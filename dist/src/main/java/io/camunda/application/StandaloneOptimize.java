@@ -7,20 +7,14 @@
  */
 package io.camunda.application;
 
+import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.optimize.OptimizeModuleConfiguration;
-import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.camunda.webapps.WebappsModuleConfiguration;
 import org.springframework.boot.SpringBootConfiguration;
 
 @SpringBootConfiguration(proxyBeanMethods = false)
 public class StandaloneOptimize {
-
-  public static final String ACTUATOR_PORT_PROPERTY_KEY = "management.server.port";
-  private static final Logger LOG = LoggerFactory.getLogger(StandaloneOptimize.class);
-  private static final ConfigurationService CONFIGURATION_SERVICE =
-      ConfigurationService.createDefault();
 
   public static void main(final String[] args) {
     // To ensure that debug logging performed using java.util.logging is routed into Log4j 2
@@ -37,7 +31,10 @@ public class StandaloneOptimize {
 
     final var standaloneOptimizeApplication =
         MainSupport.createDefaultApplicationBuilder()
-            .sources(OptimizeModuleConfiguration.class)
+            .sources(
+                CommonsModuleConfiguration.class,
+                OptimizeModuleConfiguration.class,
+                WebappsModuleConfiguration.class)
             .profiles(Profile.OPTIMIZE.getId(), Profile.STANDALONE.getId())
             .addCommandLineProperties(true)
             .listeners(new ApplicationErrorListener())

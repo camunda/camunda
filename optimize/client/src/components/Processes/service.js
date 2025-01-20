@@ -9,6 +9,7 @@
 import {get, put} from 'request';
 
 import {formatters} from 'services';
+import { getAbsoluteURL } from '../../modules/api';
 
 export async function loadProcesses(sortBy, sortOrder) {
   const params = {};
@@ -17,16 +18,16 @@ export async function loadProcesses(sortBy, sortOrder) {
     params.sortOrder = sortOrder;
   }
 
-  const response = await get('api/process/overview', params);
+  const response = await get(getAbsoluteURL('api/process/overview'), params);
   return await response.json();
 }
 
 export function updateProcess(processDefinitionKey, payload) {
-  return put(`api/process/${processDefinitionKey}`, payload);
+  return put(getAbsoluteURL(`api/process/${processDefinitionKey}`), payload);
 }
 
 export async function loadManagementDashboard() {
-  const response = await get(`api/dashboard/management`);
+  const response = await get(getAbsoluteURL(`api/dashboard/management`));
 
   return await response.json();
 }

@@ -78,7 +78,7 @@ export default function App({error}) {
     <ConfigProvider>
       <TranslationProvider>
         <Theme>
-          <Router getUserConfirmation={SaveGuard.getUserConfirmation}>
+          <Router basename='/optimize' getUserConfirmation={SaveGuard.getUserConfirmation}>
             <div className="Root-container">
               <ErrorBoundary>
                 <UserProvider>

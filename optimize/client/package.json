@@ -1,8 +1,7 @@
 {
-  "name": "client",
+  "name": "camunda-optimize",
   "version": "0.1.0",
   "private": true,
-  "homepage": ".",
   "type": "module",
   "dependencies": {
     "@bpmn-io/element-templates-icons-renderer": "^0.3.0",

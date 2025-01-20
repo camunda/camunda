@@ -9,6 +9,7 @@
 import {User} from 'components';
 import {post, get} from 'request';
 import {Definition} from 'types';
+import { getAbsoluteURL } from '../../../api';
 
 export async function loadUsersByDefinition(
   type: string,
@@ -36,7 +37,7 @@ export async function loadUsersByReportIds(
 }
 
 export async function getUsersById(type: string, ids: (string | null)[]): Promise<User[]> {
-  const response = await get(`api/${type}`, {idIn: ids.join(',')});
+  const response = await get(getAbsoluteURL(`api/${type}`), {idIn: ids.join(',')});
 
   return await response.json();
 }

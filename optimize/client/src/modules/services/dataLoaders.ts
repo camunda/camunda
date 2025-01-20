@@ -8,6 +8,7 @@
 
 import {ProcessFilter, Variable} from 'types';
 import {get, post} from 'request';
+import {getAbsoluteURL} from '../api';
 
 export async function loadProcessDefinitionXml(
   key?: string,
@@ -20,7 +21,7 @@ export async function loadProcessDefinitionXml(
   }
 
   try {
-    const response = await get('api/definition/process/xml', payload);
+    const response = await get(getAbsoluteURL('api/definition/process/xml'), payload);
 
     return await response.text();
   } catch (_e) {

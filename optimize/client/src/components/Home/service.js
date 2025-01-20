@@ -7,6 +7,7 @@
  */
 
 import {get, post, put, del} from 'request';
+import { getAbsoluteURL } from '../../modules/api';
 
 export async function loadCollectionEntities(id, sortBy, sortOrder) {
   const params = {};
@@ -15,42 +16,42 @@ export async function loadCollectionEntities(id, sortBy, sortOrder) {
     params.sortOrder = sortOrder;
   }
 
-  const response = await get(`api/collection/${id}/entities`, params);
+  const response = await get(getAbsoluteURL(`api/collection/${id}/entities`), params);
   return await response.json();
 }
 
 export async function getUsers(collection) {
-  const response = await get(`api/collection/${collection}/role`);
+  const response = await get(getAbsoluteURL(`api/collection/${collection}/role`));
   return await response.json();
 }
 
 export async function addUser(collection, roles) {
-  return await post(`api/collection/${collection}/role`, roles);
+  return await post(getAbsoluteURL(`api/collection/${collection}/role`), roles);
 }
 
 export async function editUser(collection, id, role) {
-  return await put(`api/collection/${collection}/role/${id}`, {role});
+  return await put(getAbsoluteURL(`api/collection/${collection}/role/${id}`), {role});
 }
 
 export async function removeUser(collection, id) {
-  return await del(`api/collection/${collection}/role/${id}`);
+  return await del(getAbsoluteURL(`api/collection/${collection}/role/${id}`));
 }
 
 export async function getSources(collection) {
-  const response = await get(`api/collection/${collection}/scope`);
+  const response = await get(getAbsoluteURL(`api/collection/${collection}/scope`));
   return await response.json();
 }
 
 export async function editSource(collection, scopeId, tenants, force = false) {
-  return await put(`api/collection/${collection}/scope/${scopeId}`, {tenants}, {query: {force}});
+  return await put(getAbsoluteURL(`api/collection/${collection}/scope/${scopeId}`), {tenants}, {query: {force}});
 }
 
 export async function removeSource(collection, scopeId) {
-  return await del(`api/collection/${collection}/scope/${scopeId}?force=true`);
+  return await del(getAbsoluteURL(`api/collection/${collection}/scope/${scopeId}?force=true`));
 }
 
 export async function checkDeleteSourceConflicts(collection, scopeId) {
-  const response = await get(`api/collection/${collection}/scope/${scopeId}/delete-conflicts`);
+  const response = await get(getAbsoluteURL(`api/collection/${collection}/scope/${scopeId}/delete-conflicts`));
   return await response.json();
 }
 
@@ -59,7 +60,7 @@ export async function importEntity(json, collectionId) {
   if (collectionId) {
     query.collectionId = collectionId;
   }
-  return await post('api/import', json, {query});
+  return await post(getAbsoluteURL('api/import'), json, {query});
 }
 
 export async function removeEntities(entities, collectionId) {

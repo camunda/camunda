@@ -7,6 +7,7 @@
  */
 
 import {get, del, post} from 'request';
+import { getAbsoluteURL } from '../../modules/api';
 
 export async function shareDashboard(dashboardId) {
   const body = {
@@ -19,7 +20,7 @@ export async function shareDashboard(dashboardId) {
 }
 
 export async function getSharedDashboard(reportId) {
-  const response = await get(`api/share/dashboard/${reportId}`);
+  const response = await get(getAbsoluteURL(`api/share/dashboard/${reportId}`));
 
   if (response.status > 201) {
     return '';
@@ -35,7 +36,7 @@ export async function revokeDashboardSharing(id) {
 
 export async function isAuthorizedToShareDashboard(dashboardId) {
   try {
-    const response = await get(`api/share/dashboard/${dashboardId}/isAuthorizedToShare`);
+    const response = await get(getAbsoluteURL(`api/share/dashboard/${dashboardId}/isAuthorizedToShare`));
     return response.status === 200;
   } catch (_error) {
     return false;

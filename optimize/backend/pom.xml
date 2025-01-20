@@ -671,17 +671,23 @@
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-slf4j2-impl</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-authentication</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-authentication</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-authentication</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
     <finalName>optimize-backend-${project.version}</finalName>
     <resources>
-      <!-- TODO: Remove this resource block once legacy Optimize Main class is no longer -->
-      <resource>
-        <targetPath>META-INF/resources/optimize</targetPath>
-        <directory>../client/dist</directory>
-      </resource>
-
       <resource>
         <directory>src/main/resources</directory>
       </resource>

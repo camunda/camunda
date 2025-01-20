@@ -11,6 +11,7 @@ import {Loading} from '@carbon/react';
 
 import {get, ErrorResponse} from 'request';
 import {showError} from 'notifications';
+import {getAbsoluteURL} from './api';
 
 type WebappEndpoints = {
   [key: string]: {
@@ -81,7 +82,7 @@ export function ConfigProvider({children}: {children: ReactNode}): JSX.Element {
 
   const loadConfig = async () => {
     try {
-      const response = await get('api/ui-configuration');
+      const response = await get(getAbsoluteURL('api/ui-configuration'));
       const config = await response.json();
 
       setConfig(config);

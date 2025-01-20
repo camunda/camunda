@@ -6,11 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {get} from 'request';
-import {getAbsoluteURL} from '../../modules/api';
-
-export async function getUserToken(): Promise<string> {
-  const response = await get(getAbsoluteURL('api/token'));
-  const value = (await response.json()) as {token: string};
-  return value.token;
+export function getAbsoluteURL(url: string) {
+  try {
+    const absoluteURL = new URL(url);
+    return absoluteURL.toString();
+  } catch {
+    const baseURL = `${window.location.protocol}//${window.location.host}`;
+    return `${baseURL}/${url}`;
+  }
 }

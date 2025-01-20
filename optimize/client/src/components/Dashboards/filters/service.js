@@ -7,6 +7,7 @@
  */
 
 import {post, get} from 'request';
+import {getAbsoluteURL} from '../../../modules/api';
 
 export async function getVariableNames(reportIds) {
   const response = await post('api/variables/reports', {reportIds});
@@ -34,7 +35,7 @@ export async function loadUsersByReportIds(type, payload) {
 }
 
 export async function getAssigneeNames(type, listOfIds) {
-  const response = await get('api/' + type, {idIn: listOfIds.join(',')});
+  const response = await get(getAbsoluteURL('api/' + type), {idIn: listOfIds.join(',')});
 
   return await response.json();
 }

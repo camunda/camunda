@@ -11,11 +11,12 @@ import {ChartColumn, Dashboard, Folder} from '@carbon/icons-react';
 import {del, get, post} from 'request';
 import {EntityListEntity, GenericReport} from 'types';
 import {track} from 'tracking';
+import {getAbsoluteURL} from '../api';
 
 export async function loadReports(collection?: string | null): Promise<GenericReport[]> {
-  let url = 'api/report';
+  let url = getAbsoluteURL('api/report');
   if (collection) {
-    url = `api/collection/${collection}/reports`;
+    url = getAbsoluteURL(`api/collection/${collection}/reports`);
   }
   const response = await get(url);
   return await response.json();
@@ -31,7 +32,7 @@ export async function loadEntities(
     params.sortOrder = sortOrder;
   }
 
-  const response = await get('api/entities', params);
+  const response = await get(getAbsoluteURL('api/entities'), params);
   return await response.json();
 }
 
