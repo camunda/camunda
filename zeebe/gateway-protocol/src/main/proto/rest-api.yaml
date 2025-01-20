@@ -7183,7 +7183,7 @@ components:
           type: string
           enum:
             - decisionRequirementsKey
-            - name
+            - decisionRequirementsName
             - version
             - decisionRequirementsId
             - tenantId
@@ -7213,7 +7213,7 @@ components:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this decision requirements.
-        name:
+        decisionRequirementsName:
           type: string
           description: The DMN name of the decision requirements.
         version:
@@ -7251,7 +7251,7 @@ components:
       description: Base properties for DecisionRequirementsItem.
       type: object
       properties:
-        name:
+        decisionRequirementsName:
           type: string
           description: The DMN name of the decision requirements.
         version:
@@ -8088,7 +8088,7 @@ components:
           type: integer
           format: int32
           description: The assigned decision requirements version.
-        name:
+        decisionRequirementsName:
           type: string
           description: The DMN name of the decision requirements, as parsed during deployment.
         tenantId:

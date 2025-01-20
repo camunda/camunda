@@ -32,8 +32,8 @@ public class DecisionRequirementsSortImpl extends SearchQuerySortBase<DecisionRe
   }
 
   @Override
-  public DecisionRequirementsSort name() {
-    return field("name");
+  public DecisionRequirementsSort decisionRequirementsName() {
+    return field("decisionRequirementsName");
   }
 
   @Override

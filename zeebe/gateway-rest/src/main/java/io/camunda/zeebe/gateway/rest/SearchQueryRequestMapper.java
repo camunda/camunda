@@ -572,7 +572,7 @@ public final class SearchQueryRequestMapper {
             f -> {
               Optional.ofNullable(f.getDecisionRequirementsKey())
                   .ifPresent(builder::decisionRequirementsKeys);
-              Optional.ofNullable(f.getName()).ifPresent(builder::names);
+              Optional.ofNullable(f.getDecisionRequirementsName()).ifPresent(builder::names);
               Optional.ofNullable(f.getVersion()).ifPresent(builder::versions);
               Optional.ofNullable(f.getDecisionRequirementsId())
                   .ifPresent(builder::decisionRequirementsIds);
@@ -836,7 +836,7 @@ public final class SearchQueryRequestMapper {
     } else {
       switch (field) {
         case "decisionRequirementsKey" -> builder.decisionRequirementsKey();
-        case "name" -> builder.name();
+        case "decisionRequirementsName" -> builder.name();
         case "version" -> builder.version();
         case "decisionRequirementsId" -> builder.decisionRequirementsId();
         case "tenantId" -> builder.tenantId();

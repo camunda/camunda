@@ -133,7 +133,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                 decisionRequirements.add(
                     new DecisionRequirementsImpl(
                         dr.getDecisionRequirementsId(),
-                        dr.getName(),
+                        dr.getDecisionRequirementsName(),
                         dr.getVersion(),
                         Long.parseLong(dr.getDecisionRequirementsKey()),
                         dr.getResourceName(),

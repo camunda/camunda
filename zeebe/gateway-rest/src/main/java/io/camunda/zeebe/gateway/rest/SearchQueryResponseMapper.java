@@ -392,7 +392,7 @@ public final class SearchQueryResponseMapper {
     return new DecisionRequirementsItem()
         .tenantId(d.tenantId())
         .decisionRequirementsKey(d.decisionRequirementsKey())
-        .name(d.name())
+        .decisionRequirementsName(d.name())
         .version(d.version())
         .resourceName(d.resourceName())
         .decisionRequirementsId(d.decisionRequirementsId());
