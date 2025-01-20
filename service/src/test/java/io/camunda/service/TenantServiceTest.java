@@ -137,10 +137,15 @@ public class TenantServiceTest {
 
   @Test
   public void shouldUpdateTenantName() {
+
     // given
-    final var tenantDTO = new TenantDTO(100L, "ignored", "UpdatedTenantId");
+    final var result =
+        new SearchQueryResult<>(1, List.of(tenantEntity), Arrays.array(), Arrays.array());
+    final var tenantDTO =
+        new TenantDTO(tenantEntity.key(), tenantEntity.tenantId(), "UpdatedTenantId");
 
     // when
+    when(client.searchTenants(any())).thenReturn(result);
     services.updateTenant(tenantDTO);
 
     // then

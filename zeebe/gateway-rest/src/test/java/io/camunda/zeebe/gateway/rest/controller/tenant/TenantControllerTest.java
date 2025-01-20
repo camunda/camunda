@@ -110,7 +110,7 @@ public class TenantControllerTest extends RestControllerTest {
     final var tenantKey = 100L;
     final var tenantName = "Updated Tenant Name";
     final var tenantId = "tenant-test-id";
-    when(tenantServices.updateTenant(new TenantDTO(tenantKey, null, tenantName)))
+    when(tenantServices.updateTenant(new TenantDTO(null, tenantId, tenantName)))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new TenantRecord()
@@ -121,7 +121,7 @@ public class TenantControllerTest extends RestControllerTest {
     // when
     webClient
         .patch()
-        .uri("%s/%s".formatted(TENANT_BASE_URL, tenantKey))
+        .uri("%s/%s".formatted(TENANT_BASE_URL, tenantId))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(new TenantUpdateRequest().name(tenantName))
@@ -140,7 +140,7 @@ public class TenantControllerTest extends RestControllerTest {
                 .formatted(tenantKey, tenantId, tenantName));
 
     // then
-    verify(tenantServices, times(1)).updateTenant(new TenantDTO(tenantKey, null, tenantName));
+    verify(tenantServices, times(1)).updateTenant(new TenantDTO(null, tenantId, tenantName));
   }
 
   @Test
@@ -178,10 +178,11 @@ public class TenantControllerTest extends RestControllerTest {
   @Test
   void updateNonExistingTenantShouldReturnError() {
     // given
+    final var tenantId = "tenant-id";
+    final var tenantName = "My tenant";
     final var tenantKey = 100L;
-    final var tenantName = "Updated Tenant Name";
-    final var path = "%s/%s".formatted(TENANT_BASE_URL, tenantKey);
-    when(tenantServices.updateTenant(new TenantDTO(tenantKey, null, tenantName)))
+    final var path = "%s/%s".formatted(TENANT_BASE_URL, tenantId);
+    when(tenantServices.updateTenant(new TenantDTO(null, tenantId, tenantName)))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
@@ -202,7 +203,7 @@ public class TenantControllerTest extends RestControllerTest {
         .expectStatus()
         .isNotFound();
 
-    verify(tenantServices, times(1)).updateTenant(new TenantDTO(tenantKey, null, tenantName));
+    verify(tenantServices, times(1)).updateTenant(new TenantDTO(null, tenantId, tenantName));
   }
 
   @Test

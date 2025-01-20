@@ -66,11 +66,11 @@ public class TenantController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  @CamundaPatchMapping(path = "/{tenantKey}")
+  @CamundaPatchMapping(path = "/{tenantId}")
   public CompletableFuture<ResponseEntity<Object>> updateTenant(
-      @PathVariable final long tenantKey,
+      @PathVariable final String tenantId,
       @RequestBody final TenantUpdateRequest tenantUpdateRequest) {
-    return RequestMapper.toTenantUpdateDto(tenantKey, tenantUpdateRequest)
+    return RequestMapper.toTenantUpdateDto(tenantId, tenantUpdateRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateTenant);
   }
 

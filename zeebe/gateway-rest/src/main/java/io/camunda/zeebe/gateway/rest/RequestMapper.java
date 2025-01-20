@@ -779,10 +779,10 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, TenantDTO> toTenantUpdateDto(
-      final Long tenantKey, final TenantUpdateRequest tenantUpdateRequest) {
+      final String tenantId, final TenantUpdateRequest tenantUpdateRequest) {
     return getResult(
         TenantRequestValidator.validateTenantUpdateRequest(tenantUpdateRequest),
-        () -> new TenantDTO(tenantKey, null, tenantUpdateRequest.getName()));
+        () -> new TenantDTO(null, tenantId, tenantUpdateRequest.getName()));
   }
 
   private static List<ProcessInstanceModificationActivateInstruction>
