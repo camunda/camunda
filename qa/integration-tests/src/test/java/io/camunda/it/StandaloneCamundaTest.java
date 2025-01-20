@@ -26,7 +26,7 @@ public class StandaloneCamundaTest {
 
   @Test
   public void shouldCreateAndRetrieveInstance() {
-    // givne
+    // given
     final var camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
