@@ -67,7 +67,7 @@ public class TasklistCreateProcessInstanceAuthorizationIT {
       intermediateAuthClient.createUserWithPermissions(
           ADMIN_USER_NAME,
           ADMIN_USER_PASSWORD,
-          new Permissions(ResourceTypeEnum.DEPLOYMENT, PermissionTypeEnum.CREATE, List.of("*")),
+          new Permissions(ResourceTypeEnum.RESOURCE, PermissionTypeEnum.CREATE, List.of("*")),
           new Permissions(
               ResourceTypeEnum.PROCESS_DEFINITION,
               PermissionTypeEnum.READ_PROCESS_DEFINITION,

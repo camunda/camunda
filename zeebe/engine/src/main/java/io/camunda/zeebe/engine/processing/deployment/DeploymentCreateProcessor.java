@@ -132,7 +132,7 @@ public final class DeploymentCreateProcessor
     final var authorizationRequest =
         new AuthorizationRequest(
             command,
-            AuthorizationResourceType.DEPLOYMENT,
+            AuthorizationResourceType.RESOURCE,
             PermissionType.CREATE,
             command.getValue().getTenantId());
     final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);

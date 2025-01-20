@@ -20,7 +20,7 @@ public enum AuthorizationResourceType {
   APPLICATION(PermissionType.ACCESS),
   SYSTEM(PermissionType.READ, PermissionType.UPDATE),
   TENANT(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
-  DEPLOYMENT(
+  RESOURCE(
       PermissionType.CREATE,
       PermissionType.DELETE_FORM,
       PermissionType.DELETE_PROCESS,

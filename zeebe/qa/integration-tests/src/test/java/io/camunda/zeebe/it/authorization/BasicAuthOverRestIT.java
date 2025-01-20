@@ -90,7 +90,7 @@ final class BasicAuthOverRestIT {
     authUtil.createUserWithPermissions(
         username,
         password,
-        new Permissions(ResourceTypeEnum.DEPLOYMENT, PermissionTypeEnum.CREATE, List.of("*")));
+        new Permissions(ResourceTypeEnum.RESOURCE, PermissionTypeEnum.CREATE, List.of("*")));
 
     try (final var client = authUtil.createClient(username, password)) {
       // when
@@ -132,7 +132,7 @@ final class BasicAuthOverRestIT {
           .hasMessageContaining("title: FORBIDDEN")
           .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Insufficient permissions to perform operation 'CREATE' on resource 'DEPLOYMENT'");
+              "Insufficient permissions to perform operation 'CREATE' on resource 'RESOURCE'");
     }
   }
 }

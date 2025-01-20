@@ -95,7 +95,7 @@ public class ProcessRestService extends InternalAPIErrorController {
 
   private void checkIdentityDeletePermission(final Long processDefinitionKey) {
     if (permissionsService.permissionsEnabled()
-        && !permissionsService.hasPermissionForDeployment(
+        && !permissionsService.hasPermissionForResource(
             processDefinitionKey, IdentityPermission.DELETE_PROCESS)) {
       throw new NotAuthorizedException(
           String.format("No delete permission for process definition %s", processDefinitionKey));

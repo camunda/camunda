@@ -9,8 +9,8 @@ package io.camunda.it.auth;
 
 import static io.camunda.client.protocol.rest.PermissionTypeEnum.CREATE;
 import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ_PROCESS_DEFINITION;
-import static io.camunda.client.protocol.rest.ResourceTypeEnum.DEPLOYMENT;
 import static io.camunda.client.protocol.rest.ResourceTypeEnum.PROCESS_DEFINITION;
+import static io.camunda.client.protocol.rest.ResourceTypeEnum.RESOURCE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -42,7 +42,7 @@ class ProcessAuthorizationIT {
           ADMIN,
           "password",
           List.of(
-              new Permissions(DEPLOYMENT, CREATE, List.of("*")),
+              new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*"))));
   private static final User RESTRICTED_USER =
       new User(

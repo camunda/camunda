@@ -104,7 +104,7 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
         .thenReturn(
             new ProcessEntity().setKey(processDefinitionKey).setBpmnProcessId(bpmnProcessId));
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.hasPermissionForDeployment(
+    when(permissionsService.hasPermissionForResource(
             processDefinitionKey, IdentityPermission.DELETE_PROCESS))
         .thenReturn(true);
     when(batchOperationWriter.scheduleDeleteProcessDefinition(any()))
@@ -156,7 +156,7 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
         .thenReturn(
             new ProcessEntity().setKey(processDefinitionKey).setBpmnProcessId(bpmnProcessId));
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.hasPermissionForDeployment(
+    when(permissionsService.hasPermissionForResource(
             processDefinitionKey, IdentityPermission.DELETE_PROCESS))
         .thenReturn(false);
     when(batchOperationWriter.scheduleDeleteProcessDefinition(any()))

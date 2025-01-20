@@ -69,7 +69,7 @@ public class DeploymentCreateAuthorizationTest {
     final var processId = Strings.newRandomValidBpmnId();
     final var user = createUser();
     addPermissionsToUser(
-        user.getUserKey(), AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE);
+        user.getUserKey(), AuthorizationResourceType.RESOURCE, PermissionType.CREATE);
 
     // when
     engine
@@ -106,7 +106,7 @@ public class DeploymentCreateAuthorizationTest {
     Assertions.assertThat(rejection)
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
-            "Insufficient permissions to perform operation 'CREATE' on resource 'DEPLOYMENT'");
+            "Insufficient permissions to perform operation 'CREATE' on resource 'RESOURCE'");
   }
 
   private UserRecordValue createUser() {
