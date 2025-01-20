@@ -26,8 +26,6 @@ import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -37,14 +35,16 @@ import java.util.stream.Stream;
 import org.apache.http.HttpHost;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.elasticsearch.client.RestClient;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
-@AutoCloseResources
+@Testcontainers
 abstract class BatchOperationUpdateRepositoryIT {
   @RegisterExtension protected static SearchDBExtension searchDB = SearchDBExtension.create();
   private static final Logger LOGGER =
@@ -52,7 +52,7 @@ abstract class BatchOperationUpdateRepositoryIT {
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
   protected final BatchOperationTemplate batchOperationTemplate;
   protected final OperationTemplate operationTemplate;
-  @AutoCloseResource protected final ClientAdapter clientAdapter;
+  @AutoClose protected final ClientAdapter clientAdapter;
   protected final SearchEngineClient engineClient;
   protected final ExporterConfiguration config;
 
@@ -93,7 +93,7 @@ abstract class BatchOperationUpdateRepositoryIT {
 
   static final class ElasticsearchIT extends BatchOperationUpdateRepositoryIT {
 
-    @AutoCloseResource private final RestClientTransport transport = createTransport();
+    @AutoClose private final RestClientTransport transport = createTransport();
     private final ElasticsearchAsyncClient client;
 
     public ElasticsearchIT() {

@@ -23,18 +23,16 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-@AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
 final class BasicAuthOverRestIT {
@@ -43,7 +41,7 @@ final class BasicAuthOverRestIT {
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
   private static AuthorizationsUtil authUtil;
-  @AutoCloseResource private static CamundaClient defaultUserClient;
+  @AutoClose private static CamundaClient defaultUserClient;
 
   @TestZeebe(autoStart = false)
   private TestStandaloneBroker broker =

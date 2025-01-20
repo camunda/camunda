@@ -18,22 +18,20 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 @ZeebeIntegration
-@AutoCloseResources
 @Timeout(2 * 60)
 final class ScaleDownBrokersTest {
   private static final int PARTITIONS_COUNT = 3;
   private static final String JOB_TYPE = "job";
   private static final int CLUSTER_SIZE = 3;
-  @AutoCloseResource CamundaClient camundaClient;
+  @AutoClose CamundaClient camundaClient;
 
   @TestZeebe
   private final TestCluster cluster =

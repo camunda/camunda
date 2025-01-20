@@ -25,10 +25,9 @@ import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,7 +35,6 @@ import org.mockito.Answers;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
-@AutoCloseResources
 final class CamundaExporterTest {
   private final MockedStatic<ClientAdapter> mockedClientAdapterFactory =
       Mockito.mockStatic(ClientAdapter.class);
@@ -50,7 +48,7 @@ final class CamundaExporterTest {
   private ClientAdapter stubbedClientAdapterInUse;
 
   @SuppressWarnings("FieldCanBeLocal")
-  @AutoCloseResource
+  @AutoClose
   private CamundaExporter exporter;
 
   @BeforeEach
