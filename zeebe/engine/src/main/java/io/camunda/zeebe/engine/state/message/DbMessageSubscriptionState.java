@@ -276,7 +276,7 @@ public final class DbMessageSubscriptionState
       if (subscription == null) {
         // This case can occur while a scheduled job is running asynchronously
         // and the stream processor removes one of the returned subscriptions from the state.
-        LOG.warn(
+        LOG.debug(
             "Expected to find a subscription with key {} and message name {}, but none found. The state is inconsistent.",
             elementInstanceKey,
             messageName);
