@@ -21,31 +21,21 @@ import java.util.List;
 import java.util.Objects;
 
 public class JobWorkerValue implements CamundaAnnotationValue<MethodInfo> {
-
   private String type;
-
   private String name;
-
   private Duration timeout;
-
   private Integer maxJobsActive;
-
   private Duration requestTimeout;
-
   private Duration pollInterval;
-
   private Boolean autoComplete;
-
   private List<String> fetchVariables;
-
   private Boolean enabled;
-
   private MethodInfo methodInfo;
   private List<String> tenantIds;
   private Boolean forceFetchAllVariables;
   private Boolean streamEnabled;
   private Duration streamTimeout;
-  private int maxRetries;
+  private Integer maxRetries;
 
   public JobWorkerValue() {}
 
@@ -64,7 +54,7 @@ public class JobWorkerValue implements CamundaAnnotationValue<MethodInfo> {
       final Boolean forceFetchAllVariables,
       final Boolean streamEnabled,
       final Duration streamTimeout,
-      final int maxRetries) {
+      final Integer maxRetries) {
     this.type = type;
     this.name = name;
     this.timeout = timeout;
@@ -194,11 +184,11 @@ public class JobWorkerValue implements CamundaAnnotationValue<MethodInfo> {
     this.streamTimeout = streamTimeout;
   }
 
-  public int getMaxRetries() {
+  public Integer getMaxRetries() {
     return maxRetries;
   }
 
-  public void setMaxRetries(final int maxRetries) {
+  public void setMaxRetries(final Integer maxRetries) {
     this.maxRetries = maxRetries;
   }
 
