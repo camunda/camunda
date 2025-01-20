@@ -17,7 +17,7 @@ package io.camunda.client.variable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.protocol.rest.LongFilterProperty;
+import io.camunda.client.protocol.rest.BasicLongFilterProperty;
 import io.camunda.client.protocol.rest.VariableFilterRequest;
 import io.camunda.client.protocol.rest.VariableSearchQueryRequest;
 import io.camunda.client.util.ClientRestTest;
@@ -98,7 +98,7 @@ public class SearchVariableTest extends ClientRestTest {
     client
         .newVariableQuery()
         .sort(s -> s.processInstanceKey().asc().variableKey())
-        .filter(f -> f.processInstanceKey(b -> b.gt(1L).lt(10L)))
+        .filter(f -> f.processInstanceKey(b -> b.in(1L, 10L)))
         .send()
         .join();
 
@@ -107,10 +107,9 @@ public class SearchVariableTest extends ClientRestTest {
         gatewayService.getLastRequest(VariableSearchQueryRequest.class);
     final VariableFilterRequest filter = request.getFilter();
     assertThat(filter).isNotNull();
-    final LongFilterProperty processInstanceKey = filter.getProcessInstanceKey();
+    final BasicLongFilterProperty processInstanceKey = filter.getProcessInstanceKey();
     assertThat(processInstanceKey).isNotNull();
-    assertThat(processInstanceKey.get$Gt()).isEqualTo(1);
-    assertThat(processInstanceKey.get$Lt()).isEqualTo(10);
+    assertThat(processInstanceKey.get$In()).isEqualTo(Arrays.asList(1L, 10L));
   }
 
   @Test

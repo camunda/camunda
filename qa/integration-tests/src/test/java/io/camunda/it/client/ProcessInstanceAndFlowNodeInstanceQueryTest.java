@@ -200,48 +200,6 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   }
 
   @Test
-  void shouldQueryProcessInstancesByKeyFilterGtLt() {
-    // given
-    final long processInstanceKey =
-        PROCESS_INSTANCES.stream().findFirst().orElseThrow().getProcessInstanceKey();
-
-    // when
-    final var result =
-        camundaClient
-            .newProcessInstanceQuery()
-            .filter(
-                f ->
-                    f.processInstanceKey(
-                        b -> b.gt(processInstanceKey - 1).lt(processInstanceKey + 1)))
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
-  }
-
-  @Test
-  void shouldQueryProcessInstancesByKeyFilterGteLte() {
-    // given
-    final long processInstanceKey =
-        PROCESS_INSTANCES.stream().findFirst().orElseThrow().getProcessInstanceKey();
-
-    // when
-    final var result =
-        camundaClient
-            .newProcessInstanceQuery()
-            .filter(
-                f -> f.processInstanceKey(b -> b.gte(processInstanceKey).lte(processInstanceKey)))
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
-  }
-
-  @Test
   void shouldQueryProcessInstancesByKeyFilterIn() {
     // given
     final List<Long> processInstanceKeys =

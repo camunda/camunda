@@ -111,7 +111,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     // when
     client
         .newProcessInstanceQuery()
-        .filter(f -> f.processInstanceKey(b -> b.gt(1L).lt(10L)))
+        .filter(f -> f.processInstanceKey(b -> b.in(1L, 10L)))
         .send()
         .join();
 
@@ -120,10 +120,9 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
     final ProcessInstanceFilterRequest filter = request.getFilter();
     assertThat(filter).isNotNull();
-    final LongFilterProperty processInstanceKey = filter.getProcessInstanceKey();
+    final BasicLongFilterProperty processInstanceKey = filter.getProcessInstanceKey();
     assertThat(processInstanceKey).isNotNull();
-    assertThat(processInstanceKey.get$Gt()).isEqualTo(1);
-    assertThat(processInstanceKey.get$Lt()).isEqualTo(10);
+    assertThat(processInstanceKey.get$In()).isEqualTo(Arrays.asList(1L, 10L));
   }
 
   @Test

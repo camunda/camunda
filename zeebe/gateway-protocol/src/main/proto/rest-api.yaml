@@ -4495,7 +4495,7 @@ components:
         variableKey:
           description: The key for this variable.
           allOf:
-            - $ref: "#/components/schemas/LongFilterProperty"
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
         name:
           description: Name of the variable.
           allOf:
@@ -4507,11 +4507,11 @@ components:
         scopeKey:
           description: The key of the scope of this variable.
           allOf:
-            - $ref: "#/components/schemas/LongFilterProperty"
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
         processInstanceKey:
           description: The key of the process instance of this variable.
           allOf:
-            - $ref: "#/components/schemas/LongFilterProperty"
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
         tenantId:
           description: Tenant ID of this variable.
           type: string
@@ -4823,32 +4823,9 @@ components:
           items:
             type: integer
             format: int64
-    AdvancedLongFilter:
+    BasicStringFilter:
       title: Advanced filter
-      description: Advanced long (int64) filter.
-      allOf:
-        - $ref: "#/components/schemas/BasicLongFilter"
-        - type: object
-          properties:
-            $gt:
-              description: Greater than comparison with the provided value.
-              type: integer
-              format: int64
-            $gte:
-              description: Greater than or equal comparison with the provided value.
-              type: integer
-              format: int64
-            $lt:
-              description: Lower than comparison with the provided value.
-              type: integer
-              format: int64
-            $lte:
-              description: Lower than or equal comparison with the provided value.
-              type: integer
-              format: int64
-    AdvancedStringFilter:
-      title: Advanced filter
-      description: Advanced string filter.
+      description: Basic advanced string filter.
       type: object
       properties:
         $eq:
@@ -4865,11 +4842,18 @@ components:
           type: array
           items:
             type: string
-        $like:
-          description: |
-            Checks if the property matches the provided like value.
-            Supported wildcard characters depend on the configured search client.
-          type: string
+    AdvancedStringFilter:
+      title: Advanced filter
+      description: Advanced string filter.
+      allOf:
+        - $ref: "#/components/schemas/BasicStringFilter"
+        - type: object
+          properties:
+            $like:
+              description: |
+                Checks if the property matches the provided like value.
+                Supported wildcard characters depend on the configured search client.
+              type: string
     AdvancedProcessInstanceStateFilter:
       title: Advanced filter
       description: Advanced ProcessInstanceStateEnum filter.
@@ -4943,15 +4927,14 @@ components:
           title: Exact match
           description: Matches the value exactly.
         - $ref: "#/components/schemas/BasicLongFilter"
-    LongFilterProperty:
-      description: Long property with full advanced search capabilities.
+    BasicStringFilterProperty:
+      description: String property with basic advanced search capabilities.
       type: object
       oneOf:
-        - type: integer
-          format: int64
+        - type: string
           title: Exact match
           description: Matches the value exactly.
-        - $ref: "#/components/schemas/AdvancedLongFilter"
+        - $ref: "#/components/schemas/BasicStringFilter"
     StringFilterProperty:
       description: String property with full advanced search capabilities.
       type: object
@@ -4986,7 +4969,7 @@ components:
         processInstanceKey:
           description: The key of this process instance.
           allOf:
-            - $ref: "#/components/schemas/LongFilterProperty"
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
         processDefinitionId:
           description: The process definition ID.
           allOf:
@@ -5006,15 +4989,15 @@ components:
         processDefinitionKey:
           description: The process definition key.
           allOf:
-            - $ref: "#/components/schemas/LongFilterProperty"
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
         parentProcessInstanceKey:
           description: The parent process instance key.
           allOf:
-            - $ref: "#/components/schemas/LongFilterProperty"
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
         parentFlowNodeInstanceKey:
           description: The parent flow node instance key.
           allOf:
-            - $ref: "#/components/schemas/LongFilterProperty"
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
         startDate:
           description: The start date.
           allOf:

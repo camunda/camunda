@@ -16,10 +16,10 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.VariableFilter;
-import io.camunda.client.api.search.filter.builder.LongProperty;
+import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.client.impl.search.filter.builder.LongPropertyImpl;
+import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.protocol.rest.VariableFilterRequest;
 import java.util.function.Consumer;
@@ -40,8 +40,8 @@ public class VariableFilterImpl extends TypedSearchRequestPropertyProvider<Varia
   }
 
   @Override
-  public VariableFilter variableKey(final Consumer<LongProperty> fn) {
-    final LongProperty property = new LongPropertyImpl();
+  public VariableFilter variableKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
     filter.setVariableKey(property.build());
     return this;
@@ -82,8 +82,8 @@ public class VariableFilterImpl extends TypedSearchRequestPropertyProvider<Varia
   }
 
   @Override
-  public VariableFilter scopeKey(final Consumer<LongProperty> fn) {
-    final LongProperty property = new LongPropertyImpl();
+  public VariableFilter scopeKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
     filter.setScopeKey(property.build());
     return this;
@@ -96,8 +96,8 @@ public class VariableFilterImpl extends TypedSearchRequestPropertyProvider<Varia
   }
 
   @Override
-  public VariableFilter processInstanceKey(final Consumer<LongProperty> fn) {
-    final LongProperty property = new LongPropertyImpl();
+  public VariableFilter processInstanceKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
     filter.setProcessInstanceKey(property.build());
     return this;
