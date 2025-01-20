@@ -129,12 +129,12 @@ public class TenantQueryControllerTest extends RestControllerTest {
     final var tenantName = "Tenant Name";
     final var tenantId = "tenant-id";
     final var tenant = new TenantEntity(100L, tenantId, tenantName, Set.of());
-    when(tenantServices.getByKey(tenant.key())).thenReturn(tenant);
+    when(tenantServices.getById(tenant.tenantId())).thenReturn(tenant);
 
     // when
     webClient
         .get()
-        .uri("%s/%s".formatted(TENANT_BASE_URL, tenant.key()))
+        .uri("%s/%s".formatted(TENANT_BASE_URL, tenant.tenantId()))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -152,15 +152,15 @@ public class TenantQueryControllerTest extends RestControllerTest {
                 .formatted(tenant.key(), tenantName, tenantId));
 
     // then
-    verify(tenantServices, times(1)).getByKey(tenant.key());
+    verify(tenantServices, times(1)).getById(tenant.tenantId());
   }
 
   @Test
   void getNonExistingTenantShouldReturnNotFound() {
     // given
-    final var tenantKey = 100L;
-    final var path = "%s/%s".formatted(TENANT_BASE_URL, tenantKey);
-    when(tenantServices.getByKey(tenantKey)).thenThrow(new NotFoundException("tenant not found"));
+    final var tenantId = "non-existing-tenant";
+    final var path = "%s/%s".formatted(TENANT_BASE_URL, tenantId);
+    when(tenantServices.getById(tenantId)).thenThrow(new NotFoundException("tenant not found"));
 
     // when
     webClient
@@ -183,7 +183,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
                 .formatted(path));
 
     // then
-    verify(tenantServices, times(1)).getByKey(tenantKey);
+    verify(tenantServices, times(1)).getById(tenantId);
   }
 
   @Test
