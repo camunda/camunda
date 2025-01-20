@@ -22,4 +22,10 @@ public interface CreateTenantResponse {
    * @return the key of the created tenant.
    */
   long getTenantKey();
+
+  /** Returns the id of the created tenant. */
+  String getTenantId();
+
+  /** Returns the name of the created tenant. */
+  String getName();
 }

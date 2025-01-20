@@ -20,14 +20,28 @@ import io.camunda.client.protocol.rest.TenantCreateResult;
 
 public class CreateTenantResponseImpl implements CreateTenantResponse {
   private long tenantKey;
+  private String tenantId;
+  private String name;
 
   @Override
   public long getTenantKey() {
     return tenantKey;
   }
 
+  @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  @Override
+  public String getName() {
+    return name;
+  }
+
   public CreateTenantResponseImpl setResponse(final TenantCreateResult response) {
     tenantKey = Long.parseLong(response.getTenantKey());
+    tenantId = response.getTenantId();
+    name = response.getName();
     return this;
   }
 }

@@ -80,10 +80,6 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
     return sendBrokerRequest(new BrokerTenantDeleteRequest(tenantId));
   }
 
-  public TenantEntity getByKey(final Long tenantKey) {
-    return getSingle(TenantQuery.of(q -> q.filter(f -> f.key(tenantKey))));
-  }
-
   public CompletableFuture<TenantRecord> addMember(
       final Long tenantKey, final EntityType entityType, final long entityKey) {
     return sendBrokerRequest(

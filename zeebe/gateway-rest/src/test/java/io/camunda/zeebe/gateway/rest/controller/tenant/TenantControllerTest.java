@@ -74,6 +74,45 @@ public class TenantControllerTest extends RestControllerTest {
   }
 
   @Test
+  void createTenantShouldReturnAllDetails() {
+    // given
+    final var tenantName = "Test Tenant";
+    final var tenantId = "tenant-test-id";
+    final var tenantKey = 100L;
+    when(tenantServices.createTenant(new TenantDTO(null, tenantId, tenantName)))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new TenantRecord()
+                    .setTenantKey(tenantKey)
+                    .setName(tenantName)
+                    .setTenantId(tenantId)));
+
+    // when
+    webClient
+        .post()
+        .uri(TENANT_BASE_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new TenantCreateRequest().name(tenantName).tenantId(tenantId))
+        .exchange()
+        .expectStatus()
+        .isCreated()
+        .expectBody()
+        .json(
+            """
+            {
+              "tenantKey": "%d",
+              "tenantId": "%s",
+              "name": "%s"
+            }
+            """
+                .formatted(tenantKey, tenantId, tenantName));
+
+    // then
+    verify(tenantServices, times(1)).createTenant(new TenantDTO(null, tenantId, tenantName));
+  }
+
+  @Test
   void createTenantWithEmptyTenantIdShouldFail() {
     // given
     final var tenantName = "Tenant Name";
