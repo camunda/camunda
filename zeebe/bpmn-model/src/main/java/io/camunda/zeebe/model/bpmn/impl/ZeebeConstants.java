@@ -119,4 +119,5 @@ public class ZeebeConstants {
   public static final String ELEMENT_AD_HOC = "adHoc";
 
   public static final String ELEMENT_LINKED_RESOURCE = "linkedResource";
+  public static final String ELEMENT_LINKED_RESOURCES = "linkedResources";
 }

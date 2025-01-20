@@ -16,26 +16,8 @@
 package io.camunda.zeebe.model.bpmn.instance.zeebe;
 
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
+import java.util.Collection;
 
-public interface ZeebeLinkedResource extends BpmnModelElementInstance {
-
-  String getResourceId();
-
-  void setResourceId(String resourceId);
-
-  ZeebeBindingType getBindingType();
-
-  void setBindingType(ZeebeBindingType bindingType);
-
-  String getResourceType();
-
-  void setResourceType(String resourceType);
-
-  String getVersionTag();
-
-  void setVersionTag(String versionTag);
-
-  String getLinkName();
-
-  void setLinkName(String linkName);
+public interface ZeebeLinkedResources extends BpmnModelElementInstance {
+  Collection<ZeebeLinkedResource> getLinkedResources();
 }
