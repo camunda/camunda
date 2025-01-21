@@ -50,10 +50,11 @@ class RemoveUserFromTenantTest {
             .getTenantKey();
 
     // Create User
+    final var username = "username";
     userKey =
         client
             .newUserCreateCommand()
-            .username("username")
+            .username(username)
             .name("name")
             .email("email@example.com")
             .password("password")
@@ -62,7 +63,7 @@ class RemoveUserFromTenantTest {
             .getUserKey();
 
     // Assign User to Tenant
-    client.newAssignUserToTenantCommand(tenantKey).userKey(userKey).send().join();
+    client.newAssignUserToTenantCommand(TENANT_ID).userName(username).send().join();
   }
 
   @Test
