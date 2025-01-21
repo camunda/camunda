@@ -12,6 +12,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import io.prometheus.client.Enumeration;
@@ -192,6 +193,9 @@ public final class TopologyMetrics {
   }
 
   public static final class OperationObserver {
+    final Counter.Builder counterBuilder =
+        Counter.builder(NAMESPACE + "_cluster_changes_operation_attempts_micro")
+            .description("Number of attempts to apply an operation");
     private final ClusterConfigurationChangeOperation operation;
     private final Timer timer;
     private final io.micrometer.core.instrument.Timer.Sample clusterChangeOperationTimerSample;
@@ -252,6 +256,12 @@ public final class TopologyMetrics {
                         operation.getClass().getSimpleName(),
                         "failed"));
         counter.increment();
+        final Counter c =
+            counterBuilder
+                .tags(LABEL_OPERATION, operation.getClass().getSimpleName())
+                .tags(LABEL_OUTCOME, "failed")
+                .register(meterRegistry);
+        c.increment();
       }
     }
 
@@ -275,6 +285,12 @@ public final class TopologyMetrics {
                         operation.getClass().getSimpleName(),
                         "applied"));
         counter.increment();
+        final Counter c =
+            counterBuilder
+                .tags(LABEL_OPERATION, operation.getClass().getSimpleName())
+                .tags(LABEL_OUTCOME, "applied")
+                .register(meterRegistry);
+        c.increment();
       }
     }
   }
