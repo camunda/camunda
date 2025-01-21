@@ -178,7 +178,7 @@
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>9.41.2</version.nimbus-jose-jwt>
-    <version.keycloak>25.0.6</version.keycloak>
+    <version.keycloak>26.0.6</version.keycloak>
     <version.jna>5.15.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
 
