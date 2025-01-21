@@ -20,6 +20,9 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 public abstract class SearchDBExtension
     implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback {
 
+  public static final String CUSTOM_PREFIX =
+      "custom" + RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
+
   public static final String IDX_PROCESS_PREFIX =
       "idxtestprocess" + RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
 
