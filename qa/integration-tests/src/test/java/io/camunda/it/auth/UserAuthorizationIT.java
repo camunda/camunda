@@ -161,7 +161,6 @@ class UserAuthorizationIT {
 
     //todo should return empty list , but return restricted user
     assertThat(result.getItems()).hasSize(0);
-
   }
 
   @TestTemplate
@@ -189,12 +188,9 @@ class UserAuthorizationIT {
         futureResult);
 
     final UserSearchResponse result = futureResult.join();
-    //todo delete this
-    System.out.println(result);
 
     userClient.newCreateAuthorizationCommand();
 
-    //todo should return all restricted users, as have read permissions
     assertThat(result.getItems()).hasSize(2);
 
   }
