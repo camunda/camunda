@@ -38,6 +38,7 @@ class UserAuthorizationIT {
 
   private static final String ADMIN = "admin";
   private static final String RESTRICTED = "restricted-user";
+  private static final String RESTRICTED_WITH_READ = "restricted-user-2";
 
   private static final User ADMIN_USER =
       new User(
@@ -50,9 +51,15 @@ class UserAuthorizationIT {
               new Permissions(AUTHORIZATION, PermissionTypeEnum.UPDATE, List.of("*"))));
   private static final User RESTRICTED_USER =
       new User(
-          "restricted-user",
+          RESTRICTED,
           "password",
           List.of());
+
+  private static final User RESTRICTED_USER_WITH_READ_PERMISSION =
+      new User(
+          RESTRICTED_WITH_READ,
+          "password",
+          List.of(new Permissions(USER, PermissionTypeEnum.READ, List.of("*"))));
 
   @RegisterExtension
   static final BrokerITInvocationProvider PROVIDER =
@@ -60,7 +67,7 @@ class UserAuthorizationIT {
           .withoutRdbmsExporter()
           .withAdditionalProfiles(Profile.AUTH_BASIC)
           .withAuthorizationsEnabled()
-          .withUsers(ADMIN_USER, RESTRICTED_USER);
+          .withUsers(ADMIN_USER, RESTRICTED_USER, RESTRICTED_USER_WITH_READ_PERMISSION);
 
 
   @TestTemplate
@@ -117,7 +124,7 @@ class UserAuthorizationIT {
     final UserSearchResponse result = futureResult.join();
 
 
-    assertThat(result.getItems()).hasSize(2);
+    assertThat(result.getItems()).hasSize(3);
 
   }
 
@@ -154,6 +161,41 @@ class UserAuthorizationIT {
 
     //todo should return empty list , but return restricted user
     assertThat(result.getItems()).hasSize(0);
+
+  }
+
+  @TestTemplate
+  void searchShouldReturnListOfUsersIfHaveReadPermission(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient userClient) {
+
+    final CamundaClientImpl userClient1 = (CamundaClientImpl) userClient;
+    final JsonMapper jsonMapper = userClient1.getConfiguration().getJsonMapper();
+    final HttpClient httpClient = userClient1.getHttpClient();
+
+    final RequestConfig httpRequestConfig =
+        httpClient.newRequestConfig().setResponseTimeout(15000, TimeUnit.MILLISECONDS).build();
+
+    final UserSearchQueryRequest userSearchQueryRequest = new UserSearchQueryRequest();
+
+    final String requestBody = jsonMapper.toJson(userSearchQueryRequest);
+
+    final HttpCamundaFuture<UserSearchResponse> futureResult = new HttpCamundaFuture<>();
+    httpClient.post(
+        "/users/search",
+        requestBody,
+        httpRequestConfig,
+        UserSearchResponse.class,
+        response -> response,
+        futureResult);
+
+    final UserSearchResponse result = futureResult.join();
+    //todo delete this
+    System.out.println(result);
+
+    userClient.newCreateAuthorizationCommand();
+
+    //todo should return all restricted users, as have read permissions
+    assertThat(result.getItems()).hasSize(2);
 
   }
 
