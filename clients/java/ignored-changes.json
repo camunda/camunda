@@ -131,6 +131,54 @@
           "old": "class io.camunda.zeebe.client.protocol.rest.UserTaskItem",
           "new": "class io.camunda.zeebe.client.protocol.rest.UserTaskItem",
           "justification": "JSON property order changes due to introduction of inheritance. The property order change is not considered a breaking change."
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.attributeValueChanged",
+          "annotationType": "com.fasterxml.jackson.annotation.JsonPropertyOrder",
+          "old": "class io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilterRequest",
+          "new": "class io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilterRequest",
+          "justification": "JSON property order changes due to introduction of inheritance. The property order change is not considered a breaking change."
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.attributeValueChanged",
+          "annotationType": "com.fasterxml.jackson.annotation.JsonPropertyOrder",
+          "old": "class io.camunda.zeebe.client.protocol.rest.DecisionInstanceFilterRequest",
+          "new": "class io.camunda.zeebe.client.protocol.rest.DecisionInstanceFilterRequest",
+          "justification": "JSON property order changes due to introduction of inheritance. The property order change is not considered a breaking change."
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.attributeValueChanged",
+          "annotationType": "com.fasterxml.jackson.annotation.JsonPropertyOrder",
+          "old": "class io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceFilterRequest",
+          "new": "class io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceFilterRequest",
+          "justification": "JSON property order changes due to introduction of inheritance. The property order change is not considered a breaking change."
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.attributeValueChanged",
+          "annotationType": "com.fasterxml.jackson.annotation.JsonPropertyOrder",
+          "old": "class io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest",
+          "new": "class io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest",
+          "justification": "JSON property order changes due to introduction of inheritance. The property order change is not considered a breaking change."
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.attributeValueChanged",
+          "annotationType": "com.fasterxml.jackson.annotation.JsonPropertyOrder",
+          "old": "class io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest",
+          "new": "class io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest",
+          "justification": "JSON property order changes due to introduction of inheritance. The property order change is not considered a breaking change."
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.attributeValueChanged",
+          "annotationType": "com.fasterxml.jackson.annotation.JsonPropertyOrder",
+          "old": "class io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceActivateInstruction",
+          "new": "class io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceActivateInstruction",
+          "justification": "JSON property order changes due to introduction of inheritance. The property order change is not considered a breaking change."
         }
       ]
     }
