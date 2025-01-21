@@ -7,14 +7,19 @@
  */
 package io.camunda.zeebe.scheduler;
 
-import io.prometheus.client.Counter;
-import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 final class ActorMetrics {
 
   private static final io.micrometer.core.instrument.MeterRegistry meterRegistry =
       io.micrometer.core.instrument.Metrics.globalRegistry;
+
+  //  private static final Duration[] EXECUTION_LATENCY_BUCKETS =
+  //      Stream.of(1, 1000, 2000, 5000, 10000, 30000, 60000, 120000, 180000, 300000, 600000)
+  //          .map(Duration::ofMillis)
+  //          .toArray(Duration[]::new);
 
   private static final Histogram EXECUTION_LATENCY =
       Histogram.build()
@@ -35,30 +40,21 @@ final class ActorMetrics {
           .labelNames("subscriptionType")
           .register();
 
-  private static final Counter EXECUTION_COUNT =
-      Counter.build()
-          .namespace("zeebe")
-          .name("actor_task_execution_count")
-          .help("Number of times a certain actor task was executed successfully")
-          .labelNames("actorName")
-          .register();
+  private static final String EXECUTION_COUNT_NAME = "zeebe_actor_task_execution_count";
 
-  private static final io.micrometer.core.instrument.Counter MICRO_EXECUTION_COUNT =
-      io.micrometer.core.instrument.Counter.builder("zeebe_actor_task_execution_count_micro")
-          .description("Number of times a certain actor task was executed successfully")
-          .register(meterRegistry);
+  private static final ConcurrentHashMap<String, AtomicInteger> JOB_QUEUE_LENGTHS =
+      new ConcurrentHashMap<>();
+  private static final String JOB_QUEUE_NAME = "zeebe_actor_task_queue_length";
 
-  private static final Gauge JOB_QUEUE_LENGTH =
-      Gauge.build()
-          .namespace("zeebe")
-          .name("actor_task_queue_length")
-          .help("The length of the job queue for an actor task")
-          .labelNames("actorName")
-          .register();
   private final boolean enabled;
 
   public ActorMetrics(final boolean metricsEnabled) {
     enabled = metricsEnabled;
+    if (enabled) {
+      io.micrometer.core.instrument.Counter.builder(EXECUTION_COUNT_NAME)
+          .description("Number of times a certain actor task was executed successfully")
+          .register(meterRegistry);
+    }
   }
 
   Histogram.Timer startExecutionTimer(final String name) {
@@ -70,16 +66,25 @@ final class ActorMetrics {
 
   void countExecution(final String name) {
     if (enabled) {
-      EXECUTION_COUNT.labels(name).inc();
-      meterRegistry
-          .counter("zeebe_actor_task_execution_count_micro", "actorName", name)
-          .increment();
+      meterRegistry.counter(EXECUTION_COUNT_NAME, "actorName", name).increment();
     }
   }
 
   void updateJobQueueLength(final String actorName, final int length) {
     if (enabled) {
-      JOB_QUEUE_LENGTH.labels(actorName).set(length);
+      JOB_QUEUE_LENGTHS
+          .computeIfAbsent(
+              actorName,
+              k -> {
+                final AtomicInteger newJobQueueLength = new AtomicInteger();
+                io.micrometer.core.instrument.Gauge.builder(
+                        JOB_QUEUE_NAME, newJobQueueLength, AtomicInteger::get)
+                    .description("The length of the job queue for an actor task")
+                    .tag("actorName", actorName)
+                    .register(meterRegistry);
+                return newJobQueueLength;
+              })
+          .set(length);
     }
   }
 
