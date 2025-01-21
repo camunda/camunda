@@ -9,133 +9,223 @@ package io.camunda.it.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.response.Incident;
 import io.camunda.it.utils.BrokerITInvocationProvider;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.time.Duration;
 import java.util.UUID;
 import java.util.function.Consumer;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class IncidentExporterIT {
 
-  // RDBMS doesn't support Incidents up to now
   @RegisterExtension
-  static final BrokerITInvocationProvider PROVIDER =
-      new BrokerITInvocationProvider().withoutRdbmsExporter();
+  static final BrokerITInvocationProvider PROVIDER = new BrokerITInvocationProvider();
 
   @TestTemplate
   void shouldExportIncident(final TestStandaloneBroker testBroker) {
-    final var client = testBroker.newClientBuilder().build();
+    final var steps = new IncidentSteps(testBroker);
 
-    final var resource =
-        client
-            .newDeployResourceCommand()
-            .addResourceFromClasspath("process/error-end-event.bpmn")
-            .send()
-            .join();
-
-    final var processInstanceKey =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(resource.getProcesses().getFirst().getBpmnProcessId())
-            .latestVersion()
-            .send()
-            .join()
-            .getProcessInstanceKey();
-
-    waitForIncident(client, f -> f.processInstanceKey(processInstanceKey));
-
-    final var incidents =
-        client
-            .newIncidentQuery()
-            .filter(f -> f.processInstanceKey(processInstanceKey))
-            .send()
-            .join()
-            .items();
+    // given
+    steps.deployProcessFromClasspath("process/error-end-event.bpmn");
+    // when
+    steps.startProcessInstance();
 
     // then
-    assertThat(incidents).isNotEmpty();
-    assertThat(incidents.size()).isEqualTo(1);
-    assertThat(incidents.getFirst().getErrorType())
-        .isEqualTo(ErrorType.UNHANDLED_ERROR_EVENT.name());
-    assertThat(incidents.getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    steps
+        .incidentExistsForProcessInstance(
+            i -> {
+              assertThat(i.getErrorType()).isEqualTo(ErrorType.UNHANDLED_ERROR_EVENT.name());
+            })
+        .processInstanceHasIncident();
   }
 
   @TestTemplate
-  void shouldExportUnhandledErrorIncident(final TestStandaloneBroker testBroker) {
-    final var client = testBroker.newClientBuilder().build();
+  void shouldExportAndResolveNestedIncidents(final TestStandaloneBroker testBroker) {
+    final var steps = new IncidentSteps(testBroker);
 
-    final var resource =
-        client
-            .newDeployResourceCommand()
-            .addResourceFromClasspath("process/errorProcess.bpmn")
-            .send()
-            .join();
+    // ----------------------------
+    // First create the incidents
+    // ----------------------------
 
-    final var processInstanceKey =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(resource.getProcesses().getFirst().getBpmnProcessId())
-            .latestVersion()
-            .send()
-            .join()
-            .getProcessInstanceKey();
+    // given
+    steps
+        .deployProcessFromClasspath("process/nestedErrorParentProcess.bpmn")
+        .deployProcessFromClasspath("process/nestedErrorChildProcess.bpmn")
+        .startProcessInstance("nestedErrorParentProcess")
+        .waitForChildProcessInstance();
 
-    throwIncident(client, "errorTask", "this-errorcode-does-not-exists", "Process error");
-
-    waitForIncident(client, f -> f.processInstanceKey(processInstanceKey));
-
-    final var incidents =
-        client
-            .newIncidentQuery()
-            .filter(f -> f.processInstanceKey(processInstanceKey))
-            .send()
-            .join()
-            .items();
+    // when
+    steps.throwIncident("errorTask", "this-errorcode-does-not-exists", "Process error");
 
     // then
-    assertThat(incidents).isNotEmpty();
-    assertThat(incidents.size()).isEqualTo(1);
-    assertThat(incidents.getFirst().getErrorType())
-        .isEqualTo(ErrorType.UNHANDLED_ERROR_EVENT.name());
-    assertThat(incidents.getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    steps
+        .incidentExistsForProcessInstance(
+            steps.processInstanceKey,
+            i -> {
+              assertThat(i.getErrorType()).isEqualTo(ErrorType.UNHANDLED_ERROR_EVENT.name());
+              assertThat(i.getFlowNodeId()).isEqualTo("parentprocess_error_task");
+            })
+        .incidentExistsForProcessInstance(
+            steps.childProcessInstanceKey,
+            i -> {
+              assertThat(i.getErrorType()).isEqualTo(ErrorType.UNHANDLED_ERROR_EVENT.name());
+              assertThat(i.getFlowNodeId()).isEqualTo("childprocess_error_task");
+            })
+        .processInstanceHasIncident(steps.processInstanceKey)
+        .processInstanceHasIncident(steps.childProcessInstanceKey)
+        .flowNodeHasIncident("call_error_subprocess", false)
+        .flowNodeHasIncident("parentprocess_error_task", true)
+        .flowNodeHasIncident("childprocess_error_task", true);
+
+    // ----------------------------
+    // Now solve the incidents from child to parent
+    // ----------------------------
+
+    // when
+    steps.resolveIncidentForProcessInstance(steps.childProcessInstanceKey);
+
+    // then
+    steps
+        .incidentExistsForProcessInstance(
+            steps.childProcessInstanceKey,
+            i -> {
+              assertThat(i.getState()).isEqualTo("RESOLVED");
+            })
+        .processInstanceHasNoIncident(steps.childProcessInstanceKey)
+        .processInstanceHasIncident(steps.processInstanceKey)
+        .flowNodeHasNoIncident("call_error_subprocess")
+        .flowNodeHasNoIncident("childprocess_error_task")
+        .flowNodeHasIncident("parentprocess_error_task", true);
+
+    // when
+    steps.resolveIncidentForProcessInstance(steps.processInstanceKey);
+
+    // then
+    steps
+        .incidentExistsForProcessInstance(
+            steps.processInstanceKey,
+            i -> {
+              assertThat(i.getState()).isEqualTo("RESOLVED");
+            })
+        .processInstanceHasNoIncident(steps.childProcessInstanceKey)
+        .processInstanceHasNoIncident(steps.processInstanceKey)
+        .flowNodeHasNoIncident("parentprocess_error_task");
   }
 
-  private void waitForIncident(
-      final CamundaClient client, final Consumer<IncidentFilter> filterFn) {
-    Awaitility.await()
-        .ignoreExceptions()
-        .timeout(Duration.ofSeconds(30))
-        .until(() -> !client.newIncidentQuery().filter(filterFn).send().join().items().isEmpty());
-  }
+  static class IncidentSteps extends TestSteps<IncidentSteps> {
 
-  private void throwIncident(
-      final CamundaClient client,
-      final String jobType,
-      final String errorCode,
-      final String errorMessage) {
-    client
-        .newActivateJobsCommand()
-        .jobType(jobType)
-        .maxJobsToActivate(1)
-        .workerName(UUID.randomUUID().toString())
-        .send()
-        .join()
-        .getJobs()
-        .forEach(
-            j -> {
-              final var inc =
-                  client
-                      .newThrowErrorCommand(j.getKey())
-                      .errorCode(errorCode)
-                      .errorMessage(errorMessage)
-                      .send()
-                      .join();
-            });
+    protected long incidentKey;
+
+    public IncidentSteps(final TestStandaloneBroker broker) {
+      super(broker);
+    }
+
+    // ----------------------
+    // GIVEN / WHEN
+    // ----------------------
+
+    public IncidentSteps throwIncident(
+        final String jobType, final String errorCode, final String errorMessage) {
+      client
+          .newActivateJobsCommand()
+          .jobType(jobType)
+          .maxJobsToActivate(10)
+          .workerName(UUID.randomUUID().toString())
+          .send()
+          .join()
+          .getJobs()
+          .forEach(
+              j -> {
+                client
+                    .newThrowErrorCommand(j.getKey())
+                    .errorCode(errorCode)
+                    .errorMessage(errorMessage)
+                    .send()
+                    .join();
+              });
+
+      return self();
+    }
+
+    public IncidentSteps resolveIncidentForProcessInstance(final long processInstanceKey) {
+      client
+          .newIncidentQuery()
+          .filter(f -> f.processInstanceKey(processInstanceKey))
+          .send()
+          .join()
+          .items()
+          .forEach(
+              i -> {
+                client.newResolveIncidentCommand(i.getIncidentKey()).send().join();
+              });
+
+      return self();
+    }
+
+    // ----------------------
+    // THEN
+    // ----------------------
+
+    public IncidentSteps incidentExistsForProcessInstance(final Consumer<Incident> assertion) {
+      return incidentExistsForProcessInstance(processInstanceKey, assertion);
+    }
+
+    public IncidentSteps incidentExistsForProcessInstance(
+        final long processInstanceKey, final Consumer<Incident> assertion) {
+      incidentsExistAndMatch(
+          f -> f.processInstanceKey(processInstanceKey),
+          incidents -> {
+            assertThat(incidents).hasSize(1);
+            assertion.accept(incidents.getFirst());
+
+            incidentKey = incidents.getFirst().getIncidentKey();
+          });
+
+      return self();
+    }
+
+    public IncidentSteps processInstanceHasIncident() {
+      return processInstanceHasIncident(processInstanceKey);
+    }
+
+    public IncidentSteps processInstanceHasIncident(final long processInstanceKey) {
+      return processInstanceExistAndMatch(
+          f -> f.processInstanceKey(processInstanceKey),
+          f -> {
+            assertThat(f).hasSize(1);
+            assertThat(f.getFirst().getHasIncident()).isTrue();
+          });
+    }
+
+    public IncidentSteps processInstanceHasNoIncident(final long processInstanceKey) {
+      return processInstanceExistAndMatch(
+          f -> f.processInstanceKey(processInstanceKey),
+          f -> {
+            assertThat(f).hasSize(1);
+            assertThat(f.getFirst().getHasIncident()).isFalse();
+          });
+    }
+
+    public IncidentSteps flowNodeHasIncident(final String flowNodeId, final boolean withKey) {
+      return flowNodeInstanceExistAndMatch(
+          f -> f.flowNodeId(flowNodeId),
+          f -> {
+            assertThat(f).hasSize(1);
+            assertThat(f.getFirst().getIncident()).isTrue();
+            assertThat(f.getFirst().getIncidentKey() != null).isEqualTo(withKey);
+          });
+    }
+
+    public IncidentSteps flowNodeHasNoIncident(final String flowNodeId) {
+      return flowNodeInstanceExistAndMatch(
+          f -> f.flowNodeId(flowNodeId),
+          f -> {
+            assertThat(f).hasSize(1);
+            assertThat(f.getFirst().getIncident()).isFalse();
+            assertThat(f.getFirst().getIncidentKey()).isNull();
+          });
+    }
   }
 }
