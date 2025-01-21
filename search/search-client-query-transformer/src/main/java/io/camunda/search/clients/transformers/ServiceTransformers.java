@@ -22,7 +22,6 @@ import io.camunda.search.clients.transformers.entity.ProcessDefinitionEntityTran
 import io.camunda.search.clients.transformers.entity.ProcessInstanceEntityTransformer;
 import io.camunda.search.clients.transformers.entity.RoleEntityTransformer;
 import io.camunda.search.clients.transformers.entity.TenantEntityTransformer;
-import io.camunda.search.clients.transformers.entity.UsageMetricsEntityTransformer;
 import io.camunda.search.clients.transformers.entity.UserEntityTransformer;
 import io.camunda.search.clients.transformers.entity.UserTaskEntityTransformer;
 import io.camunda.search.clients.transformers.entity.VariableEntityTransformer;
@@ -60,11 +59,11 @@ import io.camunda.search.clients.transformers.sort.FormFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.GroupFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.IncidentFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.MappingFieldSortingTransformer;
+import io.camunda.search.clients.transformers.sort.NoSortSortingTransformer;
 import io.camunda.search.clients.transformers.sort.ProcessDefinitionFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.ProcessInstanceFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.RoleFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.TenantFieldSortingTransformer;
-import io.camunda.search.clients.transformers.sort.UsageMetricsFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.UserFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.UserTaskFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.VariableFieldSortingTransformer;
@@ -118,12 +117,12 @@ import io.camunda.search.sort.FormSort;
 import io.camunda.search.sort.GroupSort;
 import io.camunda.search.sort.IncidentSort;
 import io.camunda.search.sort.MappingSort;
+import io.camunda.search.sort.NoSort;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.search.sort.RoleSort;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.TenantSort;
-import io.camunda.search.sort.UsageMetricsSort;
 import io.camunda.search.sort.UserSort;
 import io.camunda.search.sort.UserTaskSort;
 import io.camunda.search.sort.VariableSort;
@@ -138,7 +137,6 @@ import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
-import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
@@ -149,7 +147,6 @@ import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
-import io.camunda.webapps.schema.entities.operate.UsageMetricsEntity;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
@@ -250,7 +247,6 @@ public final class ServiceTransformers {
     mappers.put(GroupEntity.class, new GroupEntityTransformer());
     mappers.put(UserEntity.class, new UserEntityTransformer());
     mappers.put(MappingEntity.class, new MappingEntityTransformer());
-    mappers.put(UsageMetricsEntity.class, new UsageMetricsEntityTransformer());
 
     // domain field sorting -> database field sorting
     mappers.put(DecisionDefinitionSort.class, new DecisionDefinitionFieldSortingTransformer());
@@ -270,7 +266,7 @@ public final class ServiceTransformers {
     mappers.put(GroupSort.class, new GroupFieldSortingTransformer());
     mappers.put(UserSort.class, new UserFieldSortingTransformer());
     mappers.put(MappingSort.class, new MappingFieldSortingTransformer());
-    mappers.put(UsageMetricsSort.class, new UsageMetricsFieldSortingTransformer());
+    mappers.put(NoSort.class, new NoSortSortingTransformer());
 
     // filters -> search query
     mappers.put(
@@ -322,9 +318,7 @@ public final class ServiceTransformers {
         TenantFilter.class, new TenantFilterTransformer(indexDescriptors.get(TenantIndex.class)));
     mappers.put(
         UsageMetricsFilter.class,
-        new UsageMetricsFilterTransformer(
-            indexDescriptors.get(TasklistMetricIndex.class),
-            indexDescriptors.get(MetricIndex.class)));
+        new UsageMetricsFilterTransformer(indexDescriptors.get(MetricIndex.class)));
 
     // result config -> source config
     mappers.put(

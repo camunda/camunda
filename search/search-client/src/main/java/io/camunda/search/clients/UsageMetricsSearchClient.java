@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients;
 
+import io.camunda.search.entities.UsageMetricsCount;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.auth.SecurityContext;
 
@@ -14,9 +15,5 @@ public interface UsageMetricsSearchClient {
 
   UsageMetricsSearchClient withSecurityContext(SecurityContext securityContext);
 
-  Long countAssignees(UsageMetricsQuery query);
-
-  Long countProcessInstances(UsageMetricsQuery query);
-
-  Long countDecisionInstances(UsageMetricsQuery query);
+  UsageMetricsCount searchUsageMetrics(UsageMetricsQuery query);
 }

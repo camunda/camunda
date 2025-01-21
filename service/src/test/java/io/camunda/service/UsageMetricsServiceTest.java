@@ -44,9 +44,7 @@ public final class UsageMetricsServiceTest {
   @Test
   public void shouldReturnUsageMetricsCount() {
     // given
-    when(client.countProcessInstances(any())).thenReturn(5L);
-    when(client.countDecisionInstances(any())).thenReturn(23L);
-    when(client.countAssignees(any())).thenReturn(42L);
+    when(client.searchUsageMetrics(any())).thenReturn(new UsageMetricsCount(42L, 5L, 23L));
 
     final var startTime =
         OffsetDateTime.of(2021, 1, 1, 0, 0, 0, 0, OffsetDateTime.now().getOffset());
