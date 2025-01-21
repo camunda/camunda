@@ -78,8 +78,7 @@ jobs:
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
-          -P parallel-tests,extract-flaky-tests,skipFrontendBuild
-          -Dgroups=multiDbTest
+          -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
           -Dcamunda.it.database.type=es
           -pl 'qa/integration-tests'
           verify
