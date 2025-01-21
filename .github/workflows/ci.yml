@@ -244,6 +244,11 @@ jobs:
         # Exposing the ports allow to be accessible via http://localhost:9200 in the runner
         ports:
           - 9200:9200
+        options: >-
+          --health-cmd "curl --silent --fail http://localhost:9200/_cluster/health"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
         env:
           # Disabling the security to make sure we can access without tls in our tests
           # https://www.elastic.co/guide/en/elasticsearch/reference/current/security-settings.html#general-security-settings
@@ -273,9 +278,6 @@ jobs:
           maven-extra-args: -T1C -PskipFrontendBuild
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
-      # To fail early if set up with service container doesn't work and ES is not accessible
-      - name: Validate connection with ES
-        run: curl http://localhost:9200
       # Run specific integration tests with ES service container
       # During the migration of tests we run only specific package, where classes moved into
       #
