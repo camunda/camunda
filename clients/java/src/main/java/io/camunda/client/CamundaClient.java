@@ -1577,17 +1577,17 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newAssignUserToTenantCommand(tenantKey)
-   *   .userKey(userKey)
+   *   .newAssignUserToTenantCommand(tenantId)
+   *   .userKey(userId)
    *   .send();
    * </pre>
    *
    * <p>This command sends an HTTP PUT request to assign the specified user to the given tenant.
    *
-   * @param tenantKey the unique identifier of the tenant
+   * @param tenantId the unique identifier of the tenant
    * @return a builder for the assign user to tenant command
    */
-  AssignUserToTenantCommandStep1 newAssignUserToTenantCommand(long tenantKey);
+  AssignUserToTenantCommandStep1 newAssignUserToTenantCommand(String tenantId);
 
   /**
    * Command to remove a user from a tenant.
