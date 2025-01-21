@@ -7128,6 +7128,7 @@ components:
           description: The maximum number of items to return in one request.
           type: integer
           format: int32
+          default: 100
         searchAfter:
           description: Items to search after. Correlates to the `lastSortValues` property of a previous search response.
           type: array
