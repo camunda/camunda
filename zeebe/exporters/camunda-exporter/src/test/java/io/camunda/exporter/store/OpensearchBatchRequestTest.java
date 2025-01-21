@@ -10,6 +10,8 @@ package io.camunda.exporter.store;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -20,6 +22,7 @@ import io.camunda.exporter.utils.OpensearchScriptBuilder;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +45,7 @@ class OpensearchBatchRequestTest {
 
   private static final String ID = "id";
   private static final String INDEX = "index";
+  private static final String INDEX_WITH_HANDLER = "indexWithHandler";
   private OpensearchBatchRequest batchRequest;
   private OpenSearchClient osClient;
   private Builder requestBuilder;
@@ -433,5 +437,29 @@ class OpensearchBatchRequestTest {
     // Then
     assertThatThrownBy(callable).isInstanceOf(PersistenceException.class);
     verify(osClient).bulk(any(BulkRequest.class));
+  }
+
+  @Test
+  void shouldUseCustomErrorHandlerIfProvided() throws IOException {
+    // Given
+    final TestExporterEntity entity = new TestExporterEntity().setId(ID);
+
+    final BulkResponseItem item = mock(BulkResponseItem.class);
+    when(item.id()).thenReturn("1");
+    when(item.error())
+        .thenReturn(new ErrorCause.Builder().type("string_error").reason("error").build());
+    when(item.index()).thenReturn(INDEX_WITH_HANDLER);
+
+    final BulkResponse bulkResponse = mock(BulkResponse.class);
+    when(bulkResponse.items()).thenReturn(List.of(item));
+
+    when(osClient.bulk(any(BulkRequest.class))).thenReturn(bulkResponse);
+    final BiConsumer<String, String> errorHandler = mock(BiConsumer.class);
+    // When
+    batchRequest.add(INDEX_WITH_HANDLER, entity);
+    batchRequest.execute(errorHandler);
+
+    // Then
+    verify(errorHandler).accept(eq(INDEX_WITH_HANDLER), anyString());
   }
 }
