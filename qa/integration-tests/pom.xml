@@ -446,6 +446,27 @@
         </plugins>
       </build>
     </profile>
+
+    <!--
+    this profile will run all tests annotated with @SmokeTest. the profile is mainly used to
+    ensure that we can run basic tests on Windows, macOS, and Linux, thereby ensuring minimal
+    multi-platform support for development.
+    -->
+    <profile>
+      <id>multi-db-test</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <failIfNoTests>false</failIfNoTests>
+              <groups>multiDbTest</groups>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 
 </project>
