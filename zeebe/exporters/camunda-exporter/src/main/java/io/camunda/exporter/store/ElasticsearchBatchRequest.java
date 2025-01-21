@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -156,14 +157,15 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     LOGGER.debug(
         "Add update request for index {} id {} and update fields {}", index, id, updateFields);
 
-    bulkRequestBuilder.operations(
-        op ->
-            op.update(
-                up ->
-                    up.index(index)
-                        .id(id)
-                        .action(a -> a.doc(updateFields))
-                        .retryOnConflict(UPDATE_RETRY_COUNT)));
+    final Builder operations =
+        bulkRequestBuilder.operations(
+            op ->
+                op.update(
+                    up ->
+                        up.index(index)
+                            .id(id)
+                            .action(a -> a.doc(updateFields))
+                            .retryOnConflict(UPDATE_RETRY_COUNT)));
 
     return this;
   }
@@ -227,13 +229,18 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   @Override
+  public void execute(final BiConsumer<String, String> consumer) throws PersistenceException {
+    execute(false, consumer);
+  }
+
+  @Override
   public void execute() throws PersistenceException {
-    execute(false);
+    execute(true, null);
   }
 
   @Override
   public void executeWithRefresh() throws PersistenceException {
-    execute(true);
+    execute(true, null);
   }
 
   @Override
@@ -241,7 +248,8 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     errorHandlers.put(index, errorHandler);
   }
 
-  private void execute(final boolean shouldRefresh) throws PersistenceException {
+  private void execute(final boolean shouldRefresh, final BiConsumer<String, String> consumer)
+      throws PersistenceException {
     if (shouldRefresh) {
       bulkRequestBuilder.refresh(Refresh.True);
     }
@@ -252,14 +260,16 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     try {
       final BulkResponse bulkResponse = esClient.bulk(bulkRequest);
       final List<BulkResponseItem> items = bulkResponse.items();
-      validateNoErrors(items);
+      validateNoErrors(items, consumer);
     } catch (final IOException | ElasticsearchException ex) {
+
       throw new PersistenceException(
           "Error when processing bulk request against Elasticsearch: " + ex.getMessage(), ex);
     }
   }
 
-  private void validateNoErrors(final List<BulkResponseItem> items) {
+  private void validateNoErrors(
+      final List<BulkResponseItem> items, final BiConsumer<String, String> consumer) {
     final var errorItems = items.stream().filter(item -> item.error() != null).toList();
     if (errorItems.isEmpty()) {
       return;
@@ -277,13 +287,12 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
     errorItems.forEach(
         item -> {
-          final var errorHandler = errorHandlers.get(item.index());
           final String message =
               String.format(
                   "%s failed for type [%s] and id [%s]: %s",
                   item.operationType(), item.index(), item.id(), item.error().reason());
-          if (errorHandler != null) {
-            errorHandler.accept(message);
+          if (consumer != null) {
+            consumer.accept(item.index(), message);
           } else {
             throw new PersistenceException(message);
           }

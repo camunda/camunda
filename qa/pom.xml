@@ -25,18 +25,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <configuration>
-          <!-- combine both surefire and failsafe include patterns for now -->
-          <includes>
-            <include>**/IT*.java</include>
-            <include>**/*IT.java</include>
-            <include>**/*ITCase.java</include>
-            <include>**/Test*.java</include>
-            <include>**/*Test.java</include>
-            <include>**/*Tests.java</include>
-            <include>**/*TestCase.java</include>
-          </includes>
-        </configuration>
       </plugin>
 
       <!-- hardcode skipping surefire for now since we're not renaming all the files just yet -->

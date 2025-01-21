@@ -80,4 +80,11 @@ public abstract class AbstractOperationHandler<R extends RecordValue>
   public void onError(final BatchRequest batchRequest) throws PersistenceException {
     batchRequest.onError(indexName, NOOP_ERROR_HANDLER);
   }
+
+  @Override
+  public void onError(final String id, final String index, final Exception ex) {
+
+    // is ex because entity doesnt exist?!
+    // if so ignore otherwise throw
+  }
 }

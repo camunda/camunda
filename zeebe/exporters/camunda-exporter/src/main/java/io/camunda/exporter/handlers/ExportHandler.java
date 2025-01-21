@@ -95,4 +95,8 @@ public interface ExportHandler<T extends ExporterEntity<T>, R extends RecordValu
           throw new PersistenceException(cause);
         });
   }
+
+  default void onError(final String id, final String index, final Exception ex) {
+    throw new RuntimeException(ex);
+  }
 }

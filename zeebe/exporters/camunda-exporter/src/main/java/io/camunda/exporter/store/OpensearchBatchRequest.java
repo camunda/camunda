@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -220,8 +221,13 @@ public class OpensearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public void execute() throws PersistenceException {
+  public void execute(final BiConsumer<String, String> consumer) throws PersistenceException {
     execute(false);
+  }
+
+  @Override
+  public void execute() throws PersistenceException {
+    execute(true);
   }
 
   @Override

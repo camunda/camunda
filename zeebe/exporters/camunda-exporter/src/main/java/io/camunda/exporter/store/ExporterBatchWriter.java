@@ -20,12 +20,14 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 /** Caches exporter entities of different types and provide the method to flush them in a batch. */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class ExporterBatchWriter {
   private final Map<ValueType, List<ExportHandler>> handlers = new HashMap<>();
   private final Map<EntityIdAndEntityType, EntityAndHandlers> cachedEntities = new HashMap<>();
+  private BiConsumer<String, String> customErrorHandlingForIndex;
 
   public void addRecord(final Record<?> record) {
     final ValueType valueType = record.getValueType();
@@ -73,10 +75,11 @@ public class ExporterBatchWriter {
       final ExporterEntity entity = entityAndHandler.entity();
       for (final var handler : entityAndHandler.handlers()) {
         handler.flush(entity, batchRequest);
-        handler.onError(batchRequest);
+        //        handler.onError(batchRequest);
       }
     }
     batchRequest.execute();
+
     reset();
   }
 
@@ -110,9 +113,17 @@ public class ExporterBatchWriter {
     public ExporterBatchWriter build() {
       return writer;
     }
+
+    public void withCustomErrorHandling(final BiConsumer<String, String> consumer) {
+      writer.customErrorHandlingForIndex = consumer;
+    }
   }
 
   private record EntityIdAndEntityType(String entityId, Class<?> entityType) {}
 
   private record EntityAndHandlers(ExporterEntity entity, Set<ExportHandler> handlers) {}
+
+  public interface ErrorHandler {
+    void onError(String id, String index, Exception ex);
+  }
 }

@@ -94,7 +94,11 @@ import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import org.slf4j.LoggerFactory;
 
 /**
  * This is the class where teams should make their components such as handlers, and index/index
@@ -270,4 +274,23 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     // Register all handlers here
     return exportHandlers;
   }
+
+  @Override
+  public BiConsumer<String, String> getCustomErrorHandlingForIndex() {
+    final Map<String, Consumer<String>> index1 =
+        Map.of(
+            "index1",
+            (error) -> {
+              LoggerFactory.getLogger(DefaultExporterResourceProvider.class)
+                  .error("OMG I FAILED {}", error);
+            },
+            "index2",
+            (str) -> {},
+            "index3",
+            (str) -> {});
+    return (final String index, final String exceptionMsg) ->
+        index1.get(index).accept(exceptionMsg);
+  }
+
+  // getIndicesSwallingException
 }

@@ -236,6 +236,11 @@ public class CamundaExporter implements Exporter {
   private ExporterBatchWriter createBatchWriter() {
     final var builder = ExporterBatchWriter.Builder.begin();
     provider.getExportHandlers().forEach(builder::withHandler);
+
+    builder.withCustomErrorHandling(provider.getCustomErrorHandlingForIndex());
+    // builder.withErrorHandlerForIndex Operation - swallow
+    // builder.withErrorHandlerForIndex  Incident - retry
+    // we specify for specific index an customized error handling - per default we are throw
     return builder.build();
   }
 

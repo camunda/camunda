@@ -10,6 +10,7 @@ package io.camunda.exporter.store;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /** A {@link BatchRequest} contains updates to one or more {@link ExporterEntity} */
@@ -63,6 +64,8 @@ public interface BatchRequest {
    *
    * @throws PersistenceException if an error occurs during the execution
    */
+  void execute(final BiConsumer<String, String> consumer) throws PersistenceException;
+
   void execute() throws PersistenceException;
 
   void executeWithRefresh() throws PersistenceException;
