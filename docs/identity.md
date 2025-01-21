@@ -23,6 +23,7 @@ erDiagram
     string name
   }
   Authorization {
+    string ownerId
     enum ownerType
     enum resourceType
   }
