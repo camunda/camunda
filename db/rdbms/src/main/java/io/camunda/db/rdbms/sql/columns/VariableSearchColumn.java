@@ -15,7 +15,7 @@ public enum VariableSearchColumn implements SearchColumn<VariableEntity> {
   PROCESS_INSTANCE_KEY("processInstanceKey", VariableEntity::processInstanceKey),
   SCOPE_KEY("scopeKey", VariableEntity::scopeKey),
   VAR_NAME("name", VariableEntity::name),
-  VAR_VALUE("value", VariableEntity::value),
+  VAR_VALUE_SORT("value", VariableEntity::value),
   VAR_FULL_VALUE("fullValue", VariableEntity::fullValue),
   TENANT_ID("tenantId", VariableEntity::tenantId),
   IS_PREVIEW("isPreview", VariableEntity::isPreview),

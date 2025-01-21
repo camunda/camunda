@@ -82,7 +82,12 @@
     <choose>
       <when test="operation.operator.name().equals('EQUALS')">
         <if test="operation.type.toString == 'STRING' or operation.type.toString == 'BOOLEAN'">
-          VAR_VALUE = #{operation.value}
+            <if test="_databaseId == 'oracle'">
+              VAR_VALUE LIKE #{operation.value}
+            </if>
+            <if test="_databaseId != 'oracle'">
+              VAR_VALUE = #{operation.value}
+            </if>
         </if>
         <if test="operation.type.toString == 'LONG'">
           LONG_VALUE = #{operation.value}
@@ -93,7 +98,12 @@
       </when>
       <when test="operation.operator.name().equals('NOT_EQUALS')">
         <if test="operation.type.toString == 'STRING' or operation.type.toString == 'BOOLEAN'">
-          VAR_VALUE != #{operation.value}
+          <if test="_databaseId == 'oracle'">
+            VAR_VALUE NOT LIKE #{operation.value}
+          </if>
+          <if test="_databaseId != 'oracle'">
+            VAR_VALUE != #{operation.value}
+          </if>
         </if>
         <if test="operation.type.toString == 'LONG'">
           LONG_VALUE != #{operation.value}

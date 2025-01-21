@@ -25,10 +25,16 @@
       SCOPE_KEY,
       VAR_NAME,
       VAR_VALUE,
-    VAR_FULL_VALUE,
+      VAR_FULL_VALUE,
       TENANT_ID,
-    IS_PREVIEW,
-    PROCESS_DEFINITION_ID
+      IS_PREVIEW,
+      PROCESS_DEFINITION_ID,
+    <if test="_databaseId == 'oracle'">
+      to_char(substr(VAR_VALUE, 1, 4000)) AS VAR_VALUE_SORT
+    </if>
+    <if test="_databaseId != 'oracle'">
+      VAR_VALUE AS VAR_VALUE_SORT
+    </if>
     FROM VARIABLE
     <include refid="io.camunda.db.rdbms.sql.VariableMapper.searchFilter"/>
     ) t

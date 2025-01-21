@@ -186,6 +186,22 @@ public class VariableValueFilterIT {
   }
 
   @TestTemplate
+  public void shouldFindVariableWithNameAndLikeValue(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given 21 variables
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String varName = "var-name-" + nextStringId();
+    final var randomizedVariable =
+        prepareRandomVariablesAndReturnOne(testApplication, varName, "I have a dream");
+
+    // and a lte value filter
+    final Operation<String> operation = Operation.like("%have%");
+
+    // when we search for it, we should find one
+    searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
+  }
+
+  @TestTemplate
   public void shouldFindVariableWithMultipleNamesFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables
