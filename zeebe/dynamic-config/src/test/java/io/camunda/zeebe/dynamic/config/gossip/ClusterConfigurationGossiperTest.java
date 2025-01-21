@@ -22,6 +22,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
@@ -105,7 +106,8 @@ final class ClusterConfigurationGossiperTest {
               atomixCluster.getMembershipService(),
               new ProtoBufSerializer(),
               config,
-              this::mergeTopology);
+              this::mergeTopology,
+              new SimpleMeterRegistry());
       this.atomixCluster = atomixCluster;
     }
 
