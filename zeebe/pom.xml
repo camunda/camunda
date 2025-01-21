@@ -58,6 +58,7 @@
     <module>backup-stores/s3</module>
     <module>backup-stores/gcs</module>
     <module>backup-stores/azure</module>
+    <module>backup-stores/filesystem</module>
     <module>backup-stores/common</module>
     <module>restore</module>
     <module>dynamic-config</module>

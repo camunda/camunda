@@ -10,10 +10,12 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
+import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
@@ -61,10 +63,10 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
         case S3 -> installS3Store(context, backupCfg, installed);
         case GCS -> installGcsStore(context, backupCfg, installed);
         case AZURE -> installAzureStore(context, backupCfg, installed);
-        default ->
-            installed.completeExceptionally(
-                new IllegalArgumentException(
-                    "Unknown backup store type %s".formatted(backupCfg.getStore())));
+        case FILESYSTEM -> installFilesystemStore(context, backupCfg, installed);
+        default -> installed.completeExceptionally(
+            new IllegalArgumentException(
+                "Unknown backup store type %s".formatted(backupCfg.getStore())));
       }
     } else {
       installed.complete(null);
@@ -115,6 +117,22 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
       final var storeAzureConfig = AzureBackupStoreConfig.toStoreConfig(brokerAzureConfig);
       final var azureStore = new AzureBackupStore(storeAzureConfig);
       context.setBackupStore(azureStore);
+      installed.complete(null);
+    } catch (final Exception error) {
+      installed.completeExceptionally("Failed to create backup store", error);
+    }
+  }
+
+  private static void installFilesystemStore(
+      final PartitionTransitionContext context,
+      final BackupStoreCfg backupCfg,
+      final ActorFuture<Void> installed) {
+    try {
+      final var brokerFilesystemConfig = backupCfg.getFilesystem();
+      final var storeFilesystemConfig = FilesystemBackupStoreConfig.toStoreConfig(
+          brokerFilesystemConfig);
+      final var filesystemStore = new FilesystemBackupStore(storeFilesystemConfig);
+      context.setBackupStore(filesystemStore);
       installed.complete(null);
     } catch (final Exception error) {
       installed.completeExceptionally("Failed to create backup store", error);

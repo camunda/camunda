@@ -9,11 +9,13 @@ package io.camunda.zeebe.restore;
 
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
+import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,9 +43,9 @@ final class BackupStoreComponent {
       case S3 -> buildS3BackupStore(backupCfg);
       case GCS -> buildGcsBackupStore(backupCfg);
       case AZURE -> buildAzureBackupStore(backupCfg);
-      case NONE ->
-          throw new IllegalArgumentException(
-              "No backup store configured, cannot restore from backup.");
+      case FILESYSTEM -> buildFilesystemBackupStore(backupCfg);
+      case NONE -> throw new IllegalArgumentException(
+          "No backup store configured, cannot restore from backup.");
     };
   }
 
@@ -60,5 +62,12 @@ final class BackupStoreComponent {
   private static AzureBackupStore buildAzureBackupStore(final BackupStoreCfg backupStoreCfg) {
     final var storeConfig = AzureBackupStoreConfig.toStoreConfig(backupStoreCfg.getAzure());
     return new AzureBackupStore(storeConfig);
+  }
+
+  private static FilesystemBackupStore buildFilesystemBackupStore(
+      final BackupStoreCfg backupStoreCfg) {
+    final var storeConfig = FilesystemBackupStoreConfig.toStoreConfig(
+        backupStoreCfg.getFilesystem());
+    return new FilesystemBackupStore(storeConfig);
   }
 }
