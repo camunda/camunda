@@ -18,14 +18,14 @@ const DeleteTenantModal: FC<UseEntityModalProps<DeleteTenantParams>> = ({
   open,
   onClose,
   onSuccess,
-  entity: { tenantKey, name },
+  entity: { tenantId, name },
 }) => {
   const { t } = useTranslate();
   const { enqueueNotification } = useNotifications();
   const [apiCall, { loading }] = useApiCall(deleteTenant);
 
   const handleSubmit = async () => {
-    const { success } = await apiCall({ tenantKey });
+    const { success } = await apiCall({ tenantId });
 
     if (success) {
       enqueueNotification({
