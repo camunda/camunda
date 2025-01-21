@@ -13,30 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.impl.client;
+package io.camunda.process.test.api.assertions;
 
 import io.camunda.client.api.search.response.ProcessInstance;
-import java.util.List;
-import java.util.stream.Collectors;
 
-public class SearchProcessInstanceResponseDto {
+/** A selector for process instances. */
+@FunctionalInterface
+public interface ProcessInstanceSelector {
 
-  private List<ProcessInstanceDto> items;
-  private long total;
+  /**
+   * Checks if a process instance matches the selector.
+   *
+   * @param processInstance the process instance
+   * @return {@code true} if the process instance matches, otherwise {@code false}
+   */
+  boolean test(ProcessInstance processInstance);
 
-  public List<ProcessInstance> getItems() {
-    return items.stream().map(ProcessInstance.class::cast).collect(Collectors.toList());
-  }
-
-  public void setItems(final List<ProcessInstanceDto> items) {
-    this.items = items;
-  }
-
-  public long getTotal() {
-    return total;
-  }
-
-  public void setTotal(final long total) {
-    this.total = total;
+  /**
+   * Returns a string representation of the selector. It is used to build the failure message of an
+   * assertion. Default: {@link Object#toString()}.
+   *
+   * @return the string representation
+   */
+  default String describe() {
+    return toString();
   }
 }
