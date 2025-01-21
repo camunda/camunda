@@ -14,13 +14,11 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
-import io.micrometer.core.instrument.Tag;
 import io.prometheus.client.Enumeration;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 import io.prometheus.client.Histogram.Timer;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -194,7 +192,7 @@ public final class TopologyMetrics {
 
   public static final class OperationObserver {
     final Counter.Builder counterBuilder =
-        Counter.builder(NAMESPACE + "_cluster_changes_operation_attempts_micro")
+        Counter.builder(NAMESPACE + "_cluster_changes_operation_attempts")
             .description("Number of attempts to apply an operation");
     private final ClusterConfigurationChangeOperation operation;
     private final Timer timer;
@@ -224,17 +222,17 @@ public final class TopologyMetrics {
           io.micrometer.core.instrument.Timer.start(meterRegistry));
     }
 
-    protected io.micrometer.core.instrument.Counter newCounter(
-        final String metricName, final String operation, final String outcome) {
-      final List<Tag> tags = new ArrayList<>();
-      if (operation != null && !operation.isEmpty()) {
-        tags.add(Tag.of(LABEL_OPERATION, operation));
-      }
-      if (outcome != null && !outcome.isEmpty()) {
-        tags.add(Tag.of(LABEL_OUTCOME, outcome));
-      }
-      return meterRegistry.counter(metricName, tags);
-    }
+    //    protected io.micrometer.core.instrument.Counter newCounter(
+    //        final String metricName, final String operation, final String outcome) {
+    //      final List<Tag> tags = new ArrayList<>();
+    //      if (operation != null && !operation.isEmpty()) {
+    //        tags.add(Tag.of(LABEL_OPERATION, operation));
+    //      }
+    //      if (outcome != null && !outcome.isEmpty()) {
+    //        tags.add(Tag.of(LABEL_OUTCOME, outcome));
+    //      }
+    //      return meterRegistry.counter(metricName, tags);
+    //    }
 
     public void failed() {
       if (clusterChangeOperationTimer != null && clusterChangeOperationTimerSample != null) {
@@ -242,20 +240,20 @@ public final class TopologyMetrics {
       }
       if (timer != null) {
         timer.close();
-        final String key =
-            NAMESPACE
-                + "_cluster_changes_operation_attempts#"
-                + operation.getClass().getSimpleName()
-                + "#failed";
-        final io.micrometer.core.instrument.Counter counter =
-            operationAttempts.computeIfAbsent(
-                key,
-                k ->
-                    newCounter(
-                        NAMESPACE + "_cluster_changes_operation_attempts",
-                        operation.getClass().getSimpleName(),
-                        "failed"));
-        counter.increment();
+        //        final String key =
+        //            NAMESPACE
+        //                + "_cluster_changes_operation_attempts#"
+        //                + operation.getClass().getSimpleName()
+        //                + "#failed";
+        //        final io.micrometer.core.instrument.Counter counter =
+        //            operationAttempts.computeIfAbsent(
+        //                key,
+        //                k ->
+        //                    newCounter(
+        //                        NAMESPACE + "_cluster_changes_operation_attempts",
+        //                        operation.getClass().getSimpleName(),
+        //                        "failed"));
+        //        counter.increment();
         final Counter c =
             counterBuilder
                 .tags(LABEL_OPERATION, operation.getClass().getSimpleName())
@@ -271,20 +269,20 @@ public final class TopologyMetrics {
       }
       if (timer != null) {
         timer.close();
-        final String key =
-            NAMESPACE
-                + "_cluster_changes_operation_attempts#"
-                + operation.getClass().getSimpleName()
-                + "#applied";
-        final io.micrometer.core.instrument.Counter counter =
-            operationAttempts.computeIfAbsent(
-                key,
-                k ->
-                    newCounter(
-                        NAMESPACE + "_cluster_changes_operation_attempts",
-                        operation.getClass().getSimpleName(),
-                        "applied"));
-        counter.increment();
+        //        final String key =
+        //            NAMESPACE
+        //                + "_cluster_changes_operation_attempts#"
+        //                + operation.getClass().getSimpleName()
+        //                + "#applied";
+        //        final io.micrometer.core.instrument.Counter counter =
+        //            operationAttempts.computeIfAbsent(
+        //                key,
+        //                k ->
+        //                    newCounter(
+        //                        NAMESPACE + "_cluster_changes_operation_attempts",
+        //                        operation.getClass().getSimpleName(),
+        //                        "applied"));
+        //        counter.increment();
         final Counter c =
             counterBuilder
                 .tags(LABEL_OPERATION, operation.getClass().getSimpleName())
