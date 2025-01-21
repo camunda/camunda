@@ -37,7 +37,7 @@ jobs:
         ports:
           - 9200:9200
         options: >-
-          --health-cmd 'curl --silent --fail localhost:9200/_cluster/health'
+          --health-cmd "curl --silent --fail http://localhost:9200/_cluster/health"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
