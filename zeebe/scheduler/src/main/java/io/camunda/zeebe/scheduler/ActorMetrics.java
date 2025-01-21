@@ -13,6 +13,9 @@ import io.prometheus.client.Histogram;
 
 final class ActorMetrics {
 
+  private static final io.micrometer.core.instrument.MeterRegistry meterRegistry =
+      io.micrometer.core.instrument.Metrics.globalRegistry;
+
   private static final Histogram EXECUTION_LATENCY =
       Histogram.build()
           // goes up to ~26 seconds while being more fine-grained in the <5ms range.
@@ -40,6 +43,11 @@ final class ActorMetrics {
           .labelNames("actorName")
           .register();
 
+  private static final io.micrometer.core.instrument.Counter MICRO_EXECUTION_COUNT =
+      io.micrometer.core.instrument.Counter.builder("zeebe_actor_task_execution_count_micro")
+          .description("Number of times a certain actor task was executed successfully")
+          .register(meterRegistry);
+
   private static final Gauge JOB_QUEUE_LENGTH =
       Gauge.build()
           .namespace("zeebe")
@@ -63,6 +71,9 @@ final class ActorMetrics {
   void countExecution(final String name) {
     if (enabled) {
       EXECUTION_COUNT.labels(name).inc();
+      meterRegistry
+          .counter("zeebe_actor_task_execution_count_micro", "actorName", name)
+          .increment();
     }
   }
 
