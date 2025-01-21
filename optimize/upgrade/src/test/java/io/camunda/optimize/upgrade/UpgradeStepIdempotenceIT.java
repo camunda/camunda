@@ -7,11 +7,11 @@
  */
 package io.camunda.optimize.upgrade;
 
-import static jakarta.ws.rs.HttpMethod.PUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.verify.VerificationTimes.exactly;
+import static org.springframework.http.HttpMethod.PUT;
 
 import com.google.common.collect.ImmutableList;
 import io.camunda.optimize.service.db.DatabaseConstants;
@@ -129,7 +129,7 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
           // when creating the second rolled over index fails the upgrade
           final String targetIndexName = getVersionedIndexName(indexName, 2);
           final HttpRequest createRolledOverIndex2Request =
-              request().withPath("/" + targetIndexName + "-000002").withMethod(PUT);
+              request().withPath("/" + targetIndexName + "-000002").withMethod(PUT.name());
           dbMockServer
               .when(createRolledOverIndex2Request, Times.exactly(1))
               .error(HttpError.error().withDropConnection(true));

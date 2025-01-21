@@ -9,10 +9,10 @@ package io.camunda.optimize.service.export;
 
 import io.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.db.report.AuthorizationCheckReportEvaluationHandler;
 import io.camunda.optimize.service.db.report.ReportEvaluationInfo;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import jakarta.ws.rs.NotFoundException;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;

@@ -7,24 +7,25 @@
  */
 package io.camunda.optimize.rest;
 
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
+
 import io.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import io.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import io.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.variable.DecisionVariableService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
 import java.util.List;
-import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-@Path(DecisionVariablesRestService.DECISION_VARIABLES_PATH)
-@Component
+@Validated
+@RestController
+@RequestMapping(REST_API_PATH + DecisionVariablesRestService.DECISION_VARIABLES_PATH)
 public class DecisionVariablesRestService {
 
   public static final String DECISION_VARIABLES_PATH = "/decision-variables";
@@ -40,43 +41,31 @@ public class DecisionVariablesRestService {
     this.sessionService = sessionService;
   }
 
-  @POST
-  @Path(DECISION_INPUTS_NAMES_PATH)
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
+  @PostMapping(DECISION_INPUTS_NAMES_PATH)
   public List<DecisionVariableNameResponseDto> getInputVariableNames(
-      @Valid final List<DecisionVariableNameRequestDto> variableRequestDto) {
+      @Valid @RequestBody final List<DecisionVariableNameRequestDto> variableRequestDto) {
     return decisionVariableService.getInputVariableNames(variableRequestDto);
   }
 
-  @POST
-  @Path(DECISION_OUTPUTS_NAMES_PATH)
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
+  @PostMapping(DECISION_OUTPUTS_NAMES_PATH)
   public List<DecisionVariableNameResponseDto> getOutputVariableNames(
-      @Valid final List<DecisionVariableNameRequestDto> variableRequestDto) {
+      @Valid @RequestBody final List<DecisionVariableNameRequestDto> variableRequestDto) {
     return decisionVariableService.getOutputVariableNames(variableRequestDto);
   }
 
-  @POST
-  @Path("/inputs/values")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
+  @PostMapping("/inputs/values")
   public List<String> getInputValues(
-      @Context final ContainerRequestContext requestContext,
-      final DecisionVariableValueRequestDto requestDto) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @RequestBody final DecisionVariableValueRequestDto requestDto,
+      final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     return decisionVariableService.getInputVariableValues(userId, requestDto);
   }
 
-  @POST
-  @Path("/outputs/values")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
+  @PostMapping("/outputs/values")
   public List<String> getOutputValues(
-      @Context final ContainerRequestContext requestContext,
-      final DecisionVariableValueRequestDto requestDto) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @RequestBody final DecisionVariableValueRequestDto requestDto,
+      final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     return decisionVariableService.getOutputVariableValues(userId, requestDto);
   }
 }

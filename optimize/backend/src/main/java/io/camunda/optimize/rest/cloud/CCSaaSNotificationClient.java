@@ -16,9 +16,6 @@ import io.camunda.optimize.dto.optimize.cloud.panelnotifications.PanelNotificati
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -28,6 +25,9 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -61,15 +61,14 @@ public class CCSaaSNotificationClient extends AbstractCCSaaSClient {
           new StringEntity(
               objectMapper.writeValueAsString(notificationRequestDto),
               ContentType.APPLICATION_JSON);
-      request.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
+      request.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
       request.setEntity(notificationRequestBody);
 
       try (final CloseableHttpResponse response = performNotificationRequest(request)) {
-        final Response.Status statusCode =
-            Response.Status.fromStatusCode(response.getStatusLine().getStatusCode());
-        if (!Response.Status.OK.equals(statusCode)) {
+        final HttpStatus status = HttpStatus.resolve(response.getStatusLine().getStatusCode());
+        if (!HttpStatus.OK.equals(status)) {
           throw new OptimizeRuntimeException(
-              "Unexpected response when sending notification: " + statusCode);
+              "Unexpected response when sending notification: " + status);
         }
       }
     } catch (final IOException e) {

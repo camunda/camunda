@@ -9,7 +9,7 @@ package io.camunda.optimize.rest.util;
 
 import static io.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 
-import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -24,8 +24,8 @@ public final class TimeZoneUtil {
 
   private TimeZoneUtil() {}
 
-  public static ZoneId extractTimezone(final ContainerRequestContext requestContext) {
-    final String headerString = requestContext.getHeaderString(X_OPTIMIZE_CLIENT_TIMEZONE);
+  public static ZoneId extractTimezone(final HttpServletRequest request) {
+    final String headerString = request.getHeader(X_OPTIMIZE_CLIENT_TIMEZONE);
     if (AVAILABLE_ZONE_IDS.contains(headerString)) {
       return ZoneId.of(headerString);
     } else if (headerString != null) {

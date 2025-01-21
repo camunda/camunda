@@ -11,19 +11,16 @@ import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.ws.rs.QueryParam;
 
 public class PaginationRequestDto {
 
   public static final String LIMIT_PARAM = "limit";
   public static final String OFFSET_PARAM = "offset";
 
-  @QueryParam(LIMIT_PARAM)
   @Min(0)
   @Max(MAX_RESPONSE_SIZE_LIMIT)
   protected Integer limit;
 
-  @QueryParam(OFFSET_PARAM)
   @Min(0)
   protected Integer offset;
 

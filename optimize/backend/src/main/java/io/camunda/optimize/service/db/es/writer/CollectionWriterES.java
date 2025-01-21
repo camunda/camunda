@@ -35,6 +35,7 @@ import io.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDt
 import io.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateRequestDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeDeleteRequestBuilderES;
 import io.camunda.optimize.service.db.es.builders.OptimizeIndexRequestBuilderES;
@@ -46,7 +47,6 @@ import io.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflic
 import io.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
