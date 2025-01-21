@@ -270,6 +270,10 @@ public final class CamundaClientImpl implements CamundaClient {
     this.httpClient.start();
   }
 
+  public HttpClient getHttpClient() {
+    return httpClient;
+  }
+
   private static HttpClient buildHttpClient(final CamundaClientConfiguration config) {
     return new HttpClientFactory(config).createClient();
   }
