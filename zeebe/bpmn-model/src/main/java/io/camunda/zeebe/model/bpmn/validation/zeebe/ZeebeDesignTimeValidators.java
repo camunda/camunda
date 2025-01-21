@@ -18,11 +18,11 @@ package io.camunda.zeebe.model.bpmn.validation.zeebe;
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
-import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResource;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePublishMessage;
@@ -71,10 +71,7 @@ public final class ZeebeDesignTimeValidators {
     validators.add(new ProcessValidator());
     validators.add(new ScriptTaskValidator());
     validators.add(new SequenceFlowValidator());
-    validators.add(
-        ExtensionElementsValidator.verifyThat(ServiceTask.class)
-            .hasSingleExtensionElement(
-                ZeebeTaskDefinition.class, ZeebeConstants.ELEMENT_TASK_DEFINITION));
+    validators.add(new ServiceTaskValidator());
     validators.add(new ReceiveTaskValidator());
     validators.add(new StartEventValidator());
     validators.add(new SubProcessValidator());
@@ -121,6 +118,14 @@ public final class ZeebeDesignTimeValidators {
             .hasNonEmptyAttribute(ZeebeScript::getExpression, ZeebeConstants.ATTRIBUTE_EXPRESSION)
             .hasNonEmptyAttribute(
                 ZeebeScript::getResultVariable, ZeebeConstants.ATTRIBUTE_RESULT_VARIABLE));
+    validators.add(
+        ZeebeElementValidator.verifyThat(ZeebeLinkedResource.class)
+            .hasNonEmptyAttribute(
+                ZeebeLinkedResource::getResourceId, ZeebeConstants.ATTRIBUTE_RESOURCE_ID)
+            .hasNonEmptyEnumAttribute(
+                ZeebeLinkedResource::getBindingType, ZeebeConstants.ATTRIBUTE_BINDING_TYPE)
+            .hasNonEmptyAttribute(
+                ZeebeLinkedResource::getResourceType, ZeebeConstants.ATTRIBUTE_RESOURCE_TYPE));
     validators.add(new SignalEventDefinitionValidator());
     validators.add(new SignalValidator());
     validators.add(new LinkEventDefinitionValidator());
