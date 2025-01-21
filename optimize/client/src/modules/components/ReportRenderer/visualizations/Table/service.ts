@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import { getFullURL } from '../../../../api';
 import {post} from 'request';
 
 export async function loadObjectValues(
@@ -15,7 +16,7 @@ export async function loadObjectValues(
   processDefinitionVersions: string[],
   tenantIds: (string | null)[]
 ): Promise<string> {
-  const response = await post(`api/variables/values`, {
+  const response = await post(getFullURL(`api/variables/values`), {
     name,
     processInstanceId,
     processDefinitionKey,

@@ -6,12 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {post} from 'request';
-import { getFullURL } from '../../api';
+export function getFullURL(url: string) {
+  if (typeof window.location.origin !== 'string') {
+    throw new Error('window.location.origin is not a set');
+  }
 
-export async function loadTenants(definitions) {
-  const params = {definitions};
-  const response = await post(getFullURL(`api/definition/process/_resolveTenantsForVersions`), params);
-
-  return await response.json();
+  return new URL(url, window.location.origin).toString();
 }

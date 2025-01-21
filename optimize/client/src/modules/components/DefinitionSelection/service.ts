@@ -8,6 +8,7 @@
 
 import {Tenant} from 'types';
 import {get, post} from 'request';
+import { getFullURL } from '../../api';
 
 export type Version = {
   version: string;
@@ -32,7 +33,7 @@ export async function loadVersions(
     params.filterByCollectionScope = collectionId;
   }
 
-  const response = await get(`api/definition/${type}/${key}/versions`, params);
+  const response = await get(getFullURL(`api/definition/${type}/${key}/versions`), params);
 
   return response.json();
 }
@@ -49,7 +50,7 @@ export async function loadTenants(
     payload.filterByCollectionScope = collectionId;
   }
 
-  const response = await post(`api/definition/${type}/_resolveTenantsForVersions`, payload);
+  const response = await post(getFullURL(`api/definition/${type}/_resolveTenantsForVersions`), payload);
 
   return response.json();
 }
