@@ -17,7 +17,6 @@ import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.zeebeimport.cache.FNITreePathCacheCompositeKey;
 import io.camunda.operate.zeebeimport.cache.TreePathCache;
-import io.camunda.operate.zeebeimport.processors.fni.FNITransformer;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;

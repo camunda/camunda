@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.zeebeimport.processors;
+package io.camunda.operate.zeebeimport.v8_6.processors;
 
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
@@ -21,7 +21,7 @@ import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.cache.FlowNodeInstanceTreePathCache;
 import io.camunda.operate.zeebeimport.cache.TreePathCacheMetricsImpl;
-import io.camunda.operate.zeebeimport.processors.fni.FNITransformer;
+import io.camunda.operate.zeebeimport.v8_6.processors.fni.FNITransformer;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
