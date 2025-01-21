@@ -1124,13 +1124,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UserTaskSearchQueryRequestBody"
+              $ref: "#/components/schemas/UserTaskSearchQuery"
           application/vnd.camunda.api.keys.number+json:
             schema:
               $ref: "#/components/schemas/UserTaskSearchQueryRequest"
           application/vnd.camunda.api.keys.string+json:
             schema:
-              $ref: "#/components/schemas/UserTaskSearchQueryRequestBody"
+              $ref: "#/components/schemas/UserTaskSearchQuery"
       responses:
         "200":
           description: >
@@ -1219,13 +1219,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/VariableSearchQueryRequestBody"
+              $ref: "#/components/schemas/VariableSearchQuery"
           application/vnd.camunda.api.keys.number+json:
             schema:
               $ref: "#/components/schemas/VariableSearchQueryRequest"
           application/vnd.camunda.api.keys.string+json:
             schema:
-              $ref: "#/components/schemas/VariableSearchQueryRequestBody"
+              $ref: "#/components/schemas/VariableSearchQuery"
       responses:
         "200":
           description: >
@@ -1367,13 +1367,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ProcessDefinitionSearchQueryRequestBody"
+              $ref: "#/components/schemas/ProcessDefinitionSearchQuery"
           application/vnd.camunda.api.keys.number+json:
             schema:
               $ref: "#/components/schemas/ProcessDefinitionSearchQueryRequest"
           application/vnd.camunda.api.keys.string+json:
             schema:
-              $ref: "#/components/schemas/ProcessDefinitionSearchQueryRequestBody"
+              $ref: "#/components/schemas/ProcessDefinitionSearchQuery"
       responses:
         "200":
           description: >
@@ -1579,7 +1579,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateProcessInstanceRequestBody"
+              $ref: "#/components/schemas/ProcessInstanceCreationInstruction"
             examples:
               "By process definition key":
                 summary: "Create a process instance by processDefinitionKey."
@@ -1597,7 +1597,7 @@ paths:
               $ref: "#/components/schemas/CreateProcessInstanceRequest"
           application/vnd.camunda.api.keys.string+json:
             schema:
-              $ref: "#/components/schemas/CreateProcessInstanceRequestBody"
+              $ref: "#/components/schemas/ProcessInstanceCreationInstruction"
       responses:
         "200":
           description: The process instance was created.
@@ -1676,13 +1676,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ProcessInstanceSearchQueryRequestBody"
+              $ref: "#/components/schemas/ProcessInstanceSearchQuery"
           application/vnd.camunda.api.keys.number+json:
             schema:
               $ref: "#/components/schemas/ProcessInstanceSearchQueryRequest"
           application/vnd.camunda.api.keys.string+json:
             schema:
-              $ref: "#/components/schemas/ProcessInstanceSearchQueryRequestBody"
+              $ref: "#/components/schemas/ProcessInstanceSearchQuery"
       responses:
         "200":
           description: The process instance search result.
@@ -1775,13 +1775,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/MigrateProcessInstanceRequestBody"
+              $ref: "#/components/schemas/ProcessInstanceMigrationInstruction"
           application/vnd.camunda.api.keys.number+json:
             schema:
               $ref: "#/components/schemas/MigrateProcessInstanceRequest"
           application/vnd.camunda.api.keys.string+json:
             schema:
-              $ref: "#/components/schemas/MigrateProcessInstanceRequestBody"
+              $ref: "#/components/schemas/ProcessInstanceMigrationInstruction"
       responses:
         "204":
           description: The process instance is migrated.
@@ -1825,13 +1825,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ModifyProcessInstanceRequestBody"
+              $ref: "#/components/schemas/ProcessInstanceModificationInstruction"
           application/vnd.camunda.api.keys.number+json:
             schema:
               $ref: "#/components/schemas/ModifyProcessInstanceRequest"
           application/vnd.camunda.api.keys.string+json:
             schema:
-              $ref: "#/components/schemas/ModifyProcessInstanceRequestBody"
+              $ref: "#/components/schemas/ProcessInstanceModificationInstruction"
       responses:
         "204":
           description: The process instance is modified.
@@ -1863,13 +1863,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/FlowNodeInstanceSearchQueryRequestBody"
+              $ref: "#/components/schemas/FlowNodeInstanceSearchQuery"
           application/vnd.camunda.api.keys.number+json:
             schema:
               $ref: "#/components/schemas/FlowNodeInstanceSearchQueryRequest"
           application/vnd.camunda.api.keys.string+json:
             schema:
-              $ref: "#/components/schemas/FlowNodeInstanceSearchQueryRequestBody"
+              $ref: "#/components/schemas/FlowNodeInstanceSearchQuery"
       responses:
         "200":
           description: >
@@ -1964,13 +1964,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/DecisionDefinitionSearchQueryRequestBody"
+              $ref: "#/components/schemas/DecisionDefinitionSearchQuery"
           application/vnd.camunda.api.keys.number+json:
             schema:
               $ref: "#/components/schemas/DecisionDefinitionSearchQueryRequest"
           application/vnd.camunda.api.keys.string+json:
             schema:
-              $ref: "#/components/schemas/DecisionDefinitionSearchQueryRequestBody"
+              $ref: "#/components/schemas/DecisionDefinitionSearchQuery"
       responses:
         "200":
           description: >
@@ -2111,13 +2111,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/DecisionRequirementsSearchQueryRequestBody"
+              $ref: "#/components/schemas/DecisionRequirementsSearchQuery"
           application/vnd.camunda.api.keys.number+json:
             schema:
               $ref: "#/components/schemas/DecisionRequirementsSearchQueryRequest"
           application/vnd.camunda.api.keys.string+json:
             schema:
-              $ref: "#/components/schemas/DecisionRequirementsSearchQueryRequestBody"
+              $ref: "#/components/schemas/DecisionRequirementsSearchQuery"
       responses:
         "200":
           description: >
@@ -2258,13 +2258,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/DecisionInstanceSearchQueryRequestBody"
+              $ref: "#/components/schemas/DecisionInstanceSearchQuery"
           application/vnd.camunda.api.keys.number+json:
             schema:
               $ref: "#/components/schemas/DecisionInstanceSearchQueryRequest"
           application/vnd.camunda.api.keys.string+json:
             schema:
-              $ref: "#/components/schemas/DecisionInstanceSearchQueryRequestBody"
+              $ref: "#/components/schemas/DecisionInstanceSearchQuery"
       responses:
         "200":
           description: >
@@ -2362,7 +2362,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/EvaluateDecisionRequestBody"
+              $ref: "#/components/schemas/DecisionEvaluationInstruction"
             examples:
               "By decision definition key":
                 summary: "Evaluate the decision by decisionDefinitionKey."
@@ -2379,7 +2379,7 @@ paths:
               $ref: "#/components/schemas/EvaluateDecisionRequest"
           application/vnd.camunda.api.keys.string+json:
             schema:
-              $ref: "#/components/schemas/EvaluateDecisionRequestBody"
+              $ref: "#/components/schemas/DecisionEvaluationInstruction"
       responses:
         "200":
           description: The decision was evaluated.
@@ -2545,13 +2545,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AuthorizationSearchQueryRequestBody"
+              $ref: "#/components/schemas/AuthorizationSearchQuery"
           application/vnd.camunda.api.keys.number+json:
             schema:
               $ref: "#/components/schemas/AuthorizationSearchQueryRequest"
           application/vnd.camunda.api.keys.string+json:
             schema:
-              $ref: "#/components/schemas/AuthorizationSearchQueryRequestBody"
+              $ref: "#/components/schemas/AuthorizationSearchQuery"
         required: true
       responses:
         "200":
@@ -3717,13 +3717,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/IncidentSearchQueryRequestBody"
+              $ref: "#/components/schemas/IncidentSearchQuery"
           application/vnd.camunda.api.keys.number+json:
             schema:
               $ref: "#/components/schemas/IncidentSearchQueryRequest"
           application/vnd.camunda.api.keys.string+json:
             schema:
-              $ref: "#/components/schemas/IncidentSearchQueryRequestBody"
+              $ref: "#/components/schemas/IncidentSearchQuery"
       responses:
         "200":
           description: >
@@ -4222,7 +4222,7 @@ components:
           description: The user task search filters.
           allOf:
             - $ref: "#/components/schemas/UserTaskFilterRequest"
-    UserTaskSearchQueryRequestBody:
+    UserTaskSearchQuery:
       description: User task search query request. Key attributes as string values.
       type: object
       allOf:
@@ -4231,7 +4231,7 @@ components:
         filter:
           description: The user task search filters.
           allOf:
-            - $ref: "#/components/schemas/UserTaskFilterRequestBody"
+            - $ref: "#/components/schemas/UserTaskFilter"
     UserTaskVariableSearchQuerySortRequest:
       type: object
       properties:
@@ -4373,7 +4373,7 @@ components:
           type: integer
           description: The key of the element instance.
           format: int64
-    UserTaskFilterRequestBody:
+    UserTaskFilter:
       description: User task filter request. Key attributes as string values.
       type: object
       allOf:
@@ -4564,7 +4564,7 @@ components:
           description: The variable search filters.
           allOf:
             - $ref: "#/components/schemas/VariableFilterRequest"
-    VariableSearchQueryRequestBody:
+    VariableSearchQuery:
       description: Variable search query request. Key attributes as string values.
       type: object
       allOf:
@@ -4573,7 +4573,7 @@ components:
         filter:
           description: The variable search filters.
           allOf:
-            - $ref: "#/components/schemas/VariableFilterRequestBody"
+            - $ref: "#/components/schemas/VariableFilter"
     VariableFilterRequestBase:
       description: Base properties for VariableFilterRequest
       type: object
@@ -4611,7 +4611,7 @@ components:
           description: The key of the process instance of this variable.
           allOf:
             - $ref: "#/components/schemas/BasicLongFilterProperty"
-    VariableFilterRequestBody:
+    VariableFilter:
       description: Variable filter request. Key attributes as string values.
       type: object
       allOf:
@@ -4744,7 +4744,7 @@ components:
           description: The process definition search filters.
           allOf:
             - $ref: "#/components/schemas/ProcessDefinitionFilterRequest"
-    ProcessDefinitionSearchQueryRequestBody:
+    ProcessDefinitionSearchQuery:
       type: object
       allOf:
         - $ref: "#/components/schemas/ProcessDefinitionSearchQueryRequestBase"
@@ -4752,7 +4752,7 @@ components:
         filter:
           description: The process definition search filters.
           allOf:
-            - $ref: "#/components/schemas/ProcessDefinitionFilterRequestBody"
+            - $ref: "#/components/schemas/ProcessDefinitionFilter"
     ProcessDefinitionFilterRequestBase:
       description: Base properties for ProcessDefinitionFilterRequest
       type: object
@@ -4787,7 +4787,7 @@ components:
           description: The key for this process definition.
           type: integer
           format: int64
-    ProcessDefinitionFilterRequestBody:
+    ProcessDefinitionFilter:
       description: Process definition search filter. Key attributes as string values.
       type: object
       allOf:
@@ -4904,7 +4904,7 @@ components:
           description: The process instance search filters.
           allOf:
             - $ref: "#/components/schemas/ProcessInstanceFilterRequest"
-    ProcessInstanceSearchQueryRequestBody:
+    ProcessInstanceSearchQuery:
       description: Process instance search request. Key attributes as string values.
       type: object
       allOf:
@@ -4913,7 +4913,7 @@ components:
         filter:
           description: The process instance search filters.
           allOf:
-            - $ref: "#/components/schemas/ProcessInstanceFilterRequestBody"
+            - $ref: "#/components/schemas/ProcessInstanceFilter"
     AdvancedIntegerFilter:
       title: Advanced filter
       description: Advanced integer (int32) filter.
@@ -5189,7 +5189,7 @@ components:
           description: The parent flow node instance key.
           allOf:
             - $ref: "#/components/schemas/BasicLongFilterProperty"
-    ProcessInstanceFilterRequestBody:
+    ProcessInstanceFilter:
       description: Process instance search filter. Key attributes as string values.
       type: object
       allOf:
@@ -5379,7 +5379,7 @@ components:
           description: The flow node instance search filters.
           allOf:
             - $ref: "#/components/schemas/FlowNodeInstanceFilterRequest"
-    FlowNodeInstanceSearchQueryRequestBody:
+    FlowNodeInstanceSearchQuery:
       description: Flow node instance search request Key attributes as string values.
       type: object
       allOf:
@@ -5388,7 +5388,7 @@ components:
         filter:
           description: The flow node instance search filters.
           allOf:
-            - $ref: "#/components/schemas/FlowNodeInstanceFilterRequestBody"
+            - $ref: "#/components/schemas/FlowNodeInstanceFilter"
     FlowNodeInstanceFilterRequestBase:
       description: Base properties for FlowNodeInstanceFilterRequest
       type: object
@@ -5467,7 +5467,7 @@ components:
           type: integer
           description: The key of incident if field incident is true.
           format: int64
-    FlowNodeInstanceFilterRequestBody:
+    FlowNodeInstanceFilter:
       description: Flow node instance filter. Key attributes as string values.
       type: object
       allOf:
@@ -5647,7 +5647,7 @@ components:
           description: The decision definition search filters.
           allOf:
             - $ref: "#/components/schemas/DecisionDefinitionFilterRequest"
-    DecisionDefinitionSearchQueryRequestBody:
+    DecisionDefinitionSearchQuery:
       type: object
       allOf:
         - $ref: "#/components/schemas/DecisionDefinitionSearchQueryRequestBase"
@@ -5655,7 +5655,7 @@ components:
         filter:
           description: The decision definition search filters.
           allOf:
-            - $ref: "#/components/schemas/DecisionDefinitionFilterRequestBody"
+            - $ref: "#/components/schemas/DecisionDefinitionFilter"
     DecisionDefinitionFilterRequestBase:
       description: Base properties for DecisionDefinitionFilterRequest
       type: object
@@ -5691,7 +5691,7 @@ components:
           type: integer
           format: int64
           description: The assigned key of the decision requirements graph that the decision definition is part of.
-    DecisionDefinitionFilterRequestBody:
+    DecisionDefinitionFilter:
       description: Decision definition search filter. Key attributes as string values.
       type: object
       allOf:
@@ -5747,7 +5747,7 @@ components:
           description: The incident search filters.
           allOf:
             - $ref: "#/components/schemas/IncidentFilterRequest"
-    IncidentSearchQueryRequestBody:
+    IncidentSearchQuery:
       type: object
       allOf:
         - $ref: "#/components/schemas/IncidentSearchQueryRequestBase"
@@ -5755,7 +5755,7 @@ components:
         filter:
           description: The incident search filters.
           allOf:
-            - $ref: "#/components/schemas/IncidentFilterRequestBody"
+            - $ref: "#/components/schemas/IncidentFilter"
     IncidentFilterRequestBase:
       description: Base properties for IncidentFilterRequest
       type: object
@@ -5827,7 +5827,7 @@ components:
           type: integer
           format: int64
           description: The job key, if exists, associated with this incident.
-    IncidentFilterRequestBody:
+    IncidentFilter:
       description: Incident search filter. Key attributes as string values.
       type: object
       allOf:
@@ -6205,7 +6205,7 @@ components:
           description: The authorization search filters.
           allOf:
             - $ref: "#/components/schemas/AuthorizationFilterRequest"
-    AuthorizationSearchQueryRequestBody:
+    AuthorizationSearchQuery:
       type: object
       allOf:
         - $ref: "#/components/schemas/AuthorizationSearchQueryRequestBase"
@@ -6213,7 +6213,7 @@ components:
         filter:
           description: The authorization search filters.
           allOf:
-            - $ref: "#/components/schemas/AuthorizationFilterRequestBody"
+            - $ref: "#/components/schemas/AuthorizationFilter"
     AuthorizationFilterRequestBase:
       description: Base properties for AuthorizationFilterRequest
       type: object
@@ -6234,7 +6234,7 @@ components:
           description: The id of the owner of permissions.
           type: integer
           format: int64
-    AuthorizationFilterRequestBody:
+    AuthorizationFilter:
       description: Authorization search filter. Key attributes as string values.
       type: object
       allOf:
@@ -7560,7 +7560,7 @@ components:
           description: The decision definition search filters.
           allOf:
             - $ref: "#/components/schemas/DecisionRequirementsFilterRequest"
-    DecisionRequirementsSearchQueryRequestBody:
+    DecisionRequirementsSearchQuery:
       type: object
       allOf:
         - $ref: "#/components/schemas/DecisionRequirementsSearchQueryRequestBase"
@@ -7568,7 +7568,7 @@ components:
         filter:
           description: The decision definition search filters.
           allOf:
-            - $ref: "#/components/schemas/DecisionRequirementsFilterRequestBody"
+            - $ref: "#/components/schemas/DecisionRequirementsFilter"
     DecisionRequirementsFilterRequestBase:
       description: Base properties for DecisionRequirementsFilterRequest
       type: object
@@ -7597,7 +7597,7 @@ components:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this decision requirements.
-    DecisionRequirementsFilterRequestBody:
+    DecisionRequirementsFilter:
       description: Decision requirements search filter. Key attributes as string values.
       type: object
       allOf:
@@ -7694,7 +7694,7 @@ components:
             Cannot be used together with decisionDefinitionId.
           type: integer
           format: int64
-    EvaluateDecisionRequestBody:
+    DecisionEvaluationInstruction:
       type: object
       allOf:
         - $ref: "#/components/schemas/EvaluateDecisionRequestBase"
@@ -7917,7 +7917,7 @@ components:
           description: The decision instance search filters.
           allOf:
             - $ref: "#/components/schemas/DecisionInstanceFilterRequest"
-    DecisionInstanceSearchQueryRequestBody:
+    DecisionInstanceSearchQuery:
       type: object
       allOf:
         - $ref: "#/components/schemas/DecisionInstanceSearchQueryRequestBase"
@@ -7925,7 +7925,7 @@ components:
         filter:
           description: The decision instance search filters.
           allOf:
-            - $ref: "#/components/schemas/DecisionInstanceFilterRequestBody"
+            - $ref: "#/components/schemas/DecisionInstanceFilter"
     DecisionInstanceFilterRequestBase:
       description: Base properties for DecisionInstanceFilterRequest
       type: object
@@ -7981,7 +7981,7 @@ components:
           description: The key of the decision.
           allOf:
             - $ref: "#/components/schemas/BasicLongFilterProperty"
-    DecisionInstanceFilterRequestBody:
+    DecisionInstanceFilter:
       description: Decision instance search filter. Key attributes as string values.
       type: object
       allOf:
@@ -8707,7 +8707,7 @@ components:
             deploy resources endpoint. Cannot be used together with processDefinitionId.
           type: integer
           format: int64
-    CreateProcessInstanceRequestBody:
+    ProcessInstanceCreationInstruction:
       type: object
       allOf:
         - $ref: "#/components/schemas/CreateProcessInstanceRequestBase"
@@ -8808,7 +8808,7 @@ components:
       required:
         - targetProcessDefinitionKey
         - mappingInstructions
-    MigrateProcessInstanceRequestBody:
+    ProcessInstanceMigrationInstruction:
       type: object
       allOf:
         - $ref: "#/components/schemas/MigrateProcessInstanceRequestBase"
@@ -8859,7 +8859,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ModifyProcessInstanceTerminateInstruction"
-    ModifyProcessInstanceRequestBody:
+    ProcessInstanceModificationInstruction:
       type: object
       allOf:
         - $ref: "#/components/schemas/ModifyProcessInstanceRequestBase"
@@ -8868,12 +8868,12 @@ components:
           description: Instructions describing which elements should be activated in which scopes and which variables should be created.
           type: array
           items:
-            $ref: "#/components/schemas/ModifyProcessInstanceActivateRequestBody"
+            $ref: "#/components/schemas/ProcessInstanceModificationActivateInstruction"
         terminateInstructions:
           description: Instructions describing which elements should be terminated.
           type: array
           items:
-            $ref: "#/components/schemas/ModifyProcessInstanceTerminateRequestBody"
+            $ref: "#/components/schemas/ProcessInstanceModificationTerminateInstruction"
     ModifyProcessInstanceActivateInstructionBase:
       description: Base properties for ModifyProcessInstanceActivateInstruction
       type: object
@@ -8904,7 +8904,7 @@ components:
           default: -1
       required:
         - elementId
-    ModifyProcessInstanceActivateRequestBody:
+    ProcessInstanceModificationActivateInstruction:
       description: |-
         Instructions describing an element that should be activated.
          Key attributes as string values.
@@ -8949,7 +8949,7 @@ components:
           format: int64
       required:
         - elementInstanceKey
-    ModifyProcessInstanceTerminateRequestBody:
+    ProcessInstanceModificationTerminateInstruction:
       type: object
       description: Instructions describing which elements should be terminated. Key attributes as string values.
       properties:
