@@ -24,6 +24,8 @@ public interface ExporterResourceProvider {
       final MeterRegistry meterRegistry,
       final ExporterMetadata exporterMetadata);
 
+  void close();
+
   /**
    * This should return descriptors describing the desired state of all indices provided.
    *

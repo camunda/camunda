@@ -126,6 +126,21 @@
     </dependency>
 
     <dependency>
+      <groupId>com.auth0</groupId>
+      <artifactId>java-jwt</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
@@ -220,10 +235,9 @@
       <artifactId>httpcore</artifactId>
       <scope>test</scope>
     </dependency>
-
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
+      <groupId>com.jayway.jsonpath</groupId>
+      <artifactId>json-path</artifactId>
       <scope>test</scope>
     </dependency>
 

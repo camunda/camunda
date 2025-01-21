@@ -11,6 +11,7 @@ import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTem
 
 import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
+import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.exporter.utils.ProcessCacheUtil;
@@ -21,6 +22,7 @@ import io.camunda.webapps.schema.entities.operate.IncidentState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -38,11 +40,15 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
   private final Map<String, Record<IncidentRecordValue>> recordsMap = new HashMap<>();
   private final String indexName;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
+  private final IncidentNotifier incidentNotifier;
 
   public IncidentHandler(
-      final String indexName, final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
+      final String indexName,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final IncidentNotifier incidentNotifier) {
     this.indexName = indexName;
     this.processCache = processCache;
+    this.incidentNotifier = incidentNotifier;
   }
 
   @Override
@@ -115,13 +121,17 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
   public void flush(final IncidentEntity entity, final BatchRequest batchRequest) {
     final String id = entity.getId();
     final Record<IncidentRecordValue> record = recordsMap.get(id);
-    final String intentStr = (record == null) ? null : record.getIntent().name();
-    if (intentStr == null) {
+    final Intent intent = (record == null) ? null : record.getIntent();
+    if (intent == null) {
       LOGGER.warn("Intent is null for incident: id {}", id);
     }
-    final Map<String, Object> updateFields = getUpdateFieldsMapByIntent(intentStr, entity);
+    final Map<String, Object> updateFields = getUpdateFieldsMapByIntent(intent, entity);
     updateFields.put(POSITION, entity.getPosition());
     batchRequest.upsert(indexName, String.valueOf(entity.getKey()), entity, updateFields);
+
+    if (Objects.equals(intent, IncidentIntent.CREATED)) {
+      incidentNotifier.notifyAsync(List.of(entity));
+    }
   }
 
   @Override
@@ -175,9 +185,9 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
   }
 
   private static Map<String, Object> getUpdateFieldsMapByIntent(
-      final String intent, final IncidentEntity incidentEntity) {
+      final Intent intent, final IncidentEntity incidentEntity) {
     final Map<String, Object> updateFields = new HashMap<>();
-    if (Objects.equals(intent, IncidentIntent.MIGRATED.name())) {
+    if (Objects.equals(intent, IncidentIntent.MIGRATED)) {
       updateFields.put(BPMN_PROCESS_ID, incidentEntity.getBpmnProcessId());
       updateFields.put(PROCESS_DEFINITION_KEY, incidentEntity.getProcessDefinitionKey());
       updateFields.put(FLOW_NODE_ID, incidentEntity.getFlowNodeId());

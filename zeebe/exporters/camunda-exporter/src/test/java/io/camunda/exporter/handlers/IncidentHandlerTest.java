@@ -18,6 +18,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
+import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
@@ -40,7 +41,9 @@ public class IncidentHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-incident";
   private final TestProcessCache processCache = new TestProcessCache();
-  private final IncidentHandler underTest = new IncidentHandler(indexName, processCache);
+  private final IncidentNotifier incidentNotifier = mock(IncidentNotifier.class);
+  private final IncidentHandler underTest =
+      new IncidentHandler(indexName, processCache, incidentNotifier);
 
   @Test
   void testGetHandledValueType() {
@@ -109,15 +112,35 @@ public class IncidentHandlerTest {
   @Test
   void shouldAddEntityOnFlush() {
     // given
-    final IncidentEntity inputEntity = new IncidentEntity();
-    inputEntity.setPosition(1L);
+    final long recordKey = 123L;
+    final IncidentRecordValue incidentRecordValue =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class))
+            .build();
+
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT,
+            r ->
+                r.withIntent(IncidentIntent.CREATED)
+                    .withValue(incidentRecordValue)
+                    .withKey(recordKey)
+                    .withPartitionId(2)
+                    .withPosition(1L)
+                    .withTimestamp(System.currentTimeMillis()));
+
+    final IncidentEntity incidentEntity = new IncidentEntity();
+    underTest.updateEntity(incidentRecord, incidentEntity);
+
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(incidentEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).upsert(indexName, "0", inputEntity, Map.of("position", 1L));
+    verify(mockRequest, times(1))
+        .upsert(indexName, String.valueOf(recordKey), incidentEntity, Map.of("position", 1L));
+    verify(incidentNotifier).notifyAsync(List.of(incidentEntity));
   }
 
   @Test
@@ -133,7 +156,7 @@ public class IncidentHandlerTest {
         factory.generateRecord(
             ValueType.INCIDENT,
             r ->
-                r.withIntent(ProcessIntent.CREATED)
+                r.withIntent(IncidentIntent.CREATED)
                     .withValue(incidentRecordValue)
                     .withKey(recordKey)
                     .withPartitionId(2)
