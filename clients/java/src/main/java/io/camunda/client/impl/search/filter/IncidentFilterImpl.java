@@ -16,10 +16,10 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.response.IncidentErrorType;
+import io.camunda.client.api.search.response.IncidentState;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.IncidentFilterRequest;
-import io.camunda.client.protocol.rest.IncidentFilterRequest.ErrorTypeEnum;
-import io.camunda.client.protocol.rest.IncidentFilterRequest.StateEnum;
 
 public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<IncidentFilterRequest>
     implements IncidentFilter {
@@ -55,8 +55,8 @@ public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<Incid
   }
 
   @Override
-  public IncidentFilter errorType(final String errorType) {
-    filter.errorType(ErrorTypeEnum.valueOf(errorType));
+  public IncidentFilter errorType(final IncidentErrorType errorType) {
+    filter.errorType(IncidentErrorType.toProtocolErrorType(errorType));
     return this;
   }
 
@@ -85,8 +85,8 @@ public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<Incid
   }
 
   @Override
-  public IncidentFilter state(final String value) {
-    filter.setState(StateEnum.fromValue(value));
+  public IncidentFilter state(final IncidentState value) {
+    filter.setState(IncidentState.toProtocolState(value));
     return this;
   }
 

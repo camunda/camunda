@@ -16,10 +16,10 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.IncidentErrorType;
+import io.camunda.client.api.search.response.IncidentState;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.IncidentResult;
-import io.camunda.client.protocol.rest.IncidentResult.ErrorTypeEnum;
-import io.camunda.client.protocol.rest.IncidentResult.StateEnum;
 import java.util.Objects;
 
 public class IncidentImpl implements Incident {
@@ -28,12 +28,12 @@ public class IncidentImpl implements Incident {
   private final Long processDefinitionKey;
   private final String processDefinitionId;
   private final Long processInstanceKey;
-  private final ErrorTypeEnum errorType;
+  private final IncidentErrorType errorType;
   private final String errorMessage;
   private final String flowNodeId;
   private final Long flowNodeInstanceKey;
   private final String creationTime;
-  private final StateEnum state;
+  private final IncidentState state;
   private final Long jobKey;
   private final String tenantId;
 
@@ -42,12 +42,12 @@ public class IncidentImpl implements Incident {
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processDefinitionId = item.getProcessDefinitionId();
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
-    errorType = item.getErrorType();
+    errorType = IncidentErrorType.fromProtocolErrorType(item.getErrorType());
     errorMessage = item.getErrorMessage();
     flowNodeId = item.getFlowNodeId();
     flowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getFlowNodeInstanceKey());
     creationTime = item.getCreationTime();
-    state = item.getState();
+    state = IncidentState.fromProtocolState(item.getState());
     jobKey = ParseUtil.parseLongOrNull(item.getJobKey());
     tenantId = item.getTenantId();
   }
@@ -73,8 +73,8 @@ public class IncidentImpl implements Incident {
   }
 
   @Override
-  public String getErrorType() {
-    return errorType.getValue();
+  public IncidentErrorType getErrorType() {
+    return errorType;
   }
 
   @Override
@@ -98,8 +98,8 @@ public class IncidentImpl implements Incident {
   }
 
   @Override
-  public String getState() {
-    return state.getValue();
+  public IncidentState getState() {
+    return state;
   }
 
   @Override

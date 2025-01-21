@@ -25,7 +25,7 @@ public interface Incident {
 
   Long getProcessInstanceKey();
 
-  String getErrorType();
+  IncidentErrorType getErrorType();
 
   String getErrorMessage();
 
@@ -35,7 +35,7 @@ public interface Incident {
 
   String getCreationTime();
 
-  String getState();
+  IncidentState getState();
 
   Long getJobKey();
 
