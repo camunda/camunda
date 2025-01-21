@@ -292,7 +292,7 @@ jobs:
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
-          -D camunda.it.database.type=es
+          -D test.integration.camunda.database.type=es
           -pl 'qa/integration-tests'
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
