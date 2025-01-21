@@ -74,7 +74,7 @@ jobs:
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild
-          -Dit.test=io/camunda/v2/**
+          -Dgroups=multiDbTest
           -Dcamunda.it.database.type=es
           -pl 'qa/integration-tests'
           verify
