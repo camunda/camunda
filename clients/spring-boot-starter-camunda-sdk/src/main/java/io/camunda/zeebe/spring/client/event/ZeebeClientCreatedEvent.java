@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.event;
 
-import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import org.springframework.context.ApplicationEvent;
 
 /**
@@ -30,16 +30,17 @@ import org.springframework.context.ApplicationEvent;
  *
  * <p>Furthermore, when `zeebe.client.enabled=false`, the event might not be fired ever
  */
+@Deprecated(forRemoval = true, since = "8.6")
 public class ZeebeClientCreatedEvent extends ApplicationEvent {
 
-  public final CamundaClient client;
+  public final ZeebeClient client;
 
-  public ZeebeClientCreatedEvent(final Object source, final CamundaClient client) {
+  public ZeebeClientCreatedEvent(final Object source, final ZeebeClient client) {
     super(source);
     this.client = client;
   }
 
-  public CamundaClient getClient() {
+  public ZeebeClient getClient() {
     return client;
   }
 }

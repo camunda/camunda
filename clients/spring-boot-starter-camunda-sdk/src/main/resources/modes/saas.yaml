@@ -1,0 +1,9 @@
+camunda:
+  client:
+    mode: saas
+    auth:
+      issuer: https://login.cloud.camunda.io/oauth/token
+      audience: zeebe.camunda.io
+    enabled: true
+    grpc-address: https://${camunda.client.cluster-id}.${camunda.client.region}.zeebe.camunda.io
+    rest-address: https://${camunda.client.region}.zeebe.camunda.io/${camunda.client.cluster-id}
