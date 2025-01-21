@@ -9,8 +9,12 @@ package io.camunda.zeebe.db.impl.rocksdb;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.protocol.EnumValue;
+import io.micrometer.core.instrument.Metrics;
 import io.prometheus.client.Gauge;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,12 +115,16 @@ public final class ZeebeRocksDBMetricExporter<
 
   private static final class RocksDBMetric {
 
+    ConcurrentHashMap<String, AtomicInteger> gaugesByPartition = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, AtomicReference<Double>> gaugeByPartition =
+        new ConcurrentHashMap<>();
     private final String propertyName;
     private final Gauge gauge;
+    private final String namePrefix_;
 
     private RocksDBMetric(final String propertyName, final String namePrefix, final String help) {
       this.propertyName = Objects.requireNonNull(propertyName);
-
+      namePrefix_ = namePrefix;
       gauge =
           Gauge.build()
               .namespace(ZEEBE_NAMESPACE)
@@ -132,8 +140,26 @@ public final class ZeebeRocksDBMetricExporter<
       return suffix.replaceAll("-", "_");
     }
 
+    private void addOrUpdatePartition(final String partition, final Double value) {
+      gaugeByPartition.computeIfAbsent(
+          partition,
+          key -> {
+            // Register a gauge dynamically
+            io.micrometer.core.instrument.Gauge.builder(
+                    ZEEBE_NAMESPACE + "_" + namePrefix_ + gaugeSuffix() + "_micro",
+                    new AtomicReference<Double>(value),
+                    AtomicReference<Double>::get)
+                .description("Number of active users by region")
+                .tags(PARTITION)
+                .register(Metrics.globalRegistry);
+            return new AtomicReference<Double>(value);
+          });
+      gaugeByPartition.put(partition, new AtomicReference<>(value));
+    }
+
     public void exportValue(final String partitionID, final Double value) {
       gauge.labels(partitionID).set(value);
+      addOrUpdatePartition(partitionID, value);
     }
 
     public String getPropertyName() {
