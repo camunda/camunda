@@ -97,6 +97,9 @@ camunda:
     # Controls which database must be used, possible values: elasticsearch, opensearch
     # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_TYPE
     type: rdbms
+    url: jdbc:h2:mem:camunda
+    username: sa
+    password:
   # Operate configuration properties
   operate:
     # Set operate username and password.
@@ -151,13 +154,3 @@ logging:
   level:
     io:
       camunda: DEBUG
-
-spring:
-  datasource:
-    driverClassName: org.h2.Driver
-    url: jdbc:h2:mem:camunda
-    username: sa
-    password:
-
-mybatis:
-  mapper-locations: classpath:mapper/**/*-mapper.xml
