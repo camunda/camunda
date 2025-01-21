@@ -9,8 +9,11 @@ package io.camunda.zeebe.db.impl.rocksdb;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.protocol.EnumValue;
-import io.prometheus.client.Gauge;
+import io.micrometer.core.instrument.Metrics;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +24,9 @@ public final class ZeebeRocksDBMetricExporter<
 
   private static final Logger LOG =
       LoggerFactory.getLogger(ZeebeRocksDBMetricExporter.class.getName());
+
+  private static final io.micrometer.core.instrument.MeterRegistry meterRegistry =
+      Metrics.globalRegistry;
 
   private static final String PARTITION = "partition";
   private static final String ZEEBE_NAMESPACE = "zeebe";
@@ -112,18 +118,20 @@ public final class ZeebeRocksDBMetricExporter<
   private static final class RocksDBMetric {
 
     private final String propertyName;
-    private final Gauge gauge;
+    private final String metricName;
+    // private final Gauge gauge;
+    // private final io.micrometer.core.instrument.Gauge micrometerGauge;
+    private final AtomicReference<Double> lastValue = new AtomicReference<>(0.0);
 
     private RocksDBMetric(final String propertyName, final String namePrefix, final String help) {
       this.propertyName = Objects.requireNonNull(propertyName);
-
-      gauge =
-          Gauge.build()
-              .namespace(ZEEBE_NAMESPACE)
-              .name(namePrefix + gaugeSuffix())
-              .help(help)
-              .labelNames(PARTITION)
-              .register();
+      metricName = ZEEBE_NAMESPACE + "_" + namePrefix + gaugeSuffix();
+      // gauge = Gauge.build().name(metricName).help(help).labelNames(PARTITION).register();
+      // micrometerGauge =
+      io.micrometer.core.instrument.Gauge.builder(metricName, lastValue, AtomicReference::get)
+          .description(help)
+          .tags(PARTITION)
+          .register(meterRegistry);
     }
 
     private String gaugeSuffix() {
@@ -133,7 +141,13 @@ public final class ZeebeRocksDBMetricExporter<
     }
 
     public void exportValue(final String partitionID, final Double value) {
-      gauge.labels(partitionID).set(value);
+      lastValue.set(value);
+      final List<String> tags = new ArrayList<>(2);
+      tags.add(PARTITION);
+      tags.add(partitionID);
+      meterRegistry.gauge(metricName, (Iterable) tags, lastValue, AtomicReference::get);
+
+      // gauge.labels(partitionID).set(value);
     }
 
     public String getPropertyName() {
