@@ -16,8 +16,10 @@ import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.cache.form.ElasticSearchFormCacheLoader;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.cache.process.ElasticSearchProcessCacheLoader;
+import io.camunda.exporter.schema.PrefixMigrationClient;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
+import io.camunda.exporter.schema.elasticsearch.ElasticsearchPrefixMigrationClient;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ElasticsearchBatchRequest;
 import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
@@ -28,6 +30,7 @@ import java.io.IOException;
 class ElasticsearchAdapter implements ClientAdapter {
   private final ElasticsearchClient client;
   private final ElasticsearchEngineClient searchEngineClient;
+  private final ElasticsearchPrefixMigrationClient prefixMigrationClient;
   private final ElasticsearchExporterEntityCacheProvider entityCacheLoader;
   private final ObjectMapper objectMapper;
 
@@ -37,6 +40,7 @@ class ElasticsearchAdapter implements ClientAdapter {
     objectMapper = connector.objectMapper();
     searchEngineClient = new ElasticsearchEngineClient(client, objectMapper);
     entityCacheLoader = new ElasticsearchExporterEntityCacheProvider(client);
+    prefixMigrationClient = new ElasticsearchPrefixMigrationClient(client);
   }
 
   @Override
@@ -63,6 +67,11 @@ class ElasticsearchAdapter implements ClientAdapter {
   @Override
   public void close() throws IOException {
     client._transport().close();
+  }
+
+  @Override
+  public PrefixMigrationClient getPrefixMigrationClient() {
+    return prefixMigrationClient;
   }
 
   record ElasticsearchExporterEntityCacheProvider(ElasticsearchClient client)

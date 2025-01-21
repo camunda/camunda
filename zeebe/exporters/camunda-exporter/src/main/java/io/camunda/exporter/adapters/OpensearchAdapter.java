@@ -14,6 +14,7 @@ import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.cache.form.OpenSearchFormCacheLoader;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.cache.process.OpenSearchProcessCacheLoader;
+import io.camunda.exporter.schema.PrefixMigrationClient;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
@@ -63,6 +64,11 @@ class OpensearchAdapter implements ClientAdapter {
   @Override
   public void close() throws IOException {
     client._transport().close();
+  }
+
+  @Override
+  public PrefixMigrationClient getPrefixMigrationClient() {
+    throw new UnsupportedOperationException("Not yet implemented");
   }
 
   record OpensearchExporterEntityCacheProvider(OpenSearchClient client)

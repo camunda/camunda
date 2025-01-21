@@ -10,6 +10,7 @@ package io.camunda.exporter.adapters;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.schema.PrefixMigrationClient;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.search.connect.configuration.DatabaseType;
@@ -29,6 +30,8 @@ public interface ClientAdapter {
   ObjectMapper objectMapper();
 
   SearchEngineClient getSearchEngineClient();
+
+  PrefixMigrationClient getPrefixMigrationClient();
 
   BatchRequest createBatchRequest();
 

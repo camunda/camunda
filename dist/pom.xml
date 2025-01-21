@@ -97,7 +97,6 @@
         </exclusion>
       </exclusions>
     </dependency>
-
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-elasticsearch-exporter</artifactId>
@@ -778,6 +777,10 @@
             <program>
               <id>camunda</id>
               <mainClass>io.camunda.application.StandaloneCamunda</mainClass>
+            </program>
+            <program>
+              <id>prefix-migration</id>
+              <mainClass>io.camunda.application.StandalonePrefixMigration</mainClass>
             </program>
           </programs>
           <repositoryLayout>flat</repositoryLayout>
