@@ -9,10 +9,12 @@ package io.camunda.operate.property;
 
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.conditions.DatabaseType;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
@@ -97,6 +99,11 @@ public class OperateProperties {
 
   @NestedConfigurationProperty
   private WebSecurityProperties webSecurity = new WebSecurityProperties();
+
+  @Bean
+  public OperateConnectConfiguration mergedConfig(final ConnectConfiguration connectConfiguration) {
+    return new OperateConnectConfiguration(connectConfiguration, elasticsearch, opensearch);
+  }
 
   public boolean isImporterEnabled() {
     return importerEnabled;

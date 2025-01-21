@@ -13,11 +13,11 @@ import java.util.List;
 
 public class ConnectConfiguration {
 
-  private static final DatabaseType DATABASE_TYPE_DEFAULT = DatabaseType.ELASTICSEARCH;
-  private static final String CLUSTER_NAME_DEFAULT = "elasticsearch";
-  private static final String DATE_FORMAT_FIELD = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
-  private static final String FIELD_DATE_FORMAT_DEFAULT = "date_time";
-  private static final String URL_DEFAULT = "http://localhost:9200";
+  protected static final DatabaseType DATABASE_TYPE_DEFAULT = DatabaseType.ELASTICSEARCH;
+  protected static final String CLUSTER_NAME_DEFAULT = "elasticsearch";
+  protected static final String DATE_FORMAT_FIELD = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
+  protected static final String FIELD_DATE_FORMAT_DEFAULT = "date_time";
+  protected static final String URL_DEFAULT = "http://localhost:9200";
   private String type = DATABASE_TYPE_DEFAULT.toString();
   private String clusterName = CLUSTER_NAME_DEFAULT;
   private String dateFormat = DATE_FORMAT_FIELD;

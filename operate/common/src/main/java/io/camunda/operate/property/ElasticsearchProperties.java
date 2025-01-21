@@ -9,7 +9,6 @@ package io.camunda.operate.property;
 
 import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
 
-import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -22,31 +21,31 @@ public class ElasticsearchProperties {
 
   public static final int BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT = 1024 * 1024 * 90; // 90 MB
 
-  private String clusterName = "elasticsearch";
+  private String clusterName; // = "elasticsearch";
 
-  @Deprecated private String host = "localhost";
+  @Deprecated private String host; // = "localhost";
 
-  @Deprecated private int port = 9200;
+  @Deprecated private int port = -1; // 9200;
 
-  private String dateFormat = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT;
+  private String dateFormat; // = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT;
 
-  private String elsDateFormat = ELS_DATE_FORMAT_DEFAULT;
+  private String elsDateFormat; // = ELS_DATE_FORMAT_DEFAULT;
 
-  private int batchSize = 200;
+  private int batchSize = -1; // = 200;
 
   private Integer socketTimeout;
   private Integer connectTimeout;
 
-  private boolean createSchema = true;
+  private Boolean createSchema; // = true;
 
   /** Indicates whether operate does a proper health check for ES clusters. */
-  private boolean healthCheckEnabled = true;
+  private Boolean healthCheckEnabled; // = true;
 
   private String url;
   private String username;
   private String password;
 
-  private int bulkRequestMaxSizeInBytes = BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT;
+  private int bulkRequestMaxSizeInBytes = -1; // = BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT;
 
   @NestedConfigurationProperty private SslProperties ssl;
 
@@ -115,7 +114,7 @@ public class ElasticsearchProperties {
     this.batchSize = batchSize;
   }
 
-  public boolean isCreateSchema() {
+  public Boolean isCreateSchema() {
     return createSchema;
   }
 
@@ -123,7 +122,7 @@ public class ElasticsearchProperties {
     this.createSchema = createSchema;
   }
 
-  public boolean isHealthCheckEnabled() {
+  public Boolean isHealthCheckEnabled() {
     return healthCheckEnabled;
   }
 
@@ -148,10 +147,15 @@ public class ElasticsearchProperties {
   }
 
   public String getUrl() {
-    if (stringIsEmpty(url)) {
-      return String.format("http://%s:%d", getHost(), getPort());
+    if (getHost() != null && getPort() > 1) {
+      if (stringIsEmpty(url)) {
+        return String.format("http://%s:%d", getHost(), getPort());
+      } else {
+        return url;
+      }
+    } else {
+      return null;
     }
-    return url;
   }
 
   public void setUrl(final String url) {
