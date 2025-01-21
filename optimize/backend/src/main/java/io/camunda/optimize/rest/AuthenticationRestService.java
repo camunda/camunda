@@ -8,13 +8,9 @@
 package io.camunda.optimize.rest;
 
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
-import io.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import io.camunda.optimize.service.security.authentication.AbstractAuthenticationService;
-import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
@@ -34,21 +30,6 @@ public class AuthenticationRestService {
 
   public AuthenticationRestService(final AbstractAuthenticationService authenticationService) {
     this.authenticationService = authenticationService;
-  }
-
-  @POST
-  @Produces("application/json")
-  @Consumes("application/json")
-  public Response authenticateUser(
-      @Context final ContainerRequestContext requestContext,
-      final CredentialsRequestDto credentials) {
-    return authenticationService.authenticateUser(requestContext, credentials);
-  }
-
-  @GET
-  @Path(TEST)
-  public Response testAuthentication() {
-    return authenticationService.testAuthentication();
   }
 
   @GET
