@@ -27,28 +27,28 @@ DATE="${DATE:-}"
 # Make sure environment variables are set
 if [ -z "${VERSION}" ]; then
   echo >&2 "No VERSION was given; make sure to pass a semantic version, e.g. VERSION=3.9.0"
-  exit 1
+  exit 2
 fi
 
 if [ -z "${REVISION}" ]; then
   echo >&2 "No REVISION was given; make sure to pass the Git commit sha, e.g. REVISION=2941d620f08d9729632b2b1222123edcbe3532c8"
-  exit 1
+  exit 3
 fi
 
 if [ -z "${DATE}" ]; then
   echo >&2 "No DATE was given; make sure to pass an ISO8601 date, e.g. DATE='2001-01-01T00:00:00Z'"
-  exit 1
+  exit 4
 fi
 
 if [ -z "${BASE_IMAGE}" ]; then
   echo >&2 "No BASE_IMAGE was given; make sure to pass a valid base image name, e.g. docker.io/library/alpine:3.20.2"
-  exit 1
+  exit 5
 fi
 
 # Check that the base image exists
 if ! baseImageInfo="$(docker manifest inspect "${BASE_IMAGE}")"; then
   echo >&2 "No known Docker base image ${BASE_IMAGE} exists; did you pass the right name?"
-  exit 1
+  exit 6
 fi
 
 DIGEST_REGEX="BASE_SHA=\"(sha256\:[a-f0-9\:]+)\""
@@ -58,7 +58,7 @@ if [[ $DOCKERFILE =~ $DIGEST_REGEX ]]; then
     echo "Digest found: $DIGEST"
 else
     echo >&2 "Docker image digest can not be found in the Dockerfile (with name $DOCKERFILE)"
-    exit 1
+    exit 7
 fi
 
 imageName="${1}"
@@ -68,7 +68,7 @@ for imageName in "$@"; do
   # Check that the image exists
   if ! imageInfo="$(docker inspect "${imageName}")"; then
     echo >&2 "No known Docker image ${imageName} exists; did you pass the right name?"
-    exit 1
+    exit 8
   fi
 
   # Extract the actual labels from the info - make sure to sort keys so we always have the same
@@ -79,7 +79,7 @@ for imageName in "$@"; do
     echo >&2 "No labels found in the given image ${imageName}; raw inspect output to follow"
     printf >&2 "\n====\n%s\n====\n" "${imageInfo}"
     echo >&2 "Are there any labels in the above? If so, the JSON query may need to be changed."
-    exit 1
+    exit 9
   fi
 
     # Generate the expected labels files with the dynamic properties substituted
@@ -96,7 +96,7 @@ for imageName in "$@"; do
   # Compare and output
   if ! diff <(echo "${expectedLabels}") <(echo "${actualLabels}"); then
     echo >&2 "Expected label values (marked by '<') do not match actual label values (marked by '>'); if you think this is wrong, update the golden file at ${labelsGoldenFile}"
-    exit 1
+    exit 10
   fi
   echo "Check successful for ${imageName}"
 done
