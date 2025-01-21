@@ -210,7 +210,9 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       final RejectionType type,
       final String errorMessage) {
     rejectionWriter.appendRejection(command, type, errorMessage);
-    responseWriter.writeRejectionOnCommand(command, type, errorMessage);
+    if (command.hasRequestMetadata()) {
+      responseWriter.writeRejectionOnCommand(command, type, errorMessage);
+    }
   }
 
   private void distributeCommand(final TypedRecord<TenantRecord> command) {
