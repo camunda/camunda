@@ -133,7 +133,7 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::decisionInstanceSearchQuery);
   }
 
-  private static DecisionInstanceFilter toDecisionInstanceFilter(
+  private static io.camunda.service.search.filter.DecisionInstanceFilter toDecisionInstanceFilter(
       final DecisionInstanceFilterRequest filter) {
     final var builder = FilterBuilders.decisionInstance();
 
@@ -230,7 +230,7 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::incidentSearchQuery);
   }
 
-  private static ProcessInstanceFilter toProcessInstanceFilter(
+  private static io.camunda.service.search.filter.ProcessInstanceFilter toProcessInstanceFilter(
       final ProcessInstanceFilterRequest filter) {
     final var builder = FilterBuilders.processInstance();
 
@@ -284,8 +284,8 @@ public final class SearchQueryRequestMapper {
     return null;
   }
 
-  private static DecisionDefinitionFilter toDecisionDefinitionFilter(
-      final DecisionDefinitionFilterRequest filter) {
+  private static io.camunda.service.search.filter.DecisionDefinitionFilter
+      toDecisionDefinitionFilter(final DecisionDefinitionFilterRequest filter) {
     final var builder = FilterBuilders.decisionDefinition();
 
     if (filter != null) {
@@ -301,8 +301,8 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static DecisionRequirementsFilter toDecisionRequirementsFilter(
-      final DecisionRequirementsFilterRequest filter) {
+  private static io.camunda.service.search.filter.DecisionRequirementsFilter
+      toDecisionRequirementsFilter(final DecisionRequirementsFilterRequest filter) {
     final var builder = FilterBuilders.decisionRequirements();
 
     Optional.ofNullable(filter)
@@ -321,7 +321,7 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static FlowNodeInstanceFilter toFlownodeInstanceFilter(
+  private static io.camunda.service.search.filter.FlowNodeInstanceFilter toFlownodeInstanceFilter(
       final FlowNodeInstanceFilterRequest filter) {
     final var builder = FilterBuilders.flownodeInstance();
     Optional.ofNullable(filter)
@@ -384,7 +384,8 @@ public final class SearchQueryRequestMapper {
         .orElse(null);
   }
 
-  private static IncidentFilter toIncidentFilter(final IncidentFilterRequest filter) {
+  private static io.camunda.service.search.filter.IncidentFilter toIncidentFilter(
+      final IncidentFilterRequest filter) {
     final var builder = FilterBuilders.incident();
 
     if (filter != null) {
