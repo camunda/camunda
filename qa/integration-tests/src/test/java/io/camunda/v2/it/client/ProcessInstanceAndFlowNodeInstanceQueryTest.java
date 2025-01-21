@@ -32,6 +32,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +41,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @EnabledIfSystemProperty(
     named = CamundaTestDBExtension.PROP_CAMUNDA_IT_DATABASE_TYPE,
     matches = ".*")
+@Tag("multiDbTest")
 public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
   static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
