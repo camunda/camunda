@@ -24,6 +24,7 @@ import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupResponseDto;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -52,6 +53,7 @@ import org.opensearch.client.opensearch.snapshot.GetSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.SnapshotInfo;
 import org.opensearch.client.opensearch.snapshot.SnapshotShardFailure;
 import org.opensearch.client.transport.JsonEndpoint;
+import org.opensearch.client.transport.endpoints.SimpleEndpoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -202,7 +204,8 @@ public class BackupManagerOpenSearch extends BackupManager {
     }
   }
 
-  private void validateRepositoryExists() {
+  @VisibleForTesting
+  void validateRepositoryExists() {
     final String repositoryName = getRepositoryName();
     final GetRepositoryRequest getRepositoryRequest =
         GetRepositoryRequest.of(grr -> grr.name(repositoryName));
@@ -228,9 +231,24 @@ public class BackupManagerOpenSearch extends BackupManager {
     }
   }
 
-  private GetRepositoryResponse getRepository(final GetRepositoryRequest getRepositoryRequest)
-      throws IOException {
-    return openSearchAsyncClient.snapshot().getRepository(getRepositoryRequest).join();
+  private void getRepository(final GetRepositoryRequest getRepositoryRequest) throws IOException {
+    /**
+     * Workaround for erroneous required properties in {@link
+     * org.opensearch.client.opensearch.snapshot.RepositorySettings}. Skipping response
+     * deserialization as it is not needed.
+     *
+     * <p>see https://github.com/camunda/tasklist/issues/5125
+     */
+    final SimpleEndpoint<GetRepositoryRequest, Object> endpoint =
+        ((SimpleEndpoint<GetRepositoryRequest, GetRepositoryResponse>)
+                (GetRepositoryRequest._ENDPOINT))
+            .withResponseDeserializer(null);
+
+    openSearchAsyncClient
+        ._transport()
+        .performRequestAsync(
+            getRepositoryRequest, endpoint, openSearchAsyncClient._transportOptions())
+        .join();
   }
 
   private static boolean isSnapshotMissingException(final Throwable e) {
