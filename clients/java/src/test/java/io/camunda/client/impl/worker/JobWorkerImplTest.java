@@ -15,7 +15,7 @@
  */
 package io.camunda.client.impl.worker;
 
-import static io.camunda.client.impl.CamundaClientBuilderImpl.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.util.concurrent.Uninterruptibles;
@@ -26,7 +26,7 @@ import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.CamundaClientImpl;
 import io.camunda.client.impl.util.Environment;
-import io.camunda.client.impl.util.EnvironmentRule;
+import io.camunda.client.impl.util.EnvironmentExtension;
 import io.camunda.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
@@ -69,7 +69,7 @@ public final class JobWorkerImplTest {
   private static final Duration SLOW_POLL_THRESHOLD = Duration.ofMillis(SLOW_POLL_DELAY_IN_MS / 2);
 
   @Rule public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
-  @Rule public final EnvironmentRule environmentRule = new EnvironmentRule();
+  @Rule public final EnvironmentExtension environmentRule = new EnvironmentExtension();
 
   private MockedGateway gateway;
   private CamundaClient client;

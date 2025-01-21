@@ -15,6 +15,15 @@
  */
 package io.camunda.zeebe.client.impl.oauth;
 
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.OAUTH_ENV_AUTHORIZATION_SERVER;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.OAUTH_ENV_CACHE_PATH;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.OAUTH_ENV_CONNECT_TIMEOUT;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.OAUTH_ENV_READ_TIMEOUT;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.OAUTH_ENV_TOKEN_AUDIENCE;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.OAUTH_ENV_TOKEN_SCOPE;
+
 import io.camunda.zeebe.client.impl.util.Environment;
 import java.io.File;
 import java.io.IOException;
@@ -25,14 +34,6 @@ import java.util.Objects;
 
 public final class OAuthCredentialsProviderBuilder {
   public static final String INVALID_ARGUMENT_MSG = "Expected valid %s but none was provided.";
-  public static final String OAUTH_ENV_CLIENT_ID = "ZEEBE_CLIENT_ID";
-  public static final String OAUTH_ENV_CLIENT_SECRET = "ZEEBE_CLIENT_SECRET";
-  public static final String OAUTH_ENV_TOKEN_AUDIENCE = "ZEEBE_TOKEN_AUDIENCE";
-  public static final String OAUTH_ENV_TOKEN_SCOPE = "ZEEBE_TOKEN_SCOPE";
-  public static final String OAUTH_ENV_AUTHORIZATION_SERVER = "ZEEBE_AUTHORIZATION_SERVER_URL";
-  public static final String OAUTH_ENV_CACHE_PATH = "ZEEBE_CLIENT_CONFIG_PATH";
-  public static final String OAUTH_ENV_CONNECT_TIMEOUT = "ZEEBE_AUTH_CONNECT_TIMEOUT";
-  public static final String OAUTH_ENV_READ_TIMEOUT = "ZEEBE_AUTH_READ_TIMEOUT";
   private static final String DEFAULT_AUTHZ_SERVER = "https://login.cloud.camunda.io/oauth/token/";
   private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
   private static final Duration DEFAULT_READ_TIMEOUT = DEFAULT_CONNECT_TIMEOUT;

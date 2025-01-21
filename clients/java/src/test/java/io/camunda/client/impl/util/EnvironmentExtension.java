@@ -16,19 +16,37 @@
 package io.camunda.client.impl.util;
 
 import java.util.Map;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.rules.ExternalResource;
 
-public final class EnvironmentRule extends ExternalResource {
+/**
+ * we still need to support JUnit 4 for {@link io.camunda.client.impl.worker.JobWorkerImplTest} that
+ * uses {@link io.grpc.testing.GrpcCleanupRule}
+ */
+public final class EnvironmentExtension extends ExternalResource
+    implements BeforeEachCallback, AfterEachCallback {
 
   private Map<String, String> previousEnvironment;
 
   @Override
-  protected void before() throws Throwable {
+  protected void before() {
     previousEnvironment = Environment.system().copy();
   }
 
   @Override
   protected void after() {
     Environment.system().overwrite(previousEnvironment);
+  }
+
+  @Override
+  public void beforeEach(final ExtensionContext context) {
+    before();
+  }
+
+  @Override
+  public void afterEach(final ExtensionContext context) {
+    after();
   }
 }
