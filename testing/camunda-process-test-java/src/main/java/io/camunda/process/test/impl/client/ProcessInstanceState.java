@@ -18,5 +18,5 @@ package io.camunda.process.test.impl.client;
 public enum ProcessInstanceState {
   ACTIVE,
   COMPLETED,
-  TERMINATED
+  CANCELED
 }

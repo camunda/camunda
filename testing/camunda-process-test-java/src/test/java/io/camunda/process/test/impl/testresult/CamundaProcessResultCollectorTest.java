@@ -105,11 +105,13 @@ public class CamundaProcessResultCollectorTest {
 
     final VariableDto variable1 = newVariable("var-1", "1");
     final VariableDto variable2 = newVariable("var-2", "2");
-    when(camundaDataSource.getVariablesByProcessInstanceKey(processInstance1.getKey()))
+    when(camundaDataSource.getVariablesByProcessInstanceKey(
+            processInstance1.getProcessInstanceKey()))
         .thenReturn(Arrays.asList(variable1, variable2));
 
     final VariableDto variable3 = newVariable("var-3", "3");
-    when(camundaDataSource.getVariablesByProcessInstanceKey(processInstance2.getKey()))
+    when(camundaDataSource.getVariablesByProcessInstanceKey(
+            processInstance2.getProcessInstanceKey()))
         .thenReturn(Collections.singletonList(variable3));
 
     // when
@@ -144,7 +146,8 @@ public class CamundaProcessResultCollectorTest {
     flowNodeInstance2.setIncident(true);
     flowNodeInstance2.setIncidentKey(11L);
 
-    when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(processInstance1.getKey()))
+    when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(
+            processInstance1.getProcessInstanceKey()))
         .thenReturn(Arrays.asList(flowNodeInstance1, flowNodeInstance2));
 
     final FlowNodeInstanceDto flowNodeInstance3 = newFlowNodeInstance("task-c", "C");
@@ -154,7 +157,8 @@ public class CamundaProcessResultCollectorTest {
     final FlowNodeInstanceDto flowNodeInstance4 = newFlowNodeInstance("task-d", "D");
     flowNodeInstance4.setIncident(false);
 
-    when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(processInstance2.getKey()))
+    when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(
+            processInstance2.getProcessInstanceKey()))
         .thenReturn(Arrays.asList(flowNodeInstance3, flowNodeInstance4));
 
     final IncidentDto incident1 = newIncident("JOB_NO_RETRIES", "No retries left.");
