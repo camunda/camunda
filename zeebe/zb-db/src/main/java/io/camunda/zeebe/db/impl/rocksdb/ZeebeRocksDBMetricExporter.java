@@ -9,7 +9,6 @@ package io.camunda.zeebe.db.impl.rocksdb;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.protocol.EnumValue;
-import io.prometheus.client.Gauge;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -119,22 +118,13 @@ public final class ZeebeRocksDBMetricExporter<
 
   private static final class RocksDBMetric {
     private final String propertyName;
-    private final Gauge gauge;
     private final String gaugeName;
     private final String help;
 
     private RocksDBMetric(final String propertyName, final String namePrefix, final String help) {
       this.propertyName = Objects.requireNonNull(propertyName);
-      gaugeName = ZEEBE_NAMESPACE + "_" + namePrefix + gaugeSuffix() + "_micro";
+      gaugeName = ZEEBE_NAMESPACE + "_" + namePrefix + gaugeSuffix();
       this.help = help;
-
-      gauge =
-          Gauge.build()
-              .namespace(ZEEBE_NAMESPACE)
-              .name(namePrefix + gaugeSuffix())
-              .help(help)
-              .labelNames(PARTITION)
-              .register();
     }
 
     public String getPropertyName() {
@@ -148,8 +138,6 @@ public final class ZeebeRocksDBMetricExporter<
     }
 
     public void exportValue(final String partitionID, final Double value) {
-      gauge.labels(partitionID).set(value);
-
       final String key = gaugeName + "_" + partitionID;
       final AtomicReference<Double> newValue =
           GAUGES.computeIfAbsent(
