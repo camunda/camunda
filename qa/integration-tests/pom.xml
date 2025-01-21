@@ -442,6 +442,30 @@
         </plugins>
       </build>
     </profile>
+
+    <!--
+    This profile will run all tests annotated with @Tag("multiDbTest").
+    The profile is mainly used to run tests, that can be executed against multiple different
+    databases.
+
+    For example against:
+    Elasticsearch, OpenSearch, AWS OpenSearch, PostGreSQL, etc.
+    -->
+    <profile>
+      <id>multi-db-test</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <failIfNoTests>false</failIfNoTests>
+              <groups>multiDbTest</groups>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 
 </project>
