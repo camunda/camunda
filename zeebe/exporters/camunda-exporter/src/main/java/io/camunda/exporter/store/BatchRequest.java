@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.store;
 
+import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.util.Map;
@@ -66,7 +67,7 @@ public interface BatchRequest {
    *     message
    * @throws PersistenceException if an error occurs during the execution
    */
-  void execute(final BiConsumer<String, String> customErrorHandlers) throws PersistenceException;
+  void execute(final BiConsumer<String, Error> customErrorHandlers) throws PersistenceException;
 
   void executeWithRefresh() throws PersistenceException;
 }

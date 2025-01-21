@@ -12,7 +12,9 @@ import io.camunda.exporter.cache.ExporterEntityCacheImpl;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.errorhandling.Error;
+import io.camunda.exporter.errorhandling.ErrorHandler;
+import io.camunda.exporter.errorhandling.ErrorHandlers;
 import io.camunda.exporter.handlers.AuthorizationHandler;
 import io.camunda.exporter.handlers.DecisionEvaluationHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
@@ -102,26 +104,19 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 /**
  * This is the class where teams should make their components such as handlers, and index/index
  * template descriptors available
  */
 public class DefaultExporterResourceProvider implements ExporterResourceProvider {
-  private static final Consumer<String> ERROR_SWALLOWER = s -> {};
-  private static final Consumer<String> ERROR_THROWING =
-      s -> {
-        throw new PersistenceException(s);
-      };
-
   private IndexDescriptors indexDescriptors;
 
   private Set<ExportHandler<?, ?>> exportHandlers;
 
   private ExporterMetadata exporterMetadata;
   private ExecutorService executor;
-  private Map<String, Consumer<String>> indicesWithCustomErrorHandlers;
+  private Map<String, ErrorHandler> indicesWithCustomErrorHandlers;
 
   @Override
   public void init(
@@ -270,7 +265,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
 
     indicesWithCustomErrorHandlers =
         Map.of(
-            indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(), ERROR_SWALLOWER);
+            indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+            ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST);
   }
 
   @Override
@@ -303,9 +299,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   }
 
   @Override
-  public BiConsumer<String, String> getCustomErrorHandlers() {
-    return (index, message) -> {
-      indicesWithCustomErrorHandlers.getOrDefault(index, ERROR_THROWING).accept(message);
+  public BiConsumer<String, Error> getCustomErrorHandlers() {
+    return (index, error) -> {
+      indicesWithCustomErrorHandlers.getOrDefault(index, ErrorHandlers.THROWING).handle(error);
     };
   }
 }

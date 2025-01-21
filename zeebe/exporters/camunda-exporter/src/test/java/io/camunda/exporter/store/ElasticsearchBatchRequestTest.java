@@ -10,7 +10,6 @@ package io.camunda.exporter.store;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -28,6 +27,7 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.bulk.IndexOperation;
 import io.camunda.exporter.entities.TestExporterEntity;
+import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
 import java.io.IOException;
@@ -458,13 +458,13 @@ class ElasticsearchBatchRequestTest {
     when(bulkResponse.items()).thenReturn(List.of(item));
 
     when(elasticsearchClient.bulk(any(BulkRequest.class))).thenReturn(bulkResponse);
-    final BiConsumer<String, String> errorHandler = mock(BiConsumer.class);
+    final BiConsumer<String, Error> errorHandler = mock(BiConsumer.class);
 
     // When
     batchRequest.add(INDEX_WITH_HANDLER, entity);
     batchRequest.execute(errorHandler);
 
     // Then
-    verify(errorHandler).accept(eq(INDEX_WITH_HANDLER), anyString());
+    verify(errorHandler).accept(eq(INDEX_WITH_HANDLER), any());
   }
 }

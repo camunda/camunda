@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.store;
 
+import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.webapps.schema.entities.ExporterEntity;
@@ -27,7 +28,7 @@ import java.util.function.BiConsumer;
 public class ExporterBatchWriter {
   private final Map<ValueType, List<ExportHandler>> handlers = new HashMap<>();
   private final Map<EntityIdAndEntityType, EntityAndHandlers> cachedEntities = new HashMap<>();
-  private BiConsumer<String, String> customErrorHandlers;
+  private BiConsumer<String, Error> customErrorHandlers;
 
   public void addRecord(final Record<?> record) {
     final ValueType valueType = record.getValueType();
@@ -112,7 +113,7 @@ public class ExporterBatchWriter {
       return writer;
     }
 
-    public void withCustomErrorHandlers(final BiConsumer<String, String> customErrorHandlers) {
+    public void withCustomErrorHandlers(final BiConsumer<String, Error> customErrorHandlers) {
       writer.customErrorHandlers = customErrorHandlers;
     }
   }

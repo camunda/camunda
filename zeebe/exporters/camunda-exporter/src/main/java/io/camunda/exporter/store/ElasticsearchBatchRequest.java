@@ -13,6 +13,7 @@ import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
+import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
 import io.camunda.webapps.schema.entities.ExporterEntity;
@@ -223,7 +224,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public void execute(final BiConsumer<String, String> customErrorHandlers)
+  public void execute(final BiConsumer<String, Error> customErrorHandlers)
       throws PersistenceException {
     execute(customErrorHandlers, false);
   }
@@ -234,7 +235,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   private void execute(
-      final BiConsumer<String, String> customErrorHandlers, final boolean shouldRefresh)
+      final BiConsumer<String, Error> customErrorHandlers, final boolean shouldRefresh)
       throws PersistenceException {
     if (shouldRefresh) {
       bulkRequestBuilder.refresh(Refresh.True);
@@ -255,7 +256,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   private void validateNoErrors(
-      final List<BulkResponseItem> items, final BiConsumer<String, String> customErrorHandlers) {
+      final List<BulkResponseItem> items, final BiConsumer<String, Error> customErrorHandlers) {
     final var errorItems = items.stream().filter(item -> item.error() != null).toList();
     if (errorItems.isEmpty()) {
       return;
@@ -278,7 +279,8 @@ public class ElasticsearchBatchRequest implements BatchRequest {
                   "%s failed for type [%s] and id [%s]: %s",
                   item.operationType(), item.index(), item.id(), item.error().reason());
           if (customErrorHandlers != null) {
-            customErrorHandlers.accept(item.index(), message);
+            final Error error = new Error(message, item.error().type(), item.status());
+            customErrorHandlers.accept(item.index(), error);
           } else {
             throw new PersistenceException(message);
           }

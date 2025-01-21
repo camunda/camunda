@@ -9,6 +9,7 @@ package io.camunda.exporter;
 
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -53,5 +54,5 @@ public interface ExporterResourceProvider {
    */
   Set<ExportHandler<?, ?>> getExportHandlers();
 
-  BiConsumer<String, String> getCustomErrorHandlers();
+  BiConsumer<String, Error> getCustomErrorHandlers();
 }

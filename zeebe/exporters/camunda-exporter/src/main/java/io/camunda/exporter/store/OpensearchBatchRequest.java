@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.store;
 
+import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.utils.OpensearchScriptBuilder;
 import io.camunda.webapps.schema.entities.ExporterEntity;
@@ -216,7 +217,7 @@ public class OpensearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public void execute(final BiConsumer<String, String> customErrorHandlers)
+  public void execute(final BiConsumer<String, Error> customErrorHandlers)
       throws PersistenceException {
     execute(customErrorHandlers, false);
   }
@@ -227,7 +228,7 @@ public class OpensearchBatchRequest implements BatchRequest {
   }
 
   private void execute(
-      final BiConsumer<String, String> customErrorHandlers, final boolean shouldRefresh)
+      final BiConsumer<String, Error> customErrorHandlers, final boolean shouldRefresh)
       throws PersistenceException {
     if (shouldRefresh) {
       bulkRequestBuilder.refresh(Refresh.True);
@@ -237,7 +238,7 @@ public class OpensearchBatchRequest implements BatchRequest {
   }
 
   private void processBulkRequest(
-      final BulkRequest bulkRequest, final BiConsumer<String, String> customErrorHandlers)
+      final BulkRequest bulkRequest, final BiConsumer<String, Error> customErrorHandlers)
       throws PersistenceException {
     if (bulkRequest.operations().isEmpty()) {
       return;
@@ -253,7 +254,7 @@ public class OpensearchBatchRequest implements BatchRequest {
   }
 
   private void validateNoErrors(
-      final List<BulkResponseItem> items, final BiConsumer<String, String> errorHandlers) {
+      final List<BulkResponseItem> items, final BiConsumer<String, Error> errorHandlers) {
     final var errorItems = items.stream().filter(item -> item.error() != null).toList();
     if (errorItems.isEmpty()) {
       return;
@@ -276,7 +277,8 @@ public class OpensearchBatchRequest implements BatchRequest {
                   "%s failed for type [%s] and id [%s]: %s",
                   item.operationType(), item.index(), item.id(), item.error().reason());
           if (errorHandlers != null) {
-            errorHandlers.accept(item.index(), message);
+            final Error error = new Error(message, item.error().type(), item.status());
+            errorHandlers.accept(item.index(), error);
           } else {
             throw new PersistenceException(message);
           }
