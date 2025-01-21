@@ -39,9 +39,9 @@ public class TenantAwareActivateJobBatchTest {
         ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     ENGINE
         .tenant()
-        .addEntity(tenantKey)
+        .addEntity(tenantId)
         .withEntityType(EntityType.USER)
-        .withEntityKey(user.getUserKey())
+        .withEntityId(username)
         .add();
 
     // when
@@ -68,13 +68,12 @@ public class TenantAwareActivateJobBatchTest {
     final var username = UUID.randomUUID().toString();
     final var tenantId = UUID.randomUUID().toString();
     final var user = ENGINE.user().newUser(username).create().getValue();
-    final var tenantKey =
-        ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
+    ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     ENGINE
         .tenant()
-        .addEntity(tenantKey)
+        .addEntity(tenantId)
         .withEntityType(EntityType.USER)
-        .withEntityKey(user.getUserKey())
+        .withEntityId(username)
         .add();
 
     // when

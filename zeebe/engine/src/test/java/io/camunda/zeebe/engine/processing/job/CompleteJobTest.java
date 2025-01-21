@@ -60,13 +60,12 @@ public final class CompleteJobTest {
     tenantId = UUID.randomUUID().toString();
     username = UUID.randomUUID().toString();
     final var userKey = ENGINE.user().newUser(username).create().getValue().getUserKey();
-    final var tenantKey =
-        ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
+    ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     ENGINE
         .tenant()
-        .addEntity(tenantKey)
+        .addEntity(tenantId)
         .withEntityType(EntityType.USER)
-        .withEntityKey(userKey)
+        .withEntityId(username)
         .add();
 
     ENGINE

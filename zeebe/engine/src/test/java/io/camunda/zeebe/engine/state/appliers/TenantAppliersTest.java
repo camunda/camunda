@@ -58,11 +58,12 @@ public class TenantAppliersTest {
     final long entityKey = UUID.randomUUID().hashCode();
     final long tenantKey = UUID.randomUUID().hashCode();
     final var tenantId = UUID.randomUUID().toString();
+    final var username = "username";
     createTenant(tenantKey, tenantId);
-    createUser(entityKey, "username");
+    createUser(entityKey, username);
 
     // when
-    associateUserWithTenant(tenantKey, tenantId, entityKey);
+    associateUserWithTenant(tenantKey, tenantId, username);
 
     // then
     assertThat(tenantState.getEntitiesByType(tenantKey).get(EntityType.USER))
@@ -126,9 +127,10 @@ public class TenantAppliersTest {
     final long entityKey = UUID.randomUUID().hashCode();
     final long tenantKey = UUID.randomUUID().hashCode();
     final var tenantId = UUID.randomUUID().toString();
+    final var username = "username";
     createTenant(tenantKey, tenantId);
-    createUser(entityKey, "username");
-    associateUserWithTenant(tenantKey, tenantId, entityKey);
+    createUser(entityKey, username);
+    associateUserWithTenant(tenantKey, tenantId, username);
 
     // Ensure the user is associated with the tenant before removal
     assertThat(tenantState.getEntitiesByType(tenantKey).get(EntityType.USER))
@@ -203,12 +205,11 @@ public class TenantAppliersTest {
   }
 
   private void associateUserWithTenant(
-      final long tenantKey, final String tenantId, final long userKey) {
+      final long tenantKey, final String tenantId, final String userName) {
     final var tenantRecord =
         new TenantRecord()
-            .setTenantKey(tenantKey)
             .setTenantId(tenantId)
-            .setEntityKey(userKey)
+            .setEntityId(userName)
             .setEntityType(EntityType.USER);
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
   }

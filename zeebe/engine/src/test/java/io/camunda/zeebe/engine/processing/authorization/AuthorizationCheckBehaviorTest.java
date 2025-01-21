@@ -215,7 +215,7 @@ public class AuthorizationCheckBehaviorTest {
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(user.getUserKey(), resourceType, permissionType, resourceId);
-    final var tenantId = createAndAssignTenant(user.getUserKey(), EntityType.USER);
+    final var tenantId = createAndAssignTenant(user.getUsername(), EntityType.USER);
     final var command = mockCommand(user.getUsername());
 
     // when
@@ -259,7 +259,7 @@ public class AuthorizationCheckBehaviorTest {
     final var resourceId = UUID.randomUUID().toString();
     addPermission(user.getUserKey(), resourceType, permissionType, resourceId);
     final var anotherTenantId = "authorizedForAnotherTenant";
-    createAndAssignTenant(user.getUserKey(), EntityType.USER);
+    createAndAssignTenant(user.getUsername(), EntityType.USER);
     final var command = mockCommand(user.getUsername());
 
     // when
@@ -347,8 +347,8 @@ public class AuthorizationCheckBehaviorTest {
   public void shouldGetUserAuthorizedTenantIds() {
     // given
     final var user = createUser();
-    final var tenantId1 = createAndAssignTenant(user.getUserKey(), EntityType.USER);
-    final var tenantId2 = createAndAssignTenant(user.getUserKey(), EntityType.USER);
+    final var tenantId1 = createAndAssignTenant(user.getUsername(), EntityType.USER);
+    final var tenantId2 = createAndAssignTenant(user.getUsername(), EntityType.USER);
     final var command = mockCommand(user.getUsername());
 
     // when
@@ -970,6 +970,13 @@ public class AuthorizationCheckBehaviorTest {
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey = engine.tenant().newTenant().withTenantId(tenantId).create().getKey();
     engine.tenant().addEntity(tenantKey).withEntityKey(entityKey).withEntityType(entityType).add();
+    return tenantId;
+  }
+
+  private String createAndAssignTenant(final String entityId, final EntityType entityType) {
+    final var tenantId = UUID.randomUUID().toString();
+    engine.tenant().newTenant().withTenantId(tenantId).create();
+    engine.tenant().addEntity(tenantId).withEntityId(entityId).withEntityType(entityType).add();
     return tenantId;
   }
 

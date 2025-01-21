@@ -60,9 +60,9 @@ public class JobUpdateTimeoutTest {
         ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     ENGINE
         .tenant()
-        .addEntity(tenantKey)
+        .addEntity(tenantId)
         .withEntityType(EntityType.USER)
-        .withEntityKey(userKey)
+        .withEntityId(username)
         .add();
 
     ENGINE
