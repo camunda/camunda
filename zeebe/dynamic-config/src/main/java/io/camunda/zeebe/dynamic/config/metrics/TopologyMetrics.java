@@ -92,7 +92,7 @@ public final class TopologyMetrics {
       Metrics.globalRegistry;
 
   private static final AtomicLong MICRO_CHANGE_ID = new AtomicLong(0);
-  private static final AtomicInteger MICRO_CHANGE_STATUS = new AtomicInteger(0);
+  private static ClusterChangePlan.Status MICRO_CHANGE_STATUS = null;
   private static final AtomicInteger MICRO_CHANGE_VERSION = new AtomicInteger(0);
   private static final AtomicLong MICRO_TOPOLOGY_VERSION = new AtomicLong(0);
   private static final AtomicInteger MICRO_PENDING_OPERATIONS = new AtomicInteger(0);
@@ -100,7 +100,9 @@ public final class TopologyMetrics {
 
   static {
     io.micrometer.core.instrument.Gauge.builder(
-        NAMESPACE + "_cluster_topology_version_micro", MICRO_TOPOLOGY_VERSION, AtomicLong::get);
+            NAMESPACE + "_cluster_topology_version_micro", MICRO_TOPOLOGY_VERSION, AtomicLong::get)
+        .description("The version of the cluster topology")
+        .register(meterRegistry);
     io.micrometer.core.instrument.Gauge.builder(
             NAMESPACE + "_cluster_changes_operations_pending_micro",
             MICRO_PENDING_OPERATIONS,
@@ -126,7 +128,9 @@ public final class TopologyMetrics {
         .register(meterRegistry);
 
     io.micrometer.core.instrument.Gauge.builder(
-            NAMESPACE + "_cluster_changes_status_micro", MICRO_CHANGE_STATUS, AtomicInteger::get)
+            NAMESPACE + "_cluster_changes_status_micro",
+            MICRO_CHANGE_STATUS,
+            ClusterChangePlan.Status::ordinal)
         .description("The state of the current cluster topology")
         .register(meterRegistry);
   }
@@ -135,13 +139,12 @@ public final class TopologyMetrics {
     MICRO_TOPOLOGY_VERSION.set(topology.version());
     TOPOLOGY_VERSION.set(topology.version());
 
-    MICRO_CHANGE_STATUS.set(
+    MICRO_CHANGE_STATUS =
         topology
             .pendingChanges()
             .map(ClusterChangePlan::status)
             .or(() -> topology.lastChange().map(CompletedChange::status))
-            .orElse(Status.COMPLETED)
-            .ordinal());
+            .orElse(Status.COMPLETED);
 
     CHANGE_STATUS.state(
         topology
