@@ -8,6 +8,7 @@
 package io.camunda.operate.webapp.elasticsearch.reader;
 
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
+import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -18,12 +19,14 @@ import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVaria
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +39,8 @@ import org.springframework.stereotype.Component;
 public class ElasticsearchUserTaskReader extends AbstractReader implements UserTaskReader {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchUserTaskReader.class);
+  private static final TermQueryBuilder TASK_QUERY =
+      termQuery(TaskTemplate.JOIN_FIELD_NAME, TaskJoinRelationshipType.TASK.getType());
 
   private final TaskTemplate taskTemplate;
   private final SnapshotTaskVariableTemplate snapshotTaskVariableTemplate;
@@ -52,10 +57,9 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
   public List<TaskEntity> getUserTasks() {
     LOGGER.debug("retrieve all user tasks");
     try {
-      final QueryBuilder query = matchAllQuery();
       final SearchRequest searchRequest =
           ElasticsearchUtil.createSearchRequest(taskTemplate, ALL)
-              .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
+              .source(new SearchSourceBuilder().query(constantScoreQuery(TASK_QUERY)));
       return scroll(searchRequest, TaskEntity.class);
     } catch (final IOException e) {
       final String message =
@@ -68,7 +72,9 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
   public Optional<TaskEntity> getUserTaskByFlowNodeInstanceKey(final long flowNodeInstanceKey) {
     LOGGER.debug("Get UserTask by flowNodeInstanceKey {}", flowNodeInstanceKey);
     try {
-      final QueryBuilder query = termQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID, flowNodeInstanceKey);
+      final QueryBuilder query =
+          joinWithAnd(
+              TASK_QUERY, termQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID, flowNodeInstanceKey));
       final SearchRequest searchRequest =
           ElasticsearchUtil.createSearchRequest(taskTemplate, ALL)
               .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
