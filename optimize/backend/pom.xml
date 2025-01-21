@@ -95,6 +95,7 @@
     <dependency>
       <groupId>jakarta.ws.rs</groupId>
       <artifactId>jakarta.ws.rs-api</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <!-- IDENTITY-->
@@ -148,19 +149,6 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot</artifactId>
       <version>${version.spring-boot}</version>
-    </dependency>
-
-    <!-- this is necessary. Dependency:analyze error suppressed -->
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-jersey</artifactId>
-      <version>${version.spring-boot}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.javassist</groupId>
-          <artifactId>javassist</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>
@@ -421,11 +409,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.glassfish.jersey.media</groupId>
-      <artifactId>jersey-media-json-jackson</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
     </dependency>
@@ -621,6 +604,13 @@
       <groupId>org.glassfish.jersey.core</groupId>
       <artifactId>jersey-client</artifactId>
       <version>3.1.9</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.glassfish.jersey.media</groupId>
+      <artifactId>jersey-media-json-jackson</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <!-- this is necessary. Dependency:analyze error suppressed -->
@@ -658,11 +648,6 @@
       <artifactId>spring-web</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>org.glassfish.jersey.core</groupId>
-      <artifactId>jersey-server</artifactId>
-    </dependency>
-
     <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>jakarta.servlet</groupId>
@@ -691,6 +676,12 @@
   <build>
     <finalName>optimize-backend-${project.version}</finalName>
     <resources>
+      <!-- TODO: Remove this resource block once legacy Optimize Main class is no longer -->
+      <resource>
+        <targetPath>META-INF/resources/optimize</targetPath>
+        <directory>../client/dist</directory>
+      </resource>
+
       <resource>
         <directory>src/main/resources</directory>
       </resource>

@@ -16,9 +16,9 @@ import io.camunda.optimize.dto.optimize.query.analysis.OutlierAnalysisServicePar
 import io.camunda.optimize.dto.optimize.query.analysis.ProcessDefinitionParametersDto;
 import io.camunda.optimize.dto.optimize.query.analysis.ProcessInstanceIdDto;
 import io.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
+import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import io.camunda.optimize.service.db.reader.DurationOutliersReader;
 import io.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
-import jakarta.ws.rs.ForbiddenException;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Component;

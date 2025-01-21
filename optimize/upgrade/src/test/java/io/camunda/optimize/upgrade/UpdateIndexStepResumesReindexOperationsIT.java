@@ -8,13 +8,13 @@
 package io.camunda.optimize.upgrade;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.INDEX_SUFFIX_PRE_ROLLOVER;
-import static jakarta.ws.rs.HttpMethod.GET;
-import static jakarta.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.verify.VerificationTimes.atLeast;
 import static org.mockserver.verify.VerificationTimes.exactly;
+import static org.springframework.http.HttpMethod.GET;
+import static org.springframework.http.HttpMethod.POST;
 
 import com.google.common.collect.ImmutableList;
 import io.camunda.optimize.service.db.DatabaseConstants;
@@ -390,10 +390,10 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
   }
 
   private HttpRequest createReindexRequestMatcher() {
-    return request().withPath("/_reindex").withMethod(POST);
+    return request().withPath("/_reindex").withMethod(POST.name());
   }
 
   private HttpRequest createTaskStatusRequestTestMatcher() {
-    return request().withPath("/_tasks/.*").withMethod(GET);
+    return request().withPath("/_tasks/.*").withMethod(GET.name());
   }
 }

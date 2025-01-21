@@ -17,7 +17,6 @@ import static io.camunda.optimize.service.util.importing.ZeebeConstants.VARIABLE
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.VARIABLE_TYPE_JSON;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.VARIABLE_TYPE_OBJECT;
 import static io.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -40,6 +39,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -373,7 +373,7 @@ public class ObjectVariableService {
           Optional.ofNullable(
               String.valueOf(
                   originVariable.getValueInfo().get(VARIABLE_SERIALIZATION_DATA_FORMAT)));
-      if (serializationDataFormat.stream().anyMatch(APPLICATION_JSON::equals)) {
+      if (serializationDataFormat.stream().anyMatch(MediaType.APPLICATION_JSON_VALUE::equals)) {
         return true;
       } else {
         LOG.warn(

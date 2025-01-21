@@ -25,13 +25,6 @@ public enum ReportType {
   }
 
   public DefinitionType toDefinitionType() {
-    return DefinitionType.fromString(name());
-  }
-
-  // This is used by jersey on unmarshalling query/path parameters
-  // see
-  // https://docs.jboss.org/resteasy/docs/3.5.0.Final/userguide/html/StringConverter.html#d4e1541
-  public static ReportType fromString(final String name) {
-    return valueOf(name.toUpperCase());
+    return DefinitionType.valueOf(name());
   }
 }

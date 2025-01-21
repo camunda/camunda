@@ -9,12 +9,14 @@ package io.camunda.optimize.service.security.authentication;
 
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
 import io.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
+import io.camunda.optimize.rest.exceptions.NotSupportedException;
 import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
-import jakarta.ws.rs.NotSupportedException;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Response;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URI;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -34,19 +36,19 @@ public class CCSaaSAuthenticationService extends AbstractAuthenticationService {
   }
 
   @Override
-  public Response authenticateUser(
-      final ContainerRequestContext requestContext, final CredentialsRequestDto credentials) {
+  public void authenticateUser(final CredentialsRequestDto credentials) {
     throw new NotSupportedException(INVALID_ENDPOINT_MESSAGE);
   }
 
   @Override
-  public Response loginCallback(
-      final ContainerRequestContext requestContext, final AuthCodeDto authCode) {
+  public void loginCallback(
+      final AuthCodeDto authCode, final URI uri, final HttpServletResponse response)
+      throws IOException {
     throw new NotSupportedException(INVALID_ENDPOINT_MESSAGE);
   }
 
   @Override
-  public Response logout(final ContainerRequestContext requestContext) {
+  public void logout(final Cookie[] cookies, final HttpServletResponse response) {
     throw new NotSupportedException(INVALID_ENDPOINT_MESSAGE);
   }
 }

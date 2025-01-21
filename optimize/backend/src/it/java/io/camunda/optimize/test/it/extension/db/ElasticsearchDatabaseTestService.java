@@ -74,6 +74,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.configuration.Aggreg
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeCountRequestBuilderES;
@@ -110,7 +111,6 @@ import io.camunda.optimize.test.repository.TestIndexRepositoryES;
 import io.camunda.optimize.upgrade.es.ElasticsearchClientBuilder;
 import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;

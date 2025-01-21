@@ -14,6 +14,7 @@ import com.auth0.jwt.exceptions.TokenExpiredException;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.exception.IdentityException;
+import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
@@ -24,7 +25,6 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.ws.rs.NotAuthorizedException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
@@ -101,12 +101,12 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
                 Arrays.stream(request.getCookies())
                     .filter(cookie -> cookie.getName().equals(OPTIMIZE_AUTHORIZATION))
                     .findFirst()
-                    .map(
-                        accessToken ->
-                            ccsmTokenService.getSubjectFromToken(accessToken.getValue())))
+                    .flatMap(accessToken -> validToken(accessToken.getValue()))
+                    .map(ccsmTokenService::getSubjectFromToken))
         .orElseGet(
             () ->
                 AuthCookieService.getAuthCookieToken(request)
+                    .flatMap(this::validToken)
                     .map(ccsmTokenService::getSubjectFromToken)
                     .orElse(null));
   }
@@ -121,6 +121,15 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
                     .findFirst()
                     .map(Cookie::getValue))
         .orElseGet(() -> AuthCookieService.getAuthCookieToken(request).orElse(null));
+  }
+
+  private Optional<String> validToken(final String token) {
+    try {
+      ccsmTokenService.verifyToken(token);
+    } catch (final Exception e) {
+      return Optional.empty();
+    }
+    return Optional.ofNullable(token);
   }
 
   private void tryCookieRenewal(

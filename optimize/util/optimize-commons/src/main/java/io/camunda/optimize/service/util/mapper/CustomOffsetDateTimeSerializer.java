@@ -17,8 +17,11 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 
 public class CustomOffsetDateTimeSerializer extends JsonSerializer<OffsetDateTime> {
 
@@ -35,7 +38,15 @@ public class CustomOffsetDateTimeSerializer extends JsonSerializer<OffsetDateTim
   public void serialize(
       final OffsetDateTime value, final JsonGenerator gen, final SerializerProvider provider)
       throws IOException {
-    final String timezone = (String) provider.getAttribute(X_OPTIMIZE_CLIENT_TIMEZONE);
+    final String timezone =
+        (String)
+            Optional.ofNullable(RequestContextHolder.getRequestAttributes())
+                .map(
+                    attrs ->
+                        attrs.getAttribute(
+                            X_OPTIMIZE_CLIENT_TIMEZONE, RequestAttributes.SCOPE_REQUEST))
+                .orElse(null);
+
     OffsetDateTime timeZoneAdjustedDateTime = value;
     if (timezone != null) {
       if (AVAILABLE_ZONE_IDS.contains(timezone)) {

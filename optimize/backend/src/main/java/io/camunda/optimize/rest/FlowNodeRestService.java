@@ -8,6 +8,7 @@
 package io.camunda.optimize.rest;
 
 import static io.camunda.optimize.service.util.BpmnModelUtil.extractFlowNodeNames;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
@@ -15,19 +16,17 @@ import io.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import io.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
 import io.camunda.optimize.rest.providers.CacheRequest;
 import io.camunda.optimize.service.DefinitionService;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
-import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-@Path(FlowNodeRestService.FLOW_NODE_PATH)
-@Component
+@RestController
+@RequestMapping(REST_API_PATH + FlowNodeRestService.FLOW_NODE_PATH)
 public class FlowNodeRestService {
 
   public static final String FLOW_NODE_PATH = "/flow-node";
@@ -40,12 +39,10 @@ public class FlowNodeRestService {
     this.definitionService = definitionService;
   }
 
-  @POST
-  @Path(FLOW_NODE_NAMES_SUB_PATH)
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
+  @PostMapping(FLOW_NODE_NAMES_SUB_PATH)
   @CacheRequest
-  public FlowNodeNamesResponseDto getFlowNodeNames(final FlowNodeIdsToNamesRequestDto request) {
+  public FlowNodeNamesResponseDto getFlowNodeNames(
+      @RequestBody final FlowNodeIdsToNamesRequestDto request) {
     final FlowNodeNamesResponseDto result = new FlowNodeNamesResponseDto();
 
     final Optional<ProcessDefinitionOptimizeDto> processDefinitionXmlDto =

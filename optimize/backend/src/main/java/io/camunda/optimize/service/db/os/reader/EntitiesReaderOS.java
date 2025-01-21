@@ -30,6 +30,7 @@ import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestD
 import io.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntityType;
+import io.camunda.optimize.rest.exceptions.BadRequestException;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
@@ -46,7 +47,6 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import io.camunda.optimize.util.types.MapUtil;
-import jakarta.ws.rs.BadRequestException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;

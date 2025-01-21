@@ -150,11 +150,6 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-      <dependency>
-        <groupId>jakarta.ws.rs</groupId>
-        <artifactId>jakarta.ws.rs-api</artifactId>
-        <version>${jakarta.rs-api.version}</version>
-      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -333,7 +328,6 @@
               <dep>org.codehaus.janino:janino</dep>
               <dep>org.eclipse.angus:jakarta.mail</dep>
               <dep>org.springframework:spring-tx</dep>
-              <dep>org.springframework.boot:spring-boot-starter-jersey</dep>
               <dep>org.springframework.boot:spring-boot-starter-tomcat</dep>
               <dep>org.springframework.boot:spring-boot-starter-web</dep>
               <dep>software.amazon.awssdk:sdk-core</dep>
@@ -364,6 +358,8 @@
               <dep>org.mockito:mockito-inline</dep>
               <dep>org.mockito:mockito-junit-jupiter</dep>
               <dep>org.springframework.boot:spring-boot-starter-test</dep>
+              <dep>org.glassfish.jersey.core:jersey-client</dep>
+              <dep>org.glassfish.jersey.media:jersey-media-json-jackson</dep>
             </ignoredUnusedDeclaredDependencies>
             <ignoredNonTestScopedDependencies combine.children="append">
               <dep>com.fasterxml.jackson.datatype:jackson-datatype-jdk8</dep>
@@ -371,7 +367,6 @@
               <dep>commons-collections:commons-collections</dep>
               <dep>org.apache.httpcomponents:httpcore-nio</dep>
               <dep>org.apache.tika:tika-core</dep>
-              <dep>org.glassfish.jersey.core:jersey-client</dep>
               <dep>org.opensearch.client:opensearch-java</dep>
               <dep>org.opensearch.client:opensearch-rest-client</dep>
             </ignoredNonTestScopedDependencies>

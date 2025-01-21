@@ -9,6 +9,7 @@ package io.camunda.optimize.rest;
 
 import static io.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
 import static io.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullStringValue;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import io.camunda.optimize.dto.optimize.query.IdResponseDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
@@ -20,20 +21,8 @@ import io.camunda.optimize.service.dashboard.DashboardService;
 import io.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.security.SessionService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.DELETE;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.PUT;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.UriInfo;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -42,10 +31,20 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-@Path(DashboardRestService.DASHBOARD_PATH)
-@Component
+@Validated
+@RestController
+@RequestMapping(REST_API_PATH + DashboardRestService.DASHBOARD_PATH)
 public class DashboardRestService {
 
   public static final String DASHBOARD_PATH = "/dashboard";
@@ -66,13 +65,11 @@ public class DashboardRestService {
     this.dashboardRestMapper = dashboardRestMapper;
   }
 
-  @POST
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
+  @PostMapping()
   public IdResponseDto createNewDashboard(
-      @Context final ContainerRequestContext requestContext,
-      @Valid final DashboardDefinitionRestDto dashboardDefinitionDto) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @Valid @RequestBody final DashboardDefinitionRestDto dashboardDefinitionDto,
+      final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     if (dashboardDefinitionDto != null) {
       if (dashboardDefinitionDto.isManagementDashboard()
           || dashboardDefinitionDto.isInstantPreviewDashboard()) {
@@ -86,16 +83,13 @@ public class DashboardRestService {
         Optional.ofNullable(dashboardDefinitionDto).orElseGet(DashboardDefinitionRestDto::new));
   }
 
-  @POST
-  @Path("/{id}/copy")
-  @Produces(MediaType.APPLICATION_JSON)
+  @PostMapping(path = "/{id}/copy")
   public IdResponseDto copyDashboard(
-      @Context final UriInfo uriInfo,
-      @Context final ContainerRequestContext requestContext,
-      @PathParam("id") final String dashboardId,
-      @QueryParam("collectionId") String collectionId,
-      @QueryParam("name") final String newDashboardName) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @PathVariable("id") final String dashboardId,
+      @RequestParam(name = "collectionId", required = false) String collectionId,
+      @RequestParam(name = "name", required = false) final String newDashboardName,
+      final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
 
     if (collectionId == null) {
       return dashboardService.copyDashboard(dashboardId, userId, newDashboardName);
@@ -107,70 +101,57 @@ public class DashboardRestService {
     }
   }
 
-  @GET
-  @Path("/{id}")
-  @Produces(MediaType.APPLICATION_JSON)
+  @GetMapping(path = "/{id}")
   public AuthorizedDashboardDefinitionResponseDto getDashboard(
-      @Context final ContainerRequestContext requestContext,
-      @PathParam("id") final String dashboardId) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @PathVariable(name = "id") final String dashboardId, final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     final AuthorizedDashboardDefinitionResponseDto dashboardDefinition =
         dashboardService.getDashboardDefinition(dashboardId, userId);
     dashboardRestMapper.prepareRestResponse(
-        dashboardDefinition, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
+        dashboardDefinition, request.getHeader(X_OPTIMIZE_CLIENT_LOCALE));
     return dashboardDefinition;
   }
 
-  @GET
-  @Path(INSTANT_PREVIEW_PATH + "/{procDefKey}")
-  @Produces(MediaType.APPLICATION_JSON)
+  @GetMapping(path = INSTANT_PREVIEW_PATH + "/{procDefKey}")
   public AuthorizedDashboardDefinitionResponseDto getInstantDashboard(
-      @Context final ContainerRequestContext requestContext,
-      @PathParam("procDefKey") final String processDefinitionKey,
-      @QueryParam("template") final String dashboardJsonTemplateFilename) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @PathVariable("procDefKey") final String processDefinitionKey,
+      @RequestParam(name = "template", required = false) final String dashboardJsonTemplateFilename,
+      final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     final AuthorizedDashboardDefinitionResponseDto dashboardDefinition;
     dashboardDefinition =
         instantPreviewDashboardService.getInstantPreviewDashboard(
             processDefinitionKey, dashboardJsonTemplateFilename, userId);
     dashboardRestMapper.prepareRestResponse(
-        dashboardDefinition, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
+        dashboardDefinition, request.getHeader(X_OPTIMIZE_CLIENT_LOCALE));
     return dashboardDefinition;
   }
 
-  @GET
-  @Path("/management")
-  @Produces(MediaType.APPLICATION_JSON)
+  @GetMapping(path = "/management")
   public AuthorizedDashboardDefinitionResponseDto getManagementDashboard(
-      @Context final ContainerRequestContext requestContext) {
+      final HttpServletRequest request) {
     final AuthorizedDashboardDefinitionResponseDto dashboardDefinition =
         dashboardService.getManagementDashboard();
     dashboardRestMapper.prepareRestResponse(
-        dashboardDefinition, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
+        dashboardDefinition, request.getHeader(X_OPTIMIZE_CLIENT_LOCALE));
     return dashboardDefinition;
   }
 
-  @PUT
-  @Path("/{id}")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
+  @PutMapping(path = "/{id}")
   public void updateDashboard(
-      @Context final ContainerRequestContext requestContext,
-      @PathParam("id") final String dashboardId,
-      @Valid final DashboardDefinitionRestDto updatedDashboard) {
+      @PathVariable("id") final String dashboardId,
+      @Valid @RequestBody final DashboardDefinitionRestDto updatedDashboard,
+      final HttpServletRequest request) {
     updatedDashboard.setId(dashboardId);
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     validateDashboard(updatedDashboard);
     dashboardService.updateDashboard(updatedDashboard, userId);
   }
 
-  @DELETE
-  @Path("/{id}")
-  @Produces(MediaType.APPLICATION_JSON)
+  @DeleteMapping(path = "/{id}")
   public void deleteDashboard(
-      @Context final ContainerRequestContext requestContext,
-      @PathParam("id") final String dashboardId) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @PathVariable("id") final String dashboardId, final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     dashboardService.deleteDashboardAsUser(dashboardId, userId);
   }
 

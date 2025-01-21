@@ -25,7 +25,6 @@ import io.camunda.optimize.service.util.mapper.OptimizeDateTimeFormatterFactory;
 import io.camunda.optimize.upgrade.es.SchemaUpgradeClientES;
 import io.camunda.optimize.upgrade.os.SchemaUpgradeClientOS;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
-import jakarta.ws.rs.NotSupportedException;
 
 public final class SchemaUpgradeClientFactory {
 
@@ -71,7 +70,7 @@ public final class SchemaUpgradeClientFactory {
                   upgradeDependencies.configurationService())
               .createOptimizeMapper());
     } else {
-      throw new NotSupportedException(
+      throw new UnsupportedOperationException(
           "Database type "
               + upgradeDependencies.databaseType()
               + " not supported for schema upgrade");
@@ -102,7 +101,7 @@ public final class SchemaUpgradeClientFactory {
                   new OptimizeDateTimeFormatterFactory().getObject(), configurationService)
               .createOptimizeMapper());
     } else {
-      throw new NotSupportedException(
+      throw new UnsupportedOperationException(
           "Database type " + dbClient.getClass() + " not supported for schema upgrade");
     }
   }

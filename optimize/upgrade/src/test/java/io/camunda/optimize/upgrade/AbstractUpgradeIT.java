@@ -12,9 +12,9 @@ import static io.camunda.optimize.service.util.configuration.ConfigurationServic
 import static io.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
 import static io.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig;
 import static io.camunda.optimize.upgrade.db.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
-import static jakarta.ws.rs.HttpMethod.DELETE;
-import static jakarta.ws.rs.HttpMethod.POST;
 import static org.mockserver.model.HttpRequest.request;
+import static org.springframework.http.HttpMethod.DELETE;
+import static org.springframework.http.HttpMethod.POST;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.indices.IndexSettings;
@@ -328,11 +328,11 @@ public abstract class AbstractUpgradeIT {
                 + upgradeStep.getType()
                 + "_"
                 + indexNameWithVersion)
-        .withMethod(POST);
+        .withMethod(POST.name());
   }
 
   protected HttpRequest createIndexDeleteRequest(final String versionedIndexName) {
-    return request().withPath("/" + versionedIndexName).withMethod(DELETE);
+    return request().withPath("/" + versionedIndexName).withMethod(DELETE.name());
   }
 
   private String getLogIndexAlias() {

@@ -17,11 +17,11 @@ import io.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import io.camunda.optimize.dto.optimize.UserDto;
 import io.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import io.camunda.optimize.dto.optimize.rest.AuthorizationType;
+import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import io.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.users.AuthorizedUserType;
-import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -74,7 +74,7 @@ public abstract class AbstractIdentityService implements ConfigurationReloadable
   public abstract Optional<UserDto> getUserById(final String userId);
 
   public abstract Optional<UserDto> getCurrentUserById(
-      final String userId, final ContainerRequestContext requestContext);
+      final String userId, final HttpServletRequest request);
 
   public abstract Optional<GroupDto> getGroupById(final String groupId);
 
