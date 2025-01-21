@@ -33,7 +33,9 @@ import java.util.function.Consumer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.util.unit.DataSize;
 
-/** Represents an instance of the {@link BrokerModuleConfiguration} Spring application. */
+/**
+ * Represents an instance of the {@link BrokerModuleConfiguration} Spring application.
+ */
 @SuppressWarnings("UnusedReturnValue")
 public final class TestStandaloneBroker extends TestSpringApplication<TestStandaloneBroker>
     implements TestGateway<TestStandaloneBroker> {
@@ -156,7 +158,9 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     return TestGateway.super.newClientBuilder();
   }
 
-  /** Returns the broker configuration */
+  /**
+   * Returns the broker configuration
+   */
   public BrokerBasedProperties brokerConfig() {
     return config;
   }
@@ -193,7 +197,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    * unique ID.
    *
    * @param useRecordingExporter if true, will enable the exporter; if false, will remove it from
-   *     the config
+   * the config
    * @return itself for chaining
    */
   public TestStandaloneBroker withRecordingExporter(final boolean useRecordingExporter) {
@@ -251,11 +255,10 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   public TestStandaloneBroker withRdbmsExporter() {
     withProperty("camunda.database.type", "rdbms");
     withProperty(
-        "spring.datasource.url",
+        "camunda.database.url",
         "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
-    withProperty("spring.datasource.driver-class-name", "org.h2.Driver");
-    withProperty("spring.datasource.username", "sa");
-    withProperty("spring.datasource.password", "");
+    withProperty("camunda.database.username", "sa");
+    withProperty("camunda.database.password", "");
     withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");
     withProperty("logging.level.org.mybatis", "DEBUG");
     withExporter(
