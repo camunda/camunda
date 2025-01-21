@@ -32,9 +32,6 @@ public final class TopologyMetrics {
   private static final String LABEL_OUTCOME = "outcome";
 
   private static final Duration[] OPERATION_DURATION_BUCKETS =
-      //      Stream.of(1, 2, 5, 10, 30, 60, 120, 180, 300, 600) // Missing 0.1 - complains about it
-      //          .map(Duration::ofSeconds)
-      //          .toArray(Duration[]::new);
       Stream.of(100, 1000, 2000, 5000, 10000, 30000, 60000, 120000, 180000, 300000, 600000)
           .map(Duration::ofMillis)
           .toArray(Duration[]::new);
@@ -94,9 +91,9 @@ public final class TopologyMetrics {
   private static final io.micrometer.core.instrument.MeterRegistry meterRegistry =
       Metrics.globalRegistry;
 
-  private static io.micrometer.core.instrument.Gauge MICRO_CHANGE_ID;
-  private static io.micrometer.core.instrument.Gauge MICRO_CHANGE_STATUS;
-  private static io.micrometer.core.instrument.Gauge MICRO_CHANGE_VERSION;
+  private static final AtomicLong MICRO_CHANGE_ID = new AtomicLong(0);
+  private static final AtomicInteger MICRO_CHANGE_STATUS = new AtomicInteger(0);
+  private static final AtomicInteger MICRO_CHANGE_VERSION = new AtomicInteger(0);
   private static final AtomicLong MICRO_TOPOLOGY_VERSION = new AtomicLong(0);
   private static final AtomicInteger MICRO_PENDING_OPERATIONS = new AtomicInteger(0);
   private static final AtomicInteger MICRO_COMPLETED_OPERATIONS = new AtomicInteger(0);
@@ -117,25 +114,34 @@ public final class TopologyMetrics {
             AtomicInteger::get)
         .description("Number of completed changes in the current change plan")
         .register(meterRegistry);
+
+    io.micrometer.core.instrument.Gauge.builder(
+            NAMESPACE + "_cluster_changes_version_micro", MICRO_CHANGE_VERSION, AtomicInteger::get)
+        .description("The version of the cluster topology change plan")
+        .register(meterRegistry);
+
+    io.micrometer.core.instrument.Gauge.builder(
+            NAMESPACE + "_cluster_changes_id_micro", MICRO_CHANGE_ID, AtomicLong::get)
+        .description("The id of the cluster topology change plan")
+        .register(meterRegistry);
+
+    io.micrometer.core.instrument.Gauge.builder(
+            NAMESPACE + "_cluster_changes_status_micro", MICRO_CHANGE_STATUS, AtomicInteger::get)
+        .description("The state of the current cluster topology")
+        .register(meterRegistry);
   }
 
   public static void updateFromTopology(final ClusterConfiguration topology) {
     MICRO_TOPOLOGY_VERSION.set(topology.version());
     TOPOLOGY_VERSION.set(topology.version());
-    // TOPOLOGY_VERSION Gauge
 
-    MICRO_CHANGE_STATUS =
-        io.micrometer.core.instrument.Gauge.builder(
-                NAMESPACE + "_cluster_changes_status_micro",
-                () ->
-                    topology
-                        .pendingChanges()
-                        .map(ClusterChangePlan::status)
-                        .or(() -> topology.lastChange().map(CompletedChange::status))
-                        .orElse(Status.COMPLETED)
-                        .ordinal())
-            .description("The state of the current cluster topology")
-            .register(meterRegistry);
+    MICRO_CHANGE_STATUS.set(
+        topology
+            .pendingChanges()
+            .map(ClusterChangePlan::status)
+            .or(() -> topology.lastChange().map(CompletedChange::status))
+            .orElse(Status.COMPLETED)
+            .ordinal());
 
     CHANGE_STATUS.state(
         topology
@@ -144,20 +150,10 @@ public final class TopologyMetrics {
             .or(() -> topology.lastChange().map(CompletedChange::status))
             .orElse(Status.COMPLETED));
 
-    MICRO_CHANGE_ID =
-        io.micrometer.core.instrument.Gauge.builder(
-                NAMESPACE + "_cluster_changes_id_micro",
-                () -> topology.pendingChanges().map(ClusterChangePlan::id).orElse(0L))
-            .description("The id of the cluster topology change plan")
-            .register(meterRegistry);
+    MICRO_CHANGE_ID.set(topology.pendingChanges().map(ClusterChangePlan::id).orElse(0L));
     CHANGE_ID.set(topology.pendingChanges().map(ClusterChangePlan::id).orElse(0L));
 
-    MICRO_CHANGE_VERSION =
-        io.micrometer.core.instrument.Gauge.builder(
-                NAMESPACE + "_cluster_changes_version_micro",
-                () -> topology.pendingChanges().map(ClusterChangePlan::version).orElse(0))
-            .description("The version of the cluster topology change plan")
-            .register(meterRegistry);
+    MICRO_CHANGE_VERSION.set(topology.pendingChanges().map(ClusterChangePlan::version).orElse(0));
     CHANGE_VERSION.set(topology.pendingChanges().map(ClusterChangePlan::version).orElse(0));
 
     MICRO_PENDING_OPERATIONS.set(
