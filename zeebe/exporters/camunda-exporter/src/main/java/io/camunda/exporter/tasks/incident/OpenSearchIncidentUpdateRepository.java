@@ -57,6 +57,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
   private final String pendingUpdateAlias;
   private final String incidentAlias;
   private final String listViewAlias;
+  private final String listViewFullQualifiedName;
   private final String flowNodeAlias;
   private final String operationAlias;
 
@@ -65,6 +66,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
       final String pendingUpdateAlias,
       final String incidentAlias,
       final String listViewAlias,
+      final String listViewFullQualifiedName,
       final String flowNodeAlias,
       final String operationAlias,
       @WillCloseWhenClosed final OpenSearchAsyncClient client,
@@ -75,6 +77,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
     this.pendingUpdateAlias = pendingUpdateAlias;
     this.incidentAlias = incidentAlias;
     this.listViewAlias = listViewAlias;
+    this.listViewFullQualifiedName = listViewFullQualifiedName;
     this.flowNodeAlias = flowNodeAlias;
     this.operationAlias = operationAlias;
   }
@@ -216,7 +219,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
     final var request =
         new AnalyzeRequest.Builder()
             .field(ListViewTemplate.TREE_PATH)
-            .index(listViewAlias)
+            .index(listViewFullQualifiedName)
             .text(treePath)
             .build();
 
