@@ -41,7 +41,7 @@ public interface ProcessInstanceSort extends SearchRequestSort<ProcessInstanceSo
 
   ProcessInstanceSort state();
 
-  ProcessInstanceSort incident();
+  ProcessInstanceSort hasIncident();
 
   ProcessInstanceSort tenantId();
 }

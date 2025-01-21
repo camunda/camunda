@@ -23,27 +23,27 @@ public class ProcessInstanceSortImpl extends SearchQuerySortBase<ProcessInstance
 
   @Override
   public ProcessInstanceSort processInstanceKey() {
-    return field("key");
+    return field("processInstanceKey");
   }
 
   @Override
   public ProcessInstanceSort processDefinitionId() {
-    return field("bpmnProcessId");
+    return field("processDefinitionId");
   }
 
   @Override
   public ProcessInstanceSort processDefinitionName() {
-    return field("processName");
+    return field("processDefinitionName");
   }
 
   @Override
   public ProcessInstanceSort processDefinitionVersion() {
-    return field("processVersion");
+    return field("processDefinitionVersion");
   }
 
   @Override
   public ProcessInstanceSort processDefinitionVersionTag() {
-    return field("processVersionTag");
+    return field("processDefinitionVersionTag");
   }
 
   @Override
@@ -77,8 +77,8 @@ public class ProcessInstanceSortImpl extends SearchQuerySortBase<ProcessInstance
   }
 
   @Override
-  public ProcessInstanceSort incident() {
-    return field("incident");
+  public ProcessInstanceSort hasIncident() {
+    return field("hasIncident");
   }
 
   @Override
