@@ -7,8 +7,6 @@
  */
 package io.camunda.document.store.localstorage;
 
-import static org.apache.commons.codec.digest.MessageDigestAlgorithms.SHA_256;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentContent;
 import io.camunda.document.api.DocumentCreationRequest;
@@ -32,10 +30,13 @@ import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import org.slf4j.Logger;
 
 public class LocalStorageDocumentStore implements DocumentStore {
 
   public static final String METADATA_SUFFIX = "-metadata";
+  private static final Logger LOG =
+      org.slf4j.LoggerFactory.getLogger(LocalStorageDocumentStore.class);
   private final Path storagePath;
   private final FileHandler fileHandler;
   private final ExecutorService executor;
@@ -61,12 +62,12 @@ public class LocalStorageDocumentStore implements DocumentStore {
   @Override
   public CompletableFuture<Either<DocumentError, DocumentContent>> getDocument(
       final String documentId) {
-    return CompletableFuture.supplyAsync(() -> getDocumentInternal(documentId));
+    return CompletableFuture.supplyAsync(() -> getDocumentInternal(documentId), executor);
   }
 
   @Override
   public CompletableFuture<Either<DocumentError, Void>> deleteDocument(final String documentId) {
-    return CompletableFuture.supplyAsync(() -> deleteDocumentInternal(documentId));
+    return CompletableFuture.supplyAsync(() -> deleteDocumentInternal(documentId), executor);
   }
 
   @Override
@@ -81,7 +82,8 @@ public class LocalStorageDocumentStore implements DocumentStore {
   @Override
   public CompletableFuture<Either<DocumentError, Void>> verifyContentHash(
       final String documentId, final String contentHash) {
-    return CompletableFuture.supplyAsync(() -> verifyContentHashInternal(documentId, contentHash));
+    return CompletableFuture.supplyAsync(
+        () -> verifyContentHashInternal(documentId, contentHash), executor);
   }
 
   private Either<DocumentError, DocumentReference> createDocumentInternal(
@@ -90,12 +92,24 @@ public class LocalStorageDocumentStore implements DocumentStore {
     final Path documentFilePath = storagePath.resolve(documentId);
     final Path documentMetaDataFilePath = storagePath.resolve(documentId + METADATA_SUFFIX);
 
+    // remove inconsistent data if it exists (rare occurrence)
     if (fileHandler.fileExists(documentFilePath)
-        || fileHandler.fileExists(documentMetaDataFilePath)) {
+        != fileHandler.fileExists(documentMetaDataFilePath)) {
+      try {
+        fileHandler.delete(documentFilePath);
+        fileHandler.delete(documentMetaDataFilePath);
+      } catch (final IOException e) {
+        LOG.warn("Error deleting document or metadata with document ID {}", documentId);
+        return Either.left(new UnknownDocumentError(e));
+      }
+    }
+
+    if (fileHandler.fileExists(documentFilePath)
+        && fileHandler.fileExists(documentMetaDataFilePath)) {
       return Either.left(new DocumentAlreadyExists(documentId));
     }
 
-    final HashResult hashResult = DocumentHashProcessor.hash(request.contentInputStream(), SHA_256);
+    final HashResult hashResult = DocumentHashProcessor.hash(request.contentInputStream());
 
     try (final InputStream stream = hashResult.inputStream();
         final InputStream metadataStream =
@@ -152,7 +166,7 @@ public class LocalStorageDocumentStore implements DocumentStore {
     }
 
     try (final InputStream inputStream = fileHandler.getInputStream(documentPath)) {
-      final var result = DocumentHashProcessor.hash(inputStream, SHA_256);
+      final var result = DocumentHashProcessor.hash(inputStream);
       if (!result.contentHash().equals(contentHash)) {
         return Either.left(new DocumentHashMismatch(documentId, contentHash));
       }

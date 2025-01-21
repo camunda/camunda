@@ -12,7 +12,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class FileHandler {
+class FileHandler {
 
   public InputStream getInputStream(final Path documentPath) throws IOException {
     return Files.newInputStream(documentPath);

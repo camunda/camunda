@@ -12,10 +12,15 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 
 public class DocumentHashProcessor {
 
-  public static HashResult hash(final InputStream stream, final String algorithm) {
+  public static HashResult hash(final InputStream stream) {
+    return hash(stream, MessageDigestAlgorithms.SHA_256);
+  }
+
+  private static HashResult hash(final InputStream stream, final String algorithm) {
     final MessageDigest md;
     try {
       md = MessageDigest.getInstance(algorithm);
