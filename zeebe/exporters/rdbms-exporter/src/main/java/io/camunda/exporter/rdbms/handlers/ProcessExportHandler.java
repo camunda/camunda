@@ -18,6 +18,7 @@ import io.camunda.zeebe.util.modelreader.ProcessModelReader;
 import io.camunda.zeebe.util.modelreader.ProcessModelReader.StartFormLink;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +65,7 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
         value.getResourceName(),
         processName,
         value.getTenantId(),
-        value.getVersionTag(),
+        StringUtils.defaultIfEmpty(value.getVersionTag(), null),
         value.getVersion(),
         new String(value.getResource(), StandardCharsets.UTF_8),
         formId);
