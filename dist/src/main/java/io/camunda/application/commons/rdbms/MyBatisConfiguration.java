@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.rdbms;
 
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
 import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
@@ -29,6 +30,7 @@ import java.io.IOException;
 import java.util.Properties;
 import javax.sql.DataSource;
 import liquibase.integration.spring.MultiTenantSpringLiquibase;
+import org.apache.ibatis.mapping.DatabaseIdProvider;
 import org.apache.ibatis.mapping.VendorDatabaseIdProvider;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.JdbcType;
@@ -64,7 +66,7 @@ public class MyBatisConfiguration {
   }
 
   @Bean
-  public SqlSessionFactory sqlSessionFactory(final DataSource dataSource) throws Exception {
+  public VendorDatabaseIdProvider vendorDatabaseIdProvider() {
     final var vendorProperties = new Properties();
     vendorProperties.put("H2", "h2");
     vendorProperties.put("PostgreSQL", "postgresql");
@@ -74,6 +76,35 @@ public class MyBatisConfiguration {
     vendorProperties.put("SQL Server", "sqlserver");
     final var databaseIdProvider = new VendorDatabaseIdProvider();
     databaseIdProvider.setProperties(vendorProperties);
+
+    return databaseIdProvider;
+  }
+
+  @Bean
+  public VendorDatabaseProperties databaseProperties(
+      DataSource dataSource, VendorDatabaseIdProvider databaseIdProvider) throws IOException {
+    final var databaseId = databaseIdProvider.getDatabaseId(dataSource);
+    LOGGER.info("Detected databaseId: {}", databaseId);
+
+    final Properties properties = new Properties();
+    final var file = "db/vendor-properties/" + databaseId + ".properties";
+    try (final var propertiesInputStream = getClass().getClassLoader().getResourceAsStream(file)) {
+      if (propertiesInputStream != null) {
+        properties.load(propertiesInputStream);
+      } else {
+        LOGGER.debug("No vendor properties found for databaseId {}", databaseId);
+      }
+    }
+
+    return new VendorDatabaseProperties(properties);
+  }
+
+  @Bean
+  public SqlSessionFactory sqlSessionFactory(
+      final DataSource dataSource,
+      final DatabaseIdProvider databaseIdProvider,
+      final VendorDatabaseProperties databaseProperties)
+      throws Exception {
 
     final var configuration = new org.apache.ibatis.session.Configuration();
     configuration.setJdbcTypeForNull(JdbcType.NULL);
@@ -87,11 +118,7 @@ public class MyBatisConfiguration {
         new PathMatchingResourcePatternResolver().getResources("classpath*:mapper/*.xml"));
 
     // load vendor specific template variables
-    final var databaseId = databaseIdProvider.getDatabaseId(dataSource);
-    LOGGER.info("Detected databaseId: {}", databaseId);
-    final Properties p = getVendorProperties(databaseIdProvider.getDatabaseId(dataSource));
-
-    factoryBean.setConfigurationProperties(p);
+    factoryBean.setConfigurationProperties(databaseProperties.properties());
     return factoryBean.getObject();
   }
 
@@ -202,18 +229,5 @@ public class MyBatisConfiguration {
     final MapperFactoryBean<T> factoryBean = new MapperFactoryBean<>(clazz);
     factoryBean.setSqlSessionFactory(sqlSessionFactory);
     return factoryBean;
-  }
-
-  private Properties getVendorProperties(final String vendorId) throws IOException {
-    final Properties properties = new Properties();
-    final var file = "db/vendor-properties/" + vendorId + ".properties";
-    try (final var propertiesInputStream = getClass().getClassLoader().getResourceAsStream(file)) {
-      if (propertiesInputStream != null) {
-        properties.load(propertiesInputStream);
-      } else {
-        LOGGER.debug("No vendor properties found for databaseId {}", vendorId);
-      }
-    }
-    return properties;
   }
 }
