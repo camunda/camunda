@@ -42,6 +42,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -57,7 +58,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
   private static final String ELASTICSEARCH_EXPORTER_ID = "elasticsearchExporter";
   private static final String CAMUNDA_EXPORTER_ID = "camundaExporter";
-  private final ElasticsearchContainer esContainer =
+  private ElasticsearchContainer esContainer =
       TestSearchContainers.createDefeaultElasticsearchContainer()
           .withStartupTimeout(Duration.ofMinutes(5)); // can be slow in CI
   private final BrokerBasedProperties brokerProperties;
@@ -125,7 +126,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
 
   @Override
   public TestStandaloneCamunda start() {
-    esContainer.start();
+    startESContainer();
 
     final String esURL = String.format("http://%s", esContainer.getHttpHostAddress());
 
@@ -166,6 +167,12 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     withProperty("zeebe.broker.gateway.enable", brokerProperties.getGateway().isEnable());
     withProperty("camunda.database.url", esURL);
     return super.createSpringBuilder();
+  }
+
+  public void startESContainer() {
+    if (!esContainer.isCreated()) {
+      esContainer.start();
+    }
   }
 
   public TestRestOperateClient newOperateClient() {
@@ -241,6 +248,10 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     return TestGateway.super.newClientBuilder();
   }
 
+  public TestRestManagementClient newBackupClient() {
+    return new TestRestManagementClient(actuatorUri());
+  }
+
   /** Returns the broker configuration */
   public BrokerBasedProperties brokerConfig() {
     return brokerProperties;
@@ -301,6 +312,22 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
           cfg.setClassName(ElasticsearchExporter.class.getName());
           cfg.setArgs(Map.of("url", "http://" + esContainer.getHttpHostAddress()));
         });
+  }
+
+  public TestStandaloneCamunda withDBContainer(
+      final Function<ElasticsearchContainer, ElasticsearchContainer> update) {
+    if (!esContainer.isCreated()) {
+      esContainer = update.apply(esContainer);
+    } else {
+      throw new IllegalStateException("Elasticsearch container already exists");
+    }
+    return this;
+  }
+
+  public TestStandaloneCamunda withBackupRepository(final String repositoryName) {
+    operateProperties.getBackup().setRepositoryName(repositoryName);
+    tasklistProperties.getBackup().setRepositoryName(repositoryName);
+    return this;
   }
 
   /**
