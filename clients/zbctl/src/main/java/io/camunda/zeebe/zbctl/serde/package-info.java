@@ -20,15 +20,15 @@
 package io.camunda.zeebe.zbctl.serde;
 
 import io.avaje.jsonb.Json;
-import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.api.response.BrokerInfo;
-import io.camunda.zeebe.client.api.response.Decision;
-import io.camunda.zeebe.client.api.response.DecisionRequirements;
-import io.camunda.zeebe.client.api.response.DeploymentEvent;
-import io.camunda.zeebe.client.api.response.Form;
-import io.camunda.zeebe.client.api.response.PartitionInfo;
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
-import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
-import io.camunda.zeebe.client.api.response.Process;
-import io.camunda.zeebe.client.api.response.PublishMessageResponse;
-import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.BrokerInfo;
+import io.camunda.client.api.response.Decision;
+import io.camunda.client.api.response.DecisionRequirements;
+import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.Form;
+import io.camunda.client.api.response.PartitionInfo;
+import io.camunda.client.api.response.Process;
+import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.response.ProcessInstanceResult;
+import io.camunda.client.api.response.PublishMessageResponse;
+import io.camunda.client.api.response.Topology;

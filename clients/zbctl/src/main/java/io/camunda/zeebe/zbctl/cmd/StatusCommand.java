@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.zbctl.cmd;
 
-import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.client.api.response.Topology;
 import io.camunda.zeebe.zbctl.mixin.ClientMixin;
 import io.camunda.zeebe.zbctl.mixin.OutputMixin;
 import java.util.concurrent.Callable;

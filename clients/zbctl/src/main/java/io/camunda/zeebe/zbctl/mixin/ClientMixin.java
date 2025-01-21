@@ -7,10 +7,11 @@
  */
 package io.camunda.zeebe.zbctl.mixin;
 
-import io.camunda.zeebe.client.CredentialsProvider;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.CredentialsProvider;
 import io.camunda.zeebe.zbctl.converters.DurationConverter;
+import java.net.URI;
 import java.time.Duration;
 import java.util.function.UnaryOperator;
 import picocli.CommandLine.Option;
@@ -100,14 +101,15 @@ public final class ClientMixin {
       converter = DurationConverter.class)
   private Duration requestTimeout;
 
-  public ZeebeClient client() {
+  public CamundaClient client() {
     return client(UnaryOperator.identity());
   }
 
-  public ZeebeClient client(final UnaryOperator<ZeebeClientBuilder> configurator) {
+  public CamundaClient client(final UnaryOperator<CamundaClientBuilder> configurator) {
     var builder =
-        ZeebeClient.newClientBuilder()
-            .gatewayAddress(address())
+        CamundaClient.newClientBuilder()
+            .restAddress(address())
+            .preferRestOverGrpc(true)
             .defaultRequestTimeout(requestTimeout);
 
     if (insecure) {
@@ -142,11 +144,15 @@ public final class ClientMixin {
     return configurator.apply(builder).build();
   }
 
-  public String address() {
-    if (address != null && !address.isBlank()) {
-      return address;
-    }
+  public URI address() {
+    try {
+      if (address != null && !address.isBlank()) {
+        return new URI(address);
+      }
 
-    return host + ":" + port;
+      return new URI(host + ":" + port);
+    } catch (final Exception e) {
+      throw new IllegalArgumentException("Failed to parse address", e);
+    }
   }
 }

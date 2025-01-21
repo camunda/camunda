@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.zbctl.cmd;
 
-import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.zbctl.cmd.DeployCommand.ResourceCommand;
 import io.camunda.zeebe.zbctl.converters.PathConverter;
 import io.camunda.zeebe.zbctl.mixin.ClientMixin;

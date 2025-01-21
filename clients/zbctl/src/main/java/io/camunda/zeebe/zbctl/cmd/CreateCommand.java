@@ -7,14 +7,14 @@
  */
 package io.camunda.zeebe.zbctl.cmd;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
-import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3;
-import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceWithResultCommandStep1;
-import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
-import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
-import io.camunda.zeebe.client.api.worker.JobHandler;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3;
+import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceWithResultCommandStep1;
+import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.response.ProcessInstanceResult;
+import io.camunda.client.api.worker.JobHandler;
 import io.camunda.zeebe.zbctl.cmd.CreateCommand.InstanceCommand;
 import io.camunda.zeebe.zbctl.cmd.CreateCommand.WorkerCommand;
 import io.camunda.zeebe.zbctl.converters.DurationConverter;
@@ -108,7 +108,7 @@ public class CreateCommand {
       outputMixin.formatter().write(response, ProcessInstanceResult.class);
     }
 
-    private CreateProcessInstanceCommandStep3 prepareCommand(final ZeebeClient client) {
+    private CreateProcessInstanceCommandStep3 prepareCommand(final CamundaClient client) {
       final var command = client.newCreateInstanceCommand();
 
       try {
@@ -199,7 +199,7 @@ public class CreateCommand {
       return ExitCode.OK;
     }
 
-    private ZeebeClientBuilder configureWorker(final ZeebeClientBuilder builder) {
+    private CamundaClientBuilder configureWorker(final CamundaClientBuilder builder) {
       return builder.jobWorkerExecutor(
           Executors.newScheduledThreadPool(1, Thread.ofVirtual().factory()), true);
     }

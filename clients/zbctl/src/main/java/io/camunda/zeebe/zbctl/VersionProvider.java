@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.zbctl;
 
-import io.camunda.zeebe.client.impl.util.VersionUtil;
+import io.camunda.client.impl.util.VersionUtil;
 import picocli.CommandLine.IVersionProvider;
 
 final class VersionProvider implements IVersionProvider {

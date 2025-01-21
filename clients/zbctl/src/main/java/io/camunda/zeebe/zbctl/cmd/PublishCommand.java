@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.zbctl.cmd;
 
-import io.camunda.zeebe.client.api.response.PublishMessageResponse;
+import io.camunda.client.api.response.PublishMessageResponse;
 import io.camunda.zeebe.zbctl.cmd.PublishCommand.MessageCommand;
 import io.camunda.zeebe.zbctl.converters.DurationConverter;
 import io.camunda.zeebe.zbctl.converters.JsonInputConverter;
