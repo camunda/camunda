@@ -580,6 +580,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /tenants/{tenantKey}/users/{userKey}:
     delete:
       tags:
         - Tenant
