@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.prometheus.client.Gauge;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,9 @@ public final class ZeebeRocksDBMetricExporter<
 
   private static final Logger LOG =
       LoggerFactory.getLogger(ZeebeRocksDBMetricExporter.class.getName());
+
+  private static final io.micrometer.core.instrument.MeterRegistry METER_REGISTRY =
+      io.micrometer.core.instrument.Metrics.globalRegistry;
 
   private static final String PARTITION = "partition";
   private static final String ZEEBE_NAMESPACE = "zeebe";
@@ -111,12 +115,20 @@ public final class ZeebeRocksDBMetricExporter<
 
   private static final class RocksDBMetric {
 
+    io.micrometer.core.instrument.Gauge.Builder gaugeBuilder;
     private final String propertyName;
     private final Gauge gauge;
+    private final AtomicReference<Double> gaugeValue = new AtomicReference<>(0.0);
 
     private RocksDBMetric(final String propertyName, final String namePrefix, final String help) {
       this.propertyName = Objects.requireNonNull(propertyName);
 
+      gaugeBuilder =
+          io.micrometer.core.instrument.Gauge.builder(
+                  ZEEBE_NAMESPACE + "_" + namePrefix + "_" + gaugeSuffix() + "_micro",
+                  gaugeValue,
+                  AtomicReference::get)
+              .description(help);
       gauge =
           Gauge.build()
               .namespace(ZEEBE_NAMESPACE)
@@ -134,6 +146,8 @@ public final class ZeebeRocksDBMetricExporter<
 
     public void exportValue(final String partitionID, final Double value) {
       gauge.labels(partitionID).set(value);
+      gaugeBuilder.tag(PARTITION, partitionID).register(METER_REGISTRY);
+      gaugeValue.set(value);
     }
 
     public String getPropertyName() {
