@@ -36,10 +36,11 @@ public class RemoveEntityTenantTest {
             .create()
             .getValue()
             .getTenantKey();
+    final var username = "foo";
     final var userKey =
         engine
             .user()
-            .newUser("foo")
+            .newUser(username)
             .withEmail("foo@bar")
             .withName("Foo Bar")
             .withPassword("zabraboof")
@@ -48,7 +49,7 @@ public class RemoveEntityTenantTest {
     engine
         .tenant()
         .addEntity(tenantKey)
-        .withEntityKey(userKey)
+        .withEntityId(username)
         .withEntityType(EntityType.USER)
         .add();
     final var removedEntity =

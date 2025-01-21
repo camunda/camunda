@@ -274,6 +274,11 @@ public class TenantClient {
       return this;
     }
 
+    public TenantAddEntityClient withEntityId(final String entityId) {
+      tenantRecord.setEntityId(entityId);
+      return this;
+    }
+
     public TenantAddEntityClient withEntityType(final EntityType entityType) {
       tenantRecord.setEntityType(entityType);
       return this;

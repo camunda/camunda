@@ -75,15 +75,15 @@ public class TenantDeleteProcessorTest {
   @Test
   public void shouldDeleteTenantWithAssignedEntities() {
     // Given: create a tenant and assign a user entity to it
-    final var userKey =
-        engine
-            .user()
-            .newUser("foo")
-            .withEmail("foo@bar")
-            .withName("Foo Bar")
-            .withPassword("zabraboof")
-            .create()
-            .getKey();
+    final var username = "foo";
+    engine
+        .user()
+        .newUser(username)
+        .withEmail("foo@bar")
+        .withName("Foo Bar")
+        .withPassword("zabraboof")
+        .create()
+        .getKey();
 
     final var tenantId = UUID.randomUUID().toString();
     final var tenantName = UUID.randomUUID().toString();
@@ -100,7 +100,7 @@ public class TenantDeleteProcessorTest {
     engine
         .tenant()
         .addEntity(tenantKey)
-        .withEntityKey(userKey)
+        .withEntityId(username)
         .withEntityType(EntityType.USER)
         .add();
 
