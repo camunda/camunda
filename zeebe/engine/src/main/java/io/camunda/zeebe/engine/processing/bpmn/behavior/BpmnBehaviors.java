@@ -11,7 +11,7 @@ import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGua
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.expression.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 
