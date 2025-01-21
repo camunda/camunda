@@ -11,14 +11,18 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkRequest.Builder;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,16 +32,18 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchBatchRequest.class);
   private final ElasticsearchClient esClient;
-  private final BulkRequest.Builder bulkRequestBuilder;
+  private final Builder bulkRequestBuilder;
   private final ElasticsearchScriptBuilder scriptBuilder;
+  private final Map<String, Consumer<String>> errorHandlers;
 
   public ElasticsearchBatchRequest(
       final ElasticsearchClient esClient,
-      final BulkRequest.Builder bulkRequestBuilder,
+      final Builder bulkRequestBuilder,
       final ElasticsearchScriptBuilder scriptBuilder) {
     this.esClient = esClient;
     this.bulkRequestBuilder = bulkRequestBuilder;
     this.scriptBuilder = scriptBuilder;
+    errorHandlers = new HashMap<>();
   }
 
   @Override
@@ -230,6 +236,11 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     execute(true);
   }
 
+  @Override
+  public void onError(final String index, final Consumer<String> errorHandler) {
+    errorHandlers.put(index, errorHandler);
+  }
+
   private void execute(final boolean shouldRefresh) throws PersistenceException {
     if (shouldRefresh) {
       bulkRequestBuilder.refresh(Refresh.True);
@@ -241,15 +252,41 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     try {
       final BulkResponse bulkResponse = esClient.bulk(bulkRequest);
       final List<BulkResponseItem> items = bulkResponse.items();
-      for (final BulkResponseItem item : items) {
-        if (item.error() != null) {
-          LOGGER.warn("Bulk request execution failed. {}. Cause: {}.", item, item.error().reason());
-          throw new PersistenceException("Operation failed: " + item.error().reason());
-        }
-      }
+      validateNoErrors(items);
     } catch (final IOException | ElasticsearchException ex) {
       throw new PersistenceException(
           "Error when processing bulk request against Elasticsearch: " + ex.getMessage(), ex);
     }
+  }
+
+  private void validateNoErrors(final List<BulkResponseItem> items) {
+    final var errorItems = items.stream().filter(item -> item.error() != null).toList();
+    if (errorItems.isEmpty()) {
+      return;
+    }
+
+    final String errorMessages =
+        errorItems.stream()
+            .map(
+                item ->
+                    String.format(
+                        "%s failed for type [%s] and id [%s]: %s",
+                        item.operationType(), item.index(), item.id(), item.error().reason()))
+            .collect(Collectors.joining(", \n"));
+    LOGGER.warn("Bulk request execution failed: \n[{}]", errorMessages);
+
+    errorItems.forEach(
+        item -> {
+          final var errorHandler = errorHandlers.get(item.index());
+          final String message =
+              String.format(
+                  "%s failed for type [%s] and id [%s]: %s",
+                  item.operationType(), item.index(), item.id(), item.error().reason());
+          if (errorHandler != null) {
+            errorHandler.accept(message);
+          } else {
+            throw new PersistenceException(message);
+          }
+        });
   }
 }

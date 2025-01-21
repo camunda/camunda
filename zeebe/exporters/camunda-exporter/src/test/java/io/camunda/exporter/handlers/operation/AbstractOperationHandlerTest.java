@@ -7,8 +7,11 @@
  */
 package io.camunda.exporter.handlers.operation;
 
+import static io.camunda.exporter.handlers.operation.AbstractOperationHandler.NOOP_ERROR_HANDLER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -121,7 +124,17 @@ abstract class AbstractOperationHandlerTest<R extends RecordValue> {
     underTest.flush(entity, mockRequest);
 
     // then
-    verify(mockRequest).update(indexName, entity.getId(), expectedUpdateFields);
+    verify(mockRequest).update(eq(indexName), eq(entity.getId()), eq(expectedUpdateFields));
+  }
+
+  @Test
+  void shouldSwallowErrors() {
+    // given
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+    // when
+    underTest.onError(mockRequest);
+    // then
+    verify(mockRequest).onError(anyString(), eq(NOOP_ERROR_HANDLER));
   }
 
   protected Record<R> generateRecord(final Intent intent) {

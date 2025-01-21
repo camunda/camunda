@@ -11,12 +11,16 @@ import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.utils.OpensearchScriptBuilder;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.BulkRequest.Builder;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.slf4j.Logger;
@@ -28,16 +32,18 @@ public class OpensearchBatchRequest implements BatchRequest {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchBatchRequest.class);
   private final OpenSearchClient osClient;
-  private final BulkRequest.Builder bulkRequestBuilder;
+  private final Builder bulkRequestBuilder;
   private final OpensearchScriptBuilder scriptBuilder;
+  private final Map<String, Consumer<String>> errorHandlers;
 
   public OpensearchBatchRequest(
       final OpenSearchClient osClient,
-      final BulkRequest.Builder bulkRequestBuilder,
+      final Builder bulkRequestBuilder,
       final OpensearchScriptBuilder scriptBuilder) {
     this.osClient = osClient;
     this.bulkRequestBuilder = bulkRequestBuilder;
     this.scriptBuilder = scriptBuilder;
+    errorHandlers = new HashMap<>();
   }
 
   @Override
@@ -223,6 +229,11 @@ public class OpensearchBatchRequest implements BatchRequest {
     execute(true);
   }
 
+  @Override
+  public void onError(final String index, final Consumer<String> errorHandler) {
+    errorHandlers.put(index, errorHandler);
+  }
+
   private void execute(final boolean shouldRefresh) throws PersistenceException {
     if (shouldRefresh) {
       bulkRequestBuilder.refresh(Refresh.True);
@@ -238,22 +249,41 @@ public class OpensearchBatchRequest implements BatchRequest {
     try {
       final BulkResponse bulkItemResponses = osClient.bulk(bulkRequest);
       final List<BulkResponseItem> items = bulkItemResponses.items();
-      for (final BulkResponseItem responseItem : items) {
-        if (responseItem.error() != null) {
-          LOGGER.warn(
-              String.format(
-                  "%s failed for type [%s] and id [%s]: %s",
-                  responseItem.operationType(),
-                  responseItem.index(),
-                  responseItem.id(),
-                  responseItem.error().reason()),
-              "error on OpenSearch BulkRequest");
-          throw new PersistenceException("Operation failed: " + responseItem.error().reason());
-        }
-      }
+      validateNoErrors(items);
     } catch (final IOException | OpenSearchException ex) {
       throw new PersistenceException(
           "Error when processing bulk request against OpenSearch: " + ex.getMessage(), ex);
     }
+  }
+
+  private void validateNoErrors(final List<BulkResponseItem> items) {
+    final var errorItems = items.stream().filter(item -> item.error() != null).toList();
+    if (errorItems.isEmpty()) {
+      return;
+    }
+
+    final String errorMessages =
+        errorItems.stream()
+            .map(
+                item ->
+                    String.format(
+                        "%s failed for type [%s] and id [%s]: %s",
+                        item.operationType(), item.index(), item.id(), item.error().reason()))
+            .collect(Collectors.joining(", \n"));
+    LOGGER.warn("Bulk request execution failed: \n[{}]", errorMessages);
+
+    errorItems.forEach(
+        item -> {
+          final var errorHandler = errorHandlers.get(item.index());
+          final String message =
+              String.format(
+                  "%s failed for type [%s] and id [%s]: %s",
+                  item.operationType(), item.index(), item.id(), item.error().reason());
+          if (errorHandler != null) {
+            errorHandler.accept(message);
+          } else {
+            throw new PersistenceException(message);
+          }
+        });
   }
 }

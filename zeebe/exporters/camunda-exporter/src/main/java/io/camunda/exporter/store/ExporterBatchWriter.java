@@ -73,6 +73,7 @@ public class ExporterBatchWriter {
       final ExporterEntity entity = entityAndHandler.entity();
       for (final var handler : entityAndHandler.handlers()) {
         handler.flush(entity, batchRequest);
+        handler.onError(batchRequest);
       }
     }
     batchRequest.execute();
