@@ -117,7 +117,7 @@ public class TenantIT {
 
     rdbmsWriter
         .getTenantWriter()
-        .addMember(new TenantMemberDbModel(tenant.tenantKey(), 1337L, "USER"));
+        .addMember(new TenantMemberDbModel(tenant.tenantId(), 1337L, "USER"));
     rdbmsWriter.flush();
 
     final var addedMemberInstance = tenantReader.findOne(tenant.tenantId()).orElse(null);
@@ -125,7 +125,7 @@ public class TenantIT {
 
     rdbmsWriter
         .getTenantWriter()
-        .removeMember(new TenantMemberDbModel(tenant.tenantKey(), 1337L, "USER"));
+        .removeMember(new TenantMemberDbModel(tenant.tenantId(), 1337L, "USER"));
     rdbmsWriter.flush();
 
     final var removedMemberInstance = tenantReader.findOne(tenant.tenantId()).orElse(null);

@@ -23,11 +23,11 @@
     t.TENANT_KEY,
     t.TENANT_ID,
     t.NAME,
-    tm.TENANT_KEY AS MEMBER_TENANT_KEY,
+    tm.TENANT_ID AS MEMBER_TENANT_ID,
     tm.ENTITY_KEY AS MEMBER_ENTITY_KEY,
     tm.ENTITY_TYPE AS MEMBER_ENTITY_TYPE
     FROM TENANT t
-    LEFT JOIN TENANT_MEMBER tm ON t.TENANT_KEY = tm.TENANT_KEY
+    LEFT JOIN TENANT_MEMBER tm ON t.TENANT_ID = tm.TENANT_ID
     <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -43,13 +43,13 @@
   </sql>
 
   <resultMap id="tenantResultMap" type="io.camunda.db.rdbms.write.domain.TenantDbModel">
-    <id column="TENANT_KEY" property="tenantKey" />
-    <result column="TENANT_ID" property="tenantId"/>
+    <id column="TENANT_ID" property="tenantId"/>
+    <result column="TENANT_KEY" property="tenantKey"/>
     <result column="NAME" property="name"/>
     <collection property="members" ofType="io.camunda.db.rdbms.write.domain.TenantMemberDbModel"
       javaType="java.util.List">
       <constructor>
-        <idArg column="MEMBER_TENANT_KEY" javaType="java.lang.Long"/>
+        <idArg column="MEMBER_TENANT_ID" javaType="java.lang.String"/>
         <idArg column="MEMBER_ENTITY_KEY" javaType="java.lang.Long"/>
         <arg column="MEMBER_ENTITY_TYPE" javaType="java.lang.String"/>
       </constructor>
@@ -84,8 +84,8 @@
     id="insertMember"
     parameterType="io.camunda.db.rdbms.write.domain.TenantMemberDbModel"
     flushCache="true">
-    INSERT INTO TENANT_MEMBER (TENANT_KEY, ENTITY_KEY, ENTITY_TYPE)
-    VALUES (#{tenantKey}, #{entityKey}, #{entityType})
+    INSERT INTO TENANT_MEMBER (TENANT_ID, ENTITY_KEY, ENTITY_TYPE)
+    VALUES (#{tenantId}, #{entityKey}, #{entityType})
   </insert>
 
   <delete
@@ -94,18 +94,18 @@
     flushCache="true">
     DELETE
     FROM TENANT_MEMBER
-    WHERE TENANT_KEY = #{tenantKey}
+    WHERE TENANT_ID = #{tenantId}
       AND ENTITY_KEY = #{entityKey}
       AND ENTITY_TYPE = #{entityType}
   </delete>
 
   <delete
     id="deleteAllMembers"
-    parameterType="java.lang.Long"
+    parameterType="java.lang.String"
     flushCache="true">
     DELETE
     FROM TENANT_MEMBER
-    WHERE TENANT_KEY = #{tenantKey}
+    WHERE TENANT_ID = #{tenantId}
   </delete>
 
 </mapper>
