@@ -41,7 +41,7 @@ public class RemovePermissionAuthorizationMultiPartitionTest {
   @Test
   public void shouldTestLifecycle() {
     // when
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     final var ownerKey = createUserWithPermission(resourceId, resourceType, permissionType);
@@ -104,7 +104,7 @@ public class RemovePermissionAuthorizationMultiPartitionTest {
   @Test
   public void shouldDistributeInIdentityQueue() {
     // given
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     final var ownerKey = createUserWithPermission(resourceId, resourceType, permissionType);
@@ -134,7 +134,7 @@ public class RemovePermissionAuthorizationMultiPartitionTest {
       interceptUserCreateForPartition(partitionId);
     }
 
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     final var ownerKey = createUserWithPermission(resourceId, resourceType, permissionType);

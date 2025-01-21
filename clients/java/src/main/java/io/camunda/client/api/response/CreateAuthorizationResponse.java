@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.filter.builder;
+package io.camunda.client.api.response;
 
-import io.camunda.client.protocol.rest.LongFilterProperty;
-
-public interface LongProperty extends ComparisonProperty<Long, LongFilterProperty, LongProperty> {}
+public interface CreateAuthorizationResponse {}

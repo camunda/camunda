@@ -199,6 +199,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
    */
   public void correctAttributes(
       final List<String> correctedAttributes, final JobResultCorrections corrections) {
+    changedAttributesProp.reset();
+
     correctedAttributes.forEach(
         attribute -> {
           switch (attribute) {

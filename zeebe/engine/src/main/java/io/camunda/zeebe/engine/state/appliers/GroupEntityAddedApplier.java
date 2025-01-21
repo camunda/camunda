@@ -37,7 +37,10 @@ public class GroupEntityAddedApplier implements TypedEventApplier<GroupIntent, G
     final var entityKey = value.getEntityKey();
     final var entityType = value.getEntityType();
     switch (entityType) {
-      case USER -> userState.addGroup(entityKey, groupKey);
+      case USER ->
+          userState
+              .getUser(entityKey)
+              .ifPresent(user -> userState.addGroup(user.getUsername(), groupKey));
       case MAPPING -> mappingState.addGroup(entityKey, groupKey);
       default ->
           throw new IllegalStateException(

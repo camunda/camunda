@@ -28,6 +28,7 @@ import io.camunda.client.api.command.ClockPinCommandStep1;
 import io.camunda.client.api.command.ClockResetCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
+import io.camunda.client.api.command.CreateAuthorizationCommandStep1;
 import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.client.api.command.CreateDocumentLinkCommandStep1;
@@ -1525,15 +1526,15 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newUpdateTenantCommand(12345L) // Specify the tenant key
+   *   .newUpdateTenantCommand("my-tenant-id") // Specify the tenant id
    *   .name("Updated Tenant Name")   // Set the new tenant name
    *   .send();                       // Send the command to the broker
    * </pre>
    *
-   * @param tenantKey the unique identifier of the tenant to be updated
+   * @param tenantId the unique identifier of the tenant to be updated
    * @return a builder to configure and send the update tenant command
    */
-  UpdateTenantCommandStep1 newUpdateTenantCommand(long tenantKey);
+  UpdateTenantCommandStep1 newUpdateTenantCommand(String tenantId);
 
   /**
    * Command to delete a tenant.
@@ -1544,10 +1545,10 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * @param tenantKey the key of the tenant to delete
+   * @param tenantId the id of the tenant to delete
    * @return a builder for the delete tenant command
    */
-  DeleteTenantCommandStep1 newDeleteTenantCommand(long tenantKey);
+  DeleteTenantCommandStep1 newDeleteTenantCommand(String tenantId);
 
   /**
    * Command to assign a mapping rule to a tenant.
@@ -1641,4 +1642,24 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder to configure and send the unassign group from tenant command
    */
   UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(long tenantKey);
+
+  /**
+   * Command to create an authorization
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * camundaClient
+   *   .newCreateAuthorizationCommand(tenantKey)
+   *   .ownerId(ownerId)
+   *   .ownerType(ownerType)
+   *   .resourceId(resourceId)
+   *   .resourceType(resourceType)
+   *   .permission(PermissionType.READ)
+   *   .send();
+   * </pre>
+   *
+   * @return a builder to configure and send the create authorization command
+   */
+  CreateAuthorizationCommandStep1 newCreateAuthorizationCommand();
 }

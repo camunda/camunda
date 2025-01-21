@@ -5,8 +5,8 @@
   "dependencies": {
     "@axe-core/playwright": "4.10.0",
     "@bpmn-io/element-template-icon-renderer": "0.5.2",
-    "@camunda/camunda-composite-components": "0.15.0",
-    "@carbon/elements": "11.58.0",
+    "@camunda/camunda-composite-components": "0.16.0",
+    "@carbon/elements": "11.59.0",
     "@carbon/react": "1.57.0",
     "@devbookhq/splitter": "1.4.2",
     "@floating-ui/react-dom": "2.1.2",
@@ -67,7 +67,7 @@
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "7.21.11",
     "@camunda8/sdk": "^8.6.8",
-    "@cyclonedx/webpack-plugin": "3.15.0",
+    "@cyclonedx/webpack-plugin": "3.17.0",
     "@playwright/test": "1.47.2",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.1.0",
@@ -100,7 +100,7 @@
     "react-test-renderer": "18.3.1",
     "source-map-explorer": "2.5.3",
     "ts-toolbelt": "9.6.0",
-    "typescript": "5.6.3"
+    "typescript": "5.7.3"
   },
   "lint-staged": {
     "*": [

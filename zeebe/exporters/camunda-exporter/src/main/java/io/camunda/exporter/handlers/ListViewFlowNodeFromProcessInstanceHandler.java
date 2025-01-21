@@ -37,6 +37,8 @@ public class ListViewFlowNodeFromProcessInstanceHandler
   private static final Set<Intent> PI_AND_AI_START_STATES = Set.of(ELEMENT_ACTIVATING);
   private static final Set<Intent> PI_AND_AI_FINISH_STATES =
       Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
+  private static final Set<BpmnElementType> UNHANDLED_TYPES =
+      Set.of(BpmnElementType.PROCESS, BpmnElementType.SEQUENCE_FLOW);
 
   private final String indexName;
 
@@ -57,7 +59,7 @@ public class ListViewFlowNodeFromProcessInstanceHandler
   @Override
   public boolean handlesRecord(final Record<ProcessInstanceRecordValue> record) {
     final var intent = record.getIntent();
-    if (!isProcessEvent(record.getValue())) {
+    if (!isOfTypes(record.getValue(), UNHANDLED_TYPES)) {
       return PI_AND_AI_START_STATES.contains(intent)
           || PI_AND_AI_FINISH_STATES.contains(intent)
           || ELEMENT_MIGRATED.equals(intent);
@@ -138,16 +140,12 @@ public class ListViewFlowNodeFromProcessInstanceHandler
     return indexName;
   }
 
-  private boolean isProcessEvent(final ProcessInstanceRecordValue recordValue) {
-    return isOfType(recordValue, BpmnElementType.PROCESS);
-  }
-
-  private boolean isOfType(
-      final ProcessInstanceRecordValue recordValue, final BpmnElementType type) {
+  private boolean isOfTypes(
+      final ProcessInstanceRecordValue recordValue, final Set<BpmnElementType> types) {
     final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();
     if (bpmnElementType == null) {
       return false;
     }
-    return bpmnElementType.equals(type);
+    return types.contains(bpmnElementType);
   }
 }

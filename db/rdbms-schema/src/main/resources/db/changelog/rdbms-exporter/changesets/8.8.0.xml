@@ -343,10 +343,10 @@
 
   <changeSet id="create_tenant_table" author="cthiel">
     <createTable tableName="TENANT">
-      <column name="TENANT_KEY" type="BIGINT">
+      <column name="TENANT_ID" type="VARCHAR(255)">
         <constraints primaryKey="true"/>
       </column>
-      <column name="TENANT_ID" type="VARCHAR(255)" />
+      <column name="TENANT_KEY" type="BIGINT"/>
       <column name="NAME" type="VARCHAR(255)" />
     </createTable>
   </changeSet>

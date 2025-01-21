@@ -50,7 +50,7 @@ public class AddPermissionAuthorizationTest {
             .authorization()
             .permission()
             .withOwnerKey(ownerKey)
-            .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+            .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermission(PermissionType.CREATE, "foo")
             .withPermission(PermissionType.DELETE_PROCESS, "bar")
             .add()
@@ -62,8 +62,7 @@ public class AddPermissionAuthorizationTest {
             AuthorizationRecordValue::getOwnerKey,
             AuthorizationRecordValue::getOwnerType,
             AuthorizationRecordValue::getResourceType)
-        .containsExactly(
-            ownerKey, AuthorizationOwnerType.USER, AuthorizationResourceType.DEPLOYMENT);
+        .containsExactly(ownerKey, AuthorizationOwnerType.USER, AuthorizationResourceType.RESOURCE);
     assertThat(response.getPermissions())
         .extracting(PermissionValue::getPermissionType, PermissionValue::getResourceIds)
         .containsExactly(
@@ -82,7 +81,7 @@ public class AddPermissionAuthorizationTest {
             .authorization()
             .permission()
             .withOwnerKey(ownerKey)
-            .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+            .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermission(PermissionType.CREATE, "foo")
             .expectRejection()
             .add();
@@ -111,7 +110,7 @@ public class AddPermissionAuthorizationTest {
         .authorization()
         .permission()
         .withOwnerKey(ownerKey)
-        .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+        .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermission(PermissionType.CREATE, "foo")
         .withPermission(PermissionType.DELETE_PROCESS, "bar", "baz")
         .add()
@@ -123,7 +122,7 @@ public class AddPermissionAuthorizationTest {
             .authorization()
             .permission()
             .withOwnerKey(ownerKey)
-            .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+            .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermission(PermissionType.DELETE_PROCESS, "foo", "bar")
             .expectRejection()
             .add();
@@ -136,7 +135,7 @@ public class AddPermissionAuthorizationTest {
             "Expected to add '%s' permission for resource '%s' and resource identifiers '%s' for owner '%s', but this permission for resource identifiers '%s' already exist. Existing resource ids are: '%s'"
                 .formatted(
                     PermissionType.DELETE_PROCESS,
-                    AuthorizationResourceType.DEPLOYMENT,
+                    AuthorizationResourceType.RESOURCE,
                     "[bar, foo]",
                     ownerKey,
                     "[bar]",
@@ -161,7 +160,7 @@ public class AddPermissionAuthorizationTest {
         .authorization()
         .permission()
         .withOwnerKey(roleKey)
-        .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+        .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermission(PermissionType.CREATE, "foo")
         .withPermission(PermissionType.DELETE_PROCESS, "bar", "baz")
         .add()
@@ -173,7 +172,7 @@ public class AddPermissionAuthorizationTest {
             .authorization()
             .permission()
             .withOwnerKey(ownerKey)
-            .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+            .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermission(PermissionType.DELETE_PROCESS, "foo", "bar")
             .add();
 
@@ -183,8 +182,7 @@ public class AddPermissionAuthorizationTest {
             AuthorizationRecordValue::getOwnerKey,
             AuthorizationRecordValue::getOwnerType,
             AuthorizationRecordValue::getResourceType)
-        .containsExactly(
-            ownerKey, AuthorizationOwnerType.USER, AuthorizationResourceType.DEPLOYMENT);
+        .containsExactly(ownerKey, AuthorizationOwnerType.USER, AuthorizationResourceType.RESOURCE);
   }
 
   @Test
@@ -210,7 +208,7 @@ public class AddPermissionAuthorizationTest {
         .authorization()
         .permission()
         .withOwnerKey(groupKey)
-        .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+        .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermission(PermissionType.CREATE, "foo")
         .withPermission(PermissionType.DELETE_PROCESS, "bar", "baz")
         .add()
@@ -222,7 +220,7 @@ public class AddPermissionAuthorizationTest {
             .authorization()
             .permission()
             .withOwnerKey(ownerKey)
-            .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+            .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermission(PermissionType.DELETE_PROCESS, "foo", "bar")
             .add();
 
@@ -232,8 +230,7 @@ public class AddPermissionAuthorizationTest {
             AuthorizationRecordValue::getOwnerKey,
             AuthorizationRecordValue::getOwnerType,
             AuthorizationRecordValue::getResourceType)
-        .containsExactly(
-            ownerKey, AuthorizationOwnerType.USER, AuthorizationResourceType.DEPLOYMENT);
+        .containsExactly(ownerKey, AuthorizationOwnerType.USER, AuthorizationResourceType.RESOURCE);
   }
 
   @Test
@@ -248,7 +245,7 @@ public class AddPermissionAuthorizationTest {
             .withPassword("zabraboof")
             .create()
             .getKey();
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
 
     // when
     final var rejection =

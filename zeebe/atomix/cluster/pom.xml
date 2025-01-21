@@ -307,6 +307,7 @@
               <arguments>
                 <argument>${project.build.resources[0].directory}/snapshot-schema.xml</argument>
                 <argument>${project.build.resources[0].directory}/raft-entry-schema.xml</argument>
+                <argument>${project.build.resources[0].directory}/cluster-messaging.xml</argument>
               </arguments>
             </configuration>
           </execution>

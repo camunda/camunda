@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -39,16 +40,49 @@ public class AuthorizationStateTest {
     // when
     final var persistedAuth =
         authorizationState.getResourceIdentifiers(
-            1L, AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE);
+            1L, AuthorizationResourceType.RESOURCE, PermissionType.CREATE);
     // then
     assertThat(persistedAuth).isEmpty();
+  }
+
+  @Test
+  void shouldCreateAuthorization() {
+    // given
+    final var authorizationKey = 1L;
+    final String ownerId = "ownerId";
+    final AuthorizationOwnerType ownerType = AuthorizationOwnerType.USER;
+    final String resourceId = "resourceId";
+    final AuthorizationResourceType resourceType = AuthorizationResourceType.RESOURCE;
+    final Set<PermissionType> permissions = Set.of(PermissionType.CREATE, PermissionType.DELETE);
+    final var authorizationRecord =
+        new AuthorizationRecord()
+            .setAuthorizationKey(authorizationKey)
+            .setOwnerId(ownerId)
+            .setOwnerType(ownerType)
+            .setResourceId(resourceId)
+            .setResourceType(resourceType)
+            .setAuthorizationPermissions(permissions);
+
+    // when
+    authorizationState.create(authorizationKey, authorizationRecord);
+
+    // then
+    final var persistedAuthorization = authorizationState.get(authorizationKey);
+    assertThat(persistedAuthorization).isPresent();
+    final var authorization = persistedAuthorization.get();
+    assertThat(authorization.getAuthorizationKey()).isEqualTo(authorizationKey);
+    assertThat(authorization.getOwnerId()).isEqualTo(ownerId);
+    assertThat(authorization.getOwnerType()).isEqualTo(ownerType);
+    assertThat(authorization.getResourceId()).isEqualTo(resourceId);
+    assertThat(authorization.getResourceType()).isEqualTo(resourceType);
+    assertThat(authorization.getPermissions()).containsExactlyInAnyOrderElementsOf(permissions);
   }
 
   @Test
   void shouldCreatePermissions() {
     // given
     final var ownerKey = 1L;
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceIds = Set.of("foo", "bar");
 
@@ -65,7 +99,7 @@ public class AuthorizationStateTest {
   void shouldUpdatePermissionsIfAlreadyExists() {
     // given
     final var ownerKey = 1L;
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceIds = Set.of("foo", "bar");
     authorizationState.createOrAddPermission(ownerKey, resourceType, permissionType, resourceIds);
@@ -84,7 +118,7 @@ public class AuthorizationStateTest {
     // given
     final var ownerKey1 = 1L;
     final var ownerKey2 = 2L;
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     authorizationState.createOrAddPermission(
         ownerKey1, resourceType, permissionType, Set.of("foo"));
@@ -105,7 +139,7 @@ public class AuthorizationStateTest {
   void shouldStorePermissionsByResourceType() {
     // given
     final var ownerKey = 1L;
-    final var resourceType1 = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType1 = AuthorizationResourceType.RESOURCE;
     final var resourceType2 = AuthorizationResourceType.PROCESS_DEFINITION;
     final var permissionType = PermissionType.CREATE;
     authorizationState.createOrAddPermission(
@@ -127,7 +161,7 @@ public class AuthorizationStateTest {
   void shouldStorePermissionsByPermissionType() {
     // given
     final var ownerKey = 1L;
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType1 = PermissionType.CREATE;
     final var permissionType2 = PermissionType.UPDATE;
     authorizationState.createOrAddPermission(
@@ -195,7 +229,7 @@ public class AuthorizationStateTest {
     // given
     final var ownerKey1 = 1L;
     final var ownerKey2 = 2L;
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId1 = "foo";
     final var resourceId2 = "bar";
@@ -218,7 +252,7 @@ public class AuthorizationStateTest {
   void shouldRemoveSinglePermissionsByOwnerKey() {
     // given
     final var ownerKey = 1L;
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId1 = "foo";
     final var resourceId2 = "bar";
@@ -238,7 +272,7 @@ public class AuthorizationStateTest {
   void shouldRemoveAllPermissionsByOwnerKey() {
     // given
     final var ownerKey = 1L;
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId1 = "foo";
     final var resourceId2 = "bar";

@@ -88,15 +88,14 @@ public class CamundaRdbmsInvocationContextProviderExtension
   @Override
   public void beforeAll(final ExtensionContext context) {
     if (!started) {
-      useTestApplications.parallelStream()
-          .forEach(
-              key -> {
-                final CamundaRdbmsTestApplication testApplication =
-                    SUPPORTED_TEST_APPLICATIONS.get(key);
-                LOGGER.info("Start up CamundaDatabaseTestApplication '{}'...", key);
-                testApplication.start();
-                LOGGER.info("Start up of CamundaDatabaseTestApplication '{}' finished.", key);
-              });
+      useTestApplications.forEach(
+          key -> {
+            final CamundaRdbmsTestApplication testApplication =
+                SUPPORTED_TEST_APPLICATIONS.get(key);
+            LOGGER.info("Start up CamundaDatabaseTestApplication '{}'...", key);
+            testApplication.start();
+            LOGGER.info("Start up of CamundaDatabaseTestApplication '{}' finished.", key);
+          });
 
       started = true;
       // Your "before all tests" startup logic goes here

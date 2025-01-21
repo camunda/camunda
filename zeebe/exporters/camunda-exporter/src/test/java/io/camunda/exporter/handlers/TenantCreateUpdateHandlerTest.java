@@ -61,7 +61,7 @@ public class TenantCreateUpdateHandlerTest {
     final var idList = underTest.generateIds(tenantRecord);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(tenantRecord.getKey()));
+    assertThat(idList).containsExactly(tenantRecord.getValue().getTenantId());
   }
 
   @Test

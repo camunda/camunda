@@ -48,7 +48,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                   {
                       "tenantId": "t",
                       "decisionRequirementsKey": "0",
-                      "name": "name",
+                      "decisionRequirementsName": "name",
                       "version": 1,
                       "decisionRequirementsId": "id",
                       "resourceName": "rN"
@@ -82,7 +82,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
           {
             "tenantId": "t",
             "decisionRequirementsKey": "1",
-            "name": "name",
+            "decisionRequirementsName": "name",
             "version": 1,
             "decisionRequirementsId": "id",
             "resourceName": "rN"
@@ -161,7 +161,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
               "filter":{
                 "tenantId": "t",
                 "decisionRequirementsKey": 0,
-                "name": "name",
+                "decisionRequirementsName": "name",
                 "version": 1,
                 "decisionRequirementsId": "drId"
               }
@@ -210,7 +210,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                         "order": "ASC"
                     },
                     {
-                        "field": "name",
+                        "field": "decisionRequirementsName",
                         "order": "ASC"
                     },
                     {
@@ -281,7 +281,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                   "type": "about:blank",
                   "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [decisionRequirementsKey, name, version, decisionRequirementsId, tenantId]",
+                  "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [decisionRequirementsKey, decisionRequirementsName, version, decisionRequirementsId, tenantId]",
                   "instance": "%s"
                 }""",
             DECISION_REQUIREMENTS_SEARCH_URL);

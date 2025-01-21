@@ -25,18 +25,16 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-@AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
 public class BasicAuthOverGrpcIT {
@@ -45,7 +43,7 @@ public class BasicAuthOverGrpcIT {
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
   private static AuthorizationsUtil authUtil;
-  @AutoCloseResource private static CamundaClient defaultUserClient;
+  @AutoClose private static CamundaClient defaultUserClient;
 
   @TestZeebe(autoStart = false)
   private final TestStandaloneBroker broker =
@@ -97,7 +95,7 @@ public class BasicAuthOverGrpcIT {
     authUtil.createUserWithPermissions(
         username,
         password,
-        new Permissions(ResourceTypeEnum.DEPLOYMENT, PermissionTypeEnum.CREATE, List.of("*")));
+        new Permissions(ResourceTypeEnum.RESOURCE, PermissionTypeEnum.CREATE, List.of("*")));
 
     try (final var client = authUtil.createClientGrpc(username, password)) {
       // when
@@ -138,7 +136,7 @@ public class BasicAuthOverGrpcIT {
           .isInstanceOf(ClientStatusException.class)
           .hasMessageContaining("FORBIDDEN")
           .hasMessageContaining(
-              "Insufficient permissions to perform operation 'CREATE' on resource 'DEPLOYMENT'");
+              "Insufficient permissions to perform operation 'CREATE' on resource 'RESOURCE'");
     }
   }
 }

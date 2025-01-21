@@ -73,7 +73,7 @@ public class TenantSortIT {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final TenantReader reader = rdbmsService.getTenantReader();
 
-    createAndSaveRandomTenants(rdbmsWriter, b -> b);
+    createAndSaveRandomTenants(rdbmsWriter, b -> b.name("test"));
 
     final var searchResult =
         reader

@@ -28,16 +28,16 @@ public final class AuthorizationRequestValidator {
   private static final Map<PermissionTypeEnum, ResourceTypeEnum>
       RESOURCE_SPECIFIC_PERMISSION_TYPES =
           Map.of(
-              PermissionTypeEnum.DELETE_PROCESS, ResourceTypeEnum.DEPLOYMENT,
-              PermissionTypeEnum.DELETE_DRD, ResourceTypeEnum.DEPLOYMENT,
-              PermissionTypeEnum.DELETE_FORM, ResourceTypeEnum.DEPLOYMENT);
+              PermissionTypeEnum.DELETE_PROCESS, ResourceTypeEnum.RESOURCE,
+              PermissionTypeEnum.DELETE_DRD, ResourceTypeEnum.RESOURCE,
+              PermissionTypeEnum.DELETE_FORM, ResourceTypeEnum.RESOURCE);
 
   public static Optional<ProblemDetail> validateAuthorizationCreateRequest(
       final AuthorizationCreateRequest request) {
     return validate(
         violations -> {
           // owner validation
-          if (request.getOwnerId() == null) {
+          if (request.getOwnerId() == null || request.getOwnerId().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("ownerId"));
           }
           if (request.getOwnerType() == null) {
@@ -45,7 +45,7 @@ public final class AuthorizationRequestValidator {
           }
 
           // resource validation
-          if (request.getResourceId() == null) {
+          if (request.getResourceId() == null || request.getResourceId().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("resourceId"));
           }
           if (request.getResourceType() == null) {

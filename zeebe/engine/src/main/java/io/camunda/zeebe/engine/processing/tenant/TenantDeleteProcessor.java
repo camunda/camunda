@@ -29,7 +29,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
 
   private static final String TENANT_NOT_FOUND_ERROR_MESSAGE =
-      "Expected to delete tenant with key '%s', but no tenant with this key exists.";
+      "Expected to delete tenant with id '%s', but no tenant with this id exists.";
   private final TenantState tenantState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -56,12 +56,12 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
   @Override
   public void processNewCommand(final TypedRecord<TenantRecord> command) {
     final var record = command.getValue();
-    final var tenantKey = record.getTenantKey();
-    final var persistedTenantRecord = tenantState.getTenantByKey(tenantKey);
+    final var tenantId = record.getTenantId();
+    final var persistedTenantRecord = tenantState.getTenantById(tenantId);
 
     if (persistedTenantRecord.isEmpty()) {
       rejectCommand(
-          command, RejectionType.NOT_FOUND, TENANT_NOT_FOUND_ERROR_MESSAGE.formatted(tenantKey));
+          command, RejectionType.NOT_FOUND, TENANT_NOT_FOUND_ERROR_MESSAGE.formatted(tenantId));
       return;
     }
 
@@ -74,8 +74,11 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
       return;
     }
 
+    final var tenantKey = persistedTenantRecord.get().getTenantKey();
+
     record.setTenantId(persistedTenantRecord.get().getTenantId());
     record.setName(persistedTenantRecord.get().getName());
+    record.setTenantKey(tenantKey);
 
     removeAssignedEntities(record);
 
@@ -88,7 +91,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
   public void processDistributedCommand(final TypedRecord<TenantRecord> command) {
     final var record = command.getValue();
     tenantState
-        .getTenantByKey(record.getTenantKey())
+        .getTenantById(record.getTenantId())
         .ifPresentOrElse(
             tenant -> {
               removeAssignedEntities(command.getValue());
@@ -99,7 +102,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
                 rejectCommand(
                     command,
                     RejectionType.NOT_FOUND,
-                    TENANT_NOT_FOUND_ERROR_MESSAGE.formatted(record.getTenantKey())));
+                    TENANT_NOT_FOUND_ERROR_MESSAGE.formatted(record.getTenantId())));
 
     commandDistributionBehavior.acknowledgeCommand(command);
   }
@@ -125,7 +128,8 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
   }
 
   private void removeAssignedEntities(final TenantRecord record) {
-    final var tenantKey = record.getTenantKey();
+    final var tenantId = record.getTenantId();
+    final var tenantKey = tenantState.getTenantKeyById(tenantId).orElseThrow();
     tenantState
         .getEntitiesByType(tenantKey)
         .forEach(
@@ -134,6 +138,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
                   entityKey -> {
                     final var entityRecord =
                         new TenantRecord()
+                            .setTenantId(tenantId)
                             .setTenantKey(tenantKey)
                             .setEntityKey(entityKey)
                             .setEntityType(entityType);

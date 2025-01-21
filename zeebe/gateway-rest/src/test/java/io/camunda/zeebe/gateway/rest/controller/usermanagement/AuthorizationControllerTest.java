@@ -147,21 +147,37 @@ public class AuthorizationControllerTest extends RestControllerTest {
             new AuthorizationCreateRequest()
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("resourceId")
-                .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                .resourceType(ResourceTypeEnum.RESOURCE)
+                .permissions(permissions),
+            "No ownerId provided."),
+        Arguments.of(
+            new AuthorizationCreateRequest()
+                .ownerId("")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("resourceId")
+                .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissions(permissions),
             "No ownerId provided."),
         Arguments.of(
             new AuthorizationCreateRequest()
                 .ownerId("ownerId")
                 .resourceId("resourceId")
-                .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissions(permissions),
             "No ownerType provided."),
         Arguments.of(
             new AuthorizationCreateRequest()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
-                .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                .resourceType(ResourceTypeEnum.RESOURCE)
+                .permissions(permissions),
+            "No resourceId provided."),
+        Arguments.of(
+            new AuthorizationCreateRequest()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("")
+                .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissions(permissions),
             "No resourceId provided."),
         Arguments.of(
@@ -176,14 +192,14 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("resourceId")
-                .resourceType(ResourceTypeEnum.DEPLOYMENT),
+                .resourceType(ResourceTypeEnum.RESOURCE),
             "No permissions provided."),
         Arguments.of(
             new AuthorizationCreateRequest()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("resourceId")
-                .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissions(List.of()),
             "No permissions provided."));
   }
@@ -221,7 +237,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     final var request =
         new AuthorizationPatchRequest()
             .action(action)
-            .resourceType(ResourceTypeEnum.DEPLOYMENT)
+            .resourceType(ResourceTypeEnum.RESOURCE)
             .permissions(List.of(permissions));
 
     final var permission =
@@ -267,7 +283,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     final var request =
         new AuthorizationPatchRequest()
             .action(action)
-            .resourceType(ResourceTypeEnum.DEPLOYMENT)
+            .resourceType(ResourceTypeEnum.RESOURCE)
             .permissions(List.of(permissions));
 
     when(authorizationServices.patchAuthorization(any(PatchAuthorizationRequest.class)))
@@ -328,7 +344,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     return Stream.of(
         Arguments.of(
             new AuthorizationPatchRequest()
-                .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissions(validPermissions),
             "No action provided."),
         Arguments.of(
@@ -337,31 +353,31 @@ public class AuthorizationControllerTest extends RestControllerTest {
         Arguments.of(
             new AuthorizationPatchRequest()
                 .action(ActionEnum.ADD)
-                .resourceType(ResourceTypeEnum.DEPLOYMENT),
+                .resourceType(ResourceTypeEnum.RESOURCE),
             "No permissions provided."),
         Arguments.of(
             new AuthorizationPatchRequest()
                 .action(ActionEnum.ADD)
-                .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissions(List.of()),
             "No permissions provided."),
         Arguments.of(
             new AuthorizationPatchRequest()
                 .action(ActionEnum.ADD)
-                .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissions(List.of(new PermissionDTO().resourceIds(Set.of("resourceId")))),
             "No permissionType provided."),
         Arguments.of(
             new AuthorizationPatchRequest()
                 .action(ActionEnum.ADD)
-                .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissions(
                     List.of(new PermissionDTO().permissionType(PermissionTypeEnum.CREATE))),
             "No resourceIds provided in 'CREATE'."),
         Arguments.of(
             new AuthorizationPatchRequest()
                 .action(ActionEnum.ADD)
-                .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissions(
                     List.of(
                         new PermissionDTO()

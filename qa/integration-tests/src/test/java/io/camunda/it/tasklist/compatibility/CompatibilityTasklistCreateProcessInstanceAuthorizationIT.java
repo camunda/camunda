@@ -20,15 +20,13 @@ import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.it.util.SearchClientsUtil;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-@AutoCloseResources
 @ZeebeIntegration
 public class CompatibilityTasklistCreateProcessInstanceAuthorizationIT {
 
@@ -41,9 +39,9 @@ public class CompatibilityTasklistCreateProcessInstanceAuthorizationIT {
   private static final String TEST_USER_PASSWORD = "bar";
   private static long testUserKey;
 
-  @AutoCloseResource private static AuthorizationsUtil adminAuthClient;
-  @AutoCloseResource private static CamundaClient adminCamundaClient;
-  @AutoCloseResource private static TestRestTasklistClient tasklistRestClient;
+  @AutoClose private static AuthorizationsUtil adminAuthClient;
+  @AutoClose private static CamundaClient adminCamundaClient;
+  @AutoClose private static TestRestTasklistClient tasklistRestClient;
 
   @TestZeebe
   private TestStandaloneCamunda standaloneCamunda =
@@ -68,7 +66,7 @@ public class CompatibilityTasklistCreateProcessInstanceAuthorizationIT {
       intermediateAuthClient.createUserWithPermissions(
           ADMIN_USER_NAME,
           ADMIN_USER_PASSWORD,
-          new Permissions(ResourceTypeEnum.DEPLOYMENT, PermissionTypeEnum.CREATE, List.of("*")),
+          new Permissions(ResourceTypeEnum.RESOURCE, PermissionTypeEnum.CREATE, List.of("*")),
           new Permissions(
               ResourceTypeEnum.PROCESS_DEFINITION,
               PermissionTypeEnum.READ_PROCESS_DEFINITION,

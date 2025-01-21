@@ -7,6 +7,7 @@
  */
 package io.camunda.it.rdbms.exporter;
 
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getAuthorizationRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionDefinitionCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionRequirementsCreatedRecord;
@@ -306,15 +307,19 @@ class RdbmsExporterIT {
 
   @Test
   public void shouldExportAndUpdateTenant() {
+    final var tenantId = "tenant=" + nextKey();
     // given
-    final var tenantRecord = getTenantRecord(42L, TenantIntent.CREATED);
+    final var tenantRecord = getTenantRecord(42L, tenantId, TenantIntent.CREATED);
     final var tenantRecordValue = ((TenantRecordValue) tenantRecord.getValue());
 
     // when
     exporter.export(tenantRecord);
 
     // then
-    final var tenant = rdbmsService.getTenantReader().findOne(tenantRecord.getKey());
+    final var tenant =
+        rdbmsService
+            .getTenantReader()
+            .findOne(((TenantRecordValue) tenantRecord.getValue()).getTenantId());
     assertThat(tenant).isNotEmpty();
     assertThat(tenant.get().key()).isEqualTo(tenantRecord.getKey());
     assertThat(tenant.get().key()).isEqualTo(tenantRecordValue.getTenantKey());
@@ -322,14 +327,17 @@ class RdbmsExporterIT {
     assertThat(tenant.get().name()).isEqualTo(tenantRecordValue.getName());
 
     // given
-    final var updateTenantRecord = getTenantRecord(42L, TenantIntent.UPDATED);
+    final var updateTenantRecord = getTenantRecord(42L, tenantId, TenantIntent.UPDATED);
     final var updateTenantRecordValue = ((TenantRecordValue) updateTenantRecord.getValue());
 
     // when
     exporter.export(updateTenantRecord);
 
     // then
-    final var updatedTenant = rdbmsService.getTenantReader().findOne(tenantRecord.getKey());
+    final var updatedTenant =
+        rdbmsService
+            .getTenantReader()
+            .findOne(((TenantRecordValue) tenantRecord.getValue()).getTenantId());
     assertThat(updatedTenant).isNotEmpty();
     assertThat(updatedTenant.get().key()).isEqualTo(updateTenantRecordValue.getTenantKey());
     assertThat(updatedTenant.get().tenantId()).isEqualTo(updateTenantRecordValue.getTenantId());
@@ -338,33 +346,43 @@ class RdbmsExporterIT {
 
   @Test
   public void shouldExportTenantAndAddAndDeleteMember() {
+    final var tenantId = "tenant=" + nextKey();
     // given
-    final var tenantRecord = getTenantRecord(43L, TenantIntent.CREATED);
+    final var tenantRecord = getTenantRecord(43L, tenantId, TenantIntent.CREATED);
     final var tenantRecordValue = ((TenantRecordValue) tenantRecord.getValue());
 
     // when
     exporter.export(tenantRecord);
 
     // then
-    final var tenant = rdbmsService.getTenantReader().findOne(tenantRecord.getKey());
+    final var tenant =
+        rdbmsService
+            .getTenantReader()
+            .findOne(((TenantRecordValue) tenantRecord.getValue()).getTenantId());
     assertThat(tenant).isNotEmpty();
     assertThat(tenant.get().key()).isEqualTo(tenantRecordValue.getTenantKey());
     assertThat(tenant.get().name()).isEqualTo(tenantRecordValue.getName());
 
     // when
-    exporter.export(getTenantRecord(43L, TenantIntent.ENTITY_ADDED, 1337L));
+    exporter.export(getTenantRecord(43L, tenantId, TenantIntent.ENTITY_ADDED, 1337L));
 
     // then
     final var updatedTenant =
-        rdbmsService.getTenantReader().findOne(tenantRecord.getKey()).orElseThrow();
+        rdbmsService
+            .getTenantReader()
+            .findOne(((TenantRecordValue) tenantRecord.getValue()).getTenantId())
+            .orElseThrow();
     assertThat(updatedTenant.assignedMemberKeys()).containsExactly(1337L);
 
     // when
-    exporter.export(getTenantRecord(43L, TenantIntent.ENTITY_REMOVED, 1337L));
+    exporter.export(getTenantRecord(43L, tenantId, TenantIntent.ENTITY_REMOVED, 1337L));
 
     // then
     final var deletedTenant =
-        rdbmsService.getTenantReader().findOne(tenantRecord.getKey()).orElseThrow();
+        rdbmsService
+            .getTenantReader()
+            .findOne(((TenantRecordValue) tenantRecord.getValue()).getTenantId())
+            .orElseThrow();
     assertThat(deletedTenant.assignedMemberKeys()).isEmpty();
   }
 

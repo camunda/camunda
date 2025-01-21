@@ -37,7 +37,6 @@ import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
-import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.util.ArrayList;
 import java.util.List;
@@ -150,12 +149,6 @@ public final class BackgroundTaskManagerFactory {
         .filter(ProcessInstanceDependant.class::isInstance)
         .map(ProcessInstanceDependant.class::cast)
         .forEach(dependantTemplates::add);
-
-    // add a special case just for TaskTemplate, which has 2 kinds of documents in the same
-    // index
-    final var taskTemplate = resourceProvider.getIndexTemplateDescriptor(TaskTemplate.class);
-    dependantTemplates.add(
-        new ProcessInstanceDependantAdapter(taskTemplate.getFullQualifiedName(), TaskTemplate.ID));
 
     return buildReschedulingArchiverTask(
         new ProcessInstancesArchiverJob(
@@ -307,19 +300,5 @@ public final class BackgroundTaskManagerFactory {
             logger);
       }
     };
-  }
-
-  private record ProcessInstanceDependantAdapter(String name, String field)
-      implements ProcessInstanceDependant {
-
-    @Override
-    public String getFullQualifiedName() {
-      return name;
-    }
-
-    @Override
-    public String getProcessInstanceDependantField() {
-      return field;
-    }
   }
 }

@@ -19,8 +19,8 @@ public final class TenantFixtures extends CommonFixtures {
 
   public static TenantDbModel createRandomized(final Function<Builder, Builder> builderFunction) {
     final var key = nextKey();
-    final var builder =
-        new Builder().tenantKey(key).tenantId("tenant-" + key).name("Tenant " + key);
+    final var tenantId = nextStringId();
+    final var builder = new Builder().tenantKey(key).tenantId(tenantId).name("Tenant " + key);
     return builderFunction.apply(builder).build();
   }
 

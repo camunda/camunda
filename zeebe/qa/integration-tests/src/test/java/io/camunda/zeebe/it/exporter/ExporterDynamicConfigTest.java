@@ -13,9 +13,9 @@ import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 final class ExporterDynamicConfigTest {
 
   @TestZeebe private final TestStandaloneBroker zeebe = new TestStandaloneBroker();
-  @AutoCloseResource private CamundaClient client;
+  @AutoClose private CamundaClient client;
 
   @BeforeEach
   void beforeEach() {

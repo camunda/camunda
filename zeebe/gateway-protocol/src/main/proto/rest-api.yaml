@@ -396,12 +396,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TenantCreateResult"
-            application/vnd.camunda.api.keys.number+json:
-              schema:
-                $ref: "#/components/schemas/TenantCreateResponse"
-            application/vnd.camunda.api.keys.string+json:
-              schema:
-                $ref: "#/components/schemas/TenantCreateResult"
         "400":
           description: The provided data is not valid.
           content:
@@ -419,7 +413,51 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /tenants/{tenantKey}:
+  /tenants/{tenantId}:
+    get:
+      tags:
+        - Tenant
+      operationId: getTenant
+      summary: Get tenant
+      description: Retrieves a single tenant by tenant ID.
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The tenant was retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantResult"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/TenantItem"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/TenantResult"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Tenant not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     patch:
       tags:
         - Tenant
@@ -427,13 +465,12 @@ paths:
       summary: Update tenant
       description: Updates an existing tenant.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.
           schema:
-            type: integer
-            format: int64
+            type: string
       requestBody:
         content:
           application/json:
@@ -470,52 +507,6 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-    get:
-      tags:
-        - Tenant
-      operationId: getTenant
-      summary: Get tenant
-      description: Retrieves a single tenant by tenant Key.
-      parameters:
-        - name: tenantKey
-          in: path
-          required: true
-          description: The unique identifier of the tenant.
-          schema:
-            type: integer
-            format: int64
-      responses:
-        "200":
-          description: The tenant was retrieved successfully.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TenantResult"
-            application/vnd.camunda.api.keys.number+json:
-              schema:
-                $ref: "#/components/schemas/TenantItem"
-            application/vnd.camunda.api.keys.string+json:
-              schema:
-                $ref: "#/components/schemas/TenantResult"
-        "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          description: Tenant not found.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
     delete:
       tags:
         - Tenant
@@ -523,13 +514,12 @@ paths:
       summary: Delete tenant
       description: Deletes an existing tenant.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "204":
           description: The tenant was deleted successfully.
@@ -3310,10 +3300,8 @@ paths:
 
         Note that this currently only supports an in-memory document store, which is not meant for production use.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       parameters:
         - name: storeId
           in: query
@@ -3330,6 +3318,7 @@ paths:
               properties:
                 files:
                   type: array
+                  description: The documents to upload.
                   items:
                     type: string
                     format: binary
@@ -3595,56 +3584,6 @@ paths:
         "400":
           description: >
             The user search query failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
-  /users/{userKey}/authorizations/search:
-    post:
-      tags:
-        - Authorization
-      summary: "Query user authorizations"
-      description: |
-        Search for user authorizations based on given criteria.
-      operationId: "findUserAuthorizations"
-      parameters:
-        - name: userKey
-          in: path
-          required: true
-          description: The key of the userKey of the authorization.
-          schema:
-            type: integer
-            format: int64
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AuthorizationSearchQueryRequest"
-        required: true
-      responses:
-        "200":
-          description: The user authorization search result.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AuthorizationSearchResult"
-            application/vnd.camunda.api.keys.number+json:
-              schema:
-                $ref: "#/components/schemas/AuthorizationSearchResponse"
-            application/vnd.camunda.api.keys.string+json:
-              schema:
-                $ref: "#/components/schemas/AuthorizationSearchResult"
-        "400":
-          description: >
-            The user authorization search query failed.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -4050,20 +3989,18 @@ components:
       required:
         - tenantId
 
-    TenantCreateResponse:
-      deprecated: true
-      type: object
-      properties:
-        tenantKey:
-          description: The external key of the created tenant
-          type: integer
-          format: int64
     TenantCreateResult:
       type: object
       properties:
         tenantKey:
-          description: The external key of the created tenant
+          description: The unique system-generated internal tenant ID.
           type: string
+        tenantId:
+          type: string
+          description: The unique external tenant ID
+        name:
+          type: string
+          description: The name of the tenant.
 
     TenantUpdateRequest:
       type: object
@@ -4358,11 +4295,11 @@ components:
         followUpDate:
           description: The user task follow-up date.
           allOf:
-              - $ref: "#/components/schemas/DateTimeFilterProperty"
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
         dueDate:
-            description: The user task due date.
-            allOf:
-                - $ref: "#/components/schemas/DateTimeFilterProperty"
+          description: The user task due date.
+          allOf:
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
         processInstanceVariables:
           type: array
           description: Process Instance variables associated with the user task.
@@ -4546,7 +4483,7 @@ components:
         variableKey:
           description: The key for this variable.
           allOf:
-            - $ref: "#/components/schemas/LongFilterProperty"
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
         name:
           description: Name of the variable.
           allOf:
@@ -4558,11 +4495,11 @@ components:
         scopeKey:
           description: The key of the scope of this variable.
           allOf:
-            - $ref: "#/components/schemas/LongFilterProperty"
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
         processInstanceKey:
           description: The key of the process instance of this variable.
           allOf:
-            - $ref: "#/components/schemas/LongFilterProperty"
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
         tenantId:
           description: Tenant ID of this variable.
           type: string
@@ -4806,6 +4743,7 @@ components:
           allOf:
             - $ref: "#/components/schemas/ProcessInstanceFilterRequest"
     AdvancedIntegerFilter:
+      title: Advanced filter
       description: Advanced integer (int32) filter.
       type: object
       properties:
@@ -4848,8 +4786,11 @@ components:
       oneOf:
         - type: integer
           format: int32
+          title: Exact match
+          description: Matches the value exactly.
         - $ref: "#/components/schemas/AdvancedIntegerFilter"
     BasicLongFilter:
+      title: Advanced filter
       description: Basic advanced long (int64) filter.
       type: object
       properties:
@@ -4870,30 +4811,9 @@ components:
           items:
             type: integer
             format: int64
-    AdvancedLongFilter:
-      description: Advanced long (int64) filter.
-      allOf:
-        - $ref: "#/components/schemas/BasicLongFilter"
-        - type: object
-          properties:
-            $gt:
-              description: Greater than comparison with the provided value.
-              type: integer
-              format: int64
-            $gte:
-              description: Greater than or equal comparison with the provided value.
-              type: integer
-              format: int64
-            $lt:
-              description: Lower than comparison with the provided value.
-              type: integer
-              format: int64
-            $lte:
-              description: Lower than or equal comparison with the provided value.
-              type: integer
-              format: int64
-    AdvancedStringFilter:
-      description: Advanced string filter.
+    BasicStringFilter:
+      title: Advanced filter
+      description: Basic advanced string filter.
       type: object
       properties:
         $eq:
@@ -4910,12 +4830,20 @@ components:
           type: array
           items:
             type: string
-        $like:
-          description: |
-            Checks if the property matches the provided like value.
-            Supported wildcard characters depend on the configured search client.
-          type: string
+    AdvancedStringFilter:
+      title: Advanced filter
+      description: Advanced string filter.
+      allOf:
+        - $ref: "#/components/schemas/BasicStringFilter"
+        - type: object
+          properties:
+            $like:
+              description: |
+                Checks if the property matches the provided like value.
+                Supported wildcard characters depend on the configured search client.
+              type: string
     AdvancedProcessInstanceStateFilter:
+      title: Advanced filter
       description: Advanced ProcessInstanceStateEnum filter.
       type: object
       properties:
@@ -4941,6 +4869,7 @@ components:
             Supported wildcard characters depend on the configured search client.
           type: string
     AdvancedDateTimeFilter:
+      title: Advanced filter
       description: Advanced date-time filter.
       type: object
       properties:
@@ -4983,25 +4912,34 @@ components:
       oneOf:
         - type: integer
           format: int64
+          title: Exact match
+          description: Matches the value exactly.
         - $ref: "#/components/schemas/BasicLongFilter"
-    LongFilterProperty:
-      description: Long property with full advanced search capabilities.
+    BasicStringFilterProperty:
+      description: String property with basic advanced search capabilities.
       type: object
       oneOf:
-        - type: integer
-          format: int64
-        - $ref: "#/components/schemas/AdvancedLongFilter"
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+        - $ref: "#/components/schemas/BasicStringFilter"
     StringFilterProperty:
       description: String property with full advanced search capabilities.
       type: object
       oneOf:
         - type: string
+          title: Exact match
+          description: Matches the value exactly.
         - $ref: "#/components/schemas/AdvancedStringFilter"
     ProcessInstanceStateFilterProperty:
       description: ProcessInstanceStateEnum property with full advanced search capabilities.
       type: object
       oneOf:
-        - $ref: "#/components/schemas/ProcessInstanceStateEnum"
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceStateEnum"
         - $ref: "#/components/schemas/AdvancedProcessInstanceStateFilter"
     DateTimeFilterProperty:
       description: Date-time property with full advanced search capabilities.
@@ -5009,6 +4947,8 @@ components:
       oneOf:
         - type: string
           format: date-time
+          title: Exact match
+          description: Matches the value exactly.
         - $ref: "#/components/schemas/AdvancedDateTimeFilter"
     ProcessInstanceFilterRequest:
       description: Process instance search filter.
@@ -5017,7 +4957,7 @@ components:
         processInstanceKey:
           description: The key of this process instance.
           allOf:
-            - $ref: "#/components/schemas/LongFilterProperty"
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
         processDefinitionId:
           description: The process definition ID.
           allOf:
@@ -5037,15 +4977,15 @@ components:
         processDefinitionKey:
           description: The process definition key.
           allOf:
-            - $ref: "#/components/schemas/LongFilterProperty"
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
         parentProcessInstanceKey:
           description: The parent process instance key.
           allOf:
-            - $ref: "#/components/schemas/LongFilterProperty"
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
         parentFlowNodeInstanceKey:
           description: The parent flow node instance key.
           allOf:
-            - $ref: "#/components/schemas/LongFilterProperty"
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
         startDate:
           description: The start date.
           allOf:
@@ -5812,7 +5752,7 @@ components:
         - APPLICATION
         - SYSTEM
         - TENANT
-        - DEPLOYMENT
+        - RESOURCE
         - PROCESS_DEFINITION
         - DECISION_REQUIREMENTS_DEFINITION
         - DECISION_DEFINITION
@@ -7231,7 +7171,7 @@ components:
           type: string
           enum:
             - decisionRequirementsKey
-            - name
+            - decisionRequirementsName
             - version
             - decisionRequirementsId
             - tenantId
@@ -7261,7 +7201,7 @@ components:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this decision requirements.
-        name:
+        decisionRequirementsName:
           type: string
           description: The DMN name of the decision requirements.
         version:
@@ -7299,7 +7239,7 @@ components:
       description: Base properties for DecisionRequirementsItem.
       type: object
       properties:
-        name:
+        decisionRequirementsName:
           type: string
           description: The DMN name of the decision requirements.
         version:
@@ -7914,10 +7854,12 @@ components:
           properties:
             createdDocuments:
               type: array
+              description: Documents that were successfully created.
               items:
                 $ref: "#/components/schemas/DocumentReference"
             failedDocuments:
               type: array
+              description: Documents that failed creation.
               items:
                 $ref: "#/components/schemas/DocumentCreationFailureDetail"
 
@@ -8134,7 +8076,7 @@ components:
           type: integer
           format: int32
           description: The assigned decision requirements version.
-        name:
+        decisionRequirementsName:
           type: string
           description: The DMN name of the decision requirements, as parsed during deployment.
         tenantId:

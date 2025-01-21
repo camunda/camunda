@@ -188,7 +188,7 @@ public class ResourceDeletionDeleteProcessor
       final var process = processOptional.get();
       checkAuthorization(
           command,
-          AuthorizationResourceType.DEPLOYMENT,
+          AuthorizationResourceType.RESOURCE,
           PermissionType.DELETE_PROCESS,
           bufferAsString(process.getBpmnProcessId()));
       setTenantId(command, tenantId);
@@ -202,7 +202,7 @@ public class ResourceDeletionDeleteProcessor
       final var drg = drgOptional.get();
       checkAuthorization(
           command,
-          AuthorizationResourceType.DEPLOYMENT,
+          AuthorizationResourceType.RESOURCE,
           PermissionType.DELETE_DRD,
           bufferAsString(drg.getDecisionRequirementsId()));
       setTenantId(command, tenantId);
@@ -215,7 +215,7 @@ public class ResourceDeletionDeleteProcessor
       final var form = formOptional.get();
       checkAuthorization(
           command,
-          AuthorizationResourceType.DEPLOYMENT,
+          AuthorizationResourceType.RESOURCE,
           PermissionType.DELETE_FORM,
           bufferAsString(form.getFormId()));
       setTenantId(command, tenantId);

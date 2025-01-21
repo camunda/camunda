@@ -510,8 +510,7 @@ public final class EventAppliers implements EventApplier {
     register(RoleIntent.ENTITY_REMOVED, new RoleEntityRemovedApplier(state));
     register(
         RoleIntent.DELETED,
-        new RoleDeletedApplier(
-            state.getRoleState(), state.getUserState(), state.getAuthorizationState()));
+        new RoleDeletedApplier(state.getRoleState(), state.getAuthorizationState()));
   }
 
   private void registerGroupAppliers(final MutableProcessingState state) {
@@ -541,8 +540,7 @@ public final class EventAppliers implements EventApplier {
     register(TenantIntent.ENTITY_REMOVED, new TenantEntityRemovedApplier(state));
     register(
         TenantIntent.DELETED,
-        new TenantDeletedApplier(
-            state.getTenantState(), state.getUserState(), state.getAuthorizationState()));
+        new TenantDeletedApplier(state.getTenantState(), state.getAuthorizationState()));
   }
 
   private void registerMappingAppliers(final MutableProcessingState state) {

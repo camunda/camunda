@@ -45,7 +45,7 @@ public class TenantDeleteProcessorTest {
         .isNotNull();
 
     // When
-    engine.tenant().deleteTenant(tenantKey).delete();
+    engine.tenant().deleteTenant(tenantId).delete();
 
     // Then confirms the Tenant.DELETED event was written
     assertThat(
@@ -61,15 +61,15 @@ public class TenantDeleteProcessorTest {
   @Test
   public void shouldRejectIfTenantDoesNotExist() {
     // When
-    final var notPresentTenantKey = 1L;
+    final var notPresentTenantId = UUID.randomUUID().toString();
     final var rejectedDeleteRecord =
-        engine.tenant().deleteTenant(notPresentTenantKey).expectRejection().delete();
+        engine.tenant().deleteTenant(notPresentTenantId).expectRejection().delete();
     // Then
     assertThat(rejectedDeleteRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to delete tenant with key '%s', but no tenant with this key exists."
-                .formatted(notPresentTenantKey));
+            "Expected to delete tenant with id '%s', but no tenant with this id exists."
+                .formatted(notPresentTenantId));
   }
 
   @Test
@@ -105,7 +105,7 @@ public class TenantDeleteProcessorTest {
         .add();
 
     // When: delete the tenant
-    final var deletedTenant = engine.tenant().deleteTenant(tenantKey).delete().getValue();
+    final var deletedTenant = engine.tenant().deleteTenant(tenantId).delete().getValue();
 
     // Then: verify the ENTITY_REMOVED and DELETED events
     final var tenantRecords =

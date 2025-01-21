@@ -83,14 +83,14 @@ public class PermissionsService {
   }
 
   /**
-   * hasPermissionForDeployment
+   * hasPermissionForResource
    *
    * @return true if the user has the given permission for the process
    */
-  public boolean hasPermissionForDeployment(
+  public boolean hasPermissionForResource(
       final Long deploymentKey, final IdentityPermission identityPermission) {
     return hasPermissionForResource(
-        deploymentKey.toString(), AuthorizationResourceType.DEPLOYMENT, identityPermission);
+        deploymentKey.toString(), AuthorizationResourceType.RESOURCE, identityPermission);
   }
 
   /**

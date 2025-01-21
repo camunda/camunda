@@ -17,21 +17,20 @@ import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.it.util.SearchClientsUtil;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-@AutoCloseResources
 @ZeebeIntegration
 public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
 
@@ -46,9 +45,9 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
   private static final String TEST_USER_PASSWORD = "bar";
   private static long testUserKey;
 
-  @AutoCloseResource private static AuthorizationsUtil adminAuthClient;
-  @AutoCloseResource private static CamundaClient adminCamundaClient;
-  @AutoCloseResource private static TestRestTasklistClient tasklistRestClient;
+  @AutoClose private static AuthorizationsUtil adminAuthClient;
+  @AutoClose private static CamundaClient adminCamundaClient;
+  @AutoClose private static TestRestTasklistClient tasklistRestClient;
 
   private long processInstanceKey;
   private long processInstanceKeyWithJobBasedUserTask;
@@ -78,7 +77,7 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
       intermediateAuthClient.createUserWithPermissions(
           ADMIN_USER_NAME,
           ADMIN_USER_PASSWORD,
-          new Permissions(ResourceTypeEnum.DEPLOYMENT, PermissionTypeEnum.CREATE, List.of("*")),
+          new Permissions(ResourceTypeEnum.RESOURCE, PermissionTypeEnum.CREATE, List.of("*")),
           new Permissions(
               ResourceTypeEnum.PROCESS_DEFINITION,
               PermissionTypeEnum.READ_PROCESS_DEFINITION,
@@ -228,7 +227,10 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
   public static long awaitJobBasedUserTaskBeingAvailable(final long processInstanceKey) {
     final AtomicLong userTaskKey = new AtomicLong();
     final var processInstanceQuery =
-        SearchQueryBuilders.term(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceKey);
+        SearchQueryBuilders.and(
+            SearchQueryBuilders.term(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceKey),
+            SearchQueryBuilders.term(
+                TaskTemplate.JOIN_FIELD_NAME, TaskJoinRelationshipType.TASK.getType()));
     Awaitility.await("should create a job-based user task")
         .atMost(Duration.ofSeconds(60))
         .ignoreExceptions() // Ignore exceptions and continue retrying
@@ -244,7 +246,10 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
   public static void ensureJobBasedUserTaskAssigneeChanged(
       final long processInstanceKey, final String newAssignee) {
     final var processInstanceQuery =
-        SearchQueryBuilders.term(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceKey);
+        SearchQueryBuilders.and(
+            SearchQueryBuilders.term(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceKey),
+            SearchQueryBuilders.term(
+                TaskTemplate.JOIN_FIELD_NAME, TaskJoinRelationshipType.TASK.getType()));
     final var assigneeQuery = SearchQueryBuilders.term(TaskTemplate.ASSIGNEE, newAssignee);
     final var finalQuery = SearchQueryBuilders.and(processInstanceQuery, assigneeQuery);
 

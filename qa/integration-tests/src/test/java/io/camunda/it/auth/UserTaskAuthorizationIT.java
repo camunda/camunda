@@ -10,8 +10,8 @@ package io.camunda.it.auth;
 import static io.camunda.client.protocol.rest.PermissionTypeEnum.CREATE;
 import static io.camunda.client.protocol.rest.PermissionTypeEnum.CREATE_PROCESS_INSTANCE;
 import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ_USER_TASK;
-import static io.camunda.client.protocol.rest.ResourceTypeEnum.DEPLOYMENT;
 import static io.camunda.client.protocol.rest.ResourceTypeEnum.PROCESS_DEFINITION;
+import static io.camunda.client.protocol.rest.ResourceTypeEnum.RESOURCE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -44,7 +44,7 @@ class UserTaskAuthorizationIT {
           ADMIN,
           "password",
           List.of(
-              new Permissions(DEPLOYMENT, CREATE, List.of("*")),
+              new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))));
   private static final User USER1_USER =

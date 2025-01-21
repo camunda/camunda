@@ -51,7 +51,7 @@ import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastResponse;
-import io.camunda.zeebe.gateway.protocol.rest.TenantCreateResponse;
+import io.camunda.zeebe.gateway.protocol.rest.TenantCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserCreateResponse;
 import io.camunda.zeebe.msgpack.value.LongValue;
@@ -361,7 +361,7 @@ public final class ResponseMapper {
                 new DeploymentDecisionRequirements()
                     .decisionRequirementsId(decisionRequirement.getDecisionRequirementsId())
                     .version(decisionRequirement.getDecisionRequirementsVersion())
-                    .name(decisionRequirement.getDecisionRequirementsName())
+                    .decisionRequirementsName(decisionRequirement.getDecisionRequirementsName())
                     .tenantId(decisionRequirement.getTenantId())
                     .decisionRequirementsKey(decisionRequirement.getDecisionRequirementsKey())
                     .resourceName(decisionRequirement.getResourceName()))
@@ -484,7 +484,11 @@ public final class ResponseMapper {
   }
 
   public static ResponseEntity<Object> toTenantCreateResponse(final TenantRecord record) {
-    final var response = new TenantCreateResponse().tenantKey(record.getTenantKey());
+    final var response =
+        new TenantCreateResult()
+            .tenantKey(Long.toString(record.getTenantKey()))
+            .tenantId(record.getTenantId())
+            .name(record.getName());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 

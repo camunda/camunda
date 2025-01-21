@@ -25,6 +25,9 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
 
 public class ListViewVariableFromVariableHandlerTest {
 
@@ -41,6 +44,34 @@ public class ListViewVariableFromVariableHandlerTest {
   @Test
   public void testGetEntityType() {
     assertThat(underTest.getEntityType()).isEqualTo(VariableForListViewEntity.class);
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = VariableIntent.class,
+      names = {"CREATED", "UPDATED"},
+      mode = Mode.INCLUDE)
+  void shouldHandleRecord(final VariableIntent intent) {
+    // given
+    final Record<VariableRecordValue> variableRecord =
+        factory.generateRecord(ValueType.VARIABLE, r -> r.withIntent(intent));
+
+    // when - then
+    assertThat(underTest.handlesRecord(variableRecord)).isTrue();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = VariableIntent.class,
+      names = {"MIGRATED"},
+      mode = Mode.INCLUDE)
+  void shouldNotHandleRecord(final VariableIntent intent) {
+    // given
+    final Record<VariableRecordValue> variableRecord =
+        factory.generateRecord(ValueType.VARIABLE, r -> r.withIntent(intent));
+
+    // when - then
+    assertThat(underTest.handlesRecord(variableRecord)).isFalse();
   }
 
   @Test

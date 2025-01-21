@@ -55,7 +55,7 @@ public class AuthorizationCheckBehaviorTest {
   public void shouldBeAuthorizedWhenUserHasPermission() {
     // given
     final var user = createUser();
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(user.getUserKey(), resourceType, permissionType, resourceId);
@@ -74,7 +74,7 @@ public class AuthorizationCheckBehaviorTest {
   public void shouldNotBeAuthorizedWhenUserHasNoPermission() {
     // given
     final var user = createUser();
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.DELETE;
     final var resourceId = UUID.randomUUID().toString();
     final var command = mockCommand(user.getUsername());
@@ -92,7 +92,7 @@ public class AuthorizationCheckBehaviorTest {
   public void shouldGetResourceIdentifiersWhenUserHasPermissions() {
     // given
     final var user = createUser();
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId1 = UUID.randomUUID().toString();
     final var resourceId2 = UUID.randomUUID().toString();
@@ -112,7 +112,7 @@ public class AuthorizationCheckBehaviorTest {
   public void shouldGetEmptySetWhenUserHasNoPermissions() {
     // given
     final var user = createUser();
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.DELETE;
     final var command = mockCommand(user.getUsername());
 
@@ -130,7 +130,7 @@ public class AuthorizationCheckBehaviorTest {
     // given
     final var user = createUser();
     final var roleKey = createRole(user.getUserKey());
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(roleKey, resourceType, permissionType, resourceId);
@@ -150,7 +150,7 @@ public class AuthorizationCheckBehaviorTest {
     // given
     final var user = createUser();
     final var roleKey = createRole(user.getUserKey());
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId1 = UUID.randomUUID().toString();
     final var resourceId2 = UUID.randomUUID().toString();
@@ -171,7 +171,7 @@ public class AuthorizationCheckBehaviorTest {
     // given
     final var user = createUser();
     final var groupKey = createGroup(user.getUserKey(), EntityType.USER);
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(groupKey, resourceType, permissionType, resourceId);
@@ -191,7 +191,7 @@ public class AuthorizationCheckBehaviorTest {
     // given
     final var user = createUser();
     final var groupKey = createGroup(user.getUserKey(), EntityType.USER);
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId1 = UUID.randomUUID().toString();
     final var resourceId2 = UUID.randomUUID().toString();
@@ -211,7 +211,7 @@ public class AuthorizationCheckBehaviorTest {
   public void shouldBeAuthorizedForUserTenant() {
     // given
     final var user = createUser();
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(user.getUserKey(), resourceType, permissionType, resourceId);
@@ -232,7 +232,7 @@ public class AuthorizationCheckBehaviorTest {
   public void shouldBeAuthorizedForUserTenantThroughGroup() {
     // given
     final var user = createUser();
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(user.getUserKey(), resourceType, permissionType, resourceId);
@@ -254,7 +254,7 @@ public class AuthorizationCheckBehaviorTest {
   public void shouldBeUnauthorizedForUserTenant() {
     // given
     final var user = createUser();
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(user.getUserKey(), resourceType, permissionType, resourceId);
@@ -278,7 +278,7 @@ public class AuthorizationCheckBehaviorTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var mappingKey = createMapping(claimName, claimValue);
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(mappingKey, resourceType, permissionType, resourceId);
@@ -301,7 +301,7 @@ public class AuthorizationCheckBehaviorTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var mappingKey = createMapping(claimName, claimValue);
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(mappingKey, resourceType, permissionType, resourceId);
@@ -325,7 +325,7 @@ public class AuthorizationCheckBehaviorTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var mappingKey = createMapping(claimName, claimValue);
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(mappingKey, resourceType, permissionType, resourceId);
@@ -474,7 +474,7 @@ public class AuthorizationCheckBehaviorTest {
   public void shouldBeAuthorizedWhenAnonymousAuthenticationProvided() {
     // given
     final var user = createUser();
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(user.getUserKey(), resourceType, permissionType, resourceId);
@@ -507,7 +507,7 @@ public class AuthorizationCheckBehaviorTest {
     final var claimValue = UUID.randomUUID().toString();
     final var mapping =
         engine.mapping().newMapping(claimName).withClaimValue(claimValue).create().getValue();
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(mapping.getMappingKey(), resourceType, permissionType, resourceId);
@@ -538,7 +538,7 @@ public class AuthorizationCheckBehaviorTest {
         .withEntityType(EntityType.MAPPING)
         .withEntityKey(mappingKey)
         .add();
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(mappingKey, resourceType, permissionType, resourceId);
@@ -570,7 +570,7 @@ public class AuthorizationCheckBehaviorTest {
         .withEntityType(EntityType.MAPPING)
         .withEntityKey(mappingKey)
         .add();
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(mappingKey, resourceType, permissionType, resourceId);
@@ -600,7 +600,7 @@ public class AuthorizationCheckBehaviorTest {
         .withEntityType(EntityType.MAPPING)
         .withEntityKey(mappingKey)
         .add();
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     engine
@@ -635,7 +635,7 @@ public class AuthorizationCheckBehaviorTest {
         .withEntityType(EntityType.MAPPING)
         .withEntityKey(mappingKey)
         .add();
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     engine
@@ -666,8 +666,7 @@ public class AuthorizationCheckBehaviorTest {
 
     // when
     final var request =
-        new AuthorizationRequest(
-                command, AuthorizationResourceType.DEPLOYMENT, PermissionType.DELETE)
+        new AuthorizationRequest(command, AuthorizationResourceType.RESOURCE, PermissionType.DELETE)
             .addResourceId(UUID.randomUUID().toString());
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
@@ -697,7 +696,7 @@ public class AuthorizationCheckBehaviorTest {
             .create()
             .getKey();
 
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var firstResourceId = UUID.randomUUID().toString();
     final var secondResourceId = UUID.randomUUID().toString();
@@ -751,7 +750,7 @@ public class AuthorizationCheckBehaviorTest {
     final var secondMappingKey =
         engine.mapping().newMapping(claimName).withClaimValue(secondClaimValue).create().getKey();
 
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var firstResourceId = UUID.randomUUID().toString();
     final var secondResourceId = UUID.randomUUID().toString();
@@ -798,7 +797,7 @@ public class AuthorizationCheckBehaviorTest {
     final var claimValue = UUID.randomUUID().toString();
     final var mapping =
         engine.mapping().newMapping(claimName).withClaimValue(claimValue).create().getValue();
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(mapping.getMappingKey(), resourceType, permissionType, resourceId);
@@ -829,7 +828,7 @@ public class AuthorizationCheckBehaviorTest {
         .withEntityType(EntityType.MAPPING)
         .withEntityKey(mappingKey)
         .add();
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(roleKey, resourceType, permissionType, resourceId);
@@ -860,7 +859,7 @@ public class AuthorizationCheckBehaviorTest {
         .withEntityType(EntityType.MAPPING)
         .withEntityKey(mappingKey)
         .add();
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(groupKey, resourceType, permissionType, resourceId);

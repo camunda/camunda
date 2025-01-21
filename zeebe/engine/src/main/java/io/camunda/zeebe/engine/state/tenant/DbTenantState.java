@@ -164,4 +164,10 @@ public class DbTenantState implements MutableTenantState {
   public void forEachTenant(final Function<String, Boolean> callback) {
     tenantsColumnFamily.whileTrue((k, p) -> callback.apply(p.getTenantId()));
   }
+
+  @Override
+  public Optional<PersistedTenant> getTenantById(final String tenantId) {
+    // TODO: Change cfs to look up by id directly
+    return getTenantKeyById(tenantId).flatMap(this::getTenantByKey);
+  }
 }

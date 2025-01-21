@@ -34,7 +34,7 @@ public interface DecisionRequirementsFilter extends SearchRequestFilter {
    * @param name the name of the decision requirement
    * @return the updated filter
    */
-  DecisionRequirementsFilter name(final String name);
+  DecisionRequirementsFilter decisionRequirementsName(final String name);
 
   /**
    * Filters Decision Requirements by the specified version.

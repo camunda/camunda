@@ -71,13 +71,13 @@
     UPDATE TENANT SET
                     TENANT_ID = #{tenantId},
                     NAME = #{name}
-    WHERE TENANT_KEY = #{tenantKey}
+    WHERE TENANT_ID = #{tenantId}
   </update>
 
-  <delete id="delete" parameterType="java.lang.Long" flushCache="true">
+  <delete id="delete" parameterType="java.lang.String" flushCache="true">
     DELETE
     FROM TENANT
-    WHERE TENANT_KEY = #{tenantKey}
+    WHERE TENANT_ID = #{tenantId}
   </delete>
 
   <insert

@@ -7,9 +7,9 @@
  */
 
 import {ReactNode, createContext, useState, useEffect, ComponentType} from 'react';
-
 import {get} from 'request';
 import {useUser} from 'hooks';
+import {getFullURL} from '../api';
 
 export interface User {
   id: string;
@@ -35,7 +35,7 @@ export function UserProvider({children}: {children: ReactNode}): JSX.Element {
   const [user, setUser] = useState<User>();
 
   const refreshUser = async () => {
-    const response = await get('api/identity/current/user');
+    const response = await get(getFullURL('api/identity/current/user'));
     const user = await response.json();
 
     resolveWithUser.forEach((resolve) => resolve(user));

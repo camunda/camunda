@@ -26,8 +26,6 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.utils.net.Address;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.netty.channel.ChannelHandlerContext;
@@ -57,6 +55,7 @@ import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
@@ -65,7 +64,6 @@ import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
 /** Netty messaging service test. */
-@AutoCloseResources
 final class NettyMessagingServiceTest {
   private static final String CLUSTER_NAME = "zeebe";
   private static final int UID_COLUMN = 7;
@@ -124,10 +122,10 @@ final class NettyMessagingServiceTest {
 
   @Nested
   final class VersionTest {
-    @AutoCloseResource private final NettyMessagingService nettyv11 = newMessagingService();
-    @AutoCloseResource private final NettyMessagingService nettyv12 = newMessagingService();
-    @AutoCloseResource private final NettyMessagingService nettyv21 = newMessagingService();
-    @AutoCloseResource private final NettyMessagingService nettyv22 = newMessagingService();
+    @AutoClose private final NettyMessagingService nettyv11 = newMessagingService();
+    @AutoClose private final NettyMessagingService nettyv12 = newMessagingService();
+    @AutoClose private final NettyMessagingService nettyv21 = newMessagingService();
+    @AutoClose private final NettyMessagingService nettyv22 = newMessagingService();
 
     @BeforeEach
     void beforeEach() {
@@ -224,8 +222,8 @@ final class NettyMessagingServiceTest {
 
   @Nested
   final class DualInstanceTest {
-    @AutoCloseResource private final NettyMessagingService netty1 = newMessagingService();
-    @AutoCloseResource private final NettyMessagingService netty2 = newMessagingService();
+    @AutoClose private final NettyMessagingService netty1 = newMessagingService();
+    @AutoClose private final NettyMessagingService netty2 = newMessagingService();
 
     @BeforeEach
     void beforeEach() {
@@ -687,6 +685,7 @@ final class NettyMessagingServiceTest {
     @RegressionTest("https://github.com/camunda/camunda/issues/14837")
     void shouldNotLeakUdpSockets() throws IOException {
       // given
+      final var initialUdpSocketCount = udpSocketCount();
       // the configured amount of threads for Netty's epoll transport
       final var maxConnections = Runtime.getRuntime().availableProcessors() * 2;
       final var subject = nextSubject();
@@ -701,7 +700,11 @@ final class NettyMessagingServiceTest {
       // then - there seems to be a slight amount more than maxConnections normally, but without the
       // fix this was way, way, way more, so it should be fine to allow a little bit more than the
       // expected max number of connections
-      assertThat(udpSocketCount()).isLessThanOrEqualTo(maxConnections * 2L);
+      Awaitility.await("all sockets are closed")
+          .untilAsserted(
+              () ->
+                  assertThat(udpSocketCount() - initialUdpSocketCount)
+                      .isLessThan(maxConnections * 2L));
     }
 
     @Test
@@ -709,7 +712,7 @@ final class NettyMessagingServiceTest {
       // given
       final var subject = nextSubject();
       final var receivedHeartbeat = new AtomicBoolean(false);
-      netty2.forwardHeartbeats(true);
+      netty2.enableHeartbeatsForwarding();
       // register for heartbeats
       netty2.registerHandler(
           HeartbeatHandler.HEARTBEAT_SUBJECT,
@@ -725,7 +728,7 @@ final class NettyMessagingServiceTest {
 
       // when - removing the `IdleStateHandler` from the pipeline such that `HeartBeatHandler` is
       // not triggered
-      clientChannel.pipeline().remove("idle");
+      clientChannel.pipeline().remove(HeartbeatHandler.IDLE_STATE_HANDLER_NAME);
 
       // then - the other side notices a lack of heartbeats and closes the channel
       assertThat(clientChannel.closeFuture()).succeedsWithin(Duration.ofSeconds(5));
@@ -735,7 +738,7 @@ final class NettyMessagingServiceTest {
     void shouldNotCloseTheConnectionFromTheServerIfNoHeartbeatsIsReceived() {
       // given
       final var subject = nextSubject();
-      netty2.forwardHeartbeats(true);
+      netty2.enableHeartbeatsForwarding();
       final var receivedHeartbeats = new AtomicInteger(0);
       netty2.registerHandler(
           HeartbeatHandler.HEARTBEAT_SUBJECT,
@@ -743,11 +746,10 @@ final class NettyMessagingServiceTest {
             receivedHeartbeats.incrementAndGet();
             return CompletableFuture.completedFuture(null);
           });
+      // heartbeats are not sent from the client
+      netty1.disableHeartbeats();
       // a client channel
       final var channel = netty1.getChannelPool().getChannel(netty2.address(), subject).join();
-      // without heartbeat handler,
-      // so that client does not send any heartbeats
-      channel.pipeline().remove("heartbeat");
 
       // when
       // a request is made without heartbeats
@@ -762,10 +764,35 @@ final class NettyMessagingServiceTest {
     }
 
     @Test
+    void shouldSendHeartbeatTimeoutFromClientToServer() throws Exception {
+      // given
+      final var subject = nextSubject();
+      // new service with a different timeout;
+      final var netty3Config = defaultConfig();
+      // heartbeatTimeout on netty3 (server) is very small
+      netty3Config
+          .setHeartbeatTimeout(Duration.ofMillis(2))
+          .setHeartbeatInterval(Duration.ofMillis(1));
+      try (final var netty3 =
+          new NettyMessagingService(CLUSTER_NAME, newAddress(), netty3Config, "testingPrefix")) {
+        startMessagingServices(netty3);
+        // when
+        final var clientChannel =
+            netty1.getChannelPool().getChannel(netty3.address(), subject).join();
+        // then
+        // the channel stays open because netty3's config are ignored
+        assertThatThrownBy(() -> clientChannel.closeFuture().get(1, TimeUnit.SECONDS))
+            .isInstanceOf(TimeoutException.class);
+      }
+    }
+
+    @Test
     void shouldNotCloseTheConnectionFromTheClientIfNoHeartbeatsIsReceived()
         throws InterruptedException {
       // given
       final var subject = nextSubject();
+      // the server does not support heartbeats
+      netty2.disableHeartbeats();
       // a client channel
       final var channel = netty1.getChannelPool().getChannel(netty2.address(), subject).join();
 

@@ -51,7 +51,7 @@ public class AddPermissionsTest {
     // when
     client
         .newAddPermissionsCommand(ownerKey)
-        .resourceType(ResourceTypeEnum.DEPLOYMENT)
+        .resourceType(ResourceTypeEnum.RESOURCE)
         .permission(PermissionTypeEnum.CREATE)
         .resourceId("resourceId")
         .send()
@@ -64,7 +64,7 @@ public class AddPermissionsTest {
             .limit(2)
             .getLast()
             .getValue();
-    assertThat(recordValue.getResourceType()).isEqualTo(AuthorizationResourceType.DEPLOYMENT);
+    assertThat(recordValue.getResourceType()).isEqualTo(AuthorizationResourceType.RESOURCE);
     assertThat(recordValue.getOwnerType()).isEqualTo(AuthorizationOwnerType.USER);
     final var permission = recordValue.getPermissions().getFirst();
     assertThat(permission.getPermissionType()).isEqualTo(PermissionType.CREATE);
@@ -80,7 +80,7 @@ public class AddPermissionsTest {
     final var future =
         client
             .newAddPermissionsCommand(nonExistingOwnerKey)
-            .resourceType(ResourceTypeEnum.DEPLOYMENT)
+            .resourceType(ResourceTypeEnum.RESOURCE)
             .permission(PermissionTypeEnum.CREATE)
             .resourceId("resourceId")
             .send();
