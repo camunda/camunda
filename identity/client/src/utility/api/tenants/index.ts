@@ -41,17 +41,17 @@ export const createTenant: ApiDefinition<undefined, CreateTenantParams> = (
 ) => apiPost(TENANTS_ENDPOINT, tenant);
 
 export type UpdateTenantParams = {
-  tenantKey: string;
+  tenantId: string;
   name: string;
 };
 
 export type DeleteTenantParams = UpdateTenantParams;
 
 export const updateTenant: ApiDefinition<undefined, UpdateTenantParams> = ({
-  tenantKey,
+  tenantId,
   name,
-}) => apiPatch(`${TENANTS_ENDPOINT}/${tenantKey}`, { name });
+}) => apiPatch(`${TENANTS_ENDPOINT}/${tenantId}`, { name });
 
-export const deleteTenant: ApiDefinition<undefined, { tenantKey: string }> = ({
-  tenantKey,
-}) => apiDelete(`${TENANTS_ENDPOINT}/${tenantKey}`);
+export const deleteTenant: ApiDefinition<undefined, { tenantId: string }> = ({
+  tenantId,
+}) => apiDelete(`${TENANTS_ENDPOINT}/${tenantId}`);

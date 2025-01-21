@@ -17,7 +17,7 @@ const EditTenantModal: FC<UseEntityModalProps<UpdateTenantParams>> = ({
   open,
   onClose,
   onSuccess,
-  entity: { tenantKey, name: currentName },
+  entity: { tenantId, name: currentName },
 }) => {
   const { t } = useTranslate();
   const { enqueueNotification } = useNotifications();
@@ -26,7 +26,7 @@ const EditTenantModal: FC<UseEntityModalProps<UpdateTenantParams>> = ({
 
   const handleSubmit = async () => {
     const { success } = await apiCall({
-      tenantKey,
+      tenantId,
       name,
     });
 
