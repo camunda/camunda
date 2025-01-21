@@ -12,6 +12,7 @@ import io.camunda.exporter.cache.ExporterEntityCacheImpl;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.AuthorizationHandler;
 import io.camunda.exporter.handlers.DecisionEvaluationHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
@@ -96,15 +97,23 @@ import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.net.http.HttpClient;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * This is the class where teams should make their components such as handlers, and index/index
  * template descriptors available
  */
 public class DefaultExporterResourceProvider implements ExporterResourceProvider {
+  private static final Consumer<String> ERROR_SWALLOWER = s -> {};
+  private static final Consumer<String> ERROR_THROWING =
+      s -> {
+        throw new PersistenceException(s);
+      };
 
   private IndexDescriptors indexDescriptors;
 
@@ -112,6 +121,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
 
   private ExporterMetadata exporterMetadata;
   private ExecutorService executor;
+  private Map<String, Consumer<String>> indicesWithCustomErrorHandlers;
 
   @Override
   public void init(
@@ -257,6 +267,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new JobHandler(indexDescriptors.get(JobTemplate.class).getFullQualifiedName()),
             new MigratedVariableHandler(
                 indexDescriptors.get(VariableTemplate.class).getFullQualifiedName()));
+
+    indicesWithCustomErrorHandlers =
+        Map.of(
+            indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(), ERROR_SWALLOWER);
   }
 
   @Override
@@ -286,5 +300,12 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   public Set<ExportHandler<?, ?>> getExportHandlers() {
     // Register all handlers here
     return exportHandlers;
+  }
+
+  @Override
+  public BiConsumer<String, String> getCustomErrorHandlers() {
+    return (index, message) -> {
+      indicesWithCustomErrorHandlers.getOrDefault(index, ERROR_THROWING).accept(message);
+    };
   }
 }

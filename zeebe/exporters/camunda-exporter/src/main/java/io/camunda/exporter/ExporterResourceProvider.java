@@ -15,6 +15,7 @@ import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 public interface ExporterResourceProvider {
 
@@ -51,4 +52,6 @@ public interface ExporterResourceProvider {
    * @return A {@link Set} of {@link ExportHandler} to be registered with the exporter
    */
   Set<ExportHandler<?, ?>> getExportHandlers();
+
+  BiConsumer<String, String> getCustomErrorHandlers();
 }
