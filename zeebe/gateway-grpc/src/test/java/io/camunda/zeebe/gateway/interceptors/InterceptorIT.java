@@ -15,7 +15,7 @@ import io.atomix.utils.net.Address;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.response.DeploymentEvent;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
@@ -44,7 +44,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 final class InterceptorIT {
 
   private final GatewayCfg config = new GatewayCfg();
-  private final SecurityConfiguration securityConfiguration = new SecurityConfiguration();
   private final ActorScheduler scheduler =
       ActorScheduler.newActorScheduler()
           .setCpuBoundActorThreadCount(1)
@@ -89,7 +88,7 @@ final class InterceptorIT {
     gateway =
         new Gateway(
             config,
-            securityConfiguration,
+            SecurityConfigurations.unauthenticated(),
             brokerClient,
             scheduler,
             jobStreamClient.streamer(),

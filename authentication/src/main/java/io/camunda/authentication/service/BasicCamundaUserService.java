@@ -7,17 +7,18 @@
  */
 package io.camunda.authentication.service;
 
+import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.security.entity.AuthenticationMethod;
 import java.util.Optional;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-@Profile("auth-basic")
+@ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
 @Service
 public class BasicCamundaUserService implements CamundaUserService {
   private Optional<CamundaUser> getCurrentCamundaUser() {
