@@ -818,6 +818,132 @@ public class TaskListenerTest {
   }
 
   @Test
+  public void
+      shouldNotIncludeEmptyOrClearedUserTaskPropertiesInCompletingListenerHeadersAfterTaskWasUpdated() {
+    // given: a process instance with a user task configured with an initial assignee, candidate
+    // users/groups, due/follow-up dates, and a `completing` listener
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithZeebeUserTask(
+                userTask ->
+                    userTask
+                        .zeebeAssignee("admin")
+                        .zeebeCandidateUsers("user_A, user_B")
+                        .zeebeCandidateGroups("group_A, group_C, group_F")
+                        .zeebeDueDate("2085-09-21T11:22:33+02:00")
+                        .zeebeFollowUpDate("2095-09-21T11:22:33+02:00")
+                        .zeebeTaskListener(listener -> listener.completing().type(listenerType))));
+
+    final var changes =
+        new UserTaskRecord()
+            // Clear candidate groups and users, due date, and follow-up date
+            .setCandidateGroupsList(List.of())
+            .setCandidateUsersList(List.of())
+            .setDueDate("")
+            .setFollowUpDate("")
+            // Update priority
+            .setPriority(1);
+
+    // when: updating the user task with the specified changes
+    ENGINE.userTask().ofInstance(processInstanceKey).update(changes);
+
+    // and: completing the user task
+    final var userTaskCommand = ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // then: validate the headers of the completing listener job triggered after the task update
+    final var activatedListenerJob = activateJob(processInstanceKey, listenerType);
+
+    assertThat(activatedListenerJob.getCustomHeaders())
+        .describedAs(
+            "Headers should include only the configured, updated or automatically set user task properties")
+        .containsOnly(
+            // Assignee remains unchanged
+            entry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "admin"),
+            // Task key is always included
+            entry(Protocol.USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskCommand.getKey())),
+            // Default action value for the completing operation
+            entry(Protocol.USER_TASK_ACTION_HEADER_NAME, "complete"),
+            // Updated priority
+            entry(Protocol.USER_TASK_PRIORITY_HEADER_NAME, "1"))
+        .describedAs(
+            "Headers should not include not configured or cleared properties such as candidate groups, candidate users, due date, and follow-up date")
+        .doesNotContainKeys(
+            Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME,
+            Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME,
+            Protocol.USER_TASK_DUE_DATE_HEADER_NAME,
+            Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME);
+  }
+
+  @Test
+  public void
+      shouldNotIncludeEmptyOrClearedUserTaskPropertiesInAssigningListenerHeadersAfterTriggeringTaskUnassignment() {
+    // given: a process instance with a user task configured with an initial assignee and an
+    // `assigning` listener
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithZeebeUserTask(
+                userTask ->
+                    userTask
+                        .zeebeAssignee("initial_assignee")
+                        .zeebeTaskListener(listener -> listener.assigning().type(listenerType))));
+
+    final var createdUserTaskRecord =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final var assigningListenerJob = activateJob(processInstanceKey, listenerType);
+
+    // assert the headers of the assigning listener job triggered after the user task creation
+    final var userTaskKey = String.valueOf(createdUserTaskRecord.getKey());
+    assertThat(assigningListenerJob.getCustomHeaders())
+        .describedAs("Headers should not contain empty or non-configured properties")
+        .doesNotContainKeys(
+            Protocol.USER_TASK_ACTION_HEADER_NAME,
+            Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME,
+            Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME,
+            Protocol.USER_TASK_DUE_DATE_HEADER_NAME,
+            Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME)
+        .describedAs(
+            "Headers should include only configured, default or automatically set user task properties")
+        .containsOnly(
+            // Task key is always included
+            entry(Protocol.USER_TASK_KEY_HEADER_NAME, userTaskKey),
+            // Assignee should match the initial value
+            entry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "initial_assignee"),
+            // Default priority is propagated
+            entry(Protocol.USER_TASK_PRIORITY_HEADER_NAME, "50"));
+
+    // Complete the assigning listener job triggered after the user task creation
+    completeJobs(processInstanceKey, listenerType);
+
+    // when: unassigning the user task
+    ENGINE.userTask().ofInstance(processInstanceKey).unassign();
+
+    // then
+    final var unassigningListenerJob = activateJob(processInstanceKey, listenerType);
+    assertThat(unassigningListenerJob.getCustomHeaders())
+        .describedAs(
+            "Headers should not include the 'assignee' property, as it is cleared during unassignment")
+        .doesNotContainKeys(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME)
+        .describedAs("Headers should not contain other empty or non-configured properties")
+        .doesNotContainKeys(
+            Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME,
+            Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME,
+            Protocol.USER_TASK_DUE_DATE_HEADER_NAME,
+            Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME)
+        .describedAs(
+            "Headers should include only configured, default or automatically set user task properties")
+        .containsOnly(
+            // Task key is always included
+            entry(Protocol.USER_TASK_KEY_HEADER_NAME, userTaskKey),
+            // Priority remains unchanged
+            entry(Protocol.USER_TASK_PRIORITY_HEADER_NAME, "50"),
+            // Action should reflect the unassign operation
+            entry(Protocol.USER_TASK_ACTION_HEADER_NAME, "unassign"));
+  }
+
+  @Test
   public void shouldProvideVariablesOfTaskCompletionToCompleteTaskListener() {
     // given
     final var processInstanceKey =
