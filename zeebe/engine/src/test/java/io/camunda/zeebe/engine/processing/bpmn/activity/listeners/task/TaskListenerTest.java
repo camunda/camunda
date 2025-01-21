@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
@@ -648,9 +649,8 @@ public class TaskListenerTest {
   }
 
   @Test
-  @Ignore(
-      "Ignored due to task listener job completion rejection when variables payload is provided (issue #24056). Re-enable after implementing issue #23702.")
-  public void shouldMakeVariablesFromPreviousTaskListenersAvailableToSubsequentListeners() {
+  public void
+      shouldMakeVariablesFromPreviousCompletingTaskListenersAvailableToSubsequentListeners() {
     final long processInstanceKey =
         createProcessInstance(
             createProcessWithCompletingTaskListeners(listenerType, listenerType + "_2"));
@@ -671,9 +671,55 @@ public class TaskListenerTest {
   }
 
   @Test
+  public void
+      shouldMakeVariablesFromPreviousAssigningTaskListenersAvailableToSubsequentListenersDuringAssignCommand() {
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.assigning, listenerType, listenerType + "_2"));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("chewey").assign();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withVariable("listener_1_var", "foo")
+        .complete();
+
+    // then: `listener_1_var` variable accessible in subsequent TL
+    final var jobActivated = activateJob(processInstanceKey, listenerType + "_2");
+    assertThat(jobActivated.getVariables()).contains(entry("listener_1_var", "foo"));
+  }
+
+  @Test
+  public void
+      shouldMakeVariablesFromPreviousAssigningTaskListenersAvailableToSubsequentListenersDuringClaimCommand() {
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.assigning, listenerType, listenerType + "_2"));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("chewey").claim();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withVariable("listener_1_var", "foo")
+        .complete();
+
+    // then: `listener_1_var` variable accessible in subsequent TL
+    final var jobActivated = activateJob(processInstanceKey, listenerType + "_2");
+    assertThat(jobActivated.getVariables()).contains(entry("listener_1_var", "foo"));
+  }
+
+  @Test
   @Ignore(
-      "Ignored due to task listener job completion rejection when variables payload is provided (issue #24056). Re-enable after implementing issue #23702.")
-  public void shouldNotExposeTaskListenerVariablesOutsideUserTaskScope() {
+      "This behaviour might change, so the variables provided while completing user task listener jobs will be merged to the process instance local scope")
+  public void shouldNotExposeCompletingTaskListenerVariablesOutsideUserTaskScope() {
     // given: deploy a process with a user task having complete TL and service task following it
     final long processInstanceKey =
         createProcessInstance(
@@ -706,8 +752,97 @@ public class TaskListenerTest {
   }
 
   @Test
-  @Ignore(
-      "Ignored due to task listener job completion rejection when variables payload is provided (issue #24056). Re-enable after implementing issue #23702.")
+  public void
+      completingTaskListenerVariableShouldBePropagatedToTheGlobalScopeAfterCompletingUserTask() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(createProcessWithCompletingTaskListeners(listenerType));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // when: complete TL job with a variable
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withVariable("my_completing_listener_var", "completing")
+        .complete();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("my_completing_listener_var")
+                .getFirst()
+                .getValue())
+        .hasValue("\"completing\"")
+        .describedAs("Variable should be propagated to the global scope")
+        .hasScopeKey(processInstanceKey);
+  }
+
+  @Test
+  public void
+      assigningTaskListenerVariableShouldBecomeLocalUserTaskVariableAfterAssigningUserTask() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.assigning, listenerType));
+
+    final var userTaskRecord =
+        ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("barry").assign();
+
+    // when: complete TL job with a variable
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withVariable("my_assigning_listener_var", "bar")
+        .complete();
+
+    // that
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("my_assigning_listener_var")
+                .getFirst()
+                .getValue())
+        .hasValue("\"bar\"")
+        .describedAs("Variable should have user task local scope")
+        .hasScopeKey(userTaskRecord.getKey());
+  }
+
+  @Test
+  public void
+      assigningTaskListenerVariableShouldBecomeLocalUserTaskVariableAfterClaimingUserTask() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.assigning, listenerType));
+
+    final var userTaskRecord =
+        ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("barry").claim();
+
+    // when: complete TL job with a variable
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withVariable("my_assigning_claim_listener_var", "bar")
+        .complete();
+
+    // that
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("my_assigning_claim_listener_var")
+                .getFirst()
+                .getValue())
+        .hasValue("\"bar\"")
+        .describedAs("Variable should have user task local scope")
+        .hasScopeKey(userTaskRecord.getKey());
+  }
+
+  @Test
   public void shouldAllowTaskListenerVariablesInUserTaskOutputMappings() {
     // given: deploy a process with a user task having complete TL and service task following it
     final long processInstanceKey =
@@ -889,7 +1024,9 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldRejectCompleteTaskListenerJobCompletionWhenVariablesAreSet() {
+  @Ignore(
+      "This case would not be relevant after enabling user task listener job completion with provided variables")
+  public void shouldRejectCompletingTaskListenerJobCompletionWhenVariablesAreSet() {
     // given
     final long processInstanceKey =
         createProcessInstance(createProcessWithCompletingTaskListeners(listenerType));

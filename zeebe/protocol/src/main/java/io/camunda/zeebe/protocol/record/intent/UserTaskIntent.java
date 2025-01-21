@@ -91,7 +91,9 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
    * This intent is written during the processing of a CLAIM command and marks the User Task with
    * the `CLAIMING` lifecycle state.
    */
-  CLAIMING(20);
+  CLAIMING(20),
+
+  VARIABLES_UPDATED(21);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -153,6 +155,8 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
         return ASSIGNMENT_DENIED;
       case 20:
         return CLAIMING;
+      case 21:
+        return VARIABLES_UPDATED;
       default:
         return UNKNOWN;
     }
@@ -181,6 +185,7 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
       case CORRECTED:
       case ASSIGNMENT_DENIED:
       case CLAIMING:
+      case VARIABLES_UPDATED:
         return true;
       default:
         return false;
