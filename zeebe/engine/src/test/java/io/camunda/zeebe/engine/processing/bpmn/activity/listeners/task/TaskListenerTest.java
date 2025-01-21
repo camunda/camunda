@@ -46,6 +46,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.FormMetadataValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -1370,10 +1371,10 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldProvideCorrectedUserTaskDataToSubsequentAssigningOnCreationTaskListener() {
-    testProvideCorrectedUserTaskDataToSubsequentTaskListener(
+  public void shouldPropagateCorrectedDataToAssigningListenerJobHeadersOnTaskCreation() {
+    verifyUserTaskDataPropagationAcrossListenerJobHeaders(
         ZeebeTaskListenerEventType.assigning,
-        u -> u.zeebeAssignee("initial_assignee"),
+        true,
         userTask -> {},
         List.of(
             UserTaskIntent.CREATING,
@@ -1382,14 +1383,16 @@ public class TaskListenerTest {
             UserTaskIntent.COMPLETE_TASK_LISTENER,
             UserTaskIntent.CORRECTED,
             UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CORRECTED,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
             UserTaskIntent.ASSIGNED));
   }
 
   @Test
-  public void shouldProvideCorrectedUserTaskDataToSubsequentAssigningTaskListener() {
-    testProvideCorrectedUserTaskDataToSubsequentTaskListener(
+  public void shouldPropagateCorrectedDataToAssigningListenerJobHeadersOnTaskAssignment() {
+    verifyUserTaskDataPropagationAcrossListenerJobHeaders(
         ZeebeTaskListenerEventType.assigning,
-        u -> u,
+        false,
         userTask -> userTask.withAssignee("initial_assignee").assign(),
         List.of(
             UserTaskIntent.ASSIGN,
@@ -1397,14 +1400,16 @@ public class TaskListenerTest {
             UserTaskIntent.COMPLETE_TASK_LISTENER,
             UserTaskIntent.CORRECTED,
             UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CORRECTED,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
             UserTaskIntent.ASSIGNED));
   }
 
   @Test
-  public void shouldProvideCorrectedUserTaskDataToSubsequentClaimingTaskListener() {
-    testProvideCorrectedUserTaskDataToSubsequentTaskListener(
+  public void shouldPropagateCorrectedDataToAssigningListenerJobHeadersOnTaskClaiming() {
+    verifyUserTaskDataPropagationAcrossListenerJobHeaders(
         ZeebeTaskListenerEventType.assigning,
-        u -> u,
+        false,
         userTask -> userTask.withAssignee("initial_assignee").claim(),
         List.of(
             UserTaskIntent.CLAIM,
@@ -1412,14 +1417,16 @@ public class TaskListenerTest {
             UserTaskIntent.COMPLETE_TASK_LISTENER,
             UserTaskIntent.CORRECTED,
             UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CORRECTED,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
             UserTaskIntent.ASSIGNED));
   }
 
   @Test
-  public void shouldProvideCorrectedUserTaskDataToSubsequentCompletingTaskListener() {
-    testProvideCorrectedUserTaskDataToSubsequentTaskListener(
+  public void shouldPropagateCorrectedDataToCompletingListenerJobHeadersOnTaskCompletion() {
+    verifyUserTaskDataPropagationAcrossListenerJobHeaders(
         ZeebeTaskListenerEventType.completing,
-        u -> u,
+        false,
         UserTaskClient::complete,
         List.of(
             UserTaskIntent.COMPLETE,
@@ -1427,27 +1434,88 @@ public class TaskListenerTest {
             UserTaskIntent.COMPLETE_TASK_LISTENER,
             UserTaskIntent.CORRECTED,
             UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CORRECTED,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
             UserTaskIntent.COMPLETED));
   }
 
-  private void testProvideCorrectedUserTaskDataToSubsequentTaskListener(
+  /**
+   * Verifies the propagation of user task data across listener job headers during the task
+   * lifecycle.
+   *
+   * <p>The method validates the following scenarios:
+   *
+   * <ul>
+   *   <li>The headers of the first listener reflect the initial state of the user task, including
+   *       configured or default properties.
+   *   <li>After corrections are applied to the user task during completion of the first listener
+   *       job, the headers of the subsequent listener should reflect the corrected properties.
+   *   <li>After user task properties are cleared using corrections during completion of the second
+   *       listener job, the headers of the third listener no longer include those cleared
+   *       properties.
+   *   <li>The entire sequence of user task lifecycle intents aligns with the expected order.
+   * </ul>
+   *
+   * @param eventType the event type of the user task listener
+   * @param isAssigneeConfiguredOnTaskCreation whether the assignee is configured during task
+   *     creation
+   * @param userTaskAction the user task action to trigger the listener (e.g., assign, claim,
+   *     complete)
+   * @param expectedUserTaskIntents the expected sequence of user task intents for the test
+   */
+  private void verifyUserTaskDataPropagationAcrossListenerJobHeaders(
       final ZeebeTaskListenerEventType eventType,
-      final UnaryOperator<UserTaskBuilder> userTaskBuilder,
+      final boolean isAssigneeConfiguredOnTaskCreation,
       final Consumer<UserTaskClient> userTaskAction,
       final List<UserTaskIntent> expectedUserTaskIntents) {
-    // given
+
+    // given: a process instance with a user task configured with listeners and initial properties
     final long processInstanceKey =
         createProcessInstance(
             createProcessWithZeebeUserTask(
-                t ->
-                    userTaskBuilder
-                        .apply(t)
-                        .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType))
-                        .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType + "_2"))));
+                userTask -> {
+                  if (isAssigneeConfiguredOnTaskCreation) {
+                    userTask.zeebeAssignee("initial_assignee");
+                  }
+                  return userTask
+                      .zeebeCandidateUsers("initial_candidate_user")
+                      .zeebeCandidateGroups("initial_candidate_group")
+                      .zeebeDueDate("2085-09-21T11:22:33+02:00")
+                      .zeebeFollowUpDate("2095-09-21T11:22:33+02:00")
+                      .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType))
+                      .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType + "_2"))
+                      .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType + "_3"));
+                }));
+
+    final var createdUserTaskRecord =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    final var userTaskKey = String.valueOf(createdUserTaskRecord.getKey());
 
     userTaskAction.accept(ENGINE.userTask().ofInstance(processInstanceKey));
 
-    // when
+    // Step 1: Validate headers of the first listener (initial user task state)
+    final var firstListenerJob = activateJob(processInstanceKey, listenerType);
+    final var expectedInitialHeaders =
+        new HashMap<String, String>() {
+          {
+            if (isAssigneeConfiguredOnTaskCreation) {
+              put(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "initial_assignee");
+            }
+            put(Protocol.USER_TASK_KEY_HEADER_NAME, userTaskKey);
+            put(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "[\"initial_candidate_user\"]");
+            put(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, "[\"initial_candidate_group\"]");
+            put(Protocol.USER_TASK_DUE_DATE_HEADER_NAME, "2085-09-21T11:22:33+02:00");
+            put(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME, "2095-09-21T11:22:33+02:00");
+            put(Protocol.USER_TASK_PRIORITY_HEADER_NAME, "50");
+          }
+        };
+    assertThat(firstListenerJob.getCustomHeaders())
+        .describedAs("Headers should reflect the initial user task data in the first listener")
+        .containsAllEntriesOf(expectedInitialHeaders);
+
+    // Step 2: Apply corrections to the user task and validate the headers in the second listener
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
@@ -1472,20 +1540,51 @@ public class TaskListenerTest {
                         "priority")))
         .complete();
 
-    // then
-    final var activatedListenerJob = activateJob(processInstanceKey, listenerType + "_2");
-    assertThat(activatedListenerJob.getCustomHeaders())
-        .describedAs("Expect that corrected data is accessible in the subsequent listener")
+    final var secondListenerJob = activateJob(processInstanceKey, listenerType + "_2");
+    assertThat(secondListenerJob.getCustomHeaders())
+        .describedAs(
+            "Headers should reflect the corrected user task data in the subsequent listener")
         .contains(
             entry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "new_assignee"),
+            entry(Protocol.USER_TASK_KEY_HEADER_NAME, userTaskKey),
             entry(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "[\"new_candidate_user\"]"),
             entry(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, "[\"new_candidate_group\"]"),
             entry(Protocol.USER_TASK_DUE_DATE_HEADER_NAME, "new_due_date"),
             entry(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME, "new_follow_up_date"),
             entry(Protocol.USER_TASK_PRIORITY_HEADER_NAME, "100"));
 
-    completeJobs(processInstanceKey, listenerType + "_2");
+    // Step 3: Clear user task properties using corrections and validate third listener headers
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType + "_2")
+        .withResult(
+            new JobResult()
+                .setCorrections(new JobResultCorrections())
+                .setCorrectedAttributes(
+                    List.of(
+                        "assignee",
+                        "candidateUsersList",
+                        "candidateGroupsList",
+                        "dueDate",
+                        "followUpDate",
+                        "priority")))
+        .complete();
 
+    final var thirdListenerJob = activateJob(processInstanceKey, listenerType + "_3");
+    assertThat(thirdListenerJob.getCustomHeaders())
+        .describedAs("Headers should not include cleared user task properties")
+        .doesNotContainKeys(
+            Protocol.USER_TASK_ASSIGNEE_HEADER_NAME,
+            Protocol.USER_TASK_PRIORITY_HEADER_NAME,
+            Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME,
+            Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME,
+            Protocol.USER_TASK_DUE_DATE_HEADER_NAME,
+            Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME);
+
+    completeJobs(processInstanceKey, listenerType + "_3");
+
+    // Step 4: Validate the complete sequence of user task lifecycle intents
     assertUserTaskIntentsSequence(expectedUserTaskIntents.toArray(UserTaskIntent[]::new));
   }
 
