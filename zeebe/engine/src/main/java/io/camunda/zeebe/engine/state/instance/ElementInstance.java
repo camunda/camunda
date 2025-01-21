@@ -301,4 +301,27 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   public List<DirectBuffer> getActiveSequenceFlowIds() {
     return activeSequenceFlowIdsProp.stream().map(StringValue::getValue).toList();
   }
+
+  /**
+   * Expresses the current depth of the process instance in the called process tree.
+   *
+   * <p>A root process instance has depth 1. Each child instance has the depth of its parent
+   * incremented by 1.
+   *
+   * @since 8.7
+   * @apiNote This value is added in 8.7, any child process instances created before 8.7 will have a
+   *     depth of 1 rather than a correct value. Child instances created on or after 8.7 will have a
+   *     depth of 1 + the depth of the parent instance. Therefore, child instances created on or
+   *     after 8.7 that are part of a root process instance created prior to 8.7, will not have a
+   *     correct depth.
+   */
+  public int getProcessDepth() {
+    final int processDepth = getValue().getProcessDefinitionPath().size();
+    if (processDepth == 0) {
+      // This process instance was created prior to 8.7 and its process definition path has not been
+      // tracked yet. As we cannot determine the depth, we return 1 as a fallback.
+      return 1;
+    }
+    return processDepth;
+  }
 }

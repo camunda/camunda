@@ -14,3 +14,4 @@ zeebe:
           timeoutCheckerBatchLimit: 1000
         validators:
           resultsOutputMaxSize: 2000
+        maxProcessDepth: 2000
