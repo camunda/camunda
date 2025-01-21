@@ -47,7 +47,7 @@ public class ServiceTaskValidator implements ModelElementValidator<ServiceTask> 
     final ExtensionElements extensionElements = element.getExtensionElements();
 
     if (extensionElements == null) {
-      return true;
+      return false;
     }
     final Collection<ZeebeLinkedResources> linkedResources =
         extensionElements.getChildElementsByType(ZeebeLinkedResources.class);
@@ -55,7 +55,6 @@ public class ServiceTaskValidator implements ModelElementValidator<ServiceTask> 
         extensionElements.getChildElementsByType(ZeebeTaskDefinition.class);
 
     return linkedResources.size() == 1 && taskDefinitions.isEmpty()
-        || linkedResources.isEmpty() && taskDefinitions.size() == 1
-        || linkedResources.isEmpty() && taskDefinitions.isEmpty();
+        || linkedResources.isEmpty() && taskDefinitions.size() == 1;
   }
 }
