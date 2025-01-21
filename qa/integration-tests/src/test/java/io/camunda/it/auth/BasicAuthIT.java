@@ -10,7 +10,6 @@ package io.camunda.it.auth;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -82,7 +81,7 @@ public class BasicAuthIT {
                 null));
     when(tenantServices.getTenantsByMemberKey(anyLong()))
         .thenReturn(
-            List.of(new TenantEntity(9L, "T1", "Tenant 1", "Tenant 1 description", Set.of())));
+            List.of(new TenantEntity(9L, "T1", "Tenant 1", "Tenant 1 description")));
 
     when(authorizationServices.findAll(any()))
         .thenReturn(

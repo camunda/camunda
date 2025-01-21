@@ -8,8 +8,7 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.util.Set;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record TenantEntity(
-    Long key, String tenantId, String name, String description, Set<Long> assignedMemberKeys) {}
+    Long key, String tenantId, String name, String description) {}

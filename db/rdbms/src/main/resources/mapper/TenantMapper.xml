@@ -20,15 +20,11 @@
     resultMap="io.camunda.db.rdbms.sql.TenantMapper.tenantResultMap">
     SELECT * FROM (
     SELECT
-    t.TENANT_KEY,
-    t.TENANT_ID,
-    t.NAME,
-    t.DESCRIPTION,
-    tm.TENANT_ID AS MEMBER_TENANT_ID,
-    tm.ENTITY_KEY AS MEMBER_ENTITY_KEY,
-    tm.ENTITY_TYPE AS MEMBER_ENTITY_TYPE
+    TENANT_KEY,
+    TENANT_ID,
+    NAME,
+    DESCRIPTION
     FROM TENANT t
-    LEFT JOIN TENANT_MEMBER tm ON t.TENANT_ID = tm.TENANT_ID
     <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -48,14 +44,6 @@
     <result column="TENANT_KEY" property="tenantKey"/>
     <result column="NAME" property="name"/>
     <result column="DESCRIPTION" property="description"/>
-    <collection property="members" ofType="io.camunda.db.rdbms.write.domain.TenantMemberDbModel"
-      javaType="java.util.List">
-      <constructor>
-        <idArg column="MEMBER_TENANT_ID" javaType="java.lang.String"/>
-        <idArg column="MEMBER_ENTITY_KEY" javaType="java.lang.Long"/>
-        <arg column="MEMBER_ENTITY_TYPE" javaType="java.lang.String"/>
-      </constructor>
-    </collection>
   </resultMap>
 
   <insert

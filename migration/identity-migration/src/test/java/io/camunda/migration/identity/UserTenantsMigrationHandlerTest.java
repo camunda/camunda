@@ -34,7 +34,6 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -94,7 +93,7 @@ final class UserTenantsMigrationHandlerTest {
     // given
     givenUserTenants();
     when(tenantServices.getById(any()))
-        .thenReturn(new TenantEntity(1L, "", "", null, Collections.emptySet()));
+        .thenReturn(new TenantEntity(1L, "", "", null));
     when(tenantServices.createTenant(any()))
         .thenReturn(CompletableFuture.completedFuture(new TenantRecord()));
     when(mappingServices.createMapping(any()))
@@ -163,7 +162,7 @@ final class UserTenantsMigrationHandlerTest {
     // given
     givenUserTenants();
     when(tenantServices.getById(any()))
-        .thenReturn(new TenantEntity(1L, "", "", null, Collections.emptySet()));
+        .thenReturn(new TenantEntity(1L, "", "", null));
     doThrow(
             new BrokerRejectionException(
                 new BrokerRejection(TenantIntent.ADD_ENTITY, -1, RejectionType.ALREADY_EXISTS, "")))
