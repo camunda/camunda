@@ -9,4 +9,4 @@ package io.camunda.zeebe.gateway.rest;
 
 import io.camunda.zeebe.gateway.protocol.rest.SortOrderEnum;
 
-public record SearchQuerySortRequest(String field, SortOrderEnum order) {}
+public record SearchQuerySortRequest<T>(T field, SortOrderEnum order) {}
