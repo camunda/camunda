@@ -17,7 +17,19 @@ import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceType;
 import io.camunda.service.entities.IncidentEntity;
 import io.camunda.service.entities.IncidentEntity.IncidentState;
-import io.camunda.service.search.filter.*;
+import io.camunda.service.search.filter.DateValueFilter;
+import io.camunda.service.search.filter.DecisionDefinitionFilter;
+import io.camunda.service.search.filter.DecisionInstanceFilter;
+import io.camunda.service.search.filter.DecisionRequirementsFilter;
+import io.camunda.service.search.filter.FilterBase;
+import io.camunda.service.search.filter.FilterBuilders;
+import io.camunda.service.search.filter.FlowNodeInstanceFilter;
+import io.camunda.service.search.filter.IncidentFilter;
+import io.camunda.service.search.filter.ProcessInstanceFilter;
+import io.camunda.service.search.filter.ProcessInstanceVariableFilter;
+import io.camunda.service.search.filter.UserFilter;
+import io.camunda.service.search.filter.UserTaskFilter;
+import io.camunda.service.search.filter.VariableValueFilter;
 import io.camunda.service.search.page.SearchQueryPage;
 import io.camunda.service.search.query.DecisionDefinitionQuery;
 import io.camunda.service.search.query.DecisionInstanceQuery;
@@ -40,7 +52,27 @@ import io.camunda.service.search.sort.SortOptionBuilders;
 import io.camunda.service.search.sort.UserSort;
 import io.camunda.service.search.sort.UserTaskSort;
 import io.camunda.util.ObjectBuilder;
-import io.camunda.zeebe.gateway.protocol.rest.*;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceVariableFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
+import io.camunda.zeebe.gateway.protocol.rest.SearchQuerySortRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskVariableFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.VariableValueFilterRequest;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
 import io.camunda.zeebe.util.Either;
 import jakarta.validation.constraints.NotNull;
@@ -133,7 +165,7 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::decisionInstanceSearchQuery);
   }
 
-  private static io.camunda.service.search.filter.DecisionInstanceFilter toDecisionInstanceFilter(
+  private static DecisionInstanceFilter toDecisionInstanceFilter(
       final DecisionInstanceFilterRequest filter) {
     final var builder = FilterBuilders.decisionInstance();
 
@@ -230,7 +262,7 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::incidentSearchQuery);
   }
 
-  private static io.camunda.service.search.filter.ProcessInstanceFilter toProcessInstanceFilter(
+  private static ProcessInstanceFilter toProcessInstanceFilter(
       final ProcessInstanceFilterRequest filter) {
     final var builder = FilterBuilders.processInstance();
 
@@ -284,8 +316,8 @@ public final class SearchQueryRequestMapper {
     return null;
   }
 
-  private static io.camunda.service.search.filter.DecisionDefinitionFilter
-      toDecisionDefinitionFilter(final DecisionDefinitionFilterRequest filter) {
+  private static DecisionDefinitionFilter toDecisionDefinitionFilter(
+      final DecisionDefinitionFilterRequest filter) {
     final var builder = FilterBuilders.decisionDefinition();
 
     if (filter != null) {
@@ -301,8 +333,8 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static io.camunda.service.search.filter.DecisionRequirementsFilter
-      toDecisionRequirementsFilter(final DecisionRequirementsFilterRequest filter) {
+  private static DecisionRequirementsFilter toDecisionRequirementsFilter(
+      final DecisionRequirementsFilterRequest filter) {
     final var builder = FilterBuilders.decisionRequirements();
 
     Optional.ofNullable(filter)
@@ -321,7 +353,7 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static io.camunda.service.search.filter.FlowNodeInstanceFilter toFlownodeInstanceFilter(
+  private static FlowNodeInstanceFilter toFlownodeInstanceFilter(
       final FlowNodeInstanceFilterRequest filter) {
     final var builder = FilterBuilders.flownodeInstance();
     Optional.ofNullable(filter)
@@ -384,8 +416,7 @@ public final class SearchQueryRequestMapper {
         .orElse(null);
   }
 
-  private static io.camunda.service.search.filter.IncidentFilter toIncidentFilter(
-      final IncidentFilterRequest filter) {
+  private static IncidentFilter toIncidentFilter(final IncidentFilterRequest filter) {
     final var builder = FilterBuilders.incident();
 
     if (filter != null) {
