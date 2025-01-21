@@ -13,6 +13,8 @@ import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Refresh;
@@ -214,46 +216,70 @@ public class OpensearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public void execute() throws PersistenceException {
-    execute(false);
+  public void execute(final BiConsumer<String, String> customErrorHandlers)
+      throws PersistenceException {
+    execute(customErrorHandlers, false);
   }
 
   @Override
   public void executeWithRefresh() throws PersistenceException {
-    execute(true);
+    execute(null, true);
   }
 
-  private void execute(final boolean shouldRefresh) throws PersistenceException {
+  private void execute(
+      final BiConsumer<String, String> customErrorHandlers, final boolean shouldRefresh)
+      throws PersistenceException {
     if (shouldRefresh) {
       bulkRequestBuilder.refresh(Refresh.True);
     }
     final BulkRequest bulkRequest = bulkRequestBuilder.build();
-    processBulkRequest(bulkRequest);
+    processBulkRequest(bulkRequest, customErrorHandlers);
   }
 
-  private void processBulkRequest(final BulkRequest bulkRequest) throws PersistenceException {
+  private void processBulkRequest(
+      final BulkRequest bulkRequest, final BiConsumer<String, String> customErrorHandlers)
+      throws PersistenceException {
     if (bulkRequest.operations().isEmpty()) {
       return;
     }
     try {
       final BulkResponse bulkItemResponses = osClient.bulk(bulkRequest);
       final List<BulkResponseItem> items = bulkItemResponses.items();
-      for (final BulkResponseItem responseItem : items) {
-        if (responseItem.error() != null) {
-          LOGGER.warn(
-              String.format(
-                  "%s failed for type [%s] and id [%s]: %s",
-                  responseItem.operationType(),
-                  responseItem.index(),
-                  responseItem.id(),
-                  responseItem.error().reason()),
-              "error on OpenSearch BulkRequest");
-          throw new PersistenceException("Operation failed: " + responseItem.error().reason());
-        }
-      }
+      validateNoErrors(items, customErrorHandlers);
     } catch (final IOException | OpenSearchException ex) {
       throw new PersistenceException(
           "Error when processing bulk request against OpenSearch: " + ex.getMessage(), ex);
     }
+  }
+
+  private void validateNoErrors(
+      final List<BulkResponseItem> items, final BiConsumer<String, String> errorHandlers) {
+    final var errorItems = items.stream().filter(item -> item.error() != null).toList();
+    if (errorItems.isEmpty()) {
+      return;
+    }
+
+    final String errorMessages =
+        errorItems.stream()
+            .map(
+                item ->
+                    String.format(
+                        "%s failed for type [%s] and id [%s]: %s",
+                        item.operationType(), item.index(), item.id(), item.error().reason()))
+            .collect(Collectors.joining(", \n"));
+    LOGGER.warn("Bulk request execution failed: \n[{}]", errorMessages);
+
+    errorItems.forEach(
+        item -> {
+          final String message =
+              String.format(
+                  "%s failed for type [%s] and id [%s]: %s",
+                  item.operationType(), item.index(), item.id(), item.error().reason());
+          if (errorHandlers != null) {
+            errorHandlers.accept(item.index(), message);
+          } else {
+            throw new PersistenceException(message);
+          }
+        });
   }
 }

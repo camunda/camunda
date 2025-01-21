@@ -65,7 +65,7 @@ class OpensearchBatchRequestTest {
 
     // When
     batchRequest.add(INDEX, entity);
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -92,7 +92,7 @@ class OpensearchBatchRequestTest {
     // When
     batchRequest.addWithRouting(INDEX, entity, routing);
 
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -120,7 +120,7 @@ class OpensearchBatchRequestTest {
 
     // When
     batchRequest.upsert(INDEX, ID, entity, updateFields);
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -148,7 +148,7 @@ class OpensearchBatchRequestTest {
 
     // When
     batchRequest.upsertWithRouting(INDEX, ID, entity, updateFields, routing);
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -179,7 +179,7 @@ class OpensearchBatchRequestTest {
 
     // When
     batchRequest.upsertWithScript(INDEX, ID, entity, script, params);
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -210,7 +210,7 @@ class OpensearchBatchRequestTest {
 
     // When
     batchRequest.upsertWithScriptAndRouting(INDEX, ID, entity, script, params, routing);
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -235,7 +235,7 @@ class OpensearchBatchRequestTest {
 
     // When
     batchRequest.update(INDEX, ID, updateFields);
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -260,7 +260,7 @@ class OpensearchBatchRequestTest {
 
     // When
     batchRequest.update(INDEX, ID, entity);
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -289,7 +289,7 @@ class OpensearchBatchRequestTest {
 
     // When
     batchRequest.updateWithScript(INDEX, ID, script, params);
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -314,7 +314,7 @@ class OpensearchBatchRequestTest {
 
     // When
     batchRequest.delete(INDEX, ID);
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -339,7 +339,7 @@ class OpensearchBatchRequestTest {
 
     // when
     batchRequest.deleteWithRouting(INDEX, ID, routing);
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -365,7 +365,7 @@ class OpensearchBatchRequestTest {
     // When
     batchRequest.add(INDEX, entity);
     batchRequest.update(INDEX, ID, entity);
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -404,7 +404,7 @@ class OpensearchBatchRequestTest {
     when(osClient.bulk(any(BulkRequest.class))).thenThrow(throwable);
 
     // When
-    final ThrowingCallable callable = () -> batchRequest.execute();
+    final ThrowingCallable callable = () -> batchRequest.execute(null);
 
     // Then
     assertThatThrownBy(callable).isInstanceOf(PersistenceException.class);
@@ -428,7 +428,7 @@ class OpensearchBatchRequestTest {
 
     // When
     batchRequest.add(INDEX, entity);
-    final ThrowingCallable callable = () -> batchRequest.execute();
+    final ThrowingCallable callable = () -> batchRequest.execute(null);
 
     // Then
     assertThatThrownBy(callable).isInstanceOf(PersistenceException.class);

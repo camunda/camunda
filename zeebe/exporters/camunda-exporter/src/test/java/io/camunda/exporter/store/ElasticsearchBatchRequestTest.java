@@ -66,7 +66,7 @@ class ElasticsearchBatchRequestTest {
 
     // When
     batchRequest.add(INDEX, entity);
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -93,7 +93,7 @@ class ElasticsearchBatchRequestTest {
     // When
     batchRequest.addWithRouting(INDEX, entity, routing);
 
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -121,7 +121,7 @@ class ElasticsearchBatchRequestTest {
 
     // When
     batchRequest.upsert(INDEX, ID, entity, updateFields);
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -150,7 +150,7 @@ class ElasticsearchBatchRequestTest {
 
     // When
     batchRequest.upsertWithRouting(INDEX, ID, entity, updateFields, routing);
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -183,7 +183,7 @@ class ElasticsearchBatchRequestTest {
 
     // When
     batchRequest.upsertWithScript(INDEX, ID, entity, script, params);
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -216,7 +216,7 @@ class ElasticsearchBatchRequestTest {
 
     // When
     batchRequest.upsertWithScriptAndRouting(INDEX, ID, entity, script, params, routing);
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -243,7 +243,7 @@ class ElasticsearchBatchRequestTest {
 
     // When
     batchRequest.update(INDEX, ID, updateFields);
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -269,7 +269,7 @@ class ElasticsearchBatchRequestTest {
 
     // When
     batchRequest.update(INDEX, ID, entity);
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -299,7 +299,7 @@ class ElasticsearchBatchRequestTest {
 
     // When
     batchRequest.updateWithScript(INDEX, ID, script, params);
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -322,7 +322,7 @@ class ElasticsearchBatchRequestTest {
   void shouldDeleteEntity() throws IOException, PersistenceException {
     // When
     batchRequest.delete(INDEX, ID);
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -347,7 +347,7 @@ class ElasticsearchBatchRequestTest {
 
     // when
     batchRequest.deleteWithRouting(INDEX, ID, routing);
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -373,7 +373,7 @@ class ElasticsearchBatchRequestTest {
     // When
     batchRequest.add(INDEX, entity);
     batchRequest.update(INDEX, ID, entity);
-    batchRequest.execute();
+    batchRequest.execute(null);
 
     // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
@@ -412,7 +412,7 @@ class ElasticsearchBatchRequestTest {
     when(elasticsearchClient.bulk(any(BulkRequest.class))).thenThrow(throwable);
 
     // When
-    final ThrowingCallable callable = () -> batchRequest.execute();
+    final ThrowingCallable callable = () -> batchRequest.execute(null);
 
     // Then
     assertThatThrownBy(callable).isInstanceOf(PersistenceException.class);
@@ -434,7 +434,7 @@ class ElasticsearchBatchRequestTest {
 
     // When
     batchRequest.add(INDEX, entity);
-    final ThrowingCallable callable = () -> batchRequest.execute();
+    final ThrowingCallable callable = () -> batchRequest.execute(null);
 
     // Then
     assertThatThrownBy(callable).isInstanceOf(PersistenceException.class);
