@@ -12,7 +12,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 public enum AuthorizationResourceType {
-  AUTHORIZATION(PermissionType.READ, PermissionType.UPDATE),
+  AUTHORIZATION(
+      PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE, PermissionType.CREATE),
   MAPPING_RULE(
       PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   MESSAGE(PermissionType.CREATE, PermissionType.READ),
