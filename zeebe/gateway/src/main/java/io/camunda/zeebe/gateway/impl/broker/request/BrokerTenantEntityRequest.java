@@ -34,6 +34,11 @@ public final class BrokerTenantEntityRequest extends BrokerExecuteCommand<Tenant
     return this;
   }
 
+  public BrokerTenantEntityRequest setTenantId(final String tenantId) {
+    tenantDto.setTenantId(tenantId);
+    return this;
+  }
+
   public BrokerTenantEntityRequest setEntity(final EntityType entityType, final long entityKey) {
     if (entityType != EntityType.USER
         && entityType != EntityType.MAPPING
@@ -43,6 +48,18 @@ public final class BrokerTenantEntityRequest extends BrokerExecuteCommand<Tenant
     }
     tenantDto.setEntityType(entityType);
     tenantDto.setEntityKey(entityKey);
+    return this;
+  }
+
+  public BrokerTenantEntityRequest setEntity(final EntityType entityType, final String entityId) {
+    if (entityType != EntityType.USER
+        && entityType != EntityType.MAPPING
+        && entityType != EntityType.GROUP) {
+      throw new IllegalArgumentException(
+          "For now, tenants can only be assigned to users, groups and mappings");
+    }
+    tenantDto.setEntityType(entityType);
+    tenantDto.setEntityId(entityId);
     return this;
   }
 

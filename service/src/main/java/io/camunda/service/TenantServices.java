@@ -88,6 +88,14 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
             .setEntity(entityType, entityKey));
   }
 
+  public CompletableFuture<TenantRecord> addMember(
+      final String tenantId, final EntityType entityType, final String entityId) {
+    return sendBrokerRequest(
+        BrokerTenantEntityRequest.createAddRequest()
+            .setTenantId(tenantId)
+            .setEntity(entityType, entityId));
+  }
+
   public CompletableFuture<TenantRecord> removeMember(
       final Long tenantKey, final EntityType entityType, final long entityKey) {
     return sendBrokerRequest(
