@@ -22,6 +22,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 public final class TopologyMetrics {
@@ -95,18 +97,32 @@ public final class TopologyMetrics {
   private static io.micrometer.core.instrument.Gauge MICRO_CHANGE_ID;
   private static io.micrometer.core.instrument.Gauge MICRO_CHANGE_STATUS;
   private static io.micrometer.core.instrument.Gauge MICRO_CHANGE_VERSION;
-  private static io.micrometer.core.instrument.Gauge MICRO_TOPOLOGY_VERSION;
-  private static io.micrometer.core.instrument.Gauge MICRO_PENDING_OPERATIONS;
-  private static io.micrometer.core.instrument.Gauge MICRO_COMPLETED_OPERATIONS;
+  private static final AtomicLong MICRO_TOPOLOGY_VERSION = new AtomicLong(0);
+  private static final AtomicInteger MICRO_PENDING_OPERATIONS = new AtomicInteger(0);
+  private static final AtomicInteger MICRO_COMPLETED_OPERATIONS = new AtomicInteger(0);
+
+  static {
+    io.micrometer.core.instrument.Gauge.builder(
+        NAMESPACE + "_cluster_topology_version_micro", MICRO_TOPOLOGY_VERSION, AtomicLong::get);
+    io.micrometer.core.instrument.Gauge.builder(
+            NAMESPACE + "_cluster_changes_operations_pending_micro",
+            MICRO_PENDING_OPERATIONS,
+            AtomicInteger::get)
+        .description("Number of pending changes in the current change plan")
+        .register(meterRegistry);
+
+    io.micrometer.core.instrument.Gauge.builder(
+            NAMESPACE + "_cluster_changes_operations_completed_micro",
+            MICRO_COMPLETED_OPERATIONS,
+            AtomicInteger::get)
+        .description("Number of completed changes in the current change plan")
+        .register(meterRegistry);
+  }
 
   public static void updateFromTopology(final ClusterConfiguration topology) {
+    MICRO_TOPOLOGY_VERSION.set(topology.version());
     TOPOLOGY_VERSION.set(topology.version());
     // TOPOLOGY_VERSION Gauge
-    MICRO_TOPOLOGY_VERSION =
-        io.micrometer.core.instrument.Gauge.builder(
-                NAMESPACE + "_cluster_topology_version_micro", topology::version)
-            .description("The version of the cluster topology")
-            .register(meterRegistry);
 
     MICRO_CHANGE_STATUS =
         io.micrometer.core.instrument.Gauge.builder(
@@ -144,17 +160,12 @@ public final class TopologyMetrics {
             .register(meterRegistry);
     CHANGE_VERSION.set(topology.pendingChanges().map(ClusterChangePlan::version).orElse(0));
 
-    MICRO_PENDING_OPERATIONS =
-        io.micrometer.core.instrument.Gauge.builder(
-                NAMESPACE + "_cluster_changes_operations_pending_micro",
-                () ->
-                    topology
-                        .pendingChanges()
-                        .map(ClusterChangePlan::pendingOperations)
-                        .map(List::size)
-                        .orElse(0))
-            .description("Number of pending changes in the current change plan")
-            .register(meterRegistry);
+    MICRO_PENDING_OPERATIONS.set(
+        topology
+            .pendingChanges()
+            .map(ClusterChangePlan::pendingOperations)
+            .map(List::size)
+            .orElse(0));
     PENDING_OPERATIONS.set(
         topology
             .pendingChanges()
@@ -162,17 +173,12 @@ public final class TopologyMetrics {
             .map(List::size)
             .orElse(0));
 
-    MICRO_COMPLETED_OPERATIONS =
-        io.micrometer.core.instrument.Gauge.builder(
-                NAMESPACE + "_cluster_changes_operations_completed_micro",
-                () ->
-                    topology
-                        .pendingChanges()
-                        .map(ClusterChangePlan::completedOperations)
-                        .map(List::size)
-                        .orElse(0))
-            .description("Number of completed changes in the current change plan")
-            .register(meterRegistry);
+    MICRO_COMPLETED_OPERATIONS.set(
+        topology
+            .pendingChanges()
+            .map(ClusterChangePlan::completedOperations)
+            .map(List::size)
+            .orElse(0));
     COMPLETED_OPERATIONS.set(
         topology
             .pendingChanges()
@@ -209,8 +215,6 @@ public final class TopologyMetrics {
     }
 
     static OperationObserver startOperation(final ClusterConfigurationChangeOperation operation) {
-      MICRO_PENDING_OPERATIONS.value();
-      MICRO_COMPLETED_OPERATIONS.value();
       return new OperationObserver(
           operation,
           OPERATION_DURATION.labels(operation.getClass().getSimpleName()).startTimer(),
@@ -230,8 +234,6 @@ public final class TopologyMetrics {
     }
 
     public void failed() {
-      MICRO_PENDING_OPERATIONS.value();
-      MICRO_COMPLETED_OPERATIONS.value();
       if (clusterChangeOperationTimer != null && clusterChangeOperationTimerSample != null) {
         clusterChangeOperationTimerSample.stop(clusterChangeOperationTimer);
       }
@@ -255,8 +257,6 @@ public final class TopologyMetrics {
     }
 
     public void applied() {
-      MICRO_PENDING_OPERATIONS.value();
-      MICRO_COMPLETED_OPERATIONS.value();
       if (clusterChangeOperationTimer != null && clusterChangeOperationTimerSample != null) {
         clusterChangeOperationTimerSample.stop(clusterChangeOperationTimer);
       }
