@@ -42,9 +42,6 @@ public interface SearchTestRuleProvider {
   void processAllRecordsAndWait(
       Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments);
 
-  void processRecordsWithTypeAndWait(
-      ImportValueType importValueType, Predicate<Object[]> predicate, Object... arguments);
-
   void processRecordsAndWaitFor(
       Collection<RecordsReader> readers,
       Integer maxWaitingRounds,
