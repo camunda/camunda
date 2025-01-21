@@ -37,9 +37,10 @@ public class TenantEntityAddedApplier implements TypedEventApplier<TenantIntent,
       case USER -> {
         final var username = tenant.getEntityId();
         final var userKey = userState.getUser(username).orElseThrow().getUserKey();
+        final var tenantKey = tenantState.getTenantKeyById(tenant.getTenantId()).orElseThrow();
         tenantState.addEntity(
             new TenantRecord()
-                .setTenantKey(tenant.getTenantKey())
+                .setTenantKey(tenantKey)
                 .setEntityType(EntityType.USER)
                 .setEntityKey(userKey));
         userState.addTenantId(username, tenant.getTenantId());
