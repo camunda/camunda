@@ -269,8 +269,8 @@ public class TenantControllerTest extends RestControllerTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideAddMemberTestCases")
-  void testAddMemberToTenant(final EntityType entityType, final String entityPath) {
+  @MethodSource("provideAddMemberByKeyTestCases")
+  void testAddMemberToTenantByKey(final EntityType entityType, final String entityPath) {
     // given
     final var tenantKey = 100L;
     final var entityKey = 42L;
@@ -289,6 +289,29 @@ public class TenantControllerTest extends RestControllerTest {
 
     // then
     verify(tenantServices, times(1)).addMember(tenantKey, entityType, entityKey);
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideAddMemberByIdTestCases")
+  void testAddMemberToTenantById(final EntityType entityType, final String entityPath) {
+    // given
+    final var tenantId = "some-tenant-id";
+    final var entityId = "some-entity-id";
+
+    when(tenantServices.addMember(tenantId, entityType, entityId))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .put()
+        .uri("%s/%s/%s/%s".formatted(TENANT_BASE_URL, tenantId, entityPath, entityId))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    // then
+    verify(tenantServices, times(1)).addMember(tenantId, entityType, entityId);
   }
 
   @ParameterizedTest
@@ -314,11 +337,14 @@ public class TenantControllerTest extends RestControllerTest {
     verify(tenantServices, times(1)).removeMember(tenantKey, entityType, entityKey);
   }
 
-  private static Stream<Arguments> provideAddMemberTestCases() {
+  private static Stream<Arguments> provideAddMemberByKeyTestCases() {
     return Stream.of(
-        Arguments.of(EntityType.USER, "users"),
         Arguments.of(EntityType.MAPPING, "mapping-rules"),
         Arguments.of(EntityType.GROUP, "groups"));
+  }
+
+  private static Stream<Arguments> provideAddMemberByIdTestCases() {
+    return Stream.of(Arguments.of(EntityType.USER, "users"));
   }
 
   private static Stream<Arguments> provideRemoveMemberTestCases() {
