@@ -60,7 +60,7 @@ public final class ClientProperties {
   /**
    * @see CamundaClientBuilder#numJobWorkerExecutionThreads(int)
    */
-  public static final String JOB_WORKER_EXECUTION_THREADS = "camunda.client.zeebe.worker.threads";
+  public static final String JOB_WORKER_EXECUTION_THREADS = "camunda.client.worker.threads";
 
   /**
    * @see CamundaClientBuilder#defaultJobWorkerMaxJobsActive(int)
