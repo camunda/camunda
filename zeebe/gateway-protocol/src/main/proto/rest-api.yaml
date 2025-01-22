@@ -3990,6 +3990,7 @@ components:
           description: The description of the tenant.
       required:
         - tenantId
+        - name
 
     TenantCreateResult:
       type: object
