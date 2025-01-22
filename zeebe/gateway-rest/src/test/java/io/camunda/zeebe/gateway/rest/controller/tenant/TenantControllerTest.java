@@ -205,6 +205,85 @@ public class TenantControllerTest extends RestControllerTest {
   }
 
   @Test
+  void updateTenantNameWithoutDescription() {
+    // given
+    final var tenantKey = 100L;
+    final var tenantName = "Updated Tenant Name";
+    final var tenantId = "tenant-test-id";
+    when(tenantServices.updateTenant(new TenantDTO(null, tenantId, tenantName, null)))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new TenantRecord()
+                    .setName(tenantName)
+                    .setTenantKey(tenantKey)
+                    .setTenantId(tenantId)));
+
+    // when
+    webClient
+        .patch()
+        .uri("%s/%s".formatted(TENANT_BASE_URL, tenantId))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new TenantUpdateRequest().name(tenantName))
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+              "tenantKey": "%d",
+              "tenantId": "%s",
+              "name": "%s"
+            }
+            """
+                .formatted(tenantKey, tenantId, tenantName));
+
+    // then
+    verify(tenantServices, times(1)).updateTenant(new TenantDTO(null, tenantId, tenantName, null));
+  }
+
+  @Test
+  void updateTenantDescriptionWithoutName() {
+    // given
+    final var tenantKey = 100L;
+    final var tenantId = "tenant-test-id";
+    final var tenantDescription = "Updated description";
+    when(tenantServices.updateTenant(new TenantDTO(null, tenantId, null, tenantDescription)))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new TenantRecord()
+                    .setDescription(tenantDescription)
+                    .setTenantKey(tenantKey)
+                    .setTenantId(tenantId)));
+
+    // when
+    webClient
+        .patch()
+        .uri("%s/%s".formatted(TENANT_BASE_URL, tenantId))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new TenantUpdateRequest().description(tenantDescription))
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+              "tenantKey": "%d",
+              "tenantId": "%s",
+              "description": "%s"
+            }
+            """
+                .formatted(tenantKey, tenantId, tenantDescription));
+
+    // then
+    verify(tenantServices, times(1))
+        .updateTenant(new TenantDTO(null, tenantId, null, tenantDescription));
+  }
+
+  @Test
   void updateTenantWithoutNameAndDescriptionShouldFail() {
     // given
     final var tenantId = 100L;
