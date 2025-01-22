@@ -378,7 +378,26 @@
       <artifactId>tasklist-webapp</artifactId>
       <scope>test</scope>
     </dependency>
-
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-commons</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-common</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>tasklist-common</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <repositories>
     <repository>
@@ -476,6 +495,30 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+
+    <!--  Profile to configure tests against an external ELASTICSEARCH container -->
+    <profile>
+      <id>e2e-elasticsearch-test</id>
+      <properties>
+        <test.integration.camunda.database.type>es</test.integration.camunda.database.type>
+      </properties>
+    </profile>
+
+    <!--  Profile to configure tests against an external OPENSEARCH container -->
+    <profile>
+      <id>e2e-opensearch-test</id>
+      <properties>
+        <test.integration.camunda.database.type>es</test.integration.camunda.database.type>
+      </properties>
+    </profile>
+
+    <!--  Profile to configure tests against an external RDBMS container -->
+    <profile>
+      <id>e2e-rdbms-test</id>
+      <properties>
+        <test.integration.camunda.database.type>rdbms</test.integration.camunda.database.type>
+      </properties>
     </profile>
   </profiles>
 
