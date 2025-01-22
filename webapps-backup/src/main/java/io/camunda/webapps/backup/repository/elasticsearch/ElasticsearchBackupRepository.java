@@ -30,6 +30,7 @@ import io.camunda.webapps.backup.BackupException.MissingRepositoryException;
 import io.camunda.webapps.backup.BackupException.ResourceNotFoundException;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.BackupService;
+import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDetailDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
@@ -274,16 +275,13 @@ public class ElasticsearchBackupRepository implements BackupRepository {
 
   @Override
   public void executeSnapshotting(
-      final BackupService.SnapshotRequest snapshotRequest,
-      final boolean onlyRequired,
-      final Runnable onSuccess,
-      final Runnable onFailure) {
+      final SnapshotRequest snapshotRequest, final Runnable onSuccess, final Runnable onFailure) {
     final var request =
         CreateSnapshotRequest.of(
             b ->
                 b.repository(snapshotRequest.repositoryName())
                     .snapshot(snapshotRequest.snapshotName())
-                    .indices(snapshotRequest.indices(onlyRequired))
+                    .indices(snapshotRequest.indices().allIndices())
                     // ignoreUnavailable = false - indices defined by their exact name MUST be
                     // present
                     // allowNoIndices = true - indices defined by wildcards, e.g. archived, MIGHT BE
@@ -305,15 +303,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
             final var response = esClient.snapshot().create(request);
             listener.onResponse(response);
           } catch (final Exception e) {
-            if (isErrorType(e, INDEX_MISSING_EXCEPTION_TYPE) && !onlyRequired) {
-              // Retry taking only the required indices
-              LOGGER.debug(
-                  "Failed to execute snapshot because some index is missing, retry only with required indices",
-                  e);
-              executeSnapshotting(snapshotRequest, true, onSuccess, onFailure);
-            } else {
-              listener.onFailure(e);
-            }
+            listener.onFailure(e);
           }
         });
   }

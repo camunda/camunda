@@ -9,7 +9,6 @@ package io.camunda.webapps.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.when;
 
 import io.camunda.webapps.backup.BackupException.IndexNotFoundException;
 import io.camunda.webapps.backup.BackupService.SnapshotRequest;
@@ -35,7 +34,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -54,8 +52,7 @@ public class BackupServiceImplTest {
 
   BackupServiceImpl backupService;
   ExecutorService executor;
-  BackupPriorities backupPriorities;
-  BackupRepositoryProps backupRepositoryProps =
+  private final BackupRepositoryProps backupRepositoryProps =
       new BackupRepositoryProps() {
         @Override
         public String version() {
@@ -67,7 +64,17 @@ public class BackupServiceImplTest {
           return repositoryName;
         }
       };
-  @Mock DynamicIndicesProvider dynamicIndicesProvider;
+  private List<String> dynamicIndices = List.of();
+  private final DynamicIndicesProvider dynamicIndicesProvider = () -> dynamicIndices;
+
+  public BackupServiceImpl makeBackupService(final BackupPriorities backupPriorities) {
+    return new BackupServiceImpl(
+        executor,
+        backupPriorities,
+        backupRepositoryProps,
+        backupRepository,
+        dynamicIndicesProvider);
+  }
 
   @BeforeEach
   public void setUp() {
@@ -83,10 +90,15 @@ public class BackupServiceImplTest {
 
   @Test
   public void shouldCreateBackupWithAllIndices() {
-    when(dynamicIndicesProvider.getAllDynamicIndices()).thenReturn(List.of("dynamic1", "dynamic2"));
+    // given
+    dynamicIndices = List.of("dynamic1", "dynamic2");
+
+    // when
     final var backup = backupService.takeBackup(new TakeBackupRequestDto().setBackupId(1L));
 
-    waitCompletion();
+    waitForAllTasks();
+
+    // then
     assertThat(backup.getScheduledSnapshots())
         .isEqualTo(
             List.of(
@@ -124,7 +136,7 @@ public class BackupServiceImplTest {
   }
 
   @Test
-  public void shouldSkipMissingNonRequiredIndices() {
+  public void shouldSkipMissingNonRequiredIndicesParts() {
     // given
     final var backupPriorities =
         new BackupPriorities(
@@ -134,27 +146,10 @@ public class BackupServiceImplTest {
             List.of(() -> "prio4"),
             List.of(() -> "prio5"),
             // prio6Backups are not required
-            List.of(
-                new Prio6Backup() {
-                  @Override
-                  public String getFullQualifiedName() {
-                    return "non-required-index";
-                  }
-
-                  @Override
-                  public boolean required() {
-                    return false;
-                  }
-                }));
+            List.of(new Prio6BackupIndex("non-required-index", false)));
     // the index is missing from ES
     backupRepository.addMissingIndices("non-required-index");
-    final var backupService =
-        new BackupServiceImpl(
-            executor,
-            backupPriorities,
-            backupRepositoryProps,
-            backupRepository,
-            dynamicIndicesProvider);
+    final var backupService = makeBackupService(backupPriorities);
     // when
     final var validPatterns = backupService.getValidIndexPatterns();
 
@@ -227,12 +222,20 @@ public class BackupServiceImplTest {
         .containsExactly("test_snapshot_1_1_3", "test_snapshot_1_3_3", "test_snapshot_1_2_3");
   }
 
-  private void waitCompletion() {
+  private void waitForAllTasks() {
     try {
       // wait for the executor to process all tasks
       executor.submit(() -> {}).get();
     } catch (final Exception ex) {
       throw new RuntimeException(ex);
+    }
+  }
+
+  record Prio6BackupIndex(String name, boolean required) implements Prio6Backup {
+
+    @Override
+    public String getFullQualifiedName() {
+      return name;
     }
   }
 
@@ -306,10 +309,7 @@ public class BackupServiceImplTest {
 
     @Override
     public void executeSnapshotting(
-        final SnapshotRequest snapshotRequest,
-        final boolean onlyRequired,
-        final Runnable onSuccess,
-        final Runnable onFailure) {
+        final SnapshotRequest snapshotRequest, final Runnable onSuccess, final Runnable onFailure) {
       validateRepositoryExists(snapshotRequest.repositoryName());
       final var id = snapshotNameProvider.extractBackupId(snapshotRequest.snapshotName());
       final var backup = backups.getOrDefault(id, new GetBackupStateResponseDto(id));

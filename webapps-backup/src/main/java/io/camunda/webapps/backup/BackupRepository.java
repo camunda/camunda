@@ -7,6 +7,7 @@
  */
 package io.camunda.webapps.backup;
 
+import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import java.time.Instant;
 import java.util.List;
@@ -35,18 +36,7 @@ public interface BackupRepository {
 
   List<GetBackupStateResponseDto> getBackups(String repositoryName);
 
-  void executeSnapshotting(
-      BackupService.SnapshotRequest snapshotRequest,
-      boolean onlyRequired,
-      Runnable onSuccess,
-      Runnable onFailure);
-
-  default void executeSnapshotting(
-      final BackupService.SnapshotRequest snapshotRequest,
-      final Runnable onSuccess,
-      final Runnable onFailure) {
-    executeSnapshotting(snapshotRequest, false, onSuccess, onFailure);
-  }
+  void executeSnapshotting(SnapshotRequest snapshotRequest, Runnable onSuccess, Runnable onFailure);
 
   default boolean isIncompleteCheckTimedOut(
       final long incompleteCheckTimeoutInSeconds, final long lastSnapshotFinishedTime) {

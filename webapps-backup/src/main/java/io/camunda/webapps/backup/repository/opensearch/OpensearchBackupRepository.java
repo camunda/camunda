@@ -24,6 +24,7 @@ import io.camunda.webapps.backup.BackupException;
 import io.camunda.webapps.backup.BackupException.*;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.BackupService;
+import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDetailDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
@@ -254,10 +255,7 @@ public class OpensearchBackupRepository implements BackupRepository {
 
   @Override
   public void executeSnapshotting(
-      final BackupService.SnapshotRequest snapshotRequest,
-      final boolean onlyRequired,
-      final Runnable onSuccess,
-      final Runnable onFailure) {
+      final SnapshotRequest snapshotRequest, final Runnable onSuccess, final Runnable onFailure) {
     final Long backupId = backupId(snapshotRequest);
     final Map<String, JsonData> metadataJson =
         MetadataMarshaller.asJson(
@@ -267,7 +265,7 @@ public class OpensearchBackupRepository implements BackupRepository {
         createSnapshotRequestBuilder(
                 snapshotRequest.repositoryName(),
                 snapshotRequest.snapshotName(),
-                snapshotRequest.indices(onlyRequired))
+                snapshotRequest.indices().allIndices())
             .ignoreUnavailable(
                 false) // ignoreUnavailable = false - indices defined by their exact name MUST be
             // present
@@ -324,11 +322,6 @@ public class OpensearchBackupRepository implements BackupRepository {
                     break;
                   }
                 }
-              } else if (isErrorType(e, INDEX_MISSING_EXCEPTION_TYPE) && !onlyRequired) {
-                LOGGER.debug(
-                    "Failed to execute snapshot because some index is missing, retry only with required indices",
-                    e);
-                executeSnapshotting(snapshotRequest, true, onSuccess, onFailure);
               } else {
                 LOGGER.error(
                     "Exception while creating snapshot [{}] for backup id [{}].",

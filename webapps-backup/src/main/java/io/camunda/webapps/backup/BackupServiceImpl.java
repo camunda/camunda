@@ -53,7 +53,8 @@ public class BackupServiceImpl implements BackupService {
     // the number of parts can be dynamic
     final var backupMetadataOpt = repository.getMetadata(repositoryName, backupId);
     if (backupMetadataOpt.isEmpty()) {
-      throw new InvalidRequestException("Cannot find backup with id " + backupId);
+      throw new ResourceNotFoundException(
+          "Expected to find backup with ID '%d', but no metadata for it found".formatted(backupId));
     }
     final var backupMetadata = backupMetadataOpt.get();
     final int partCount = backupMetadata.partCount();
@@ -124,7 +125,7 @@ public class BackupServiceImpl implements BackupService {
       threadPoolTaskExecutor.execute(
           () ->
               repository.executeSnapshotting(
-                  nextRequest, false, this::scheduleNextSnapshot, requestsQueue::clear));
+                  nextRequest, this::scheduleNextSnapshot, requestsQueue::clear));
       LOGGER.debug("Snapshot picked for execution: {}", nextRequest);
     }
   }
@@ -135,6 +136,8 @@ public class BackupServiceImpl implements BackupService {
     final var missingIndicesList = new ArrayList<String>();
     for (final var indices : backupPriorities.indicesSplitBySnapshot().toList()) {
       final var foundIndices = repository.checkAllIndicesExist(indices.allIndices());
+      final var missingNonRequiredIndices =
+          indices.skippableIndices().stream().filter(idx -> !foundIndices.contains(idx)).toList();
       final var missingRequiredIndices =
           indices.requiredIndices().stream().filter(idx -> !foundIndices.contains(idx)).toList();
       if (!missingRequiredIndices.isEmpty()) {
@@ -142,7 +145,7 @@ public class BackupServiceImpl implements BackupService {
       }
       // skip this part if there is no index, but they are not required
       if (!foundIndices.isEmpty()) {
-        list.add(indices);
+        list.add(indices.removeSkippableIndices(missingNonRequiredIndices));
       }
     }
     if (!missingIndicesList.isEmpty()) {
