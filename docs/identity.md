@@ -21,6 +21,7 @@ erDiagram
   Tenant {
     string id PK
     string name
+    string description
   }
   Authorization {
     string ownerId
