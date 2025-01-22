@@ -38,6 +38,7 @@ import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.CreateRoleCommandStep1;
 import io.camunda.client.api.command.CreateTenantCommandStep1;
 import io.camunda.client.api.command.CreateUserCommandStep1;
+import io.camunda.client.api.command.DeleteAuthorizationCommandStep1;
 import io.camunda.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.client.api.command.DeleteGroupCommandStep1;
 import io.camunda.client.api.command.DeleteResourceCommandStep1;
@@ -1662,4 +1663,20 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder to configure and send the create authorization command
    */
   CreateAuthorizationCommandStep1 newCreateAuthorizationCommand();
+
+  /**
+   * Command to delete an authorization
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * camundaClient
+   *   .newDeleteAuthorizationCommand(authorizationKey)
+   *   .send();
+   * </pre>
+   *
+   * @param authorizationKey the key of the authorization to delete
+   * @return a builder to configure and send the delete authorization command
+   */
+  DeleteAuthorizationCommandStep1 newDeleteAuthorizationCommand(long authorizationKey);
 }
