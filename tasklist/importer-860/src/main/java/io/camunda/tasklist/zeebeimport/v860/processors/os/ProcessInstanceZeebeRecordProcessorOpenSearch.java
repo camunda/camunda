@@ -16,15 +16,11 @@ import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
 import io.camunda.tasklist.entities.FlowNodeType;
 import io.camunda.tasklist.entities.ProcessInstanceEntity;
 import io.camunda.tasklist.entities.ProcessInstanceState;
-import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
-import io.camunda.tasklist.entities.listview.ProcessInstanceListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
-import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.util.DateUtil;
-import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebeimport.v860.record.value.ProcessInstanceRecordValueImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -74,7 +70,6 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
   @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
 
   @Autowired private ProcessInstanceIndex processInstanceIndex;
-  @Autowired private TasklistListViewTemplate tasklistListViewTemplate;
 
   public void processProcessInstanceRecord(
       final Record record, final List<BulkOperation> operations) throws PersistenceException {
@@ -84,11 +79,6 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
     if (isVariableScopeType(recordValue) && FLOW_NODE_STATES.contains(record.getIntent().name())) {
       final FlowNodeInstanceEntity flowNodeInstance = createFlowNodeInstance(record);
       operations.add(getFlowNodeInstanceQuery(flowNodeInstance));
-      final BulkOperation persistFlowNodeDataToListView =
-          persistFlowNodeDataToListView(flowNodeInstance);
-      if (persistFlowNodeDataToListView != null) {
-        operations.add(persistFlowNodeDataToListView(flowNodeInstance));
-      }
     }
 
     if (isProcessEvent(recordValue)
@@ -177,36 +167,5 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
       return false;
     }
     return bpmnElementType.equals(type);
-  }
-
-  private BulkOperation persistFlowNodeDataToListView(
-      final FlowNodeInstanceEntity flowNodeInstance) {
-    final ProcessInstanceListViewEntity processInstanceListViewEntity =
-        new ProcessInstanceListViewEntity();
-
-    if (flowNodeInstance.getType().equals(FlowNodeType.PROCESS)) {
-      processInstanceListViewEntity.setJoin(new ListViewJoinRelation());
-      processInstanceListViewEntity.setId(flowNodeInstance.getId());
-      processInstanceListViewEntity.setPartitionId(flowNodeInstance.getPartitionId());
-      processInstanceListViewEntity.setTenantId(flowNodeInstance.getTenantId());
-      processInstanceListViewEntity.getJoin().setName("process");
-      return getUpdateRequest(processInstanceListViewEntity);
-    } else {
-      return null;
-    }
-  }
-
-  private BulkOperation getUpdateRequest(
-      final ProcessInstanceListViewEntity processInstanceListViewEntity) {
-
-    return new BulkOperation.Builder()
-        .update(
-            up ->
-                up.index(tasklistListViewTemplate.getFullQualifiedName())
-                    .id(processInstanceListViewEntity.getId())
-                    .document(CommonUtils.getJsonObjectFromEntity(processInstanceListViewEntity))
-                    .docAsUpsert(true)
-                    .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT))
-        .build();
   }
 }

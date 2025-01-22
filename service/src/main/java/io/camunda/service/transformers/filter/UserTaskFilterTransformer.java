@@ -99,7 +99,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
   @Override
   public List<String> toIndices(final UserTaskFilter filter) {
-    return Arrays.asList("tasklist-list-view-8.6.0_");
+    return Arrays.asList("tasklist-task-8.5.0_");
   }
 
   private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {
