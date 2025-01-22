@@ -142,6 +142,8 @@ public class ProcessInstanceAssertj
 
   private void hasProcessInstanceInState(
       final ProcessInstanceState expectedState, final Predicate<ProcessInstanceDto> waitCondition) {
+    // reset cached process instance
+    actualProcessInstance.set(null);
 
     try {
       Awaitility.await()
