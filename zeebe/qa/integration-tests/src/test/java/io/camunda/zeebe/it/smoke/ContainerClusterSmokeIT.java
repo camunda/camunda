@@ -18,7 +18,6 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.zeebe.containers.cluster.ZeebeCluster;
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -44,7 +43,7 @@ final class ContainerClusterSmokeIT {
       final var topology = client.newTopologyRequest().send();
 
       // then
-      final var result = topology.join(5L, TimeUnit.SECONDS);
+      final var result = topology.join();
       assertThat(result.getBrokers()).as("There is one connected broker").hasSize(1);
     }
   }
@@ -80,6 +79,6 @@ final class ContainerClusterSmokeIT {
   private CamundaClient createCamundaClient() {
     // increased request timeout as container tests might be less responsive when emulation is
     // involved e.g. emulation of ARM64
-    return newClientBuilder(cluster).defaultRequestTimeout(Duration.ofMinutes(1)).build();
+    return newClientBuilder(cluster).defaultRequestTimeout(Duration.ofMinutes(2)).build();
   }
 }
