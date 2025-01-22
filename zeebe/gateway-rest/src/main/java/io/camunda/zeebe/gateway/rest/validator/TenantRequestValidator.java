@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.validator;
 
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
@@ -37,11 +36,11 @@ public final class TenantRequestValidator {
       final TenantUpdateRequest request) {
     return validate(
         violations -> {
-          final var noDescription =
-              request.getDescription() == null || request.getDescription().isBlank();
-          final var noName = request.getName() == null || request.getName().isBlank();
-          if (noDescription && noName) {
-            violations.add(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("description, name"));
+          if (request.getName() == null || request.getName().isBlank()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
+          }
+          if (request.getDescription() == null || request.getDescription().isBlank()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("description"));
           }
         });
   }

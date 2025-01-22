@@ -4016,6 +4016,9 @@ components:
         description:
           type: string
           description: The new description of the tenant.
+      required:
+        - name
+        - description
 
     TenantUpdateResponseBase:
       description: Base properties for TenantUpdateResponse.

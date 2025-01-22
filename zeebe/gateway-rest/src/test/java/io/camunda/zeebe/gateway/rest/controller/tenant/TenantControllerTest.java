@@ -205,89 +205,10 @@ public class TenantControllerTest extends RestControllerTest {
   }
 
   @Test
-  void updateTenantNameWithoutDescription() {
-    // given
-    final var tenantKey = 100L;
-    final var tenantName = "Updated Tenant Name";
-    final var tenantId = "tenant-test-id";
-    when(tenantServices.updateTenant(new TenantDTO(null, tenantId, tenantName, null)))
-        .thenReturn(
-            CompletableFuture.completedFuture(
-                new TenantRecord()
-                    .setName(tenantName)
-                    .setTenantKey(tenantKey)
-                    .setTenantId(tenantId)));
-
-    // when
-    webClient
-        .patch()
-        .uri("%s/%s".formatted(TENANT_BASE_URL, tenantId))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new TenantUpdateRequest().name(tenantName))
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectBody()
-        .json(
-            """
-            {
-              "tenantKey": "%d",
-              "tenantId": "%s",
-              "name": "%s"
-            }
-            """
-                .formatted(tenantKey, tenantId, tenantName));
-
-    // then
-    verify(tenantServices, times(1)).updateTenant(new TenantDTO(null, tenantId, tenantName, null));
-  }
-
-  @Test
-  void updateTenantDescriptionWithoutName() {
-    // given
-    final var tenantKey = 100L;
-    final var tenantId = "tenant-test-id";
-    final var tenantDescription = "Updated description";
-    when(tenantServices.updateTenant(new TenantDTO(null, tenantId, null, tenantDescription)))
-        .thenReturn(
-            CompletableFuture.completedFuture(
-                new TenantRecord()
-                    .setDescription(tenantDescription)
-                    .setTenantKey(tenantKey)
-                    .setTenantId(tenantId)));
-
-    // when
-    webClient
-        .patch()
-        .uri("%s/%s".formatted(TENANT_BASE_URL, tenantId))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new TenantUpdateRequest().description(tenantDescription))
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectBody()
-        .json(
-            """
-            {
-              "tenantKey": "%d",
-              "tenantId": "%s",
-              "description": "%s"
-            }
-            """
-                .formatted(tenantKey, tenantId, tenantDescription));
-
-    // then
-    verify(tenantServices, times(1))
-        .updateTenant(new TenantDTO(null, tenantId, null, tenantDescription));
-  }
-
-  @Test
-  void updateTenantWithoutNameAndDescriptionShouldFail() {
+  void updateTenantWithoutDescriptionShouldFail() {
     // given
     final var tenantId = 100L;
-    final var tenantName = "";
+    final var tenantName = "tenant name";
     final var uri = "%s/%s".formatted(TENANT_BASE_URL, tenantId);
 
     // when / then
@@ -307,7 +228,39 @@ public class TenantControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "At least one of description, name is required.",
+              "detail": "No description provided.",
+              "instance": "%s"
+            }"""
+                .formatted(uri));
+
+    verifyNoInteractions(tenantServices);
+  }
+
+  @Test
+  void updateTenantWithoutNameShouldFail() {
+    // given
+    final var tenantId = 100L;
+    final var tenantDescription = "Tenant description";
+    final var uri = "%s/%s".formatted(TENANT_BASE_URL, tenantId);
+
+    // when / then
+    webClient
+        .patch()
+        .uri(uri)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new TenantUpdateRequest().description(tenantDescription))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No name provided.",
               "instance": "%s"
             }"""
                 .formatted(uri));
@@ -320,9 +273,10 @@ public class TenantControllerTest extends RestControllerTest {
     // given
     final var tenantId = "tenant-id";
     final var tenantName = "My tenant";
+    final var tenantDescription = "My tenant description";
     final var tenantKey = 100L;
     final var path = "%s/%s".formatted(TENANT_BASE_URL, tenantId);
-    when(tenantServices.updateTenant(new TenantDTO(null, tenantId, tenantName, null)))
+    when(tenantServices.updateTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription)))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
@@ -338,12 +292,13 @@ public class TenantControllerTest extends RestControllerTest {
         .uri(path)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new TenantUpdateRequest().name(tenantName))
+        .bodyValue(new TenantUpdateRequest().name(tenantName).description(tenantDescription))
         .exchange()
         .expectStatus()
         .isNotFound();
 
-    verify(tenantServices, times(1)).updateTenant(new TenantDTO(null, tenantId, tenantName, null));
+    verify(tenantServices, times(1))
+        .updateTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription));
   }
 
   @Test
