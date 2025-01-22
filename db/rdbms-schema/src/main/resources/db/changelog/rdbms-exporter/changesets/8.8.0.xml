@@ -13,7 +13,7 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
   <changeSet id="create_exporter_position_table" author="pwunderlich">
-    <createTable tableName="EXPORTER_POSITION">
+    <createTable tableName="${prefix}EXPORTER_POSITION">
       <column name="PARTITION_ID" type="NUMBER">
         <constraints primaryKey="true"/>
       </column>
@@ -25,7 +25,7 @@
   </changeSet>
 
   <changeSet id="create_process_deployment_table" author="cthiel">
-    <createTable tableName="PROCESS_DEFINITION">
+    <createTable tableName="${prefix}PROCESS_DEFINITION">
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
@@ -39,13 +39,13 @@
       <column name="FORM_ID" type="VARCHAR(200)" />
     </createTable>
 
-    <createIndex tableName="PROCESS_DEFINITION" indexName="IDX_PROCESS_DEFINITION_ID">
+    <createIndex tableName="${prefix}PROCESS_DEFINITION" indexName="${prefix}IDX_PROCESS_DEFINITION_ID">
       <column name="PROCESS_DEFINITION_ID" />
     </createIndex>
   </changeSet>
 
   <changeSet id="create_process_instance_table" author="cthiel">
-    <createTable tableName="PROCESS_INSTANCE">
+    <createTable tableName="${prefix}PROCESS_INSTANCE">
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
@@ -69,7 +69,7 @@
   </changeSet>
 
   <changeSet id="create_variable_table" author="pwunderlich">
-    <createTable tableName="VARIABLE">
+    <createTable tableName="${prefix}VARIABLE">
       <column name="VAR_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
@@ -86,10 +86,10 @@
       <column name="IS_PREVIEW" type="BOOLEAN"/>
     </createTable>
 
-    <createIndex tableName="VARIABLE" indexName="IDX_VARIABLE_PROCESS_INSTANCE_KEY">
+    <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_PROCESS_INSTANCE_KEY">
       <column name="PROCESS_INSTANCE_KEY" />
     </createIndex>
-    <createIndex tableName="VARIABLE" indexName="IDX_VARIABLE_TENANT_ID">
+    <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_TENANT_ID">
       <column name="TENANT_ID" />
     </createIndex>
 
@@ -101,7 +101,7 @@
 
 
   <changeSet id="create_flow_node_table" author="cthiel">
-    <createTable tableName="FLOW_NODE_INSTANCE">
+    <createTable tableName="${prefix}FLOW_NODE_INSTANCE">
       <column name="FLOW_NODE_INSTANCE_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
@@ -126,7 +126,7 @@
   </changeSet>
 
   <changeSet author="pwunderlich" id="create_usertask_table">
-    <createTable tableName="USER_TASK">
+    <createTable tableName="${prefix}USER_TASK">
       <column name="USER_TASK_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
@@ -149,25 +149,25 @@
       <column name="PRIORITY" type="INT"/>
     </createTable>
 
-    <createTable tableName="CANDIDATE_USER">
+    <createTable tableName="${prefix}CANDIDATE_USER">
       <column name="USER_TASK_KEY" type="BIGINT">
         <constraints foreignKeyName="FK_CANDIDATE_USER_USER_TASK"/>
       </column>
       <column name="CANDIDATE_USER" type="VARCHAR(200)"/>
     </createTable>
 
-    <createTable tableName="CANDIDATE_GROUP">
+    <createTable tableName="${prefix}CANDIDATE_GROUP">
       <column name="USER_TASK_KEY" type="BIGINT">
         <constraints foreignKeyName="FK_CANDIDATE_GROUP_USER_TASK"/>
       </column>
       <column name="CANDIDATE_GROUP" type="VARCHAR(200)"/>
     </createTable>
 
-    <createIndex tableName="CANDIDATE_USER" indexName="IDX_CANDIDATE_USER_USER_TASK_KEY">
+    <createIndex tableName="${prefix}CANDIDATE_USER" indexName="${prefix}IDX_CANDIDATE_USER_USER_TASK_KEY">
       <column name="USER_TASK_KEY"/>
     </createIndex>
 
-    <createIndex tableName="CANDIDATE_GROUP" indexName="IDX_CANDIDATE_GROUP_USER_TASK_KEY">
+    <createIndex tableName="${prefix}CANDIDATE_GROUP" indexName="${prefix}IDX_CANDIDATE_GROUP_USER_TASK_KEY">
       <column name="USER_TASK_KEY"/>
     </createIndex>
     <modifySql dbms="mariadb">
@@ -177,7 +177,7 @@
   </changeSet>
 
   <changeSet id="create_incident" author="cthiel">
-    <createTable tableName="INCIDENT">
+    <createTable tableName="${prefix}INCIDENT">
       <column name="INCIDENT_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
@@ -204,7 +204,7 @@
   </changeSet>
 
   <changeSet id="create_decision_definition_table" author="cthiel">
-    <createTable tableName="DECISION_DEFINITION">
+    <createTable tableName="${prefix}DECISION_DEFINITION">
       <column name="DECISION_DEFINITION_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
@@ -216,13 +216,13 @@
       <column name="DECISION_REQUIREMENTS_ID" type="VARCHAR(255)" />
     </createTable>
 
-    <createIndex tableName="DECISION_DEFINITION" indexName="IDX_DECISION_DEFINITION_ID">
+    <createIndex tableName="${prefix}DECISION_DEFINITION" indexName="${prefix}IDX_DECISION_DEFINITION_ID">
       <column name="DECISION_DEFINITION_ID" />
     </createIndex>
   </changeSet>
 
   <changeSet id="create_decision_requirements_table" author="cthiel">
-    <createTable tableName="DECISION_REQUIREMENTS">
+    <createTable tableName="${prefix}DECISION_REQUIREMENTS">
       <column name="DECISION_REQUIREMENTS_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
@@ -234,13 +234,13 @@
       <column name="XML" type="CLOB" />
     </createTable>
 
-    <createIndex tableName="DECISION_REQUIREMENTS" indexName="IDX_DECISION_REQUIREMENTS_ID">
+    <createIndex tableName="${prefix}DECISION_REQUIREMENTS" indexName="${prefix}IDX_DECISION_REQUIREMENTS_ID">
       <column name="DECISION_REQUIREMENTS_ID" />
     </createIndex>
   </changeSet>
 
   <changeSet id="create_decision_instance_table" author="cthiel">
-    <createTable tableName="DECISION_INSTANCE">
+    <createTable tableName="${prefix}DECISION_INSTANCE">
       <column name="DECISION_INSTANCE_ID" type="VARCHAR(255)" >
         <constraints primaryKey="true"/>
       </column>
@@ -270,7 +270,7 @@
   </changeSet>
 
   <changeSet id="create_decision_instance_input_table" author="cthiel">
-    <createTable tableName="DECISION_INSTANCE_INPUT">
+    <createTable tableName="${prefix}DECISION_INSTANCE_INPUT">
       <column name="DECISION_INSTANCE_ID" type="VARCHAR(255)">
         <constraints primaryKey="true"/>
       </column>
@@ -284,7 +284,7 @@
   </changeSet>
 
   <changeSet id="create_decision_instance_output_table" author="cthiel">
-    <createTable tableName="DECISION_INSTANCE_OUTPUT">
+    <createTable tableName="${prefix}DECISION_INSTANCE_OUTPUT">
       <column name="DECISION_INSTANCE_ID" type="VARCHAR(255)">
         <constraints primaryKey="true"/>
       </column>
@@ -300,7 +300,7 @@
   </changeSet>
 
   <changeSet id="create_user_table" author="cthiel">
-    <createTable tableName="USERS">
+    <createTable tableName="${prefix}USERS">
       <column name="USERNAME" type="VARCHAR(255)">
         <constraints primaryKey="true"/>
       </column>
@@ -312,7 +312,7 @@
   </changeSet>
 
   <changeSet id="create_form_table" author="pwunderlich">
-    <createTable tableName="FORM">
+    <createTable tableName="${prefix}FORM">
       <column name="FORM_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
@@ -323,16 +323,16 @@
       <column name="IS_DELETED" type="BOOLEAN"/>
     </createTable>
 
-    <createIndex tableName="FORM" indexName="IDX_FORM_ID">
+    <createIndex tableName="${prefix}FORM" indexName="${prefix}IDX_FORM_ID">
       <column name="FORM_ID"/>
     </createIndex>
-    <createIndex tableName="FORM" indexName="IDX_FORM_TENANT_ID">
+    <createIndex tableName="${prefix}FORM" indexName="${prefix}IDX_FORM_TENANT_ID">
       <column name="TENANT_ID"/>
     </createIndex>
   </changeSet>
 
   <changeSet id="create_mapping_table" author="pwunderlich">
-    <createTable tableName="MAPPINGS">
+    <createTable tableName="${prefix}MAPPINGS">
       <column name="MAPPING_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
@@ -343,7 +343,7 @@
   </changeSet>
 
   <changeSet id="create_tenant_table" author="cthiel">
-    <createTable tableName="TENANT">
+    <createTable tableName="${prefix}TENANT">
       <column name="TENANT_ID" type="VARCHAR(255)">
         <constraints primaryKey="true"/>
       </column>
@@ -354,7 +354,7 @@
   </changeSet>
 
   <changeSet id="tenant_members_table" author="cthiel">
-    <createTable tableName="TENANT_MEMBER">
+    <createTable tableName="${prefix}TENANT_MEMBER">
       <column name="TENANT_ID" type="VARCHAR(255)">
         <constraints primaryKey="true"/>
       </column>
@@ -367,7 +367,7 @@
 
 
   <changeSet id="create_role_table" author="cthiel">
-    <createTable tableName="ROLES">
+    <createTable tableName="${prefix}ROLES">
       <column name="ROLE_KEY" type="BIGINT" >
         <constraints primaryKey="true"/>
       </column>
@@ -376,7 +376,7 @@
   </changeSet>
 
   <changeSet id="role_members_table" author="cthiel">
-    <createTable tableName="ROLE_MEMBER">
+    <createTable tableName="${prefix}ROLE_MEMBER">
       <column name="ROLE_KEY" type="BIGINT" >
         <constraints primaryKey="true"/>
       </column>
@@ -388,7 +388,7 @@
   </changeSet>
 
   <changeSet id="create_group_table" author="cthiel">
-    <createTable tableName="GROUPS">
+    <createTable tableName="${prefix}GROUPS">
       <column name="GROUP_KEY" type="BIGINT" >
         <constraints primaryKey="true"/>
       </column>
@@ -397,7 +397,7 @@
   </changeSet>
 
   <changeSet id="group_members_table" author="cthiel">
-    <createTable tableName="GROUP_MEMBER">
+    <createTable tableName="${prefix}GROUP_MEMBER">
       <column name="GROUP_KEY" type="BIGINT" >
         <constraints primaryKey="true"/>
       </column>
@@ -410,7 +410,7 @@
 
   <changeSet id="create_authorization_permission_table" author="cthiel">
     <!-- no PK possible, would have too many columns (ALL) -->
-    <createTable tableName="AUTHORIZATIONS">
+    <createTable tableName="${prefix}AUTHORIZATIONS">
       <column name="OWNER_KEY" type="BIGINT" />
       <column name="OWNER_TYPE" type="VARCHAR(255)" />
       <column name="RESOURCE_TYPE" type="VARCHAR(255)" />
@@ -418,7 +418,7 @@
       <column name="RESOURCE_ID" type="VARCHAR(255)" />
     </createTable>
 
-    <createIndex tableName="AUTHORIZATIONS" indexName="IDX_AUTHORIZATIONS">
+    <createIndex tableName="${prefix}AUTHORIZATIONS" indexName="${prefix}IDX_AUTHORIZATIONS">
       <column name="OWNER_KEY"/>
       <column name="OWNER_TYPE"/>
       <column name="RESOURCE_TYPE"/>

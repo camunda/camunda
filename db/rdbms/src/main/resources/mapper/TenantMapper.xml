@@ -12,7 +12,7 @@
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.TenantDbQuery">
     SELECT COUNT(*)
-    FROM TENANT t
+    FROM ${prefix}TENANT t
     <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchFilter"/>
   </select>
 
@@ -24,7 +24,7 @@
     TENANT_ID,
     NAME,
     DESCRIPTION
-    FROM TENANT
+    FROM ${prefix}TENANT
     <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -50,7 +50,7 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.TenantDbModel"
     flushCache="true">
-    INSERT INTO TENANT (TENANT_KEY, TENANT_ID, NAME, DESCRIPTION)
+    INSERT INTO ${prefix}TENANT (TENANT_KEY, TENANT_ID, NAME, DESCRIPTION)
     VALUES (#{tenantKey}, #{tenantId}, #{name}, #{description})
   </insert>
 
@@ -58,7 +58,7 @@
     id="update"
     parameterType="io.camunda.db.rdbms.write.domain.TenantDbModel"
     flushCache="true">
-    UPDATE TENANT SET
+    UPDATE ${prefix}TENANT SET
                     TENANT_ID = #{tenantId},
                     NAME = #{name},
                     DESCRIPTION = #{description}
@@ -67,7 +67,7 @@
 
   <delete id="delete" parameterType="java.lang.String" flushCache="true">
     DELETE
-    FROM TENANT
+    FROM ${prefix}TENANT
     WHERE TENANT_ID = #{tenantId}
   </delete>
 
@@ -75,7 +75,7 @@
     id="insertMember"
     parameterType="io.camunda.db.rdbms.write.domain.TenantMemberDbModel"
     flushCache="true">
-    INSERT INTO TENANT_MEMBER (TENANT_ID, ENTITY_ID, ENTITY_TYPE)
+    INSERT INTO ${prefix}TENANT_MEMBER (TENANT_ID, ENTITY_ID, ENTITY_TYPE)
     VALUES (#{tenantId}, #{entityID}, #{entityType})
   </insert>
 
@@ -84,7 +84,7 @@
     parameterType="io.camunda.db.rdbms.write.domain.TenantMemberDbModel"
     flushCache="true">
     DELETE
-    FROM TENANT_MEMBER
+    FROM ${prefix}TENANT_MEMBER
     WHERE TENANT_ID = #{tenantId}
       AND ENTITY_ID = #{entityId}
       AND ENTITY_TYPE = #{entityType}
@@ -95,7 +95,7 @@
     parameterType="java.lang.String"
     flushCache="true">
     DELETE
-    FROM TENANT_MEMBER
+    FROM ${prefix}TENANT_MEMBER
     WHERE TENANT_ID = #{tenantId}
   </delete>
 
