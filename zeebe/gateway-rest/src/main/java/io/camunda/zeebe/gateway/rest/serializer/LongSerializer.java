@@ -19,12 +19,13 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 public class LongSerializer extends JsonSerializer<Long> {
 
+  public static final String HEADER_ZEEBE_CLIENT_AGENT = "zeebe-client-java/";
   public static final String PACKAGE_GATEWAY_REST = "io.camunda.zeebe.gateway.protocol.rest";
   public static final String KEY = "Key";
   public static final String KEYS = "Keys";
 
   private void writeDefault(final Long value, final JsonGenerator gen) throws IOException {
-    writeNumber(value, gen);
+    writeString(value, gen);
   }
 
   private void writeString(final Long value, final JsonGenerator gen) throws IOException {
@@ -71,6 +72,12 @@ public class LongSerializer extends JsonSerializer<Long> {
       }
       if (acceptHeader != null && acceptHeader.equals(RequestMapper.MEDIA_TYPE_KEYS_STRING_VALUE)) {
         writeString(value, gen);
+        return;
+      }
+
+      final var userAgentHeader = r.getRequest().getHeader(HttpHeaders.USER_AGENT);
+      if (userAgentHeader != null && userAgentHeader.startsWith(HEADER_ZEEBE_CLIENT_AGENT)) {
+        writeNumber(value, gen);
         return;
       }
     }
