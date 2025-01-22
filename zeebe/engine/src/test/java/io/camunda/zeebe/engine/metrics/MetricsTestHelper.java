@@ -31,4 +31,15 @@ final class MetricsTestHelper {
     return CollectorRegistry.defaultRegistry.getSampleValue(
         name, labelNames.toArray(new String[] {}), labelValues.toArray(new String[] {}));
   }
+
+  //  @SafeVarargs
+  //  static Double readMetricValue(final String name, final Entry<String, String>... labels) {
+  //    final List<String> labelNames = Arrays.stream(labels).map(Entry::getKey).toList();
+  //    final List<String> labelValues = Arrays.stream(labels).map(Entry::getValue).toList();
+  //    final var metric = Metrics.globalRegistry.get(name);
+  //    final RequiredSearch search = metric.tags(labels);
+  //    search.
+  //    return MeterRegistry.defaultRegistry.getSampleValue(
+  //        name, labelNames.toArray(new String[] {}), labelValues.toArray(new String[] {}));
+  //  }
 }

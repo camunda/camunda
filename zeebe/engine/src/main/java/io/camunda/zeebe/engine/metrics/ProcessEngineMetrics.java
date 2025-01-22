@@ -11,11 +11,25 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
-import io.prometheus.client.Counter;
+import io.micrometer.core.instrument.Metrics;
 
 public final class ProcessEngineMetrics {
+  private static final io.micrometer.core.instrument.MeterRegistry METER_REGISTRY =
+      Metrics.globalRegistry;
 
   private static final String NAMESPACE = "zeebe";
+  static final io.micrometer.core.instrument.Counter.Builder EVALUATED_DMN_ELEMENTS_BUILDER =
+      io.micrometer.core.instrument.Counter.builder(NAMESPACE + "_evaluated_dmn_elements_total")
+          .description("Number of evaluated DMN elements including required decisions");
+  static final io.micrometer.core.instrument.Counter.Builder EXECUTED_INSTANCES_BUILDER =
+      io.micrometer.core.instrument.Counter.builder(NAMESPACE + "_executed_instances_total")
+          .description("Number of executed (root) process instances");
+  static final io.micrometer.core.instrument.Counter.Builder ELEMENT_INSTANCE_EVENTS_BUILDER =
+      io.micrometer.core.instrument.Counter.builder(NAMESPACE + "_element_instance_events_total")
+          .description("Number of process element instance events");
+  static final io.micrometer.core.instrument.Counter.Builder CREATED_PROCESS_INSTANCES_BUILDER =
+      io.micrometer.core.instrument.Counter.builder(NAMESPACE + "_process_instance_creations_total")
+          .description("Number of created (root) process instances");
 
   /**
    * Metrics that are annotated with this label are vitally important for usage tracking and
@@ -31,22 +45,8 @@ public final class ProcessEngineMetrics {
 
   private static final String PARTITION_LABEL = "partition";
   private static final String ACTION_LABEL = "action";
-  static final Counter EVALUATED_DMN_ELEMENTS =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("evaluated_dmn_elements_total")
-          .help("Number of evaluated DMN elements including required decisions")
-          .labelNames(ORGANIZATION_ID_LABEL, ACTION_LABEL, PARTITION_LABEL)
-          .register();
   private static final String EVENT_TYPE = "eventType";
   private static final String TYPE_LABEL = "type";
-  static final Counter EXECUTED_INSTANCES =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("executed_instances_total")
-          .help("Number of executed (root) process instances")
-          .labelNames(ORGANIZATION_ID_LABEL, TYPE_LABEL, ACTION_LABEL, PARTITION_LABEL)
-          .register();
   private static final String ORGANIZATION_ID =
       System.getenv().getOrDefault("CAMUNDA_CLOUD_ORGANIZATION_ID", "null");
   private static final String ACTION_ACTIVATED = "activated";
@@ -54,21 +54,7 @@ public final class ProcessEngineMetrics {
   private static final String ACTION_TERMINATED = "terminated";
   private static final String ACTION_EVALUATED_SUCCESSFULLY = "evaluated_successfully";
   private static final String ACTION_EVALUATED_FAILED = "evaluated_failed";
-  private static final Counter ELEMENT_INSTANCE_EVENTS =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("element_instance_events_total")
-          .help("Number of process element instance events")
-          .labelNames(ACTION_LABEL, TYPE_LABEL, PARTITION_LABEL, EVENT_TYPE)
-          .register();
   private static final String CREATION_MODE_LABEL = "creation_mode";
-  static final Counter CREATED_PROCESS_INSTANCES =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("process_instance_creations_total")
-          .help("Number of created (root) process instances")
-          .labelNames(PARTITION_LABEL, CREATION_MODE_LABEL)
-          .register();
   private final String partitionIdLabel;
 
   public ProcessEngineMetrics(final int partitionId) {
@@ -81,18 +67,41 @@ public final class ProcessEngineMetrics {
             ? CreationMode.CREATION_AT_GIVEN_ELEMENT
             : CreationMode.CREATION_AT_DEFAULT_START_EVENT;
 
-    CREATED_PROCESS_INSTANCES.labels(partitionIdLabel, creationMode.toString()).inc();
+    CREATED_PROCESS_INSTANCES_BUILDER
+        .tags(PARTITION_LABEL, partitionIdLabel, CREATION_MODE_LABEL, creationMode.toString())
+        .register(METER_REGISTRY)
+        .increment();
   }
 
   private void elementInstanceEvent(
       final String action, final BpmnElementType elementType, final String eventType) {
-    ELEMENT_INSTANCE_EVENTS.labels(action, elementType.name(), partitionIdLabel, eventType).inc();
+    ELEMENT_INSTANCE_EVENTS_BUILDER
+        .tags(
+            ACTION_LABEL,
+            action,
+            TYPE_LABEL,
+            "ROOT_PROCESS_INSTANCE",
+            PARTITION_LABEL,
+            partitionIdLabel,
+            EVENT_TYPE,
+            eventType)
+        .register(METER_REGISTRY)
+        .increment();
   }
 
   private void increaseRootProcessInstance(final String action) {
-    EXECUTED_INSTANCES
-        .labels(ORGANIZATION_ID, "ROOT_PROCESS_INSTANCE", action, partitionIdLabel)
-        .inc();
+    EXECUTED_INSTANCES_BUILDER
+        .tags(
+            ORGANIZATION_ID_LABEL,
+            ORGANIZATION_ID,
+            TYPE_LABEL,
+            "ROOT_PROCESS_INSTANCE",
+            ACTION_LABEL,
+            action,
+            PARTITION_LABEL,
+            partitionIdLabel)
+        .register(METER_REGISTRY)
+        .increment();
   }
 
   public void elementInstanceActivated(
@@ -146,7 +155,16 @@ public final class ProcessEngineMetrics {
   }
 
   private void increaseEvaluatedDmnElements(final String action, final int amount) {
-    EVALUATED_DMN_ELEMENTS.labels(ORGANIZATION_ID, action, partitionIdLabel).inc(amount);
+    EVALUATED_DMN_ELEMENTS_BUILDER
+        .tags(
+            ORGANIZATION_ID_LABEL,
+            ORGANIZATION_ID,
+            ACTION_LABEL,
+            action,
+            PARTITION_LABEL,
+            partitionIdLabel)
+        .register(METER_REGISTRY)
+        .increment();
   }
 
   private String extractEventTypeName(final BpmnEventType eventType) {
