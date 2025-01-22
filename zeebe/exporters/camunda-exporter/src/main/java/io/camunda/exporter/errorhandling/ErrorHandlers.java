@@ -10,6 +10,7 @@ package io.camunda.exporter.errorhandling;
 import io.camunda.exporter.exceptions.PersistenceException;
 
 public enum ErrorHandlers implements ErrorHandler {
+  /** Ignore the error if the document does not exist, otherwise, throw. */
   IGNORE_DOCUMENT_DOES_NOT_EXIST {
     @Override
     public void handle(final Error error) {
@@ -19,6 +20,7 @@ public enum ErrorHandlers implements ErrorHandler {
       throw new PersistenceException(error.message());
     }
   },
+  /** Always throw when an error occurs */
   THROWING {
     @Override
     public void handle(final Error error) {

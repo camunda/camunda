@@ -7,4 +7,12 @@
  */
 package io.camunda.exporter.errorhandling;
 
+/**
+ * Represents error details for Elasticsearch/Opensearch persistence errors when executing batch
+ * requests in the exporter.
+ *
+ * @param message the error message
+ * @param type the error type communicated by the search engine
+ * @param status the HTTP status code of the error
+ */
 public record Error(String message, String type, int status) {}

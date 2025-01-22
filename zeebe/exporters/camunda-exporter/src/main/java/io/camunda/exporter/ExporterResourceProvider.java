@@ -54,5 +54,12 @@ public interface ExporterResourceProvider {
    */
   Set<ExportHandler<?, ?>> getExportHandlers();
 
+  /**
+   * Possible custom error handlers to be used if certain indices threw persistence errors. The
+   * first parameter is the name of the index that threw the error and the second is the error
+   * details
+   *
+   * @return A {@link BiConsumer} of {@link String} and {@link Error} to handle custom errors
+   */
   BiConsumer<String, Error> getCustomErrorHandlers();
 }
