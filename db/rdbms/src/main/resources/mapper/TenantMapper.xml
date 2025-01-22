@@ -23,6 +23,7 @@
     t.TENANT_KEY,
     t.TENANT_ID,
     t.NAME,
+    t.DESCRIPTION,
     tm.TENANT_ID AS MEMBER_TENANT_ID,
     tm.ENTITY_KEY AS MEMBER_ENTITY_KEY,
     tm.ENTITY_TYPE AS MEMBER_ENTITY_TYPE
@@ -46,6 +47,7 @@
     <id column="TENANT_ID" property="tenantId"/>
     <result column="TENANT_KEY" property="tenantKey"/>
     <result column="NAME" property="name"/>
+    <result column="DESCRIPTION" property="description"/>
     <collection property="members" ofType="io.camunda.db.rdbms.write.domain.TenantMemberDbModel"
       javaType="java.util.List">
       <constructor>
@@ -60,8 +62,8 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.TenantDbModel"
     flushCache="true">
-    INSERT INTO TENANT (TENANT_KEY, TENANT_ID, NAME)
-    VALUES (#{tenantKey}, #{tenantId}, #{name})
+    INSERT INTO TENANT (TENANT_KEY, TENANT_ID, NAME, DESCRIPTION)
+    VALUES (#{tenantKey}, #{tenantId}, #{name}, #{description})
   </insert>
 
   <update
@@ -70,7 +72,8 @@
     flushCache="true">
     UPDATE TENANT SET
                     TENANT_ID = #{tenantId},
-                    NAME = #{name}
+                    NAME = #{name},
+                    DESCRIPTION = #{description}
     WHERE TENANT_ID = #{tenantId}
   </update>
 
