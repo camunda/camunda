@@ -50,6 +50,7 @@ public class DeleteUserTest {
   @Test
   public void shouldCleanupMembership() {
     final var username = UUID.randomUUID().toString();
+    final var tenantId = "tenant";
     final var userRecord =
         ENGINE
             .user()
@@ -60,7 +61,7 @@ public class DeleteUserTest {
             .create();
     final var group = ENGINE.group().newGroup("group").create();
     final var role = ENGINE.role().newRole("role").create();
-    final var tenant = ENGINE.tenant().newTenant().withTenantId("tenant").create();
+    final var tenant = ENGINE.tenant().newTenant().withTenantId(tenantId).create();
 
     ENGINE
         .group()
@@ -76,8 +77,8 @@ public class DeleteUserTest {
         .add();
     ENGINE
         .tenant()
-        .addEntity(tenant.getKey())
-        .withEntityKey(userRecord.getKey())
+        .addEntity(tenantId)
+        .withEntityId(username)
         .withEntityType(EntityType.USER)
         .add();
 

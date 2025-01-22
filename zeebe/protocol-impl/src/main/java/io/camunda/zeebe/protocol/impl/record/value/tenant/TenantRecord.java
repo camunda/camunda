@@ -19,19 +19,22 @@ import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import org.agrona.DirectBuffer;
 
 public final class TenantRecord extends UnifiedRecordValue implements TenantRecordValue {
-  private final LongProperty tenantKeyProp = new LongProperty("tenantKey", -1L);
+  private static final long DEFAULT_KEY = -1;
+  private final LongProperty tenantKeyProp = new LongProperty("tenantKey", DEFAULT_KEY);
   private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
   private final StringProperty nameProp = new StringProperty("name", "");
-  private final LongProperty entityKeyProp = new LongProperty("entityKey", -1L);
+  private final LongProperty entityKeyProp = new LongProperty("entityKey", DEFAULT_KEY);
+  private final StringProperty entityIdProp = new StringProperty("entityId", "");
   private final EnumProperty<EntityType> entityTypeProp =
       new EnumProperty<>("entityType", EntityType.class, EntityType.UNSPECIFIED);
 
   public TenantRecord() {
-    super(5);
+    super(6);
     declareProperty(tenantKeyProp)
         .declareProperty(tenantIdProp)
         .declareProperty(nameProp)
         .declareProperty(entityKeyProp)
+        .declareProperty(entityIdProp)
         .declareProperty(entityTypeProp);
   }
 
@@ -92,6 +95,16 @@ public final class TenantRecord extends UnifiedRecordValue implements TenantReco
   }
 
   @Override
+  public String getEntityId() {
+    return bufferAsString(entityIdProp.getValue());
+  }
+
+  public TenantRecord setEntityId(final String entityId) {
+    entityIdProp.setValue(entityId);
+    return this;
+  }
+
+  @Override
   public EntityType getEntityType() {
     return entityTypeProp.getValue();
   }
@@ -99,6 +112,10 @@ public final class TenantRecord extends UnifiedRecordValue implements TenantReco
   public TenantRecord setEntityType(final EntityType entityType) {
     entityTypeProp.setValue(entityType);
     return this;
+  }
+
+  public boolean hasTenantKey() {
+    return tenantKeyProp.getValue() != -1L;
   }
 
   @JsonIgnore

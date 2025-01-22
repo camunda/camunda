@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.MariaDBContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.oracle.OracleContainer;
 
 public class CamundaRdbmsInvocationContextProviderExtension
     implements TestTemplateInvocationContextProvider,
@@ -36,21 +37,28 @@ public class CamundaRdbmsInvocationContextProviderExtension
   private static final Map<String, CamundaRdbmsTestApplication> SUPPORTED_TEST_APPLICATIONS =
       Map.of(
           "camundaWithH2",
-              new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class).withRdbms().withH2(),
+          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class).withRdbms().withH2(),
           "camundaWithPostgresSQL",
-              new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
-                  .withRdbms()
-                  .withDatabaseContainer(
-                      new PostgreSQLContainer<>("postgres:16-alpine")
-                          .withUsername("user")
-                          .withPassword("password")),
+          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+              .withRdbms()
+              .withDatabaseContainer(
+                  new PostgreSQLContainer<>("postgres:16-alpine")
+                      .withUsername("camunda")
+                      .withPassword("camunda")),
           "camundaWithMariaDB",
-              new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
-                  .withRdbms()
-                  .withDatabaseContainer(
-                      new MariaDBContainer<>("mariadb:11.4")
-                          .withUsername("user")
-                          .withPassword("password")));
+          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+              .withRdbms()
+              .withDatabaseContainer(
+                  new MariaDBContainer<>("mariadb:11.4")
+                      .withUsername("camunda")
+                      .withPassword("camunda")),
+          "camundaWithOracleDB",
+          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+              .withRdbms()
+              .withDatabaseContainer(
+                  new OracleContainer("gvenzl/oracle-free:latest")
+                      .withUsername("camunda")
+                      .withPassword("camunda")));
 
   private final Set<String> useTestApplications;
 

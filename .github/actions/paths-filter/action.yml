@@ -201,7 +201,9 @@ runs:
           - 'buf.yaml'
 
         openapi-change:
-          - '**/rest-api.yaml'
+          - 'zeebe/gateway-protocol/src/main/proto/rest-api.yaml'
+          - 'zeebe/gateway-protocol/vacuum-ruleset.yaml'
+          - 'zeebe/gateway-protocol/vacuum-ignores.yaml'
 
   - uses: dorny/paths-filter@v3
     id: filter-identity

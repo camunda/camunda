@@ -30,8 +30,6 @@ public record VariableDbModel(
     String processDefinitionId,
     String tenantId) {
 
-  public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191; // TODO make configurable
-
   public VariableDbModel copy(
       final Function<ObjectBuilder<VariableDbModel>, ObjectBuilder<VariableDbModel>>
           builderFunction) {
@@ -46,6 +44,26 @@ public record VariableDbModel(
                 .processDefinitionId(processDefinitionId)
                 .tenantId(tenantId))
         .build();
+  }
+
+  public VariableDbModel truncateValue(final int sizeLimit) {
+    if (type == ValueTypeEnum.STRING && value != null && value.length() > sizeLimit) {
+      return new VariableDbModel(
+          variableKey,
+          name,
+          type,
+          doubleValue,
+          longValue,
+          value.substring(0, sizeLimit),
+          value,
+          true,
+          scopeKey,
+          processInstanceKey,
+          processDefinitionId,
+          tenantId);
+    } else {
+      return this;
+    }
   }
 
   public static class VariableDbModelBuilder implements ObjectBuilder<VariableDbModel> {
@@ -98,17 +116,13 @@ public record VariableDbModel(
     // Build method to create the record
     @Override
     public VariableDbModel build() {
-      if (value != null && value.length() > DEFAULT_VARIABLE_SIZE_THRESHOLD) {
-        return getModelWithPreview();
-      } else {
-        return switch (ValueTypeUtil.getValueType(value)) {
-          case LONG -> getLongModel();
-          case DOUBLE -> getDoubleModel();
-          case BOOLEAN -> getModel(ValueTypeEnum.BOOLEAN, mapBoolean(value));
-          case NULL -> getModel(ValueTypeEnum.NULL, null);
-          default -> getModel(ValueTypeEnum.STRING, value);
-        };
-      }
+      return switch (ValueTypeUtil.getValueType(value)) {
+        case LONG -> getLongModel();
+        case DOUBLE -> getDoubleModel();
+        case BOOLEAN -> getModel(ValueTypeEnum.BOOLEAN, mapBoolean(value));
+        case NULL -> getModel(ValueTypeEnum.NULL, null);
+        default -> getModel(ValueTypeEnum.STRING, value);
+      };
     }
 
     private VariableDbModel getModel(final ValueTypeEnum valueTypeEnum, final String value) {
@@ -121,22 +135,6 @@ public record VariableDbModel(
           value,
           null,
           false,
-          scopeKey,
-          processInstanceKey,
-          processDefinitionId,
-          tenantId);
-    }
-
-    private VariableDbModel getModelWithPreview() {
-      return new VariableDbModel(
-          variableKey,
-          name,
-          ValueTypeEnum.STRING,
-          null,
-          null,
-          value.substring(0, DEFAULT_VARIABLE_SIZE_THRESHOLD),
-          value,
-          true,
           scopeKey,
           processInstanceKey,
           processDefinitionId,

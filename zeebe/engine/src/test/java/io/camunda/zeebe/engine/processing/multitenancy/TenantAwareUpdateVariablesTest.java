@@ -70,20 +70,16 @@ public class TenantAwareUpdateVariablesTest {
   @Test
   public void shouldRejectUpdateVariablesForUnauthorizedTenant() {
     // given
-    final var user = ENGINE.user().newUser("username").create().getValue();
+    final var tenantId = "another-tenant";
+    final var username = "username";
+    final var user = ENGINE.user().newUser(username).create().getValue();
     final var tenantKey =
-        ENGINE
-            .tenant()
-            .newTenant()
-            .withTenantId("another-tenant")
-            .create()
-            .getValue()
-            .getTenantKey();
+        ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     ENGINE
         .tenant()
-        .addEntity(tenantKey)
+        .addEntity(tenantId)
         .withEntityType(EntityType.USER)
-        .withEntityKey(user.getUserKey())
+        .withEntityId(username)
         .add();
 
     ENGINE

@@ -119,7 +119,7 @@
     FROM USER_TASK ut
     <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchFilter"/>
     ${paging.after}
-    ) as ut
+    ) ut
     LEFT JOIN CANDIDATE_USER cu ON (cu.USER_TASK_KEY = ut.USER_TASK_KEY)
     LEFT JOIN CANDIDATE_GROUP cg ON (cg.USER_TASK_KEY = ut.USER_TASK_KEY)
     <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
@@ -334,7 +334,7 @@
     statementType="PREPARED">
     DELETE
     FROM CANDIDATE_USER
-    WHERE USER_TASK_KEY = #{userTaskKey};
+    WHERE USER_TASK_KEY = #{userTaskKey}
   </delete>
 
   <delete
@@ -344,7 +344,7 @@
     statementType="PREPARED">
     DELETE
     FROM CANDIDATE_GROUP
-    WHERE USER_TASK_KEY = #{userTaskKey};
+    WHERE USER_TASK_KEY = #{userTaskKey}
   </delete>
 
 </mapper>
