@@ -190,9 +190,9 @@ class ExpressionProcessorTest {
           .extracting(r -> r.getLeft().getMessage())
           .isEqualTo(
               """
-              Expected result of the expression '[x]' to be 'ARRAY' containing 'STRING' items, \
-              but was 'ARRAY' containing at least one non-'STRING' item. \
-              The evaluation reported the following warnings:
+             Expected result of the expression '[x]' to be 'ARRAY' containing 'STRING' items, \
+             but was 'ARRAY' containing at least one non-'STRING' item. \
+             The evaluation reported the following warnings:
              [NO_VARIABLE_FOUND] No variable found with name 'x'""");
     }
 
