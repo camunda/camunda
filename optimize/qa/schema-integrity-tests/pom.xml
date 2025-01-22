@@ -118,8 +118,7 @@
             <configuration>
               <artifactItems>
                 <artifactItem>
-                  <!-- This will be updated in https://github.com/camunda/camunda-optimize/issues/14145-->
-                  <groupId>org.camunda.optimize</groupId>
+                  <groupId>io.camunda.optimize</groupId>
                   <artifactId>camunda-optimize</artifactId>
                   <version>${project.previousVersion}</version>
                   <type>tar.gz</type>

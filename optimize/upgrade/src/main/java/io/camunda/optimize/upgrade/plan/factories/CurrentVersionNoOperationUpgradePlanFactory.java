@@ -28,9 +28,4 @@ public class CurrentVersionNoOperationUpgradePlanFactory implements UpgradePlanF
   public UpgradePlan createUpgradePlan(final UpgradeExecutionDependencies dependencies) {
     return createUpgradePlan();
   }
-
-  @Override
-  public void logErrorMessage(final String message) {
-    log.error(message);
-  }
 }
