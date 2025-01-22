@@ -37,6 +37,7 @@ import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.mapper.MapperFactoryBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -48,7 +49,12 @@ public class MyBatisConfiguration {
   private static final Logger LOGGER = LoggerFactory.getLogger(MyBatisConfiguration.class);
 
   @Bean
-  public MultiTenantSpringLiquibase customerLiquibase(final DataSource dataSource) {
+  @ConditionalOnProperty(
+      prefix = "camunda.database",
+      name = "auto-ddl",
+      havingValue = "true",
+      matchIfMissing = true)
+  public MultiTenantSpringLiquibase rdbmsExporterLiquibase(final DataSource dataSource) {
     LOGGER.info("Initializing Liquibase for RDBMS.");
     final var moduleConfig = new MultiTenantSpringLiquibase();
     moduleConfig.setDataSource(dataSource);

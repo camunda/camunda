@@ -22,6 +22,7 @@ import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.UpdateResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeDeleteRequestBuilderES;
 import io.camunda.optimize.service.db.es.builders.OptimizeIndexRequestBuilderES;
@@ -34,7 +35,6 @@ import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.List;
 import org.slf4j.Logger;
@@ -195,6 +195,16 @@ public class AlertWriterES implements AlertWriter {
         ALERT_INDEX_NAME);
   }
 
+  /** Delete all alerts that are associated with following report ID */
+  @Override
+  public void deleteAlertsForReport(final String reportId) {
+    taskRepositoryES.tryDeleteByQueryRequest(
+        Query.of(q -> q.term(t -> t.field(AlertIndex.REPORT_ID).value(reportId))),
+        String.format("all alerts for report with ID [%s]", reportId),
+        true,
+        ALERT_INDEX_NAME);
+  }
+
   @Override
   public void writeAlertTriggeredStatus(final boolean alertStatus, final String alertId) {
     LOG.debug("Writing alert status for alert with id [{}] to Elasticsearch", alertId);
@@ -211,15 +221,5 @@ public class AlertWriterES implements AlertWriter {
     } catch (final Exception e) {
       LOG.error("Can't update status of alert [{}]", alertId, e);
     }
-  }
-
-  /** Delete all alerts that are associated with following report ID */
-  @Override
-  public void deleteAlertsForReport(final String reportId) {
-    taskRepositoryES.tryDeleteByQueryRequest(
-        Query.of(q -> q.term(t -> t.field(AlertIndex.REPORT_ID).value(reportId))),
-        String.format("all alerts for report with ID [%s]", reportId),
-        true,
-        ALERT_INDEX_NAME);
   }
 }

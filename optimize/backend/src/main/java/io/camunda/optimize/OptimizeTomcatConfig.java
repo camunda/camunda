@@ -19,6 +19,7 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants;
 import io.camunda.optimize.tomcat.OptimizeResourceConstants;
 import io.camunda.optimize.tomcat.ResponseSecurityHeaderFilter;
+import io.camunda.optimize.tomcat.ResponseTimezoneFilter;
 import io.camunda.optimize.tomcat.URLRedirectFilter;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -65,7 +66,9 @@ public class OptimizeTomcatConfig {
             OptimizeResourceConstants.STATIC_RESOURCE_PATH,
             OptimizeResourceConstants.ACTUATOR_ENDPOINT,
             PanelNotificationConstants.SEND_NOTIFICATION_TO_ALL_ORG_USERS_ENDPOINT,
-            UIConfigurationRestService.UI_CONFIGURATION_PATH
+            UIConfigurationRestService.UI_CONFIGURATION_PATH,
+            "/favicon.ico",
+            "/index.html"
           });
 
   private static final String HTTP11_NIO_PROTOCOL = "org.apache.coyote.http11.Http11Nio2Protocol";
@@ -130,6 +133,17 @@ public class OptimizeTomcatConfig {
         new FilterRegistrationBean<>();
     registrationBean.addUrlPatterns("/*");
     registrationBean.setFilter(responseSecurityHeaderFilter);
+    return registrationBean;
+  }
+
+  @Bean
+  FilterRegistrationBean<ResponseTimezoneFilter> responseTimezoneFilter() {
+    LOG.debug("Registering filter 'responseTimezoneFilter'...");
+    final ResponseTimezoneFilter filter = new ResponseTimezoneFilter();
+    final FilterRegistrationBean<ResponseTimezoneFilter> registrationBean =
+        new FilterRegistrationBean<>();
+    registrationBean.addUrlPatterns("/*");
+    registrationBean.setFilter(filter);
     return registrationBean;
   }
 

@@ -21,10 +21,10 @@ import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRespon
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableValuesQueryDto;
+import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import io.camunda.optimize.service.db.reader.ProcessVariableReader;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.security.util.tenant.DataSourceTenantAuthorizationService;
-import jakarta.ws.rs.ForbiddenException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
