@@ -36,7 +36,7 @@ import org.springframework.http.MediaType;
     properties = "camunda.rest.query.enabled=true")
 public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
 
-  static final String EXPECTED_SEARCH_RESPONSE =
+  static final String EXPECTED_SEARCH_RESPONSE_NUMBER_KEYS =
       """
       {
           "items": [
@@ -58,7 +58,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
               ]
           }
       }""";
-  static final String EXPECTED_SEARCH_RESPONSE_STRING_KEYS =
+  static final String EXPECTED_SEARCH_RESPONSE =
       """
       {
           "items": [
@@ -145,7 +145,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldSearchDecisionDefinitionsWithEmptyQueryStringKeys() {
+  void shouldSearchDecisionDefinitionsWithEmptyQueryNumberKeys() {
     // given
     when(decisionDefinitionServices.search(any(DecisionDefinitionQuery.class)))
         .thenReturn(SEARCH_QUERY_RESULT);
@@ -154,16 +154,16 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
     webClient
         .post()
         .uri(DECISION_DEFINITIONS_SEARCH_URL)
-        .accept(RequestMapper.MEDIA_TYPE_KEYS_STRING)
+        .accept(RequestMapper.MEDIA_TYPE_KEYS_NUMBER)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
         .exchange()
         .expectStatus()
         .isOk()
         .expectHeader()
-        .contentType(RequestMapper.MEDIA_TYPE_KEYS_STRING)
+        .contentType(RequestMapper.MEDIA_TYPE_KEYS_NUMBER)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE_STRING_KEYS);
+        .json(EXPECTED_SEARCH_RESPONSE_NUMBER_KEYS);
 
     verify(decisionDefinitionServices).search(new DecisionDefinitionQuery.Builder().build());
   }

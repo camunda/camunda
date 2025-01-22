@@ -82,12 +82,12 @@ public class JobControllerLongPollingTest extends RestControllerTest {
         {
           "jobs": [
             {
-              "jobKey": 4503599627370496,
+              "jobKey": "4503599627370496",
               "type": "TEST",
-              "processInstanceKey": 123,
-              "processDefinitionKey": 4532,
+              "processInstanceKey": "123",
+              "processDefinitionKey": "4532",
               "processDefinitionVersion": 23,
-              "elementInstanceKey": 459,
+              "elementInstanceKey": "459",
               "retries": 12,
               "deadline": 123123123,
               "tenantId": "default",
@@ -98,12 +98,12 @@ public class JobControllerLongPollingTest extends RestControllerTest {
               "worker": "bar"
             },
             {
-              "jobKey": 4503599627370497,
+              "jobKey": "4503599627370497",
               "type": "TEST",
-              "processInstanceKey": 123,
-              "processDefinitionKey": 4532,
+              "processInstanceKey": "123",
+              "processDefinitionKey": "4532",
               "processDefinitionVersion": 23,
-              "elementInstanceKey": 459,
+              "elementInstanceKey": "459",
               "retries": 12,
               "deadline": 123123123,
               "tenantId": "default",
@@ -135,7 +135,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
   }
 
   @Test
-  void shouldActivateJobsImmediatelyIfAvailableWithStringKeys() {
+  void shouldActivateJobsImmediatelyIfAvailableWithNumberKeys() {
     // given
     final ActivateJobsStub stub = new ActivateJobsStub();
     stub.addAvailableJobs("TEST", 2);
@@ -157,12 +157,12 @@ public class JobControllerLongPollingTest extends RestControllerTest {
         {
           "jobs": [
             {
-              "jobKey": "2251799813685248",
+              "jobKey": 2251799813685248,
               "type": "TEST",
-              "processInstanceKey": "123",
-              "processDefinitionKey": "4532",
+              "processInstanceKey": 123,
+              "processDefinitionKey": 4532,
               "processDefinitionVersion": 23,
-              "elementInstanceKey": "459",
+              "elementInstanceKey": 459,
               "retries": 12,
               "deadline": 123123123,
               "tenantId": "default",
@@ -173,12 +173,12 @@ public class JobControllerLongPollingTest extends RestControllerTest {
               "worker": "bar"
             },
             {
-              "jobKey": "2251799813685249",
+              "jobKey": 2251799813685249,
               "type": "TEST",
-              "processInstanceKey": "123",
-              "processDefinitionKey": "4532",
+              "processInstanceKey": 123,
+              "processDefinitionKey": 4532,
               "processDefinitionVersion": 23,
-              "elementInstanceKey": "459",
+              "elementInstanceKey": 459,
               "retries": 12,
               "deadline": 123123123,
               "tenantId": "default",
@@ -194,14 +194,14 @@ public class JobControllerLongPollingTest extends RestControllerTest {
     webClient
         .post()
         .uri(JOBS_BASE_URL + "/activation")
-        .accept(RequestMapper.MEDIA_TYPE_KEYS_STRING)
+        .accept(RequestMapper.MEDIA_TYPE_KEYS_NUMBER)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
         .exchange()
         .expectStatus()
         .isOk()
         .expectHeader()
-        .contentType(RequestMapper.MEDIA_TYPE_KEYS_STRING)
+        .contentType(RequestMapper.MEDIA_TYPE_KEYS_NUMBER)
         .expectBody()
         .json(expectedBody);
 
@@ -289,7 +289,8 @@ public class JobControllerLongPollingTest extends RestControllerTest {
             .returnResult()
             .getResponseBody();
 
-    final int basePartition = Protocol.decodePartitionId(JsonPath.read(result, "$.jobs[0].jobKey"));
+    final int basePartition =
+        Protocol.decodePartitionId(Long.parseLong(JsonPath.read(result, "$.jobs[0].jobKey")));
     final int partitionsCount =
         stubbedBrokerClient.getTopologyManager().getTopology().getPartitionsCount();
 
