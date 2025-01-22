@@ -62,6 +62,7 @@ public class TenantCreateUpdateHandler implements ExportHandler<TenantEntity, Te
         .setKey(value.getTenantKey())
         .setTenantId(value.getTenantId())
         .setName(value.getName())
+        .setDescription(value.getDescription())
         .setJoin(joinRelation);
   }
 

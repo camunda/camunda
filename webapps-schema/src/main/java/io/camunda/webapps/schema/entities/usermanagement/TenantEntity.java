@@ -14,6 +14,7 @@ public class TenantEntity extends AbstractExporterEntity<TenantEntity> {
   private Long key;
   private String tenantId;
   private String name;
+  private String description;
   private Long memberKey;
 
   private EntityJoinRelation join;
@@ -42,6 +43,15 @@ public class TenantEntity extends AbstractExporterEntity<TenantEntity> {
 
   public TenantEntity setName(final String name) {
     this.name = name;
+    return this;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public TenantEntity setDescription(final String description) {
+    this.description = description;
     return this;
   }
 
