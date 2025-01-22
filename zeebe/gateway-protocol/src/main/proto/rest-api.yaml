@@ -103,7 +103,7 @@ paths:
           required: true
           description: The key of the job to fail.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: false
         content:
@@ -155,7 +155,7 @@ paths:
           required: true
           description: The key of the job.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: true
         content:
@@ -207,7 +207,7 @@ paths:
           required: true
           description: The key of the job to complete.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: false
         content:
@@ -258,7 +258,7 @@ paths:
           required: true
           description: The key of the job to update.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: true
         content:
@@ -311,7 +311,7 @@ paths:
           required: true
           description: Key of the incident to resolve.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "204":
           description: The incident is marked as resolved.
@@ -346,7 +346,7 @@ paths:
           required: true
           description: The key of the user task to complete.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: false
         content:
@@ -398,7 +398,7 @@ paths:
           required: true
           description: The key of the user task to assign.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: true
         content:
@@ -449,7 +449,7 @@ paths:
           required: true
           description: The key of the user task to update.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: false
         content:
@@ -500,7 +500,7 @@ paths:
           required: true
           description: The key of the user task.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "204":
           description: The user task was unassigned successfully.
@@ -764,7 +764,7 @@ paths:
           required: true
           description: The key of the process instance to cancel.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: false
         content:
@@ -811,7 +811,7 @@ paths:
           required: true
           description: The key of the process instance that should be migrated.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: true
         content:
@@ -863,7 +863,7 @@ paths:
           required: true
           description: The key of the process instance that should be modified.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: true
         content:
@@ -1025,7 +1025,7 @@ paths:
           required: true
           description: The assigned key of the decision definition, which acts as a unique identifier for this decision.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "200":
           description: >
@@ -1656,7 +1656,7 @@ paths:
           required: true
           description: The assigned key of the incident, which acts as a unique identifier for this incident.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "200":
           description: >
@@ -1759,7 +1759,7 @@ paths:
             This can be the key of a process definition, the key of a decision requirements
             definition or the key of a form definition
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: false
         content:
@@ -1806,7 +1806,7 @@ paths:
             This can be the process instance key (as obtained during instance creation), or a given
             element, such as a service task (see the `elementInstanceKey` on the job message).
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: true
         content:
@@ -2226,7 +2226,7 @@ components:
           allOf:
             - $ref: "#/components/schemas/FlowNodeInstanceFilterRequest"
     FlowNodeInstanceSearchQuery:
-      description: Flow node instance search request Key attributes as string values.
+      description: Flow node instance search request. Key attributes as string values.
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
@@ -3138,7 +3138,7 @@ components:
           items:
             $ref: "#/components/schemas/ActivatedJob"
     JobActivationResult:
-      description: The list of activated jobs Key attributes as string values.
+      description: The list of activated jobs. Key attributes as string values.
       type: object
       properties:
         jobs:
@@ -3315,12 +3315,6 @@ components:
           description: The duration of the new timeout in ms, starting from the current moment.
           nullable: true
 
-    KeyParameter:
-      description: The key parameter.
-      oneOf:
-        - type: integer
-          format: int64
-        - type: string
     ProblemDetail:
       description: >
         A Problem detail object as described in [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457).
@@ -3974,7 +3968,7 @@ components:
       description: |-
         The message key of the correlated message, as well as the first process instance key it
         correlated with.
-         Key attributes as string values.
+        Key attributes as string values.
       type: object
       allOf:
         - $ref: "#/components/schemas/MessageCorrelationResponseBase"
@@ -4396,7 +4390,7 @@ components:
       properties:
         processDefinitionKey:
           description: |
-            The unique key identifying the process definition, e.g. returned for a process in the
+            The unique key identifying the process definition, for example, returned for a process in the
             deploy resources endpoint. Cannot be used together with processDefinitionId.
           type: integer
           format: int64
@@ -4407,7 +4401,7 @@ components:
       properties:
         processDefinitionKey:
           description: |
-            The unique key identifying the process definition, e.g. returned for a process in the
+            The unique key identifying the process definition, for example, returned for a process in the
             deploy resources endpoint. Cannot be used together with processDefinitionId.
           type: string
     ProcessInstanceCreationStartInstruction:
@@ -4594,7 +4588,7 @@ components:
     ProcessInstanceModificationActivateInstruction:
       description: |-
         Instructions describing which elements should be activated in which scopes and which variables should be created.
-         Key attributes as string values.
+        Key attributes as string values.
       type: object
       allOf:
         - $ref: "#/components/schemas/ModifyProcessInstanceActivateInstructionBase"
