@@ -141,8 +141,8 @@ public final class UpdateUserTaskTest {
         .withXmlResource(
             process(
                 t ->
-                    t.zeebeCandidateGroups("foo, bar")
-                        .zeebeCandidateUsers("oof, rab")
+                    t.zeebeCandidateGroups("initial_group_A, initial_group_B")
+                        .zeebeCandidateUsers("initial_user_A, initial_user_B")
                         .zeebeDueDate("2023-03-02T15:35+02:00")
                         .zeebeFollowUpDate("2023-03-02T16:35+02:00")))
         .deploy();
@@ -153,7 +153,7 @@ public final class UpdateUserTaskTest {
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
-            .update(List.of("baz", "foobar"), null, null, null);
+            .update(List.of("updated_group_C", "updated_group_D"), null, null, null);
 
     // then
     Assertions.assertThat(updatingRecord)
@@ -169,8 +169,8 @@ public final class UpdateUserTaskTest {
         .allSatisfy(
             recordValue ->
                 Assertions.assertThat(recordValue)
-                    .hasCandidateGroupsList("baz", "foobar")
-                    .hasCandidateUsersList("oof", "rab")
+                    .hasCandidateGroupsList("updated_group_C", "updated_group_C")
+                    .hasCandidateUsersList("initial_user_A", "initial_user_B")
                     .hasDueDate("2023-03-02T15:35+02:00")
                     .hasFollowUpDate("2023-03-02T16:35+02:00"));
   }
@@ -183,8 +183,8 @@ public final class UpdateUserTaskTest {
         .withXmlResource(
             process(
                 t ->
-                    t.zeebeCandidateGroups("foo, bar")
-                        .zeebeCandidateUsers("oof, rab")
+                    t.zeebeCandidateGroups("initial_group_A, initial_group_B")
+                        .zeebeCandidateUsers("initial_user_A, initial_user_B")
                         .zeebeDueDate("2023-03-02T15:35+02:00")
                         .zeebeFollowUpDate("2023-03-02T16:35+02:00")))
         .deploy();
@@ -195,7 +195,7 @@ public final class UpdateUserTaskTest {
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
-            .update(null, List.of("baz", "foobar"), null, null);
+            .update(null, List.of("updated_user_C", "updated_user_D"), null, null);
 
     // then
     Assertions.assertThat(updatingRecord)
@@ -211,8 +211,8 @@ public final class UpdateUserTaskTest {
         .allSatisfy(
             recordValue ->
                 Assertions.assertThat(recordValue)
-                    .hasCandidateGroupsList("foo", "bar")
-                    .hasCandidateUsersList("baz", "foobar")
+                    .hasCandidateGroupsList("initial_group_A", "initial_group_B")
+                    .hasCandidateUsersList("updated_user_C", "updated_user_D")
                     .hasDueDate("2023-03-02T15:35+02:00")
                     .hasFollowUpDate("2023-03-02T16:35+02:00"));
   }
@@ -225,8 +225,8 @@ public final class UpdateUserTaskTest {
         .withXmlResource(
             process(
                 t ->
-                    t.zeebeCandidateGroups("foo, bar")
-                        .zeebeCandidateUsers("oof, rab")
+                    t.zeebeCandidateGroups("initial_group_A, initial_group_B")
+                        .zeebeCandidateUsers("initial_user_A, initial_user_B")
                         .zeebeDueDate("2023-03-02T15:35+02:00")
                         .zeebeFollowUpDate("2023-03-02T16:35+02:00")))
         .deploy();
@@ -234,7 +234,10 @@ public final class UpdateUserTaskTest {
 
     // when
     final var updatingRecord =
-        ENGINE.userTask().ofInstance(processInstanceKey).update(null, null, "abc", null);
+        ENGINE
+            .userTask()
+            .ofInstance(processInstanceKey)
+            .update(null, null, "updated_dueDate", null);
 
     // then
     Assertions.assertThat(updatingRecord)
@@ -250,9 +253,9 @@ public final class UpdateUserTaskTest {
         .allSatisfy(
             recordValue ->
                 Assertions.assertThat(recordValue)
-                    .hasCandidateGroupsList("foo", "bar")
-                    .hasCandidateUsersList("oof", "rab")
-                    .hasDueDate("abc")
+                    .hasCandidateGroupsList("initial_group_A", "initial_group_B")
+                    .hasCandidateUsersList("initial_user_A", "initial_user_B")
+                    .hasDueDate("updated_dueDate")
                     .hasFollowUpDate("2023-03-02T16:35+02:00"));
   }
 
@@ -264,8 +267,8 @@ public final class UpdateUserTaskTest {
         .withXmlResource(
             process(
                 t ->
-                    t.zeebeCandidateGroups("foo, bar")
-                        .zeebeCandidateUsers("oof, rab")
+                    t.zeebeCandidateGroups("initial_group_A, initial_group_B")
+                        .zeebeCandidateUsers("initial_user_A, initial_user_B")
                         .zeebeDueDate("2023-03-02T15:35+02:00")
                         .zeebeFollowUpDate("2023-03-02T16:35+02:00")))
         .deploy();
@@ -273,7 +276,10 @@ public final class UpdateUserTaskTest {
 
     // when
     final var updatingRecord =
-        ENGINE.userTask().ofInstance(processInstanceKey).update(null, null, null, "abc");
+        ENGINE
+            .userTask()
+            .ofInstance(processInstanceKey)
+            .update(null, null, null, "updated_followUpDate");
 
     // then
     Assertions.assertThat(updatingRecord)
@@ -289,10 +295,10 @@ public final class UpdateUserTaskTest {
         .allSatisfy(
             recordValue ->
                 Assertions.assertThat(recordValue)
-                    .hasCandidateGroupsList("foo", "bar")
-                    .hasCandidateUsersList("oof", "rab")
+                    .hasCandidateGroupsList("initial_group_A", "initial_group_B")
+                    .hasCandidateUsersList("initial_user_A", "initial_user_B")
                     .hasDueDate("2023-03-02T15:35+02:00")
-                    .hasFollowUpDate("abc"));
+                    .hasFollowUpDate("updated_followUpDate"));
   }
 
   @Test
@@ -303,10 +309,10 @@ public final class UpdateUserTaskTest {
         .withXmlResource(
             process(
                 t ->
-                    t.zeebeCandidateGroups("foo, bar")
-                        .zeebeCandidateUsers("oof, rab")
-                        .zeebeFollowUpDate("2023-03-02T15:35+02:00")
-                        .zeebeDueDate("2023-03-02T16:35+02:00")))
+                    t.zeebeCandidateGroups("initial_group_A, initial_group_B")
+                        .zeebeCandidateUsers("initial_user_A, initial_user_B")
+                        .zeebeDueDate("2023-03-02T15:35+02:00")
+                        .zeebeFollowUpDate("2023-03-02T16:35+02:00")))
         .deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
