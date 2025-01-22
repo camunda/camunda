@@ -254,7 +254,6 @@ func main() {
 	stopFlagSet.BoolVar(&settings.disableElasticsearch, "disable-elasticsearch", false, "Do not stop Elasticsearch")
 	stopFlagSet.BoolVar(&settings.docker, "docker", false, "Stop docker-compose distribution of camunda.")
 
-
 	switch baseCommand {
 	case "start":
 		startFlagSet.Parse(os.Args[2:])
