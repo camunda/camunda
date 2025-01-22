@@ -37,7 +37,8 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 public class CamundaMultiDBExtension
     implements AfterAllCallback, BeforeAllCallback, ParameterResolver {
 
-  public static final String PROP_CAMUNDA_IT_DATABASE_TYPE = "camunda.it.database.type";
+  public static final String PROP_CAMUNDA_IT_DATABASE_TYPE =
+      "test.integration.camunda.database.type";
   public static final String DEFAULT_ES_URL = "http://localhost:9200";
   public static final String DEFAULT_OS_URL = "http://localhost:9200";
   public static final String DEFAULT_OS_ADMIN_USER = "admin";
