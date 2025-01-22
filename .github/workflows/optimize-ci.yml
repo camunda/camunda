@@ -426,7 +426,6 @@ jobs:
 
   # Only deploy artifacts on push event, which in this case can only be triggered by main and stable
   deploy-artifacts:
-    if: github.event_name == 'push' && (github.ref_name == 'main' || startsWith(github.ref_name, 'stable/'))
     name: Deploy Artifacts
     needs: [ integration-tests, upgrade-tests, es-schema-integrity-test, os-schema-integrity-test ]
     uses: ./.github/workflows/optimize-deploy-artifacts.yml
