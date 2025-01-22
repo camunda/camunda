@@ -69,7 +69,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/JobActivationResponse"
+                $ref: "#/components/schemas/JobActivationResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
                 $ref: "#/components/schemas/JobActivationResponse"
@@ -559,7 +559,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserTaskSearchQueryResponse"
+                $ref: "#/components/schemas/UserTaskSearchQueryResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
                 $ref: "#/components/schemas/UserTaskSearchQueryResponse"
@@ -658,12 +658,12 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateProcessInstanceRequest"
+              $ref: "#/components/schemas/ProcessInstanceCreationInstruction"
             examples:
               "By process definition key":
                 summary: "Create a process instance by processDefinitionKey."
                 value:
-                  processDefinitionKey: 12345
+                  processDefinitionKey: "12345"
                   variables: {}
               "By process definition ID":
                 summary: "Create a process instance by processDefinitionId and version."
@@ -683,7 +683,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CreateProcessInstanceResponse"
+                $ref: "#/components/schemas/CreateProcessInstanceResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
                 $ref: "#/components/schemas/CreateProcessInstanceResponse"
@@ -716,7 +716,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ProcessInstanceSearchQueryRequest"
+              $ref: "#/components/schemas/ProcessInstanceSearchQuery"
           application/vnd.camunda.api.keys.number+json:
             schema:
               $ref: "#/components/schemas/ProcessInstanceSearchQueryRequest"
@@ -730,7 +730,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ProcessInstanceSearchQueryResponse"
+                $ref: "#/components/schemas/ProcessInstanceSearchQueryResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
                 $ref: "#/components/schemas/ProcessInstanceSearchQueryResponse"
@@ -817,7 +817,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/MigrateProcessInstanceRequest"
+              $ref: "#/components/schemas/ProcessInstanceMigrationInstruction"
           application/vnd.camunda.api.keys.number+json:
             schema:
               $ref: "#/components/schemas/MigrateProcessInstanceRequest"
@@ -869,7 +869,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ModifyProcessInstanceRequest"
+              $ref: "#/components/schemas/ProcessInstanceModificationInstruction"
           application/vnd.camunda.api.keys.number+json:
             schema:
               $ref: "#/components/schemas/ModifyProcessInstanceRequest"
@@ -916,7 +916,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/FlowNodeInstanceSearchQueryRequest"
+              $ref: "#/components/schemas/FlowNodeInstanceSearchQuery"
           application/vnd.camunda.api.keys.number+json:
             schema:
               $ref: "#/components/schemas/FlowNodeInstanceSearchQueryRequest"
@@ -930,7 +930,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/FlowNodeInstanceSearchQueryResponse"
+                $ref: "#/components/schemas/FlowNodeInstanceSearchQueryResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
                 $ref: "#/components/schemas/FlowNodeInstanceSearchQueryResponse"
@@ -970,7 +970,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/DecisionDefinitionSearchQueryRequest"
+              $ref: "#/components/schemas/DecisionDefinitionSearchQuery"
           application/vnd.camunda.api.keys.number+json:
             schema:
               $ref: "#/components/schemas/DecisionDefinitionSearchQueryRequest"
@@ -984,7 +984,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DecisionDefinitionSearchQueryResponse"
+                $ref: "#/components/schemas/DecisionDefinitionSearchQueryResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
                 $ref: "#/components/schemas/DecisionDefinitionSearchQueryResponse"
@@ -1075,7 +1075,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/DecisionRequirementsSearchQueryRequest"
+              $ref: "#/components/schemas/DecisionRequirementsSearchQuery"
           application/vnd.camunda.api.keys.number+json:
             schema:
               $ref: "#/components/schemas/DecisionRequirementsSearchQueryRequest"
@@ -1089,7 +1089,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DecisionRequirementsSearchQueryResponse"
+                $ref: "#/components/schemas/DecisionRequirementsSearchQueryResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
                 $ref: "#/components/schemas/DecisionRequirementsSearchQueryResponse"
@@ -1119,7 +1119,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/DecisionInstanceSearchQueryRequest"
+              $ref: "#/components/schemas/DecisionInstanceSearchQuery"
           application/vnd.camunda.api.keys.number+json:
             schema:
               $ref: "#/components/schemas/DecisionInstanceSearchQueryRequest"
@@ -1133,7 +1133,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DecisionInstanceSearchQueryResponse"
+                $ref: "#/components/schemas/DecisionInstanceSearchQueryResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
                 $ref: "#/components/schemas/DecisionInstanceSearchQueryResponse"
@@ -1172,12 +1172,12 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/EvaluateDecisionRequest"
+              $ref: "#/components/schemas/DecisionEvaluationInstruction"
             examples:
               "By decision definition key":
                 summary: "Evaluate the decision by decisionDefinitionKey."
                 value:
-                  decisionDefinitionKey: 12345
+                  decisionDefinitionKey: "12345"
                   variables: {}
               "By decision definition ID":
                 summary: "Evaluate the decision by decisionDefinitionId."
@@ -1196,7 +1196,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EvaluateDecisionResponse"
+                $ref: "#/components/schemas/EvaluateDecisionResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
                 $ref: "#/components/schemas/EvaluateDecisionResponse"
@@ -1244,7 +1244,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MessagePublicationResponse"
+                $ref: "#/components/schemas/MessagePublicationResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
                 $ref: "#/components/schemas/MessagePublicationResponse"
@@ -1283,7 +1283,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MessageCorrelationResponse"
+                $ref: "#/components/schemas/MessageCorrelationResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
                 $ref: "#/components/schemas/MessageCorrelationResponse"
@@ -1533,7 +1533,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserSearchResponse"
+                $ref: "#/components/schemas/UserSearchResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
                 $ref: "#/components/schemas/UserSearchResponse"
@@ -1589,7 +1589,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/IncidentSearchQueryRequest"
+              $ref: "#/components/schemas/IncidentSearchQuery"
           application/vnd.camunda.api.keys.number+json:
             schema:
               $ref: "#/components/schemas/IncidentSearchQueryRequest"
@@ -1603,7 +1603,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/IncidentSearchQueryResponse"
+                $ref: "#/components/schemas/IncidentSearchQueryResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
                 $ref: "#/components/schemas/IncidentSearchQueryResponse"
@@ -1664,7 +1664,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/IncidentItem"
+                $ref: "#/components/schemas/IncidentResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
                 $ref: "#/components/schemas/IncidentItem"
@@ -1727,7 +1727,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DeploymentResponse"
+                $ref: "#/components/schemas/DeploymentResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
                 $ref: "#/components/schemas/DeploymentResponse"
@@ -1847,7 +1847,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SignalBroadcastResponse"
+                $ref: "#/components/schemas/SignalBroadcastResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
                 $ref: "#/components/schemas/SignalBroadcastResponse"
