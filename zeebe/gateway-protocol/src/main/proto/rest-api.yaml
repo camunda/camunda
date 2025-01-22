@@ -160,7 +160,7 @@ paths:
           required: true
           description: The key of the job to fail.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: false
         content:
@@ -208,7 +208,7 @@ paths:
           required: true
           description: The key of the job.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: true
         content:
@@ -256,7 +256,7 @@ paths:
           required: true
           description: The key of the job to complete.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: false
         content:
@@ -303,7 +303,7 @@ paths:
           required: true
           description: The key of the job to update.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: true
         content:
@@ -352,7 +352,7 @@ paths:
           required: true
           description: Key of the incident to resolve.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "204":
           description: The incident is marked as resolved.
@@ -588,7 +588,7 @@ paths:
           required: true
           description: The unique identifier of the tenant.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
         - name: userKey
           in: path
           required: true
@@ -629,7 +629,7 @@ paths:
           required: true
           description: The unique identifier of the tenant.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
         - name: mappingKey
           in: path
           required: true
@@ -669,7 +669,7 @@ paths:
           required: true
           description: The unique identifier of the tenant.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
         - name: mappingKey
           in: path
           required: true
@@ -710,7 +710,7 @@ paths:
           required: true
           description: The unique identifier of the tenant.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
         - name: groupKey
           in: path
           required: true
@@ -750,7 +750,7 @@ paths:
           required: true
           description: The unique identifier of the tenant.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
         - name: groupKey
           in: path
           required: true
@@ -836,7 +836,7 @@ paths:
           required: true
           description: The key of the user task to complete.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: false
         content:
@@ -885,7 +885,7 @@ paths:
           required: true
           description: The key of the user task to assign.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: true
         content:
@@ -934,7 +934,7 @@ paths:
           required: true
           description: The user task key.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "200":
           description: >
@@ -982,7 +982,7 @@ paths:
           required: true
           description: The key of the user task to update.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: false
         content:
@@ -1033,7 +1033,7 @@ paths:
           required: true
           description: The user task key.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "200":
           description: >
@@ -1083,7 +1083,7 @@ paths:
           required: true
           description: The key of the user task.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "204":
           description: The user task was unassigned successfully.
@@ -1174,7 +1174,7 @@ paths:
           required: true
           description: The key of the user task.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: false
         content:
@@ -1269,7 +1269,7 @@ paths:
           required: true
           description: The variable key.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "200":
           description: >
@@ -1417,7 +1417,7 @@ paths:
           required: true
           description: The assigned key of the process definition, which acts as a unique identifier for this process definition.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "200":
           description: >
@@ -1469,7 +1469,7 @@ paths:
           required: true
           description: The assigned key of the process definition, which acts as a unique identifier for this process.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "200":
           description: >
@@ -1524,7 +1524,7 @@ paths:
           required: true
           description: The process key.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "200":
           description: >
@@ -1630,7 +1630,7 @@ paths:
           required: true
           description: The process instance key.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "200":
           description: The process instance is successfully returned.
@@ -1724,7 +1724,7 @@ paths:
           required: true
           description: The key of the process instance to cancel.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: false
         content:
@@ -1769,7 +1769,7 @@ paths:
           required: true
           description: The key of the process instance that should be migrated.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: true
         content:
@@ -1819,7 +1819,7 @@ paths:
           required: true
           description: The key of the process instance that should be modified.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: true
         content:
@@ -1913,7 +1913,7 @@ paths:
           required: true
           description: The assigned key of the flow node instance, which acts as a unique identifier for this flow node instance.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "200":
           description: >
@@ -2014,7 +2014,7 @@ paths:
           required: true
           description: The assigned key of the decision definition, which acts as a unique identifier for this decision.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "200":
           description: >
@@ -2066,7 +2066,7 @@ paths:
           required: true
           description: The assigned key of the decision definition, which acts as a unique identifier for this decision.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "200":
           description: >
@@ -2161,7 +2161,7 @@ paths:
           required: true
           description: The assigned key of the decision requirements, which acts as a unique identifier for this decision requirements.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "200":
           description: >
@@ -2213,7 +2213,7 @@ paths:
           required: true
           description: The assigned key of the decision requirements, which acts as a unique identifier for this decision.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "200":
           description: >
@@ -2469,7 +2469,7 @@ paths:
           required: true
           description: The key of the owner of the authorization.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         content:
           application/json:
@@ -2636,7 +2636,7 @@ paths:
           required: true
           description: The role key.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "200":
           description: The role is successfully returned.
@@ -2674,7 +2674,7 @@ paths:
           required: true
           description: The key of the role to update.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: true
         content:
@@ -2713,7 +2713,7 @@ paths:
           required: true
           description: The key of the role to delete.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "204":
           description: The role was deleted successfully.
@@ -2825,7 +2825,7 @@ paths:
           required: true
           description: The group key.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "200":
           description: The group is successfully returned.
@@ -2863,7 +2863,7 @@ paths:
           required: true
           description: The key of the group to update.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: true
         content:
@@ -2902,7 +2902,7 @@ paths:
           required: true
           description: The key of the group to delete.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "204":
           description: The group was deleted successfully.
@@ -2930,7 +2930,7 @@ paths:
           required: true
           description: The group key.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
         - name: userKey
           in: path
           required: true
@@ -2978,13 +2978,13 @@ paths:
           required: true
           description: The group key.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
         - name: userKey
           in: path
           required: true
           description: The user key.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "202":
           description: The user was unassigned successfully from the group.
@@ -3113,7 +3113,7 @@ paths:
           required: true
           description: The key of the mapping rule to delete.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "204":
           description: The mapping rule was deleted successfully.
@@ -3763,7 +3763,7 @@ paths:
           required: true
           description: The assigned key of the incident, which acts as a unique identifier for this incident.
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       responses:
         "200":
           description: >
@@ -3911,7 +3911,7 @@ paths:
             This can be the key of a process definition, the key of a decision requirements
             definition or the key of a form definition
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: false
         content:
@@ -3954,7 +3954,7 @@ paths:
             This can be the process instance key (as obtained during instance creation), or a given
             element, such as a service task (see the `elementInstanceKey` on the job message).
           schema:
-            $ref: "#/components/schemas/KeyParameter"
+            type: string
       requestBody:
         required: true
         content:
@@ -5380,7 +5380,7 @@ components:
           allOf:
             - $ref: "#/components/schemas/FlowNodeInstanceFilterRequest"
     FlowNodeInstanceSearchQuery:
-      description: Flow node instance search request Key attributes as string values.
+      description: Flow node instance search request. Key attributes as string values.
       type: object
       allOf:
         - $ref: "#/components/schemas/FlowNodeInstanceSearchQueryRequestBase"
@@ -6231,7 +6231,7 @@ components:
         - $ref: "#/components/schemas/AuthorizationFilterRequestBase"
       properties:
         ownerKey:
-          description: The id of the owner of permissions.
+          description: The ID of the owner of permissions.
           type: integer
           format: int64
     AuthorizationFilter:
@@ -6241,7 +6241,7 @@ components:
         - $ref: "#/components/schemas/AuthorizationFilterRequestBase"
       properties:
         ownerKey:
-          description: The id of the owner of permissions.
+          description: The ID of the owner of permissions.
           type: string
     AuthorizationResponseBase:
       type: "object"
@@ -6267,7 +6267,7 @@ components:
         - $ref: "#/components/schemas/AuthorizationResponseBase"
       properties:
         ownerKey:
-          description: The id of the owner of permissions.
+          description: The ID of the owner of permissions.
           type: integer
           format: int64
     AuthorizationResult:
@@ -6276,7 +6276,7 @@ components:
         - $ref: "#/components/schemas/AuthorizationResponseBase"
       properties:
         ownerKey:
-          description: The id of the owner of permissions.
+          description: The ID of the owner of permissions.
           type: string
     AuthorizationSearchResponse:
       deprecated: true
@@ -7435,12 +7435,6 @@ components:
           format: int64
           description: The duration of the new timeout in ms, starting from the current moment.
           nullable: true
-    KeyParameter:
-      description: The key parameter.
-      oneOf:
-        - type: string
-        - type: integer
-          format: int64
     ProblemDetail:
       description: >
         A Problem detail object as described in [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457).
@@ -8703,7 +8697,7 @@ components:
       properties:
         processDefinitionKey:
           description: |
-            The unique key identifying the process definition, e.g. returned for a process in the
+            The unique key identifying the process definition, for example, returned for a process in the
             deploy resources endpoint. Cannot be used together with processDefinitionId.
           type: integer
           format: int64
@@ -8714,7 +8708,7 @@ components:
       properties:
         processDefinitionKey:
           description: |
-            The unique key identifying the process definition, e.g. returned for a process in the
+            The unique key identifying the process definition, for example, returned for a process in the
             deploy resources endpoint. Cannot be used together with processDefinitionId.
           type: string
     ProcessInstanceCreationStartInstruction:
@@ -8907,7 +8901,7 @@ components:
     ProcessInstanceModificationActivateInstruction:
       description: |-
         Instructions describing an element that should be activated.
-         Key attributes as string values.
+        Key attributes as string values.
       type: object
       allOf:
         - $ref: "#/components/schemas/ModifyProcessInstanceActivateInstructionBase"
