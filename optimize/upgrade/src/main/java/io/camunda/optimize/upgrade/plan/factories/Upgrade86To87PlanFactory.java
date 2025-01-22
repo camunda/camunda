@@ -13,15 +13,10 @@ import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class Upgrade863To864PlanFactory implements UpgradePlanFactory {
+public class Upgrade86To87PlanFactory implements UpgradePlanFactory {
 
   @Override
   public UpgradePlan createUpgradePlan(final UpgradeExecutionDependencies dependencies) {
-    return UpgradePlanBuilder.createUpgradePlan().fromVersion("8.6.3").toVersion("8.6.4").build();
-  }
-
-  @Override
-  public void logErrorMessage(final String message) {
-    log.error(message);
+    return UpgradePlanBuilder.createUpgradePlan().fromVersion("8.6").toVersion("8.7.0").build();
   }
 }
