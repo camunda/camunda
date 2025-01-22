@@ -64,10 +64,14 @@ public interface BatchRequest {
    *
    * @param customErrorHandlers possible custom error handlers to be used if certain indices threw
    *     persistence errors. The first parameter is the index name and the second is the error
-   *     detail
+   *     detail if not passed, a PersistenceException will be thrown by default in case of error
    * @throws PersistenceException if an error occurs during the execution
    */
   void execute(final BiConsumer<String, Error> customErrorHandlers) throws PersistenceException;
+
+  default void execute() throws PersistenceException {
+    execute(null);
+  }
 
   void executeWithRefresh() throws PersistenceException;
 }

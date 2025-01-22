@@ -131,7 +131,7 @@ class ExporterBatchWriterTest {
     // then
 
     verify(handler).flush(entity, batchRequest);
-    verify(batchRequest).execute(null);
+    verify(batchRequest).execute();
     assertThat(batchWriter.getBatchSize()).isEqualTo(0);
   }
 }
