@@ -54,13 +54,12 @@ public class IdentitySetupInitializeTest {
     final var roleName = "roleName";
     final var role = new RoleRecord().setName(roleName);
     final var username = "username";
-    final var userName = "userName";
     final var password = "password";
     final var mail = "e@mail.com";
     final var user =
         new UserRecord()
             .setUsername(username)
-            .setName(userName)
+            .setName(username)
             .setPassword(password)
             .setEmail(mail);
     final var tenantId = "tenant-id";
@@ -95,7 +94,7 @@ public class IdentitySetupInitializeTest {
                 .getValue())
         .hasUserKey(userKey)
         .hasUsername(username)
-        .hasName(userName)
+        .hasName(username)
         .hasPassword(password)
         .hasEmail(mail);
     assertThat(
@@ -116,20 +115,19 @@ public class IdentitySetupInitializeTest {
     final var roleName = "roleName";
     final var role = new RoleRecord().setName(roleName);
     final var username = "username";
-    final var userName = "userName";
     final var password = "password";
     final var mail = "e@mail.com";
     final var user =
         new UserRecord()
             .setUsername(username)
-            .setName(userName)
+            .setName(username)
             .setPassword(password)
             .setEmail(mail);
     final var userKey =
         engine
             .user()
             .newUser(username)
-            .withName(userName)
+            .withName(username)
             .withPassword(password)
             .withEmail(mail)
             .create()
@@ -151,13 +149,12 @@ public class IdentitySetupInitializeTest {
     final var roleName = "roleName";
     final var role = new RoleRecord().setRoleKey(1).setName(roleName);
     final var username = "username";
-    final var userName = "userName";
     final var password = "password";
     final var mail = "e@mail.com";
     final var user =
         new UserRecord()
             .setUsername(username)
-            .setName(userName)
+            .setName(username)
             .setPassword(password)
             .setEmail(mail);
     final var roleKey = engine.role().newRole(roleName).create().getKey();
@@ -207,14 +204,13 @@ public class IdentitySetupInitializeTest {
     final var roleName = "roleName";
     final var role = new RoleRecord().setRoleKey(1).setName(roleName);
     final var username = "username";
-    final var userName = "userName";
     final var password = "password";
     final var mail = "e@mail.com";
     final var user =
         new UserRecord()
             .setUserKey(2)
             .setUsername(username)
-            .setName(userName)
+            .setName(username)
             .setPassword(password)
             .setEmail(mail);
     final var roleKey = engine.role().newRole(roleName).create().getKey();
@@ -222,7 +218,7 @@ public class IdentitySetupInitializeTest {
         engine
             .user()
             .newUser(username)
-            .withName(userName)
+            .withName(username)
             .withPassword(password)
             .withEmail(mail)
             .create()
@@ -244,14 +240,13 @@ public class IdentitySetupInitializeTest {
     final var roleName = "roleName";
     final var role = new RoleRecord().setRoleKey(1).setName(roleName);
     final var username = "username";
-    final var userName = "userName";
     final var password = "password";
     final var mail = "e@mail.com";
     final var user =
         new UserRecord()
             .setUserKey(2)
             .setUsername(username)
-            .setName(userName)
+            .setName(username)
             .setPassword(password)
             .setEmail(mail);
     final var roleKey = engine.role().newRole(roleName).create().getKey();
@@ -259,7 +254,7 @@ public class IdentitySetupInitializeTest {
         engine
             .user()
             .newUser(username)
-            .withName(userName)
+            .withName(username)
             .withPassword(password)
             .withEmail(mail)
             .create()

@@ -28,7 +28,7 @@ import org.apache.hc.client5.http.config.RequestConfig;
 public final class AssignUserToTenantCommandImpl implements AssignUserToTenantCommandStep1 {
 
   private final String tenantId;
-  private String userName;
+  private String username;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
@@ -39,8 +39,8 @@ public final class AssignUserToTenantCommandImpl implements AssignUserToTenantCo
   }
 
   @Override
-  public AssignUserToTenantCommandStep1 userName(final String userName) {
-    this.userName = userName;
+  public AssignUserToTenantCommandStep1 username(final String username) {
+    this.username = username;
     return this;
   }
 
@@ -54,7 +54,7 @@ public final class AssignUserToTenantCommandImpl implements AssignUserToTenantCo
   @Override
   public CamundaFuture<AssignUserToTenantResponse> send() {
     final HttpCamundaFuture<AssignUserToTenantResponse> result = new HttpCamundaFuture<>();
-    final String endpoint = String.format("/tenants/%s/users/%s", tenantId, userName);
+    final String endpoint = String.format("/tenants/%s/users/%s", tenantId, username);
     httpClient.put(endpoint, null, httpRequestConfig.build(), result);
     return result;
   }

@@ -63,7 +63,7 @@ class RemoveUserFromTenantTest {
             .getUserKey();
 
     // Assign User to Tenant
-    client.newAssignUserToTenantCommand(TENANT_ID).userName(username).send().join();
+    client.newAssignUserToTenantCommand(TENANT_ID).username(username).send().join();
   }
 
   @Test

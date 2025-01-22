@@ -205,11 +205,11 @@ public class TenantAppliersTest {
   }
 
   private void associateUserWithTenant(
-      final long tenantKey, final String tenantId, final String userName) {
+      final long tenantKey, final String tenantId, final String username) {
     final var tenantRecord =
         new TenantRecord()
             .setTenantId(tenantId)
-            .setEntityId(userName)
+            .setEntityId(username)
             .setEntityType(EntityType.USER);
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
   }

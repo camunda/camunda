@@ -68,7 +68,7 @@ class AssignUserToTenantTest {
   @Test
   void shouldAssignUserToTenant() {
     // When
-    client.newAssignUserToTenantCommand(TENANT_ID).userName(USERNAME).send().join();
+    client.newAssignUserToTenantCommand(TENANT_ID).username(USERNAME).send().join();
 
     // Then
     assertThat(
@@ -91,7 +91,7 @@ class AssignUserToTenantTest {
             () ->
                 client
                     .newAssignUserToTenantCommand(invalidTenantId)
-                    .userName(USERNAME)
+                    .username(USERNAME)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -111,7 +111,7 @@ class AssignUserToTenantTest {
             () ->
                 client
                     .newAssignUserToTenantCommand(TENANT_ID)
-                    .userName(invalidUserName)
+                    .username(invalidUserName)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)

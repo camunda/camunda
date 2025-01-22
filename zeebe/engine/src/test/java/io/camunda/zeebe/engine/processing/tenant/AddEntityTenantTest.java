@@ -72,7 +72,7 @@ public class AddEntityTenantTest {
     final var entityType = USER;
     final var user = createUser();
     final var userKey = user.getUserKey();
-    final var userName = user.getUsername();
+    final var username = user.getUsername();
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
         engine
@@ -89,7 +89,7 @@ public class AddEntityTenantTest {
         engine
             .tenant()
             .addEntity(tenantKey)
-            .withEntityId(userName)
+            .withEntityId(username)
             .withEntityType(entityType)
             .add()
             .getValue();
@@ -100,7 +100,7 @@ public class AddEntityTenantTest {
             "Entity of type %s with key %s should be correctly added to tenant with key %s",
             entityType, userKey, tenantKey)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("entityId", userName)
+        .hasFieldOrPropertyWithValue("entityId", username)
         .hasFieldOrPropertyWithValue("tenantKey", tenantKey)
         .hasFieldOrPropertyWithValue("entityType", entityType);
   }

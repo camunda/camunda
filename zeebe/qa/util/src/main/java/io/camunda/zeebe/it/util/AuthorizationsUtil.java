@@ -94,7 +94,7 @@ public class AuthorizationsUtil implements CloseableSilently {
   }
 
   public void createTenant(
-      final String tenantId, final String tenantName, final String... userNames) {
+      final String tenantId, final String tenantName, final String... usernames) {
     client
         .newCreateTenantCommand()
         .tenantId(tenantId)
@@ -102,8 +102,8 @@ public class AuthorizationsUtil implements CloseableSilently {
         .send()
         .join()
         .getTenantKey();
-    for (final var userName : userNames) {
-      client.newAssignUserToTenantCommand(tenantId).userName(userName).send().join();
+    for (final var username : usernames) {
+      client.newAssignUserToTenantCommand(tenantId).username(username).send().join();
     }
     awaitTenantExistsInElasticsearch(tenantId);
   }

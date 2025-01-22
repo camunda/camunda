@@ -540,7 +540,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /tenants/{tenantId}/users/{userName}:
+  /tenants/{tenantId}/users/{username}:
     put:
       tags:
         - Tenant
@@ -554,7 +554,7 @@ paths:
           description: The unique identifier of the tenant.
           schema:
             type: string
-        - name: userName
+        - name: username
           in: path
           required: true
           description: The username of the user to assign.

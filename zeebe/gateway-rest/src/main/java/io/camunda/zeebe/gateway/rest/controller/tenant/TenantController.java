@@ -74,14 +74,14 @@ public class TenantController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateTenant);
   }
 
-  @CamundaPutMapping(path = "/{tenantId}/users/{userName}")
+  @CamundaPutMapping(path = "/{tenantId}/users/{username}")
   public CompletableFuture<ResponseEntity<Object>> assignUsersToTenant(
-      @PathVariable final String tenantId, @PathVariable final String userName) {
+      @PathVariable final String tenantId, @PathVariable final String username) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             tenantServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .addMember(tenantId, EntityType.USER, userName));
+                .addMember(tenantId, EntityType.USER, username));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}")
