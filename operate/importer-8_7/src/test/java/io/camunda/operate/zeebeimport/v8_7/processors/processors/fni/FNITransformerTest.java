@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.zeebeimport.v8_6.processors.fni;
+package io.camunda.operate.zeebeimport.v8_7.processors.processors.fni;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -17,6 +17,7 @@ import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.zeebeimport.cache.FNITreePathCacheCompositeKey;
 import io.camunda.operate.zeebeimport.cache.TreePathCache;
+import io.camunda.operate.zeebeimport.processors.fni.FNITransformer;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;

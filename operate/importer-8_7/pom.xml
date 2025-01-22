@@ -7,9 +7,9 @@
     <version>8.7.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
-  <artifactId>operate-importer-8_6</artifactId>
+  <artifactId>operate-importer-8_7</artifactId>
 
-  <name>Operate Importer 8.6</name>
+  <name>Operate Importer 8.7</name>
 
   <dependencies>
 
@@ -107,35 +107,5 @@
     </dependency>
 
   </dependencies>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <configuration>
-          <artifactSet>
-            <includes>
-              <include>io.camunda:zeebe-protocol</include>
-              <include>io.camunda:zeebe-protocol-jackson</include>
-            </includes>
-          </artifactSet>
-          <relocations>
-            <relocation>
-              <pattern>io.camunda.zeebe.protocol</pattern>
-              <shadedPattern>io.camunda.zeebe.protocol.v860</shadedPattern>
-            </relocation>
-          </relocations>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <phase>package</phase>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 
 </project>

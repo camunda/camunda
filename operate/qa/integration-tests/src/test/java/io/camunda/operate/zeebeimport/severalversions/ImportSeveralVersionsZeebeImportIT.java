@@ -81,7 +81,7 @@ public class ImportSeveralVersionsZeebeImportIT extends OperateAbstractIT {
 
   @SpyBean private ImportBulkProcessor importerv2;
 
-  @SpyBean private io.camunda.operate.zeebeimport.v8_5.processors.ImportBulkProcessor importerv1;
+  @SpyBean private io.camunda.operate.zeebeimport.v8_6.processors.ImportBulkProcessor importerv1;
 
   @MockBean private PartitionHolder partitionHolder;
 

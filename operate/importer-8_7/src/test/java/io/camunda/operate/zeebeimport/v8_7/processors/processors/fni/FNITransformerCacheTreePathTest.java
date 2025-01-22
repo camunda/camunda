@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.zeebeimport.v8_6.processors.fni;
+package io.camunda.operate.zeebeimport.v8_7.processors.processors.fni;
 
-import static io.camunda.operate.zeebeimport.v8_6.processors.fni.FNITransformerTest.createZeebeRecord;
+import static io.camunda.operate.zeebeimport.v8_7.processors.processors.fni.FNITransformerTest.createZeebeRecord;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.operate.zeebeimport.cache.FNITreePathCacheCompositeKey;
 import io.camunda.operate.zeebeimport.cache.TreePathCache;
+import io.camunda.operate.zeebeimport.processors.fni.FNITransformer;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import org.junit.jupiter.api.BeforeEach;

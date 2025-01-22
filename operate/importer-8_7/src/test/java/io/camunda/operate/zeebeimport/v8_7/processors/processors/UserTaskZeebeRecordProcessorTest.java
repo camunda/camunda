@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.zeebeimport.v8_6.processors;
+package io.camunda.operate.zeebeimport.v8_7.processors.processors;
 
 import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -17,6 +17,7 @@ import io.camunda.operate.entities.UserTaskEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.UserTaskTemplate;
 import io.camunda.operate.store.BatchRequest;
+import io.camunda.operate.zeebeimport.processors.UserTaskZeebeRecordProcessor;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;

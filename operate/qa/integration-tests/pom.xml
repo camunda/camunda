@@ -99,13 +99,13 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-importer-8_5</artifactId>
+      <artifactId>operate-importer-8_6</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-importer-8_6</artifactId>
+      <artifactId>operate-importer-8_7</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
