@@ -51,6 +51,7 @@ if ! baseImageInfo="$(docker manifest inspect "${BASE_IMAGE}")"; then
   exit 1
 fi
 
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 DOCKERFILE_PATH="${SCRIPT_DIR}/../../../optimize.Dockerfile"
 DIGEST=$(cat $DOCKERFILE_PATH | grep -o 'sha256:[a-f0-9]\{64\}')
 if [[ -z "$DIGEST" ]]; then
