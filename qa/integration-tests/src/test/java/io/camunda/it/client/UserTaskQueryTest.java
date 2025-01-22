@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -59,6 +60,7 @@ class UserTaskQueryTest {
   }
 
   @Test
+  @Disabled("Tasklist list-view index is removed, searchTasksByVariables is not supported")
   public void shouldRetrieveTaskByTaskVariable() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("task02").value("1");
@@ -73,6 +75,7 @@ class UserTaskQueryTest {
   }
 
   @Test
+  @Disabled("Tasklist list-view index is removed, searchTasksByVariables is not supported")
   public void shouldRetrieveTaskByProcessVariable() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("process01").value("\"pVar\"");
@@ -87,6 +90,7 @@ class UserTaskQueryTest {
   }
 
   @Test
+  @Disabled("Tasklist list-view index is removed, searchTasksByVariables is not supported")
   public void shouldRetrieveTaskByVariableNameSearch() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("process01");
@@ -101,6 +105,7 @@ class UserTaskQueryTest {
   }
 
   @Test
+  @Disabled("Tasklist list-view index is removed, searchTasksByVariables is not supported")
   public void shouldNoteRetrieveTaskByInvalidVariableValue() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("process01").value("\"pVariable\"");
@@ -115,6 +120,7 @@ class UserTaskQueryTest {
   }
 
   @Test
+  @Disabled("Tasklist list-view index is removed, searchTasksByVariables is not supported")
   public void shouldRetrieveTaskByOrVariableCondition() {
     final UserTaskVariableFilterRequest variableValueFilter1 =
         new UserTaskVariableFilterRequest().name("task02").value("1");
