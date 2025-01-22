@@ -13,16 +13,10 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
-import java.util.Arrays;
 
 public final class FineGrainedColumnFamilyMetrics implements ColumnFamilyMetrics {
   private static final MeterRegistry METER_REGISTRY = Metrics.globalRegistry;
-
-  private static final Duration[] LATENCY_DURATION_BUCKETS =
-      Arrays.stream(exponentialBuckets(0.00001, 2, 15))
-          .mapToObj(Duration::ofMillis)
-          .toArray(Duration[]::new);
-
+  private static final String NAMESPACE = "zeebe";
   private final Timer getLatency;
   private final Timer putLatency;
   private final Timer deleteLatency;
@@ -38,16 +32,25 @@ public final class FineGrainedColumnFamilyMetrics implements ColumnFamilyMetrics
     iterateLatency = createTimer(METER_REGISTRY, "iterate", partitionLabel, columnFamilyLabel);
   }
 
+  private static Duration[] generateExponentialBuckets(
+      final double start, final int factor, final int count) {
+    final Duration[] buckets = new Duration[count];
+    for (int i = 0; i < count; i++) {
+      buckets[i] = Duration.ofNanos((long) (start * Math.pow(factor, i) * 1_000_000_000));
+    }
+    return buckets;
+  }
+
   private Timer createTimer(
       final MeterRegistry registry,
       final String operation,
       final String partition,
       final String columnFamily) {
-    return io.micrometer.core.instrument.Timer.builder("zeebe.rocksdb.latency")
+    return Timer.builder(NAMESPACE + "rocksdb_latency")
         .description("Latency of RocksDB operations per column family")
         .tags("partition", partition, "columnFamily", columnFamily, "operation", operation)
         .publishPercentileHistogram() // Enables histogram generation
-        .serviceLevelObjectives(LATENCY_DURATION_BUCKETS)
+        .serviceLevelObjectives(generateExponentialBuckets(0.00001, 2, 15))
         .register(registry);
   }
 
