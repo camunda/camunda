@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.test;
 
+import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
@@ -136,6 +137,7 @@ final class ContainerState implements CloseableResource {
             .withEnv("ZEEBE_BROKER_DATA_LOGSEGMENTSIZE", "64MB")
             .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m")
             .withEnv("ZEEBE_BROKER_DATA_LOGINDEXDENSITY", "1")
+            .withEnv(AuthenticationProperties.getAllowUnauthenticatedApiAccessEnvVar(), "true")
             .withZeebeData(volume)
             .withNetwork(network);
     this.withRemoteDebugging = withRemoteDebugging;

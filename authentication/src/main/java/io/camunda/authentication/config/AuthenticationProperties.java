@@ -13,4 +13,8 @@ public final class AuthenticationProperties {
       "camunda.security.authentication.basic.allow-unauthenticated-api-access";
 
   private AuthenticationProperties() {}
+
+  public static String getAllowUnauthenticatedApiAccessEnvVar() {
+    return API_UNPROTECTED.replace(".", "_").replace("-", "").toUpperCase();
+  }
 }
