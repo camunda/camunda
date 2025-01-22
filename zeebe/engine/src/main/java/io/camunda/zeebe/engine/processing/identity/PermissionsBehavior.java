@@ -99,15 +99,13 @@ public class PermissionsBehavior {
     return Either.right(record);
   }
 
-  // TODO: we need to provide also the ownerType here when
-  // https://github.com/camunda/camunda/issues/27036 is implemented
   public Either<Rejection, AuthorizationRecord> authorizationAlreadyExists(
       final AuthorizationRecord record) {
     for (final PermissionType permission : record.getAuthorizationPermissions()) {
       final var addedResourceId = record.getResourceId();
       final var currentResourceIds =
           authCheckBehavior.getDirectAuthorizedResourceIdentifiers(
-              record.getOwnerKey(), record.getResourceType(), permission);
+              record.getOwnerType(), record.getOwnerId(), record.getResourceType(), permission);
 
       if (currentResourceIds.contains(addedResourceId)) {
         return Either.left(
