@@ -16,7 +16,6 @@
 package io.camunda.zeebe.spring.client.properties;
 
 import io.camunda.client.CamundaClientConfiguration;
-import io.camunda.client.ClientProperties;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.util.Environment;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
@@ -118,21 +117,30 @@ public class ZeebeClientConfigurationProperties {
       // Java Client has some name differences in properties - support those as well in case people
       // use those (https://github.com/camunda-community-hub/spring-zeebe/issues/350)
       if (broker.gatewayAddress == null
-          && environment.containsProperty(ClientProperties.GATEWAY_ADDRESS)) {
-        broker.gatewayAddress = environment.getProperty(ClientProperties.GATEWAY_ADDRESS);
+          && environment.containsProperty(
+              io.camunda.zeebe.client.ClientProperties.GATEWAY_ADDRESS)) {
+        broker.gatewayAddress =
+            environment.getProperty(io.camunda.zeebe.client.ClientProperties.GATEWAY_ADDRESS);
       }
       if (cloud.clientSecret == null
-          && environment.containsProperty(ClientProperties.CLOUD_CLIENT_SECRET)) {
-        cloud.clientSecret = environment.getProperty(ClientProperties.CLOUD_CLIENT_SECRET);
+          && environment.containsProperty(
+              io.camunda.zeebe.client.ClientProperties.CLOUD_CLIENT_SECRET)) {
+        cloud.clientSecret =
+            environment.getProperty(io.camunda.zeebe.client.ClientProperties.CLOUD_CLIENT_SECRET);
       }
       if (worker.defaultName == null
-          && environment.containsProperty(ClientProperties.DEFAULT_JOB_WORKER_NAME)) {
-        worker.defaultName = environment.getProperty(ClientProperties.DEFAULT_JOB_WORKER_NAME);
+          && environment.containsProperty(
+              io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_NAME)) {
+        worker.defaultName =
+            environment.getProperty(
+                io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_NAME);
       }
       // Support environment based default tenant id override if value is client default fallback
       if ((defaultTenantId == null || defaultTenantId.equals(DEFAULT.getDefaultTenantId()))
-          && environment.containsProperty(ClientProperties.DEFAULT_TENANT_ID)) {
-        defaultTenantId = environment.getProperty(ClientProperties.DEFAULT_TENANT_ID);
+          && environment.containsProperty(
+              io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID)) {
+        defaultTenantId =
+            environment.getProperty(io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID);
       }
     }
 
