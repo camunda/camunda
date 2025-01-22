@@ -322,7 +322,7 @@ jobs:
     timeout-minutes: 15
     needs: [ test-summary ]
     runs-on: ubuntu-latest
-    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
+    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/stable/8.7'
     concurrency:
       group: deploy-docker-snapshot
       cancel-in-progress: false
@@ -342,7 +342,7 @@ jobs:
         id: build-zeebe-docker
         with:
           repository: camunda/zeebe
-          version: SNAPSHOT
+          version: 8.7.0-SNAPSHOT
           platforms: ${{ env.DOCKER_PLATFORMS }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
