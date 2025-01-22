@@ -383,6 +383,16 @@
       <artifactId>junit-platform-commons</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-common</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>tasklist-common</artifactId>
+      <scope>test</scope>
+    </dependency>
 
   </dependencies>
   <repositories>
