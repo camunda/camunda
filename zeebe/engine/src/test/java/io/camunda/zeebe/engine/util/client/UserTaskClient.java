@@ -251,12 +251,15 @@ public final class UserTaskClient {
   }
 
   public Record<UserTaskRecordValue> update(final UserTaskRecord changes) {
-    changes
-        .setCandidateGroupsChanged()
-        .setCandidateUsersChanged()
-        .setDueDateChanged()
-        .setFollowUpDateChanged()
-        .setPriorityChanged();
+    if (changes.getChangedAttributesProp().isEmpty()) {
+      // assume all attributes have been changed
+      changes
+          .setCandidateGroupsChanged()
+          .setCandidateUsersChanged()
+          .setDueDateChanged()
+          .setFollowUpDateChanged()
+          .setPriorityChanged();
+    }
     userTaskRecord.wrapChangedAttributes(changes, true);
 
     final long userTaskKey = findUserTaskKey();
@@ -272,11 +275,15 @@ public final class UserTaskClient {
   }
 
   public Record<UserTaskRecordValue> update(final UserTaskRecord changes, final String username) {
-    changes
-        .setCandidateGroupsChanged()
-        .setCandidateUsersChanged()
-        .setDueDateChanged()
-        .setFollowUpDateChanged();
+    if (changes.getChangedAttributesProp().isEmpty()) {
+      // assume all attributes have been changed
+      changes
+          .setCandidateGroupsChanged()
+          .setCandidateUsersChanged()
+          .setDueDateChanged()
+          .setFollowUpDateChanged()
+          .setPriorityChanged();
+    }
     userTaskRecord.wrapChangedAttributes(changes, true);
 
     final long userTaskKey = findUserTaskKey();
