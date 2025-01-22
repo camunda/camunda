@@ -75,8 +75,8 @@
     id="insertMember"
     parameterType="io.camunda.db.rdbms.write.domain.TenantMemberDbModel"
     flushCache="true">
-    INSERT INTO TENANT_MEMBER (TENANT_ID, ENTITY_KEY, ENTITY_TYPE)
-    VALUES (#{tenantId}, #{entityKey}, #{entityType})
+    INSERT INTO TENANT_MEMBER (TENANT_ID, ENTITY_ID, ENTITY_TYPE)
+    VALUES (#{tenantId}, #{entityID}, #{entityType})
   </insert>
 
   <delete
@@ -86,7 +86,7 @@
     DELETE
     FROM TENANT_MEMBER
     WHERE TENANT_ID = #{tenantId}
-      AND ENTITY_KEY = #{entityKey}
+      AND ENTITY_ID = #{entityId}
       AND ENTITY_TYPE = #{entityType}
   </delete>
 

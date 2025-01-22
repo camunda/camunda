@@ -9,12 +9,12 @@ package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.util.ObjectBuilder;
 
-public record TenantMemberDbModel(String tenantId, Long entityKey, String entityType) {
+public record TenantMemberDbModel(String tenantId, String entityId, String entityType) {
 
   public static class Builder implements ObjectBuilder<TenantMemberDbModel> {
 
     private String tenantId;
-    private Long entityKey;
+    private String entityId;
     private String entityType;
 
     public Builder tenantId(final String tenantId) {
@@ -22,8 +22,8 @@ public record TenantMemberDbModel(String tenantId, Long entityKey, String entity
       return this;
     }
 
-    public Builder entityKey(final Long entityKey) {
-      this.entityKey = entityKey;
+    public Builder entityId(final String entityId) {
+      this.entityId = entityId;
       return this;
     }
 
@@ -34,7 +34,7 @@ public record TenantMemberDbModel(String tenantId, Long entityKey, String entity
 
     @Override
     public TenantMemberDbModel build() {
-      return new TenantMemberDbModel(tenantId, entityKey, entityType);
+      return new TenantMemberDbModel(tenantId, entityId, entityType);
     }
   }
 }
