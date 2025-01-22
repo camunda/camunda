@@ -9,6 +9,9 @@ package io.camunda.zeebe.db.impl.rocksdb;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.protocol.EnumValue;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -23,8 +26,8 @@ public final class ZeebeRocksDBMetricExporter<
   private static final Logger LOG =
       LoggerFactory.getLogger(ZeebeRocksDBMetricExporter.class.getName());
 
-  private static final io.micrometer.core.instrument.MeterRegistry METER_REGISTRY =
-      io.micrometer.core.instrument.Metrics.globalRegistry;
+  private static final MeterRegistry METER_REGISTRY =
+      Metrics.globalRegistry;
 
   private static final ConcurrentHashMap<String, AtomicReference<Double>> GAUGES =
       new ConcurrentHashMap<>();
@@ -144,8 +147,7 @@ public final class ZeebeRocksDBMetricExporter<
               key,
               k -> {
                 final AtomicReference<Double> newGaugeValue = new AtomicReference<>(0.0);
-                io.micrometer.core.instrument.Gauge.builder(
-                        gaugeName, newGaugeValue, AtomicReference::get)
+                Gauge.builder(gaugeName, newGaugeValue, AtomicReference::get)
                     .description(help)
                     .tags(PARTITION, partitionID)
                     .register(METER_REGISTRY);
