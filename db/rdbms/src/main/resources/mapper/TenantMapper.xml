@@ -24,7 +24,7 @@
     TENANT_ID,
     NAME,
     DESCRIPTION
-    FROM TENANT t
+    FROM TENANT
     <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -34,9 +34,9 @@
 
   <sql id="searchFilter">
     WHERE 1 = 1
-    <if test="filter.key != null">AND t.TENANT_KEY = #{filter.key}</if>
-    <if test="filter.tenantId != null">AND t.TENANT_ID = #{filter.tenantId}</if>
-    <if test="filter.name != null">AND t.NAME = #{filter.name}</if>
+    <if test="filter.key != null">AND TENANT_KEY = #{filter.key}</if>
+    <if test="filter.tenantId != null">AND TENANT_ID = #{filter.tenantId}</if>
+    <if test="filter.name != null">AND NAME = #{filter.name}</if>
   </sql>
 
   <resultMap id="tenantResultMap" type="io.camunda.db.rdbms.write.domain.TenantDbModel">
