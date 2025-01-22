@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 
 public class MappingDeletedApplier implements TypedEventApplier<MappingIntent, MappingRecord> {
 
@@ -28,6 +29,8 @@ public class MappingDeletedApplier implements TypedEventApplier<MappingIntent, M
   public void applyState(final long key, final MappingRecord value) {
     // retrieve mapping from the state
     final var mappingKey = value.getMappingKey();
+    // TODO: refactor when Mapping Rules use String-based IDs
+    final var mappingId = String.valueOf(mappingKey);
     final var mapping = mappingState.get(mappingKey);
     if (mapping.isEmpty()) {
       throw new IllegalStateException(
@@ -37,7 +40,8 @@ public class MappingDeletedApplier implements TypedEventApplier<MappingIntent, M
     }
     // remove mapping from authorization state
     authorizationState.deleteOwnerTypeByKey(mappingKey);
-    authorizationState.deleteAuthorizationsByOwnerKeyPrefix(mappingKey);
+    authorizationState.deleteAuthorizationsByOwnerTypeAndIdPrefix(
+        AuthorizationOwnerType.MAPPING, mappingId);
     mappingState.delete(mappingKey);
   }
 }
