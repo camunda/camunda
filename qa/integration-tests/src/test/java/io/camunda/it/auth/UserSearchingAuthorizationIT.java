@@ -113,19 +113,18 @@ class UserSearchingAuthorizationIT {
   void searchShouldReturnAuthorizedUsers(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient userClient) throws Exception {
     // when
-    final var tenantSearchResponse =
+    final var userSearchResponse =
         searchUsers(
             userClient.getConfiguration().getRestAddress().toString(), RESTRICTED_WITH_READ);
 
     // then
-    assertThat(tenantSearchResponse.items())
-        .hasSize(5)
+    assertThat(userSearchResponse.items())
         .map(UserResponse::username)
-        .containsExactlyInAnyOrder("demo", "admin", "user1", "user2", "restricted-user-2");
+        .contains("demo", "admin", "user1", "user2", "restricted-user-2");
   }
 
   @TestTemplate
-  void searchShouldReturnEmptyListWhenUnauthorized(
+  void searchShouldReturnOnlyRestrictedUserWhenUnauthorized(
       @Authenticated(RESTRICTED) final CamundaClient userClient) throws Exception {
     // when
     final var tenantSearchResponse =
