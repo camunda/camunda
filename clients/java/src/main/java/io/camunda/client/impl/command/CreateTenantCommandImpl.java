@@ -55,6 +55,12 @@ public final class CreateTenantCommandImpl implements CreateTenantCommandStep1 {
   }
 
   @Override
+  public CreateTenantCommandStep1 description(final String description) {
+    request.setDescription(description);
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<CreateTenantResponse> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;

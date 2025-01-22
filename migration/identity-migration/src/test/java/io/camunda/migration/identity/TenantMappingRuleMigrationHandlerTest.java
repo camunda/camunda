@@ -89,7 +89,7 @@ final class TenantMappingRuleMigrationHandlerTest {
     // given
     givenMappingRules();
     when(tenantServices.getById(any()))
-        .thenReturn(new TenantEntity(1L, "", "", Collections.emptySet()));
+        .thenReturn(new TenantEntity(1L, "", "", null, Collections.emptySet()));
     when(mappingServices.createMapping(any()))
         .thenAnswer(invocation -> CompletableFuture.completedFuture(new MappingRecord()));
     when(tenantServices.addMember(any(), any(), anyLong()))
@@ -157,7 +157,7 @@ final class TenantMappingRuleMigrationHandlerTest {
     // given
     givenMappingRules();
     when(tenantServices.getById(any()))
-        .thenReturn(new TenantEntity(1L, "", "", Collections.emptySet()));
+        .thenReturn(new TenantEntity(1L, "", "", null, Collections.emptySet()));
     when(mappingServices.createMapping(any()))
         .thenAnswer(invocation -> CompletableFuture.completedFuture(new MappingRecord()));
     when(tenantServices.addMember(any(), any(), anyLong()))

@@ -55,7 +55,11 @@ public class TenantDeletedHandler implements ExportHandler<TenantEntity, TenantR
   @Override
   public void updateEntity(final Record<TenantRecordValue> record, final TenantEntity entity) {
     final TenantRecordValue value = record.getValue();
-    entity.setKey(value.getTenantKey()).setTenantId(value.getTenantId()).setName(value.getName());
+    entity
+        .setKey(value.getTenantKey())
+        .setTenantId(value.getTenantId())
+        .setName(value.getName())
+        .setDescription(value.getDescription());
   }
 
   @Override

@@ -33,4 +33,7 @@ public interface CreateTenantCommandStep1 extends FinalCommandStep<CreateTenantR
    * @return the builder for this command
    */
   CreateTenantCommandStep1 name(String name);
+
+  /** Set the description for the tenant to be created. */
+  CreateTenantCommandStep1 description(String description);
 }

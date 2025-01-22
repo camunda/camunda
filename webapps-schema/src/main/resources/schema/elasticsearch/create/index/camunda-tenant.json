@@ -14,6 +14,9 @@
       "name": {
         "type": "keyword"
       },
+      "description": {
+        "type": "text"
+      },
       "memberKey": {
         "type": "long"
       },

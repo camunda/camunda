@@ -22,6 +22,7 @@ public class TenantEntityTransformer
         source.getKey(),
         source.getTenantId(),
         source.getName(),
+        source.getDescription(),
         source.getJoin().parent() != null ? Set.of(source.getJoin().parent()) : Set.of());
   }
 }

@@ -38,6 +38,28 @@ class CreateTenantTest {
   void shouldCreateTenant() {
     // when
     final var response =
+        client
+            .newCreateTenantCommand()
+            .tenantId("tenant-id")
+            .name("Tenant Name")
+            .description("Tenant Description")
+            .send()
+            .join();
+
+    // then
+    assertThat(response.getTenantKey()).isGreaterThan(0);
+    ZeebeAssertHelper.assertTenantCreated(
+        "tenant-id",
+        (tenant) -> {
+          assertThat(tenant.getName()).isEqualTo("Tenant Name");
+          assertThat(tenant.getDescription()).isEqualTo("Tenant Description");
+        });
+  }
+
+  @Test
+  void shouldCreateTenantWithoutDescription() {
+    // when
+    final var response =
         client.newCreateTenantCommand().tenantId("tenant-id").name("Tenant Name").send().join();
 
     // then
@@ -46,6 +68,7 @@ class CreateTenantTest {
         "tenant-id",
         (tenant) -> {
           assertThat(tenant.getName()).isEqualTo("Tenant Name");
+          assertThat(tenant.getDescription()).isEmpty();
         });
   }
 

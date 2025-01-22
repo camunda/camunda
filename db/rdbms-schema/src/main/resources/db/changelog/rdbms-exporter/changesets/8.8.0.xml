@@ -349,6 +349,7 @@
       </column>
       <column name="TENANT_KEY" type="BIGINT"/>
       <column name="NAME" type="VARCHAR(255)" />
+      <column name="DESCRIPTION" type="VARCHAR(255)" />
     </createTable>
   </changeSet>
 

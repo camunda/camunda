@@ -46,7 +46,9 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
 
   protected MigrationStatusUpdateRequest processTask(final Tenant tenant) {
     try {
-      tenantServices.createTenant(new TenantDTO(null, tenant.tenantId(), tenant.name())).join();
+      tenantServices
+          .createTenant(new TenantDTO(null, tenant.tenantId(), tenant.name(), null))
+          .join();
     } catch (final Exception e) {
       if (!isConflictError(e)) {
         return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenant, e);
