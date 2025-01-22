@@ -435,8 +435,8 @@ public class CommandDistributionIdempotencyTest {
                   final var user = createUser();
                   ENGINE
                       .tenant()
-                      .addEntity(tenant.getKey())
-                      .withEntityKey(user.getKey())
+                      .addEntity(tenant.getValue().getTenantId())
+                      .withEntityId(user.getValue().getUsername())
                       .withEntityType(EntityType.USER)
                       .add();
                 },
@@ -453,8 +453,8 @@ public class CommandDistributionIdempotencyTest {
                   final var user = createUser();
                   ENGINE
                       .tenant()
-                      .addEntity(tenant.getKey())
-                      .withEntityKey(user.getKey())
+                      .addEntity(tenant.getValue().getTenantId())
+                      .withEntityId(user.getValue().getUsername())
                       .withEntityType(EntityType.USER)
                       .add();
                   ENGINE

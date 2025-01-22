@@ -540,7 +540,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /tenants/{tenantKey}/users/{userKey}:
+  /tenants/{tenantId}/users/{username}:
     put:
       tags:
         - Tenant
@@ -548,20 +548,18 @@ paths:
       summary: Assign a user to a tenant
       description: Assign a single user to a specified tenant.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.
           schema:
-            type: integer
-            format: int64
-        - name: userKey
+            type: string
+        - name: username
           in: path
           required: true
-          description: The unique identifier of the user.
+          description: The username of the user to assign.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The user was successfully assigned to the tenant.
@@ -582,6 +580,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /tenants/{tenantKey}/users/{userKey}:
     delete:
       tags:
         - Tenant

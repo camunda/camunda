@@ -37,10 +37,11 @@ public class RemoveEntityTenantMultiPartitionTest {
   @Rule public final TestWatcher testWatcher = new RecordingExporterTestWatcher();
 
   public void setupTenantWithUserAndRemoveEntity() {
+    final var username = "foo";
     final var userKey =
         engine
             .user()
-            .newUser("foo")
+            .newUser(username)
             .withEmail("foo@bar")
             .withName("Foo Bar")
             .withPassword("zabraboof")
@@ -52,7 +53,7 @@ public class RemoveEntityTenantMultiPartitionTest {
     engine
         .tenant()
         .addEntity(tenantKey)
-        .withEntityKey(userKey)
+        .withEntityId(username)
         .withEntityType(EntityType.USER)
         .add();
     engine

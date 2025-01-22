@@ -39,22 +39,22 @@ public class AddEntityTenantMultiPartitionTest {
   @Test
   public void shouldDistributeTenantAddEntityCommand() {
     // when
-    final var userKey =
-        engine
-            .user()
-            .newUser("foo")
-            .withEmail("foo@bar")
-            .withName("Foo Bar")
-            .withPassword("zabraboof")
-            .create()
-            .getKey();
+    final var username = "foo";
+    engine
+        .user()
+        .newUser(username)
+        .withEmail("foo@bar")
+        .withName("Foo Bar")
+        .withPassword("zabraboof")
+        .create()
+        .getKey();
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
         engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     engine
         .tenant()
         .addEntity(tenantKey)
-        .withEntityKey(userKey)
+        .withEntityId(username)
         .withEntityType(EntityType.USER)
         .add();
 
@@ -105,22 +105,22 @@ public class AddEntityTenantMultiPartitionTest {
   @Test
   public void shouldDistributeInIdentityQueue() {
     // when
-    final var userKey =
-        engine
-            .user()
-            .newUser("foo")
-            .withEmail("foo@bar")
-            .withName("Foo Bar")
-            .withPassword("zabraboof")
-            .create()
-            .getKey();
+    final var username = "foo";
+    engine
+        .user()
+        .newUser(username)
+        .withEmail("foo@bar")
+        .withName("Foo Bar")
+        .withPassword("zabraboof")
+        .create()
+        .getKey();
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
         engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     engine
         .tenant()
         .addEntity(tenantKey)
-        .withEntityKey(userKey)
+        .withEntityId(username)
         .withEntityType(EntityType.USER)
         .add();
 
@@ -136,15 +136,15 @@ public class AddEntityTenantMultiPartitionTest {
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // given the tenant creation distribution is intercepted
-    final var userKey =
-        engine
-            .user()
-            .newUser("foo")
-            .withEmail("foo@bar")
-            .withName("Foo Bar")
-            .withPassword("zabraboof")
-            .create()
-            .getKey();
+    final var username = "foo";
+    engine
+        .user()
+        .newUser(username)
+        .withEmail("foo@bar")
+        .withName("Foo Bar")
+        .withPassword("zabraboof")
+        .create()
+        .getKey();
 
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       interceptTenantCreateForPartition(partitionId); // Intercept tenant creation
@@ -157,7 +157,7 @@ public class AddEntityTenantMultiPartitionTest {
     engine
         .tenant()
         .addEntity(tenantKey)
-        .withEntityKey(userKey)
+        .withEntityId(username)
         .withEntityType(EntityType.USER)
         .add();
 

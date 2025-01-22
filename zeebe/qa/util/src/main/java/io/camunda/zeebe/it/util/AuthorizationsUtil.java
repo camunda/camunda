@@ -93,20 +93,19 @@ public class AuthorizationsUtil implements CloseableSilently {
     }
   }
 
-  public long createTenant(final String tenantId, final String tenantName, final long... userKeys) {
-    final long tenantKey =
-        client
-            .newCreateTenantCommand()
-            .tenantId(tenantId)
-            .name(tenantName)
-            .send()
-            .join()
-            .getTenantKey();
-    for (final long userKey : userKeys) {
-      client.newAssignUserToTenantCommand(tenantKey).userKey(userKey).send().join();
+  public void createTenant(
+      final String tenantId, final String tenantName, final String... usernames) {
+    client
+        .newCreateTenantCommand()
+        .tenantId(tenantId)
+        .name(tenantName)
+        .send()
+        .join()
+        .getTenantKey();
+    for (final var username : usernames) {
+      client.newAssignUserToTenantCommand(tenantId).username(username).send().join();
     }
     awaitTenantExistsInElasticsearch(tenantId);
-    return tenantKey;
   }
 
   public CamundaClient createClient(final String username, final String password) {
