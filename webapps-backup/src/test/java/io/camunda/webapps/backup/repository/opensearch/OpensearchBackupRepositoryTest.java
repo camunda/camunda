@@ -14,6 +14,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.fail;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -45,6 +47,8 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.ErrorResponse;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch.indices.GetIndexRequest;
+import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.opensearch.client.opensearch.snapshot.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -414,6 +418,21 @@ class OpensearchBackupRepositoryTest {
     // Test
     final var backupState = repository.getBackupState("repository-name", 5L);
     assertThat(backupState.getState()).isEqualTo(BackupStateDto.FAILED);
+  }
+
+  @Test
+  void shouldReturnAvailableIndices() throws IOException {
+    // given
+    when(openSearchClient.indices().get((GetIndexRequest) any()))
+        .thenReturn(GetIndexResponse.of(b -> b));
+
+    // when
+    final var result = repository.checkAllIndicesExist(List.of("missingIndex"));
+
+    // then
+    assertThat(result.size()).isEqualTo(0);
+    verify(openSearchClient.indices(), atLeastOnce())
+        .get((GetIndexRequest) argThat(r -> ((GetIndexRequest) r).ignoreUnavailable()));
   }
 
   private SnapshotInfo.Builder defaultFields(final SnapshotInfo.Builder b) {

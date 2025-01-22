@@ -15,6 +15,7 @@ import static java.util.stream.Collectors.toList;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
 import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotRequest;
 import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotResponse;
 import co.elastic.clients.elasticsearch.snapshot.GetSnapshotRequest;
@@ -45,6 +46,8 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -62,11 +65,11 @@ public class ElasticsearchBackupRepository implements BackupRepository {
 
   public ElasticsearchBackupRepository(
       final ElasticsearchClient esClient,
-      final BackupRepositoryProps operateProperties,
+      final BackupRepositoryProps backupProps,
       final SnapshotNameProvider snapshotNameProvider,
       final Executor executor) {
     this.esClient = esClient;
-    backupProps = operateProperties;
+    this.backupProps = backupProps;
     this.snapshotNameProvider = snapshotNameProvider;
     this.executor = executor;
   }
@@ -172,6 +175,37 @@ public class ElasticsearchBackupRepository implements BackupRepository {
       final String repositoryName, final Long backupId) {
     final List<SnapshotInfo> snapshots = findSnapshots(repositoryName, backupId);
     return getBackupResponse(backupId, snapshots);
+  }
+
+  @Override
+  public Optional<Metadata> getMetadata(final String repositoryName, final Long backupId) {
+    final var snapshots = findSnapshots(repositoryName, backupId);
+    if (snapshots.isEmpty()) {
+      return Optional.empty();
+    } else {
+      final var first = snapshots.getFirst();
+      return Optional.of(
+          MetadataMarshaller.fromMetadata(first.metadata(), esClient._jsonpMapper()));
+    }
+  }
+
+  @Override
+  public Set<String> checkAllIndicesExist(final List<String> indices) {
+    try {
+      final var response =
+          esClient
+              .indices()
+              .get(
+                  GetIndexRequest.of(
+                      b ->
+                          b.index(indices)
+                              // setting this to true to not receive an exception, but only the list
+                              // of available indices
+                              .ignoreUnavailable(true)));
+      return response.result().keySet();
+    } catch (final IOException e) {
+      throw new BackupRepositoryConnectionException("Unable to connect to Elasticsearch", e);
+    }
   }
 
   @Override

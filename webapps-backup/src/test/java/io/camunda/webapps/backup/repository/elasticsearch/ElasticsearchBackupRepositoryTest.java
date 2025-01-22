@@ -10,6 +10,8 @@ package io.camunda.webapps.backup.repository.elasticsearch;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -19,6 +21,8 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.ErrorCause;
 import co.elastic.clients.elasticsearch._types.ErrorResponse;
+import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
+import co.elastic.clients.elasticsearch.indices.GetIndexResponse;
 import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotRequest;
 import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotResponse;
 import co.elastic.clients.elasticsearch.snapshot.GetSnapshotRequest;
@@ -251,8 +255,7 @@ public class ElasticsearchBackupRepositoryTest {
 
     // Test
     final var backupState = backupRepository.getBackupState("repository-name", 5L);
-    org.assertj.core.api.Assertions.assertThat(backupState.getState())
-        .isEqualTo(BackupStateDto.INCOMPLETE);
+    assertThat(backupState.getState()).isEqualTo(BackupStateDto.INCOMPLETE);
   }
 
   @Test
@@ -372,5 +375,17 @@ public class ElasticsearchBackupRepositoryTest {
         snapshotRequest, () -> {}, () -> fail("Expected snapshot to complete"));
 
     verify(esClient.snapshot(), times(2)).create((CreateSnapshotRequest) ArgumentMatchers.any());
+  void shouldReturnAvailableIndices() throws IOException {
+    // given
+    when(esClient.indices().get((GetIndexRequest) Mockito.any()))
+        .thenReturn(GetIndexResponse.of(b -> b));
+
+    // when
+    final var result = backupRepository.checkAllIndicesExist(List.of("missingIndex"));
+
+    // then
+    assertThat(result.size()).isEqualTo(0);
+    verify(esClient.indices(), atLeastOnce())
+        .get((GetIndexRequest) argThat(r -> ((GetIndexRequest) r).ignoreUnavailable()));
   }
 }
