@@ -69,7 +69,10 @@ public class CamundaMultiDBExtension
     testPrefix = testClass.getSimpleName().toLowerCase();
 
     switch (databaseType) {
-      case ES -> testApplication.withElasticsearchSupport(DEFAULT_ES_URL, testPrefix);
+      case ES -> {
+        validateESConnection();
+        testApplication.withElasticsearchSupport(DEFAULT_ES_URL, testPrefix);
+      }
       case OS ->
           testApplication.withOpensearchSupport(
               DEFAULT_OS_URL, testPrefix, DEFAULT_OS_ADMIN_USER, DEFAULT_OS_ADMIN_PW);
@@ -80,6 +83,28 @@ public class CamundaMultiDBExtension
     testApplication.awaitCompleteTopology();
 
     injectFields(testClass, null, ModifierSupport::isStatic);
+  }
+
+  private static void validateESConnection() {
+    final HttpRequest httpRequest =
+        HttpRequest.newBuilder()
+            .GET()
+            .uri(URI.create(String.format("%s/", DEFAULT_ES_URL)))
+            .build();
+    try (final HttpClient httpClient = HttpClient.newHttpClient()) {
+      final HttpResponse<String> response = httpClient.send(httpRequest, BodyHandlers.ofString());
+      final int statusCode = response.statusCode();
+      assert statusCode / 100 == 2
+          : "Expected to have a running ES service available under: " + DEFAULT_ES_URL;
+    } catch (final IOException | InterruptedException e) {
+      assert false
+          : "Expected no exception on validating connection under: "
+              + DEFAULT_ES_URL
+              + ", failed with: "
+              + e
+              + ": "
+              + e.getMessage();
+    }
   }
 
   private void injectFields(
