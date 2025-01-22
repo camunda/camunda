@@ -576,7 +576,7 @@ jobs:
     name: Deploy snapshot artifacts
     needs: [ check-results ]
     runs-on: ubuntu-latest
-    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
+    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/stable/8.7'
     concurrency:
       group: deploy-maven-snapshot
       cancel-in-progress: false
