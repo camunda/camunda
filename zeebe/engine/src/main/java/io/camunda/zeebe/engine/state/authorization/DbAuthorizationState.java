@@ -105,15 +105,7 @@ public class DbAuthorizationState implements MutableAuthorizationState {
     ownerType.wrapString(authorization.getOwnerType().name());
     resourceType.wrapString(authorization.getResourceType().name());
 
-    final var permissions = new Permissions();
-    authorization
-        .getPermissions()
-        .forEach(
-            permissionValue -> {
-              permissions.addResourceIdentifiers(
-                  permissionValue.getPermissionType(), permissionValue.getResourceIds());
-            });
-    permissionsColumnFamily.insert(ownerTypeOwnerIdAndResourceType, permissions);
+    upsertNewPermissions(authorization);
   }
 
   @Override
@@ -160,6 +152,33 @@ public class DbAuthorizationState implements MutableAuthorizationState {
   public void deleteOwnerTypeByKey(final long ownerKey) {
     this.ownerKey.wrapLong(ownerKey);
     ownerTypeByOwnerKeyColumnFamily.deleteExisting(this.ownerKey);
+  }
+
+  private void upsertNewPermissions(final AuthorizationRecord authorizationRecord) {
+    final var persistedPermissions = permissionsColumnFamily.get(ownerTypeOwnerIdAndResourceType);
+    // if the permission does not exist, create a new one
+    if (persistedPermissions == null) {
+      final var permissions = new Permissions();
+      authorizationRecord
+          .getAuthorizationPermissions()
+          .forEach(
+              permissionType -> {
+                permissions.addResourceIdentifier(
+                    permissionType, authorizationRecord.getResourceId());
+              });
+      permissionsColumnFamily.insert(ownerTypeOwnerIdAndResourceType, permissions);
+      return;
+    }
+
+    // if the permission already exists, add a new resource identifier
+    authorizationRecord
+        .getAuthorizationPermissions()
+        .forEach(
+            permissionType -> {
+              persistedPermissions.addResourceIdentifier(
+                  permissionType, authorizationRecord.getResourceId());
+              permissionsColumnFamily.upsert(ownerTypeOwnerIdAndResourceType, persistedPermissions);
+            });
   }
 
   @Override
