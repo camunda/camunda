@@ -140,8 +140,6 @@ public class TenantServiceTest {
   public void shouldUpdateTenantName() {
 
     // given
-    final var result =
-        new SearchQueryResult<>(1, List.of(tenantEntity), Arrays.array(), Arrays.array());
     final var tenantDTO =
         new TenantDTO(tenantEntity.key(), tenantEntity.tenantId(), "UpdatedTenantId", null);
 
@@ -155,6 +153,26 @@ public class TenantServiceTest {
     final TenantRecord brokerRequestValue = request.getRequestWriter();
     assertThat(brokerRequestValue.getTenantId()).isEqualTo(tenantDTO.tenantId());
     assertThat(brokerRequestValue.getName()).isEqualTo(tenantDTO.name());
+  }
+
+  @Test
+  public void shouldUpdateTenantDescription() {
+
+    // given
+    final var tenantDTO =
+        new TenantDTO(
+            tenantEntity.key(), tenantEntity.tenantId(), "TenantName", "UpdatedTenantDescription");
+
+    // when
+    services.updateTenant(tenantDTO);
+
+    // then
+    final BrokerTenantUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
+    assertThat(request.getIntent()).isEqualTo(TenantIntent.UPDATE);
+    assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
+    final TenantRecord brokerRequestValue = request.getRequestWriter();
+    assertThat(brokerRequestValue.getTenantId()).isEqualTo(tenantDTO.tenantId());
+    assertThat(brokerRequestValue.getDescription()).isEqualTo(tenantDTO.description());
   }
 
   @Test
