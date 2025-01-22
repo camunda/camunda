@@ -33,19 +33,23 @@ public class RemovePermissionAuthorizationTest {
   @Test
   public void shouldRemovePermission() {
     // given
-    final var ownerKey =
+    final var owner =
         engine
             .user()
             .newUser("foo")
             .withEmail("foo@bar")
             .withName("Foo Bar")
             .withPassword("zabraboof")
-            .create()
-            .getKey();
+            .create();
+    final var ownerKey = owner.getKey();
+    final var ownerId = owner.getValue().getUsername();
+
     engine
         .authorization()
         .permission()
         .withOwnerKey(ownerKey)
+        .withOwnerId(ownerId)
+        .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermission(PermissionType.CREATE, "foo")
         .withPermission(PermissionType.DELETE_PROCESS, "bar")
@@ -58,6 +62,8 @@ public class RemovePermissionAuthorizationTest {
             .authorization()
             .permission()
             .withOwnerKey(ownerKey)
+            .withOwnerId(ownerId)
+            .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermission(PermissionType.CREATE, "foo")
             .withPermission(PermissionType.DELETE_PROCESS, "bar")
@@ -82,6 +88,7 @@ public class RemovePermissionAuthorizationTest {
   public void shouldRejectIfNoOwnerExists() {
     // given no user
     final var ownerKey = 1L;
+    final var ownerId = "bar";
 
     // when
     final var rejection =
@@ -89,6 +96,8 @@ public class RemovePermissionAuthorizationTest {
             .authorization()
             .permission()
             .withOwnerKey(ownerKey)
+            .withOwnerId(ownerId)
+            .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermission(PermissionType.CREATE, "foo")
             .expectRejection()
@@ -105,19 +114,23 @@ public class RemovePermissionAuthorizationTest {
   @Test
   public void shouldRejectIfPermissionDoesNotExist() {
     // given
-    final var ownerKey =
+    final var owner =
         engine
             .user()
             .newUser("foo")
             .withEmail("foo@bar")
             .withName("Foo Bar")
             .withPassword("zabraboof")
-            .create()
-            .getKey();
+            .create();
+    final var ownerKey = owner.getKey();
+    final var ownerId = owner.getValue().getUsername();
+
     engine
         .authorization()
         .permission()
         .withOwnerKey(ownerKey)
+        .withOwnerId(ownerId)
+        .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermission(PermissionType.CREATE, "foo")
         .withPermission(PermissionType.DELETE_PROCESS, "bar")
@@ -130,6 +143,8 @@ public class RemovePermissionAuthorizationTest {
             .authorization()
             .permission()
             .withOwnerKey(ownerKey)
+            .withOwnerId(ownerId)
+            .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermission(PermissionType.DELETE_PROCESS, "foo", "bar")
             .expectRejection()
@@ -153,21 +168,25 @@ public class RemovePermissionAuthorizationTest {
   @Test
   public void shouldRejectIfPermissionIsOnlyInheritedFromRole() {
     // given
-    final var userKey =
+    final var user =
         engine
             .user()
             .newUser("foo")
             .withEmail("foo@bar")
             .withName("Foo Bar")
             .withPassword("zabraboof")
-            .create()
-            .getKey();
+            .create();
+    final var userKey = user.getKey();
+    final var userId = user.getValue().getUsername();
     final var roleKey = engine.role().newRole("role").create().getKey();
+    final var roleId = String.valueOf(roleKey);
 
     engine
         .authorization()
         .permission()
         .withOwnerKey(roleKey)
+        .withOwnerId(roleId)
+        .withOwnerType(AuthorizationOwnerType.ROLE)
         .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermission(PermissionType.CREATE, "foo")
         .withPermission(PermissionType.DELETE_PROCESS, "bar")
@@ -181,6 +200,8 @@ public class RemovePermissionAuthorizationTest {
             .authorization()
             .permission()
             .withOwnerKey(userKey)
+            .withOwnerId(userId)
+            .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermission(PermissionType.DELETE_PROCESS, "foo", "bar")
             .expectRejection()
@@ -204,21 +225,25 @@ public class RemovePermissionAuthorizationTest {
   @Test
   public void shouldRejectIfPermissionIsOnlyInheritedFromGroup() {
     // given
-    final var userKey =
+    final var user =
         engine
             .user()
             .newUser("foo")
             .withEmail("foo@bar")
             .withName("Foo Bar")
             .withPassword("zabraboof")
-            .create()
-            .getKey();
+            .create();
+    final var userKey = user.getKey();
+    final var userId = user.getValue().getUsername();
     final var groupKey = engine.group().newGroup("role").create().getKey();
+    final var groupId = String.valueOf(groupKey);
 
     engine
         .authorization()
         .permission()
         .withOwnerKey(groupKey)
+        .withOwnerId(groupId)
+        .withOwnerType(AuthorizationOwnerType.GROUP)
         .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermission(PermissionType.CREATE, "foo")
         .withPermission(PermissionType.DELETE_PROCESS, "bar")
@@ -232,6 +257,8 @@ public class RemovePermissionAuthorizationTest {
             .authorization()
             .permission()
             .withOwnerKey(userKey)
+            .withOwnerId(userId)
+            .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermission(PermissionType.DELETE_PROCESS, "foo", "bar")
             .expectRejection()

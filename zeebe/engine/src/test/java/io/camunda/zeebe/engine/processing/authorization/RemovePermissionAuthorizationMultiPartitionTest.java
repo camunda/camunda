@@ -18,9 +18,11 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -44,12 +46,16 @@ public class RemovePermissionAuthorizationMultiPartitionTest {
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
-    final var ownerKey = createUserWithPermission(resourceId, resourceType, permissionType);
+    final var owner = createUserWithPermission(resourceId, resourceType, permissionType);
+    final var ownerKey = owner.getUserKey();
+    final var ownerId = owner.getUsername();
 
     engine
         .authorization()
         .permission()
         .withOwnerKey(ownerKey)
+        .withOwnerId(ownerId)
+        .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(resourceType)
         .withPermission(permissionType, resourceId)
         .remove();
@@ -107,13 +113,17 @@ public class RemovePermissionAuthorizationMultiPartitionTest {
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
-    final var ownerKey = createUserWithPermission(resourceId, resourceType, permissionType);
+    final var owner = createUserWithPermission(resourceId, resourceType, permissionType);
+    final var ownerKey = owner.getUserKey();
+    final var ownerId = owner.getUsername();
 
     // when
     engine
         .authorization()
         .permission()
         .withOwnerKey(ownerKey)
+        .withOwnerId(ownerId)
+        .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(resourceType)
         .withPermission(permissionType, resourceId)
         .remove();
@@ -137,13 +147,17 @@ public class RemovePermissionAuthorizationMultiPartitionTest {
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
-    final var ownerKey = createUserWithPermission(resourceId, resourceType, permissionType);
+    final var owner = createUserWithPermission(resourceId, resourceType, permissionType);
+    final var ownerKey = owner.getUserKey();
+    final var ownerId = owner.getUsername();
 
     // when
     engine
         .authorization()
         .permission()
         .withOwnerKey(ownerKey)
+        .withOwnerId(ownerId)
+        .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(resourceType)
         .withPermission(permissionType, resourceId)
         .remove();
@@ -174,11 +188,11 @@ public class RemovePermissionAuthorizationMultiPartitionTest {
         });
   }
 
-  private long createUserWithPermission(
+  private UserRecordValue createUserWithPermission(
       final String resourceId,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
-    final var ownerKey =
+    final var user =
         engine
             .user()
             .newUser(UUID.randomUUID().toString())
@@ -186,14 +200,16 @@ public class RemovePermissionAuthorizationMultiPartitionTest {
             .withName("Foo Bar")
             .withPassword("zabraboof")
             .create()
-            .getKey();
+            .getValue();
     engine
         .authorization()
         .permission()
-        .withOwnerKey(ownerKey)
+        .withOwnerKey(user.getUserKey())
+        .withOwnerId(user.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(resourceType)
         .withPermission(permissionType, resourceId)
         .add();
-    return ownerKey;
+    return user;
   }
 }

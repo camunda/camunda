@@ -62,6 +62,7 @@ import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -141,6 +142,8 @@ public class CommandDistributionIdempotencyTest {
                       .authorization()
                       .permission()
                       .withOwnerKey(user.getKey())
+                      .withOwnerId(user.getValue().getUsername())
+                      .withOwnerType(AuthorizationOwnerType.USER)
                       .withResourceType(AuthorizationResourceType.USER)
                       .withPermission(PermissionType.READ, "*")
                       .add();
@@ -159,6 +162,8 @@ public class CommandDistributionIdempotencyTest {
                       .authorization()
                       .permission()
                       .withOwnerKey(user.getKey())
+                      .withOwnerId(user.getValue().getUsername())
+                      .withOwnerType(AuthorizationOwnerType.USER)
                       .withResourceType(AuthorizationResourceType.USER)
                       .withPermission(PermissionType.READ, user.getValue().getUsername())
                       .remove();

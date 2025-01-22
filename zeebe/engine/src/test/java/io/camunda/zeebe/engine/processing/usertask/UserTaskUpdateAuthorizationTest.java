@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -87,7 +88,7 @@ public class UserTaskUpdateAuthorizationTest {
     final var processInstanceKey = createProcessInstance();
     final var user = createUser();
     addPermissionsToUser(
-        user.getUserKey(),
+        user,
         AuthorizationResourceType.PROCESS_DEFINITION,
         PermissionType.UPDATE_USER_TASK,
         PROCESS_ID);
@@ -139,14 +140,16 @@ public class UserTaskUpdateAuthorizationTest {
   }
 
   private void addPermissionsToUser(
-      final long userKey,
+      final UserRecordValue user,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType,
       final String... resourceIds) {
     engine
         .authorization()
         .permission()
-        .withOwnerKey(userKey)
+        .withOwnerKey(user.getUserKey())
+        .withOwnerId(user.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
         .withPermission(permissionType, resourceIds)
         .add(DEFAULT_USER.getUsername());

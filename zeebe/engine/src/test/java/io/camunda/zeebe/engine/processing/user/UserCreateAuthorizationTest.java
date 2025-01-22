@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -60,8 +61,7 @@ public class UserCreateAuthorizationTest {
   public void shouldBeAuthorizedToCreateUserWithPermissions() {
     // given
     final var authorizedUser = createUser(DEFAULT_USER.getUsername());
-    addPermissionsToUser(
-        authorizedUser.getUserKey(), AuthorizationResourceType.USER, PermissionType.CREATE);
+    addPermissionsToUser(authorizedUser, AuthorizationResourceType.USER, PermissionType.CREATE);
 
     // when
     final var user = createUser(authorizedUser.getUsername());
@@ -110,13 +110,15 @@ public class UserCreateAuthorizationTest {
   }
 
   private void addPermissionsToUser(
-      final long userKey,
+      final UserRecordValue user,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType) {
     engine
         .authorization()
         .permission()
-        .withOwnerKey(userKey)
+        .withOwnerKey(user.getUserKey())
+        .withOwnerId(user.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
         .withPermission(permissionType, "*")
         .add(DEFAULT_USER.getUsername());
