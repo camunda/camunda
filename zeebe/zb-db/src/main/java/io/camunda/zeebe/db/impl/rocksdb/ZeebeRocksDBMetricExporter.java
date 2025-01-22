@@ -26,8 +26,7 @@ public final class ZeebeRocksDBMetricExporter<
   private static final Logger LOG =
       LoggerFactory.getLogger(ZeebeRocksDBMetricExporter.class.getName());
 
-  private static final MeterRegistry METER_REGISTRY =
-      Metrics.globalRegistry;
+  private static final MeterRegistry METER_REGISTRY = Metrics.globalRegistry;
 
   private static final ConcurrentHashMap<String, AtomicReference<Double>> GAUGES =
       new ConcurrentHashMap<>();
