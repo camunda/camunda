@@ -38,6 +38,7 @@ defaults:
 env:
   BRANCH_NAME: ${{ inputs.branch }}
   IS_DEFAULT_BRANCH: ${{ inputs.branch == 'main' }}
+  SHOULD_PUSH_DOCKER_SNAPSHOT: ${{ inputs.branch == 'stable/8.7' }}
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
 
 jobs:
@@ -126,7 +127,7 @@ jobs:
       #########################################################################
       # Docker login for snapshot deployment
       - name: Login to docker hub
-        if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
+        if: ${{ env.SHOULD_PUSH_DOCKER_SNAPSHOT == 'true' }}
         uses: docker/login-action@v3
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
@@ -135,11 +136,11 @@ jobs:
       #########################################################################
       # Build SNAPSHOT Docker image
       - name: Build SNAPSHOT Docker image
-        if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
+        if: ${{ env.SHOULD_PUSH_DOCKER_SNAPSHOT == 'true' }}
         uses: ./.github/actions/build-platform-docker
         with:
           repository: camunda/operate
-          version: SNAPSHOT
+          version: 8.7.0-SNAPSHOT
           push: true
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: operate.Dockerfile

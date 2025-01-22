@@ -630,7 +630,7 @@ jobs:
     name: Deploy snapshot Camunda Docker image
     needs: [ docker-checks, check-results ]
     runs-on: ubuntu-latest
-    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
+    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/stable/8.7'
     concurrency:
       group: deploy-camunda-docker-snapshot
       cancel-in-progress: false
@@ -663,7 +663,7 @@ jobs:
         id: build-camunda-docker
         with:
           repository: camunda/camunda
-          version: SNAPSHOT
+          version: 8.7.0-SNAPSHOT
           distball: ${{ steps.build-camunda.outputs.distball }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: camunda.Dockerfile
