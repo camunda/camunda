@@ -59,7 +59,7 @@ public class TenantEntityAddedHandlerTest {
     // then
     final var value = tenantRecord.getValue();
     assertThat(idList)
-        .containsExactly(TenantEntity.getChildKey(value.getTenantKey(), value.getEntityKey()));
+        .containsExactly(TenantEntity.getChildKey(value.getTenantId(), value.getEntityId()));
   }
 
   @Test
@@ -75,7 +75,7 @@ public class TenantEntityAddedHandlerTest {
   @Test
   void shouldUpdateTenantEntityOnFlush() throws PersistenceException {
     // given
-    final var joinRelation = TenantIndex.JOIN_RELATION_FACTORY.createChild(111L);
+    final var joinRelation = TenantIndex.JOIN_RELATION_FACTORY.createChild("111");
     final TenantEntity inputEntity =
         new TenantEntity().setId("111").setMemberKey(222L).setJoin(joinRelation);
     final BatchRequest mockRequest = mock(BatchRequest.class);
