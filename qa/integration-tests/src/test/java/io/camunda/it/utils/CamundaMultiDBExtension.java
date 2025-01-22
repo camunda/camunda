@@ -184,7 +184,9 @@ public class CamundaMultiDBExtension
   }
 
   private CamundaClient createCamundaClient() {
-    return testApplication.newClientBuilder().build();
+    final CamundaClient camundaClient = testApplication.newClientBuilder().build();
+    closeables.add(camundaClient);
+    return camundaClient;
   }
 
   public enum DatabaseType {
