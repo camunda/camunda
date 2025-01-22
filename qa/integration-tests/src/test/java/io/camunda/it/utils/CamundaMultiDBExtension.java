@@ -34,7 +34,54 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
-/** TBD */
+/**
+ * An extension that is able to detect databases setups, configure {@link TestStandaloneApplication}
+ * and run test against such them accordingly.
+ *
+ * <p>Databases can be set up externally. The detection works based on {@link
+ * CamundaMultiDBExtension#PROP_CAMUNDA_IT_DATABASE_TYPE} property, which specifies the type of
+ * database. Supported types can be found as part of {@link DatabaseType}.
+ *
+ * <p>Per default, for example if no property is set, local environment is expected. In a local
+ * environment case the extension will bootstrap a database via test containers.
+ *
+ * <p>For simplicity tests can be annotated with {@link MultiDbTest}, and all the magic happens inside
+ * the extension. It will fallback to {@link TestSimpleCamundaApplication}, to bootstrap a single
+ * camunda application, configure it accordingly to the detected database.
+ *
+ * <pre>{@code
+ * @MultiDbTest
+ * final class MyMultiDbTest {
+ *
+ *   private CamundaClient client;
+ *
+ *   @Test
+ *   void shouldMakeUseOfClient() {
+ *     // given
+ *     // ... set up
+ *
+ *     // when
+ *     topology = c.newTopologyRequest().send().join();
+ *
+ *     // then
+ *     assertThat(topology.getClusterSize()).isEqualTo(1);
+ *   }
+ * }</pre>
+ *
+ * <p>There are more complex scenarios that might need to start respective TestApplication externally.
+ * For such cases the extension can be used via:
+ * <pre>{@code
+ * @RegisterExtension
+ * public final CamundaMultiDBExtension extension =
+ *    new CamundaMultiDBExtension(new TestStandaloneBroker());
+ * }</pre>
+ *
+ *<p>The extension will take care of the life cycle of the {@link TestStandaloneApplication}, which
+ * means configuring the detected database (this includes Operate, Tasklist, Broker properties and
+ * exporter), starting the application, and tearing down at the end.
+ *
+ * <p>See {@link TestStandaloneApplication} for more details.
+ */
 public class CamundaMultiDBExtension
     implements AfterAllCallback, BeforeAllCallback, ParameterResolver {
 

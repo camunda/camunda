@@ -38,8 +38,8 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.util.unit.DataSize;
 
 /**
- * Represents an instance of the a Camunda Application, without any extras (like ES containers,
- * etc.).
+ * Represents an instance of the Camunda Application, without any extras we have in other test
+ * applications (like ES containers, etc.), to keep it simple.
  */
 @SuppressWarnings("UnusedReturnValue")
 public final class TestSimpleCamundaApplication

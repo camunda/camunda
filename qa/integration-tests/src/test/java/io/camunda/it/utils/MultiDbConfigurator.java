@@ -17,6 +17,9 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Helper class to configure any {@link TestStandaloneApplication}, with specific secondary storage.
+ */
 public class MultiDbConfigurator {
 
   private final TestStandaloneApplication<?> testApplication;
