@@ -30,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** TBD */
-public class CamundaExternalDBExtension
+public class CamundaMultiDBExtension
     implements AfterAllCallback, BeforeAllCallback, ParameterResolver {
 
   public static final String PROP_CAMUNDA_IT_DATABASE_TYPE = "camunda.it.database.type";
@@ -39,13 +39,13 @@ public class CamundaExternalDBExtension
   public static final String DEFAULT_OS_ADMIN_USER = "admin";
   public static final String DEFAULT_OS_ADMIN_PW = "yourStrongPassword123!";
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(CamundaExternalDBExtension.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(CamundaMultiDBExtension.class);
   private final DatabaseType databaseType;
   private final List<AutoCloseable> closeables = new ArrayList<>();
   private final NewCamundaTestApplication testApplication;
   private String testPrefix;
 
-  public CamundaExternalDBExtension() {
+  public CamundaMultiDBExtension() {
     this(new NewCamundaTestApplication());
 
     closeables.add(testApplication);
@@ -54,7 +54,7 @@ public class CamundaExternalDBExtension
         .withRecordingExporter(true);
   }
 
-  public CamundaExternalDBExtension(final NewCamundaTestApplication testApplication) {
+  public CamundaMultiDBExtension(final NewCamundaTestApplication testApplication) {
     this.testApplication = testApplication;
     // resolve active database and exporter type
     final String property = System.getProperty(PROP_CAMUNDA_IT_DATABASE_TYPE);
