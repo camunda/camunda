@@ -730,13 +730,13 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>tasklist-importer-850</artifactId>
+        <artifactId>tasklist-importer-860</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>tasklist-importer-860</artifactId>
+        <artifactId>tasklist-importer-870</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -808,6 +808,13 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>tasklist-qa-migration-tests-test-fixture-850</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>tasklist-qa-migration-tests-test-fixture-860</artifactId>
         <version>${project.version}</version>
         <scope>test</scope>
       </dependency>

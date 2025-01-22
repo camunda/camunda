@@ -51,13 +51,13 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>tasklist-importer-850</artifactId>
+      <artifactId>tasklist-importer-860</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>tasklist-importer-860</artifactId>
+      <artifactId>tasklist-importer-870</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -582,7 +582,7 @@
             <dependency>jakarta.json:jakarta.json-api</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-test</dependency>
             <dependency>org.glassfish:jakarta.json</dependency>
-            <dependency>io.camunda:tasklist-importer-850</dependency>
+            <dependency>io.camunda:tasklist-importer-860</dependency>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
