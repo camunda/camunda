@@ -19,7 +19,6 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Set;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -63,8 +62,6 @@ public class CreateAuthorizationTest {
   }
 
   @Test
-  @Ignore(
-      "This test needs to be enabled once this feature: https://github.com/camunda/camunda/issues/27036 is implemented")
   public void shouldRejectIfPermissionAlreadyExistsDirectly() {
     // given
     engine
@@ -75,7 +72,7 @@ public class CreateAuthorizationTest {
         .withOwnerId("ownerId")
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceId("resourceId")
-        .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+        .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermissions(PermissionType.CREATE)
         .create();
 
@@ -87,7 +84,7 @@ public class CreateAuthorizationTest {
         .withOwnerId("ownerId")
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceId("anotherResourceId")
-        .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+        .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermissions(PermissionType.CREATE)
         .create();
 
@@ -101,7 +98,7 @@ public class CreateAuthorizationTest {
             .withOwnerId("ownerId")
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceId("resourceId")
-            .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)
             .expectRejection()
             .create();
@@ -115,7 +112,7 @@ public class CreateAuthorizationTest {
                 .formatted(
                     "ownerId",
                     PermissionType.CREATE,
-                    AuthorizationResourceType.PROCESS_DEFINITION,
+                    AuthorizationResourceType.RESOURCE,
                     "resourceId",
                     "[resourceId, anotherResourceId]"));
   }
