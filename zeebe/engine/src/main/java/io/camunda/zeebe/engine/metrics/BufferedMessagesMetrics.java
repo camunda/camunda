@@ -14,19 +14,19 @@ public class BufferedMessagesMetrics {
   private static final io.micrometer.core.instrument.MeterRegistry METER_REGISTRY =
       Metrics.globalRegistry;
 
-  private final AtomicInteger BUFFERED_MESSAGES_COUNT = new AtomicInteger(0);
+  private final AtomicInteger bufferedMessageCount = new AtomicInteger(0);
 
   public BufferedMessagesMetrics(final int partitionId) {
     final String partitionIdLabel = String.valueOf(partitionId);
 
     io.micrometer.core.instrument.Gauge.builder(
-            "zeebe_buffered_messages_count", BUFFERED_MESSAGES_COUNT, AtomicInteger::get)
+            "zeebe_buffered_messages_count", bufferedMessageCount, AtomicInteger::get)
         .description("Current number of buffered messages.")
         .tags("partition", partitionIdLabel)
         .register(METER_REGISTRY);
   }
 
   public void setBufferedMessagesCounter(final long counter) {
-    BUFFERED_MESSAGES_COUNT.set((int) counter);
+    bufferedMessageCount.set((int) counter);
   }
 }
