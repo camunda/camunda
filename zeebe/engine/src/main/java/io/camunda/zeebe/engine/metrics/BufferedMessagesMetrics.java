@@ -7,25 +7,26 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
-import io.prometheus.client.Gauge;
+import io.micrometer.core.instrument.Metrics;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class BufferedMessagesMetrics {
+  private static final io.micrometer.core.instrument.MeterRegistry METER_REGISTRY =
+      Metrics.globalRegistry;
 
-  private static final Gauge BUFFERED_MESSAGES_COUNT =
-      Gauge.build()
-          .namespace("zeebe")
-          .name("buffered_messages_count")
-          .help("Current number of buffered messages.")
-          .labelNames("partition")
-          .register();
-
-  private final String partitionIdLabel;
+  private final AtomicInteger BUFFERED_MESSAGES_COUNT = new AtomicInteger(0);
 
   public BufferedMessagesMetrics(final int partitionId) {
-    partitionIdLabel = String.valueOf(partitionId);
+    final String partitionIdLabel = String.valueOf(partitionId);
+
+    io.micrometer.core.instrument.Gauge.builder(
+            "zeebe_buffered_messages_count", BUFFERED_MESSAGES_COUNT, AtomicInteger::get)
+        .description("Current number of buffered messages.")
+        .tags("partition", partitionIdLabel)
+        .register(METER_REGISTRY);
   }
 
   public void setBufferedMessagesCounter(final long counter) {
-    BUFFERED_MESSAGES_COUNT.labels(partitionIdLabel).set((int) counter);
+    BUFFERED_MESSAGES_COUNT.set((int) counter);
   }
 }
