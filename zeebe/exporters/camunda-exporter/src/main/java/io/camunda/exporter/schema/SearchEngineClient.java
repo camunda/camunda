@@ -44,4 +44,10 @@ public interface SearchEngineClient {
 
   boolean importersCompleted(
       final int partitionId, final List<IndexDescriptor> importPositionIndices);
+
+  default void deleteIndex(final String indexName) {}
+
+  default void deleteIndexTemplate(final String indexTemplateName) {}
+
+  default void deleteIndexLifeCyclePolicy(final String policyName) {}
 }

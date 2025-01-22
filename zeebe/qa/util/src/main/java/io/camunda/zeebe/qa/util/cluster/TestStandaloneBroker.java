@@ -28,6 +28,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -246,12 +247,22 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   }
 
   public TestStandaloneBroker withCamundaExporter(final String elasticSearchUrl) {
+    return withCamundaExporter(elasticSearchUrl, null);
+  }
+
+  public TestStandaloneBroker withCamundaExporter(
+      final String elasticSearchUrl, final String retentionPolicyName) {
+    final var exporterConfigArgs =
+        new HashMap<String, Object>(
+            Map.of("connect", Map.of("url", elasticSearchUrl), "bulk", Map.of("size", 1)));
+    if (retentionPolicyName != null) {
+      exporterConfigArgs.put("retention", Map.of("enabled", true, "policyName", "test-policy"));
+    }
     withExporter(
         "CamundaExporter",
         cfg -> {
           cfg.setClassName("io.camunda.exporter.CamundaExporter");
-          cfg.setArgs(
-              Map.of("connect", Map.of("url", elasticSearchUrl), "bulk", Map.of("size", 1)));
+          cfg.setArgs(exporterConfigArgs);
         });
     final var searchClient = new SearchClientProperties();
     searchClient.setUrl(elasticSearchUrl);
