@@ -8,13 +8,21 @@
 package io.camunda.exporter.schema.elasticsearch;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.AcknowledgedResponse;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.mapping.Property;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import co.elastic.clients.elasticsearch.cluster.DeleteComponentTemplateRequest;
+import co.elastic.clients.elasticsearch.cluster.DeleteComponentTemplateResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.ilm.DeleteLifecycleRequest;
+import co.elastic.clients.elasticsearch.ilm.DeleteLifecycleResponse;
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
+import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
+import co.elastic.clients.elasticsearch.indices.DeleteIndexTemplateRequest;
+import co.elastic.clients.elasticsearch.indices.DeleteIndexTemplateResponse;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
@@ -224,6 +232,64 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
               partitionId);
       LOG.error(errMsg, e);
       return false;
+    }
+  }
+
+  @Override
+  public void deleteIndex(final String indexName) {
+    LOG.info("Deleting index [{}]", indexName);
+    final DeleteIndexRequest deleteIndexRequest =
+        new DeleteIndexRequest.Builder().index(indexName).build();
+    try {
+      final AcknowledgedResponse deleteIndexResponse = client.indices().delete(deleteIndexRequest);
+      LOG.debug("Delete index acknowledged: {}", deleteIndexResponse.acknowledged());
+    } catch (final IOException e) {
+      final var errMsg = String.format("Failed to delete index %s", indexName);
+      LOG.error(errMsg, e);
+    }
+  }
+
+  @Override
+  public void deleteIndexTemplate(final String indexTemplateName) {
+    LOG.info("Deleting index template [{}]", indexTemplateName);
+    final DeleteIndexTemplateRequest deleteIndexTemplateRequest =
+        new DeleteIndexTemplateRequest.Builder().name(indexTemplateName).build();
+    try {
+      final DeleteIndexTemplateResponse deleteIndexTemplateResponse =
+          client.indices().deleteIndexTemplate(deleteIndexTemplateRequest);
+      LOG.debug("Delete template acknowledged: {}", deleteIndexTemplateResponse.acknowledged());
+    } catch (final IOException e) {
+      final var errMsg = String.format("Failed to delete index template %s", indexTemplateName);
+      LOG.error(errMsg, e);
+    }
+  }
+
+  @Override
+  public void deleteIndexLifeCyclePolicy(final String policyName) {
+    LOG.info("Deleting index lifecycle policy [{}]", policyName);
+    final DeleteLifecycleRequest request =
+        new DeleteLifecycleRequest.Builder().name(policyName).build();
+    try {
+      final DeleteLifecycleResponse response = client.ilm().deleteLifecycle(request);
+      LOG.debug("Delete index policy acknowledged: {}", response.acknowledged());
+    } catch (final IOException e) {
+      final var errMsg = String.format("Failed to delete index policy %s", policyName);
+      throw new ElasticsearchExporterException(errMsg, e);
+    }
+  }
+
+  @Override
+  public void deleteComponentTemplate(final String templateName) {
+    final DeleteComponentTemplateRequest request =
+        new DeleteComponentTemplateRequest.Builder().name(templateName).build();
+
+    try {
+      final DeleteComponentTemplateResponse response =
+          client.cluster().deleteComponentTemplate(request);
+      LOG.debug("Delete component request acknowledged: {}", response.acknowledged());
+    } catch (final IOException e) {
+      final var errMsg = String.format("Failed to delete component template %s", templateName);
+      LOG.error(errMsg, e);
     }
   }
 

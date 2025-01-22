@@ -29,6 +29,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE_DOCUMENT;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.schema.MappingSource;
@@ -51,6 +52,8 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
@@ -216,9 +219,42 @@ public class CamundaExporter implements Exporter {
     }
   }
 
+  @Override
+  public void purge() throws Exception {
+    final var client = clientAdapter.getSearchEngineClient();
+
+    // Indices
+    final var indexNames = String.join(",", prefixedNames("operate-*", "tasklist-*"));
+    LOG.info("Purging exporter indexes: {}", indexNames);
+    client.getMappings(indexNames, MappingSource.INDEX).keySet().forEach(client::deleteIndex);
+
+    // Index templates
+    prefixedNames("operate-*", "tasklist-*")
+        .forEach(
+            name -> {
+              final var templateMapping = client.getMappings(name, MappingSource.INDEX_TEMPLATE);
+              LOG.info("Purging '{}' existing template indices.", templateMapping.size());
+              templateMapping.keySet().forEach(client::deleteIndexTemplate);
+            });
+
+    // Lifecycle policies
+    final RetentionConfiguration retention = configuration.getArchiver().getRetention();
+    if (retention.isEnabled()) {
+      client.deleteIndexLifeCyclePolicy(retention.getPolicyName());
+    }
+
+    LOG.info("Exporter purged");
+  }
+
   @VisibleForTesting
   ExporterMetadata getMetadata() {
     return metadata;
+  }
+
+  private List<String> prefixedNames(final String... names) {
+    final var rawPrefix = configuration.getIndex().getPrefix();
+    final var indexPrefix = rawPrefix.isBlank() ? "" : rawPrefix + "-";
+    return Arrays.stream(names).map(s -> indexPrefix + s).toList();
   }
 
   private void ensureCachedRecordsLessThanBulkSize(final Record<?> record) {

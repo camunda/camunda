@@ -7,85 +7,58 @@
  */
 package io.camunda.it.cluster;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.protocol.rest.ProblemDetail;
+import io.camunda.it.utils.CamundaMultiDBExtension;
+import io.camunda.it.utils.MultiDbTest;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
-import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
- * TODO: We currently only test RDBMS, this should be tested by the ClusterPurgeMultiDbIT, once RDMS
- * works with the multi-db extension.
+ * TODO: We currently only test CamundaExporter (Elasticsearch) because purge is not implemented in
+ * the others (yet).
  */
-@ZeebeIntegration
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class ClusterPurgeIT {
+@MultiDbTest
+public class ClusterPurgeMultiDbIT {
 
-  private static final int BROKER_COUNT = 1;
-  private static final int PARTITION_COUNT = 1;
-  private static final int REPLICATION_FACTOR = 1;
+  private static CamundaClient client;
 
-  private TestCluster cluster;
-  private CamundaClient client;
+  private static final TestStandaloneApplication<?> APPLICATION =
+      new TestStandaloneBroker().withUnauthenticatedAccess();
 
-  void setupCluster(final TestBrokerConfig config) {
-    // Setup cluster based on the provided broker configuration
-    cluster =
-        TestCluster.builder()
-            .withBrokersCount(BROKER_COUNT)
-            .withPartitionsCount(PARTITION_COUNT)
-            .withReplicationFactor(REPLICATION_FACTOR)
-            .withEmbeddedGateway(true)
-            .withBrokerConfig(config.brokerConfig)
-            .build()
-            .start()
-            .awaitHealthyTopology();
-    client = cluster.newClientBuilder().preferRestOverGrpc(true).build();
-  }
+  @RegisterExtension
+  public static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(APPLICATION);
 
-  @AfterEach
-  void tearDownCluster() {
-    if (client != null) {
-      client.close();
-    }
-    if (cluster != null) {
-      cluster.close();
-    }
-  }
+  private static final int TIMEOUT = 40;
 
-  @ParameterizedTest
-  @MethodSource("brokerConfigs")
-  void shouldPurgeProcessDefinitions(final TestBrokerConfig config) {
+  @Test
+  void shouldPurgeProcessDefinitions() {
     // GIVEN
-    setupCluster(config);
+    final ClusterActuator actuator = ClusterActuator.of(APPLICATION);
     final var processModel =
         Bpmn.createExecutableProcess("test-process").startEvent().endEvent().done();
     final var processDefinitionKey = deployProcessModel(processModel);
-    final var actuator = ClusterActuator.of(cluster.availableGateway());
 
     // WHEN
     final var planChangeResponse = actuator.purge(false);
@@ -98,11 +71,10 @@ public class ClusterPurgeIT {
         () -> client.newProcessDefinitionGetRequest(processDefinitionKey).send());
   }
 
-  @ParameterizedTest
-  @MethodSource("brokerConfigs")
-  void shouldPurgeProcessInstances(final TestBrokerConfig config) {
+  @Test
+  void shouldPurgeProcessInstances() {
     // GIVEN
-    setupCluster(config);
+    final ClusterActuator actuator = ClusterActuator.of(APPLICATION);
     final var processModel =
         Bpmn.createExecutableProcess("test-process")
             .startEvent()
@@ -113,8 +85,6 @@ public class ClusterPurgeIT {
     final var processDefinitionKey = deployProcessModel(processModel);
     final var processInstanceKey = startProcess(processDefinitionKey);
 
-    final var actuator = ClusterActuator.of(cluster.availableGateway());
-
     // WHEN
     final var planChangeResponse = actuator.purge(false);
 
@@ -124,11 +94,10 @@ public class ClusterPurgeIT {
     assertThatEntityNotFound(() -> client.newProcessInstanceGetRequest(processInstanceKey).send());
   }
 
-  @ParameterizedTest
-  @MethodSource("brokerConfigs")
-  void shouldPurgeServiceTask(final TestBrokerConfig config) {
+  @Test
+  void shouldPurgeServiceTask() {
     // GIVEN
-    setupCluster(config);
+    final ClusterActuator actuator = ClusterActuator.of(APPLICATION);
     final var processModel =
         Bpmn.createExecutableProcess("test-process")
             .startEvent()
@@ -149,8 +118,6 @@ public class ClusterPurgeIT {
             .getJobs()
             .getFirst();
 
-    final var actuator = ClusterActuator.of(cluster.availableGateway());
-
     // WHEN
     final var planChangeResponse = actuator.purge(false);
 
@@ -159,12 +126,10 @@ public class ClusterPurgeIT {
     assertThatEntityNotFound(() -> client.newCompleteCommand(activeJob).send());
   }
 
-  @ParameterizedTest
-  @MethodSource("brokerConfigs")
-  void shouldPurgeUserTask(final TestBrokerConfig config) {
+  @Test
+  void shouldPurgeUserTask() {
     // GIVEN
-    setupCluster(config);
-    client = cluster.newClientBuilder().preferRestOverGrpc(true).build();
+    final ClusterActuator actuator = ClusterActuator.of(APPLICATION);
     final var processModel =
         Bpmn.createExecutableProcess("test-process")
             .startEvent()
@@ -177,13 +142,13 @@ public class ClusterPurgeIT {
     final AtomicReference<Long> userTaskKey = new AtomicReference<>();
     Awaitility.await("until user task is active")
         .ignoreExceptions()
-        .atMost(Duration.ofSeconds(20))
+        .atMost(Duration.ofSeconds(2 * TIMEOUT))
         .untilAsserted(
             () -> {
               final Future<SearchQueryResponse<UserTask>> userTaskFuture =
                   client.newUserTaskQuery().send();
               Assertions.assertThat(userTaskFuture)
-                  .succeedsWithin(Duration.ofSeconds(10))
+                  .succeedsWithin(Duration.ofSeconds(TIMEOUT))
                   .extracting(SearchQueryResponse::items)
                   .satisfies(
                       items -> {
@@ -191,8 +156,6 @@ public class ClusterPurgeIT {
                         userTaskKey.set(items.getFirst().getUserTaskKey());
                       });
             });
-
-    final var actuator = ClusterActuator.of(cluster.availableGateway());
 
     // WHEN
     final var planChangeResponse = actuator.purge(false);
@@ -202,13 +165,13 @@ public class ClusterPurgeIT {
     assertThatEntityNotFound(() -> client.newUserTaskCompleteCommand(userTaskKey.get()).send());
 
     Awaitility.await("until user task query returns empty list")
-        .atMost(Duration.ofSeconds(20))
+        .atMost(Duration.ofSeconds(2 * TIMEOUT))
         .untilAsserted(
             () -> {
               final Future<SearchQueryResponse<UserTask>> userTaskFuture =
                   client.newUserTaskQuery().send();
               Assertions.assertThat(userTaskFuture)
-                  .succeedsWithin(Duration.ofSeconds(10))
+                  .succeedsWithin(Duration.ofSeconds(TIMEOUT))
                   .extracting(SearchQueryResponse::items)
                   .satisfies(items -> Assertions.assertThat(items).isEmpty());
             });
@@ -229,12 +192,12 @@ public class ClusterPurgeIT {
     final var processDefinitionKey =
         deploymentEvent.getProcesses().getFirst().getProcessDefinitionKey();
     Awaitility.await("until process model is accessible via API")
-        .atMost(Duration.ofSeconds(20))
+        .atMost(Duration.ofSeconds(2 * TIMEOUT))
         .untilAsserted(
             () -> {
               final Future<?> futureRequest =
                   client.newProcessDefinitionGetRequest(processDefinitionKey).send();
-              Assertions.assertThat(futureRequest).succeedsWithin(Duration.ofSeconds(10));
+              assertThat(futureRequest).succeedsWithin(Duration.ofSeconds(TIMEOUT));
             });
     return processDefinitionKey;
   }
@@ -248,23 +211,23 @@ public class ClusterPurgeIT {
             .join()
             .getProcessInstanceKey();
     Awaitility.await("until process instance is created")
-        .atMost(Duration.ofSeconds(20))
+        .atMost(Duration.ofSeconds(2 * TIMEOUT))
         .untilAsserted(
             () -> {
               final Future<?> futureRequest =
                   client.newProcessInstanceGetRequest(processInstanceKey).send();
-              Assertions.assertThat(futureRequest).succeedsWithin(Duration.ofSeconds(10));
+              assertThat(futureRequest).succeedsWithin(Duration.ofSeconds(TIMEOUT));
             });
     return processInstanceKey;
   }
 
   private void assertThatEntityNotFound(final Supplier<Future<?>> sendRequest) {
     Awaitility.await("until entity not found")
-        .atMost(Duration.ofSeconds(20))
+        .atMost(Duration.ofSeconds(2 * TIMEOUT))
         .untilAsserted(
             () ->
-                Assertions.assertThat(sendRequest.get())
-                    .failsWithin(Duration.ofSeconds(10))
+                assertThat(sendRequest.get())
+                    .failsWithin(Duration.ofSeconds(TIMEOUT))
                     .withThrowableOfType(ExecutionException.class)
                     .extracting(Throwable::getCause)
                     .asInstanceOf(InstanceOfAssertFactories.type(ProblemException.class))
@@ -278,39 +241,17 @@ public class ClusterPurgeIT {
     Awaitility.await("until cluster purge completes")
         .untilAsserted(
             () ->
-                ClusterActuatorAssert.assertThat(cluster).hasCompletedChanges(planChangeResponse));
+                Assertions.assertThatNoException()
+                    .isThrownBy(() -> APPLICATION.healthActuator().ready()));
     Awaitility.await("until cluster is ready")
         .untilAsserted(
             () ->
                 TopologyAssert.assertThat(client.newTopologyRequest().send().join())
-                    .isComplete(BROKER_COUNT, PARTITION_COUNT, REPLICATION_FACTOR));
+                    .isComplete(1, 1, 1));
     Awaitility.await("until cluster is healthy")
         .untilAsserted(
             () -> TopologyAssert.assertThat(client.newTopologyRequest().send().join()).isHealthy());
 
-    Assertions.assertThat(planChangeResponse.getPlannedChanges()).isNotEmpty();
-  }
-
-  private static Stream<TestBrokerConfig> brokerConfigs() {
-    return Stream.of(
-        new TestBrokerConfig("RdbmsExporter", TestStandaloneBroker::withRdbmsExporter)
-        /*,
-        new TestBrokerConfig(
-            "CamundaExporter", t -> t.withCamundaExporter("http://localhost:9200", null))*/ );
-  }
-
-  static class TestBrokerConfig {
-    private final String name;
-    private final Consumer<TestStandaloneBroker> brokerConfig;
-
-    TestBrokerConfig(final String name, final Consumer<TestStandaloneBroker> brokerConfig) {
-      this.name = name;
-      this.brokerConfig = brokerConfig;
-    }
-
-    @Override
-    public String toString() {
-      return name;
-    }
+    assertThat(planChangeResponse.getPlannedChanges()).isNotEmpty();
   }
 }

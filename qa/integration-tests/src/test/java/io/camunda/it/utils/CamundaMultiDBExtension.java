@@ -206,7 +206,8 @@ public class CamundaMultiDBExtension
   }
 
   private CamundaClient createCamundaClient() {
-    final CamundaClient camundaClient = testApplication.newClientBuilder().build();
+    final CamundaClient camundaClient =
+        testApplication.newClientBuilder().preferRestOverGrpc(true).build();
     closeables.add(camundaClient);
     return camundaClient;
   }
