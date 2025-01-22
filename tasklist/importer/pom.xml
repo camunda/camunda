@@ -36,7 +36,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>tasklist-importer-860</artifactId>
+      <artifactId>tasklist-importer-870</artifactId>
       <scope>runtime</scope>
     </dependency>
 
@@ -181,7 +181,7 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <usedDependencies>
-            <dependency>io.camunda:tasklist-importer-860</dependency>
+            <dependency>io.camunda:tasklist-importer-870</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
