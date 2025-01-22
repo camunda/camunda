@@ -62,6 +62,7 @@ public class UserTaskRecordToTaskEntityMapper {
 
     final UserTaskRecordValue recordValue = record.getValue();
     final String processDefinitionId = String.valueOf(recordValue.getProcessDefinitionKey());
+
     final TaskEntity entity =
         new TaskEntity()
             .setImplementation(TaskImplementation.ZEEBE_USER_TASK)
@@ -127,9 +128,7 @@ public class UserTaskRecordToTaskEntityMapper {
                 entity.setFormVersion(linkedForm.version());
                 entity.setFormId(linkedForm.bpmnId());
               },
-              () -> {
-                LOGGER.warn("Form with key={} cannot be found", strFromKey);
-              });
+              () -> LOGGER.warn("Form with key={} cannot be found", strFromKey));
     }
 
     // TODO handle removal of attributes in Zeebe https://github.com/camunda/tasklist/issues/4306
