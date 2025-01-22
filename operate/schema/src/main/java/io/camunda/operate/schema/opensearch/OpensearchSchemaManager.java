@@ -39,6 +39,7 @@ import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
+import org.opensearch.client.opensearch.cluster.DeleteComponentTemplateRequest;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
 import org.opensearch.client.opensearch.indices.Alias;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
@@ -223,6 +224,17 @@ public class OpensearchSchemaManager implements SchemaManager {
   @Override
   public boolean deleteTemplatesFor(final String deleteTemplatePattern) {
     return richOpenSearchClient.template().deleteTemplatesWithRetries(deleteTemplatePattern);
+  }
+
+  @Override
+  public boolean deleteDefaults() {
+    final String settingsTemplateName = settingsTemplateName();
+    LOGGER.info("Delete default settings '{}'.", settingsTemplateName);
+
+    return richOpenSearchClient
+        .template()
+        .deleteComponentTemplateWithRetries(
+            new DeleteComponentTemplateRequest.Builder().name(settingsTemplateName).build());
   }
 
   @Override

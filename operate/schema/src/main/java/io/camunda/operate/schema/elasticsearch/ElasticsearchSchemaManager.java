@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.DeleteComponentTemplateRequest;
 import org.elasticsearch.client.indices.PutComponentTemplateRequest;
 import org.elasticsearch.client.indices.PutComposableIndexTemplateRequest;
 import org.elasticsearch.client.indices.PutIndexTemplateRequest;
@@ -184,6 +185,12 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   @Override
   public boolean deleteTemplatesFor(final String deleteTemplatePattern) {
     return retryElasticsearchClient.deleteTemplatesFor(deleteTemplatePattern);
+  }
+
+  @Override
+  public boolean deleteDefaults() {
+    final var request = new DeleteComponentTemplateRequest(settingsTemplateName());
+    return retryElasticsearchClient.deleteComponentTemplate(request);
   }
 
   @Override

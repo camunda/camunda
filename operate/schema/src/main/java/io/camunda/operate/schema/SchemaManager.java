@@ -52,6 +52,8 @@ public interface SchemaManager {
 
   boolean deleteTemplatesFor(final String deleteTemplatePattern);
 
+  boolean deleteDefaults();
+
   void removePipeline(String pipelineName);
 
   boolean addPipeline(String name, String pipelineDefinition);
