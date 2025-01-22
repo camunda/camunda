@@ -9,12 +9,8 @@
 <databaseChangeLog
   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
-  xmlns:pro="http://www.liquibase.org/xml/ns/pro"
   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd
-        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd
-        http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd">
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
   <changeSet id="create_exporter_position_table" author="pwunderlich">
     <createTable tableName="EXPORTER_POSITION">
@@ -353,7 +349,7 @@
 
   <changeSet id="tenant_members_table" author="cthiel">
     <createTable tableName="TENANT_MEMBER">
-      <column name="TENANT_KEY" type="BIGINT" >
+      <column name="TENANT_ID" type="VARCHAR(255)">
         <constraints primaryKey="true"/>
       </column>
       <column name="ENTITY_KEY" type="BIGINT" >

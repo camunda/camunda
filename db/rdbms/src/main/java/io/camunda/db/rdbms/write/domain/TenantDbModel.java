@@ -21,8 +21,8 @@ public class TenantDbModel implements DbModel<TenantDbModel> {
   public TenantDbModel() {}
 
   private TenantDbModel(
-      final Long tenantKey,
       final String tenantId,
+      final Long tenantKey,
       final String name,
       final List<TenantMemberDbModel> members) {
     this.tenantKey = tenantKey;
@@ -104,7 +104,7 @@ public class TenantDbModel implements DbModel<TenantDbModel> {
 
     @Override
     public TenantDbModel build() {
-      return new TenantDbModel(tenantKey, tenantId, name, members);
+      return new TenantDbModel(tenantId, tenantKey, name, members);
     }
   }
 }
