@@ -53,18 +53,21 @@ public class TenantQueryControllerTest extends RestControllerTest {
            {
              "tenantKey": %s,
              "name": "%s",
+             "description": "%s",
              "tenantId": "%s",
              "assignedMemberKeys": %s
            },
            {
              "tenantKey": %s,
              "name": "%s",
+             "description": "%s",
              "tenantId": "%s",
              "assignedMemberKeys": %s
            },
            {
              "tenantKey": %s,
              "name": "%s",
+             "description": "%s",
              "tenantId": "%s",
              "assignedMemberKeys": %s
            }
@@ -80,14 +83,17 @@ public class TenantQueryControllerTest extends RestControllerTest {
       RESPONSE.formatted(
           "\"%s\"".formatted(TENANT_ENTITIES.get(0).key()),
           TENANT_ENTITIES.get(0).name(),
+          TENANT_ENTITIES.get(0).description(),
           TENANT_ENTITIES.get(0).tenantId(),
           formatSet(TENANT_ENTITIES.get(0).assignedMemberKeys(), true),
           "\"%s\"".formatted(TENANT_ENTITIES.get(1).key()),
           TENANT_ENTITIES.get(1).name(),
+          TENANT_ENTITIES.get(1).description(),
           TENANT_ENTITIES.get(1).tenantId(),
           formatSet(TENANT_ENTITIES.get(1).assignedMemberKeys(), true),
           "\"%s\"".formatted(TENANT_ENTITIES.get(2).key()),
           TENANT_ENTITIES.get(2).name(),
+          TENANT_ENTITIES.get(2).description(),
           TENANT_ENTITIES.get(2).tenantId(),
           formatSet(TENANT_ENTITIES.get(2).assignedMemberKeys(), true),
           TENANT_ENTITIES.size());
@@ -95,14 +101,17 @@ public class TenantQueryControllerTest extends RestControllerTest {
       RESPONSE.formatted(
           TENANT_ENTITIES.get(0).key(),
           TENANT_ENTITIES.get(0).name(),
+          TENANT_ENTITIES.get(0).description(),
           TENANT_ENTITIES.get(0).tenantId(),
           formatSet(TENANT_ENTITIES.get(0).assignedMemberKeys(), false),
           TENANT_ENTITIES.get(1).key(),
           TENANT_ENTITIES.get(1).name(),
+          TENANT_ENTITIES.get(1).description(),
           TENANT_ENTITIES.get(1).tenantId(),
           formatSet(TENANT_ENTITIES.get(1).assignedMemberKeys(), false),
           TENANT_ENTITIES.get(2).key(),
           TENANT_ENTITIES.get(2).name(),
+          TENANT_ENTITIES.get(2).description(),
           TENANT_ENTITIES.get(2).tenantId(),
           formatSet(TENANT_ENTITIES.get(2).assignedMemberKeys(), false),
           TENANT_ENTITIES.size());
