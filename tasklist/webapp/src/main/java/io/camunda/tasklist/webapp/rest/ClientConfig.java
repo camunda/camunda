@@ -48,10 +48,10 @@ public class ClientConfig {
   @Value("${CAMUNDA_TASKLIST_IDENTITY_USER_ACCESS_RESTRICTIONS_ENABLED:#{true}}")
   public boolean isUserAccessRestrictionsEnabled;
 
+  public long maxRequestSize;
+
   @Value("${spring.servlet.multipart.max-request-size:4MB}")
   private DataSize maxRequestSizeConfigValue;
-
-  public long maxRequestSize;
 
   @Autowired private TasklistProfileService profileService;
   @Autowired private TasklistProperties tasklistProperties;
