@@ -92,6 +92,11 @@ public final class TenantRecord extends UnifiedRecordValue implements TenantReco
   }
 
   public TenantRecord setDescription(final String description) {
+    if (description == null) {
+      descriptionProp.reset();
+      return this;
+    }
+
     descriptionProp.setValue(description);
     return this;
   }
