@@ -60,22 +60,38 @@ public final class FineGrainedColumnFamilyMetrics implements ColumnFamilyMetrics
   }
 
   @Override
-  public Timer measureGetLatency() {
-    return getLatency;
+  public TimerContext measureGetLatency() {
+    return new TimerContext(getLatency);
   }
 
   @Override
-  public Timer measurePutLatency() {
-    return putLatency;
+  public TimerContext measurePutLatency() {
+    return new TimerContext(putLatency);
   }
 
   @Override
-  public Timer measureDeleteLatency() {
-    return deleteLatency;
+  public TimerContext measureDeleteLatency() {
+    return new TimerContext(deleteLatency);
   }
 
   @Override
-  public Timer measureIterateLatency() {
-    return iterateLatency;
+  public TimerContext measureIterateLatency() {
+    return new TimerContext(iterateLatency);
+  }
+
+  /** A helper class for handling AutoCloseable Timer measurement. */
+  public static class TimerContext implements AutoCloseable {
+    private final Timer timer;
+    private final Timer.Sample sample;
+
+    public TimerContext(final Timer timer) {
+      this.timer = timer;
+      sample = Timer.start();
+    }
+
+    @Override
+    public void close() {
+      sample.stop(timer);
+    }
   }
 }

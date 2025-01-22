@@ -8,27 +8,27 @@
 package io.camunda.zeebe.db.impl;
 
 import io.camunda.zeebe.db.ColumnFamilyMetrics;
-import io.prometheus.client.Histogram.Timer;
+import io.camunda.zeebe.db.impl.FineGrainedColumnFamilyMetrics.TimerContext;
 
 public class NoopColumnFamilyMetrics implements ColumnFamilyMetrics {
 
   @Override
-  public Timer measureGetLatency() {
+  public TimerContext measureGetLatency() {
     return null;
   }
 
   @Override
-  public Timer measurePutLatency() {
+  public TimerContext measurePutLatency() {
     return null;
   }
 
   @Override
-  public Timer measureDeleteLatency() {
+  public TimerContext measureDeleteLatency() {
     return null;
   }
 
   @Override
-  public Timer measureIterateLatency() {
+  public TimerContext measureIterateLatency() {
     return null;
   }
 }
