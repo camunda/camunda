@@ -15,7 +15,7 @@ import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.Enti
 public class TenantIndex extends UserManagementIndexDescriptor implements Prio5Backup {
 
   public static final String INDEX_NAME = "tenant";
-  public static final String INDEX_VERSION = "8.7.0";
+  public static final String INDEX_VERSION = "8.8.0";
 
   public static final String KEY = "key";
   public static final String TENANT_ID = "tenantId";
