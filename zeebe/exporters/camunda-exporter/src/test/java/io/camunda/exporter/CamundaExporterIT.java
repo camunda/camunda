@@ -419,13 +419,15 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter) {
     // given
     final ValueType valueType = ValueType.INCIDENT;
+    final long notExistingOperationReference = 9876543210L;
     final Record record =
         factory.generateRecord(
             valueType,
             r ->
                 r.withBrokerVersion("8.7.0")
                     .withIntent(IncidentIntent.RESOLVED)
-                    .withTimestamp(System.currentTimeMillis()));
+                    .withTimestamp(System.currentTimeMillis())
+                    .withOperationReference(notExistingOperationReference));
     final var resourceProvider = new DefaultExporterResourceProvider();
     resourceProvider.init(
         config,

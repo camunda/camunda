@@ -10,7 +10,6 @@ package io.camunda.exporter.store;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -26,6 +25,7 @@ import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.bulk.IndexOperation;
+import co.elastic.clients.elasticsearch.core.bulk.OperationType;
 import io.camunda.exporter.entities.TestExporterEntity;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
@@ -449,10 +449,17 @@ class ElasticsearchBatchRequestTest {
   void shouldUseCustomErrorHandlerIfProvided() throws IOException {
     // Given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
+    final OperationType operationType = OperationType.Update;
+    final int notFound = 404;
 
     final BulkResponseItem item = mock(BulkResponseItem.class);
-    when(item.error()).thenReturn(new ErrorCause.Builder().reason("error").build());
+    when(item.id()).thenReturn(ID);
+    when(item.operationType()).thenReturn(operationType);
     when(item.index()).thenReturn(INDEX_WITH_HANDLER);
+    when(item.status()).thenReturn(notFound);
+    when(item.error())
+        .thenReturn(
+            new ErrorCause.Builder().reason("error").type("document_missing_exception").build());
 
     final BulkResponse bulkResponse = mock(BulkResponse.class);
     when(bulkResponse.items()).thenReturn(List.of(item));
@@ -460,11 +467,17 @@ class ElasticsearchBatchRequestTest {
     when(elasticsearchClient.bulk(any(BulkRequest.class))).thenReturn(bulkResponse);
     final BiConsumer<String, Error> errorHandler = mock(BiConsumer.class);
 
+    final String message =
+        String.format(
+            "%s failed for type [%s] and id [%s]: %s",
+            item.operationType(), item.index(), item.id(), item.error().reason());
+
     // When
     batchRequest.add(INDEX_WITH_HANDLER, entity);
     batchRequest.execute(errorHandler);
 
     // Then
-    verify(errorHandler).accept(eq(INDEX_WITH_HANDLER), any());
+    verify(errorHandler)
+        .accept(INDEX_WITH_HANDLER, new Error(message, item.error().type(), notFound));
   }
 }
