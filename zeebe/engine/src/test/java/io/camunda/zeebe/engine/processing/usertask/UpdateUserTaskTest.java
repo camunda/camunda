@@ -7,18 +7,18 @@
  */
 package io.camunda.zeebe.engine.processing.usertask;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
-import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
@@ -61,18 +61,25 @@ public final class UpdateUserTaskTest {
             .getKey();
 
     // when
-    final Record<UserTaskRecordValue> updateRecord =
-        ENGINE.userTask().withKey(userTaskKey).update(new UserTaskRecord());
+    final var updatingRecord = ENGINE.userTask().withKey(userTaskKey).update(new UserTaskRecord());
 
     // then
-    Assertions.assertThat(updateRecord)
+    Assertions.assertThat(updatingRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.UPDATING);
 
-    Assertions.assertThat(updateRecord.getValue())
-        .hasUserTaskKey(userTaskKey)
-        .hasAction("update")
-        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    final var updatingRecordValue = updatingRecord.getValue();
+    final var updatedRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.UPDATED).getFirst().getValue();
+
+    assertThat(List.of(updatingRecordValue, updatedRecordValue))
+        .describedAs("Ensure both UPDATING and UPDATED records have consistent attribute values")
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .hasUserTaskKey(userTaskKey)
+                    .hasAction("update")
+                    .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
 
   @Test
@@ -87,7 +94,7 @@ public final class UpdateUserTaskTest {
             .getKey();
 
     // when
-    final Record<UserTaskRecordValue> updateRecord =
+    final var updatingRecord =
         ENGINE
             .userTask()
             .withKey(userTaskKey)
@@ -95,14 +102,22 @@ public final class UpdateUserTaskTest {
             .update(new UserTaskRecord());
 
     // then
-    Assertions.assertThat(updateRecord)
+    Assertions.assertThat(updatingRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.UPDATING);
 
-    Assertions.assertThat(updateRecord.getValue())
-        .hasUserTaskKey(userTaskKey)
-        .hasAction("customAction")
-        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    final var updatingRecordValue = updatingRecord.getValue();
+    final var updatedRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.UPDATED).getFirst().getValue();
+
+    assertThat(List.of(updatingRecordValue, updatedRecordValue))
+        .describedAs("Ensure both UPDATING and UPDATED records have consistent attribute values")
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .hasUserTaskKey(userTaskKey)
+                    .hasAction("customAction")
+                    .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
 
   @Test
@@ -111,11 +126,11 @@ public final class UpdateUserTaskTest {
     final int key = 123;
 
     // when
-    final Record<UserTaskRecordValue> updateRecord =
+    final var updatingRecord =
         ENGINE.userTask().withKey(key).expectRejection().update(new UserTaskRecord());
 
     // then
-    Assertions.assertThat(updateRecord).hasRejectionType(RejectionType.NOT_FOUND);
+    Assertions.assertThat(updatingRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -134,22 +149,30 @@ public final class UpdateUserTaskTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    final Record<UserTaskRecordValue> updateRecord =
+    final var updatingRecord =
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
             .update(List.of("baz", "foobar"), null, null, null);
 
     // then
-    Assertions.assertThat(updateRecord)
+    Assertions.assertThat(updatingRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.UPDATING);
 
-    Assertions.assertThat(updateRecord.getValue())
-        .hasCandidateGroupsList("baz", "foobar")
-        .hasCandidateUsersList("oof", "rab")
-        .hasDueDate("2023-03-02T15:35+02:00")
-        .hasFollowUpDate("2023-03-02T16:35+02:00");
+    final var updatingRecordValue = updatingRecord.getValue();
+    final var updatedRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.UPDATED).getFirst().getValue();
+
+    assertThat(List.of(updatingRecordValue, updatedRecordValue))
+        .describedAs("Ensure both UPDATING and UPDATED records have consistent attribute values")
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .hasCandidateGroupsList("baz", "foobar")
+                    .hasCandidateUsersList("oof", "rab")
+                    .hasDueDate("2023-03-02T15:35+02:00")
+                    .hasFollowUpDate("2023-03-02T16:35+02:00"));
   }
 
   @Test
@@ -168,22 +191,30 @@ public final class UpdateUserTaskTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    final Record<UserTaskRecordValue> updateRecord =
+    final var updatingRecord =
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
             .update(null, List.of("baz", "foobar"), null, null);
 
     // then
-    Assertions.assertThat(updateRecord)
+    Assertions.assertThat(updatingRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.UPDATING);
 
-    Assertions.assertThat(updateRecord.getValue())
-        .hasCandidateGroupsList("foo", "bar")
-        .hasCandidateUsersList("baz", "foobar")
-        .hasDueDate("2023-03-02T15:35+02:00")
-        .hasFollowUpDate("2023-03-02T16:35+02:00");
+    final var updatingRecordValue = updatingRecord.getValue();
+    final var updatedRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.UPDATED).getFirst().getValue();
+
+    assertThat(List.of(updatingRecordValue, updatedRecordValue))
+        .describedAs("Ensure both UPDATING and UPDATED records have consistent attribute values")
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .hasCandidateGroupsList("foo", "bar")
+                    .hasCandidateUsersList("baz", "foobar")
+                    .hasDueDate("2023-03-02T15:35+02:00")
+                    .hasFollowUpDate("2023-03-02T16:35+02:00"));
   }
 
   @Test
@@ -202,19 +233,27 @@ public final class UpdateUserTaskTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    final Record<UserTaskRecordValue> updateRecord =
+    final var updatingRecord =
         ENGINE.userTask().ofInstance(processInstanceKey).update(null, null, "abc", null);
 
     // then
-    Assertions.assertThat(updateRecord)
+    Assertions.assertThat(updatingRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.UPDATING);
 
-    Assertions.assertThat(updateRecord.getValue())
-        .hasCandidateGroupsList("foo", "bar")
-        .hasCandidateUsersList("oof", "rab")
-        .hasDueDate("abc")
-        .hasFollowUpDate("2023-03-02T16:35+02:00");
+    final var updatingRecordValue = updatingRecord.getValue();
+    final var updatedRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.UPDATED).getFirst().getValue();
+
+    assertThat(List.of(updatingRecordValue, updatedRecordValue))
+        .describedAs("Ensure both UPDATING and UPDATED records have consistent attribute values")
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .hasCandidateGroupsList("foo", "bar")
+                    .hasCandidateUsersList("oof", "rab")
+                    .hasDueDate("abc")
+                    .hasFollowUpDate("2023-03-02T16:35+02:00"));
   }
 
   @Test
@@ -233,19 +272,27 @@ public final class UpdateUserTaskTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    final Record<UserTaskRecordValue> updateRecord =
+    final var updatingRecord =
         ENGINE.userTask().ofInstance(processInstanceKey).update(null, null, null, "abc");
 
     // then
-    Assertions.assertThat(updateRecord)
+    Assertions.assertThat(updatingRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.UPDATING);
 
-    Assertions.assertThat(updateRecord.getValue())
-        .hasCandidateGroupsList("foo", "bar")
-        .hasCandidateUsersList("oof", "rab")
-        .hasDueDate("2023-03-02T15:35+02:00")
-        .hasFollowUpDate("abc");
+    final var updatingRecordValue = updatingRecord.getValue();
+    final var updatedRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.UPDATED).getFirst().getValue();
+
+    assertThat(List.of(updatingRecordValue, updatedRecordValue))
+        .describedAs("Ensure both UPDATING and UPDATED records have consistent attribute values")
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .hasCandidateGroupsList("foo", "bar")
+                    .hasCandidateUsersList("oof", "rab")
+                    .hasDueDate("2023-03-02T15:35+02:00")
+                    .hasFollowUpDate("abc"));
   }
 
   @Test
@@ -264,19 +311,27 @@ public final class UpdateUserTaskTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    final Record<UserTaskRecordValue> updateRecord =
+    final var updatingRecord =
         ENGINE.userTask().ofInstance(processInstanceKey).update(new UserTaskRecord());
 
     // then
-    Assertions.assertThat(updateRecord)
+    Assertions.assertThat(updatingRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.UPDATING);
 
-    Assertions.assertThat(updateRecord.getValue())
-        .hasNoCandidateUsersList()
-        .hasNoCandidateUsersList()
-        .hasDueDate("")
-        .hasFollowUpDate("");
+    final var updatingRecordValue = updatingRecord.getValue();
+    final var updatedRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.UPDATED).getFirst().getValue();
+
+    assertThat(List.of(updatingRecordValue, updatedRecordValue))
+        .describedAs("Ensure both UPDATING and UPDATED records have consistent attribute values")
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .hasNoCandidateUsersList()
+                    .hasNoCandidateUsersList()
+                    .hasDueDate("")
+                    .hasFollowUpDate(""));
   }
 
   @Test
@@ -288,7 +343,7 @@ public final class UpdateUserTaskTest {
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
     // when
-    final Record<UserTaskRecordValue> updateRecord =
+    final var updatingRecord =
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
@@ -296,7 +351,7 @@ public final class UpdateUserTaskTest {
             .update(new UserTaskRecord());
 
     // then
-    Assertions.assertThat(updateRecord).hasRejectionType(RejectionType.NOT_FOUND);
+    Assertions.assertThat(updatingRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -308,7 +363,7 @@ public final class UpdateUserTaskTest {
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
 
     // when
-    final Record<UserTaskRecordValue> updateRecord =
+    final var updatingRecord =
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
@@ -316,13 +371,17 @@ public final class UpdateUserTaskTest {
             .update(new UserTaskRecord());
 
     // then
-    final UserTaskRecordValue recordValue = updateRecord.getValue();
-
-    Assertions.assertThat(updateRecord)
+    Assertions.assertThat(updatingRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.UPDATING);
 
-    Assertions.assertThat(recordValue).hasTenantId(tenantId);
+    final var updatingRecordValue = updatingRecord.getValue();
+    final var updatedRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.UPDATED).getFirst().getValue();
+
+    assertThat(List.of(updatingRecordValue, updatedRecordValue))
+        .describedAs("Ensure both UPDATING and UPDATED records have consistent attribute values")
+        .allSatisfy(recordValue -> Assertions.assertThat(recordValue).hasTenantId(tenantId));
   }
 
   @Test
@@ -335,7 +394,7 @@ public final class UpdateUserTaskTest {
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
 
     // when
-    final Record<UserTaskRecordValue> updateRecord =
+    final var updatingRecord =
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
@@ -344,6 +403,6 @@ public final class UpdateUserTaskTest {
             .update(new UserTaskRecord());
 
     // then
-    Assertions.assertThat(updateRecord).hasRejectionType(RejectionType.NOT_FOUND);
+    Assertions.assertThat(updatingRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 }
