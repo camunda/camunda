@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
-import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -21,9 +20,12 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.micrometer.core.instrument.ImmutableTag;
+import io.micrometer.core.instrument.Tag;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -230,12 +232,14 @@ public class JobMetricsTest {
   }
 
   private static Double jobMetric(final String action, final String type, final JobKind jobKind) {
-    return MetricsTestHelper.readMetricValue(
-        "zeebe_job_events_total",
-        entry("action", action),
-        entry("partition", "1"),
-        entry("type", type),
-        entry("job_kind", jobKind.name()));
+    final List<Tag> tags =
+        List.of(
+            new ImmutableTag("action", action),
+            new ImmutableTag("partition", "0"),
+            new ImmutableTag("type", type),
+            new ImmutableTag("kind", jobKind.name()));
+
+    return MetricsTestHelper.readMetricValue("zeebe_job_events_total", tags);
   }
 
   record JobMetricsTestScenario(JobKind jobKind, BpmnModelInstance process) {

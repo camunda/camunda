@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
-import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -17,6 +16,9 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.micrometer.core.instrument.ImmutableTag;
+import io.micrometer.core.instrument.Tag;
+import java.util.List;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -34,9 +36,10 @@ public class ProcessEngineMetricsTest {
 
   @Before
   public void resetMetrics() {
-    ProcessEngineMetrics.EVALUATED_DMN_ELEMENTS.clear();
-    ProcessEngineMetrics.EXECUTED_INSTANCES.clear();
-    ProcessEngineMetrics.CREATED_PROCESS_INSTANCES.clear();
+
+    //    ProcessEngineMetrics.EVALUATED_DMN_ELEMENTS_BUILDER.clear();
+    //    ProcessEngineMetrics.EXECUTED_INSTANCES_BUILDER.clear();
+    //    ProcessEngineMetrics.CREATED_PROCESS_INSTANCES_BUILDER.clear();
   }
 
   @Test
@@ -195,19 +198,21 @@ public class ProcessEngineMetricsTest {
   }
 
   private Double executedProcessInstanceMetric(final String action) {
-    return MetricsTestHelper.readMetricValue(
-        "zeebe_executed_instances_total",
-        entry("organizationId", "null"),
-        entry("type", "ROOT_PROCESS_INSTANCE"),
-        entry("action", action),
-        entry("partition", "1"));
+    final List<Tag> tags =
+        List.of(
+            new ImmutableTag("organizationId", "null"),
+            new ImmutableTag("type", "ROOT_PROCESS_INSTANCE"),
+            new ImmutableTag("action", action),
+            new ImmutableTag("partition", "1"));
+
+    return MetricsTestHelper.readMetricValue("zeebe_executed_instances_total", tags);
   }
 
   private Double processInstanceCreationsMetric(final String creationMode) {
-    return MetricsTestHelper.readMetricValue(
-        "zeebe_process_instance_creations_total",
-        entry("partition", "1"),
-        entry("creation_mode", creationMode));
+    final List<Tag> tags =
+        List.of(
+            new ImmutableTag("partition", "1"), new ImmutableTag("creation_mode", creationMode));
+    return MetricsTestHelper.readMetricValue("zeebe_process_instance_creations_total", tags);
   }
 
   private Double succeededEvaluatedDmnElementsMetric() {
@@ -219,10 +224,11 @@ public class ProcessEngineMetricsTest {
   }
 
   private Double evaluatedDmnElementsMetric(final String action) {
-    return MetricsTestHelper.readMetricValue(
-        "zeebe_evaluated_dmn_elements_total",
-        entry("organizationId", "null"),
-        entry("action", action),
-        entry("partition", "1"));
+    final List<Tag> tags =
+        List.of(
+            new ImmutableTag("organizationId", "null"),
+            new ImmutableTag("action", action),
+            new ImmutableTag("partition", "1"));
+    return MetricsTestHelper.readMetricValue("zeebe_evaluated_dmn_elements_total", tags);
   }
 }

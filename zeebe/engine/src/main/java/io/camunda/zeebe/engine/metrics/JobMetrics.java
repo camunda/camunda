@@ -8,17 +8,15 @@
 package io.camunda.zeebe.engine.metrics;
 
 import io.camunda.zeebe.protocol.record.value.JobKind;
-import io.prometheus.client.Counter;
+import io.micrometer.core.instrument.Metrics;
 
 public final class JobMetrics {
+  private static final io.micrometer.core.instrument.MeterRegistry METER_REGISTRY =
+      Metrics.globalRegistry;
 
-  private static final Counter JOB_EVENTS =
-      Counter.build()
-          .namespace("zeebe")
-          .name("job_events_total")
-          .help("Number of job events")
-          .labelNames("action", "partition", "type", "job_kind")
-          .register();
+  private static final io.micrometer.core.instrument.Counter.Builder JOB_EVENTS_BUILDER =
+      io.micrometer.core.instrument.Counter.builder("zeebe_job_events_total")
+          .description("Number of job events");
 
   private final String partitionIdLabel;
 
@@ -27,7 +25,10 @@ public final class JobMetrics {
   }
 
   private void jobEvent(final String action, final String type, final JobKind jobKind) {
-    JOB_EVENTS.labels(action, partitionIdLabel, type, jobKind.name()).inc();
+    JOB_EVENTS_BUILDER
+        .tags("action", action, "partition", partitionIdLabel, "type", type, "kind", jobKind.name())
+        .register(METER_REGISTRY)
+        .increment();
   }
 
   public void jobCreated(final String type, final JobKind jobKind) {
@@ -35,7 +36,18 @@ public final class JobMetrics {
   }
 
   public void jobActivated(final String type, final JobKind jobKind, final int activatedJobs) {
-    JOB_EVENTS.labels("activated", partitionIdLabel, type, jobKind.name()).inc(activatedJobs);
+    JOB_EVENTS_BUILDER
+        .tags(
+            "action",
+            "activated",
+            "partition",
+            partitionIdLabel,
+            "type",
+            type,
+            "kind",
+            jobKind.name())
+        .register(METER_REGISTRY)
+        .increment(activatedJobs);
   }
 
   public void jobTimedOut(final String type, final JobKind jobKind) {
@@ -68,6 +80,6 @@ public final class JobMetrics {
 
   /** Clears the metrics counter. You probably only want to use this during testing. */
   static void clear() {
-    JOB_EVENTS.clear();
+    METER_REGISTRY.clear();
   }
 }

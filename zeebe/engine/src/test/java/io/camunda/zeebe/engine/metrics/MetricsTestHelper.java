@@ -7,10 +7,8 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
-import io.prometheus.client.CollectorRegistry;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map.Entry;
+// import io.prometheus.client.CollectorRegistry;
+import io.micrometer.core.instrument.Tag;
 
 final class MetricsTestHelper {
 
@@ -20,26 +18,17 @@ final class MetricsTestHelper {
    * <p>This uses the defaultRegistry which is inefficient, so this should only be used in testing.
    *
    * @param name the name of the metric
-   * @param labels names and values for labels. This is useful for filtering the right value within
-   *     the metric.
+   * @param tags names and values for labels or tags. This is useful for filtering the right value
+   *     within the metric.
    * @return the given value or null if it doesn't exist
    */
-  @SafeVarargs
-  static Double readMetricValue(final String name, final Entry<String, String>... labels) {
-    final List<String> labelNames = Arrays.stream(labels).map(Entry::getKey).toList();
-    final List<String> labelValues = Arrays.stream(labels).map(Entry::getValue).toList();
-    return CollectorRegistry.defaultRegistry.getSampleValue(
-        name, labelNames.toArray(new String[] {}), labelValues.toArray(new String[] {}));
-  }
-
   //  @SafeVarargs
-  //  static Double readMetricValue(final String name, final Entry<String, String>... labels) {
-  //    final List<String> labelNames = Arrays.stream(labels).map(Entry::getKey).toList();
-  //    final List<String> labelValues = Arrays.stream(labels).map(Entry::getValue).toList();
-  //    final var metric = Metrics.globalRegistry.get(name);
-  //    final RequiredSearch search = metric.tags(labels);
-  //    search.
-  //    return MeterRegistry.defaultRegistry.getSampleValue(
-  //        name, labelNames.toArray(new String[] {}), labelValues.toArray(new String[] {}));
-  //  }
+  static Double readMetricValue(final String name, final Iterable<Tag> tags) {
+    final var metric = io.micrometer.core.instrument.Metrics.globalRegistry.get(name).tags(tags);
+    if (metric != null) {
+      return metric.counter().count();
+    }
+
+    return null;
+  }
 }
