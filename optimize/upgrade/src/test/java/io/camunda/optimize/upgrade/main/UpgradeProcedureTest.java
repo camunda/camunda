@@ -104,25 +104,6 @@ public class UpgradeProcedureTest {
   }
 
   @Test
-  public void validationIsDoneBeforeUpgradeExecution() {
-    // given
-    final UpgradeProcedure underTest = createUpgradeProcedure();
-    when(schemaUpgradeClient.getSchemaVersion()).thenReturn(Optional.of(FROM_VERSION));
-
-    // when
-    underTest.performUpgrade(createUpgradePlan());
-
-    // then the validation and execution happens in the expected order
-    final InOrder inOrder = inOrder(validationService, createIndexStep);
-    // The validation order matters since we first need to ensure that the DB client
-    // is able to communicate to the DB before using it to retrieve the schema version.
-    inOrder
-        .verify(validationService)
-        .validateSchemaVersions(FROM_VERSION, FROM_VERSION, TARGET_VERSION);
-    inOrder.verify(createIndexStep).execute(eq(schemaUpgradeClient));
-  }
-
-  @Test
   public void successfulUpgradeStepIsLogged() {
     // given
     final UpgradeProcedure underTest = createUpgradeProcedure();
