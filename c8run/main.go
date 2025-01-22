@@ -232,7 +232,7 @@ func main() {
 	} else if os.Args[1] == "-h" || os.Args[1] == "--help" {
 		usage(0)
 	} else {
-		panic(fmt.Sprintln("Unsupported operation", os.Args[0]))
+		panic(fmt.Sprintln("Unsupported operation", os.Args[1]))
 	}
 	fmt.Print("Command: " + baseCommand + "\n")
 
