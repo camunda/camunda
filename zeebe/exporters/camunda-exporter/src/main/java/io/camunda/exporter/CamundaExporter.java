@@ -165,7 +165,7 @@ public class CamundaExporter implements Exporter {
 
     final var recordVersion = getVersion(record.getBrokerVersion());
 
-    if (recordVersion.major() == 8 && recordVersion.minor() < 7) {
+    if (recordVersion.major() == 8 && recordVersion.minor() < 8) {
       LOG.debug(
           "Skip record with broker version '{}'. Last exported position will be updated to '{}'",
           record.getBrokerVersion(),
