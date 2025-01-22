@@ -8,7 +8,9 @@
 package io.camunda.it.utils;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.qa.util.cluster.NewCamundaTestApplication;
+import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -44,20 +46,22 @@ public class CamundaMultiDBExtension
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaMultiDBExtension.class);
   private final DatabaseType databaseType;
   private final List<AutoCloseable> closeables = new ArrayList<>();
-  private final NewCamundaTestApplication testApplication;
+  private final TestStandaloneApplication<?> testApplication;
   private String testPrefix;
+  private final MultiDbConfigurator multiDbConfigurator;
 
   public CamundaMultiDBExtension() {
-    this(new NewCamundaTestApplication());
-
+    this(new TestSimpleCamundaApplication());
     closeables.add(testApplication);
     testApplication
         .withBrokerConfig(cfg -> cfg.getGateway().setEnable(true))
-        .withRecordingExporter(true);
+        .withExporter(
+            "recordingExporter", cfg -> cfg.setClassName(RecordingExporter.class.getName()));
   }
 
-  public CamundaMultiDBExtension(final NewCamundaTestApplication testApplication) {
+  public CamundaMultiDBExtension(final TestStandaloneApplication testApplication) {
     this.testApplication = testApplication;
+    multiDbConfigurator = new MultiDbConfigurator(testApplication);
     // resolve active database and exporter type
     final String property = System.getProperty(PROP_CAMUNDA_IT_DATABASE_TYPE);
     databaseType =
@@ -75,16 +79,16 @@ public class CamundaMultiDBExtension
         final ElasticsearchContainer elasticsearchContainer = setupElasticsearch();
         final String elasticSearchUrl = "http://" + elasticsearchContainer.getHttpHostAddress();
         validateESConnection(elasticSearchUrl);
-        testApplication.withElasticsearchSupport(elasticSearchUrl, testPrefix);
+        multiDbConfigurator.configureElasticsearchSupport(elasticSearchUrl, testPrefix);
       }
       case ES -> {
         validateESConnection(DEFAULT_ES_URL);
-        testApplication.withElasticsearchSupport(DEFAULT_ES_URL, testPrefix);
+        multiDbConfigurator.configureElasticsearchSupport(DEFAULT_ES_URL, testPrefix);
       }
       case OS ->
-          testApplication.withOpensearchSupport(
+          multiDbConfigurator.configureOpenSearchSupport(
               DEFAULT_OS_URL, testPrefix, DEFAULT_OS_ADMIN_USER, DEFAULT_OS_ADMIN_PW);
-      case RDBMS -> testApplication.withRdbmsExporter();
+      case RDBMS -> multiDbConfigurator.configureRDBMSSupport();
       default -> throw new RuntimeException("Unknown exporter type");
     }
     testApplication.start();
