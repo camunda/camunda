@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.zeebeimport.v8_6.processors;
+package io.camunda.operate.zeebeimport.v8_7.processors.processors;
 
 import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
