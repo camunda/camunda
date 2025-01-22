@@ -42,9 +42,9 @@ public class TenantQueryControllerTest extends RestControllerTest {
 
   private static final List<TenantEntity> TENANT_ENTITIES =
       List.of(
-          new TenantEntity(100L, "tenant-id-1", "Tenant 1", Set.of()),
-          new TenantEntity(200L, "tenant-id-2", "Tenant 2", Set.of(1L, 2L)),
-          new TenantEntity(300L, "tenant-id-3", "Tenant 12", Set.of(3L)));
+          new TenantEntity(100L, "tenant-id-1", "Tenant 1", "Description 1", Set.of()),
+          new TenantEntity(200L, "tenant-id-2", "Tenant 2", "Description 2", Set.of(1L, 2L)),
+          new TenantEntity(300L, "tenant-id-3", "Tenant 12", "Description 3", Set.of(3L)));
 
   private static final String RESPONSE =
       """
@@ -128,7 +128,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
     // given
     final var tenantName = "Tenant Name";
     final var tenantId = "tenant-id";
-    final var tenant = new TenantEntity(100L, tenantId, tenantName, Set.of());
+    final var tenantDescription = "Tenant Description";
+    final var tenant = new TenantEntity(100L, tenantId, tenantName, tenantDescription, Set.of());
     when(tenantServices.getById(tenant.tenantId())).thenReturn(tenant);
 
     // when
@@ -145,11 +146,12 @@ public class TenantQueryControllerTest extends RestControllerTest {
             {
               "tenantKey": "%d",
               "name": "%s",
+              "description": "%s",
               "tenantId": "%s",
               "assignedMemberKeys": []
             }
             """
-                .formatted(tenant.key(), tenantName, tenantId));
+                .formatted(tenant.key(), tenantName, tenantDescription, tenantId));
 
     // then
     verify(tenantServices, times(1)).getById(tenant.tenantId());

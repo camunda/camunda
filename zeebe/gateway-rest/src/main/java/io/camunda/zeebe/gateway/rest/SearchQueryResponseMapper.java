@@ -314,6 +314,7 @@ public final class SearchQueryResponseMapper {
     return new TenantItem()
         .tenantKey(tenantEntity.key())
         .name(tenantEntity.name())
+        .description(tenantEntity.description())
         .tenantId(tenantEntity.tenantId())
         .assignedMemberKeys(
             tenantEntity.assignedMemberKeys() == null

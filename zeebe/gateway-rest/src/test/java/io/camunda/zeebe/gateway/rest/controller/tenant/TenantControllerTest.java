@@ -53,38 +53,14 @@ public class TenantControllerTest extends RestControllerTest {
     // given
     final var tenantName = "Test Tenant";
     final var tenantId = "tenant-test-id";
-    when(tenantServices.createTenant(new TenantDTO(null, tenantId, tenantName)))
-        .thenReturn(
-            CompletableFuture.completedFuture(
-                new TenantRecord().setTenantKey(100L).setName(tenantName).setTenantId(tenantId)));
-
-    // when
-    webClient
-        .post()
-        .uri(TENANT_BASE_URL)
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new TenantCreateRequest().name(tenantName).tenantId(tenantId))
-        .exchange()
-        .expectStatus()
-        .isCreated();
-
-    // then
-    verify(tenantServices, times(1)).createTenant(new TenantDTO(null, tenantId, tenantName));
-  }
-
-  @Test
-  void createTenantShouldReturnAllDetails() {
-    // given
-    final var tenantName = "Test Tenant";
-    final var tenantId = "tenant-test-id";
-    final var tenantKey = 100L;
-    when(tenantServices.createTenant(new TenantDTO(null, tenantId, tenantName)))
+    final var tenantDescription = "Test description";
+    when(tenantServices.createTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription)))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new TenantRecord()
-                    .setTenantKey(tenantKey)
+                    .setTenantKey(100L)
                     .setName(tenantName)
+                    .setDescription(tenantDescription)
                     .setTenantId(tenantId)));
 
     // when
@@ -93,7 +69,47 @@ public class TenantControllerTest extends RestControllerTest {
         .uri(TENANT_BASE_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new TenantCreateRequest().name(tenantName).tenantId(tenantId))
+        .bodyValue(
+            new TenantCreateRequest()
+                .name(tenantName)
+                .description(tenantDescription)
+                .tenantId(tenantId))
+        .exchange()
+        .expectStatus()
+        .isCreated();
+
+    // then
+    verify(tenantServices, times(1))
+        .createTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription));
+  }
+
+  @Test
+  void createTenantShouldReturnAllDetails() {
+    // given
+    final var tenantName = "Test Tenant";
+    final var tenantId = "tenant-test-id";
+    final var tenantDescription = "Test description";
+    final var tenantKey = 100L;
+    when(tenantServices.createTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription)))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new TenantRecord()
+                    .setTenantKey(tenantKey)
+                    .setName(tenantName)
+                    .setDescription(tenantDescription)
+                    .setTenantId(tenantId)));
+
+    // when
+    webClient
+        .post()
+        .uri(TENANT_BASE_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            new TenantCreateRequest()
+                .name(tenantName)
+                .tenantId(tenantId)
+                .description(tenantDescription))
         .exchange()
         .expectStatus()
         .isCreated()
@@ -103,13 +119,15 @@ public class TenantControllerTest extends RestControllerTest {
             {
               "tenantKey": "%d",
               "tenantId": "%s",
-              "name": "%s"
+              "name": "%s",
+              "description": "%s"
             }
             """
-                .formatted(tenantKey, tenantId, tenantName));
+                .formatted(tenantKey, tenantId, tenantName, tenantDescription));
 
     // then
-    verify(tenantServices, times(1)).createTenant(new TenantDTO(null, tenantId, tenantName));
+    verify(tenantServices, times(1))
+        .createTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription));
   }
 
   @Test
@@ -149,11 +167,13 @@ public class TenantControllerTest extends RestControllerTest {
     final var tenantKey = 100L;
     final var tenantName = "Updated Tenant Name";
     final var tenantId = "tenant-test-id";
-    when(tenantServices.updateTenant(new TenantDTO(null, tenantId, tenantName)))
+    final var tenantDescription = "Updated description";
+    when(tenantServices.updateTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription)))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new TenantRecord()
                     .setName(tenantName)
+                    .setDescription(tenantDescription)
                     .setTenantKey(tenantKey)
                     .setTenantId(tenantId)));
 
@@ -163,7 +183,7 @@ public class TenantControllerTest extends RestControllerTest {
         .uri("%s/%s".formatted(TENANT_BASE_URL, tenantId))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new TenantUpdateRequest().name(tenantName))
+        .bodyValue(new TenantUpdateRequest().name(tenantName).description(tenantDescription))
         .exchange()
         .expectStatus()
         .isOk()
@@ -173,17 +193,19 @@ public class TenantControllerTest extends RestControllerTest {
             {
               "tenantKey": "%d",
               "tenantId": "%s",
-              "name": "%s"
+              "name": "%s",
+              "description": "%s"
             }
             """
-                .formatted(tenantKey, tenantId, tenantName));
+                .formatted(tenantKey, tenantId, tenantName, tenantDescription));
 
     // then
-    verify(tenantServices, times(1)).updateTenant(new TenantDTO(null, tenantId, tenantName));
+    verify(tenantServices, times(1))
+        .updateTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription));
   }
 
   @Test
-  void updateTenantWithEmptyNameShouldFail() {
+  void updateTenantWithoutNameAndDescriptionShouldFail() {
     // given
     final var tenantId = 100L;
     final var tenantName = "";
@@ -206,7 +228,7 @@ public class TenantControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "No name provided.",
+              "detail": "At least one of description, name is required.",
               "instance": "%s"
             }"""
                 .formatted(uri));
@@ -221,7 +243,7 @@ public class TenantControllerTest extends RestControllerTest {
     final var tenantName = "My tenant";
     final var tenantKey = 100L;
     final var path = "%s/%s".formatted(TENANT_BASE_URL, tenantId);
-    when(tenantServices.updateTenant(new TenantDTO(null, tenantId, tenantName)))
+    when(tenantServices.updateTenant(new TenantDTO(null, tenantId, tenantName, null)))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
@@ -242,7 +264,7 @@ public class TenantControllerTest extends RestControllerTest {
         .expectStatus()
         .isNotFound();
 
-    verify(tenantServices, times(1)).updateTenant(new TenantDTO(null, tenantId, tenantName));
+    verify(tenantServices, times(1)).updateTenant(new TenantDTO(null, tenantId, tenantName, null));
   }
 
   @Test
