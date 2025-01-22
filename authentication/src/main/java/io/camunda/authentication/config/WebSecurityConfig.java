@@ -48,6 +48,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
@@ -105,6 +106,14 @@ public class WebSecurityConfig {
   }
 
   @Bean
+  @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
+  public ClientRegistrationRepository clientRegistrationRepository(
+      final SecurityConfiguration securityConfiguration) {
+    return new InMemoryClientRegistrationRepository(
+        OidcClientRegistration.create(securityConfiguration.getAuthentication().getOidc()));
+  }
+
+  @Bean
   @Primary
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
   public SecurityFilterChain oidcHttpSecurity(
@@ -119,7 +128,7 @@ public class WebSecurityConfig {
                     jwtConfigurer ->
                         jwtConfigurer.jwkSetUri(
                             clientRegistrationRepository
-                                .findByRegistrationId("oidcclient")
+                                .findByRegistrationId(OidcClientRegistration.REGISTRATION_ID)
                                 .getProviderDetails()
                                 .getJwkSetUri())))
         .oauth2Login(oauthLoginConfigurer -> {})

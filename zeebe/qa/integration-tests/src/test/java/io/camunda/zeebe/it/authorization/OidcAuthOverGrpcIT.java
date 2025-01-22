@@ -64,21 +64,22 @@ public class OidcAuthOverGrpcIT {
   @TestZeebe(awaitCompleteTopology = false)
   private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
+          .withAuthenticationMethod(AuthenticationMethod.OIDC)
           .withSecurityConfig(
               c -> {
                 c.getAuthorizations().setEnabled(true);
+
+                final var oidcConfig = c.getAuthentication().getOidc();
+                oidcConfig.setIssuerUri(KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM);
+                // The following two properties are only needed for the webapp login flow which we
+                // don't test here.
+                oidcConfig.setClientId("example");
+                oidcConfig.setRedirectUri("example.com");
+
                 c.getInitialization()
                     .setMappings(
                         List.of(new ConfiguredMapping(USER_ID_CLAIM_NAME, DEFAULT_USER_ID)));
-              })
-          .withAuthenticationMethod(AuthenticationMethod.OIDC)
-          .withProperty(
-              "camunda.security.authentication.oidc.issuer-uri",
-              KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM)
-          // The following two properties are only needed for the webapp login flow which we don't
-          // test here.
-          .withProperty("camunda.security.authentication.oidc.client-id", "example")
-          .withProperty("camunda.security.authentication.oidc.redirect-uri", "example.com");
+              });
 
   @BeforeAll
   static void setupKeycloak() {
