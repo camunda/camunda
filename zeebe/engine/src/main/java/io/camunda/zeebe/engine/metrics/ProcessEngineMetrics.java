@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 
 public final class ProcessEngineMetrics {
@@ -67,10 +68,11 @@ public final class ProcessEngineMetrics {
             ? CreationMode.CREATION_AT_GIVEN_ELEMENT
             : CreationMode.CREATION_AT_DEFAULT_START_EVENT;
 
-    CREATED_PROCESS_INSTANCES_BUILDER
-        .tags(PARTITION_LABEL, partitionIdLabel, CREATION_MODE_LABEL, creationMode.toString())
-        .register(METER_REGISTRY)
-        .increment();
+    final Counter counter =
+        CREATED_PROCESS_INSTANCES_BUILDER
+            .tags(PARTITION_LABEL, partitionIdLabel, CREATION_MODE_LABEL, creationMode.toString())
+            .register(METER_REGISTRY);
+    counter.increment();
   }
 
   private void elementInstanceEvent(
@@ -80,7 +82,7 @@ public final class ProcessEngineMetrics {
             ACTION_LABEL,
             action,
             TYPE_LABEL,
-            "ROOT_PROCESS_INSTANCE",
+            elementType.name(),
             PARTITION_LABEL,
             partitionIdLabel,
             EVENT_TYPE,
@@ -164,7 +166,7 @@ public final class ProcessEngineMetrics {
             PARTITION_LABEL,
             partitionIdLabel)
         .register(METER_REGISTRY)
-        .increment();
+        .increment(amount);
   }
 
   private String extractEventTypeName(final BpmnEventType eventType) {

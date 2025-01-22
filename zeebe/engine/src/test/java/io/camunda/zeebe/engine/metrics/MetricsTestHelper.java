@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
-// import io.prometheus.client.CollectorRegistry;
+import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
+import java.util.HashSet;
 
 final class MetricsTestHelper {
 
@@ -24,9 +25,15 @@ final class MetricsTestHelper {
    */
   //  @SafeVarargs
   static Double readMetricValue(final String name, final Iterable<Tag> tags) {
-    final var metric = io.micrometer.core.instrument.Metrics.globalRegistry.get(name).tags(tags);
-    if (metric != null) {
-      return metric.counter().count();
+    final var metric = Metrics.globalRegistry.find(name);
+
+    if (metric.meter() != null) {
+      final HashSet<Tag> existingTags = new HashSet<>(metric.meter().getId().getTags());
+      tags.forEach(existingTags::remove);
+
+      if (existingTags.isEmpty() && metric.tags(tags).counter() != null) {
+        return metric.tags(tags).counter().count();
+      }
     }
 
     return null;
