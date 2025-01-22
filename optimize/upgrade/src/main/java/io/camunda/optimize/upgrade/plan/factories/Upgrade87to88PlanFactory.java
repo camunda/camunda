@@ -11,7 +11,7 @@ import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 
-public class Upgrade86to87PlanFactory implements UpgradePlanFactory {
+public class Upgrade87to88PlanFactory implements UpgradePlanFactory {
 
   @Override
   public UpgradePlan createUpgradePlan(final UpgradeExecutionDependencies dependencies) {
