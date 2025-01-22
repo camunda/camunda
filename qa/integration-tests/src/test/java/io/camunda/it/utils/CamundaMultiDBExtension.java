@@ -22,6 +22,7 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
+import org.agrona.CloseHelper;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -158,15 +159,7 @@ public class CamundaMultiDBExtension
       }
     }
 
-    closeables.parallelStream()
-        .forEach(
-            c -> {
-              try {
-                c.close();
-              } catch (final Exception e) {
-                throw new RuntimeException(e);
-              }
-            });
+    CloseHelper.quietCloseAll(closeables);
   }
 
   @Override
