@@ -806,7 +806,7 @@ jobs:
         run: curl -fsSL https://quobix.com/scripts/install_vacuum.sh | sh > /dev/null
         shell: bash
       - name: Run OpenAPI Linter
-        run: vacuum lint zeebe/gateway-protocol/src/main/proto/rest-api.yaml -r .github/vacuum-ruleset.yaml -d -e
+        run: vacuum lint zeebe/gateway-protocol/src/main/proto/rest-api.yaml -r zeebe/gateway-protocol/vacuum-ruleset.yaml -d -e
         shell: bash
       - name: Observe build status
         if: always()
