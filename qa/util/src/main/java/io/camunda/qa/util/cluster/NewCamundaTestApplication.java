@@ -61,7 +61,6 @@ public final class NewCamundaTestApplication
   private final TasklistProperties tasklistProperties;
   private final CamundaSecurityProperties securityConfig;
   private final Map<String, Consumer<ExporterCfg>> registeredExporters = new HashMap<>();
-  private String elasticSearchUrl;
 
   public NewCamundaTestApplication() {
     super(
@@ -270,7 +269,6 @@ public final class NewCamundaTestApplication
 
   public NewCamundaTestApplication withElasticsearchSupport(
       final String elasticSearchUrl, final String prefix) {
-    this.elasticSearchUrl = elasticSearchUrl;
     operateProperties.getElasticsearch().setUrl(elasticSearchUrl);
     operateProperties.getElasticsearch().setIndexPrefix(prefix);
     operateProperties.getZeebeElasticsearch().setUrl(elasticSearchUrl);
@@ -300,25 +298,24 @@ public final class NewCamundaTestApplication
 
     withProperty("camunda.database.type", DatabaseType.ELASTICSEARCH);
     withProperty("camunda.database.indexPrefix", prefix);
+    withProperty("camunda.database.url", elasticSearchUrl);
     return this;
   }
 
   public NewCamundaTestApplication withOpensearchSupport(
-      final String elasticSearchUrl,
+      final String opensearchUrl,
       final String prefix,
       final String adminUser,
       final String adminPassword) {
-    this.elasticSearchUrl = elasticSearchUrl;
-
     final OperateOpensearchProperties operateOpensearch = operateProperties.getOpensearch();
-    operateOpensearch.setUrl(elasticSearchUrl);
+    operateOpensearch.setUrl(opensearchUrl);
     operateOpensearch.setIndexPrefix(prefix);
     operateOpensearch.setPassword(adminPassword);
     operateOpensearch.setUsername(adminUser);
 
     tasklistProperties.setDatabase("opensearch");
     final TasklistOpenSearchProperties tasklistOpensearch = tasklistProperties.getOpenSearch();
-    tasklistOpensearch.setUrl(elasticSearchUrl);
+    tasklistOpensearch.setUrl(opensearchUrl);
     tasklistOpensearch.setIndexPrefix(prefix);
     tasklistOpensearch.setPassword(adminPassword);
     tasklistOpensearch.setUsername(adminUser);
@@ -332,7 +329,7 @@ public final class NewCamundaTestApplication
                   "connect",
                   Map.of(
                       "url",
-                      elasticSearchUrl,
+                      opensearchUrl,
                       "indexPrefix",
                       prefix,
                       "type",
@@ -353,6 +350,7 @@ public final class NewCamundaTestApplication
     withProperty("camunda.database.indexPrefix", prefix);
     withProperty("camunda.database.username", adminUser);
     withProperty("camunda.database.password", adminPassword);
+    withProperty("camunda.database.url", opensearchUrl);
     return this;
   }
 

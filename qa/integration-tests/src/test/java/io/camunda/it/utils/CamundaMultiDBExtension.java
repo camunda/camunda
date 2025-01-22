@@ -9,6 +9,7 @@ package io.camunda.it.utils;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.cluster.NewCamundaTestApplication;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.platform.commons.support.ModifierSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 /** TBD */
 public class CamundaMultiDBExtension
@@ -59,7 +61,7 @@ public class CamundaMultiDBExtension
     // resolve active database and exporter type
     final String property = System.getProperty(PROP_CAMUNDA_IT_DATABASE_TYPE);
     databaseType =
-        property == null ? DatabaseType.ES : DatabaseType.valueOf(property.toUpperCase());
+        property == null ? DatabaseType.LOCAL : DatabaseType.valueOf(property.toUpperCase());
   }
 
   @Override
@@ -69,8 +71,14 @@ public class CamundaMultiDBExtension
     testPrefix = testClass.getSimpleName().toLowerCase();
 
     switch (databaseType) {
+      case LOCAL -> {
+        final ElasticsearchContainer elasticsearchContainer = setupElasticsearch();
+        final String elasticSearchUrl = "http://" + elasticsearchContainer.getHttpHostAddress();
+        validateESConnection(elasticSearchUrl);
+        testApplication.withElasticsearchSupport(elasticSearchUrl, testPrefix);
+      }
       case ES -> {
-        validateESConnection();
+        validateESConnection(DEFAULT_ES_URL);
         testApplication.withElasticsearchSupport(DEFAULT_ES_URL, testPrefix);
       }
       case OS ->
@@ -85,21 +93,26 @@ public class CamundaMultiDBExtension
     injectFields(testClass, null, ModifierSupport::isStatic);
   }
 
-  private static void validateESConnection() {
+  private ElasticsearchContainer setupElasticsearch() {
+    final ElasticsearchContainer elasticsearchContainer =
+        TestSearchContainers.createDefeaultElasticsearchContainer();
+    elasticsearchContainer.start();
+    closeables.add(elasticsearchContainer);
+    return elasticsearchContainer;
+  }
+
+  private static void validateESConnection(final String url) {
     final HttpRequest httpRequest =
-        HttpRequest.newBuilder()
-            .GET()
-            .uri(URI.create(String.format("%s/", DEFAULT_ES_URL)))
-            .build();
+        HttpRequest.newBuilder().GET().uri(URI.create(String.format("%s/", url))).build();
     try (final HttpClient httpClient = HttpClient.newHttpClient()) {
       final HttpResponse<String> response = httpClient.send(httpRequest, BodyHandlers.ofString());
       final int statusCode = response.statusCode();
       assert statusCode / 100 == 2
-          : "Expected to have a running ES service available under: " + DEFAULT_ES_URL;
+          : "Expected to have a running ES service available under: " + url;
     } catch (final IOException | InterruptedException e) {
       assert false
           : "Expected no exception on validating connection under: "
-              + DEFAULT_ES_URL
+              + url
               + ", failed with: "
               + e
               + ": "
@@ -170,6 +183,7 @@ public class CamundaMultiDBExtension
   }
 
   public enum DatabaseType {
+    LOCAL,
     ES,
     OS,
     RDBMS
