@@ -24,7 +24,9 @@ import org.testcontainers.containers.MariaDBContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 public class CamundaRdbmsInvocationContextProviderExtension
-    implements TestTemplateInvocationContextProvider, BeforeAllCallback {
+    implements TestTemplateInvocationContextProvider,
+        BeforeAllCallback,
+        ExtensionContext.Store.CloseableResource {
 
   private static boolean started = false;
 
@@ -121,5 +123,15 @@ public class CamundaRdbmsInvocationContextProviderExtension
                 standaloneCamundaKey, SUPPORTED_TEST_APPLICATIONS.get(standaloneCamundaKey)));
       }
     };
+  }
+
+  /**
+   * We need to set started to false for the case that the tests should be rerun because of
+   * surefire.rerunFailingTestsCount
+   */
+  @Override
+  public void close() throws Throwable {
+    LOGGER.info("Resource closed - Close CamundaRdbmsInvocationContextProviderExtension");
+    started = false;
   }
 }
