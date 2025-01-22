@@ -52,6 +52,7 @@
     "taskDetailsFormJSMultipleFieldError": "Por favor revise {{count}} campos",
     "formJSPoweredByLabel": "Desarrollado por",
     "formJSPoweredByLogoLabel": "Logo de Camunda",
+    "formJSLargeFilePayloadError": "El tamaño del archivo excede el límite de {{size}}. Intente cargar archivos más pequeños.",
     "taskDetailsTenantLabel": "Arrendatario",
     "multiTenancyDropdownLabel": "Arrendatario",
     "taskDetailsNewVariableNameFieldLabel": "Nombre",

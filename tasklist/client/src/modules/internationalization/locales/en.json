@@ -52,6 +52,7 @@
     "taskDetailsFormJSMultipleFieldError": "Please review {{count}} fields",
     "formJSPoweredByLabel": "Powered by",
     "formJSPoweredByLogoLabel": "Camunda logo",
+    "formJSLargeFilePayloadError": "File size exceeds the limit of {{size}}. Try to upload smaller files.",
     "taskDetailsTenantLabel": "Tenant",
     "multiTenancyDropdownLabel": "Tenant",
     "taskDetailsNewVariableNameFieldLabel": "Name",
