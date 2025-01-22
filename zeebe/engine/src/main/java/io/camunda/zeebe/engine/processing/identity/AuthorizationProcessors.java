@@ -44,5 +44,10 @@ public final class AuthorizationProcessors {
         AuthorizationIntent.DELETE,
         new AuthorizationDeleteProcessor(
             writers, keyGenerator, processingState, distributionBehavior, authCheckBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.AUTHORIZATION,
+        AuthorizationIntent.UPDATE,
+        new AuthorizationUpdateProcessor(
+            writers, keyGenerator, processingState, distributionBehavior, authCheckBehavior));
   }
 }
