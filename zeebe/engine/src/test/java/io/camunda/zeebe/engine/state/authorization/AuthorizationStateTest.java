@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -40,7 +41,10 @@ public class AuthorizationStateTest {
     // when
     final var persistedAuth =
         authorizationState.getResourceIdentifiers(
-            1L, AuthorizationResourceType.RESOURCE, PermissionType.CREATE);
+            AuthorizationOwnerType.USER,
+            "test",
+            AuthorizationResourceType.RESOURCE,
+            PermissionType.CREATE);
     // then
     assertThat(persistedAuth).isEmpty();
   }
@@ -61,7 +65,9 @@ public class AuthorizationStateTest {
             .setOwnerType(ownerType)
             .setResourceId(resourceId)
             .setResourceType(resourceType)
-            .setAuthorizationPermissions(permissions);
+            .setAuthorizationPermissions(permissions)
+            .addPermission(
+                new Permission().setPermissionType(PermissionType.CREATE).addResourceId("test"));
 
     // when
     authorizationState.create(authorizationKey, authorizationRecord);
@@ -76,60 +82,73 @@ public class AuthorizationStateTest {
     assertThat(authorization.getResourceId()).isEqualTo(resourceId);
     assertThat(authorization.getResourceType()).isEqualTo(resourceType);
     assertThat(authorization.getPermissions()).containsExactlyInAnyOrderElementsOf(permissions);
+    final var resourceIdentifiers =
+        authorizationState.getResourceIdentifiers(
+            ownerType, ownerId, resourceType, PermissionType.CREATE);
+    assertThat(resourceIdentifiers).containsExactly("test");
   }
 
   @Test
   void shouldCreatePermissions() {
     // given
-    final var ownerKey = 1L;
+    final var ownerType = AuthorizationOwnerType.USER;
+    final var ownerId = "test";
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceIds = Set.of("foo", "bar");
 
     // when
-    authorizationState.createOrAddPermission(ownerKey, resourceType, permissionType, resourceIds);
+    authorizationState.createOrAddPermission(
+        ownerType, ownerId, resourceType, permissionType, resourceIds);
 
     // then
     final var resourceIdentifiers =
-        authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType);
+        authorizationState.getResourceIdentifiers(ownerType, ownerId, resourceType, permissionType);
     assertThat(resourceIdentifiers).containsExactlyInAnyOrder("foo", "bar");
   }
 
   @Test
   void shouldUpdatePermissionsIfAlreadyExists() {
     // given
-    final var ownerKey = 1L;
+    final var ownerType = AuthorizationOwnerType.USER;
+    final var ownerId = "test";
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceIds = Set.of("foo", "bar");
-    authorizationState.createOrAddPermission(ownerKey, resourceType, permissionType, resourceIds);
+    authorizationState.createOrAddPermission(
+        ownerType, ownerId, resourceType, permissionType, resourceIds);
 
     // when
-    authorizationState.createOrAddPermission(ownerKey, resourceType, permissionType, Set.of("baz"));
+    authorizationState.createOrAddPermission(
+        ownerType, ownerId, resourceType, permissionType, Set.of("baz"));
 
     // then
     final var resourceIdentifiers =
-        authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType);
+        authorizationState.getResourceIdentifiers(ownerType, ownerId, resourceType, permissionType);
     assertThat(resourceIdentifiers).containsExactlyInAnyOrder("foo", "bar", "baz");
   }
 
   @Test
   void shouldStorePermissionsByOwnerKey() {
     // given
-    final var ownerKey1 = 1L;
-    final var ownerKey2 = 2L;
+    final var ownerType1 = AuthorizationOwnerType.USER;
+    final var ownerId1 = "test1";
+    final var ownerType2 = AuthorizationOwnerType.USER;
+    final var ownerId2 = "test2";
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     authorizationState.createOrAddPermission(
-        ownerKey1, resourceType, permissionType, Set.of("foo"));
+        ownerType1, ownerId1, resourceType, permissionType, Set.of("foo"));
     authorizationState.createOrAddPermission(
-        ownerKey2, resourceType, permissionType, Set.of("bar"));
+        ownerType2, ownerId2, resourceType, permissionType, Set.of("bar"));
 
     // when
     final var resourceIds1 =
-        authorizationState.getResourceIdentifiers(ownerKey1, resourceType, permissionType);
+        authorizationState.getResourceIdentifiers(
+            ownerType1, ownerId1, resourceType, permissionType);
     final var resourceIds2 =
-        authorizationState.getResourceIdentifiers(ownerKey2, resourceType, permissionType);
+        authorizationState.getResourceIdentifiers(
+            ownerType2, ownerId2, resourceType, permissionType);
 
     // then
     assertThat(resourceIds1).isNotEqualTo(resourceIds2);
@@ -138,20 +157,23 @@ public class AuthorizationStateTest {
   @Test
   void shouldStorePermissionsByResourceType() {
     // given
-    final var ownerKey = 1L;
+    final var ownerType = AuthorizationOwnerType.USER;
+    final var ownerId = "test";
     final var resourceType1 = AuthorizationResourceType.RESOURCE;
     final var resourceType2 = AuthorizationResourceType.PROCESS_DEFINITION;
     final var permissionType = PermissionType.CREATE;
     authorizationState.createOrAddPermission(
-        ownerKey, resourceType1, permissionType, Set.of("foo"));
+        ownerType, ownerId, resourceType1, permissionType, Set.of("foo"));
     authorizationState.createOrAddPermission(
-        ownerKey, resourceType2, permissionType, Set.of("bar"));
+        ownerType, ownerId, resourceType2, permissionType, Set.of("bar"));
 
     // when
     final var resourceIds1 =
-        authorizationState.getResourceIdentifiers(ownerKey, resourceType1, permissionType);
+        authorizationState.getResourceIdentifiers(
+            ownerType, ownerId, resourceType1, permissionType);
     final var resourceIds2 =
-        authorizationState.getResourceIdentifiers(ownerKey, resourceType2, permissionType);
+        authorizationState.getResourceIdentifiers(
+            ownerType, ownerId, resourceType2, permissionType);
 
     // then
     assertThat(resourceIds1).isNotEqualTo(resourceIds2);
@@ -160,20 +182,23 @@ public class AuthorizationStateTest {
   @Test
   void shouldStorePermissionsByPermissionType() {
     // given
-    final var ownerKey = 1L;
+    final var ownerType = AuthorizationOwnerType.USER;
+    final var ownerId = "test";
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType1 = PermissionType.CREATE;
     final var permissionType2 = PermissionType.UPDATE;
     authorizationState.createOrAddPermission(
-        ownerKey, resourceType, permissionType1, Set.of("foo"));
+        ownerType, ownerId, resourceType, permissionType1, Set.of("foo"));
     authorizationState.createOrAddPermission(
-        ownerKey, resourceType, permissionType2, Set.of("bar"));
+        ownerType, ownerId, resourceType, permissionType2, Set.of("bar"));
 
     // when
     final var resourceIds1 =
-        authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType1);
+        authorizationState.getResourceIdentifiers(
+            ownerType, ownerId, resourceType, permissionType1);
     final var resourceIds2 =
-        authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType2);
+        authorizationState.getResourceIdentifiers(
+            ownerType, ownerId, resourceType, permissionType2);
 
     // then
     assertThat(resourceIds1).isNotEqualTo(resourceIds2);
@@ -225,66 +250,78 @@ public class AuthorizationStateTest {
   }
 
   @Test
-  void shouldDeleteAuthorizationsByOwnerKeyPrefix() {
+  void shouldDeleteAuthorizationsByOwnerTypeAndIdPrefix() {
     // given
-    final var ownerKey1 = 1L;
-    final var ownerKey2 = 2L;
+    final var ownerType1 = AuthorizationOwnerType.USER;
+    final var ownerId1 = "test1";
+    final var ownerType2 = AuthorizationOwnerType.USER;
+    final var ownerId2 = "test2";
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId1 = "foo";
     final var resourceId2 = "bar";
     authorizationState.createOrAddPermission(
-        ownerKey1, resourceType, permissionType, Set.of(resourceId1));
+        ownerType1, ownerId1, resourceType, permissionType, Set.of(resourceId1));
     authorizationState.createOrAddPermission(
-        ownerKey2, resourceType, permissionType, Set.of(resourceId2));
+        ownerType2, ownerId2, resourceType, permissionType, Set.of(resourceId2));
 
     // when
-    authorizationState.deleteAuthorizationsByOwnerKeyPrefix(ownerKey1);
+    authorizationState.deleteAuthorizationsByOwnerTypeAndIdPrefix(ownerType1, ownerId1);
 
     // then
-    assertThat(authorizationState.getResourceIdentifiers(ownerKey1, resourceType, permissionType))
+    assertThat(
+            authorizationState.getResourceIdentifiers(
+                ownerType1, ownerId1, resourceType, permissionType))
         .isEmpty();
-    assertThat(authorizationState.getResourceIdentifiers(ownerKey2, resourceType, permissionType))
+    assertThat(
+            authorizationState.getResourceIdentifiers(
+                ownerType2, ownerId2, resourceType, permissionType))
         .containsExactly(resourceId2);
   }
 
   @Test
-  void shouldRemoveSinglePermissionsByOwnerKey() {
+  void shouldRemoveSinglePermissionsByOwnerTypeAndID() {
     // given
-    final var ownerKey = 1L;
+    final var ownerType = AuthorizationOwnerType.USER;
+    final var ownerId = "test";
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId1 = "foo";
     final var resourceId2 = "bar";
     authorizationState.createOrAddPermission(
-        ownerKey, resourceType, permissionType, Set.of(resourceId1, resourceId2));
+        ownerType, ownerId, resourceType, permissionType, Set.of(resourceId1, resourceId2));
 
     // when
     authorizationState.removePermission(
-        ownerKey, resourceType, permissionType, Set.of(resourceId1));
+        ownerType, ownerId, resourceType, permissionType, Set.of(resourceId1));
 
     // then
-    assertThat(authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType))
+    assertThat(
+            authorizationState.getResourceIdentifiers(
+                ownerType, ownerId, resourceType, permissionType))
         .containsOnly(resourceId2);
   }
 
   @Test
-  void shouldRemoveAllPermissionsByOwnerKey() {
+  void shouldRemoveAllPermissionsByOwnerTypeAndID() {
     // given
-    final var ownerKey = 1L;
+    final var ownerType = AuthorizationOwnerType.USER;
+    final var ownerId = "test";
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId1 = "foo";
     final var resourceId2 = "bar";
     authorizationState.createOrAddPermission(
-        ownerKey, resourceType, permissionType, Set.of(resourceId1, resourceId2));
+        ownerType, ownerId, resourceType, permissionType, Set.of(resourceId1, resourceId2));
 
     // when
     authorizationState.removePermission(
-        ownerKey, resourceType, permissionType, Set.of("foo", "bar"));
+        ownerType, ownerId, resourceType, permissionType, Set.of("foo", "bar"));
 
     // then
-    assertThat(authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType))
+    assertThat(
+            authorizationState.getResourceIdentifiers(
+                ownerType, ownerId, resourceType, permissionType))
         .isEmpty();
   }
 }

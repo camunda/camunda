@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -117,7 +118,10 @@ public class TenantAppliersTest {
     assertThat(ownerType).isEmpty();
     final var resourceIdentifiers =
         authorizationState.getResourceIdentifiers(
-            tenantKey, AuthorizationResourceType.TENANT, PermissionType.DELETE);
+            AuthorizationOwnerType.TENANT,
+            tenantId,
+            AuthorizationResourceType.TENANT,
+            PermissionType.DELETE);
     assertThat(resourceIdentifiers).isEmpty();
   }
 

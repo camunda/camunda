@@ -27,7 +27,14 @@ public class BrokerAuthorizationPatchRequest extends BrokerExecuteCommand<Author
   }
 
   public BrokerAuthorizationPatchRequest setOwnerKey(final Long ownerKey) {
+    // TODO: remove ownerKey from AuthorizationRecord once all Identity-related entities use
+    // String-based identifiers
     requestDto.setOwnerKey(ownerKey);
+    return this;
+  }
+
+  public BrokerAuthorizationPatchRequest setOwnerId(final String ownerId) {
+    requestDto.setOwnerId(ownerId);
     return this;
   }
 

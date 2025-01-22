@@ -15,6 +15,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -97,8 +98,7 @@ public class MessagePublishAuthorizationTest {
     final var correlationKey = UUID.randomUUID().toString();
     createProcessInstance(correlationKey);
     final var user = createUser();
-    addPermissionsToUser(
-        user.getUserKey(), AuthorizationResourceType.MESSAGE, PermissionType.CREATE);
+    addPermissionsToUser(user, AuthorizationResourceType.MESSAGE, PermissionType.CREATE);
 
     // when
     engine
@@ -150,13 +150,15 @@ public class MessagePublishAuthorizationTest {
   }
 
   private void addPermissionsToUser(
-      final long userKey,
+      final UserRecordValue user,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType) {
     engine
         .authorization()
         .permission()
-        .withOwnerKey(userKey)
+        .withOwnerKey(user.getUserKey())
+        .withOwnerId(user.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
         .withPermission(permissionType, "*")
         .add(DEFAULT_USER.getUsername());
