@@ -1,10 +1,12 @@
 -------------------------------------------
 Access each component at the following urls:
 
-Operate:                     http://localhost:8080/operate
-Tasklist:                    http://localhost:8080/tasklist
+Operate:                     http://localhost:{{.ServerPort}}/operate
+Tasklist:                    http://localhost:{{.ServerPort}}/tasklist
 Zeebe Cluster Endpoint:      http://localhost:26500
 Inbound Connectors Endpoint: http://localhost:8085
+
+Camunda metrics endpoint:    http://localhost:9600/actuator/prometheus
 
 When using the Desktop Modeler, Authentication may be set to None.
 
