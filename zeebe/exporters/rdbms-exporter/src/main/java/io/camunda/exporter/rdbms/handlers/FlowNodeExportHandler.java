@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.util.DateUtil;
 import java.util.Set;
@@ -28,6 +29,9 @@ public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstance
           ProcessInstanceIntent.ELEMENT_COMPLETED,
           ProcessInstanceIntent.ELEMENT_TERMINATED);
 
+  private static final Set<BpmnElementType> UNHANDLED_BPMN_TYPES =
+      Set.of(BpmnElementType.PROCESS, BpmnElementType.SEQUENCE_FLOW);
+
   private final FlowNodeInstanceWriter flowNodeInstanceWriter;
 
   public FlowNodeExportHandler(final FlowNodeInstanceWriter flowNodeInstanceWriter) {
@@ -37,7 +41,8 @@ public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstance
   @Override
   public boolean canExport(final Record<ProcessInstanceRecordValue> record) {
     return record.getValueType() == ValueType.PROCESS_INSTANCE
-        && FLOW_NODE_INTENT.contains(record.getIntent());
+        && FLOW_NODE_INTENT.contains(record.getIntent())
+        && !UNHANDLED_BPMN_TYPES.contains(record.getValue().getBpmnElementType());
   }
 
   @Override
@@ -49,7 +54,7 @@ public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstance
               .flowNodeInstanceKey(record.getKey())
               .flowNodeId(value.getElementId())
               .processInstanceKey(value.getProcessInstanceKey())
-              .processDefinitionKey(value.getProcessInstanceKey())
+              .processDefinitionKey(value.getProcessDefinitionKey())
               .processDefinitionId(value.getBpmnProcessId())
               .tenantId(value.getTenantId())
               .state(FlowNodeState.ACTIVE)
