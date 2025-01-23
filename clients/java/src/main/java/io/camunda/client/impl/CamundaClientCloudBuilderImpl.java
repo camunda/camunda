@@ -87,18 +87,35 @@ public class CamundaClientCloudBuilderImpl
 
   @Override
   public CamundaClientBuilder withProperties(final Properties properties) {
-    BuilderUtils.applyIfNotNull(properties, CLOUD_CLUSTER_ID, this::withClusterId);
-
-    BuilderUtils.applyIfNotNull(properties, CLOUD_CLIENT_ID, this::withClientId);
-
-    BuilderUtils.applyIfNotNull(properties, CLOUD_CLIENT_SECRET, this::withClientId);
-
-    BuilderUtils.applyIfNotNull(properties, CLOUD_REGION, this::withRegion);
-
-    BuilderUtils.applyIfNotNull(
+    BuilderUtils.applyPropertyValueIfNotNull(
         properties,
+        this::withClusterId,
+        CLOUD_CLUSTER_ID,
+        io.camunda.zeebe.client.ClientProperties.CLOUD_CLUSTER_ID);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties,
+        this::withClientId,
+        CLOUD_CLIENT_ID,
+        io.camunda.zeebe.client.ClientProperties.CLOUD_CLIENT_ID);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties,
+        this::withClientId,
+        CLOUD_CLIENT_SECRET,
+        io.camunda.zeebe.client.ClientProperties.CLOUD_CLIENT_SECRET);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties,
+        this::withRegion,
+        CLOUD_REGION,
+        io.camunda.zeebe.client.ClientProperties.CLOUD_REGION);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties,
+        value -> defaultJobWorkerStreamEnabled(Boolean.parseBoolean(value)),
         STREAM_ENABLED,
-        value -> defaultJobWorkerStreamEnabled(Boolean.parseBoolean(value)));
+        io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED);
 
     innerBuilder.withProperties(properties);
 

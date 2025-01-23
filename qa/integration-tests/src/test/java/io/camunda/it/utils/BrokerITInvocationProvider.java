@@ -49,7 +49,6 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
  */
 public class BrokerITInvocationProvider
     implements TestTemplateInvocationContextProvider, AfterAllCallback, BeforeAllCallback {
-
   private static final Logger LOGGER = LoggerFactory.getLogger(BrokerITInvocationProvider.class);
 
   private final Set<ExporterType> supportedExporterTypes = new HashSet<>();

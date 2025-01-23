@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import org.assertj.core.api.AbstractAssert;
 import org.awaitility.Awaitility;
@@ -41,23 +42,29 @@ public class ProcessInstanceAssertj
     implements ProcessInstanceAssert {
 
   private final CamundaDataSource dataSource;
+
   private final ElementAssertj elementAssertj;
   private final VariableAssertj variableAssertj;
   private final String failureMessagePrefix;
 
   private final AtomicReference<ProcessInstanceDto> actualProcessInstance = new AtomicReference<>();
 
-  public ProcessInstanceAssertj(final CamundaDataSource dataSource, final long processInstanceKey) {
-    this(dataSource, ProcessInstanceSelectors.byKey(processInstanceKey));
+  public ProcessInstanceAssertj(
+      final CamundaDataSource dataSource,
+      final long processInstanceKey,
+      final Function<String, ElementSelector> elementSelector) {
+    this(dataSource, ProcessInstanceSelectors.byKey(processInstanceKey), elementSelector);
   }
 
   public ProcessInstanceAssertj(
-      final CamundaDataSource dataSource, final ProcessInstanceSelector processInstanceSelector) {
+      final CamundaDataSource dataSource,
+      final ProcessInstanceSelector processInstanceSelector,
+      final Function<String, ElementSelector> elementSelector) {
     super(processInstanceSelector, ProcessInstanceAssertj.class);
     this.dataSource = dataSource;
     failureMessagePrefix =
         String.format("Process instance [%s]", processInstanceSelector.describe());
-    elementAssertj = new ElementAssertj(dataSource, failureMessagePrefix);
+    elementAssertj = new ElementAssertj(dataSource, failureMessagePrefix, elementSelector);
     variableAssertj = new VariableAssertj(dataSource, failureMessagePrefix);
   }
 
@@ -135,6 +142,8 @@ public class ProcessInstanceAssertj
 
   private void hasProcessInstanceInState(
       final ProcessInstanceState expectedState, final Predicate<ProcessInstanceDto> waitCondition) {
+    // reset cached process instance
+    actualProcessInstance.set(null);
 
     try {
       Awaitility.await()

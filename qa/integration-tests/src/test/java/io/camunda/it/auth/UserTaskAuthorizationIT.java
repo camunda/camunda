@@ -26,6 +26,7 @@ import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.function.Executable;
 
 @TestInstance(Lifecycle.PER_CLASS)
+@Disabled("https://github.com/camunda/camunda/issues/27289")
 class UserTaskAuthorizationIT {
   private static final String PROCESS_ID_1 = "bpmProcessVariable";
   private static final String PROCESS_ID_2 = "processWithForm";

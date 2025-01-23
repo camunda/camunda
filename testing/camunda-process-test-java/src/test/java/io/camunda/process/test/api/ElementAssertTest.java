@@ -107,6 +107,11 @@ public class ElementAssertTest {
           .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB, flowNodeInstanceC));
     }
 
+    @AfterEach
+    void reset() {
+      CamundaAssert.setElementSelector(CamundaAssert.DEFAULT_ELEMENT_SELECTOR);
+    }
+
     @Test
     void shouldUseStringSelector() {
       // when
@@ -129,6 +134,18 @@ public class ElementAssertTest {
                   + "\t- 'C': completed\n"
                   + "\t- 'D': not activated",
               PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldChangeStringSelector() {
+      // given
+      CamundaAssert.setElementSelector(ElementSelectors::byName);
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("element_A", "element_B");
     }
 
     @Test

@@ -22,7 +22,7 @@ public class LiquibaseScriptGenerator {
 
   public static void main(final String[] args) throws Exception {
     final var targetDir = args[0] + "/liquibase";
-    final var databases = Set.of("h2", "mysql", "postgresql");
+    final var databases = Set.of("h2", "mysql", "postgresql", "oracle");
 
     for (final var database : databases) {
       generateLiquibaseScript(

@@ -53,14 +53,14 @@ public class TenantExportHandler implements RdbmsExportHandler<TenantRecordValue
       case TenantIntent.ENTITY_ADDED ->
           tenantWriter.addMember(
               new TenantMemberDbModel.Builder()
-                  .tenantKey(value.getTenantKey())
+                  .tenantId(value.getTenantId())
                   .entityKey(value.getEntityKey())
                   .entityType(value.getEntityType().name())
                   .build());
       case TenantIntent.ENTITY_REMOVED ->
           tenantWriter.removeMember(
               new TenantMemberDbModel.Builder()
-                  .tenantKey(value.getTenantKey())
+                  .tenantId(value.getTenantId())
                   .entityKey(value.getEntityKey())
                   .entityType(value.getEntityType().name())
                   .build());
@@ -73,6 +73,7 @@ public class TenantExportHandler implements RdbmsExportHandler<TenantRecordValue
         .tenantKey(recordValue.getTenantKey())
         .tenantId(recordValue.getTenantId())
         .name(recordValue.getName())
+        .description(recordValue.getDescription())
         .build();
   }
 }

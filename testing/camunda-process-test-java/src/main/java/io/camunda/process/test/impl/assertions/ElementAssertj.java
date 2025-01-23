@@ -21,13 +21,13 @@ import static org.assertj.core.api.Assertions.fail;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.process.test.api.assertions.ElementSelector;
-import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.impl.client.CamundaClientNotFoundException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
@@ -38,16 +38,21 @@ import org.awaitility.core.TerminalFailureException;
 public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
 
   private final CamundaDataSource dataSource;
+  private final Function<String, ElementSelector> elementSelector;
 
-  protected ElementAssertj(final CamundaDataSource dataSource, final String failureMessagePrefix) {
+  protected ElementAssertj(
+      final CamundaDataSource dataSource,
+      final String failureMessagePrefix,
+      final Function<String, ElementSelector> elementSelector) {
     super(failureMessagePrefix, ElementAssertj.class);
     this.dataSource = dataSource;
+    this.elementSelector = elementSelector;
   }
 
   public void hasActiveElements(final long processInstanceKey, final String... elementIds) {
     hasElementsInState(
         processInstanceKey,
-        asElementIdSelectors(elementIds),
+        toElementSelectors(elementIds),
         FlowNodeInstanceState.ACTIVE,
         Objects::nonNull);
   }
@@ -64,7 +69,7 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
   public void hasCompletedElements(final long processInstanceKey, final String... elementIds) {
     hasElementsInState(
         processInstanceKey,
-        asElementIdSelectors(elementIds),
+        toElementSelectors(elementIds),
         FlowNodeInstanceState.COMPLETED,
         ElementAssertj::isEnded);
   }
@@ -81,7 +86,7 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
   public void hasTerminatedElements(final long processInstanceKey, final String... elementIds) {
     hasElementsInState(
         processInstanceKey,
-        asElementIdSelectors(elementIds),
+        toElementSelectors(elementIds),
         FlowNodeInstanceState.TERMINATED,
         ElementAssertj::isEnded);
   }
@@ -175,8 +180,8 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
     }
   }
 
-  private static List<ElementSelector> asElementIdSelectors(final String[] elementIds) {
-    return Arrays.stream(elementIds).map(ElementSelectors::byId).collect(Collectors.toList());
+  private List<ElementSelector> toElementSelectors(final String[] elementIds) {
+    return Arrays.stream(elementIds).map(elementSelector).collect(Collectors.toList());
   }
 
   private static boolean isEnded(final FlowNodeInstance flowNodeInstance) {

@@ -488,7 +488,8 @@ public final class ResponseMapper {
         new TenantCreateResult()
             .tenantKey(Long.toString(record.getTenantKey()))
             .tenantId(record.getTenantId())
-            .name(record.getName());
+            .name(record.getName())
+            .description(record.getDescription());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 
@@ -497,7 +498,8 @@ public final class ResponseMapper {
         new TenantUpdateResponse()
             .tenantKey(record.getTenantKey())
             .tenantId(record.getTenantId())
-            .name(record.getName());
+            .name(record.getName())
+            .description(record.getDescription());
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 

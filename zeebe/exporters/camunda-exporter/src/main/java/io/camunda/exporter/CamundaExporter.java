@@ -238,6 +238,7 @@ public class CamundaExporter implements Exporter {
   private ExporterBatchWriter createBatchWriter() {
     final var builder = ExporterBatchWriter.Builder.begin();
     provider.getExportHandlers().forEach(builder::withHandler);
+    builder.withCustomErrorHandlers(provider.getCustomErrorHandlers());
     return builder.build();
   }
 

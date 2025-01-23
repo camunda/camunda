@@ -13,7 +13,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-qa</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>camunda-qa-integration-tests</artifactId>
@@ -308,6 +308,17 @@
     </dependency>
 
     <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>oracle-free</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.oracle.database.jdbc</groupId>
+      <artifactId>ojdbc8</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>com.github.docker-java</groupId>
       <artifactId>docker-java-api</artifactId>
       <scope>test</scope>
@@ -367,7 +378,26 @@
       <artifactId>tasklist-webapp</artifactId>
       <scope>test</scope>
     </dependency>
-
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-commons</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-common</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>tasklist-common</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <repositories>
     <repository>
@@ -465,6 +495,30 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+
+    <!--  Profile to configure tests against an external ELASTICSEARCH container -->
+    <profile>
+      <id>e2e-elasticsearch-test</id>
+      <properties>
+        <test.integration.camunda.database.type>es</test.integration.camunda.database.type>
+      </properties>
+    </profile>
+
+    <!--  Profile to configure tests against an external OPENSEARCH container -->
+    <profile>
+      <id>e2e-opensearch-test</id>
+      <properties>
+        <test.integration.camunda.database.type>es</test.integration.camunda.database.type>
+      </properties>
+    </profile>
+
+    <!--  Profile to configure tests against an external RDBMS container -->
+    <profile>
+      <id>e2e-rdbms-test</id>
+      <properties>
+        <test.integration.camunda.database.type>rdbms</test.integration.camunda.database.type>
+      </properties>
     </profile>
   </profiles>
 

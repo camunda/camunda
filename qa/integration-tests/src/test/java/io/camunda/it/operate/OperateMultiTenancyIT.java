@@ -47,10 +47,10 @@ public class OperateMultiTenancyIT {
   public void beforeEach() {
     try (final var authorizationsUtil =
         AuthorizationsUtil.create(testInstance, testInstance.getElasticSearchHostAddress())) {
-      final var userKey1 = authorizationsUtil.createUser(USERNAME_1, PASSWORD);
-      final var userKey2 = authorizationsUtil.createUser(USERNAME_2, PASSWORD);
-      authorizationsUtil.createTenant(TENANT_ID_1, TENANT_ID_1, userKey1);
-      authorizationsUtil.createTenant(TENANT_ID_2, TENANT_ID_2, userKey2);
+      authorizationsUtil.createUser(USERNAME_1, PASSWORD);
+      authorizationsUtil.createUser(USERNAME_2, PASSWORD);
+      authorizationsUtil.createTenant(TENANT_ID_1, TENANT_ID_1, USERNAME_1);
+      authorizationsUtil.createTenant(TENANT_ID_2, TENANT_ID_2, USERNAME_2);
 
       final var processTenant1 =
           deployResourceForTenant(

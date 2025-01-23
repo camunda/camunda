@@ -27,14 +27,19 @@ public class TenantWriter {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.TENANT,
-            tenant.tenantKey(),
+            tenant.tenantId(),
             "io.camunda.db.rdbms.sql.TenantMapper.insert",
             tenant));
   }
 
   public void update(final TenantDbModel tenant) {
     final boolean wasMerged =
-        mergeToQueue(tenant.tenantId(), b -> b.tenantId(tenant.tenantId()).name(tenant.name()));
+        mergeToQueue(
+            tenant.tenantId(),
+            b ->
+                b.tenantId(tenant.tenantId())
+                    .name(tenant.name())
+                    .description(tenant.description()));
 
     if (!wasMerged) {
       executionQueue.executeInQueue(
@@ -50,7 +55,7 @@ public class TenantWriter {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.TENANT,
-            member.tenantKey(),
+            member.tenantId(),
             "io.camunda.db.rdbms.sql.TenantMapper.insertMember",
             member));
   }
@@ -59,7 +64,7 @@ public class TenantWriter {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.TENANT,
-            member.tenantKey(),
+            member.tenantId(),
             "io.camunda.db.rdbms.sql.TenantMapper.deleteMember",
             member));
   }
@@ -76,7 +81,7 @@ public class TenantWriter {
             ContextType.TENANT,
             tenant.tenantId(),
             "io.camunda.db.rdbms.sql.TenantMapper.deleteAllMembers",
-            tenant.tenantKey()));
+            tenant.tenantId()));
   }
 
   private boolean mergeToQueue(

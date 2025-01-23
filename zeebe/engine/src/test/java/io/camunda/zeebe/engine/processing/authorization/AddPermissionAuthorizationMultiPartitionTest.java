@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -40,20 +41,23 @@ public class AddPermissionAuthorizationMultiPartitionTest {
   @Test
   public void shouldTestLifecycle() {
     // when
-    final var ownerKey =
+    final var userRecord =
         engine
             .user()
             .newUser("foo")
             .withEmail("foo@bar")
             .withName("Foo Bar")
             .withPassword("zabraboof")
-            .create()
-            .getKey();
+            .create();
+    final var ownerKey = userRecord.getValue().getUserKey();
+    final var ownerId = userRecord.getValue().getUsername();
 
     engine
         .authorization()
         .permission()
         .withOwnerKey(ownerKey)
+        .withOwnerId(ownerId)
+        .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermission(PermissionType.CREATE, "foo")
         .add();

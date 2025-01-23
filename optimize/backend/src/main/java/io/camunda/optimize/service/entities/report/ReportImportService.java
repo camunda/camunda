@@ -433,8 +433,7 @@ public class ReportImportService {
     final String indexName =
         OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion(
             name, Integer.toString(version));
-    return OptimizeIndexNameService.getOptimizeIndexAliasForIndexNameAndPrefix(
-        indexName, optimizeIndexNameService.getIndexPrefix());
+    return optimizeIndexNameService.getOptimizeIndexAliasForIndexNameAndPrefix(indexName);
   }
 
   private void validateIndexVersionOrFail(

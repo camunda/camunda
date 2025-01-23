@@ -307,10 +307,12 @@ public class RoleTest {
     // given
     final var name = UUID.randomUUID().toString();
     final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
+    final var roleId = String.valueOf(roleKey);
     engine
         .authorization()
         .permission()
         .withOwnerKey(roleKey)
+        .withOwnerId(roleId)
         .withOwnerType(AuthorizationOwnerType.ROLE)
         .withResourceType(AuthorizationResourceType.ROLE)
         .add();

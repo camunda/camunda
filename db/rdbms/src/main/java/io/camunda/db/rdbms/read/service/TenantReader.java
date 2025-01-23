@@ -53,6 +53,7 @@ public class TenantReader extends AbstractEntityReader<TenantEntity> {
         model.tenantKey(),
         model.tenantId(),
         model.name(),
+        model.description(),
         model.members().stream().map(TenantMemberDbModel::entityKey).collect(Collectors.toSet()));
   }
 }

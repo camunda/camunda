@@ -38,6 +38,7 @@ import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.CreateRoleCommandStep1;
 import io.camunda.client.api.command.CreateTenantCommandStep1;
 import io.camunda.client.api.command.CreateUserCommandStep1;
+import io.camunda.client.api.command.DeleteAuthorizationCommandStep1;
 import io.camunda.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.client.api.command.DeleteGroupCommandStep1;
 import io.camunda.client.api.command.DeleteResourceCommandStep1;
@@ -1577,17 +1578,17 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newAssignUserToTenantCommand(tenantKey)
-   *   .userKey(userKey)
+   *   .newAssignUserToTenantCommand(tenantId)
+   *   .username(username)
    *   .send();
    * </pre>
    *
    * <p>This command sends an HTTP PUT request to assign the specified user to the given tenant.
    *
-   * @param tenantKey the unique identifier of the tenant
+   * @param tenantId the unique identifier of the tenant
    * @return a builder for the assign user to tenant command
    */
-  AssignUserToTenantCommandStep1 newAssignUserToTenantCommand(long tenantKey);
+  AssignUserToTenantCommandStep1 newAssignUserToTenantCommand(String tenantId);
 
   /**
    * Command to remove a user from a tenant.
@@ -1662,4 +1663,20 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder to configure and send the create authorization command
    */
   CreateAuthorizationCommandStep1 newCreateAuthorizationCommand();
+
+  /**
+   * Command to delete an authorization
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * camundaClient
+   *   .newDeleteAuthorizationCommand(authorizationKey)
+   *   .send();
+   * </pre>
+   *
+   * @param authorizationKey the key of the authorization to delete
+   * @return a builder to configure and send the delete authorization command
+   */
+  DeleteAuthorizationCommandStep1 newDeleteAuthorizationCommand(long authorizationKey);
 }
