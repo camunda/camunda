@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.el.util.TestFeelEngineClock;
 import java.util.Map;
 import org.agrona.DirectBuffer;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class EvaluationContextTest {
 
