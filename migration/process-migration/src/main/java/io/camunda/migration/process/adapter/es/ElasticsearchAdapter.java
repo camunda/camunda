@@ -52,10 +52,9 @@ public class ElasticsearchAdapter implements Adapter {
       final ProcessMigrationProperties properties,
       final ConnectConfiguration connectConfiguration) {
     this.properties = properties;
-    migrationRepositoryIndex =
-        new MigrationRepositoryIndex(connectConfiguration.getIndexPrefix(), true);
-    processIndex = new ProcessIndex(connectConfiguration.getIndexPrefix(), true);
-    importPositionIndex = new ImportPositionIndex(connectConfiguration.getIndexPrefix(), true);
+    migrationRepositoryIndex = new MigrationRepositoryIndex(connectConfiguration.getPrefix(), true);
+    processIndex = new ProcessIndex(connectConfiguration.getPrefix(), true);
+    importPositionIndex = new ImportPositionIndex(connectConfiguration.getPrefix(), true);
     client = new ElasticsearchConnector(connectConfiguration).createClient();
     retryDecorator = new AdapterRetryDecorator(properties);
   }

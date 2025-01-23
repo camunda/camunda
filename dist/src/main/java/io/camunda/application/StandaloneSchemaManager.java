@@ -91,10 +91,10 @@ public class StandaloneSchemaManager {
 
     final ExporterConfiguration exporterConfig = new ExporterConfiguration();
     exporterConfig.setConnect(connectConfiguration);
-    exporterConfig.getIndex().setPrefix(connectConfiguration.getIndexPrefix());
+    exporterConfig.getIndex().setPrefix(connectConfiguration.getPrefix());
 
     final IndexDescriptors indexDescriptors =
-        new IndexDescriptors(connectConfiguration.getIndexPrefix(), IS_ELASTICSEARCH);
+        new IndexDescriptors(connectConfiguration.getPrefix(), IS_ELASTICSEARCH);
 
     final ClientAdapter clientAdapter = ClientAdapter.of(exporterConfig);
     final SearchEngineClient client = clientAdapter.getSearchEngineClient();

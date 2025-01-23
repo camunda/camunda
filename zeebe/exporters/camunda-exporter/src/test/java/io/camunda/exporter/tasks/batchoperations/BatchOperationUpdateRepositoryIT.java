@@ -45,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 abstract class BatchOperationUpdateRepositoryIT {
+
   @RegisterExtension protected static SearchDBExtension searchDB = SearchDBExtension.create();
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BatchOperationUpdateRepositoryIT.class);
@@ -58,7 +59,7 @@ abstract class BatchOperationUpdateRepositoryIT {
   public BatchOperationUpdateRepositoryIT(final String databaseUrl, final boolean isElastic) {
     config = new ExporterConfiguration();
     final var indexPrefix = UUID.randomUUID().toString();
-    config.getConnect().setIndexPrefix(indexPrefix);
+    config.getConnect().setPrefix(indexPrefix);
     config.getConnect().setUrl(databaseUrl);
     config.getConnect().setType(isElastic ? "elasticsearch" : "opensearch");
 
@@ -145,6 +146,7 @@ abstract class BatchOperationUpdateRepositoryIT {
   @Nested
   @Order(1)
   final class GetNotFinishedBatchOperationsTest {
+
     @Test
     void shouldReturnEmptyList() {
       // given
@@ -190,6 +192,7 @@ abstract class BatchOperationUpdateRepositoryIT {
   @Nested
   @Order(2)
   final class GetFinishedOperationsCountTest {
+
     @Test
     void shouldReturnEmptyList() {
       // given

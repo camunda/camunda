@@ -28,7 +28,12 @@ public class ConnectConfiguration {
   private String username;
   private String password;
   private SecurityConfiguration security = new SecurityConfiguration();
+  private String prefix;
+
+  /** replaced by <code>prefix</code> */
+  @Deprecated(forRemoval = true)
   private String indexPrefix;
+
   private List<PluginConfiguration> interceptorPlugins = new ArrayList<>();
 
   /** Use {@link ConnectConfiguration#getTypeEnum()} */
@@ -117,10 +122,22 @@ public class ConnectConfiguration {
     this.security = security;
   }
 
+  public String getPrefix() {
+    return prefix != null && !prefix.isEmpty() ? prefix : indexPrefix;
+  }
+
+  public void setPrefix(final String indexPrefix) {
+    prefix = indexPrefix;
+  }
+
+  /** replaced by <code>prefix</code> */
+  @Deprecated(forRemoval = true)
   public String getIndexPrefix() {
     return indexPrefix;
   }
 
+  /** replaced by <code>prefix</code> */
+  @Deprecated(forRemoval = true)
   public void setIndexPrefix(final String indexPrefix) {
     this.indexPrefix = indexPrefix;
   }

@@ -60,15 +60,18 @@ public class MyBatisConfiguration {
       matchIfMissing = true)
   public MultiTenantSpringLiquibase rdbmsExporterLiquibase(
       final DataSource dataSource,
-      @Value("${camunda.database.index-prefix:}") final String indexPrefix) {
-    final String prefix = StringUtils.trimToEmpty(indexPrefix);
-    LOGGER.info("Initializing Liquibase for RDBMS with global table prefix '{}'.", prefix);
+      @Value("${camunda.database.index-prefix:}") final String indexPrefixProperty,
+      @Value("${camunda.database.prefix:}") final String prefixProperty) {
+    final String indexPrefix = StringUtils.trimToEmpty(indexPrefixProperty);
+    final String prefix = StringUtils.trimToEmpty(prefixProperty);
+    final String usedPrefix = prefix.isEmpty() ? indexPrefix : prefix;
+    LOGGER.info("Initializing Liquibase for RDBMS with global table prefix '{}'.", usedPrefix);
 
     final var moduleConfig = new MultiTenantSpringLiquibase();
     moduleConfig.setDataSource(dataSource);
-    moduleConfig.setDatabaseChangeLogTable(prefix + "DATABASECHANGELOG");
-    moduleConfig.setDatabaseChangeLogLockTable(prefix + "DATABASECHANGELOGLOCK");
-    moduleConfig.setParameters(Map.of("prefix", prefix));
+    moduleConfig.setDatabaseChangeLogTable(usedPrefix + "DATABASECHANGELOG");
+    moduleConfig.setDatabaseChangeLogLockTable(usedPrefix + "DATABASECHANGELOGLOCK");
+    moduleConfig.setParameters(Map.of("prefix", usedPrefix));
     // changelog file located in src/main/resources directly in the module
     moduleConfig.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
 
@@ -107,7 +110,7 @@ public class MyBatisConfiguration {
       final DataSource dataSource,
       final DatabaseIdProvider databaseIdProvider,
       final VendorDatabaseProperties databaseProperties,
-      @Value("${camunda.database.index-prefix:}") final String indexPrefix)
+      @Value("${camunda.database.prefix:}") final String prefixProperty)
       throws Exception {
 
     final var configuration = new org.apache.ibatis.session.Configuration();
@@ -122,7 +125,7 @@ public class MyBatisConfiguration {
         new PathMatchingResourcePatternResolver().getResources("classpath*:mapper/*.xml"));
 
     final Properties p = new Properties();
-    p.put("prefix", StringUtils.trimToEmpty(indexPrefix));
+    p.put("prefix", StringUtils.trimToEmpty(prefixProperty));
     p.putAll(databaseProperties.properties());
     factoryBean.setConfigurationProperties(p);
     return factoryBean.getObject();

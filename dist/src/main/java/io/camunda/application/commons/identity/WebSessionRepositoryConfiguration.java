@@ -47,7 +47,7 @@ public class WebSessionRepositoryConfiguration {
 
   @Bean
   public PersistentWebSessionIndexDescriptor persistentWebSessionIndex() {
-    final var indexPrefix = connectConfiguration.getIndexPrefix();
+    final var indexPrefix = connectConfiguration.getPrefix();
     final var isElasticsearch =
         ConnectionTypes.from(connectConfiguration.getType()).equals(ConnectionTypes.ELASTICSEARCH);
     return new PersistentWebSessionIndexDescriptor(indexPrefix, isElasticsearch);

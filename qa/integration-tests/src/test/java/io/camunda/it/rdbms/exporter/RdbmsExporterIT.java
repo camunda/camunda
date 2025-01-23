@@ -80,7 +80,7 @@ import org.springframework.test.context.TestPropertySource;
       "spring.liquibase.enabled=false",
       "camunda.database.type=rdbms",
       "zeebe.broker.exporters.rdbms.args.maxQueueSize=0",
-      "camunda.database.index-prefix=C8_"
+      "camunda.database.prefix=C8_"
     })
 class RdbmsExporterIT {
 

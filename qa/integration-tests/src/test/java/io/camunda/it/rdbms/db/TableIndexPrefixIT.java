@@ -20,6 +20,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
+/** This test verifies that the old indexPrefix property is still working. */
 @Tag("rdbms")
 @DataJdbcTest
 @ContextConfiguration(classes = {RdbmsTestConfiguration.class, RdbmsConfiguration.class})
@@ -28,9 +29,9 @@ import org.springframework.test.context.TestPropertySource;
     properties = {
       "spring.liquibase.enabled=false",
       "camunda.database.type=rdbms",
-      "camunda.database.prefix=C8_"
+      "camunda.database.index-prefix=C8_"
     })
-public class TablePrefixIT {
+public class TableIndexPrefixIT {
 
   @Autowired JdbcTemplate jdbcTemplate;
 

@@ -51,9 +51,9 @@ public class OpensearchAdapter implements Adapter {
       final ConnectConfiguration connectConfiguration) {
     this.properties = properties;
     migrationRepositoryIndex =
-        new MigrationRepositoryIndex(connectConfiguration.getIndexPrefix(), false);
-    processIndex = new ProcessIndex(connectConfiguration.getIndexPrefix(), false);
-    importPositionIndex = new ImportPositionIndex(connectConfiguration.getIndexPrefix(), false);
+        new MigrationRepositoryIndex(connectConfiguration.getPrefix(), false);
+    processIndex = new ProcessIndex(connectConfiguration.getPrefix(), false);
+    importPositionIndex = new ImportPositionIndex(connectConfiguration.getPrefix(), false);
     client = new OpensearchConnector(connectConfiguration).createClient();
     retryDecorator = new AdapterRetryDecorator(properties);
   }

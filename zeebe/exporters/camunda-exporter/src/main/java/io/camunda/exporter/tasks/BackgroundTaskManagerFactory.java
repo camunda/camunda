@@ -45,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 
 public final class BackgroundTaskManagerFactory {
+
   private final int partitionId;
   private final String exporterId;
   private final ExporterConfiguration config;
@@ -208,7 +209,7 @@ public final class BackgroundTaskManagerFactory {
             partitionId,
             config.getArchiver(),
             config.getRetention(),
-            config.getConnect().getIndexPrefix(),
+            config.getConnect().getPrefix(),
             listViewTemplate.getFullQualifiedName(),
             batchOperationTemplate.getFullQualifiedName(),
             connector.createAsyncClient(),
@@ -222,7 +223,7 @@ public final class BackgroundTaskManagerFactory {
             partitionId,
             config.getArchiver(),
             config.getRetention(),
-            config.getConnect().getIndexPrefix(),
+            config.getConnect().getPrefix(),
             listViewTemplate.getFullQualifiedName(),
             batchOperationTemplate.getFullQualifiedName(),
             connector.createAsyncClient(),

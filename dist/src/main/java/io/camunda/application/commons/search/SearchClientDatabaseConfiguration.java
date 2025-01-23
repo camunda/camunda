@@ -72,8 +72,7 @@ public class SearchClientDatabaseConfiguration {
       final ConnectConfiguration connectConfiguration) {
     final IndexDescriptors indexDescriptors =
         new IndexDescriptors(
-            connectConfiguration.getIndexPrefix(),
-            connectConfiguration.getTypeEnum().isElasticSearch());
+            connectConfiguration.getPrefix(), connectConfiguration.getTypeEnum().isElasticSearch());
     return new SearchClients(searchClient, indexDescriptors);
   }
 
