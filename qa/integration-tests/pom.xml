@@ -433,7 +433,7 @@
               <value>${version.identity}</value>
             </property>
           </systemProperties>
-          <groups>!rdbms</groups>
+          <excludedGroups>rdbms, multi-db-test</excludedGroups>
         </configuration>
         <dependencies>
           <dependency>
@@ -467,6 +467,7 @@
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <groups>rdbms</groups>
+              <excludedGroups>multi-db-test</excludedGroups>
             </configuration>
           </plugin>
         </plugins>
@@ -490,7 +491,8 @@
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <failIfNoTests>false</failIfNoTests>
-              <groups>multiDbTest</groups>
+              <groups>multi-db-test</groups>
+              <excludedGroups>rdbms</excludedGroups>
             </configuration>
           </plugin>
         </plugins>
