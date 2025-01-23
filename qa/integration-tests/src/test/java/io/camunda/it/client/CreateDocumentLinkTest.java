@@ -13,13 +13,11 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.it.utils.MultiDbTest;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-@ZeebeIntegration
+@MultiDbTest
 public class CreateDocumentLinkTest {
 
   private static final String DOCUMENT_CONTENT = "test";
@@ -27,17 +25,8 @@ public class CreateDocumentLinkTest {
   private static CamundaClient camundaClient;
   private static DocumentReferenceResponse documentReference;
 
-  @TestZeebe(initMethod = "initTestStandaloneCamunda")
-  private static TestStandaloneCamunda testStandaloneCamunda;
-
-  @SuppressWarnings("unused")
-  static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda();
-  }
-
   @BeforeAll
   public static void beforeAll() {
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     documentReference =
         camundaClient.newCreateDocumentCommand().content(DOCUMENT_CONTENT).send().join();
   }
@@ -46,7 +35,6 @@ public class CreateDocumentLinkTest {
   public void shouldReturnBadRequestWhenDocumentStoreDoesNotExist() {
     // given
     final var storeId = "invalid-document-store-id";
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
     final var exception =
@@ -71,7 +59,6 @@ public class CreateDocumentLinkTest {
     // given
     final var storeId = "in-memory";
     final var documentId = documentReference.getDocumentId();
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
     final var exception =
