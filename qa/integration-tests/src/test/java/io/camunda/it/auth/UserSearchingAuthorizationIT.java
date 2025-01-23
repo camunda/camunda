@@ -33,14 +33,12 @@ import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 @TestInstance(Lifecycle.PER_CLASS)
-@Disabled("https://github.com/camunda/camunda/issues/27289")
 class UserSearchingAuthorizationIT {
 
   public static final ObjectMapper OBJECT_MAPPER =

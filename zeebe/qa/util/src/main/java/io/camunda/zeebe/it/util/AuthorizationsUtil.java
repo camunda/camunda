@@ -79,7 +79,6 @@ public class AuthorizationsUtil implements CloseableSilently {
     return userCreateResponse.getUserKey();
   }
 
-  // TODO: use for authorization creation based on owner Type + ID
   public void createPermissions(final String username, final Permissions... permissions) {
     for (final Permissions permission : permissions) {
       for (final String resourceId : permission.resourceIds()) {
