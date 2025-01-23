@@ -67,7 +67,7 @@ public class AnonymousAuthorizationTest {
     engine
         .tenant()
         .addEntity(tenantKey)
-        .withEntityKey(user.getUserKey())
+        .withEntityId(username)
         .withEntityType(EntityType.USER)
         .add();
 
@@ -77,6 +77,7 @@ public class AnonymousAuthorizationTest {
         .withPermission(PermissionType.CREATE, "*")
         .withResourceType(AuthorizationResourceType.RESOURCE)
         .withOwnerKey(user.getUserKey())
+        .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .add();
 

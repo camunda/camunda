@@ -12,6 +12,7 @@ import static io.camunda.security.configuration.InitializationConfiguration.DEFA
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CredentialsProvider;
+import io.camunda.client.protocol.rest.OwnerTypeEnum;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.search.clients.SearchClients;
@@ -74,7 +75,7 @@ public class AuthorizationsUtil implements CloseableSilently {
             .send()
             .join();
     awaitUserExistsInElasticsearch(username);
-    createPermissions(userCreateResponse.getUserKey(), permissions);
+    createPermissions(userCreateResponse.getUserKey(), username, permissions);
     return userCreateResponse.getUserKey();
   }
 
@@ -93,20 +94,40 @@ public class AuthorizationsUtil implements CloseableSilently {
     }
   }
 
-  public long createTenant(final String tenantId, final String tenantName, final long... userKeys) {
-    final long tenantKey =
+  // TODO: use for authorization creation based on owner Type + ID
+  public void createPermissions(
+      final long userKey, final String username, final Permissions... permissions) {
+    for (final Permissions permission : permissions) {
+      for (final String resourceId : permission.resourceIds()) {
         client
-            .newCreateTenantCommand()
-            .tenantId(tenantId)
-            .name(tenantName)
+            .newCreateAuthorizationCommand()
+            .ownerId(username)
+            .ownerType(OwnerTypeEnum.USER)
+            .resourceId(resourceId)
+            .resourceType(permission.resourceType())
+            .permission(permission.permissionType())
             .send()
-            .join()
-            .getTenantKey();
-    for (final long userKey : userKeys) {
-      client.newAssignUserToTenantCommand(tenantKey).userKey(userKey).send().join();
+            .join();
+      }
+    }
+    if (permissions != null && permissions.length > 0) {
+      awaitPermissionExistsInElasticsearch(userKey, Arrays.asList(permissions).getLast());
+    }
+  }
+
+  public void createTenant(
+      final String tenantId, final String tenantName, final String... usernames) {
+    client
+        .newCreateTenantCommand()
+        .tenantId(tenantId)
+        .name(tenantName)
+        .send()
+        .join()
+        .getTenantKey();
+    for (final var username : usernames) {
+      client.newAssignUserToTenantCommand(tenantId).username(username).send().join();
     }
     awaitTenantExistsInElasticsearch(tenantId);
-    return tenantKey;
   }
 
   public CamundaClient createClient(final String username, final String password) {

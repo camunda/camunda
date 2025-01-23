@@ -2837,14 +2837,18 @@ final class JsonSerializableToJsonTest {
                     .setTenantKey(123L)
                     .setTenantId("tenant-abc")
                     .setName("Test Tenant")
+                    .setDescription("Test Description")
                     .setEntityKey(456L)
+                    .setEntityId("entity-xyz")
                     .setEntityType(EntityType.USER),
         """
         {
           "tenantKey": 123,
           "tenantId": "tenant-abc",
           "name": "Test Tenant",
+          "description": "Test Description",
           "entityKey": 456,
+          "entityId": "entity-xyz",
           "entityType": "USER"
         }
         """
@@ -2860,7 +2864,9 @@ final class JsonSerializableToJsonTest {
             "tenantKey": -1,
             "tenantId": "",
             "name": "",
+            "description": "",
             "entityKey": -1,
+            "entityId": "",
             "entityType": "UNSPECIFIED"
           }
           """
@@ -3061,7 +3067,9 @@ final class JsonSerializableToJsonTest {
           "tenantKey": 5,
           "tenantId": "id",
           "name": "name",
+          "description": "",
           "entityKey": -1,
+          "entityId": "",
           "entityType": "UNSPECIFIED"
         },
         "mappings": [
@@ -3100,7 +3108,9 @@ final class JsonSerializableToJsonTest {
               "tenantKey": -1,
               "tenantId": "",
               "name": "",
+              "description": "",
               "entityKey": -1,
+              "entityId": "",
               "entityType": "UNSPECIFIED"
           },
           "mappings": []

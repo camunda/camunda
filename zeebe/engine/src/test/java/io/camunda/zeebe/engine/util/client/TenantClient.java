@@ -56,6 +56,17 @@ public class TenantClient {
   }
 
   /**
+   * Creates a new {@link TenantAddEntityClient} for adding an entity to a tenant. The client uses
+   * the internal command writer to submit the add entity commands.
+   *
+   * @param tenantId the id of the tenant
+   * @return a new instance of {@link TenantAddEntityClient}
+   */
+  public TenantAddEntityClient addEntity(final String tenantId) {
+    return new TenantAddEntityClient(writer, tenantId);
+  }
+
+  /**
    * Creates a new {@link TenantRemoveEntityClient} for removing an entity from a tenant. The client
    * uses the internal command writer to submit the remove entity commands.
    *
@@ -269,8 +280,19 @@ public class TenantClient {
       tenantRecord.setTenantKey(tenantKey);
     }
 
+    public TenantAddEntityClient(final CommandWriter writer, final String tenantId) {
+      this.writer = writer;
+      tenantRecord = new TenantRecord();
+      tenantRecord.setTenantId(tenantId);
+    }
+
     public TenantAddEntityClient withEntityKey(final long entityKey) {
       tenantRecord.setEntityKey(entityKey);
+      return this;
+    }
+
+    public TenantAddEntityClient withEntityId(final String entityId) {
+      tenantRecord.setEntityId(entityId);
       return this;
     }
 

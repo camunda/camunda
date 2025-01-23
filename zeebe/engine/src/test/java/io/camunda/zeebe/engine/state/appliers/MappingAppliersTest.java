@@ -56,6 +56,7 @@ public class MappingAppliersTest {
   void shouldDeleteMapping() {
     // given
     final long mappingKey = 1L;
+    final String mappingId = String.valueOf(mappingKey);
     final String claimName = "foo";
     final String claimValue = "bar";
     final var mappingRecord =
@@ -101,7 +102,8 @@ public class MappingAppliersTest {
     authorizationState.insertOwnerTypeByKey(mappingKey, AuthorizationOwnerType.MAPPING);
     // create authorization
     authorizationState.createOrAddPermission(
-        mappingKey,
+        AuthorizationOwnerType.MAPPING,
+        mappingId,
         AuthorizationResourceType.PROCESS_DEFINITION,
         PermissionType.READ,
         Set.of("process"));
@@ -114,7 +116,10 @@ public class MappingAppliersTest {
     assertThat(authorizationState.getOwnerType(mappingKey)).isEmpty();
     assertThat(
             authorizationState.getResourceIdentifiers(
-                mappingKey, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.READ))
+                AuthorizationOwnerType.MAPPING,
+                mappingId,
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                PermissionType.READ))
         .isEmpty();
   }
 

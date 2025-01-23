@@ -34,7 +34,12 @@ public class TenantWriter {
 
   public void update(final TenantDbModel tenant) {
     final boolean wasMerged =
-        mergeToQueue(tenant.tenantId(), b -> b.tenantId(tenant.tenantId()).name(tenant.name()));
+        mergeToQueue(
+            tenant.tenantId(),
+            b ->
+                b.tenantId(tenant.tenantId())
+                    .name(tenant.name())
+                    .description(tenant.description()));
 
     if (!wasMerged) {
       executionQueue.executeInQueue(

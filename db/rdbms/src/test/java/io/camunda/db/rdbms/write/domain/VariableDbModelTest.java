@@ -172,8 +172,8 @@ public class VariableDbModelTest {
   @Test
   public void shouldSetCorrectTypeAndValueForLargeValue() {
     // given
-    final String largeValue =
-        "\"" + "a".repeat(VariableDbModel.DEFAULT_VARIABLE_SIZE_THRESHOLD + 1) + "\"";
+    final int variableSizeThreshold = 10;
+    final String largeValue = "\"" + "a".repeat(variableSizeThreshold + 1) + "\"";
     final VariableDbModel.VariableDbModelBuilder builder =
         new VariableDbModel.VariableDbModelBuilder();
 
@@ -186,7 +186,8 @@ public class VariableDbModelTest {
             .scopeKey(2L)
             .processInstanceKey(3L)
             .tenantId("tenant1")
-            .build();
+            .build()
+            .truncateValue(variableSizeThreshold);
 
     // then
     assertThat(model.variableKey()).isEqualTo(1L);
@@ -194,8 +195,7 @@ public class VariableDbModelTest {
     assertThat(model.type()).isEqualTo(ValueTypeEnum.STRING);
     assertThat(model.doubleValue()).isNull();
     assertThat(model.longValue()).isNull();
-    assertThat(model.value())
-        .isEqualTo(largeValue.substring(0, VariableDbModel.DEFAULT_VARIABLE_SIZE_THRESHOLD));
+    assertThat(model.value()).isEqualTo(largeValue.substring(0, variableSizeThreshold));
     assertThat(model.fullValue()).isEqualTo(largeValue);
     assertThat(model.isPreview()).isTrue();
     assertThat(model.scopeKey()).isEqualTo(2L);

@@ -13,22 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.impl.util;
+package io.camunda.client.api.response;
 
-import java.util.Map;
-import org.junit.rules.ExternalResource;
-
-public final class EnvironmentRule extends ExternalResource {
-
-  private Map<String, String> previousEnvironment;
-
-  @Override
-  protected void before() throws Throwable {
-    previousEnvironment = Environment.system().copy();
-  }
-
-  @Override
-  protected void after() {
-    Environment.system().overwrite(previousEnvironment);
-  }
-}
+public interface DeleteAuthorizationResponse {}

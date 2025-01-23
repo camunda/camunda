@@ -230,6 +230,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
   @Test
   void patchAuthorizationShouldReturnNoContent() {
     final var ownerKey = 1L;
+    final var ownerId = String.valueOf(ownerKey);
     final var action = ActionEnum.ADD;
     final var resourceIds = Set.of("permission1", "permission2");
     final var permissions =
@@ -245,6 +246,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     final var authorizationRecord =
         new AuthorizationRecord()
             .setOwnerKey(ownerKey)
+            .setOwnerId(ownerId)
             .setOwnerType(AuthorizationOwnerType.USER)
             .setResourceType(AuthorizationResourceType.valueOf(request.getResourceType().name()))
             .addPermission(permission);

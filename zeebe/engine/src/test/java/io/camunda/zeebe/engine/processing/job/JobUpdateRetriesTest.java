@@ -47,14 +47,15 @@ public final class JobUpdateRetriesTest {
   public static void setUp() {
     tenantId = UUID.randomUUID().toString();
     username = UUID.randomUUID().toString();
-    final var userKey = ENGINE.user().newUser(username).create().getValue().getUserKey();
-    final var tenantKey =
-        ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
+    final var user = ENGINE.user().newUser(username).create().getValue();
+    final var userKey = user.getUserKey();
+    final var username = user.getUsername();
+    ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     ENGINE
         .tenant()
-        .addEntity(tenantKey)
+        .addEntity(tenantId)
         .withEntityType(EntityType.USER)
-        .withEntityKey(userKey)
+        .withEntityId(username)
         .add();
 
     ENGINE
@@ -63,6 +64,7 @@ public final class JobUpdateRetriesTest {
         .withPermission(PermissionType.UPDATE_PROCESS_INSTANCE, PROCESS_ID)
         .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
         .withOwnerKey(userKey)
+        .withOwnerId(username)
         .withOwnerType(AuthorizationOwnerType.USER)
         .add();
   }

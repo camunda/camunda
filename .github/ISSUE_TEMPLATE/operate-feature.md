@@ -46,7 +46,7 @@ Scenario: As an Operate user
 ### Links
 
 <!--
-- https://jira.camunda.com/browse/SUPPORT-12398
+- Link to JIRA support case
 -->
 
 ### Breakdown

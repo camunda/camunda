@@ -18,7 +18,10 @@ public interface AuthorizationState {
   Optional<PersistedAuthorization> get(final long authorizationKey);
 
   Set<String> getResourceIdentifiers(
-      Long ownerKey, AuthorizationResourceType resourceType, final PermissionType permissionType);
+      final AuthorizationOwnerType ownerType,
+      final String ownerId,
+      AuthorizationResourceType resourceType,
+      final PermissionType permissionType);
 
   Optional<AuthorizationOwnerType> getOwnerType(final long ownerKey);
 }

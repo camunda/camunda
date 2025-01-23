@@ -239,8 +239,12 @@ public final class IdentitySetupInitializeProcessor
   private void addAllPermissions(final long roleKey) {
 
     for (final AuthorizationResourceType resourceType : AuthorizationResourceType.values()) {
+      // TODO: refactor when Roles use String IDs as unique identifiers
       final var record =
-          new AuthorizationRecord().setOwnerKey(roleKey).setOwnerType(AuthorizationOwnerType.ROLE);
+          new AuthorizationRecord()
+              .setOwnerKey(roleKey)
+              .setOwnerId(String.valueOf(roleKey))
+              .setOwnerType(AuthorizationOwnerType.ROLE);
       record.setResourceType(resourceType);
 
       for (final PermissionType permissionType : resourceType.getSupportedPermissionTypes()) {

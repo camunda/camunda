@@ -94,7 +94,7 @@ final class UserTenantsMigrationHandlerTest {
     // given
     givenUserTenants();
     when(tenantServices.getById(any()))
-        .thenReturn(new TenantEntity(1L, "", "", Collections.emptySet()));
+        .thenReturn(new TenantEntity(1L, "", "", null, Collections.emptySet()));
     when(tenantServices.createTenant(any()))
         .thenReturn(CompletableFuture.completedFuture(new TenantRecord()));
     when(mappingServices.createMapping(any()))
@@ -163,7 +163,7 @@ final class UserTenantsMigrationHandlerTest {
     // given
     givenUserTenants();
     when(tenantServices.getById(any()))
-        .thenReturn(new TenantEntity(1L, "", "", Collections.emptySet()));
+        .thenReturn(new TenantEntity(1L, "", "", null, Collections.emptySet()));
     doThrow(
             new BrokerRejectionException(
                 new BrokerRejection(TenantIntent.ADD_ENTITY, -1, RejectionType.ALREADY_EXISTS, "")))

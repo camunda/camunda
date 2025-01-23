@@ -14,6 +14,7 @@ import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
@@ -69,7 +70,9 @@ public class AddEntityTenantTest {
   public void shouldAddUserToTenant() {
     // given
     final var entityType = USER;
-    final var entityKey = createUser();
+    final var user = createUser();
+    final var userKey = user.getUserKey();
+    final var username = user.getUsername();
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
         engine
@@ -86,7 +89,7 @@ public class AddEntityTenantTest {
         engine
             .tenant()
             .addEntity(tenantKey)
-            .withEntityKey(entityKey)
+            .withEntityId(username)
             .withEntityType(entityType)
             .add()
             .getValue();
@@ -95,9 +98,9 @@ public class AddEntityTenantTest {
     Assertions.assertThat(updatedTenant)
         .describedAs(
             "Entity of type %s with key %s should be correctly added to tenant with key %s",
-            entityType, entityKey, tenantKey)
+            entityType, userKey, tenantKey)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("entityKey", entityKey)
+        .hasFieldOrPropertyWithValue("entityId", username)
         .hasFieldOrPropertyWithValue("tenantKey", tenantKey)
         .hasFieldOrPropertyWithValue("entityType", entityType);
   }
@@ -165,7 +168,7 @@ public class AddEntityTenantTest {
         engine
             .tenant()
             .addEntity(tenantKey)
-            .withEntityKey(1L)
+            .withEntityId("does-not-exist")
             .withEntityType(USER)
             .expectRejection()
             .add();
@@ -174,26 +177,27 @@ public class AddEntityTenantTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to add entity with key '1' to tenant with tenantId '%s', but the entity doesn't exist."
+            "Expected to add user 'does-not-exist' to tenant '%s', but the user doesn't exist."
                 .formatted(tenantId));
   }
 
   @Test
   public void shouldRejectIfEntityIsAlreadyAssignedToTenant() {
     // given
-    final var userKey = createUser();
+    final var user = createUser();
     final var tenantId = UUID.randomUUID().toString();
     final var tenantRecord =
         engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create();
     final var tenantKey = tenantRecord.getValue().getTenantKey();
-    engine.tenant().addEntity(tenantKey).withEntityKey(userKey).withEntityType(USER).add();
+    final var username = user.getUsername();
+    engine.tenant().addEntity(tenantKey).withEntityId(username).withEntityType(USER).add();
 
     // when try adding a non-existent entity to the tenant
     final var alreadyAssignedRecord =
         engine
             .tenant()
             .addEntity(tenantKey)
-            .withEntityKey(userKey)
+            .withEntityId(username)
             .withEntityType(USER)
             .expectRejection()
             .add();
@@ -202,11 +206,11 @@ public class AddEntityTenantTest {
     assertThat(alreadyAssignedRecord)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
-            "Expected to add entity with key '%s' to tenant with tenantId '%s', but the entity is already assigned to the tenant."
-                .formatted(userKey, tenantId));
+            "Expected to add user '%s' to tenant '%s', but the user is already assigned to the tenant."
+                .formatted(username, tenantId));
   }
 
-  private Long createUser() {
+  private UserRecordValue createUser() {
     return engine
         .user()
         .newUser(UUID.randomUUID().toString())
@@ -214,8 +218,7 @@ public class AddEntityTenantTest {
         .withEmail("foo@bar.com")
         .withPassword("password")
         .create()
-        .getValue()
-        .getUserKey();
+        .getValue();
   }
 
   private long createGroup() {

@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -79,6 +80,7 @@ final class BasicAuthOverRestIT {
     assertThat(deploymentEvent.getProcesses().getFirst().getBpmnProcessId()).isEqualTo(processId);
   }
 
+  @Disabled("https://github.com/camunda/camunda/issues/27289")
   @Test
   void shouldBeAuthorizedWithUserThatIsGrantedPermissions() {
     // given

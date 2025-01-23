@@ -15,6 +15,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -85,13 +86,9 @@ public class SignalBroadcastAuthorizationTest {
     createProcessInstance();
     final var user = createUser();
     addPermissionsToUser(
-        user.getUserKey(),
-        AuthorizationResourceType.PROCESS_DEFINITION,
-        PermissionType.CREATE_PROCESS_INSTANCE);
+        user, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.CREATE_PROCESS_INSTANCE);
     addPermissionsToUser(
-        user.getUserKey(),
-        AuthorizationResourceType.PROCESS_DEFINITION,
-        PermissionType.UPDATE_PROCESS_INSTANCE);
+        user, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE_PROCESS_INSTANCE);
 
     // when
     engine.signal().withSignalName(SIGNAL_NAME).broadcast(user.getUsername());
@@ -128,9 +125,7 @@ public class SignalBroadcastAuthorizationTest {
     createProcessInstance();
     final var user = createUser();
     addPermissionsToUser(
-        user.getUserKey(),
-        AuthorizationResourceType.PROCESS_DEFINITION,
-        PermissionType.CREATE_PROCESS_INSTANCE);
+        user, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.CREATE_PROCESS_INSTANCE);
 
     // when
     final var rejection =
@@ -156,13 +151,15 @@ public class SignalBroadcastAuthorizationTest {
   }
 
   private void addPermissionsToUser(
-      final long userKey,
+      final UserRecordValue user,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType) {
     engine
         .authorization()
         .permission()
-        .withOwnerKey(userKey)
+        .withOwnerKey(user.getUserKey())
+        .withOwnerId(user.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
         .withPermission(permissionType, "*")
         .add(DEFAULT_USER.getUsername());

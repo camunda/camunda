@@ -22,6 +22,7 @@ public final class UpdateTenantResponseImpl implements UpdateTenantResponse {
   private long tenantKey;
   private String tenantId;
   private String name;
+  private String description;
 
   @Override
   public long getTenantKey() {
@@ -38,10 +39,16 @@ public final class UpdateTenantResponseImpl implements UpdateTenantResponse {
     return name;
   }
 
+  @Override
+  public String getDescription() {
+    return description;
+  }
+
   public UpdateTenantResponseImpl setResponse(final TenantUpdateResult response) {
     tenantKey = Long.parseLong(response.getTenantKey());
     tenantId = response.getTenantId();
     name = response.getName();
+    description = response.getDescription();
     return this;
   }
 }
