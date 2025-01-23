@@ -33,6 +33,7 @@ import io.camunda.zeebe.client.api.command.ClockResetCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
@@ -54,7 +55,9 @@ import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetXmlRequest;
+import io.camunda.zeebe.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.response.DocumentReferenceResponse;
 import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.zeebe.client.api.search.query.DecisionRequirementsQuery;
 import io.camunda.zeebe.client.api.search.query.FlownodeInstanceQuery;
@@ -642,5 +645,21 @@ public final class ZeebeClientImpl implements ZeebeClient {
   public StreamJobsCommandStep1 newStreamJobsCommand() {
     return new StreamJobsCommandImpl(
         asyncStub, jsonMapper, credentialsProvider::shouldRetryRequest, config);
+  }
+
+  @Override
+  public CreateDocumentCommandStep1 newCreateDocumentCommand() {
+    throw new UnsupportedOperationException("This operation is not yet supported.");
+  }
+
+  @Override
+  public DocumentContentGetRequest newDocumentContentGetRequest(final String documentId) {
+    throw new UnsupportedOperationException("This operation is not yet supported.");
+  }
+
+  @Override
+  public DocumentContentGetRequest newDocumentContentGetRequest(
+      final DocumentReferenceResponse documentReferenceResponse) {
+    throw new UnsupportedOperationException("This operation is not yet supported.");
   }
 }
