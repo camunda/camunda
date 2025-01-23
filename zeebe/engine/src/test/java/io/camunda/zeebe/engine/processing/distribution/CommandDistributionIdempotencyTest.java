@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationAddPermissionPro
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationDeleteProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRemovePermissionProcessor;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationUpdateProcessor;
 import io.camunda.zeebe.engine.processing.identity.GroupAddEntityProcessor;
 import io.camunda.zeebe.engine.processing.identity.GroupCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.GroupDeleteProcessor;
@@ -177,6 +178,31 @@ public class CommandDistributionIdempotencyTest {
                 },
                 3),
             AuthorizationDeleteProcessor.class
+          },
+          {
+            "Authorization.UPDATE is idempotent",
+            new Scenario(
+                ValueType.AUTHORIZATION,
+                AuthorizationIntent.UPDATE,
+                () -> {
+                  final var user = createUser();
+                  final var key =
+                      ENGINE
+                          .authorization()
+                          .newAuthorization()
+                          .withOwnerKey(user.getKey())
+                          .withOwnerId(user.getValue().getUsername())
+                          .withResourceId("*")
+                          .withResourceType(AuthorizationResourceType.USER)
+                          .withPermissions(PermissionType.READ)
+                          .create()
+                          .getValue()
+                          .getAuthorizationKey();
+
+                  ENGINE.authorization().updateAuthorization(key).update();
+                },
+                3),
+            AuthorizationUpdateProcessor.class
           },
           {
             "Authorization.ADD_PERMISSION is idempotent",

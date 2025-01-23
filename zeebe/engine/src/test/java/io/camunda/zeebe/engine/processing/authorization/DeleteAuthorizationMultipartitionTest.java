@@ -101,7 +101,7 @@ public class DeleteAuthorizationMultipartitionTest {
       assertThat(
               RecordingExporter.records()
                   .withPartitionId(partitionId)
-                  .limitByCount(r -> r.getIntent().equals(AuthorizationIntent.CREATED), 2)
+                  .limit(r -> r.getIntent().equals(AuthorizationIntent.DELETED))
                   .collect(Collectors.toList()))
           .extracting(Record::getIntent)
           .endsWith(AuthorizationIntent.DELETE, AuthorizationIntent.DELETED);
