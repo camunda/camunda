@@ -17,7 +17,7 @@ import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionInstanceState;
-import io.camunda.it.utils.BrokerITInvocationProvider;
+import io.camunda.it.utils.MultiDbTest;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -25,55 +25,45 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.api.TestTemplate;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
-@TestInstance(Lifecycle.PER_CLASS)
+@MultiDbTest
 class DecisionInstanceQueryTest {
-
-  // TODO Bugs in RDBMS
-  @RegisterExtension
-  static final BrokerITInvocationProvider PROVIDER =
-      new BrokerITInvocationProvider().withoutRdbmsExporter();
 
   private static final String DECISION_DEFINITION_ID_1 = "decision_1";
   private static final String DECISION_DEFINITION_ID_2 = "invoiceAssignApprover";
+  private static CamundaClient camundaClient;
   // evaluated decisions mapped by decision definition id
-  private final Map<String, EvaluateDecisionResponse> evaluatedDecisions = new HashMap<>();
+  private static final Map<String, EvaluateDecisionResponse> EVALUATED_DECISIONS = new HashMap<>();
   private boolean initialized;
 
-  @BeforeEach
-  void setUp(final CamundaClient camundaClient) {
-    if (!initialized) {
+  @BeforeAll
+  static void setUp() {
 
-      List.of("decision_model.dmn", "invoiceBusinessDecisions_v_1.dmn")
-          .forEach(
-              dmn ->
-                  deployResource(camundaClient, String.format("decisions/%s", dmn)).getDecisions());
-      evaluatedDecisions.put(
-          DECISION_DEFINITION_ID_1,
-          evaluateDecision(
-              camundaClient, DECISION_DEFINITION_ID_1, "{\"age\": 20, \"income\": 20000}"));
-      evaluatedDecisions.put(
-          DECISION_DEFINITION_ID_2,
-          evaluateDecision(
-              camundaClient,
-              DECISION_DEFINITION_ID_2,
-              "{\"amount\": 100, \"invoiceCategory\": \"Misc\"}"));
-      waitForDecisionsToBeEvaluated(
-          camundaClient,
-          evaluatedDecisions.values().stream()
-              .mapToInt(v -> v.getEvaluatedDecisions().size())
-              .sum());
-      initialized = true;
-    }
+    List.of("decision_model.dmn", "invoiceBusinessDecisions_v_1.dmn")
+        .forEach(
+            dmn ->
+                deployResource(camundaClient, String.format("decisions/%s", dmn)).getDecisions());
+    EVALUATED_DECISIONS.put(
+        DECISION_DEFINITION_ID_1,
+        evaluateDecision(
+            camundaClient, DECISION_DEFINITION_ID_1, "{\"age\": 20, \"income\": 20000}"));
+    EVALUATED_DECISIONS.put(
+        DECISION_DEFINITION_ID_2,
+        evaluateDecision(
+            camundaClient,
+            DECISION_DEFINITION_ID_2,
+            "{\"amount\": 100, \"invoiceCategory\": \"Misc\"}"));
+    waitForDecisionsToBeEvaluated(
+        camundaClient,
+        EVALUATED_DECISIONS.values().stream()
+            .mapToInt(v -> v.getEvaluatedDecisions().size())
+            .sum());
   }
 
-  @TestTemplate
-  public void shouldRetrieveAllDecisionInstances(final CamundaClient camundaClient) {
+  @Test
+  public void shouldRetrieveAllDecisionInstances() {
     // when
     final var result =
         camundaClient
@@ -90,13 +80,13 @@ class DecisionInstanceQueryTest {
                 .map(DecisionInstance::getDecisionInstanceKey)
                 .collect(Collectors.toSet()))
         .containsExactlyElementsOf(
-            evaluatedDecisions.values().stream()
+            EVALUATED_DECISIONS.values().stream()
                 .map(EvaluateDecisionResponse::getDecisionInstanceKey)
                 .collect(Collectors.toSet()));
   }
 
-  @TestTemplate
-  void shouldSearchByFromWithLimit(final CamundaClient camundaClient) {
+  @Test
+  void shouldSearchByFromWithLimit() {
     // when
     final var resultAll = camundaClient.newDecisionInstanceQuery().send().join();
 
@@ -114,12 +104,12 @@ class DecisionInstanceQueryTest {
         .isEqualTo(thirdKey);
   }
 
-  @TestTemplate
+  @Test
   public void shouldRetrieveDecisionInstanceByDecisionDefinitionKey(
       final CamundaClient camundaClient) {
     // when
     final long decisionDefinitionKey =
-        evaluatedDecisions.get(DECISION_DEFINITION_ID_1).getDecisionKey();
+        EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionKey();
     final var result =
         camundaClient
             .newDecisionInstanceQuery()
@@ -132,15 +122,15 @@ class DecisionInstanceQueryTest {
     assertThat(result.items().getFirst().getDecisionDefinitionKey())
         .isEqualTo(decisionDefinitionKey);
     assertThat(result.items().getFirst().getDecisionInstanceKey())
-        .isEqualTo(evaluatedDecisions.get(DECISION_DEFINITION_ID_1).getDecisionInstanceKey());
+        .isEqualTo(EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionInstanceKey());
   }
 
-  @TestTemplate
+  @Test
   public void shouldRetrieveDecisionInstanceByDecisionKeyFilterIn(
       final CamundaClient camundaClient) {
     // when
     final long decisionDefinitionKey =
-        evaluatedDecisions.get(DECISION_DEFINITION_ID_1).getDecisionKey();
+        EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionKey();
     final var result =
         camundaClient
             .newDecisionInstanceQuery()
@@ -153,15 +143,15 @@ class DecisionInstanceQueryTest {
     assertThat(result.items().getFirst().getDecisionDefinitionKey())
         .isEqualTo(decisionDefinitionKey);
     assertThat(result.items().getFirst().getDecisionInstanceKey())
-        .isEqualTo(evaluatedDecisions.get(DECISION_DEFINITION_ID_1).getDecisionInstanceKey());
+        .isEqualTo(EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionInstanceKey());
   }
 
-  @TestTemplate
+  @Test
   public void shouldRetrieveDecisionInstanceByDecisionInstanceKey(
       final CamundaClient camundaClient) {
     // when
     final long decisionInstanceKey =
-        evaluatedDecisions.get(DECISION_DEFINITION_ID_2).getDecisionInstanceKey();
+        EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_2).getDecisionInstanceKey();
     final var result =
         camundaClient
             .newDecisionInstanceQuery()
@@ -175,8 +165,8 @@ class DecisionInstanceQueryTest {
     assertThat(result.items().getLast().getDecisionInstanceKey()).isEqualTo(decisionInstanceKey);
   }
 
-  @TestTemplate
-  public void shouldRetrieveDecisionInstanceByStateAndType(final CamundaClient camundaClient) {
+  @Test
+  public void shouldRetrieveDecisionInstanceByStateAndType() {
     // when
     final DecisionInstanceState state = DecisionInstanceState.EVALUATED;
     final DecisionDefinitionType type = DecisionDefinitionType.DECISION_TABLE;
@@ -191,8 +181,8 @@ class DecisionInstanceQueryTest {
     assertThat(result.items().size()).isEqualTo(3);
   }
 
-  @TestTemplate
-  public void shouldRetrieveDecisionInstanceByEvaluationDate(final CamundaClient camundaClient) {
+  @Test
+  public void shouldRetrieveDecisionInstanceByEvaluationDate() {
     // given
     final var allResult =
         camundaClient.newDecisionInstanceQuery().page(p -> p.limit(1)).send().join();
@@ -212,7 +202,7 @@ class DecisionInstanceQueryTest {
         .isEqualTo(di.getDecisionInstanceKey());
   }
 
-  @TestTemplate
+  @Test
   public void shouldRetrieveDecisionInstanceByEvaluationDateFilterGt(
       final CamundaClient camundaClient) {
     // given
@@ -244,7 +234,7 @@ class DecisionInstanceQueryTest {
         .noneMatch(key -> di.getDecisionInstanceKey() == key);
   }
 
-  @TestTemplate
+  @Test
   public void shouldRetrieveDecisionInstanceByEvaluationDateFilterGte(
       final CamundaClient camundaClient) {
     // given
@@ -276,13 +266,13 @@ class DecisionInstanceQueryTest {
         .anyMatch(key -> di.getDecisionInstanceKey() == key);
   }
 
-  @TestTemplate
+  @Test
   public void shouldRetrieveDecisionInstanceByDmnDecisionIdAndDecisionVersion(
       final CamundaClient camundaClient) {
     // when
-    final String dmnDecisionId = evaluatedDecisions.get(DECISION_DEFINITION_ID_1).getDecisionId();
+    final String dmnDecisionId = EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionId();
     final int decisionVersion =
-        evaluatedDecisions.get(DECISION_DEFINITION_ID_1).getDecisionVersion();
+        EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionVersion();
     final var result =
         camundaClient
             .newDecisionInstanceQuery()
@@ -296,14 +286,14 @@ class DecisionInstanceQueryTest {
     // then
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().get(0).getDecisionInstanceKey())
-        .isEqualTo(evaluatedDecisions.get(DECISION_DEFINITION_ID_1).getDecisionInstanceKey());
+        .isEqualTo(EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionInstanceKey());
   }
 
-  @TestTemplate
-  void shouldGetDecisionInstance(final CamundaClient camundaClient) {
+  @Test
+  void shouldGetDecisionInstance() {
     // when
     final long decisionInstanceKey =
-        evaluatedDecisions.get(DECISION_DEFINITION_ID_2).getDecisionInstanceKey();
+        EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_2).getDecisionInstanceKey();
     final var decisionInstanceId = "%d-%d".formatted(decisionInstanceKey, 1);
     final var result =
         camundaClient.newDecisionInstanceGetRequest(decisionInstanceId).send().join();
@@ -313,8 +303,8 @@ class DecisionInstanceQueryTest {
     assertThat(result.getDecisionInstanceKey()).isEqualTo(decisionInstanceKey);
   }
 
-  @TestTemplate
-  void shouldReturn404ForNotFoundDecisionInstance(final CamundaClient camundaClient) {
+  @Test
+  void shouldReturn404ForNotFoundDecisionInstance() {
     // when
     final var decisionInstanceId = "not-existing";
     final var problemException =
@@ -327,7 +317,7 @@ class DecisionInstanceQueryTest {
         .isEqualTo("Decision instance with key %s not found".formatted(decisionInstanceId));
   }
 
-  private DeploymentEvent deployResource(
+  private static DeploymentEvent deployResource(
       final CamundaClient camundaClient, final String resourceName) {
     return camundaClient
         .newDeployResourceCommand()
@@ -336,7 +326,7 @@ class DecisionInstanceQueryTest {
         .join();
   }
 
-  private EvaluateDecisionResponse evaluateDecision(
+  private static EvaluateDecisionResponse evaluateDecision(
       final CamundaClient camundaClient,
       final String decisionDefinitionId,
       final String variables) {
@@ -348,7 +338,7 @@ class DecisionInstanceQueryTest {
         .join();
   }
 
-  private void waitForDecisionsToBeEvaluated(
+  private static void waitForDecisionsToBeEvaluated(
       final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should deploy decision definitions and import in Operate")
         .atMost(Duration.ofSeconds(15))
