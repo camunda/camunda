@@ -743,13 +743,14 @@ public class AuthorizationCheckBehaviorTest {
     final var resourceId = UUID.randomUUID().toString();
     engine
         .authorization()
-        .permission()
+        .newAuthorization()
         .withOwnerKey(roleKey)
         .withOwnerId(String.valueOf(roleKey))
-        .withOwnerType(AuthorizationOwnerType.GROUP)
+        .withOwnerType(AuthorizationOwnerType.ROLE)
         .withResourceType(resourceType)
-        .withPermission(permissionType, resourceId)
-        .add();
+        .withResourceId(resourceId)
+        .withPermissions(permissionType)
+        .create();
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when

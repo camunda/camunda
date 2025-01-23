@@ -23,6 +23,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Set;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
 import org.junit.rules.TestWatcher;
 
 public class RemovePermissionAuthorizationTest {
@@ -84,6 +85,8 @@ public class RemovePermissionAuthorizationTest {
             tuple(PermissionType.DELETE_PROCESS, Set.of("bar")));
   }
 
+  // TODO: we should decide if we refactor or remove this test with the GitHub issue specified below
+  @Disabled("https://github.com/camunda/camunda/issues/27344")
   @Test
   public void shouldRejectIfNoOwnerExists() {
     // given no user
