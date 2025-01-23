@@ -433,7 +433,7 @@
               <value>${version.identity}</value>
             </property>
           </systemProperties>
-          <groups>!rdbms & !multi-db-test</groups>
+          <excludedGroups>rdbms, multi-db-test</excludedGroups>
         </configuration>
         <dependencies>
           <dependency>
