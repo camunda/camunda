@@ -2,7 +2,6 @@ networks:
   zeebe_network: {}
 
 services:
-
   postgres:
     container_name: postgres
     image: postgres:16.4-alpine
@@ -88,7 +87,7 @@ services:
       KEYCLOAK_ADMIN_USER: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080/auth" ]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/auth"]
       interval: 30s
       timeout: 15s
       retries: 8
@@ -316,6 +315,38 @@ services:
     env_file:
       - envs/.env.database.${DATABASE}
       - envs/.env.identity
+    networks:
+      - zeebe_network
+
+  optimize:
+    profiles: ["", "elasticsearch"]
+    container_name: optimize
+    image: camunda/optimize:8.7.0-SNAPSHOT
+    depends_on:
+      - elasticsearch
+      - identity
+    ports:
+      - "8086:8090"
+      - "8092:8092"
+    environment:
+      - SPRING_PROFILES_ACTIVE=ccsm
+      - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
+      - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL=http://keycloak:8080/auth/realms/camunda-platform
+      - CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL=http://identity:8084/
+      - CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID=optimize
+      - CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET=XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
+      - CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE=optimize-api
+      - OPTIMIZE_ELASTICSEARCH_HOST=elasticsearch
+      - OPTIMIZE_ELASTICSEARCH_HTTP_PORT=9200
+      - CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED=false
+      - CAMUNDA_OPTIMIZE_ENTERPRISE=false
+      - CAMUNDA_OPTIMIZE_ZEEBE_ENABLED=true
+      - CAMUNDA_OPTIMIZE_ZEEBE_NAME=zeebe-record
+      - CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT=2
+      - CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED=true
+      # This should only be set if you plan to use JWTs for the public API rather than a statically configured token
+      # - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
+      - OPTIMIZE_LOG_LEVEL=DEBUG
     networks:
       - zeebe_network
 
