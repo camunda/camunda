@@ -28,19 +28,19 @@ import org.junit.jupiter.api.Test;
 
 public class RemoveUserFromTenantTest extends ClientRestTest {
 
-  private static final long TENANT_KEY = 123L;
-  private static final long USER_KEY = 456L;
+  private static final String TENANT_ID = "tenant-id";
+  private static final String USERNAME = "username";
 
   @Test
   void shouldRemoveUserFromTenant() {
     // when
-    client.newRemoveUserFromTenantCommand(TENANT_KEY).userKey(USER_KEY).send().join();
+    client.newRemoveUserFromTenantCommand(TENANT_ID).username(USERNAME).send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
     final RequestMethod method = RestGatewayService.getLastRequest().getMethod();
     assertThat(requestPath)
-        .isEqualTo(REST_API_PATH + "/tenants/" + TENANT_KEY + "/users/" + USER_KEY);
+        .isEqualTo(REST_API_PATH + "/tenants/" + TENANT_ID + "/users/" + USERNAME);
     assertThat(method).isEqualTo(RequestMethod.DELETE);
   }
 
@@ -48,12 +48,12 @@ public class RemoveUserFromTenantTest extends ClientRestTest {
   void shouldRaiseExceptionOnNotFoundTenant() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_KEY + "/users/" + USER_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/users/" + USERNAME,
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
     assertThatThrownBy(
-            () -> client.newRemoveUserFromTenantCommand(TENANT_KEY).userKey(USER_KEY).send().join())
+            () -> client.newRemoveUserFromTenantCommand(TENANT_ID).username(USERNAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -62,12 +62,12 @@ public class RemoveUserFromTenantTest extends ClientRestTest {
   void shouldRaiseExceptionOnNotFoundUser() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_KEY + "/users/" + USER_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/users/" + USERNAME,
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
     assertThatThrownBy(
-            () -> client.newRemoveUserFromTenantCommand(TENANT_KEY).userKey(USER_KEY).send().join())
+            () -> client.newRemoveUserFromTenantCommand(TENANT_ID).username(USERNAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -76,12 +76,12 @@ public class RemoveUserFromTenantTest extends ClientRestTest {
   void shouldHandleServerError() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_KEY + "/users/" + USER_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/users/" + USERNAME,
         () -> new ProblemDetail().title("Internal Server Error").status(500));
 
     // when / then
     assertThatThrownBy(
-            () -> client.newRemoveUserFromTenantCommand(TENANT_KEY).userKey(USER_KEY).send().join())
+            () -> client.newRemoveUserFromTenantCommand(TENANT_ID).username(USERNAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 500: 'Internal Server Error'");
   }
@@ -90,12 +90,12 @@ public class RemoveUserFromTenantTest extends ClientRestTest {
   void shouldRaiseExceptionOnForbiddenRequest() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_KEY + "/users/" + USER_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/users/" + USERNAME,
         () -> new ProblemDetail().title("Forbidden").status(403));
 
     // when / then
     assertThatThrownBy(
-            () -> client.newRemoveUserFromTenantCommand(TENANT_KEY).userKey(USER_KEY).send().join())
+            () -> client.newRemoveUserFromTenantCommand(TENANT_ID).username(USERNAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 403: 'Forbidden'");
   }
