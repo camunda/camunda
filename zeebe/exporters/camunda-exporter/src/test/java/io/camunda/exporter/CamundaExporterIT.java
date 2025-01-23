@@ -409,6 +409,8 @@ final class CamundaExporterIT {
     final var expectedHandlers =
         resourceProvider.getExportHandlers().stream()
             .filter(exportHandler -> exportHandler.getHandledValueType() == valueType)
+            .filter(
+                exportHandler -> !exportHandler.getEntityType().equals(UserTaskVariableBatch.class))
             .filter(exportHandler -> exportHandler.handlesRecord(record))
             .toList();
 
@@ -427,19 +429,14 @@ final class CamundaExporterIT {
     assertThat(expectedHandlers).isNotEmpty();
     expectedHandlers.forEach(
         exportHandler -> {
-          ExporterEntity expectedEntity = getExpectedEntity(record, exportHandler);
-          if (exportHandler.getEntityType().equals(UserTaskVariableBatch.class)) {
-            assertThat(expectedEntity).isInstanceOf(UserTaskVariableBatch.class);
-            expectedEntity = ((UserTaskVariableBatch) expectedEntity).getVariables().getFirst();
-          }
+          final ExporterEntity expectedEntity = getExpectedEntity(record, exportHandler);
           final ExporterEntity<?> responseEntity;
           try {
             responseEntity =
                 clientAdapter.get(
-                    expectedEntity.getId(), exportHandler.getIndexName(), getType(exportHandler));
-            if (exportHandler.getEntityType().equals(UserTaskVariableBatch.class)) {
-              assertThat(responseEntity).isInstanceOf(TaskVariableEntity.class);
-            }
+                    expectedEntity.getId(),
+                    exportHandler.getIndexName(),
+                    exportHandler.getEntityType());
           } catch (final IOException e) {
             fail("Failed to find expected entity " + expectedEntity, e);
             return;
@@ -453,15 +450,63 @@ final class CamundaExporterIT {
         });
   }
 
-  /**
-   * For the {@link UserTaskVariableBatch} the actual persisted entities are of {@link
-   * TaskVariableEntity}
-   */
-  private Class<? extends ExporterEntity<? extends ExporterEntity<?>>> getType(
-      final ExportHandler<?, ?> handler) {
-    return handler.getEntityType().equals(UserTaskVariableBatch.class)
-        ? TaskVariableEntity.class
-        : handler.getEntityType();
+  @TestTemplate
+  void shouldExportUserTaskVariableBatchRecord(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter) {
+
+    // given
+    final var valueType = ValueType.VARIABLE;
+    final Record record = generateRecordWithSupportedBrokerVersion(valueType);
+    final var resourceProvider = new DefaultExporterResourceProvider();
+    resourceProvider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new SimpleMeterRegistry(),
+        new ExporterMetadata());
+
+    final CamundaExporter camundaExporter = new CamundaExporter();
+    final ExporterTestContext exporterTestContext =
+        new ExporterTestContext()
+            .setConfiguration(new ExporterTestConfiguration<>("camundaExporter", config));
+
+    camundaExporter.configure(exporterTestContext);
+    camundaExporter.open(new ExporterTestController());
+
+    // when
+    camundaExporter.export(record);
+
+    // then
+    final var handlerOpt =
+        resourceProvider.getExportHandlers().stream()
+            .filter(handler -> handler.getEntityType().equals(UserTaskVariableBatch.class))
+            .findFirst();
+
+    assertThat(handlerOpt).isPresent();
+    final var handler = handlerOpt.get();
+
+    ExporterEntity expectedEntity = getExpectedEntity(record, handler);
+    if (handler.getEntityType().equals(UserTaskVariableBatch.class)) {
+      assertThat(expectedEntity).isInstanceOf(UserTaskVariableBatch.class);
+      expectedEntity = ((UserTaskVariableBatch) expectedEntity).getVariables().getFirst();
+    }
+    final ExporterEntity<?> responseEntity;
+    try {
+      responseEntity =
+          clientAdapter.get(
+              expectedEntity.getId(), handler.getIndexName(), TaskVariableEntity.class);
+      if (handler.getEntityType().equals(UserTaskVariableBatch.class)) {
+        assertThat(responseEntity).isInstanceOf(TaskVariableEntity.class);
+      }
+    } catch (final IOException e) {
+      fail("Failed to find expected entity " + expectedEntity, e);
+      return;
+    }
+
+    assertThat(responseEntity)
+        .describedAs(
+            "Handler [%s] correctly handles a [%s] record",
+            handler.getClass().getSimpleName(), handler.getHandledValueType())
+        .isEqualTo(expectedEntity);
   }
 
   @TestTemplate
