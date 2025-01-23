@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
@@ -47,6 +48,13 @@ public class DbAuthorizationState implements MutableAuthorizationState {
   private final ColumnFamily<DbLong, PersistedAuthorization>
       authorizationByAuthorizationKeyColumnFamily;
 
+  // authorization key -> owner type + owner id + resource type
+  private final DbForeignKey<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbString>>
+      fkPermissionKey;
+  private final ColumnFamily<
+          DbLong, DbForeignKey<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbString>>>
+      permissionKeyByAuthorizationKeyColumnFamily;
+
   public DbAuthorizationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     ownerType = new DbString();
@@ -73,6 +81,15 @@ public class DbAuthorizationState implements MutableAuthorizationState {
             transactionContext,
             authorizationKey,
             new PersistedAuthorization());
+
+    fkPermissionKey =
+        new DbForeignKey<>(ownerTypeOwnerIdAndResourceType, ZbColumnFamilies.PERMISSIONS);
+    permissionKeyByAuthorizationKeyColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.PERMISSION_KEY_BY_AUTHORIZATION_KEY,
+            transactionContext,
+            authorizationKey,
+            fkPermissionKey);
   }
 
   @Override
@@ -116,6 +133,9 @@ public class DbAuthorizationState implements MutableAuthorizationState {
               permissions.addResourceIdentifier(permissionType, authorization.getResourceId());
             });
     permissionsColumnFamily.upsert(ownerTypeOwnerIdAndResourceType, permissions);
+
+    // add authorization key and permission key record
+    permissionKeyByAuthorizationKeyColumnFamily.insert(this.authorizationKey, fkPermissionKey);
   }
 
   @Override
