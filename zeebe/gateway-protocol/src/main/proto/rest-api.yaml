@@ -594,13 +594,13 @@ paths:
       summary: Remove a user from a tenant
       description: Removes a single user from a specified tenant without deleting the user.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.
           schema:
             type: string
-        - name: userKey
+        - name: username
           in: path
           required: true
           description: The unique identifier of the user.
