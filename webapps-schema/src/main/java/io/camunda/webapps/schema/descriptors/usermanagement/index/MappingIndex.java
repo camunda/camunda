@@ -12,7 +12,7 @@ import io.camunda.webapps.schema.descriptors.usermanagement.UserManagementIndexD
 
 public class MappingIndex extends UserManagementIndexDescriptor implements Prio5Backup {
   public static final String INDEX_NAME = "mapping";
-  public static final String INDEX_VERSION = "8.7.0";
+  public static final String INDEX_VERSION = "8.8.0";
 
   public static final String MAPPING_KEY = "mappingKey";
   public static final String CLAIM_NAME = "claimName";

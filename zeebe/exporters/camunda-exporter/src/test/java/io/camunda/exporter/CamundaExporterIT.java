@@ -328,13 +328,13 @@ final class CamundaExporterIT {
         // we verify the names hard coded on purpose
         // to make sure no index will be accidentally dropped, names are changed or added
         .containsExactlyInAnyOrder(
-            "custom-prefix-camunda-authorization-8.7.0_",
-            "custom-prefix-camunda-group-8.7.0_",
-            "custom-prefix-camunda-mapping-8.7.0_",
-            "custom-prefix-camunda-role-8.7.0_",
-            "custom-prefix-camunda-tenant-8.7.0_",
-            "custom-prefix-camunda-user-8.7.0_",
-            "custom-prefix-camunda-web-session-8.7.0_",
+            "custom-prefix-camunda-authorization-8.8.0_",
+            "custom-prefix-camunda-group-8.8.0_",
+            "custom-prefix-camunda-mapping-8.8.0_",
+            "custom-prefix-camunda-role-8.8.0_",
+            "custom-prefix-camunda-tenant-8.8.0_",
+            "custom-prefix-camunda-user-8.8.0_",
+            "custom-prefix-camunda-web-session-8.8.0_",
             "custom-prefix-operate-batch-operation-1.0.0_",
             "custom-prefix-operate-decision-8.3.0_",
             "custom-prefix-operate-decision-instance-8.3.0_",
@@ -424,7 +424,7 @@ final class CamundaExporterIT {
         factory.generateRecord(
             valueType,
             r ->
-                r.withBrokerVersion("8.7.0")
+                r.withBrokerVersion("8.8.0")
                     .withIntent(IncidentIntent.RESOLVED)
                     .withTimestamp(System.currentTimeMillis())
                     .withOperationReference(notExistingOperationReference));
@@ -457,7 +457,7 @@ final class CamundaExporterIT {
         factory.generateRecord(
             valueType,
             r ->
-                r.withBrokerVersion("8.7.0")
+                r.withBrokerVersion("8.8.0")
                     .withIntent(IncidentIntent.RESOLVED)
                     .withTimestamp(invalidTimestamp));
     final var resourceProvider = new DefaultExporterResourceProvider();
@@ -483,7 +483,7 @@ final class CamundaExporterIT {
   }
 
   @TestTemplate
-  void shouldNotExport860RecordButStillUpdateLastExportedPosition(
+  void shouldNotExport870RecordButStillUpdateLastExportedPosition(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given
@@ -491,7 +491,7 @@ final class CamundaExporterIT {
     final var record =
         factory.generateRecord(
             ValueType.AUTHORIZATION,
-            r -> r.withBrokerVersion("8.6.0").withPosition(recordPosition));
+            r -> r.withBrokerVersion("8.7.0").withPosition(recordPosition));
 
     final CamundaExporter camundaExporter = new CamundaExporter();
     final var controller = new ExporterTestController();
@@ -549,7 +549,7 @@ final class CamundaExporterIT {
   }
 
   private Record<?> generateRecordWithSupportedBrokerVersion(final ValueType valueType) {
-    return factory.generateRecord(valueType, r -> r.withBrokerVersion("8.7.0"));
+    return factory.generateRecord(valueType, r -> r.withBrokerVersion("8.8.0"));
   }
 
   private static Stream<Arguments> containerProvider() {
@@ -650,7 +650,7 @@ final class CamundaExporterIT {
       final var record =
           factory.generateRecord(
               ValueType.AUTHORIZATION,
-              r -> r.withBrokerVersion("8.7.0").withTimestamp(System.currentTimeMillis()));
+              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()));
 
       camundaExporter.export(record);
 
@@ -691,7 +691,7 @@ final class CamundaExporterIT {
       final var record =
           factory.generateRecord(
               ValueType.AUTHORIZATION,
-              r -> r.withBrokerVersion("8.7.0").withTimestamp(System.currentTimeMillis()));
+              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()));
 
       camundaExporter.export(record);
 
@@ -736,14 +736,14 @@ final class CamundaExporterIT {
       final var record =
           factory.generateRecord(
               ValueType.AUTHORIZATION,
-              r -> r.withBrokerVersion("8.7.0").withTimestamp(System.currentTimeMillis()));
+              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()));
 
       camundaExporter.export(record);
 
       final var record2 =
           factory.generateRecord(
               ValueType.AUTHORIZATION,
-              r -> r.withBrokerVersion("8.7.0").withTimestamp(System.currentTimeMillis()));
+              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()));
 
       // then
       assertThatThrownBy(() -> camundaExporter.export(record2))
