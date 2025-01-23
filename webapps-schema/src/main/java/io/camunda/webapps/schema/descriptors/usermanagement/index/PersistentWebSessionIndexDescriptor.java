@@ -14,7 +14,7 @@ public class PersistentWebSessionIndexDescriptor extends UserManagementIndexDesc
     implements Prio5Backup {
 
   public static final String INDEX_NAME = "web-session";
-  public static final String INDEX_VERSION = "8.7.0";
+  public static final String INDEX_VERSION = "8.8.0";
 
   public PersistentWebSessionIndexDescriptor(
       final String indexPrefix, final boolean isElasticsearch) {

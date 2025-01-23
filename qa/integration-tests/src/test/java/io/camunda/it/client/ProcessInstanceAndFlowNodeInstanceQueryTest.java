@@ -26,9 +26,7 @@ import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.it.utils.MultiDbTest;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -36,31 +34,19 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-@ZeebeIntegration
+@MultiDbTest
 public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
   static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
   static final List<ProcessInstanceEvent> PROCESS_INSTANCES = new ArrayList<>();
 
-  private static CamundaClient camundaClient;
-
-  @TestZeebe(initMethod = "initTestStandaloneCamunda")
-  private static TestStandaloneCamunda testStandaloneCamunda;
-
   private static FlowNodeInstance flowNodeInstance;
   private static FlowNodeInstance flowNodeInstanceWithIncident;
-
-  @SuppressWarnings("unused")
-  static void initTestStandaloneCamunda() {
-    testStandaloneCamunda =
-        new TestStandaloneCamunda().withElasticsearchExporter(false).withCamundaExporter();
-  }
+  private static CamundaClient camundaClient;
 
   @BeforeAll
   public static void beforeAll() {
-
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
-
+    Objects.requireNonNull(camundaClient);
     final List<String> processes =
         List.of(
             "service_tasks_v1.bpmn",
