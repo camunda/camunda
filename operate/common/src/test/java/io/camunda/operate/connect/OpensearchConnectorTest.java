@@ -30,9 +30,9 @@ import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.concurrent.FutureCallback;
 import org.apache.hc.core5.http.message.BasicHttpRequest;
-import org.apache.hc.core5.http.protocol.BasicHttpContext;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -129,7 +129,8 @@ public class OpensearchConnectorTest {
     final OperateProperties operateProperties = new OperateProperties();
     final OperateOpensearchProperties osProperties = new OperateOpensearchProperties();
     operateProperties.setOpensearch(osProperties);
-    final OpensearchConnector connector = spy(new OpensearchConnector(operateProperties, mock()));
+    final OpensearchConnector connector =
+        spy(new OpensearchConnector(operateProperties, objectMapper));
     doReturn(true).when(connector).checkHealth(any(OpenSearchClient.class));
     doReturn(true).when(connector).checkHealth(any(OpenSearchAsyncClient.class));
     doReturn(mock(HttpAsyncClientBuilder.class))
@@ -177,7 +178,7 @@ public class OpensearchConnectorTest {
 
   @Test
   void shouldApplyRequestInterceptorsForOSOperateClient() throws Exception {
-    final var context = new BasicHttpContext();
+    final var context = HttpClientContext.create();
     final var operateProps = new OperateProperties();
     final PluginRepository pluginRepository = new PluginRepository();
     pluginRepository.load(
@@ -213,7 +214,7 @@ public class OpensearchConnectorTest {
 
   @Test
   void shouldApplyRequestInterceptorsForOSAsyncOperateClient() throws Exception {
-    final var context = new BasicHttpContext();
+    final var context = HttpClientContext.create();
     final var operateProperties = new OperateProperties();
     final PluginRepository pluginRepository = new PluginRepository();
     pluginRepository.load(
