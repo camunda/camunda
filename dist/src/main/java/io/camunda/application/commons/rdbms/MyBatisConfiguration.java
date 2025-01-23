@@ -33,7 +33,6 @@ import javax.sql.DataSource;
 import liquibase.integration.spring.MultiTenantSpringLiquibase;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.mapping.DatabaseIdProvider;
-import org.apache.ibatis.mapping.VendorDatabaseIdProvider;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.OffsetDateTimeTypeHandler;
@@ -77,23 +76,14 @@ public class MyBatisConfiguration {
   }
 
   @Bean
-  public VendorDatabaseIdProvider vendorDatabaseIdProvider() {
-    final var vendorProperties = new Properties();
-    vendorProperties.put("H2", "h2");
-    vendorProperties.put("PostgreSQL", "postgresql");
-    vendorProperties.put("Oracle", "oracle");
-    vendorProperties.put("MariaDB", "mariadb");
-    vendorProperties.put("MySQL", "mariadb");
-    vendorProperties.put("SQL Server", "sqlserver");
-    final var databaseIdProvider = new VendorDatabaseIdProvider();
-    databaseIdProvider.setProperties(vendorProperties);
-
-    return databaseIdProvider;
+  public RdbmsDatabaseIdProvider databaseIdProvider(
+      @Value("${camunda.database.database-vendor-id:}") final String vendorId) {
+    return new RdbmsDatabaseIdProvider(vendorId);
   }
 
   @Bean
   public VendorDatabaseProperties databaseProperties(
-      final DataSource dataSource, final VendorDatabaseIdProvider databaseIdProvider)
+      final DataSource dataSource, final RdbmsDatabaseIdProvider databaseIdProvider)
       throws IOException {
     final var databaseId = databaseIdProvider.getDatabaseId(dataSource);
     LOGGER.info("Detected databaseId: {}", databaseId);
