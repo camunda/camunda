@@ -12,13 +12,14 @@ import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
-public class VariableForListViewEntity extends AbstractExporterEntity<VariableForListViewEntity> {
+public class VariableForListViewEntity extends AbstractExporterEntity<VariableForListViewEntity>
+    implements TenantOwned {
 
   private Long processInstanceKey;
   private Long scopeKey;
   private String varName;
   private String varValue;
-  private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
   private Long position;
 
   private ListViewJoinRelation joinRelation =
@@ -64,6 +65,7 @@ public class VariableForListViewEntity extends AbstractExporterEntity<VariableFo
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }

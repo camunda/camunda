@@ -16,7 +16,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-public class DecisionInstanceEntity extends AbstractExporterEntity<DecisionInstanceEntity> {
+public class DecisionInstanceEntity extends AbstractExporterEntity<DecisionInstanceEntity>
+    implements TenantOwned {
 
   private Integer executionIndex;
   private DecisionInstanceState state;
@@ -44,7 +45,7 @@ public class DecisionInstanceEntity extends AbstractExporterEntity<DecisionInsta
   private String result;
   private List<DecisionInstanceInputEntity> evaluatedInputs = new ArrayList<>();
   private List<DecisionInstanceOutputEntity> evaluatedOutputs = new ArrayList<>();
-  private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   @JsonIgnore private Object[] sortValues;
 
@@ -274,6 +275,7 @@ public class DecisionInstanceEntity extends AbstractExporterEntity<DecisionInsta
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }

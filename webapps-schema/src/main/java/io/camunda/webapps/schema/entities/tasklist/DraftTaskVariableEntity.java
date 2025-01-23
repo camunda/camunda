@@ -12,9 +12,10 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
 /** Represents draft variable with its value when task is in created state. */
-public class DraftTaskVariableEntity extends AbstractExporterEntity<DraftTaskVariableEntity> {
+public class DraftTaskVariableEntity extends AbstractExporterEntity<DraftTaskVariableEntity>
+    implements TenantOwned {
 
-  private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
   private String taskId;
   private String name;
   private String value;
@@ -66,6 +67,7 @@ public class DraftTaskVariableEntity extends AbstractExporterEntity<DraftTaskVar
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }

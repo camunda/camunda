@@ -12,7 +12,8 @@ import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
-public class TaskProcessInstanceEntity extends AbstractExporterEntity<TaskProcessInstanceEntity> {
+public class TaskProcessInstanceEntity extends AbstractExporterEntity<TaskProcessInstanceEntity>
+    implements TenantOwned {
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long processInstanceId;
@@ -20,7 +21,7 @@ public class TaskProcessInstanceEntity extends AbstractExporterEntity<TaskProces
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private TaskJoinRelationship join;
 
-  private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   public TaskProcessInstanceEntity() {}
 
@@ -42,6 +43,7 @@ public class TaskProcessInstanceEntity extends AbstractExporterEntity<TaskProces
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }

@@ -12,7 +12,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public class EventEntity extends AbstractExporterEntity<EventEntity> {
+public class EventEntity extends AbstractExporterEntity<EventEntity> implements TenantOwned {
 
   /** Process data. */
   private Long processDefinitionKey;
@@ -34,7 +34,7 @@ public class EventEntity extends AbstractExporterEntity<EventEntity> {
   /** Metadata */
   private EventMetadataEntity metadata;
 
-  private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   private Long position;
   private Long positionIncident;
@@ -122,6 +122,7 @@ public class EventEntity extends AbstractExporterEntity<EventEntity> {
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }

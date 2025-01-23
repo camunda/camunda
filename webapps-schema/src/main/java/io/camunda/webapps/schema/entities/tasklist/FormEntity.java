@@ -12,12 +12,12 @@ import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
-public class FormEntity extends AbstractExporterEntity<FormEntity> {
+public class FormEntity extends AbstractExporterEntity<FormEntity> implements TenantOwned {
 
   @JsonProperty("bpmnId")
   private String formId;
 
-  private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
   private String schema;
   private Long version;
   private Boolean isDeleted;
@@ -78,6 +78,7 @@ public class FormEntity extends AbstractExporterEntity<FormEntity> {
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }

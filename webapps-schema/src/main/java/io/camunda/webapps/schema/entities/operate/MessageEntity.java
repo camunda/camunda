@@ -12,7 +12,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public class MessageEntity extends AbstractExporterEntity<MessageEntity> {
+public class MessageEntity extends AbstractExporterEntity<MessageEntity> implements TenantOwned {
 
   private String messageName;
   private String correlationKey;
@@ -22,7 +22,7 @@ public class MessageEntity extends AbstractExporterEntity<MessageEntity> {
   private Long timeToLive;
   private String messageId;
   private String variables;
-  private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   public String getMessageName() {
     return messageName;
@@ -96,6 +96,7 @@ public class MessageEntity extends AbstractExporterEntity<MessageEntity> {
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }

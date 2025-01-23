@@ -13,7 +13,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public class IncidentEntity extends AbstractExporterEntity<IncidentEntity> {
+public class IncidentEntity extends AbstractExporterEntity<IncidentEntity> implements TenantOwned {
 
   private ErrorType errorType;
 
@@ -40,7 +40,7 @@ public class IncidentEntity extends AbstractExporterEntity<IncidentEntity> {
 
   private String treePath;
 
-  private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   private Long position;
 
@@ -164,6 +164,7 @@ public class IncidentEntity extends AbstractExporterEntity<IncidentEntity> {
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }

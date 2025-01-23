@@ -14,9 +14,9 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 
-public class TaskEntity extends AbstractExporterEntity<TaskEntity> {
+public class TaskEntity extends AbstractExporterEntity<TaskEntity> implements TenantOwned {
 
-  private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String flowNodeBpmnId;
@@ -332,6 +332,7 @@ public class TaskEntity extends AbstractExporterEntity<TaskEntity> {
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }

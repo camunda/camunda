@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Objects;
 
 public class ProcessInstanceForListViewEntity
-    extends AbstractExporterEntity<ProcessInstanceForListViewEntity> {
+    extends AbstractExporterEntity<ProcessInstanceForListViewEntity> implements TenantOwned {
 
   private Long processDefinitionKey;
   private String processName;
@@ -40,7 +40,7 @@ public class ProcessInstanceForListViewEntity
 
   private boolean incident;
 
-  private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   private ListViewJoinRelation joinRelation =
       new ListViewJoinRelation(PROCESS_INSTANCE_JOIN_RELATION);
@@ -178,6 +178,7 @@ public class ProcessInstanceForListViewEntity
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }

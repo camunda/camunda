@@ -12,9 +12,10 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
 /** Represents variable with its value at the moment when task was completed. */
-public class SnapshotTaskVariableEntity extends AbstractExporterEntity<SnapshotTaskVariableEntity> {
+public class SnapshotTaskVariableEntity extends AbstractExporterEntity<SnapshotTaskVariableEntity>
+    implements TenantOwned {
 
-  private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
   private String taskId;
   private String name;
   private String value;
@@ -78,6 +79,7 @@ public class SnapshotTaskVariableEntity extends AbstractExporterEntity<SnapshotT
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }

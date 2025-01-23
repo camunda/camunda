@@ -11,9 +11,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 
-public class TaskVariableEntity extends AbstractExporterEntity<TaskVariableEntity> {
+public class TaskVariableEntity extends AbstractExporterEntity<TaskVariableEntity>
+    implements TenantOwned {
 
-  private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String name;
@@ -113,6 +114,7 @@ public class TaskVariableEntity extends AbstractExporterEntity<TaskVariableEntit
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }

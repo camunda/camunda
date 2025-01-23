@@ -14,7 +14,8 @@ import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class FlowNodeInstanceEntity extends AbstractExporterEntity<FlowNodeInstanceEntity> {
+public class FlowNodeInstanceEntity extends AbstractExporterEntity<FlowNodeInstanceEntity>
+    implements TenantOwned {
 
   private String flowNodeId;
   private OffsetDateTime startDate;
@@ -34,7 +35,7 @@ public class FlowNodeInstanceEntity extends AbstractExporterEntity<FlowNodeInsta
   private int level;
   private Long position;
   private boolean incident;
-  private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
   private Long scopeKey;
 
   @JsonIgnore private Object[] sortValues;
@@ -167,6 +168,7 @@ public class FlowNodeInstanceEntity extends AbstractExporterEntity<FlowNodeInsta
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }

@@ -11,14 +11,15 @@ import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
-public class DecisionRequirementsEntity extends AbstractExporterEntity<DecisionRequirementsEntity> {
+public class DecisionRequirementsEntity extends AbstractExporterEntity<DecisionRequirementsEntity>
+    implements TenantOwned {
 
   private String decisionRequirementsId;
   private String name;
   private int version;
   private String xml;
   private String resourceName;
-  private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   public String getDecisionRequirementsId() {
     return decisionRequirementsId;
@@ -65,6 +66,7 @@ public class DecisionRequirementsEntity extends AbstractExporterEntity<DecisionR
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }

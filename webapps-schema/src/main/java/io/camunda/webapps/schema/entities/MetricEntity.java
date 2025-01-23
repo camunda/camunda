@@ -11,11 +11,11 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public class MetricEntity extends AbstractExporterEntity<MetricEntity> {
+public class MetricEntity extends AbstractExporterEntity<MetricEntity> implements TenantOwned {
   private String event;
   private String value;
   private OffsetDateTime eventTime;
-  private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   public MetricEntity() {
     super();
@@ -54,6 +54,7 @@ public class MetricEntity extends AbstractExporterEntity<MetricEntity> {
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }

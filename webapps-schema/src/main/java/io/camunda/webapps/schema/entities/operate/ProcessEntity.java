@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class ProcessEntity extends AbstractExporterEntity<ProcessEntity> {
+public class ProcessEntity extends AbstractExporterEntity<ProcessEntity> implements TenantOwned {
 
   private String name;
   private int version;
@@ -28,7 +28,7 @@ public class ProcessEntity extends AbstractExporterEntity<ProcessEntity> {
   private String formKey;
   private Boolean isFormEmbedded;
   private Boolean isPublic;
-  private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   public String getName() {
     return name;
@@ -197,6 +197,7 @@ public class ProcessEntity extends AbstractExporterEntity<ProcessEntity> {
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }
