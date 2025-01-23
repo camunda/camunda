@@ -512,7 +512,7 @@ public class TestContainerUtil {
       // this user cannot access a mounted volume that is owned by root
       broker.withCreateContainerCmdModifier(cmd -> cmd.withUser("root"));
 
-      if ("SNAPSHOT".equals(version) || SemanticVersion.fromVersion(version).isAtLeast("8.7.0")) {
+      if ("SNAPSHOT".equals(version) || SemanticVersion.fromVersion(version).isAtLeast("8.8.0")) {
         configureCamundaExporter(testContext);
       } else {
         configureElasticsearchExporter(testContext);
