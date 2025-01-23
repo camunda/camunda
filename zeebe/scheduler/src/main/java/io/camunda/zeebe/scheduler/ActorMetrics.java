@@ -7,6 +7,10 @@
  */
 package io.camunda.zeebe.scheduler;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,21 +18,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 final class ActorMetrics {
 
-  private static final io.micrometer.core.instrument.MeterRegistry METER_REGISTRY =
-      io.micrometer.core.instrument.Metrics.globalRegistry;
+  private static final MeterRegistry METER_REGISTRY = Metrics.globalRegistry;
 
   private static final String EXECUTION_COUNT_NAME = "zeebe_actor_task_execution_count";
   private static final ConcurrentHashMap<String, AtomicInteger> JOB_QUEUE_LENGTHS =
       new ConcurrentHashMap<>();
   private static final String JOB_QUEUE_NAME = "zeebe_actor_task_queue_length";
+  private static final String EXECUTION_TIMER_NAME = "zeebe_actor_task_execution_latency";
+  private static final String SCHEDULING_TIMER_NAME = "zeebe_actor_job_scheduling_latency";
 
   static {
-    io.micrometer.core.instrument.Timer.builder("zeebe_actor_task_execution_latency")
+    Timer.builder(EXECUTION_TIMER_NAME)
         .description("Execution time of a certain actor task")
         .sla(generateExponentialBuckets(1 / 1_000_000f, 4, 12))
         .register(METER_REGISTRY);
 
-    io.micrometer.core.instrument.Timer.builder("zeebe_actor_job_scheduling_latency")
+    Timer.builder(SCHEDULING_TIMER_NAME)
         .description("Time between scheduling and executing a job")
         .sla(generateExponentialBuckets(0.0001, 4, 10))
         .register(METER_REGISTRY);
@@ -39,7 +44,7 @@ final class ActorMetrics {
   public ActorMetrics(final boolean metricsEnabled) {
     enabled = metricsEnabled;
     if (enabled) {
-      io.micrometer.core.instrument.Counter.builder(EXECUTION_COUNT_NAME)
+      Counter.builder(EXECUTION_COUNT_NAME)
           .description("Number of times a certain actor task was executed successfully")
           .register(METER_REGISTRY);
     }
@@ -64,7 +69,7 @@ final class ActorMetrics {
   void stopExecutionTimer(final Timer.Sample sample, final String name) {
     if (enabled) {
       final Timer executionLatencyTimer =
-          METER_REGISTRY.timer("zeebe_actor_task_execution_latency", "actorName", name);
+          METER_REGISTRY.timer(EXECUTION_TIMER_NAME, "actorName", name);
       sample.stop(executionLatencyTimer);
     }
   }
@@ -82,8 +87,7 @@ final class ActorMetrics {
               actorName,
               k -> {
                 final AtomicInteger newJobQueueLength = new AtomicInteger();
-                io.micrometer.core.instrument.Gauge.builder(
-                        JOB_QUEUE_NAME, newJobQueueLength, AtomicInteger::get)
+                Gauge.builder(JOB_QUEUE_NAME, newJobQueueLength, AtomicInteger::get)
                     .description("The length of the job queue for an actor task")
                     .tag("actorName", actorName)
                     .register(METER_REGISTRY);
@@ -96,8 +100,7 @@ final class ActorMetrics {
   public void observeJobSchedulingLatency(final long waitTimeNs, final String subscriptionType) {
     if (enabled) {
       final Timer executionLatencyTimer =
-          METER_REGISTRY.timer(
-              "zeebe_actor_job_scheduling_latency", "subscriptionType", subscriptionType);
+          METER_REGISTRY.timer(SCHEDULING_TIMER_NAME, "subscriptionType", subscriptionType);
       final Duration duration = Duration.ofNanos(waitTimeNs);
       executionLatencyTimer.record(duration);
     }
