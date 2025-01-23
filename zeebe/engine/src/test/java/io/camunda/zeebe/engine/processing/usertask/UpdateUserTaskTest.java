@@ -33,6 +33,13 @@ public final class UpdateUserTaskTest {
   private static final String PROCESS_ID = "process";
   private static final String DEFAULT_ACTION = "update";
   private static final int DEFAULT_PRIORITY = 50;
+  private static final List<String> ALL_UPDATABLE_ATTRIBUTES =
+      List.of(
+          UserTaskRecord.CANDIDATE_GROUPS,
+          UserTaskRecord.CANDIDATE_USERS,
+          UserTaskRecord.DUE_DATE,
+          UserTaskRecord.FOLLOW_UP_DATE,
+          UserTaskRecord.PRIORITY);
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -82,7 +89,8 @@ public final class UpdateUserTaskTest {
                     .hasUserTaskKey(userTaskKey)
                     .hasAction(DEFAULT_ACTION)
                     .hasPriority(DEFAULT_PRIORITY)
-                    .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+                    .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+                    .hasOnlyChangedAttributes(ALL_UPDATABLE_ATTRIBUTES));
   }
 
   @Test
@@ -120,7 +128,8 @@ public final class UpdateUserTaskTest {
                 Assertions.assertThat(recordValue)
                     .hasUserTaskKey(userTaskKey)
                     .hasAction("customAction")
-                    .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+                    .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+                    .hasOnlyChangedAttributes(ALL_UPDATABLE_ATTRIBUTES));
   }
 
   @Test
@@ -180,7 +189,8 @@ public final class UpdateUserTaskTest {
                     .hasCandidateUsersList("initial_user_A", "initial_user_B")
                     .hasDueDate("2023-03-02T15:35+02:00")
                     .hasFollowUpDate("2023-03-02T16:35+02:00")
-                    .hasPriority(20));
+                    .hasPriority(20)
+                    .hasOnlyChangedAttributes(UserTaskRecord.CANDIDATE_GROUPS));
   }
 
   @Test
@@ -227,7 +237,8 @@ public final class UpdateUserTaskTest {
                     .hasCandidateUsersList("updated_user_C", "updated_user_D")
                     .hasDueDate("2023-03-02T15:35+02:00")
                     .hasFollowUpDate("2023-03-02T16:35+02:00")
-                    .hasPriority(20));
+                    .hasPriority(20)
+                    .hasOnlyChangedAttributes(UserTaskRecord.CANDIDATE_USERS));
   }
 
   @Test
@@ -271,7 +282,8 @@ public final class UpdateUserTaskTest {
                     .hasCandidateUsersList("initial_user_A", "initial_user_B")
                     .hasDueDate("updated_dueDate")
                     .hasFollowUpDate("2023-03-02T16:35+02:00")
-                    .hasPriority(20));
+                    .hasPriority(20)
+                    .hasOnlyChangedAttributes(UserTaskRecord.DUE_DATE));
   }
 
   @Test
@@ -318,7 +330,8 @@ public final class UpdateUserTaskTest {
                     .hasCandidateUsersList("initial_user_A", "initial_user_B")
                     .hasDueDate("2023-03-02T15:35+02:00")
                     .hasFollowUpDate("updated_followUpDate")
-                    .hasPriority(20));
+                    .hasPriority(20)
+                    .hasOnlyChangedAttributes(UserTaskRecord.FOLLOW_UP_DATE));
   }
 
   @Test
@@ -363,7 +376,8 @@ public final class UpdateUserTaskTest {
                     .hasCandidateUsersList("initial_user_A", "initial_user_B")
                     .hasDueDate("2023-03-02T15:35+02:00")
                     .hasFollowUpDate("2023-03-02T16:35+02:00")
-                    .hasPriority(newPriority));
+                    .hasPriority(newPriority)
+                    .hasOnlyChangedAttributes(UserTaskRecord.PRIORITY));
   }
 
   @Test
@@ -404,7 +418,8 @@ public final class UpdateUserTaskTest {
                     .hasNoCandidateUsersList()
                     .hasDueDate("")
                     .hasFollowUpDate("")
-                    .hasPriority(DEFAULT_PRIORITY));
+                    .hasPriority(DEFAULT_PRIORITY)
+                    .hasOnlyChangedAttributes(ALL_UPDATABLE_ATTRIBUTES));
   }
 
   @Test
