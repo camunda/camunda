@@ -27,7 +27,9 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CreateAuthorizationResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.CreateAuthorizationResponseImpl;
 import io.camunda.client.protocol.rest.AuthorizationRequest;
+import io.camunda.client.protocol.rest.AuthorizationCreateResult;
 import io.camunda.client.protocol.rest.OwnerTypeEnum;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
@@ -105,8 +107,14 @@ public class CreateAuthorizationCommandImpl
   @Override
   public CamundaFuture<CreateAuthorizationResponse> send() {
     final HttpCamundaFuture<CreateAuthorizationResponse> result = new HttpCamundaFuture<>();
-    httpClient.patch(
-        "/authorizations", jsonMapper.toJson(request), httpRequestConfig.build(), result);
+    final CreateAuthorizationResponseImpl response = new CreateAuthorizationResponseImpl();
+    httpClient.post(
+        "/authorizations",
+        jsonMapper.toJson(request),
+        httpRequestConfig.build(),
+        AuthorizationCreateResult.class,
+        response::setResponse,
+        result);
     return result;
   }
 }
