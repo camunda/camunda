@@ -98,8 +98,6 @@ public class MappingAppliersTest {
             .setEntityType(EntityType.MAPPING);
     groupState.create(groupKey, group);
     groupState.addEntity(groupKey, group);
-    // create owner
-    authorizationState.insertOwnerTypeByKey(mappingKey, AuthorizationOwnerType.MAPPING);
     // create authorization
     authorizationState.createOrAddPermission(
         AuthorizationOwnerType.MAPPING,
@@ -113,7 +111,6 @@ public class MappingAppliersTest {
 
     // then
     assertThat(mappingState.get(mappingKey)).isEmpty();
-    assertThat(authorizationState.getOwnerType(mappingKey)).isEmpty();
     assertThat(
             authorizationState.getResourceIdentifiers(
                 AuthorizationOwnerType.MAPPING,

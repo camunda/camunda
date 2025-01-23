@@ -52,8 +52,6 @@ public class UserDeletedApplierTest {
             .setPassword("password");
     userState.create(userRecord);
 
-    authorizationState.insertOwnerTypeByKey(userRecord.getUserKey(), AuthorizationOwnerType.USER);
-
     authorizationState.createOrAddPermission(
         AuthorizationOwnerType.USER,
         userRecord.getUsername(),
@@ -67,11 +65,6 @@ public class UserDeletedApplierTest {
         DECISION_DEFINITION,
         DELETE,
         Set.of("definition1"));
-
-    final var ownerType = authorizationState.getOwnerType(userRecord.getUserKey());
-
-    assertThat(ownerType).isPresent();
-    assertThat(ownerType.get()).isEqualTo(AuthorizationOwnerType.USER);
 
     assertThat(
             authorizationState.getResourceIdentifiers(
@@ -89,7 +82,6 @@ public class UserDeletedApplierTest {
     userDeletedApplier.applyState(userRecord.getUserKey(), userRecord);
 
     // then
-    assertThat(authorizationState.getOwnerType(userRecord.getUserKey())).isEmpty();
     assertThat(
             authorizationState.getResourceIdentifiers(
                 AuthorizationOwnerType.USER, userRecord.getUsername(), PROCESS_DEFINITION, CREATE))
