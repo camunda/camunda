@@ -19,6 +19,7 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const [apiCall, { loading, namedErrors }] = useApiCall(createTenant);
   const [name, setName] = useState("");
   const [tenantId, setTenantId] = useState("");
+  const [description, setDescription] = useState("");
 
   const submitDisabled = loading || !name || !tenantId;
 
@@ -26,6 +27,7 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     const { success } = await apiCall({
       name,
       tenantId,
+      description,
     });
 
     if (success) {
@@ -64,6 +66,13 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         onChange={setTenantId}
         value={tenantId}
         errors={namedErrors?.tenantId}
+      />
+      <TextField
+        label={t("Description")}
+        value={description}
+        placeholder={t("Enter a tenant description")}
+        onChange={setDescription}
+        errors={namedErrors?.description}
       />
     </FormModal>
   );

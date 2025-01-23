@@ -45,7 +45,7 @@ public class ProcessFlowNodeProvider {
                     q.filter(f -> f.processDefinitionKeys(keysList))
                         .page(p -> p.size(processDefinitionKeys.size()))));
 
-    if (result.total() > result.items().size()) {
+    if (result.total() < processDefinitionKeys.size()) {
       LOG.warn("Could not load all required process definitions");
     }
 

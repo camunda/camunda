@@ -16,6 +16,7 @@ export type Tenant = EntityData & {
   tenantKey: string;
   tenantId: string;
   name: string;
+  description: string;
 };
 
 export const searchTenant: ApiDefinition<SearchResponse<Tenant>> = () =>
@@ -24,6 +25,7 @@ export const searchTenant: ApiDefinition<SearchResponse<Tenant>> = () =>
 type GetTenantParams = {
   tenantId?: string;
   name?: string;
+  description?: string;
 };
 
 export const getTenantDetails: ApiDefinition<
@@ -43,6 +45,7 @@ export const createTenant: ApiDefinition<undefined, CreateTenantParams> = (
 export type UpdateTenantParams = {
   tenantId: string;
   name: string;
+  description: string;
 };
 
 export type DeleteTenantParams = UpdateTenantParams;
@@ -50,7 +53,8 @@ export type DeleteTenantParams = UpdateTenantParams;
 export const updateTenant: ApiDefinition<undefined, UpdateTenantParams> = ({
   tenantId,
   name,
-}) => apiPatch(`${TENANTS_ENDPOINT}/${tenantId}`, { name });
+  description,
+}) => apiPatch(`${TENANTS_ENDPOINT}/${tenantId}`, { name, description });
 
 export const deleteTenant: ApiDefinition<undefined, { tenantId: string }> = ({
   tenantId,

@@ -45,7 +45,7 @@ public class TenantEntityRemovedHandler implements ExportHandler<TenantEntity, T
   public List<String> generateIds(final Record<TenantRecordValue> record) {
     final var tenantRecord = record.getValue();
     return List.of(
-        TenantEntity.getChildKey(tenantRecord.getTenantKey(), tenantRecord.getEntityKey()));
+        TenantEntity.getChildKey(tenantRecord.getTenantId(), tenantRecord.getEntityId()));
   }
 
   @Override
@@ -56,8 +56,8 @@ public class TenantEntityRemovedHandler implements ExportHandler<TenantEntity, T
   @Override
   public void updateEntity(final Record<TenantRecordValue> record, final TenantEntity entity) {
     final TenantRecordValue value = record.getValue();
-    final var joinRelation = TenantIndex.JOIN_RELATION_FACTORY.createChild(value.getTenantKey());
-    entity.setMemberKey(value.getEntityKey()).setJoin(joinRelation);
+    final var joinRelation = TenantIndex.JOIN_RELATION_FACTORY.createChild(value.getTenantId());
+    entity.setMemberId(value.getEntityId()).setJoin(joinRelation);
   }
 
   @Override

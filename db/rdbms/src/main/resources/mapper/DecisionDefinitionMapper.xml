@@ -12,7 +12,7 @@
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.DecisionDefinitionDbQuery">
     SELECT COUNT(*)
-    FROM DECISION_DEFINITION
+    FROM ${prefix}DECISION_DEFINITION
     <include refid="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.searchFilter"/>
   </select>
 
@@ -26,7 +26,7 @@
     VERSION,
     DECISION_REQUIREMENTS_KEY,
     DECISION_REQUIREMENTS_ID
-    FROM DECISION_DEFINITION
+    FROM ${prefix}DECISION_DEFINITION
     <include refid="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -96,7 +96,7 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.DecisionDefinitionDbModel"
     flushCache="true">
-    INSERT INTO DECISION_DEFINITION (DECISION_DEFINITION_KEY, DECISION_DEFINITION_ID, NAME, TENANT_ID, VERSION, DECISION_REQUIREMENTS_ID, DECISION_REQUIREMENTS_KEY)
+    INSERT INTO ${prefix}DECISION_DEFINITION (DECISION_DEFINITION_KEY, DECISION_DEFINITION_ID, NAME, TENANT_ID, VERSION, DECISION_REQUIREMENTS_ID, DECISION_REQUIREMENTS_KEY)
     VALUES (#{decisionDefinitionKey}, #{decisionDefinitionId}, #{name},
             #{tenantId}, #{version}, #{decisionRequirementsId}, #{decisionRequirementsKey})
   </insert>

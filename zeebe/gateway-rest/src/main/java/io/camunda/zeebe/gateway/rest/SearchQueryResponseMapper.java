@@ -315,11 +315,7 @@ public final class SearchQueryResponseMapper {
         .tenantKey(tenantEntity.key())
         .name(tenantEntity.name())
         .description(tenantEntity.description())
-        .tenantId(tenantEntity.tenantId())
-        .assignedMemberKeys(
-            tenantEntity.assignedMemberKeys() == null
-                ? null
-                : tenantEntity.assignedMemberKeys().stream().sorted().toList());
+        .tenantId(tenantEntity.tenantId());
   }
 
   private static List<MappingItem> toMappings(final List<MappingEntity> mappings) {

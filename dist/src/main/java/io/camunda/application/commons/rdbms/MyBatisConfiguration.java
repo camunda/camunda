@@ -27,9 +27,11 @@ import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Properties;
 import javax.sql.DataSource;
 import liquibase.integration.spring.MultiTenantSpringLiquibase;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.mapping.DatabaseIdProvider;
 import org.apache.ibatis.mapping.VendorDatabaseIdProvider;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -39,6 +41,7 @@ import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.mapper.MapperFactoryBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -56,12 +59,20 @@ public class MyBatisConfiguration {
       name = "auto-ddl",
       havingValue = "true",
       matchIfMissing = true)
-  public MultiTenantSpringLiquibase rdbmsExporterLiquibase(final DataSource dataSource) {
-    LOGGER.info("Initializing Liquibase for RDBMS.");
+  public MultiTenantSpringLiquibase rdbmsExporterLiquibase(
+      final DataSource dataSource,
+      @Value("${camunda.database.index-prefix:}") final String indexPrefix) {
+    final String prefix = StringUtils.trimToEmpty(indexPrefix);
+    LOGGER.info("Initializing Liquibase for RDBMS with global table prefix '{}'.", prefix);
+
     final var moduleConfig = new MultiTenantSpringLiquibase();
     moduleConfig.setDataSource(dataSource);
+    moduleConfig.setDatabaseChangeLogTable(prefix + "DATABASECHANGELOG");
+    moduleConfig.setDatabaseChangeLogLockTable(prefix + "DATABASECHANGELOGLOCK");
+    moduleConfig.setParameters(Map.of("prefix", prefix));
     // changelog file located in src/main/resources directly in the module
     moduleConfig.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
+
     return moduleConfig;
   }
 
@@ -82,7 +93,8 @@ public class MyBatisConfiguration {
 
   @Bean
   public VendorDatabaseProperties databaseProperties(
-      DataSource dataSource, VendorDatabaseIdProvider databaseIdProvider) throws IOException {
+      final DataSource dataSource, final VendorDatabaseIdProvider databaseIdProvider)
+      throws IOException {
     final var databaseId = databaseIdProvider.getDatabaseId(dataSource);
     LOGGER.info("Detected databaseId: {}", databaseId);
 
@@ -92,7 +104,8 @@ public class MyBatisConfiguration {
       if (propertiesInputStream != null) {
         properties.load(propertiesInputStream);
       } else {
-        LOGGER.debug("No vendor properties found for databaseId {}", databaseId);
+        throw new IllegalArgumentException(
+            "No vendor properties found for databaseId " + databaseId);
       }
     }
 
@@ -103,7 +116,8 @@ public class MyBatisConfiguration {
   public SqlSessionFactory sqlSessionFactory(
       final DataSource dataSource,
       final DatabaseIdProvider databaseIdProvider,
-      final VendorDatabaseProperties databaseProperties)
+      final VendorDatabaseProperties databaseProperties,
+      @Value("${camunda.database.index-prefix:}") final String indexPrefix)
       throws Exception {
 
     final var configuration = new org.apache.ibatis.session.Configuration();
@@ -117,8 +131,10 @@ public class MyBatisConfiguration {
     factoryBean.addMapperLocations(
         new PathMatchingResourcePatternResolver().getResources("classpath*:mapper/*.xml"));
 
-    // load vendor specific template variables
-    factoryBean.setConfigurationProperties(databaseProperties.properties());
+    final Properties p = new Properties();
+    p.put("prefix", StringUtils.trimToEmpty(indexPrefix));
+    p.putAll(databaseProperties.properties());
+    factoryBean.setConfigurationProperties(p);
     return factoryBean.getObject();
   }
 

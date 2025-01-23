@@ -44,7 +44,7 @@ public class TenantEntityAddedHandler implements ExportHandler<TenantEntity, Ten
   public List<String> generateIds(final Record<TenantRecordValue> record) {
     final var tenantRecord = record.getValue();
     return List.of(
-        TenantEntity.getChildKey(tenantRecord.getTenantKey(), tenantRecord.getEntityKey()));
+        TenantEntity.getChildKey(tenantRecord.getTenantId(), tenantRecord.getEntityId()));
   }
 
   @Override
@@ -56,14 +56,14 @@ public class TenantEntityAddedHandler implements ExportHandler<TenantEntity, Ten
   public void updateEntity(final Record<TenantRecordValue> record, final TenantEntity entity) {
     final TenantRecordValue value = record.getValue();
     entity
-        .setMemberKey(value.getEntityKey())
-        .setJoin(TenantIndex.JOIN_RELATION_FACTORY.createChild(value.getTenantKey()));
+        .setMemberId(value.getEntityId())
+        .setJoin(TenantIndex.JOIN_RELATION_FACTORY.createChild(value.getTenantId()));
   }
 
   @Override
   public void flush(final TenantEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.addWithRouting(indexName, entity, String.valueOf(entity.getJoin().parent()));
+    batchRequest.addWithRouting(indexName, entity, entity.getJoin().parent());
   }
 
   @Override

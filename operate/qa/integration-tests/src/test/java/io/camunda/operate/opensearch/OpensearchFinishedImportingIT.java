@@ -89,16 +89,16 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void shouldMarkRecordReadersAsCompletedIf870RecordReceived() throws IOException {
+  public void shouldMarkRecordReadersAsCompletedIf880RecordReceived() throws IOException {
     // given
-    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     EXPORTER.export(record);
     osClient.index().refresh("*");
 
     zeebeImporter.performOneRoundOfImport();
 
     // when
-    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
     EXPORTER.export(record2);
     osClient.index().refresh("*");
 
@@ -119,10 +119,10 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void shouldMarkMultiplePositionIndexAsCompletedIf870RecordReceived() throws IOException {
-    final var processInstanceRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
-    final var decisionEvalRecord = generateRecord(ValueType.DECISION_EVALUATION, "8.6.0", 1);
-    final var decisionRecord = generateRecord(ValueType.DECISION, "8.6.0", 2);
+  public void shouldMarkMultiplePositionIndexAsCompletedIf880RecordReceived() throws IOException {
+    final var processInstanceRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var decisionEvalRecord = generateRecord(ValueType.DECISION_EVALUATION, "8.7.0", 1);
+    final var decisionRecord = generateRecord(ValueType.DECISION, "8.7.0", 2);
     EXPORTER.export(processInstanceRecord);
     EXPORTER.export(decisionEvalRecord);
     EXPORTER.export(decisionRecord);
@@ -132,15 +132,15 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
 
     // when
     final var newVersionProcessInstanceRecord =
-        generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+        generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
     EXPORTER.export(newVersionProcessInstanceRecord);
     final var newVersionDecisionEvalRecord =
-        generateRecord(ValueType.DECISION_EVALUATION, "8.7.0", 1);
+        generateRecord(ValueType.DECISION_EVALUATION, "8.8.0", 1);
     EXPORTER.export(newVersionDecisionEvalRecord);
 
     for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
       // simulate existing decision records left to process so it is not marked as completed
-      final var decisionRecord2 = generateRecord(ValueType.DECISION, "8.6.0", 2);
+      final var decisionRecord2 = generateRecord(ValueType.DECISION, "8.7.0", 2);
       EXPORTER.export(decisionRecord2);
       osClient.index().refresh("*");
 
@@ -157,10 +157,10 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void shouldMarkMultiplePartitionsAsCompletedIfTheyReceiveAn870Record() throws IOException {
+  public void shouldMarkMultiplePartitionsAsCompletedIfTheyReceiveAn880Record() throws IOException {
     // given
-    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
-    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 2);
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
     EXPORTER.export(record);
     EXPORTER.export(partitionTwoRecord);
     osClient.index().refresh("*");
@@ -168,8 +168,8 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
     zeebeImporter.performOneRoundOfImport();
 
     // when
-    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
-    final var partitionTwoRecord2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
+    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
+    final var partitionTwoRecord2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 2);
     EXPORTER.export(record2);
     EXPORTER.export(partitionTwoRecord2);
     osClient.index().refresh("*");
@@ -190,14 +190,14 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
   @Test
   public void shouldNotSetCompletedToFalseForSubsequentRecordsAfterImportingDone()
       throws IOException {
-    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     EXPORTER.export(record);
     osClient.index().refresh("*");
 
     zeebeImporter.performOneRoundOfImport();
 
     // when
-    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
     EXPORTER.export(record2);
     osClient.index().refresh("*");
 
@@ -216,7 +216,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
         .atMost(Duration.ofSeconds(30))
         .until(() -> isRecordReaderIsCompleted("1-process-instance"));
 
-    final var record3 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var record3 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
     EXPORTER.export(record3);
     osClient.index().refresh("*");
 
@@ -231,7 +231,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
   @Test
   public void shouldNotOverwriteImportPositionDocumentWithDefaultValue() {
     // given
-    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     EXPORTER.export(record);
     osClient.index().refresh("*");
 
@@ -283,7 +283,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
   @Test
   public void shouldMarkRecordReadersCompletedEvenIfZeebeIndicesDontExist() throws IOException {
     // given
-    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
     EXPORTER.export(record);
     osClient.index().refresh("*");
 
