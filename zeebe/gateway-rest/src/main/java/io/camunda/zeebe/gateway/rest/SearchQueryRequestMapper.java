@@ -71,7 +71,6 @@ import io.camunda.zeebe.gateway.protocol.rest.UserFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.VariableValueFilterRequest;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
 import io.camunda.zeebe.util.Either;
@@ -395,10 +394,6 @@ public final class SearchQueryRequestMapper {
               Optional.ofNullable(f.getProcessInstanceKey())
                   .ifPresent(builder::processInstanceKeys);
               Optional.ofNullable(f.getTenantIds()).ifPresent(builder::tenantIds);
-
-              Optional.ofNullable(f.getVariables())
-                  .filter(variables -> !variables.isEmpty())
-                  .ifPresent(vars -> builder.variable(toVariableValueFilters(vars)));
             });
 
     return builder.build();
@@ -567,23 +562,6 @@ public final class SearchQueryRequestMapper {
       }
     }
     return validationErrors;
-  }
-
-  private static List<VariableValueFilter> toVariableValueFilters(
-      final List<UserTaskVariableFilterRequest> filters) {
-
-    if (filters != null && !filters.isEmpty()) {
-      return filters.stream()
-          .map(
-              filter ->
-                  new VariableValueFilter.Builder()
-                      .name(filter.getName())
-                      .eq(filter.getValue())
-                      .build())
-          .toList();
-    }
-
-    return null;
   }
 
   private static VariableValueFilter toVariableValueFilter(
