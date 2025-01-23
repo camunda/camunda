@@ -15,10 +15,6 @@ Contents:
                     which can be used to overwrite default values of Optimize configuration. Also the logging
                     level can be configured here.
 
-        elastic/config/
-
-                    this folder contains preconfigured Elasticsearch server.
-
         upgrade/
 
                     execute the upgrade optimize jar files from here to upgrade Optimize.
