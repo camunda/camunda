@@ -27,14 +27,12 @@ public class RoleDeletedApplier implements TypedEventApplier<RoleIntent, RoleRec
 
   @Override
   public void applyState(final long key, final RoleRecord value) {
-    final var roleKey = value.getRoleKey();
-    // TODO: refactor when Mapping Rules use String-based IDs
-    final var roleId = String.valueOf(roleKey);
-
     // delete role from authorization state
+    // TODO: refactor when Mapping Rules use String-based IDs
+    final var roleId = String.valueOf(value.getRoleKey());
     authorizationState.deleteAuthorizationsByOwnerTypeAndIdPrefix(
         AuthorizationOwnerType.ROLE, roleId);
-    authorizationState.deleteOwnerTypeByKey(roleKey);
+
     roleState.delete(value);
   }
 }

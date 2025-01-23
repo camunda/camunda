@@ -36,7 +36,6 @@ public class GroupDeletedApplier implements TypedEventApplier<GroupIntent, Group
     // delete group from authorization state
     authorizationState.deleteAuthorizationsByOwnerTypeAndIdPrefix(
         AuthorizationOwnerType.GROUP, groupId);
-    authorizationState.deleteOwnerTypeByKey(groupKey);
 
     // delete group from group state
     groupState.delete(groupKey);
