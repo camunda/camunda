@@ -2029,10 +2029,6 @@ components:
           type: string
         processDefinitionId:
           type: string
-        variables:
-          type: array
-          items:
-            $ref: "#/components/schemas/UserTaskVariableFilterRequest"
     UserTaskFilterRequest:
       description: User task filter request.
       type: object
@@ -2058,13 +2054,6 @@ components:
         processDefinitionKey:
           type: string
         processInstanceKey:
-          type: string
-    UserTaskVariableFilterRequest:
-      type: object
-      properties:
-        name:
-          type: string
-        value:
           type: string
     UserTaskItemBase:
       description: Base properties for UserTaskItem
