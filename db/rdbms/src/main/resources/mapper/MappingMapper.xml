@@ -22,20 +22,20 @@
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.MappingDbModel">
-    INSERT INTO MAPPINGS (MAPPING_KEY, CLAIM_NAME, CLAIM_VALUE, NAME)
+    INSERT INTO ${prefix}MAPPINGS (MAPPING_KEY, CLAIM_NAME, CLAIM_VALUE, NAME)
     VALUES (#{mappingKey}, #{claimName}, #{claimValue}, #{name})
   </insert>
 
   <delete id="delete" parameterType="long">
     DELETE
-    FROM MAPPINGS
+    FROM ${prefix}MAPPINGS
     WHERE MAPPING_KEY = #{mappingKey}
   </delete>
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.MappingDbQuery"
     resultType="long">
     SELECT COUNT(*)
-    FROM MAPPINGS
+    FROM ${prefix}MAPPINGS
     <include refid="io.camunda.db.rdbms.sql.MappingMapper.searchFilter"/>
   </select>
 
@@ -47,7 +47,7 @@
     CLAIM_NAME,
     CLAIM_VALUE,
     NAME
-    FROM MAPPINGS
+    FROM ${prefix}MAPPINGS
     <include refid="io.camunda.db.rdbms.sql.MappingMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
