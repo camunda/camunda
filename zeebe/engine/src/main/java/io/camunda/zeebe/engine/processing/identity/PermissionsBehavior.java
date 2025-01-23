@@ -54,24 +54,6 @@ public class PermissionsBehavior {
     return authCheckBehavior.isAuthorized(authorizationRequest).map(unused -> command.getValue());
   }
 
-  public Either<Rejection, AuthorizationRecord> ownerExists(
-      final AuthorizationRecord authorizationRecord) {
-    final var ownerKey = authorizationRecord.getOwnerKey();
-
-    return authorizationState
-        .getOwnerType(ownerKey)
-        .map(
-            ownerType -> {
-              authorizationRecord.setOwnerType(ownerType);
-              return Either.<Rejection, AuthorizationRecord>right(authorizationRecord);
-            })
-        .orElseGet(
-            () ->
-                Either.left(
-                    new Rejection(
-                        RejectionType.NOT_FOUND, OWNER_NOT_FOUND_MESSAGE.formatted(ownerKey))));
-  }
-
   public Either<Rejection, AuthorizationRecord> permissionAlreadyExists(
       final AuthorizationRecord record) {
     for (final PermissionValue permission : record.getPermissions()) {
