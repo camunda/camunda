@@ -24,6 +24,7 @@ import io.camunda.zeebe.client.api.command.ClockPinCommandStep1;
 import io.camunda.zeebe.client.api.command.ClockResetCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
@@ -42,7 +43,9 @@ import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetXmlRequest;
+import io.camunda.zeebe.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.response.DocumentReferenceResponse;
 import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.zeebe.client.api.search.query.DecisionRequirementsQuery;
 import io.camunda.zeebe.client.api.search.query.FlownodeInstanceQuery;
@@ -889,4 +892,50 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   AddPermissionsCommandStep1 newAddPermissionsCommand(long ownerKey);
+
+  /**
+   * Command to create a document.
+   *
+   * <pre>
+   *   zeebeClient
+   *   .newCreateDocumentCommand()
+   *   .content(inputStream)
+   *   .fileName("file.txt")
+   *   .timeToLive(Duration.ofDays(1))
+   *   .send();
+   *   </pre>
+   *
+   * @return a builder for the command
+   */
+  CreateDocumentCommandStep1 newCreateDocumentCommand();
+
+  /**
+   * Command to get a document.
+   *
+   * <pre>
+   *   zeebeClient
+   *   .newDocumentContentGetRequest(documentId)
+   *   .storeId(storeId)
+   *   .send();
+   *   </pre>
+   *
+   * @param documentId the id of the document
+   * @return a builder for the request
+   */
+  DocumentContentGetRequest newDocumentContentGetRequest(String documentId);
+
+  /**
+   * Command to get a document.
+   *
+   * <pre>
+   *   zeebeClient
+   *   .newDocumentContentGetRequest(documentReferenceResponse)
+   *   .send();
+   *   </pre>
+   *
+   * @param documentReferenceResponse the reference of the document
+   * @return a builder for the request
+   */
+  DocumentContentGetRequest newDocumentContentGetRequest(
+      DocumentReferenceResponse documentReferenceResponse);
 }
