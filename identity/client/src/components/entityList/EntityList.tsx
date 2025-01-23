@@ -268,32 +268,34 @@ const EntityList = <D extends EntityData>({
             <>
               <TableToolbar {...getToolbarProps()}>
                 <TableToolbarContent>
-                  <TableToolbarSearch
-                    placeholder={searchPlaceholder}
-                    persistent
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                      const { value } = e.target;
-                      debounce(() => {
-                        if (onSearch) {
-                          onSearch(value);
-                        } else {
-                          onInputChange(e);
+                  {onSearch && (
+                    <TableToolbarSearch
+                      placeholder={searchPlaceholder}
+                      persistent
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                        const { value } = e.target;
+                        debounce(() => {
+                          if (onSearch) {
+                            onSearch(value);
+                          } else {
+                            onInputChange(e);
+                          }
+                        });
+                      }}
+                      onFocus={(event: unknown, handleExpand: HandleExpand) => {
+                        handleExpand(event, true);
+                      }}
+                      onBlur={(
+                        event: { target: { value: unknown } },
+                        handleExpand: HandleExpand,
+                      ) => {
+                        const { value } = event.target;
+                        if (!value) {
+                          handleExpand(event, false);
                         }
-                      });
-                    }}
-                    onFocus={(event: unknown, handleExpand: HandleExpand) => {
-                      handleExpand(event, true);
-                    }}
-                    onBlur={(
-                      event: { target: { value: unknown } },
-                      handleExpand: HandleExpand,
-                    ) => {
-                      const { value } = event.target;
-                      if (!value) {
-                        handleExpand(event, false);
-                      }
-                    }}
-                  />
+                      }}
+                    />
+                  )}
                   {filter && (
                     <ToolbarMultiSelect
                       type="inline"

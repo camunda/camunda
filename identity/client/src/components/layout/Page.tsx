@@ -30,6 +30,10 @@ export const PageSubTitle = styled.p`
 
 const Page = styled(Content)`
   height: 100%;
+
+  .cds--css-grid {
+    padding-inline: 0;
+  }
 `;
 
 type PageHeaderProps = {
