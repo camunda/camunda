@@ -134,7 +134,9 @@ func adjustJavaOpts(javaOpts string, settings C8RunSettings) string {
 	if settings.password != "" {
 		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].password=" + settings.password
 	}
-	javaOpts = javaOpts + " -Dspring.profiles.active=operate,tasklist,broker,identity,auth-basic"
+	javaOpts += " -Dspring.profiles.active=operate,tasklist,broker,identity,consolidated-auth"
+	javaOpts += " -Dcamunda.security.authentication.method=basic"
+	javaOpts += " -Dcamunda.security.authentication.basic.allow-unauthenticated-api-access=true"
 	os.Setenv("CAMUNDA_OPERATE_ZEEBE_RESTADDRESS", protocol+"://localhost:"+strconv.Itoa(settings.port))
 	fmt.Println("Java opts: " + javaOpts)
 	return javaOpts

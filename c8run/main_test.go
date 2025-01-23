@@ -22,7 +22,10 @@ func TestCamundaCmdWithKeystoreSettings(t *testing.T) {
 		keystore:         "/tmp/camundatest/certs/secret.jks",
 		keystorePassword: "changeme",
 	}
-	expectedJavaOpts := "JAVA_OPTS= -Dserver.ssl.keystore=file:" + settings.keystore + " -Dserver.ssl.enabled=true" + " -Dserver.ssl.key-password=" + settings.keystorePassword + " -Dspring.profiles.active=operate,tasklist,broker,identity,auth-basic"
+	expectedJavaOpts := "JAVA_OPTS= -Dserver.ssl.keystore=file:" + settings.keystore + " -Dserver.ssl.enabled=true" + " -Dserver.ssl.key-password=" + settings.keystorePassword
+	expectedJavaOpts += " -Dspring.profiles.active=operate,tasklist,broker,identity,consolidated-auth"
+	expectedJavaOpts += " -Dcamunda.security.authentication.method=basic"
+	expectedJavaOpts += " -Dcamunda.security.authentication.basic.allow-unauthenticated-api-access=true"
 
 	javaOpts := adjustJavaOpts("", settings)
 	c8runPlatform := getC8RunPlatform()
