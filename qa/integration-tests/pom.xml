@@ -467,6 +467,7 @@
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <groups>rdbms</groups>
+              <excludedGroups>multi-db-test</excludedGroups>
             </configuration>
           </plugin>
         </plugins>
@@ -491,6 +492,7 @@
             <configuration>
               <failIfNoTests>false</failIfNoTests>
               <groups>multi-db-test</groups>
+              <excludedGroups>rdbms</excludedGroups>
             </configuration>
           </plugin>
         </plugins>
