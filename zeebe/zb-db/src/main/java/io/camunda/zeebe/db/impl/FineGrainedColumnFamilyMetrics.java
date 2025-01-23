@@ -46,7 +46,7 @@ public final class FineGrainedColumnFamilyMetrics implements ColumnFamilyMetrics
       final String operation,
       final String partition,
       final String columnFamily) {
-    return Timer.builder(NAMESPACE + "rocksdb_latency")
+    return Timer.builder(NAMESPACE + "_rocksdb_latency")
         .description("Latency of RocksDB operations per column family")
         .tags("partition", partition, "columnFamily", columnFamily, "operation", operation)
         .publishPercentileHistogram() // Enables histogram generation
