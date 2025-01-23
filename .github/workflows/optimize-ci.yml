@@ -262,7 +262,7 @@ jobs:
             -Dit.test.includedGroups=${{ matrix.includedGroups }}
             -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
             -Dfailsafe.rerunFailingTestsCount=2
-            -Ddatabase.type=elasticsearch -pl optimize/backend -am
+            -Ddatabase.type=elasticsearch -f optimize/backend -am
 
       - name: Upload Test Results
         if: always()
@@ -341,7 +341,7 @@ jobs:
             -Dit.test.includedGroups=${{ matrix.includedGroups }}
             -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
             -Dfailsafe.rerunFailingTestsCount=2
-            -Ddatabase.type=opensearch -pl optimize/backend -am
+            -Ddatabase.type=opensearch -f optimize/backend -am
 
       - name: Upload Test Results
         if: always()
@@ -406,7 +406,7 @@ jobs:
       - name: Verify upgrade tests
         uses: ./.github/actions/run-maven
         with:
-          parameters: verify -U -Dskip.docker -pl optimize/upgrade -Ddatabase.type=${{ matrix.database }}
+          parameters: verify -U -Dskip.docker -f optimize/upgrade -Ddatabase.type=${{ matrix.database }}
         env:
           CAMUNDA_OPTIMIZE_DATABASE: ${{ matrix.database }}
       - name: Upload Test Results
