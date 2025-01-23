@@ -104,7 +104,7 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
       existingTenant.setName(updatedName);
     }
     final var updatedDescription = updateRecord.getDescription();
-    if (!updatedDescription.isEmpty()) {
+    if (!existingTenant.getDescription().equals(updatedDescription)) {
       existingTenant.setDescription(updatedDescription);
     }
   }

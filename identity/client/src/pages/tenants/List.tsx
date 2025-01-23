@@ -88,14 +88,22 @@ const List: FC = () => {
             label: t("Rename"),
             icon: Edit,
             onClick: (tenant) =>
-              editTenant({ tenantId: tenant.tenantId, name: tenant.name }),
+              editTenant({
+                tenantId: tenant.tenantId,
+                name: tenant.name,
+                description: tenant.description,
+              }),
           },
           {
             label: t("Delete"),
             icon: TrashCan,
             isDangerous: true,
             onClick: (tenant) =>
-              deleteTenant({ tenantId: tenant.tenantId, name: tenant.name }),
+              deleteTenant({
+                tenantId: tenant.tenantId,
+                name: tenant.name,
+                description: tenant.description,
+              }),
           },
         ]}
       />
