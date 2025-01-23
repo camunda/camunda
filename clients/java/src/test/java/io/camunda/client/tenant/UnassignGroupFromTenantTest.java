@@ -23,8 +23,11 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled(
+    "Disabled while groups are not fully supported yet: https://github.com/camunda/camunda/issues/26961 ")
 public class UnassignGroupFromTenantTest extends ClientRestTest {
 
   private static final long TENANT_KEY = 123L;
