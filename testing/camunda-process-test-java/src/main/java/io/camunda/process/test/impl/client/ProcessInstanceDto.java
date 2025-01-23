@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.client;
 
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.api.search.response.ProcessInstanceState;
 
 public class ProcessInstanceDto implements ProcessInstance {
 
@@ -101,8 +102,8 @@ public class ProcessInstanceDto implements ProcessInstance {
   }
 
   @Override
-  public String getState() {
-    return state.name();
+  public ProcessInstanceState getState() {
+    return state;
   }
 
   public void setState(final ProcessInstanceState state) {

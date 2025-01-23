@@ -15,10 +15,12 @@
  */
 package io.camunda.client.process;
 
+import static io.camunda.client.api.search.response.ProcessInstanceState.ACTIVE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.client.impl.search.SearchQuerySortRequest;
 import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.protocol.rest.*;
@@ -79,7 +81,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .parentFlowNodeInstanceKey(30L)
                     .startDate(startDate)
                     .endDate(endDate)
-                    .state("ACTIVE")
+                    .state(ACTIVE)
                     .hasIncident(true)
                     .tenantId("tenant")
                     .variables(variables))
@@ -260,6 +262,30 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(pageRequest.getLimit()).isEqualTo(5);
     assertThat(pageRequest.getSearchBefore()).isEqualTo(Collections.singletonList("b"));
     assertThat(pageRequest.getSearchAfter()).isEqualTo(Collections.singletonList("a"));
+  }
+
+  @Test
+  public void shouldConvertProcessInstanceState() {
+
+    for (final ProcessInstanceState value : ProcessInstanceState.values()) {
+      final ProcessInstanceStateEnum protocolValue = ProcessInstanceState.toProtocolState(value);
+      assertThat(protocolValue).isNotNull();
+      if (value == ProcessInstanceState.UNKNOWN_ENUM_VALUE) {
+        assertThat(protocolValue).isEqualTo(ProcessInstanceStateEnum.UNKNOWN_DEFAULT_OPEN_API);
+      } else {
+        assertThat(protocolValue.name()).isEqualTo(value.name());
+      }
+    }
+
+    for (final ProcessInstanceStateEnum protocolValue : ProcessInstanceStateEnum.values()) {
+      final ProcessInstanceState value = ProcessInstanceState.fromProtocolState(protocolValue);
+      assertThat(value).isNotNull();
+      if (protocolValue == ProcessInstanceStateEnum.UNKNOWN_DEFAULT_OPEN_API) {
+        assertThat(value).isEqualTo(ProcessInstanceState.UNKNOWN_ENUM_VALUE);
+      } else {
+        assertThat(value.name()).isEqualTo(protocolValue.name());
+      }
+    }
   }
 
   private void assertSort(
