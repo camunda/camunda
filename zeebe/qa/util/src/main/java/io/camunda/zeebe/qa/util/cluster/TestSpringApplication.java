@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.Banner.Mode;
@@ -33,7 +34,7 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestSpringApplication.class);
 
-  private final Class<?>[] springApplications;
+  private Class<?>[] springApplications;
   private final Map<String, Bean<?>> beans;
   private final Map<String, Object> propertyOverrides;
   private final Collection<String> additionalProfiles;
@@ -116,6 +117,12 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   @Override
   public <V> T withBean(final String qualifier, final V bean, final Class<V> type) {
     beans.put(qualifier, new Bean<>(bean, type));
+    return self();
+  }
+
+  @Override
+  public <V> T withSpringConfiguration(final Class<?> springConfiguration) {
+    springApplications = ArrayUtils.add(springApplications, springConfiguration);
     return self();
   }
 

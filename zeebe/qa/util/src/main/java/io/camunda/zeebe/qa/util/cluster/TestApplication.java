@@ -60,6 +60,10 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
   @SuppressWarnings("UnusedReturnValue")
   <V> T withBean(final String qualifier, final V bean, final Class<V> type);
 
+  default <V> T withSpringConfiguration(final Class<?> springConfiguration) {
+    throw new UnsupportedOperationException("Not implemented");
+  }
+
   /** Returns this node's unique cluster ID */
   MemberId nodeId();
 

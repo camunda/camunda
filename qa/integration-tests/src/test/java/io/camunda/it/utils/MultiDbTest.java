@@ -27,6 +27,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * <p> Furthermore, test is part of "multi-db-test" group, which can be executed via maven:
  * `mvn verify -Dgroups="multi-db-test"`
  *
+ * <p> To test a specific databases in IntelliJ, you can add it as CLI / VM property in the run dialog:
+ * `-Dtest.integration.camunda.database.type=h2`
+ * See {@link CamundaMultiDBExtension.DatabaseType} for supported types.
+ *
  * <pre>{@code
  * @MultiDbTest
  * final class MyMultiDbTest {

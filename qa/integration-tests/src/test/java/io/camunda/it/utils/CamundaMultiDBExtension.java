@@ -161,7 +161,8 @@ public class CamundaMultiDBExtension
       case OS ->
           multiDbConfigurator.configureOpenSearchSupport(
               DEFAULT_OS_URL, testPrefix, DEFAULT_OS_ADMIN_USER, DEFAULT_OS_ADMIN_PW);
-      case RDBMS -> multiDbConfigurator.configureRDBMSSupport();
+      case H2 -> multiDbConfigurator.configureH2Support();
+      case POSTGRES -> multiDbConfigurator.configurePostgresSupport();
       default -> throw new RuntimeException("Unknown exporter type");
     }
     testApplication.start();
@@ -325,6 +326,7 @@ public class CamundaMultiDBExtension
     LOCAL,
     ES,
     OS,
-    RDBMS
+    H2,
+    POSTGRES
   }
 }

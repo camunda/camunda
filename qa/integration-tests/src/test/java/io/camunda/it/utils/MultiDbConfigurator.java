@@ -133,16 +133,30 @@ public class MultiDbConfigurator {
     testApplication.withProperty("camunda.database.url", opensearchUrl);
   }
 
-  public void configureRDBMSSupport() {
+  public void configureH2Support() {
+    configureRDBMSSupport();
+
+    final var jdbcUrl =
+        "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
+    testApplication.withProperty("camunda.datasource.url", jdbcUrl);
+    testApplication.withProperty("camunda.datasource.username", "sa");
+    testApplication.withProperty("camunda.datasource.password", "");
+  }
+
+  public void configurePostgresSupport() {
+    configureRDBMSSupport();
+
+    testApplication.withProperty("camunda.datasource.url", "jdbc:postgresql:camunda");
+    testApplication.withProperty("camunda.datasource.username", "camunda");
+    testApplication.withProperty("camunda.datasource.password", "camunda");
+  }
+
+  private void configureRDBMSSupport() {
     testApplication.withProperty("camunda.database.type", DatabaseType.RDBMS);
-    testApplication.withProperty(
-        "spring.datasource.url",
-        "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
-    testApplication.withProperty("spring.datasource.driver-class-name", "org.h2.Driver");
-    testApplication.withProperty("spring.datasource.username", "sa");
-    testApplication.withProperty("spring.datasource.password", "");
     testApplication.withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");
-    testApplication.withProperty("logging.level.org.mybatis", "DEBUG");
+    testApplication.withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");
+    testApplication.withProperty("camunda.tasklist.webappEnabled", "false");
+    testApplication.withProperty("camunda.operate.webappEnabled", "false");
     testApplication.withExporter(
         "rdbms",
         cfg -> {
