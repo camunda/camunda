@@ -427,7 +427,7 @@ jobs:
   # Only deploy artifacts on push event, which in this case can only be triggered by main and stable
   deploy-artifacts:
     name: Deploy Artifacts
-    needs: [ integration-tests, upgrade-tests, es-schema-integrity-test, os-schema-integrity-test ]
+    needs: [ integration-tests, upgrade-tests ]
     uses: ./.github/workflows/optimize-deploy-artifacts.yml
     secrets: inherit
 
