@@ -109,6 +109,12 @@
         AND TENANT_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
+    <if test="filter.hasIncident != null and filter.hasIncident == true">
+      AND NUM_INCIDENTS > 0
+    </if>
+    <if test="filter.hasIncident != null and filter.hasIncident == false">
+      AND NUM_INCIDENTS = 0
+    </if>
 
     <!-- date filters -->
     <if test="filter.startDateOperations != null and !filter.startDateOperations.isEmpty()">
