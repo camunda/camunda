@@ -552,6 +552,12 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/UserTaskSearchQueryRequest"
+          application/vnd.camunda.api.keys.number+json:
+            schema:
+              $ref: "#/components/schemas/UserTaskSearchQueryRequest"
+          application/vnd.camunda.api.keys.string+json:
+            schema:
+              $ref: "#/components/schemas/UserTaskSearchQuery"
       responses:
         "200":
           description: >
@@ -1879,10 +1885,19 @@ components:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       description: User task search query request.
+      deprecated: true
       type: object
       properties:
         filter:
           $ref: "#/components/schemas/UserTaskFilterRequest"
+    UserTaskSearchQuery:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      description: User task search query request. Key attributes as string values.
+      type: object
+      properties:
+        filter:
+          $ref: "#/components/schemas/UserTaskFilter"
     UserTaskSearchQueryResponse:
       description: User task search query response.
       deprecated: true
@@ -1904,13 +1919,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/UserTaskResult"
-    UserTaskFilterRequest:
-      description: User task filter request.
+    UserTaskFilterRequestBase:
+      description: Base properties for ProcessInstanceFilterRequest
       type: object
       properties:
-        key:
-          type: integer
-          format: int64
         state:
           type: string
         assignee:
@@ -1921,12 +1933,6 @@ components:
           type: string
         candidateUser:
           type: string
-        processDefinitionKey:
-          type: integer
-          format: int64
-        processInstanceKey:
-          type: integer
-          format: int64
         tenantIds:
           type: string
         processDefinitionId:
@@ -1935,6 +1941,32 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/UserTaskVariableFilterRequest"
+    UserTaskFilterRequest:
+      description: User task filter request.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/UserTaskFilterRequestBase"
+      properties:
+        key:
+          type: integer
+          format: int64
+        processDefinitionKey:
+          type: integer
+          format: int64
+        processInstanceKey:
+          type: integer
+          format: int64
+    UserTaskFilter:
+      description: User task filter request. Key attributes as string values.
+      allOf:
+        - $ref: "#/components/schemas/UserTaskFilterRequestBase"
+      properties:
+        key:
+          type: string
+        processDefinitionKey:
+          type: string
+        processInstanceKey:
+          type: string
     UserTaskVariableFilterRequest:
       type: object
       properties:
