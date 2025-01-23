@@ -23,7 +23,7 @@ import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import java.util.List;
 
-public interface TestRestManagementClient {
+public interface HistoryBackupClient {
 
   @RequestLine("POST")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
@@ -35,25 +35,25 @@ public interface TestRestManagementClient {
   GetBackupStateResponseDto getBackup(@Param final long id);
 
   /**
-   * Returns a {@link TestRestManagementClient} instance using the given node as upstream.
+   * Returns a {@link HistoryBackupClient} instance using the given node as upstream.
    *
    * @param node the node to connect to
-   * @return a new instance of {@link TestRestManagementClient}
+   * @return a new instance of {@link HistoryBackupClient}
    */
-  static TestRestManagementClient of(final TestApplication<?> node) {
+  static HistoryBackupClient of(final TestApplication<?> node) {
     return of(node.actuatorUri("backupHistory").toString());
   }
 
   /**
-   * Returns a {@link TestRestManagementClient} instance using the given endpoint as upstream. The
+   * Returns a {@link HistoryBackupClient} instance using the given endpoint as upstream. The
    * endpoint is expected to be a complete absolute URL, e.g.
    * "http://localhost:9600/actuator/backups".
    *
    * @param endpoint the actuator URL to connect to
-   * @return a new instance of {@link TestRestManagementClient}
+   * @return a new instance of {@link HistoryBackupClient}
    */
-  static TestRestManagementClient of(final String endpoint) {
-    final var target = new HardCodedTarget<>(TestRestManagementClient.class, endpoint);
+  static HistoryBackupClient of(final String endpoint) {
+    final var target = new HardCodedTarget<>(HistoryBackupClient.class, endpoint);
     final var decoder = new JacksonDecoder(List.of(new Jdk8Module(), new JavaTimeModule()));
 
     return Feign.builder()
