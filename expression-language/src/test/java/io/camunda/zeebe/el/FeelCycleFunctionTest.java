@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.el.util.TestFeelEngineClock;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.util.Map;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class FeelCycleFunctionTest {
 
