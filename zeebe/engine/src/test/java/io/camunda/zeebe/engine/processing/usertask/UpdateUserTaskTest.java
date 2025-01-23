@@ -153,7 +153,10 @@ public final class UpdateUserTaskTest {
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
-            .update(List.of("updated_group_C", "updated_group_D"), null, null, null);
+            .update(
+                new UserTaskRecord()
+                    .setCandidateGroupsList(List.of("updated_group_C", "updated_group_D"))
+                    .setCandidateGroupsChanged());
 
     // then
     Assertions.assertThat(updatingRecord)
@@ -195,7 +198,10 @@ public final class UpdateUserTaskTest {
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
-            .update(null, List.of("updated_user_C", "updated_user_D"), null, null);
+            .update(
+                new UserTaskRecord()
+                    .setCandidateUsersList(List.of("updated_user_C", "updated_user_D"))
+                    .setCandidateUsersChanged());
 
     // then
     Assertions.assertThat(updatingRecord)
@@ -237,7 +243,7 @@ public final class UpdateUserTaskTest {
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
-            .update(null, null, "updated_dueDate", null);
+            .update(new UserTaskRecord().setDueDate("updated_dueDate").setDueDateChanged());
 
     // then
     Assertions.assertThat(updatingRecord)
@@ -279,7 +285,10 @@ public final class UpdateUserTaskTest {
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
-            .update(null, null, null, "updated_followUpDate");
+            .update(
+                new UserTaskRecord()
+                    .setFollowUpDate("updated_followUpDate")
+                    .setFollowUpDateChanged());
 
     // then
     Assertions.assertThat(updatingRecord)
