@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -143,9 +144,8 @@ public class TenantAppliersTest {
     // when
     final var tenantRecord =
         new TenantRecord()
-            .setTenantKey(tenantKey)
             .setTenantId(tenantId)
-            .setEntityKey(entityKey)
+            .setEntityId(username)
             .setEntityType(EntityType.USER);
     tenantEntityRemovedApplier.applyState(tenantKey, tenantRecord);
 
@@ -156,6 +156,8 @@ public class TenantAppliersTest {
   }
 
   @Test
+  @Disabled(
+      "Disabled while mappings are not supported: https://github.com/camunda/camunda/issues/26981")
   void shouldRemoveEntityFromTenantWithTypeMapping() {
     // given
     final long entityKey = 1L;
