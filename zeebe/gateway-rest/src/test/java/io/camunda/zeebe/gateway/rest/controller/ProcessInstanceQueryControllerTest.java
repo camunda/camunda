@@ -37,17 +37,17 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
       {
           "items": [
             {
-              "key": 123,
+              "key": "123",
               "processDefinitionName": "Demo Process",
               "processDefinitionVersion": 5,
               "bpmnProcessId": "demoProcess",
-              "parentKey": 555,
-              "parentFlowNodeInstanceKey": 789,
+              "parentKey": "555",
+              "parentFlowNodeInstanceKey": "789",
               "startDate": "2024-01-01T00:00:00Z",
               "state": "ACTIVE",
               "incident": false,
               "hasActiveOperation": false,
-              "processDefinitionKey": 777,
+              "processDefinitionKey": "777",
               "tenantId": "default"
             }
           ],

@@ -90,12 +90,12 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
         {
           "jobs": [
             {
-              "jobKey": %d,
+              "jobKey": "%d",
               "type": "TEST",
-              "processInstanceKey": 123,
-              "processDefinitionKey": 4532,
+              "processInstanceKey": "123",
+              "processDefinitionKey": "4532",
               "processDefinitionVersion": 23,
-              "elementInstanceKey": 459,
+              "elementInstanceKey": "459",
               "retries": 12,
               "deadline": 123123123,
               "tenantId": "default",
@@ -106,12 +106,12 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
               "worker": "bar"
             },
             {
-              "jobKey": %d,
+              "jobKey": "%d",
               "type": "TEST",
-              "processInstanceKey": 123,
-              "processDefinitionKey": 4532,
+              "processInstanceKey": "123",
+              "processDefinitionKey": "4532",
               "processDefinitionVersion": 23,
-              "elementInstanceKey": 459,
+              "elementInstanceKey": "459",
               "retries": 12,
               "deadline": 123123123,
               "tenantId": "default",
@@ -320,7 +320,7 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
     // reset the results in the test class' observer (created anew per request in production setup)
     responseObserver.reset();
     // return the current partition
-    return Protocol.decodePartitionId(JsonPath.read(result, "$.jobs[0].jobKey"));
+    return Protocol.decodePartitionId(Long.parseLong(JsonPath.read(result, "$.jobs[0].jobKey")));
   }
 
   private static int getExpectedPartitionId(

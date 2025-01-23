@@ -36,7 +36,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
 
   private static final String DECISION_BASE_URL = "/v2/decision-definitions";
   private static final String EVALUATION_URL = DECISION_BASE_URL + "/evaluation";
-  private static final String EXPECTED_EVALUATION_RESPONSE =
+  private static final String EXPECTED_EVALUATION_RESPONSE_NUMBER_KEYS =
       """
       {
          "decisionDefinitionKey":123456,
@@ -52,7 +52,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
          "decisionInstanceKey":123,
          "evaluatedDecisions":[]
       }""";
-  private static final String EXPECTED_EVALUATION_RESPONSE_STRING_KEYS =
+  private static final String EXPECTED_EVALUATION_RESPONSE =
       """
       {
          "decisionDefinitionKey":"123456",
@@ -88,7 +88,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
     final var request =
         """
         {
-          "decisionDefinitionKey": 123456,
+          "decisionDefinitionKey": "123456",
           "variables": {
             "key": "value"
           },
@@ -149,7 +149,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
                     .expectStatus()
                     .isOk());
 
-    response.expectBody().json(EXPECTED_EVALUATION_RESPONSE_STRING_KEYS);
+    response.expectBody().json(EXPECTED_EVALUATION_RESPONSE);
     Mockito.verify(decisionServices)
         .evaluateDecision("", 123456L, Map.of("key", "value"), "tenantId");
   }
@@ -188,7 +188,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
                     .expectStatus()
                     .isOk());
 
-    response.expectBody().json(EXPECTED_EVALUATION_RESPONSE);
+    response.expectBody().json(EXPECTED_EVALUATION_RESPONSE_NUMBER_KEYS);
     Mockito.verify(decisionServices)
         .evaluateDecision("", 123456L, Map.of("key", "value"), "tenantId");
   }

@@ -40,7 +40,7 @@ import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 @WebMvcTest(value = ProcessInstanceController.class)
 public class ProcessInstanceControllerTest extends RestControllerTest {
 
-  static final String EXPECTED_START_RESPONSE =
+  static final String EXPECTED_START_RESPONSE_NUMBER_KEYS =
       """
       {
          "processDefinitionKey":123,
@@ -49,7 +49,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
          "processInstanceKey":123,
          "tenantId":"tenantId"
       }""";
-  static final String EXPECTED_START_RESPONSE_STRING_KEYS =
+  static final String EXPECTED_START_RESPONSE =
       """
       {
          "processDefinitionKey":"123",
@@ -125,7 +125,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldCreateProcessInstancesWithProcessDefinitionStringKeys() {
+  void shouldCreateProcessInstancesWithProcessDefinitionNumberKeys() {
     // given
     when(multiTenancyCfg.isEnabled()).thenReturn(true);
     final var mockResponse =
@@ -153,7 +153,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 client
                     .post()
                     .uri(PROCESS_INSTANCES_START_URL)
-                    .accept(RequestMapper.MEDIA_TYPE_KEYS_STRING)
+                    .accept(RequestMapper.MEDIA_TYPE_KEYS_NUMBER)
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(request)
                     .exchange()
@@ -162,9 +162,9 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     response
         .expectHeader()
-        .contentType(RequestMapper.MEDIA_TYPE_KEYS_STRING)
+        .contentType(RequestMapper.MEDIA_TYPE_KEYS_NUMBER)
         .expectBody()
-        .json(EXPECTED_START_RESPONSE_STRING_KEYS);
+        .json(EXPECTED_START_RESPONSE_NUMBER_KEYS);
 
     verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
     final var capturedRequest = createRequestCaptor.getValue();
@@ -207,10 +207,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .json(
             """
 {
-   "processDefinitionKey":123,
+   "processDefinitionKey":"123",
    "processDefinitionId":"bpmnProcessId",
    "processDefinitionVersion":-1,
-   "processInstanceKey":123,
+   "processInstanceKey":"123",
    "tenantId":"<default>"
 }""");
 
