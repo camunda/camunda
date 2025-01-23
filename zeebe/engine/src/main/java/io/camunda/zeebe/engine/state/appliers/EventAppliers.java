@@ -484,6 +484,9 @@ public final class EventAppliers implements EventApplier {
     register(AuthorizationIntent.PERMISSION_ADDED, new AuthorizationPermissionAddedApplier(state));
     register(
         AuthorizationIntent.PERMISSION_REMOVED, new AuthorizationPermissionRemovedApplier(state));
+    register(
+        AuthorizationIntent.CREATED,
+        new AuthorizationCreatedApplier(state.getAuthorizationState()));
   }
 
   private void registerEscalationAppliers() {

@@ -105,15 +105,17 @@ public class DbAuthorizationState implements MutableAuthorizationState {
     ownerType.wrapString(authorization.getOwnerType().name());
     resourceType.wrapString(authorization.getResourceType().name());
 
-    final var permissions = new Permissions();
+    final var permissions =
+        Optional.ofNullable(permissionsColumnFamily.get(ownerTypeOwnerIdAndResourceType))
+            .orElse(new Permissions());
+
     authorization
-        .getPermissions()
+        .getAuthorizationPermissions()
         .forEach(
-            permissionValue -> {
-              permissions.addResourceIdentifiers(
-                  permissionValue.getPermissionType(), permissionValue.getResourceIds());
+            permissionType -> {
+              permissions.addResourceIdentifier(permissionType, authorization.getResourceId());
             });
-    permissionsColumnFamily.insert(ownerTypeOwnerIdAndResourceType, permissions);
+    permissionsColumnFamily.upsert(ownerTypeOwnerIdAndResourceType, permissions);
   }
 
   @Override

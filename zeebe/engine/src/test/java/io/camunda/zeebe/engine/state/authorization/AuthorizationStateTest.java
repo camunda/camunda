@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -65,9 +64,7 @@ public class AuthorizationStateTest {
             .setOwnerType(ownerType)
             .setResourceId(resourceId)
             .setResourceType(resourceType)
-            .setAuthorizationPermissions(permissions)
-            .addPermission(
-                new Permission().setPermissionType(PermissionType.CREATE).addResourceId("test"));
+            .setAuthorizationPermissions(permissions);
 
     // when
     authorizationState.create(authorizationKey, authorizationRecord);
@@ -85,7 +82,7 @@ public class AuthorizationStateTest {
     final var resourceIdentifiers =
         authorizationState.getResourceIdentifiers(
             ownerType, ownerId, resourceType, PermissionType.CREATE);
-    assertThat(resourceIdentifiers).containsExactly("test");
+    assertThat(resourceIdentifiers).containsExactly("resourceId");
   }
 
   @Test
