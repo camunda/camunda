@@ -19,9 +19,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.response.Incident;
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.it.utils.MultiDbTest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -31,26 +29,17 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-@ZeebeIntegration
+@MultiDbTest
 class IncidentQueryTest {
 
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
 
   private static CamundaClient camundaClient;
 
-  @TestZeebe(initMethod = "initTestStandaloneCamunda")
-  private static TestStandaloneCamunda testStandaloneCamunda;
-
   private static Incident incident;
-
-  @SuppressWarnings("unused")
-  static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda();
-  }
 
   @BeforeAll
   static void beforeAll() {
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     final var processes =
         List.of("service_tasks_v1.bpmn", "service_tasks_v2.bpmn", "incident_process_v1.bpmn");
