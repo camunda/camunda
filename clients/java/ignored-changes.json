@@ -179,6 +179,14 @@
           "old": "class io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceActivateInstruction",
           "new": "class io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceActivateInstruction",
           "justification": "JSON property order changes due to introduction of inheritance. The property order change is not considered a breaking change."
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.attributeValueChanged",
+          "annotationType": "com.fasterxml.jackson.annotation.JsonPropertyOrder",
+          "old": "class io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest",
+          "new": "class io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest",
+          "justification": "JSON property order changes due to introduction of inheritance. The property order change is not considered a breaking change."
         }
       ]
     }
