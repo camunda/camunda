@@ -53,6 +53,8 @@ public class AuthorizationCreateProcessor
             record ->
                 permissionsBehavior.hasValidPermissionTypes(
                     record,
+                    record.getAuthorizationPermissions(),
+                    record.getResourceType(),
                     "Expected to create authorization with permission types '%s' and resource type '%s', but these permissions are not supported. Supported permission types are: '%s'"))
         .flatMap(permissionsBehavior::authorizationAlreadyExists)
         .ifRightOrLeft(
