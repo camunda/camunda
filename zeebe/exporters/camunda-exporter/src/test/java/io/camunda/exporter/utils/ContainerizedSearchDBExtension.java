@@ -18,9 +18,14 @@ import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.testcontainers.OpensearchContainer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 public class ContainerizedSearchDBExtension extends SearchDBExtension {
+
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(ContainerizedSearchDBExtension.class);
 
   private static ElasticsearchContainer elasticsearchContainer;
   private static OpensearchContainer opensearchContainer;
@@ -56,10 +61,30 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
 
   @Override
   public void afterEach(final ExtensionContext context) throws Exception {
-    elsClient.indices().delete(req -> req.index(PROCESS_INDEX.getFullQualifiedName()));
-    osClient.indices().delete(req -> req.index(PROCESS_INDEX.getFullQualifiedName()));
-    elsClient.indices().delete(req -> req.index(FORM_INDEX.getFullQualifiedName()));
-    osClient.indices().delete(req -> req.index(FORM_INDEX.getFullQualifiedName()));
+    maybeDeleteIndexEs(PROCESS_INDEX.getFullQualifiedName());
+    maybeDeleteIndexEs(FORM_INDEX.getFullQualifiedName());
+    maybeDeleteIndexOs(PROCESS_INDEX.getFullQualifiedName());
+    maybeDeleteIndexOs(FORM_INDEX.getFullQualifiedName());
+    //    elsClient.indices().delete(req -> req.index(PROCESS_INDEX.getFullQualifiedName()));
+    //    osClient.indices().delete(req -> req.index(PROCESS_INDEX.getFullQualifiedName()));
+    //    elsClient.indices().delete(req -> req.index(FORM_INDEX.getFullQualifiedName()));
+    //    osClient.indices().delete(req -> req.index(FORM_INDEX.getFullQualifiedName()));
+  }
+
+  private void maybeDeleteIndexEs(final String indexName) {
+    try {
+      elsClient.indices().delete(req -> req.index(indexName));
+    } catch (final Exception e) {
+      LOGGER.warn("Failed to delete index {}", indexName, e);
+    }
+  }
+
+  private void maybeDeleteIndexOs(final String indexName) {
+    try {
+      osClient.indices().delete(req -> req.index(indexName));
+    } catch (final Exception e) {
+      LOGGER.warn("Failed to delete index {}", indexName, e);
+    }
   }
 
   @Override

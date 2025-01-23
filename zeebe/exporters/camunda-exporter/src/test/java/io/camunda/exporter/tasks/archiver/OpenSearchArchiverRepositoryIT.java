@@ -14,11 +14,11 @@ import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
+import io.camunda.exporter.utils.SearchDBExtension;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -38,6 +38,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.opensearch.client.RestClient;
@@ -52,21 +53,20 @@ import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Request;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
-import org.opensearch.testcontainers.OpensearchContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SuppressWarnings("resource")
-@Testcontainers
+// @Testcontainers
 final class OpenSearchArchiverRepositoryIT {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(OpenSearchArchiverRepositoryIT.class);
 
-  @Container
-  private static final OpensearchContainer<?> OPENSEARCH =
-      TestSearchContainers.createDefaultOpensearchContainer();
+  //  @Container
+  //  private static final OpensearchContainer<?> OPENSEARCH =
+  //      TestSearchContainers.createDefaultOpensearchContainer();
+
+  @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
   @AutoClose private final RestClientTransport transport = createRestClient();
@@ -164,6 +164,7 @@ final class OpenSearchArchiverRepositoryIT {
     }
 
     connectConfiguration.setIndexPrefix(prefix);
+    connectConfiguration.setUrl(searchDB.osUrl());
     final var repository = createRepository();
     final var indices = new ArrayList<>(expectedIndices);
     indices.addAll(untouchedIndices);
@@ -244,7 +245,10 @@ final class OpenSearchArchiverRepositoryIT {
     final var destIndexName = UUID.randomUUID().toString();
     final var repository = createRepository();
     final var documents =
-        List.of(new TestDocument("1"), new TestDocument("2"), new TestDocument("3"));
+        List.of(
+            new TestDocument(UUID.randomUUID().toString()),
+            new TestDocument(UUID.randomUUID().toString()),
+            new TestDocument(UUID.randomUUID().toString()));
     documents.forEach(doc -> index(sourceIndexName, doc));
     testClient.indices().refresh(r -> r.index(sourceIndexName));
     testClient.indices().create(r -> r.index(destIndexName));
@@ -437,8 +441,7 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   private RestClientTransport createRestClient() {
-    final var restClient =
-        RestClient.builder(HttpHost.create(OPENSEARCH.getHttpHostAddress())).build();
+    final var restClient = RestClient.builder(HttpHost.create(searchDB.osUrl())).build();
     return new RestClientTransport(restClient, new JacksonJsonpMapper());
   }
 
