@@ -117,7 +117,7 @@ public class ProcessViewRawDataInterpreterOS extends AbstractProcessViewRawDataI
               });
     }
 
-    Map<String, JsonData> params = new HashMap<>();
+    final Map<String, JsonData> params = new HashMap<>();
     params.put(CURRENT_TIME, json(LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli()));
     params.put(DATE_FORMAT, json(OPTIMIZE_DATE_FORMAT));
     searchRequestBuilder.scriptFields(
@@ -148,25 +148,24 @@ public class ProcessViewRawDataInterpreterOS extends AbstractProcessViewRawDataI
         new HashMap<>();
     final Map<String, Long> instanceIdsToUserTaskCount = new HashMap<>();
     final List<ProcessInstanceDto> rawDataProcessInstanceDtos;
+    final List<Hit<RawResult>> hits = new ArrayList<>();
     if (context.isCsvExport()) {
       final int limit = context.getPagination().orElse(new PaginationDto()).getLimit();
-      final List<Hit<RawResult>> hits = new ArrayList<>();
       osClient.scrollWith(response, hits::addAll, RawResult.class, limit);
-      rawDataProcessInstanceDtos = transformHits(hits);
     } else {
-      rawDataProcessInstanceDtos =
-          response.hits().hits().stream()
-              .map(
-                  mappingFunction(
-                      processInstanceIdsToFlowNodeIdsAndDurations,
-                      instanceIdsToUserTaskCount,
-                      context))
-              .toList();
+      hits.addAll(response.hits().hits());
     }
-
-    RawProcessDataResultDtoMapper rawDataSingleReportResultDtoMapper =
+    rawDataProcessInstanceDtos =
+        hits.stream()
+            .map(
+                mappingFunction(
+                    processInstanceIdsToFlowNodeIdsAndDurations,
+                    instanceIdsToUserTaskCount,
+                    context))
+            .toList();
+    final RawProcessDataResultDtoMapper rawDataSingleReportResultDtoMapper =
         new RawProcessDataResultDtoMapper();
-    Map<String, String> flowNodeIdsToFlowNodeNames =
+    final Map<String, String> flowNodeIdsToFlowNodeNames =
         definitionService.fetchDefinitionFlowNodeNamesAndIdsForProcessInstances(
             rawDataProcessInstanceDtos);
     final List<RawDataProcessInstanceDto> rawData =
@@ -182,12 +181,12 @@ public class ProcessViewRawDataInterpreterOS extends AbstractProcessViewRawDataI
     return ViewResult.builder().rawData(rawData).build();
   }
 
-  private <R> R getField(Hit<RawResult> hit, String field) {
+  private <R> R getField(final Hit<RawResult> hit, final String field) {
     try {
       final List<R> values =
           objectMapper.readValue(hit.fields().get(field).toJson().toString(), List.class);
       return values.get(0);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OptimizeRuntimeException(format("Failed to extract %s from response!", field), e);
     }
   }
@@ -213,7 +212,7 @@ public class ProcessViewRawDataInterpreterOS extends AbstractProcessViewRawDataI
               && ProcessInstanceIndex.DURATION.equals(sorting.get().getBy().get())) {
             processInstance.setDuration(Math.round(Double.parseDouble(hit.sort().get(0))));
           } else {
-            long currentTime = this.<Long>getField(hit, CURRENT_TIME);
+            final long currentTime = this.<Long>getField(hit, CURRENT_TIME);
             processInstance.setDuration(
                 currentTime - processInstance.getStartDate().toInstant().toEpochMilli());
           }
@@ -251,10 +250,6 @@ public class ProcessViewRawDataInterpreterOS extends AbstractProcessViewRawDataI
         .orElse(SortOrder.Desc);
   }
 
-  private List<ProcessInstanceDto> transformHits(final List<Hit<RawResult>> rawResult) {
-    return rawResult.stream().map(this::transformHit).toList();
-  }
-
   private ProcessInstanceDto transformHit(final Hit<RawResult> hit) {
     return safe(
         () ->
@@ -270,10 +265,10 @@ public class ProcessViewRawDataInterpreterOS extends AbstractProcessViewRawDataI
   }
 
   private void addSorting(
-      String sortByField,
-      SortOrder sortOrder,
-      SearchRequest.Builder searchRequestBuilder,
-      Map<String, JsonData> params) {
+      final String sortByField,
+      final SortOrder sortOrder,
+      final SearchRequest.Builder searchRequestBuilder,
+      final Map<String, JsonData> params) {
     if (sortByField.startsWith(VARIABLE_PREFIX)) {
       final String variableName = sortByField.substring(VARIABLE_PREFIX.length());
       searchRequestBuilder.sort(
@@ -291,7 +286,7 @@ public class ProcessViewRawDataInterpreterOS extends AbstractProcessViewRawDataI
     } else if (sortByField.equals(ProcessInstanceIndex.DURATION)) {
       params.put("duration", json(ProcessInstanceIndex.DURATION));
       params.put("startDate", json(ProcessInstanceIndex.START_DATE));
-      Script script = createDefaultScriptWithSpecificDtoParams(SORT_SCRIPT, params);
+      final Script script = createDefaultScriptWithSpecificDtoParams(SORT_SCRIPT, params);
       searchRequestBuilder.sort(
           SortOptions.of(
               so -> so.script(s -> s.script(script).type(ScriptSortType.Number).order(sortOrder))));
