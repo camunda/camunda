@@ -27,6 +27,7 @@ import {
   TableToolbarContent,
   TableToolbarSearch,
 } from "@carbon/react";
+import { Add } from "@carbon/react/icons";
 import useDebounce from "react-debounced";
 import styled from "styled-components";
 import { StyledTableContainer } from "./components";
@@ -125,6 +126,7 @@ type EntityListProps<D extends EntityData> = (
     onSelectAll: (selected: D[]) => unknown;
     isSelected: (selected: D) => boolean;
   };
+  hasTableSearch?: boolean;
 };
 
 const MAX_ICON_ACTIONS = 2;
@@ -146,6 +148,7 @@ const EntityList = <D extends EntityData>({
   sortProperty,
   loading,
   batchSelection,
+  hasTableSearch = true,
 }: EntityListProps<D>): ReturnType<FC> => {
   const debounce = useDebounce(300);
   const { t } = useTranslate("components");
@@ -255,30 +258,32 @@ const EntityList = <D extends EntityData>({
             <>
               <TableToolbar {...getToolbarProps()}>
                 <TableToolbarContent>
-                  <TableToolbarSearch
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                      const { value } = e.target;
-                      debounce(() => {
-                        if (onSearch) {
-                          onSearch(value);
-                        } else {
-                          onInputChange(e);
+                  {hasTableSearch && (
+                    <TableToolbarSearch
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                        const { value } = e.target;
+                        debounce(() => {
+                          if (onSearch) {
+                            onSearch(value);
+                          } else {
+                            onInputChange(e);
+                          }
+                        });
+                      }}
+                      onFocus={(event: unknown, handleExpand: HandleExpand) => {
+                        handleExpand(event, true);
+                      }}
+                      onBlur={(
+                        event: { target: { value: unknown } },
+                        handleExpand: HandleExpand,
+                      ) => {
+                        const { value } = event.target;
+                        if (!value) {
+                          handleExpand(event, false);
                         }
-                      });
-                    }}
-                    onFocus={(event: unknown, handleExpand: HandleExpand) => {
-                      handleExpand(event, true);
-                    }}
-                    onBlur={(
-                      event: { target: { value: unknown } },
-                      handleExpand: HandleExpand,
-                    ) => {
-                      const { value } = event.target;
-                      if (!value) {
-                        handleExpand(event, false);
-                      }
-                    }}
-                  />
+                      }}
+                    />
+                  )}
                   {filter && (
                     <ToolbarMultiSelect
                       type="inline"
@@ -296,7 +301,11 @@ const EntityList = <D extends EntityData>({
                     />
                   )}
                   {addEntityLabel && (
-                    <Button onClick={onAddEntity} disabled={addEntityDisabled}>
+                    <Button
+                      onClick={onAddEntity}
+                      disabled={addEntityDisabled}
+                      renderIcon={Add}
+                    >
                       {addEntityLabel}
                     </Button>
                   )}
@@ -398,10 +407,9 @@ const EntityList = <D extends EntityData>({
                                     disabled,
                                   } = menuItem as MenuItem<D>;
 
-                                  const kind: ButtonKind =
-                                    !icon && isDangerous
-                                      ? "danger--ghost"
-                                      : "ghost";
+                                  const kind: ButtonKind = isDangerous
+                                    ? "danger--ghost"
+                                    : "ghost";
 
                                   return (
                                     <Button
@@ -409,7 +417,7 @@ const EntityList = <D extends EntityData>({
                                       kind={kind}
                                       size="md"
                                       disabled={disabled}
-                                      hasIconOnly={!!icon}
+                                      hasIconOnly={!!icon && !isDangerous}
                                       renderIcon={icon}
                                       tooltipAlignment="end"
                                       iconDescription={label}
@@ -418,7 +426,9 @@ const EntityList = <D extends EntityData>({
                                         onClick,
                                       )}
                                     >
-                                      {icon ? "" : label}
+                                      {icon && isDangerous && label}
+                                      {icon && !isDangerous && ""}
+                                      {!icon && label}
                                     </Button>
                                   );
                                 })}

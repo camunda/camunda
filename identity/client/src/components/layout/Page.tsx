@@ -16,6 +16,7 @@ import { DocumentationDescription } from "src/components/entityList";
 import { DocumentationLink } from "src/components/documentation";
 import useTranslate from "src/utility/localization";
 
+// @TODO: remove PageTitle and use PageHeader component instead for all pages
 export const PageTitle = styled.h2`
   margin-bottom: ${cssSize(3)};
   margin-left: ${cssSize(2)};
@@ -23,6 +24,10 @@ export const PageTitle = styled.h2`
 
 const Page = styled(Content)`
   height: 100%;
+
+  .cds--css-grid {
+    padding-inline: 0;
+  }
 `;
 
 const PageHeaderContainer = styled.div<{ $largeBottomMargin?: boolean }>`
