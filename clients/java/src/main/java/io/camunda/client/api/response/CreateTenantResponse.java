@@ -28,4 +28,7 @@ public interface CreateTenantResponse {
 
   /** Returns the name of the created tenant. */
   String getName();
+
+  /** Returns the description of the created tenant. */
+  String getDescription();
 }

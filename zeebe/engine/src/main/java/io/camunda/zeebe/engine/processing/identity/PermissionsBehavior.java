@@ -71,7 +71,10 @@ public class PermissionsBehavior {
       final var addedResourceIds = permission.getResourceIds();
       final var currentResourceIds =
           authCheckBehavior.getDirectAuthorizedResourceIdentifiers(
-              record.getOwnerKey(), record.getResourceType(), permission.getPermissionType());
+              record.getOwnerType(),
+              record.getOwnerId(),
+              record.getResourceType(),
+              permission.getPermissionType());
 
       final var duplicates = new HashSet<>(currentResourceIds);
       duplicates.retainAll(addedResourceIds);
@@ -97,7 +100,10 @@ public class PermissionsBehavior {
     for (final PermissionValue permission : record.getPermissions()) {
       final var currentResourceIdentifiers =
           authCheckBehavior.getDirectAuthorizedResourceIdentifiers(
-              record.getOwnerKey(), record.getResourceType(), permission.getPermissionType());
+              record.getOwnerType(),
+              record.getOwnerId(),
+              record.getResourceType(),
+              permission.getPermissionType());
 
       final var removedResourceIds = permission.getResourceIds();
       if (!currentResourceIdentifiers.containsAll(removedResourceIds)) {

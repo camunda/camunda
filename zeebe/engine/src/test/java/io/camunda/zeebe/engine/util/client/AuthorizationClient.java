@@ -71,8 +71,14 @@ public final class AuthorizationClient {
       authorizationCreationRecord = new AuthorizationRecord();
     }
 
+    // TODO: remove when all Identity-related entities use String-based identifiers
     public AuthorizationPermissionClient withOwnerKey(final Long ownerKey) {
       authorizationCreationRecord.setOwnerKey(ownerKey);
+      return this;
+    }
+
+    public AuthorizationPermissionClient withOwnerId(final String ownerId) {
+      authorizationCreationRecord.setOwnerId(ownerId);
       return this;
     }
 

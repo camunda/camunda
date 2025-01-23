@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -93,7 +94,7 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
     final var serviceTaskKey = getServiceTaskKey(processInstanceKey);
     final var user = createUser();
     addPermissionsToUser(
-        user.getUserKey(),
+        user,
         AuthorizationResourceType.PROCESS_DEFINITION,
         PermissionType.UPDATE_PROCESS_INSTANCE,
         PROCESS_ID);
@@ -154,14 +155,16 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
   }
 
   private void addPermissionsToUser(
-      final long userKey,
+      final UserRecordValue user,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType,
       final String... resourceIds) {
     engine
         .authorization()
         .permission()
-        .withOwnerKey(userKey)
+        .withOwnerKey(user.getUserKey())
+        .withOwnerId(user.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
         .withPermission(permissionType, resourceIds)
         .add(DEFAULT_USER.getUsername());

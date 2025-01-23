@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -58,11 +59,12 @@ public class TenantAppliersTest {
     final long entityKey = UUID.randomUUID().hashCode();
     final long tenantKey = UUID.randomUUID().hashCode();
     final var tenantId = UUID.randomUUID().toString();
+    final var username = "username";
     createTenant(tenantKey, tenantId);
-    createUser(entityKey, "username");
+    createUser(entityKey, username);
 
     // when
-    associateUserWithTenant(tenantKey, tenantId, entityKey);
+    associateUserWithTenant(tenantKey, tenantId, username);
 
     // then
     assertThat(tenantState.getEntitiesByType(tenantKey).get(EntityType.USER))
@@ -116,7 +118,10 @@ public class TenantAppliersTest {
     assertThat(ownerType).isEmpty();
     final var resourceIdentifiers =
         authorizationState.getResourceIdentifiers(
-            tenantKey, AuthorizationResourceType.TENANT, PermissionType.DELETE);
+            AuthorizationOwnerType.TENANT,
+            tenantId,
+            AuthorizationResourceType.TENANT,
+            PermissionType.DELETE);
     assertThat(resourceIdentifiers).isEmpty();
   }
 
@@ -126,9 +131,10 @@ public class TenantAppliersTest {
     final long entityKey = UUID.randomUUID().hashCode();
     final long tenantKey = UUID.randomUUID().hashCode();
     final var tenantId = UUID.randomUUID().toString();
+    final var username = "username";
     createTenant(tenantKey, tenantId);
-    createUser(entityKey, "username");
-    associateUserWithTenant(tenantKey, tenantId, entityKey);
+    createUser(entityKey, username);
+    associateUserWithTenant(tenantKey, tenantId, username);
 
     // Ensure the user is associated with the tenant before removal
     assertThat(tenantState.getEntitiesByType(tenantKey).get(EntityType.USER))
@@ -203,12 +209,11 @@ public class TenantAppliersTest {
   }
 
   private void associateUserWithTenant(
-      final long tenantKey, final String tenantId, final long userKey) {
+      final long tenantKey, final String tenantId, final String username) {
     final var tenantRecord =
         new TenantRecord()
-            .setTenantKey(tenantKey)
             .setTenantId(tenantId)
-            .setEntityKey(userKey)
+            .setEntityId(username)
             .setEntityType(EntityType.USER);
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
   }

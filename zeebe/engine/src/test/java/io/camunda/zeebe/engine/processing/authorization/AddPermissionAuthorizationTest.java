@@ -34,22 +34,23 @@ public class AddPermissionAuthorizationTest {
   @Test
   public void shouldAddPermission() {
     // given no user
-    final var ownerKey =
+    final var owner =
         engine
             .user()
             .newUser("foo")
             .withEmail("foo@bar")
             .withName("Foo Bar")
             .withPassword("zabraboof")
-            .create()
-            .getKey();
+            .create();
 
     // when
     final var response =
         engine
             .authorization()
             .permission()
-            .withOwnerKey(ownerKey)
+            .withOwnerKey(owner.getKey())
+            .withOwnerId(owner.getValue().getUsername())
+            .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermission(PermissionType.CREATE, "foo")
             .withPermission(PermissionType.DELETE_PROCESS, "bar")
@@ -62,7 +63,8 @@ public class AddPermissionAuthorizationTest {
             AuthorizationRecordValue::getOwnerKey,
             AuthorizationRecordValue::getOwnerType,
             AuthorizationRecordValue::getResourceType)
-        .containsExactly(ownerKey, AuthorizationOwnerType.USER, AuthorizationResourceType.RESOURCE);
+        .containsExactly(
+            owner.getKey(), AuthorizationOwnerType.USER, AuthorizationResourceType.RESOURCE);
     assertThat(response.getPermissions())
         .extracting(PermissionValue::getPermissionType, PermissionValue::getResourceIds)
         .containsExactly(
@@ -81,6 +83,8 @@ public class AddPermissionAuthorizationTest {
             .authorization()
             .permission()
             .withOwnerKey(ownerKey)
+            .withOwnerId("bar")
+            .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermission(PermissionType.CREATE, "foo")
             .expectRejection()
@@ -97,19 +101,22 @@ public class AddPermissionAuthorizationTest {
   @Test
   public void shouldRejectIfPermissionAlreadyExistsDirectly() {
     // given
-    final var ownerKey =
+    final var owner =
         engine
             .user()
             .newUser("foo")
             .withEmail("foo@bar")
             .withName("Foo Bar")
             .withPassword("zabraboof")
-            .create()
-            .getKey();
+            .create();
+    final var ownerKey = owner.getKey();
+
     engine
         .authorization()
         .permission()
         .withOwnerKey(ownerKey)
+        .withOwnerId(owner.getValue().getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermission(PermissionType.CREATE, "foo")
         .withPermission(PermissionType.DELETE_PROCESS, "bar", "baz")
@@ -122,6 +129,8 @@ public class AddPermissionAuthorizationTest {
             .authorization()
             .permission()
             .withOwnerKey(ownerKey)
+            .withOwnerId(owner.getValue().getUsername())
+            .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermission(PermissionType.DELETE_PROCESS, "foo", "bar")
             .expectRejection()
@@ -145,21 +154,24 @@ public class AddPermissionAuthorizationTest {
   @Test
   public void shouldNotRejectIfPermissionAlreadyExistsOnRole() {
     // given -- user is assigned a role that has the permission
-    final var ownerKey =
+    final var owner =
         engine
             .user()
             .newUser("foo")
             .withEmail("foo@bar")
             .withName("Foo Bar")
             .withPassword("zabraboof")
-            .create()
-            .getKey();
+            .create();
+    final var ownerKey = owner.getKey();
+    final var ownerId = owner.getValue().getUsername();
     final var roleKey = engine.role().newRole("role").create().getKey();
     engine.role().addEntity(roleKey).withEntityKey(ownerKey).withEntityType(EntityType.USER).add();
     engine
         .authorization()
         .permission()
         .withOwnerKey(roleKey)
+        .withOwnerId(String.valueOf(roleKey))
+        .withOwnerType(AuthorizationOwnerType.ROLE)
         .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermission(PermissionType.CREATE, "foo")
         .withPermission(PermissionType.DELETE_PROCESS, "bar", "baz")
@@ -172,6 +184,8 @@ public class AddPermissionAuthorizationTest {
             .authorization()
             .permission()
             .withOwnerKey(ownerKey)
+            .withOwnerId(ownerId)
+            .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermission(PermissionType.DELETE_PROCESS, "foo", "bar")
             .add();
@@ -188,15 +202,16 @@ public class AddPermissionAuthorizationTest {
   @Test
   public void shouldNotRejectIfPermissionAlreadyExistsOnGroup() {
     // given -- user is assigned a group that has the permission
-    final var ownerKey =
+    final var owner =
         engine
             .user()
             .newUser("foo")
             .withEmail("foo@bar")
             .withName("Foo Bar")
             .withPassword("zabraboof")
-            .create()
-            .getKey();
+            .create();
+    final var ownerKey = owner.getKey();
+    final var ownerId = owner.getValue().getUsername();
     final var groupKey = engine.group().newGroup("group").create().getKey();
     engine
         .group()
@@ -208,6 +223,8 @@ public class AddPermissionAuthorizationTest {
         .authorization()
         .permission()
         .withOwnerKey(groupKey)
+        .withOwnerId(String.valueOf(groupKey))
+        .withOwnerType(AuthorizationOwnerType.GROUP)
         .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermission(PermissionType.CREATE, "foo")
         .withPermission(PermissionType.DELETE_PROCESS, "bar", "baz")
@@ -220,6 +237,8 @@ public class AddPermissionAuthorizationTest {
             .authorization()
             .permission()
             .withOwnerKey(ownerKey)
+            .withOwnerId(ownerId)
+            .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermission(PermissionType.DELETE_PROCESS, "foo", "bar")
             .add();
@@ -236,15 +255,16 @@ public class AddPermissionAuthorizationTest {
   @Test
   public void shouldRejectAddingUnsupportedPermission() {
     // given
-    final var ownerKey =
+    final var owner =
         engine
             .user()
             .newUser("foo")
             .withEmail("foo@bar")
             .withName("Foo Bar")
             .withPassword("zabraboof")
-            .create()
-            .getKey();
+            .create();
+    final var ownerKey = owner.getKey();
+    final var ownerId = owner.getValue().getUsername();
     final var resourceType = AuthorizationResourceType.RESOURCE;
 
     // when
@@ -253,6 +273,8 @@ public class AddPermissionAuthorizationTest {
             .authorization()
             .permission()
             .withOwnerKey(ownerKey)
+            .withOwnerId(ownerId)
+            .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceType(resourceType)
             .withPermission(PermissionType.CREATE, "foo")
             .withPermission(PermissionType.DELETE_PROCESS, "foo")

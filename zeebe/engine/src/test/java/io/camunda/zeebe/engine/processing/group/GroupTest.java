@@ -295,11 +295,13 @@ public class GroupTest {
     // given
     final var name = UUID.randomUUID().toString();
     final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
+    final var groupId = String.valueOf(groupKey);
     engine
         .authorization()
         .permission()
         .withOwnerKey(groupKey)
-        .withOwnerType(AuthorizationOwnerType.ROLE)
+        .withOwnerId(groupId)
+        .withOwnerType(AuthorizationOwnerType.GROUP)
         .withResourceType(AuthorizationResourceType.ROLE)
         .add();
 

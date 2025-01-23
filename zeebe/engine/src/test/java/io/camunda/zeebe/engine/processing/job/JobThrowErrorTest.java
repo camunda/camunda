@@ -56,13 +56,12 @@ public final class JobThrowErrorTest {
     tenantId = UUID.randomUUID().toString();
     username = UUID.randomUUID().toString();
     final var user = ENGINE.user().newUser(username).create().getValue();
-    final var tenantKey =
-        ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
+    ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     ENGINE
         .tenant()
-        .addEntity(tenantKey)
+        .addEntity(tenantId)
         .withEntityType(EntityType.USER)
-        .withEntityKey(user.getUserKey())
+        .withEntityId(username)
         .add();
 
     ENGINE
@@ -71,6 +70,7 @@ public final class JobThrowErrorTest {
         .withPermission(PermissionType.UPDATE_PROCESS_INSTANCE, PROCESS_ID)
         .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
         .withOwnerKey(user.getUserKey())
+        .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .add();
   }

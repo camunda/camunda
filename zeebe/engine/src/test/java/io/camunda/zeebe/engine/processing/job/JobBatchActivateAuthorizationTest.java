@@ -13,6 +13,7 @@ import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -75,7 +76,7 @@ public class JobBatchActivateAuthorizationTest {
     createJobs(processId1, processId2);
     final var user = createUser();
     addPermissionsToUser(
-        user.getUserKey(),
+        user,
         AuthorizationResourceType.PROCESS_DEFINITION,
         PermissionType.UPDATE_PROCESS_INSTANCE,
         processId1,
@@ -100,7 +101,7 @@ public class JobBatchActivateAuthorizationTest {
     createJobs(processId1, processId2);
     final var user = createUser();
     addPermissionsToUser(
-        user.getUserKey(),
+        user,
         AuthorizationResourceType.PROCESS_DEFINITION,
         PermissionType.UPDATE_PROCESS_INSTANCE,
         processId1);
@@ -144,14 +145,16 @@ public class JobBatchActivateAuthorizationTest {
   }
 
   private void addPermissionsToUser(
-      final long userKey,
+      final UserRecordValue user,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType,
       final String... resourceIds) {
     engine
         .authorization()
         .permission()
-        .withOwnerKey(userKey)
+        .withOwnerKey(user.getUserKey())
+        .withOwnerId(user.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
         .withPermission(permissionType, resourceIds)
         .add(DEFAULT_USER.getUsername());

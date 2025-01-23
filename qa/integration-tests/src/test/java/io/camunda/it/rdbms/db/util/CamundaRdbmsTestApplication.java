@@ -73,7 +73,7 @@ public final class CamundaRdbmsTestApplication
 
   @Override
   public void close() {
-    LOGGER.info("Stop spring application ...");
+    LOGGER.info("Resource closed - Stop spring application ...");
     super.stop();
     if (databaseContainer != null) {
       LOGGER.info("Stop database container '{}'...", databaseContainer.getContainerInfo());

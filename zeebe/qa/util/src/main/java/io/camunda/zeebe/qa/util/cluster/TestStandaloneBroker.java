@@ -36,7 +36,7 @@ import org.springframework.util.unit.DataSize;
 /** Represents an instance of the {@link BrokerModuleConfiguration} Spring application. */
 @SuppressWarnings("UnusedReturnValue")
 public final class TestStandaloneBroker extends TestSpringApplication<TestStandaloneBroker>
-    implements TestGateway<TestStandaloneBroker> {
+    implements TestGateway<TestStandaloneBroker>, TestStandaloneApplication<TestStandaloneBroker> {
 
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
   private final BrokerBasedProperties config;
@@ -127,7 +127,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
           "Expected to get the gateway address for this broker, but the embedded gateway is not enabled");
     }
 
-    return TestGateway.super.grpcAddress();
+    return TestStandaloneApplication.super.grpcAddress();
   }
 
   @Override
@@ -153,21 +153,12 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
           "Cannot create a new client for this broker, as it does not have an embedded gateway");
     }
 
-    return TestGateway.super.newClientBuilder();
+    return TestStandaloneApplication.super.newClientBuilder();
   }
 
   /** Returns the broker configuration */
   public BrokerBasedProperties brokerConfig() {
     return config;
-  }
-
-  /**
-   * Modifies the broker configuration. Will still mutate the configuration if the broker is
-   * started, but likely has no effect until it's restarted.
-   */
-  public TestStandaloneBroker withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
-    modifier.accept(config);
-    return this;
   }
 
   /**
@@ -214,11 +205,22 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    * @param modifier a configuration function
    * @return itself for chaining
    */
+  @Override
   public TestStandaloneBroker withExporter(final String id, final Consumer<ExporterCfg> modifier) {
     final var exporterConfig =
         config.getExporters().computeIfAbsent(id, ignored -> new ExporterCfg());
     modifier.accept(exporterConfig);
 
+    return this;
+  }
+
+  /**
+   * Modifies the broker configuration. Will still mutate the configuration if the broker is
+   * started, but likely has no effect until it's restarted.
+   */
+  @Override
+  public TestStandaloneBroker withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
+    modifier.accept(config);
     return this;
   }
 
