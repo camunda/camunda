@@ -220,36 +220,6 @@ public final class UserTaskClient {
     return expectation.apply(position);
   }
 
-  public Record<UserTaskRecordValue> update(
-      final List<String> candidateGroups,
-      final List<String> candidateUsers,
-      final String dueDate,
-      final String followUpDate) {
-    if (candidateGroups != null) {
-      userTaskRecord.setCandidateGroupsList(candidateGroups).setCandidateGroupsChanged();
-    }
-    if (candidateUsers != null) {
-      userTaskRecord.setCandidateUsersList(candidateUsers).setCandidateUsersChanged();
-    }
-    if (dueDate != null) {
-      userTaskRecord.setDueDate(dueDate).setDueDateChanged();
-    }
-    if (followUpDate != null) {
-      userTaskRecord.setFollowUpDate(followUpDate).setFollowUpDateChanged();
-    }
-
-    final long userTaskKey = findUserTaskKey();
-    final long position =
-        writer.writeCommand(
-            userTaskKey,
-            DEFAULT_REQUEST_STREAM_ID,
-            DEFAULT_REQUEST_ID,
-            UserTaskIntent.UPDATE,
-            userTaskRecord.setUserTaskKey(userTaskKey),
-            authorizedTenantIds.toArray(new String[0]));
-    return expectation.apply(position);
-  }
-
   public Record<UserTaskRecordValue> update(final UserTaskRecord changes) {
     if (changes.getChangedAttributesProp().isEmpty()) {
       // assume all attributes have been changed
