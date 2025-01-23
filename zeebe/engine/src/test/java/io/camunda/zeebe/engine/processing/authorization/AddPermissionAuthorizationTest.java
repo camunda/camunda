@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Set;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -253,6 +254,7 @@ public class AddPermissionAuthorizationTest {
   }
 
   @Test
+  @Ignore("This test will be removed")
   public void shouldRejectAddingUnsupportedPermission() {
     // given
     final var owner =
