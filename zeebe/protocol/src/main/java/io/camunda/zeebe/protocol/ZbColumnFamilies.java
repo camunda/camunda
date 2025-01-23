@@ -192,6 +192,7 @@ public enum ZbColumnFamilies implements EnumValue {
 
   @Deprecated
   AUTHORIZATION_KEY_BY_RESOURCE_ID(94),
+  @Deprecated
   OWNER_TYPE_BY_OWNER_KEY(95),
 
   ROUTING(96),

@@ -39,7 +39,6 @@ public class MappingDeletedApplier implements TypedEventApplier<MappingIntent, M
               value.getMappingKey()));
     }
     // remove mapping from authorization state
-    authorizationState.deleteOwnerTypeByKey(mappingKey);
     authorizationState.deleteAuthorizationsByOwnerTypeAndIdPrefix(
         AuthorizationOwnerType.MAPPING, mappingId);
     mappingState.delete(mappingKey);

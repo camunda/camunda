@@ -22,6 +22,4 @@ public interface AuthorizationState {
       final String ownerId,
       AuthorizationResourceType resourceType,
       final PermissionType permissionType);
-
-  Optional<AuthorizationOwnerType> getOwnerType(final long ownerKey);
 }

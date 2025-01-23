@@ -62,14 +62,6 @@ public interface MutableAuthorizationState extends AuthorizationState {
       Set<String> resourceIds);
 
   /**
-   * Stores the owner type for a new owner in the state.
-   *
-   * @param ownerKey the key of the owner
-   * @param ownerType the type of the owner
-   */
-  void insertOwnerTypeByKey(final long ownerKey, final AuthorizationOwnerType ownerType);
-
-  /**
    * Removes all permissions for the provided ownerKey.
    *
    * @param ownerType the type of the owner of the authorizations
@@ -77,11 +69,4 @@ public interface MutableAuthorizationState extends AuthorizationState {
    */
   void deleteAuthorizationsByOwnerTypeAndIdPrefix(
       final AuthorizationOwnerType ownerType, final String ownerId);
-
-  /**
-   * Removes the owner type for the provided ownerKey.
-   *
-   * @param ownerKey the key of the owner
-   */
-  void deleteOwnerTypeByKey(final long ownerKey);
 }

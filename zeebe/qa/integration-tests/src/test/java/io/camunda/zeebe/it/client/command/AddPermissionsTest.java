@@ -16,7 +16,6 @@ import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -25,6 +24,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -65,12 +65,15 @@ public class AddPermissionsTest {
             .getLast()
             .getValue();
     assertThat(recordValue.getResourceType()).isEqualTo(AuthorizationResourceType.RESOURCE);
-    assertThat(recordValue.getOwnerType()).isEqualTo(AuthorizationOwnerType.USER);
+    // TODO: re-enable or remove whole test with https://github.com/camunda/camunda/issues/27344
+    // assertThat(recordValue.getOwnerType()).isEqualTo(AuthorizationOwnerType.USER);
     final var permission = recordValue.getPermissions().getFirst();
     assertThat(permission.getPermissionType()).isEqualTo(PermissionType.CREATE);
     assertThat(permission.getResourceIds()).containsExactly("resourceId");
   }
 
+  // TODO: we should decide if we refactor or remove this test with the GitHub issue specified below
+  @Disabled("https://github.com/camunda/camunda/issues/27344")
   @Test
   void shouldRejectWhenOwnerNotFound() {
     // given

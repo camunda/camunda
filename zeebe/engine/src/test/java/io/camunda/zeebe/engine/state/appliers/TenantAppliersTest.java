@@ -114,8 +114,6 @@ public class TenantAppliersTest {
 
     // then
     assertThat(tenantState.getTenantByKey(tenantKey)).isEmpty();
-    final var ownerType = authorizationState.getOwnerType(tenantKey);
-    assertThat(ownerType).isEmpty();
     final var resourceIdentifiers =
         authorizationState.getResourceIdentifiers(
             AuthorizationOwnerType.TENANT,
@@ -193,7 +191,7 @@ public class TenantAppliersTest {
             .setTenantKey(tenantKey)
             .setTenantId(tenantId)
             .setName("Tenant-" + tenantId);
-    new TenantCreatedApplier(tenantState, authorizationState).applyState(tenantKey, tenantRecord);
+    new TenantCreatedApplier(tenantState).applyState(tenantKey, tenantRecord);
     return tenantRecord;
   }
 
@@ -205,7 +203,7 @@ public class TenantAppliersTest {
             .setName("User-" + username)
             .setEmail(username + "@test.com")
             .setPassword("password");
-    new UserCreatedApplier(processingState).applyState(userKey, userRecord);
+    new UserCreatedApplier(userState).applyState(userKey, userRecord);
   }
 
   private void associateUserWithTenant(
