@@ -31,6 +31,8 @@ public final class UpdateUserTaskTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
+  private static final String DEFAULT_ACTION = "update";
+  private static final int DEFAULT_PRIORITY = 50;
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -78,7 +80,8 @@ public final class UpdateUserTaskTest {
             recordValue ->
                 Assertions.assertThat(recordValue)
                     .hasUserTaskKey(userTaskKey)
-                    .hasAction("update")
+                    .hasAction(DEFAULT_ACTION)
+                    .hasPriority(DEFAULT_PRIORITY)
                     .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
 
@@ -144,7 +147,8 @@ public final class UpdateUserTaskTest {
                     t.zeebeCandidateGroups("initial_group_A, initial_group_B")
                         .zeebeCandidateUsers("initial_user_A, initial_user_B")
                         .zeebeDueDate("2023-03-02T15:35+02:00")
-                        .zeebeFollowUpDate("2023-03-02T16:35+02:00")))
+                        .zeebeFollowUpDate("2023-03-02T16:35+02:00")
+                        .zeebeTaskPriority("20")))
         .deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
@@ -175,7 +179,8 @@ public final class UpdateUserTaskTest {
                     .hasCandidateGroupsList("updated_group_C", "updated_group_C")
                     .hasCandidateUsersList("initial_user_A", "initial_user_B")
                     .hasDueDate("2023-03-02T15:35+02:00")
-                    .hasFollowUpDate("2023-03-02T16:35+02:00"));
+                    .hasFollowUpDate("2023-03-02T16:35+02:00")
+                    .hasPriority(20));
   }
 
   @Test
@@ -189,7 +194,8 @@ public final class UpdateUserTaskTest {
                     t.zeebeCandidateGroups("initial_group_A, initial_group_B")
                         .zeebeCandidateUsers("initial_user_A, initial_user_B")
                         .zeebeDueDate("2023-03-02T15:35+02:00")
-                        .zeebeFollowUpDate("2023-03-02T16:35+02:00")))
+                        .zeebeFollowUpDate("2023-03-02T16:35+02:00")
+                        .zeebeTaskPriority("20")))
         .deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
@@ -220,7 +226,8 @@ public final class UpdateUserTaskTest {
                     .hasCandidateGroupsList("initial_group_A", "initial_group_B")
                     .hasCandidateUsersList("updated_user_C", "updated_user_D")
                     .hasDueDate("2023-03-02T15:35+02:00")
-                    .hasFollowUpDate("2023-03-02T16:35+02:00"));
+                    .hasFollowUpDate("2023-03-02T16:35+02:00")
+                    .hasPriority(20));
   }
 
   @Test
@@ -234,7 +241,8 @@ public final class UpdateUserTaskTest {
                     t.zeebeCandidateGroups("initial_group_A, initial_group_B")
                         .zeebeCandidateUsers("initial_user_A, initial_user_B")
                         .zeebeDueDate("2023-03-02T15:35+02:00")
-                        .zeebeFollowUpDate("2023-03-02T16:35+02:00")))
+                        .zeebeFollowUpDate("2023-03-02T16:35+02:00")
+                        .zeebeTaskPriority("20")))
         .deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
@@ -262,7 +270,8 @@ public final class UpdateUserTaskTest {
                     .hasCandidateGroupsList("initial_group_A", "initial_group_B")
                     .hasCandidateUsersList("initial_user_A", "initial_user_B")
                     .hasDueDate("updated_dueDate")
-                    .hasFollowUpDate("2023-03-02T16:35+02:00"));
+                    .hasFollowUpDate("2023-03-02T16:35+02:00")
+                    .hasPriority(20));
   }
 
   @Test
@@ -276,7 +285,8 @@ public final class UpdateUserTaskTest {
                     t.zeebeCandidateGroups("initial_group_A, initial_group_B")
                         .zeebeCandidateUsers("initial_user_A, initial_user_B")
                         .zeebeDueDate("2023-03-02T15:35+02:00")
-                        .zeebeFollowUpDate("2023-03-02T16:35+02:00")))
+                        .zeebeFollowUpDate("2023-03-02T16:35+02:00")
+                        .zeebeTaskPriority("20")))
         .deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
@@ -307,7 +317,53 @@ public final class UpdateUserTaskTest {
                     .hasCandidateGroupsList("initial_group_A", "initial_group_B")
                     .hasCandidateUsersList("initial_user_A", "initial_user_B")
                     .hasDueDate("2023-03-02T15:35+02:00")
-                    .hasFollowUpDate("updated_followUpDate"));
+                    .hasFollowUpDate("updated_followUpDate")
+                    .hasPriority(20));
+  }
+
+  @Test
+  public void shouldUpdateUserTaskPriorityOnlyWithSingleAttribute() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(
+                t ->
+                    t.zeebeCandidateGroups("initial_group_A, initial_group_B")
+                        .zeebeCandidateUsers("initial_user_A, initial_user_B")
+                        .zeebeDueDate("2023-03-02T15:35+02:00")
+                        .zeebeFollowUpDate("2023-03-02T16:35+02:00")
+                        .zeebeTaskPriority("20")))
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final int newPriority = 42;
+
+    // when
+    final var updatingRecord =
+        ENGINE
+            .userTask()
+            .ofInstance(processInstanceKey)
+            .update(new UserTaskRecord().setPriority(newPriority).setPriorityChanged());
+
+    // then
+    Assertions.assertThat(updatingRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(UserTaskIntent.UPDATING);
+
+    final var updatingRecordValue = updatingRecord.getValue();
+    final var updatedRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.UPDATED).getFirst().getValue();
+
+    assertThat(List.of(updatingRecordValue, updatedRecordValue))
+        .describedAs("Ensure both UPDATING and UPDATED records have consistent attribute values")
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .hasCandidateGroupsList("initial_group_A", "initial_group_B")
+                    .hasCandidateUsersList("initial_user_A", "initial_user_B")
+                    .hasDueDate("2023-03-02T15:35+02:00")
+                    .hasFollowUpDate("2023-03-02T16:35+02:00")
+                    .hasPriority(newPriority));
   }
 
   @Test
@@ -321,7 +377,8 @@ public final class UpdateUserTaskTest {
                     t.zeebeCandidateGroups("initial_group_A, initial_group_B")
                         .zeebeCandidateUsers("initial_user_A, initial_user_B")
                         .zeebeDueDate("2023-03-02T15:35+02:00")
-                        .zeebeFollowUpDate("2023-03-02T16:35+02:00")))
+                        .zeebeFollowUpDate("2023-03-02T16:35+02:00")
+                        .zeebeTaskPriority("20")))
         .deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
@@ -346,7 +403,8 @@ public final class UpdateUserTaskTest {
                     .hasNoCandidateUsersList()
                     .hasNoCandidateUsersList()
                     .hasDueDate("")
-                    .hasFollowUpDate(""));
+                    .hasFollowUpDate("")
+                    .hasPriority(DEFAULT_PRIORITY));
   }
 
   @Test
