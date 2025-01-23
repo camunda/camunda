@@ -14,7 +14,7 @@ import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.Iden
 
 public class RoleIndex extends UserManagementIndexDescriptor implements Prio5Backup {
   public static final String INDEX_NAME = "role";
-  public static final String INDEX_VERSION = "8.7.0";
+  public static final String INDEX_VERSION = "8.8.0";
 
   public static final String KEY = "key";
   public static final String NAME = "name";
