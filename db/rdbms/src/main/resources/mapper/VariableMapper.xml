@@ -11,7 +11,7 @@
 
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)
-    FROM VARIABLE
+    FROM ${prefix}VARIABLE
     <include refid="io.camunda.db.rdbms.sql.VariableMapper.searchFilter"/>
   </select>
 
@@ -29,7 +29,7 @@
       TENANT_ID,
     IS_PREVIEW,
     PROCESS_DEFINITION_ID
-    FROM VARIABLE
+    FROM ${prefix}VARIABLE
     <include refid="io.camunda.db.rdbms.sql.VariableMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -124,7 +124,7 @@
     statementType="PREPARED"
     parameterType="io.camunda.db.rdbms.write.domain.VariableDbModel"
     flushCache="true">
-    INSERT INTO VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, SCOPE_KEY, TYPE, VAR_NAME, DOUBLE_VALUE,
+    INSERT INTO ${prefix}VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, SCOPE_KEY, TYPE, VAR_NAME, DOUBLE_VALUE,
                           LONG_VALUE,
                           VAR_VALUE, VAR_FULL_VALUE, TENANT_ID, IS_PREVIEW)
     VALUES (#{variableKey}, #{processInstanceKey}, #{processDefinitionId}, #{scopeKey}, #{type}, #{name}, #{doubleValue},
@@ -137,7 +137,7 @@
     statementType="PREPARED"
     parameterType="io.camunda.db.rdbms.write.domain.VariableDbModel"
     flushCache="true">
-      UPDATE VARIABLE
+      UPDATE ${prefix}VARIABLE
       SET TYPE         = #{type},
           DOUBLE_VALUE = #{doubleValue},
           LONG_VALUE   = #{longValue},

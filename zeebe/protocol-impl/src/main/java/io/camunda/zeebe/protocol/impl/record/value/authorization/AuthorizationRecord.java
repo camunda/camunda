@@ -26,18 +26,17 @@ import java.util.stream.Collectors;
 
 public final class AuthorizationRecord extends UnifiedRecordValue
     implements AuthorizationRecordValue {
-  // TODO: remove default value in: https://github.com/camunda/camunda/issues/26883
   private final LongProperty authorizationKeyProp = new LongProperty("authorizationKey", -1L);
   private final StringProperty ownerIdProp = new StringProperty("ownerId", "");
   // TODO: remove in: https://github.com/camunda/camunda/issues/26883
-  private final LongProperty ownerKeyProp = new LongProperty("ownerKey");
+  private final LongProperty ownerKeyProp = new LongProperty("ownerKey", -1L);
   private final EnumProperty<AuthorizationOwnerType> ownerTypeProp =
       new EnumProperty<>(
           "ownerType", AuthorizationOwnerType.class, AuthorizationOwnerType.UNSPECIFIED);
-  // TODO: remove default value in: https://github.com/camunda/camunda/issues/26883
   private final StringProperty resourceIdProp = new StringProperty("resourceId", "");
   private final EnumProperty<AuthorizationResourceType> resourceTypeProp =
-      new EnumProperty<>("resourceType", AuthorizationResourceType.class);
+      new EnumProperty<>(
+          "resourceType", AuthorizationResourceType.class, AuthorizationResourceType.UNSPECIFIED);
   // TODO: remove in: https://github.com/camunda/camunda/issues/26883
   private final ArrayProperty<Permission> permissionsProp =
       new ArrayProperty<>("permissions", Permission::new);

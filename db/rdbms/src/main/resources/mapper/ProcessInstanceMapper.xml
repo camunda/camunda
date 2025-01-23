@@ -28,16 +28,16 @@
            pi.VERSION AS PROCESS_DEFINITION_VERSION,
            pd.NAME        AS PROCESS_DEFINITION_NAME,
            pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG
-    FROM PROCESS_INSTANCE pi
-           LEFT JOIN PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
+    FROM ${prefix}PROCESS_INSTANCE pi
+           LEFT JOIN ${prefix}PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
   </select>
 
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)
-    FROM PROCESS_INSTANCE pi
+    FROM ${prefix}PROCESS_INSTANCE pi
     <!-- TODO: only when definition filters are active -->
-    LEFT JOIN PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
+    LEFT JOIN ${prefix}PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
     <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
   </select>
 
@@ -62,8 +62,8 @@
     pi.VERSION PROCESS_DEFINITION_VERSION,
     pd.NAME AS PROCESS_DEFINITION_NAME,
     pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG
-    FROM PROCESS_INSTANCE pi
-    LEFT JOIN PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
+    FROM ${prefix}PROCESS_INSTANCE pi
+    LEFT JOIN ${prefix}PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
     <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -108,6 +108,12 @@
       <foreach collection="filter.tenantIdOperations" item="operation">
         AND TENANT_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
+    </if>
+    <if test="filter.hasIncident != null and filter.hasIncident == true">
+      AND NUM_INCIDENTS > 0
+    </if>
+    <if test="filter.hasIncident != null and filter.hasIncident == false">
+      AND NUM_INCIDENTS = 0
     </if>
 
     <!-- date filters -->
@@ -163,7 +169,7 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel"
     flushCache="true">
-    INSERT INTO PROCESS_INSTANCE (PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY, STATE, START_DATE, END_DATE, TENANT_ID, PARENT_PROCESS_INSTANCE_KEY, PARENT_ELEMENT_INSTANCE_KEY,
+    INSERT INTO ${prefix}PROCESS_INSTANCE (PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY, STATE, START_DATE, END_DATE, TENANT_ID, PARENT_PROCESS_INSTANCE_KEY, PARENT_ELEMENT_INSTANCE_KEY,
                                   NUM_INCIDENTS, VERSION)
     VALUES (#{processInstanceKey}, #{processDefinitionId}, #{processDefinitionKey}, #{state}, #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId}, #{parentProcessInstanceKey},
             #{parentElementInstanceKey}, #{numIncidents}, #{version})
@@ -174,7 +180,7 @@
     statementType="PREPARED"
     parameterType="io.camunda.db.rdbms.sql.ProcessInstanceMapper$EndProcessInstanceDto"
     flushCache="true">
-    UPDATE PROCESS_INSTANCE p
+    UPDATE ${prefix}PROCESS_INSTANCE p
     SET STATE    = #{state},
         END_DATE = #{endDate}
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
@@ -185,7 +191,7 @@
     statementType="PREPARED"
     parameterType="java.lang.Long"
     flushCache="true">
-    UPDATE PROCESS_INSTANCE
+    UPDATE ${prefix}PROCESS_INSTANCE
     SET NUM_INCIDENTS = NUM_INCIDENTS + 1
     WHERE PROCESS_INSTANCE_KEY = #{id}
   </update>
@@ -195,7 +201,7 @@
     statementType="PREPARED"
     parameterType="java.lang.Long"
     flushCache="true">
-    UPDATE PROCESS_INSTANCE
+    UPDATE ${prefix}PROCESS_INSTANCE
     SET NUM_INCIDENTS = NUM_INCIDENTS - 1
     WHERE PROCESS_INSTANCE_KEY = #{id}
   </update>

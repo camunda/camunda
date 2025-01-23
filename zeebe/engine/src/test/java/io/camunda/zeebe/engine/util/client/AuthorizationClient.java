@@ -27,6 +27,14 @@ public final class AuthorizationClient {
     this.writer = writer;
   }
 
+  public AuthorizationCreateClient newAuthorization() {
+    return new AuthorizationCreateClient(writer);
+  }
+
+  public AuthorizationDeleteClient deleteAuthorization(final long authorizationKey) {
+    return new AuthorizationDeleteClient(writer, authorizationKey);
+  }
+
   public AuthorizationPermissionClient permission() {
     return new AuthorizationPermissionClient(writer);
   }
@@ -137,6 +145,129 @@ public final class AuthorizationClient {
       final long position =
           writer.writeCommand(
               AuthorizationIntent.REMOVE_PERMISSION, username, authorizationCreationRecord);
+      return expectation.apply(position);
+    }
+  }
+
+  public static class AuthorizationCreateClient {
+    private static final Function<Long, Record<AuthorizationRecordValue>> CREATE_SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.authorizationRecords()
+                .withIntent(AuthorizationIntent.CREATED)
+                .withSourceRecordPosition(position)
+                .getFirst();
+    private static final Function<Long, Record<AuthorizationRecordValue>>
+        CREATE_REJECTION_SUPPLIER =
+            (position) ->
+                RecordingExporter.authorizationRecords()
+                    .onlyCommandRejections()
+                    .withIntent(AuthorizationIntent.CREATE)
+                    .withSourceRecordPosition(position)
+                    .getFirst();
+
+    private Function<Long, Record<AuthorizationRecordValue>> expectation = CREATE_SUCCESS_SUPPLIER;
+    private final CommandWriter writer;
+    private final AuthorizationRecord authorizationCreationRecord;
+    private boolean expectRejection = false;
+
+    public AuthorizationCreateClient(final CommandWriter writer) {
+      this.writer = writer;
+      authorizationCreationRecord = new AuthorizationRecord();
+    }
+
+    public AuthorizationCreateClient withOwnerKey(final Long ownerKey) {
+      authorizationCreationRecord.setOwnerKey(ownerKey);
+      return this;
+    }
+
+    public AuthorizationCreateClient withOwnerId(final String ownerId) {
+      authorizationCreationRecord.setOwnerId(ownerId);
+      return this;
+    }
+
+    public AuthorizationCreateClient withOwnerType(final AuthorizationOwnerType ownerType) {
+      authorizationCreationRecord.setOwnerType(ownerType);
+      return this;
+    }
+
+    public AuthorizationCreateClient withResourceId(final String resourceId) {
+      authorizationCreationRecord.setResourceId(resourceId);
+      return this;
+    }
+
+    public AuthorizationCreateClient withResourceType(
+        final AuthorizationResourceType resourceType) {
+      authorizationCreationRecord.setResourceType(resourceType);
+      return this;
+    }
+
+    public AuthorizationCreateClient withPermissions(final PermissionType... permissions) {
+      authorizationCreationRecord.setAuthorizationPermissions(Set.of(permissions));
+      return this;
+    }
+
+    public AuthorizationCreateClient expectRejection() {
+      expectRejection = true;
+      return this;
+    }
+
+    public Record<AuthorizationRecordValue> create() {
+      expectation = expectRejection ? CREATE_REJECTION_SUPPLIER : CREATE_SUCCESS_SUPPLIER;
+      final long position =
+          writer.writeCommand(AuthorizationIntent.CREATE, authorizationCreationRecord);
+      return expectation.apply(position);
+    }
+
+    public Record<AuthorizationRecordValue> create(final String username) {
+      expectation = expectRejection ? CREATE_REJECTION_SUPPLIER : CREATE_SUCCESS_SUPPLIER;
+      final long position =
+          writer.writeCommand(AuthorizationIntent.CREATE, username, authorizationCreationRecord);
+      return expectation.apply(position);
+    }
+  }
+
+  public static class AuthorizationDeleteClient {
+    private static final Function<Long, Record<AuthorizationRecordValue>> DELETE_SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.authorizationRecords()
+                .withIntent(AuthorizationIntent.DELETED)
+                .withSourceRecordPosition(position)
+                .getFirst();
+    private static final Function<Long, Record<AuthorizationRecordValue>>
+        DELETE_REJECTION_SUPPLIER =
+            (position) ->
+                RecordingExporter.authorizationRecords()
+                    .onlyCommandRejections()
+                    .withIntent(AuthorizationIntent.DELETE)
+                    .withSourceRecordPosition(position)
+                    .getFirst();
+
+    private Function<Long, Record<AuthorizationRecordValue>> expectation = DELETE_SUCCESS_SUPPLIER;
+    private final CommandWriter writer;
+    private final AuthorizationRecord authorizationDeletionRecord;
+    private boolean expectRejection = false;
+
+    public AuthorizationDeleteClient(final CommandWriter writer, final long authorizationKey) {
+      this.writer = writer;
+      authorizationDeletionRecord = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
+    }
+
+    public AuthorizationDeleteClient expectRejection() {
+      expectRejection = true;
+      return this;
+    }
+
+    public Record<AuthorizationRecordValue> delete() {
+      expectation = expectRejection ? DELETE_REJECTION_SUPPLIER : DELETE_SUCCESS_SUPPLIER;
+      final long position =
+          writer.writeCommand(AuthorizationIntent.DELETE, authorizationDeletionRecord);
+      return expectation.apply(position);
+    }
+
+    public Record<AuthorizationRecordValue> delete(final String username) {
+      expectation = expectRejection ? DELETE_REJECTION_SUPPLIER : DELETE_SUCCESS_SUPPLIER;
+      final long position =
+          writer.writeCommand(AuthorizationIntent.DELETE, username, authorizationDeletionRecord);
       return expectation.apply(position);
     }
   }

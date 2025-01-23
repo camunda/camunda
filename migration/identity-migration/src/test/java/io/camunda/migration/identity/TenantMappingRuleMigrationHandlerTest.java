@@ -36,7 +36,6 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -88,8 +87,7 @@ final class TenantMappingRuleMigrationHandlerTest {
   void stopWhenNoMoreRecords() {
     // given
     givenMappingRules();
-    when(tenantServices.getById(any()))
-        .thenReturn(new TenantEntity(1L, "", "", null, Collections.emptySet()));
+    when(tenantServices.getById(any())).thenReturn(new TenantEntity(1L, "", "", null));
     when(mappingServices.createMapping(any()))
         .thenAnswer(invocation -> CompletableFuture.completedFuture(new MappingRecord()));
     when(tenantServices.addMember(any(), any(), anyLong()))
@@ -156,8 +154,7 @@ final class TenantMappingRuleMigrationHandlerTest {
   void ignoreWhenMappingAlreadyAssigned() {
     // given
     givenMappingRules();
-    when(tenantServices.getById(any()))
-        .thenReturn(new TenantEntity(1L, "", "", null, Collections.emptySet()));
+    when(tenantServices.getById(any())).thenReturn(new TenantEntity(1L, "", "", null));
     when(mappingServices.createMapping(any()))
         .thenAnswer(invocation -> CompletableFuture.completedFuture(new MappingRecord()));
     when(tenantServices.addMember(any(), any(), anyLong()))

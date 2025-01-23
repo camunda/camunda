@@ -54,14 +54,14 @@ public class TenantExportHandler implements RdbmsExportHandler<TenantRecordValue
           tenantWriter.addMember(
               new TenantMemberDbModel.Builder()
                   .tenantId(value.getTenantId())
-                  .entityKey(value.getEntityKey())
+                  .entityId(value.getEntityId())
                   .entityType(value.getEntityType().name())
                   .build());
       case TenantIntent.ENTITY_REMOVED ->
           tenantWriter.removeMember(
               new TenantMemberDbModel.Builder()
                   .tenantId(value.getTenantId())
-                  .entityKey(value.getEntityKey())
+                  .entityId(value.getEntityId())
                   .entityType(value.getEntityType().name())
                   .build());
       default -> LOG.warn("Unexpected intent {} for tenant record", record.getIntent());

@@ -49,6 +49,10 @@ const Details: FC<DetailsProps> = ({ tenant, loading }) => {
             </StyledCodeSnippet>
           ),
         },
+        {
+          label: t("Description"),
+          value: tenant.description,
+        },
       ]}
     />
   );

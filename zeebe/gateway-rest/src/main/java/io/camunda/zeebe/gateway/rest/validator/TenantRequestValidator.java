@@ -39,7 +39,7 @@ public final class TenantRequestValidator {
           if (request.getName() == null || request.getName().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
           }
-          if (request.getDescription() == null || request.getDescription().isBlank()) {
+          if (request.getDescription() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("description"));
           }
         });

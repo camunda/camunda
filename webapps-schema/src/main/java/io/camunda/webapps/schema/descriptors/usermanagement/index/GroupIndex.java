@@ -21,8 +21,8 @@ public class GroupIndex extends UserManagementIndexDescriptor implements Prio5Ba
   public static final String NAME = "name";
   public static final String JOIN = "join";
 
-  public static final EntityJoinRelationFactory JOIN_RELATION_FACTORY =
-      new EntityJoinRelationFactory(
+  public static final EntityJoinRelationFactory<Long> JOIN_RELATION_FACTORY =
+      new EntityJoinRelationFactory<>(
           IdentityJoinRelationshipType.GROUP, IdentityJoinRelationshipType.MEMBER);
 
   public GroupIndex(final String indexPrefix, final boolean isElasticsearch) {

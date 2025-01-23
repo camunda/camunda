@@ -12,7 +12,7 @@
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.UserDbQuery">
     SELECT COUNT(*)
-    FROM USERS
+    FROM ${prefix}USERS
     <include refid="io.camunda.db.rdbms.sql.UserMapper.searchFilter"/>
   </select>
 
@@ -24,7 +24,7 @@
     NAME,
     EMAIL,
     PASSWORD
-    FROM USERS
+    FROM ${prefix}USERS
     <include refid="io.camunda.db.rdbms.sql.UserMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -55,7 +55,7 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.UserDbModel"
     flushCache="true">
-    INSERT INTO USERS (USER_KEY, USERNAME, NAME, EMAIL, PASSWORD)
+    INSERT INTO ${prefix}USERS (USER_KEY, USERNAME, NAME, EMAIL, PASSWORD)
     VALUES (#{userKey}, #{username}, #{name}, #{email}, #{password})
   </insert>
 
@@ -63,7 +63,7 @@
     id="update"
     parameterType="io.camunda.db.rdbms.write.domain.UserDbModel"
     flushCache="true">
-    UPDATE USERS
+    UPDATE ${prefix}USERS
     SET NAME     = #{name},
         EMAIL    = #{email},
         PASSWORD = #{password}
@@ -71,7 +71,7 @@
   </update>
 
   <delete id="delete" parameterType="java.lang.String" flushCache="true">
-    DELETE FROM USERS
+    DELETE FROM ${prefix}USERS
     WHERE USERNAME = #{username}
   </delete>
 
