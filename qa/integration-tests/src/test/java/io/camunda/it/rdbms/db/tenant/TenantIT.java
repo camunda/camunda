@@ -16,7 +16,6 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.TenantReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.TenantDbModel;
-import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
 import io.camunda.it.rdbms.db.fixtures.TenantFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -104,32 +103,6 @@ public class TenantIT {
 
     final var deletedInstance = tenantReader.findOne(tenant.tenantId()).orElse(null);
     assertThat(deletedInstance).isNull();
-  }
-
-  @TestTemplate
-  public void shouldAddAndRemoveMember(final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final TenantReader tenantReader = rdbmsService.getTenantReader();
-
-    final var tenant = TenantFixtures.createRandomized(b -> b);
-    createAndSaveTenant(rdbmsWriter, tenant);
-
-    rdbmsWriter
-        .getTenantWriter()
-        .addMember(new TenantMemberDbModel(tenant.tenantId(), 1337L, "USER"));
-    rdbmsWriter.flush();
-
-    final var addedMemberInstance = tenantReader.findOne(tenant.tenantId()).orElse(null);
-    assertThat(addedMemberInstance.assignedMemberKeys()).containsExactly(1337L);
-
-    rdbmsWriter
-        .getTenantWriter()
-        .removeMember(new TenantMemberDbModel(tenant.tenantId(), 1337L, "USER"));
-    rdbmsWriter.flush();
-
-    final var removedMemberInstance = tenantReader.findOne(tenant.tenantId()).orElse(null);
-    assertThat(removedMemberInstance.assignedMemberKeys()).isEmpty();
   }
 
   @TestTemplate

@@ -345,48 +345,6 @@ class RdbmsExporterIT {
   }
 
   @Test
-  public void shouldExportTenantAndAddAndDeleteMember() {
-    final var tenantId = "tenant=" + nextKey();
-    // given
-    final var tenantRecord = getTenantRecord(43L, tenantId, TenantIntent.CREATED);
-    final var tenantRecordValue = ((TenantRecordValue) tenantRecord.getValue());
-
-    // when
-    exporter.export(tenantRecord);
-
-    // then
-    final var tenant =
-        rdbmsService
-            .getTenantReader()
-            .findOne(((TenantRecordValue) tenantRecord.getValue()).getTenantId());
-    assertThat(tenant).isNotEmpty();
-    assertThat(tenant.get().key()).isEqualTo(tenantRecordValue.getTenantKey());
-    assertThat(tenant.get().name()).isEqualTo(tenantRecordValue.getName());
-
-    // when
-    exporter.export(getTenantRecord(43L, tenantId, TenantIntent.ENTITY_ADDED, 1337L));
-
-    // then
-    final var updatedTenant =
-        rdbmsService
-            .getTenantReader()
-            .findOne(((TenantRecordValue) tenantRecord.getValue()).getTenantId())
-            .orElseThrow();
-    assertThat(updatedTenant.assignedMemberKeys()).containsExactly(1337L);
-
-    // when
-    exporter.export(getTenantRecord(43L, tenantId, TenantIntent.ENTITY_REMOVED, 1337L));
-
-    // then
-    final var deletedTenant =
-        rdbmsService
-            .getTenantReader()
-            .findOne(((TenantRecordValue) tenantRecord.getValue()).getTenantId())
-            .orElseThrow();
-    assertThat(deletedTenant.assignedMemberKeys()).isEmpty();
-  }
-
-  @Test
   public void shouldExportUpdateAndDeleteRole() {
     // given
     final var roleRecord = getRoleRecord(42L, RoleIntent.CREATED);

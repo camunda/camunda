@@ -33,7 +33,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
-import java.util.Set;
 import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +45,7 @@ public class TenantServiceTest {
   private TenantSearchClient client;
   private StubbedBrokerClient stubbedBrokerClient;
   private final TenantEntity tenantEntity =
-      new TenantEntity(100L, "tenant-id", "Tenant name", "Tenant description", Set.of());
+      new TenantEntity(100L, "tenant-id", "Tenant name", "Tenant description");
 
   @BeforeEach
   public void before() {

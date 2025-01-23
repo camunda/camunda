@@ -21,8 +21,8 @@ public class RoleIndex extends UserManagementIndexDescriptor implements Prio5Bac
   public static final String MEMBER_KEY = "memberKey";
   public static final String JOIN = "join";
 
-  public static final EntityJoinRelationFactory JOIN_RELATION_FACTORY =
-      new EntityJoinRelationFactory(
+  public static final EntityJoinRelationFactory<Long> JOIN_RELATION_FACTORY =
+      new EntityJoinRelationFactory<>(
           IdentityJoinRelationshipType.ROLE, IdentityJoinRelationshipType.MEMBER);
 
   public RoleIndex(final String indexPrefix, final boolean isElasticsearch) {
