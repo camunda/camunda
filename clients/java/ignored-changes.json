@@ -187,6 +187,31 @@
           "old": "class io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest",
           "new": "class io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest",
           "justification": "JSON property order changes due to introduction of inheritance. The property order change is not considered a breaking change."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest",
+          "justification": "The Search Tasks by Variables experimental API will be reintroduced under different API specifications."
+        },
+        {
+          "regex": true,
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method .* io\\.camunda\\.zeebe\\.client\\.protocol\\.rest\\.UserTaskFilterRequest::.*(?i)variables.*",
+          "justification": "The Search Tasks by Variables experimental API will be reintroduced under different API specifications."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.client.api.search.filter.UserTaskFilter io.camunda.zeebe.client.api.search.filter.UserTaskFilter::variables(java.util.List<io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest>)",
+          "justification": "The Search Tasks by Variables experimental API will be reintroduced under different API specifications."
+        },
+        {
+          "ignore": true,
+          "code": "java.field.removedWithConstant",
+          "old": "field io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest.JSON_PROPERTY_VARIABLES",
+          "justification": "The Search Tasks by Variables experimental API will be reintroduced under different API specifications."
         }
       ]
     }
