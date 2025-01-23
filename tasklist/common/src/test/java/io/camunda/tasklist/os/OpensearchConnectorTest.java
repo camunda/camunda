@@ -21,9 +21,9 @@ import java.util.List;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.concurrent.FutureCallback;
 import org.apache.hc.core5.http.message.BasicHttpRequest;
-import org.apache.hc.core5.http.protocol.BasicHttpContext;
 import org.apache.http.HttpHost;
 import org.apache.http.client.methods.HttpGet;
 import org.junit.jupiter.api.Test;
@@ -46,7 +46,7 @@ class OpensearchConnectorTest {
 
   @Test
   void shouldApplyRequestInterceptorsForOSTasklistClient() throws Exception {
-    final var context = new BasicHttpContext();
+    final var context = HttpClientContext.create();
     final var taskListProperties = new TasklistProperties();
     final PluginRepository pluginRepository = new PluginRepository();
     pluginRepository.load(
@@ -84,7 +84,7 @@ class OpensearchConnectorTest {
 
   @Test
   void shouldApplyRequestInterceptorsForOSTasklistCamundaClient() throws Exception {
-    final var context = new BasicHttpContext();
+    final var context = HttpClientContext.create();
     final var taskListProperties = new TasklistProperties();
     final PluginRepository pluginRepository = new PluginRepository();
     pluginRepository.load(
@@ -122,7 +122,7 @@ class OpensearchConnectorTest {
 
   @Test
   void shouldApplyRequestInterceptorsForOSAsyncTasklistClient() throws Exception {
-    final var context = new BasicHttpContext();
+    final var context = HttpClientContext.create();
     final var taskListProperties = new TasklistProperties();
     final PluginRepository pluginRepository = new PluginRepository();
     pluginRepository.load(
