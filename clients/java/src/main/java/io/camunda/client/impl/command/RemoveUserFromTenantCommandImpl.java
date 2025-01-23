@@ -27,20 +27,20 @@ import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class RemoveUserFromTenantCommandImpl implements RemoveUserFromTenantCommandStep1 {
 
-  private final long tenantKey;
-  private long userKey;
+  private final String tenantId;
+  private String username;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public RemoveUserFromTenantCommandImpl(final HttpClient httpClient, final long tenantKey) {
+  public RemoveUserFromTenantCommandImpl(final HttpClient httpClient, final String tenantId) {
     this.httpClient = httpClient;
-    this.tenantKey = tenantKey;
+    this.tenantId = tenantId;
     httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override
-  public RemoveUserFromTenantCommandStep1 userKey(final long userKey) {
-    this.userKey = userKey;
+  public RemoveUserFromTenantCommandStep1 username(final String username) {
+    this.username = username;
     return this;
   }
 
@@ -54,7 +54,7 @@ public final class RemoveUserFromTenantCommandImpl implements RemoveUserFromTena
   @Override
   public CamundaFuture<RemoveUserFromTenantResponse> send() {
     final HttpCamundaFuture<RemoveUserFromTenantResponse> result = new HttpCamundaFuture<>();
-    final String endpoint = String.format("/tenants/%d/users/%d", tenantKey, userKey);
+    final String endpoint = String.format("/tenants/%s/users/%s", tenantId, username);
     httpClient.delete(endpoint, null, httpRequestConfig.build(), result);
     return result;
   }
