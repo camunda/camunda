@@ -73,6 +73,29 @@ public class ProcessInstanceIT {
   }
 
   @TestTemplate
+  public void shouldFindProcessesWithIncident(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+
+    ProcessInstanceFixtures.createAndSaveRandomProcessInstances(rdbmsWriter, b -> b);
+    final ProcessInstanceDbModel instanceWithIncident =
+        ProcessInstanceFixtures.createRandomized(b -> b.numIncidents(1));
+    rdbmsWriter.getProcessInstanceWriter().create(instanceWithIncident);
+    rdbmsWriter.flush();
+
+    final var searchResult =
+        processInstanceReader.search(
+            ProcessInstanceQuery.of(
+                b ->
+                    b.filter(f -> f.hasIncident(true)).sort(s -> s).page(p -> p.from(0).size(10))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+  }
+
+  @TestTemplate
   public void shouldSaveLogAndResolveIncident(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
