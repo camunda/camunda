@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import static io.camunda.zeebe.engine.processing.identity.PermissionsBehavior.AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_UPDATE;
+
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -48,7 +51,20 @@ public class AuthorizationUpdateProcessor
   public void processNewCommand(final TypedRecord<AuthorizationRecord> command) {
     permissionsBehavior
         .isAuthorized(command)
-        .flatMap(permissionsBehavior::authorizationExists)
+        .flatMap(
+            authorizationRecord ->
+                permissionsBehavior.authorizationExists(
+                    authorizationRecord, AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_UPDATE))
+        .map(
+            persistedAuthorization ->
+                overlayAuthorization(command.getValue(), persistedAuthorization))
+        .flatMap(
+            record ->
+                permissionsBehavior.hasValidPermissionTypes(
+                    command.getValue(),
+                    command.getValue().getAuthorizationPermissions(),
+                    record.getResourceType(),
+                    "Expected to update authorization with permission types '%s' and resource type '%s', but these permissions are not supported. Supported permission types are: '%s'"))
         .ifRightOrLeft(
             authorizationRecord -> writeEventAndDistribute(command, authorizationRecord),
             (rejection) -> {
@@ -59,7 +75,16 @@ public class AuthorizationUpdateProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
-    writeEventAndDistribute(command, command.getValue());
+    permissionsBehavior
+        .authorizationExists(command.getValue(), AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_UPDATE)
+        .ifRightOrLeft(
+            ignored ->
+                stateWriter.appendFollowUpEvent(
+                    command.getKey(), AuthorizationIntent.UPDATED, command.getValue()),
+            rejection ->
+                rejectionWriter.appendRejection(command, rejection.type(), rejection.reason()));
+
+    distributionBehavior.acknowledgeCommand(command);
   }
 
   private void writeEventAndDistribute(
@@ -73,5 +98,28 @@ public class AuthorizationUpdateProcessor
         .distribute(command);
     responseWriter.writeEventOnCommand(
         key, AuthorizationIntent.UPDATED, authorizationRecord, command);
+  }
+
+  // Create the new record with the persisted values if not changed by the user
+  private AuthorizationRecord overlayAuthorization(
+      final AuthorizationRecord newAuthorization,
+      final PersistedAuthorization persistedAuthorization) {
+    final var changeset = newAuthorization.getChangedAttributes();
+    if (!changeset.contains(AuthorizationRecord.OWNER_ID)) {
+      newAuthorization.setOwnerId(persistedAuthorization.getOwnerId());
+    }
+    if (!changeset.contains(AuthorizationRecord.OWNER_TYPE)) {
+      newAuthorization.setOwnerType(persistedAuthorization.getOwnerType());
+    }
+    if (!changeset.contains(AuthorizationRecord.RESOURCE_ID)) {
+      newAuthorization.setResourceId(persistedAuthorization.getResourceId());
+    }
+    if (!changeset.contains(AuthorizationRecord.RESOURCE_TYPE)) {
+      newAuthorization.setResourceType(persistedAuthorization.getResourceType());
+    }
+    if (!changeset.contains(AuthorizationRecord.PERMISSIONS)) {
+      newAuthorization.setAuthorizationPermissions(persistedAuthorization.getPermissions());
+    }
+    return newAuthorization;
   }
 }
