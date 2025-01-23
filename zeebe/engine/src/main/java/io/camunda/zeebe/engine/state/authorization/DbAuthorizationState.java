@@ -49,8 +49,11 @@ public class DbAuthorizationState implements MutableAuthorizationState {
       authorizationByAuthorizationKeyColumnFamily;
 
   // authorization key -> owner type + owner id + resource type
-  private final DbForeignKey<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbString>> fkPermissionKey;
-  private final ColumnFamily<DbLong, DbForeignKey<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbString>>> permissionKeyByAuthorizationKeyColumnFamily;
+  private final DbForeignKey<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbString>>
+      fkPermissionKey;
+  private final ColumnFamily<
+          DbLong, DbForeignKey<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbString>>>
+      permissionKeyByAuthorizationKeyColumnFamily;
 
   public DbAuthorizationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -79,12 +82,14 @@ public class DbAuthorizationState implements MutableAuthorizationState {
             authorizationKey,
             new PersistedAuthorization());
 
-    fkPermissionKey = new DbForeignKey<>(ownerTypeOwnerIdAndResourceType, ZbColumnFamilies.PERMISSIONS);
-    permissionKeyByAuthorizationKeyColumnFamily = zeebeDb.createColumnFamily(
-        ZbColumnFamilies.PERMISSION_KEY_BY_AUTHORIZATION_KEY,
-        transactionContext,
-        authorizationKey,
-        fkPermissionKey);
+    fkPermissionKey =
+        new DbForeignKey<>(ownerTypeOwnerIdAndResourceType, ZbColumnFamilies.PERMISSIONS);
+    permissionKeyByAuthorizationKeyColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.PERMISSION_KEY_BY_AUTHORIZATION_KEY,
+            transactionContext,
+            authorizationKey,
+            fkPermissionKey);
   }
 
   @Override

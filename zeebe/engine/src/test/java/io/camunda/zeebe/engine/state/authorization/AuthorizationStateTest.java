@@ -20,7 +20,6 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,7 +49,6 @@ public class AuthorizationStateTest {
   }
 
   @Test
-  @Disabled("Enable again when https://github.com/camunda/camunda/issues/27036 is implemented")
   void shouldCreateAuthorization() {
     // given
     final var authorizationKey = 1L;
