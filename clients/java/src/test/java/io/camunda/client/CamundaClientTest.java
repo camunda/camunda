@@ -594,7 +594,7 @@ public final class CamundaClientTest {
   @Test
   public void shouldSetRestAddressFromSetterWithClientBuilder() throws URISyntaxException {
     // given
-    final URI restAddress = new URI("localhost:9090");
+    final URI restAddress = new URI("http://localhost:9090");
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
     builder.restAddress(restAddress);
 
@@ -610,7 +610,7 @@ public final class CamundaClientTest {
   public void shouldSetRestAddressPortFromPropertyWithClientBuilder(final String propertyName)
       throws URISyntaxException {
     // given
-    final URI restAddress = new URI("localhost:9090");
+    final URI restAddress = new URI("http://localhost:9090");
     final Properties properties = new Properties();
     properties.setProperty(propertyName, restAddress.toString());
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
@@ -628,7 +628,7 @@ public final class CamundaClientTest {
   public void shouldSetRestAddressPortFromEnvVarWithClientBuilder(final String envName)
       throws URISyntaxException {
     // given
-    final URI restAddress = new URI("localhost:9090");
+    final URI restAddress = new URI("http://localhost:9090");
     Environment.system().put(envName, restAddress.toString());
 
     // when
