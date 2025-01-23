@@ -80,8 +80,7 @@ public class BasicAuthIT {
                 null,
                 null));
     when(tenantServices.getTenantsByMemberKey(anyLong()))
-        .thenReturn(
-            List.of(new TenantEntity(9L, "T1", "Tenant 1", "Tenant 1 description")));
+        .thenReturn(List.of(new TenantEntity(9L, "T1", "Tenant 1", "Tenant 1 description")));
 
     when(authorizationServices.findAll(any()))
         .thenReturn(

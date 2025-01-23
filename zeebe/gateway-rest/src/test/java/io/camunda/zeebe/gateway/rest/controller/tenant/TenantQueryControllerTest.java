@@ -54,7 +54,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
              "tenantKey": %s,
              "name": "%s",
              "description": "%s",
-             "tenantId": "%s",
+             "tenantId": "%s"
            },
            {
              "tenantKey": %s,

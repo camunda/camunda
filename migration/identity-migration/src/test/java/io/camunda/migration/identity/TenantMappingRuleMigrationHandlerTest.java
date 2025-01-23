@@ -87,8 +87,7 @@ final class TenantMappingRuleMigrationHandlerTest {
   void stopWhenNoMoreRecords() {
     // given
     givenMappingRules();
-    when(tenantServices.getById(any()))
-        .thenReturn(new TenantEntity(1L, "", "", null));
+    when(tenantServices.getById(any())).thenReturn(new TenantEntity(1L, "", "", null));
     when(mappingServices.createMapping(any()))
         .thenAnswer(invocation -> CompletableFuture.completedFuture(new MappingRecord()));
     when(tenantServices.addMember(any(), any(), anyLong()))
@@ -155,8 +154,7 @@ final class TenantMappingRuleMigrationHandlerTest {
   void ignoreWhenMappingAlreadyAssigned() {
     // given
     givenMappingRules();
-    when(tenantServices.getById(any()))
-        .thenReturn(new TenantEntity(1L, "", "", null));
+    when(tenantServices.getById(any())).thenReturn(new TenantEntity(1L, "", "", null));
     when(mappingServices.createMapping(any()))
         .thenAnswer(invocation -> CompletableFuture.completedFuture(new MappingRecord()));
     when(tenantServices.addMember(any(), any(), anyLong()))
