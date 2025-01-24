@@ -22,7 +22,6 @@ import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
-import io.camunda.client.api.command.AddPermissionsCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
@@ -58,7 +57,6 @@ import io.camunda.client.api.command.FailJobCommandStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1;
-import io.camunda.client.api.command.RemovePermissionsCommandStep1;
 import io.camunda.client.api.command.RemoveUserFromTenantCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
@@ -103,7 +101,6 @@ import io.camunda.client.api.search.query.UserTaskVariableQuery;
 import io.camunda.client.api.search.query.VariableQuery;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
-import io.camunda.client.impl.command.AddPermissionsCommandImpl;
 import io.camunda.client.impl.command.AssignGroupToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignMappingToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignUserTaskCommandImpl;
@@ -139,7 +136,6 @@ import io.camunda.client.impl.command.JobUpdateTimeoutCommandImpl;
 import io.camunda.client.impl.command.MigrateProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.ModifyProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.PublishMessageCommandImpl;
-import io.camunda.client.impl.command.RemovePermissionsCommandImpl;
 import io.camunda.client.impl.command.RemoveUserFromTenantCommandImpl;
 import io.camunda.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.client.impl.command.SetVariablesCommandImpl;
@@ -755,16 +751,6 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public CreateUserCommandStep1 newUserCreateCommand() {
     return new CreateUserCommandImpl(httpClient, jsonMapper);
-  }
-
-  @Override
-  public AddPermissionsCommandStep1 newAddPermissionsCommand(final long ownerKey) {
-    return new AddPermissionsCommandImpl(ownerKey, httpClient, jsonMapper);
-  }
-
-  @Override
-  public RemovePermissionsCommandStep1 newRemovePermissionsCommand(final long ownerKey) {
-    return new RemovePermissionsCommandImpl(ownerKey, httpClient, jsonMapper);
   }
 
   @Override

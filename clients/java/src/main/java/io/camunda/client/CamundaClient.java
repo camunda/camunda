@@ -16,7 +16,6 @@
 package io.camunda.client;
 
 import io.camunda.client.api.ExperimentalApi;
-import io.camunda.client.api.command.AddPermissionsCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
@@ -49,7 +48,6 @@ import io.camunda.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1;
-import io.camunda.client.api.command.RemovePermissionsCommandStep1;
 import io.camunda.client.api.command.RemoveUserFromTenantCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
@@ -1129,52 +1127,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   CreateUserCommandStep1 newUserCreateCommand();
-
-  /**
-   * Command to add permissions to an owner.
-   *
-   * <pre>
-   * camundaClient
-   *  .newAddPermissionsCommand(ownerKey)
-   *  .resourceType(resourceType)
-   *  .permission(permissionType)
-   *  .resourceIds(resourceIds)
-   *  .permission(permissionType)
-   *  .resourceId(resourceId)
-   *  .resourceId(resourceId)
-   *  .send();
-   * </pre>
-   *
-   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
-   * <br>
-   *
-   * @param ownerKey the key of the owner
-   * @return a builder for the command
-   */
-  AddPermissionsCommandStep1 newAddPermissionsCommand(long ownerKey);
-
-  /**
-   * Command to remove permissions from an owner.
-   *
-   * <pre>
-   * camundaClient
-   *  .newRemovePermissionsCommand(ownerKey)
-   *  .resourceType(resourceType)
-   *  .permission(permissionType)
-   *  .resourceIds(resourceIds)
-   *  .permission(permissionType)
-   *  .resourceId(resourceId)
-   *  .resourceId(resourceId)
-   *  .send();
-   * </pre>
-   *
-   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
-   * <br>
-   *
-   * @param ownerKey the key of the owner
-   * @return a builder for the command
-   */
-  RemovePermissionsCommandStep1 newRemovePermissionsCommand(long ownerKey);
 
   /**
    * Command to create a mapping rule.
