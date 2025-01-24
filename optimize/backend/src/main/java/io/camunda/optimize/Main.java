@@ -30,7 +30,7 @@ public class Main {
 
   public static void main(final String[] args) {
     final String cwd = Path.of("").toAbsolutePath().toString();
-    final String root = Path.of(cwd + "/../../../").toAbsolutePath().toString();
+    final String root = Path.of(cwd + "/../../..").toAbsolutePath().toString();
     System.out.println("CWD=" + cwd);
     System.out.println("ROOT=" + root);
 
