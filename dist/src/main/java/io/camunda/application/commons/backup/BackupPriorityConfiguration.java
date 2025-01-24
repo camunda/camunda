@@ -263,9 +263,9 @@ public class BackupPriorityConfiguration {
                 "operate",
                 Optional.ofNullable(operateProperties).map(OperateProperties::getIndexPrefix),
                 "tasklist",
-                Optional.ofNullable(tasklistProperties).map(TasklistProperties::getIndexPrefix)),
-            // optimize does not use the global index prefix as the other apps, so it's not included
-            // in this check.
+                Optional.ofNullable(tasklistProperties).map(TasklistProperties::getIndexPrefix),
+                "optimize",
+                Optional.ofNullable(optimizeIndexNameService).map(OptimizeIndexNameService::getShortIndexPrefix)),
             skipEmptyOptional());
     if (indexOptional.isEmpty()) {
       throw new IllegalArgumentException(NO_CONFIG_ERROR_MESSAGE);

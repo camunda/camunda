@@ -53,9 +53,8 @@ public class ObjectMapperFactory {
     this.configurationService = configurationService;
   }
 
-  @Qualifier("optimizeMapper")
+  @Qualifier("optimizeObjectMapper")
   @Bean
-  @Primary
   public ObjectMapper createOptimizeMapper() {
     return buildObjectMapper(optimizeDateTimeFormatter, true);
   }

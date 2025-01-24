@@ -7,6 +7,7 @@
  */
 package io.camunda.application;
 
+import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.optimize.OptimizeModuleConfiguration;
 import org.springframework.boot.SpringBootConfiguration;
@@ -36,7 +37,10 @@ public class StandaloneOptimize {
 
     final var standaloneOptimizeApplication =
         MainSupport.createDefaultApplicationBuilder()
-            .sources(OptimizeModuleConfiguration.class)
+            .sources(
+                CommonsModuleConfiguration.class,
+                OptimizeModuleConfiguration.class
+            )
             .profiles(Profile.OPTIMIZE.getId(), Profile.STANDALONE.getId())
             .addCommandLineProperties(true)
             .listeners(new ApplicationErrorListener())
