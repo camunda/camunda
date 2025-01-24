@@ -74,7 +74,8 @@ public class UserTenantsMigrationHandler extends MigrationHandler<UserTenants> {
 
   private void assignMemberToTenant(final String tenantId, final long mappingKey) {
     try {
-      tenantServices.addMember(tenantKey, EntityType.MAPPING, mappingKey).join();
+      // TODO: Should use the mapping id, not the key
+      tenantServices.addMember(tenantId, EntityType.MAPPING, Long.toString(mappingKey)).join();
     } catch (final Exception e) {
       if (!isConflictError(e)) {
         throw e;

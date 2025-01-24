@@ -76,7 +76,8 @@ public class TenantMappingRuleMigrationHandler extends MigrationHandler<TenantMa
 
   private void assignMappingToTenant(final String tenantId, final long mappingKey) {
     try {
-      tenantServices.addMember(tenantKey, EntityType.MAPPING, mappingKey).join();
+      // TODO: Should use mapping id, not key
+      tenantServices.addMember(tenantId, EntityType.MAPPING, Long.toString(mappingKey)).join();
     } catch (final Exception e) {
       if (!isConflictError(e)) {
         throw e;
