@@ -57,6 +57,7 @@ services:
       KEYCLOAK_DATABASE_VENDOR: dev-file
       KEYCLOAK_HTTP_RELATIVE_PATH: /auth
       KEYCLOAK_ENABLE_HEALTH_ENDPOINTS: true
+      JAVA_OPTS: -XX:UseSVE=0
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8080/health/ready"]
       interval: 30s
@@ -95,7 +96,8 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=false
       - action.destructive_requires_name=false
-      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g -XX:UseSVE=0
+      - CLI_JAVA_OPTS=-XX:UseSVE=0
     ulimits:
       memlock:
         soft: -1
@@ -119,6 +121,7 @@ services:
     container_name: zeebe
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
+      - "JAVA_OPTS=-XX:UseSVE=0"
     ports:
       - "26500:26500"
     restart: always
@@ -139,6 +142,7 @@ services:
       - camunda.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
       - camunda.tasklist.zeebe.gatewayAddress=zeebe:26500
       - spring.profiles.active=dev,dev-data,auth
+      - JAVA_OPTS=-XX:UseSVE=0
     depends_on:
       - elasticsearch
       - zeebe
@@ -164,6 +168,7 @@ services:
         - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
         - SERVER_SERVLET_CONTEXT_PATH=/
         - CAMUNDA_OPERATE_CLUSTERNODE_PARTITIONIDS=1,2
+        - JAVA_OPTS=-XX:UseSVE=0
     ports:
       - "8080:8080"
     depends_on:
