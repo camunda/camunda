@@ -100,20 +100,15 @@ public class IndexSchemaValidatorUtil {
     }
 
     // Validate if the difference is dynamic
-    if (difference.getEntriesDiffering() != null) {
-      for (final PropertyDifference propertyDifference : difference.getEntriesDiffering()) {
-        final Object typeDefinition = propertyDifference.getLeftValue().getTypeDefinition();
-        if (propertyDifference.getLeftValue().getTypeDefinition() instanceof Map) {
-          final Map<String, Object> typeDefMap = (Map<String, Object>) typeDefinition;
-          final Object dynamicValue = typeDefMap.getOrDefault("dynamic", false);
-          if (dynamicValue.equals(true)) {
-            LOGGER.debug(
-                String.format(
-                    "Difference is on dynamic field - continue initialization: %s.",
-                    indexDescriptor.getIndexName()));
-            return;
-          }
-        }
+    if (difference.getEntriesDiffering() != null && difference.getEntriesDiffering().size() > 0) {
+      if (difference.getEntriesDiffering().stream().noneMatch(this::nonDynamicPropertyDifference)) {
+        LOGGER.debug(
+            String.format(
+                "Difference is on dynamic field - continue initialization - left %s, right %s. Actual diff values: %s",
+                difference.getLeftIndexMapping().getIndexName(),
+                difference.getRightIndexMapping().getIndexName(),
+                difference.getEntriesDiffering()));
+        return;
       }
     }
 
@@ -186,14 +181,37 @@ public class IndexSchemaValidatorUtil {
           // all those indices should have the same difference. Compare based only on the
           // differences (exclude the IndexMapping fields in the comparison)
         } else if (!difference.checkEqualityForDifferences(currentDifference)) {
-          throw new TasklistRuntimeException(
-              "Ambiguous schema update. First bring runtime and date indices to one schema. Difference 1: "
-                  + difference
-                  + ". Difference 2: "
-                  + currentDifference);
+          if (currentDifference.getEntriesDiffering().stream()
+              .anyMatch(this::nonDynamicPropertyDifference)) {
+            throw new TasklistRuntimeException(
+                "Ambiguous schema update. First bring runtime and data indices to one schema."
+                    + " Difference 1:"
+                    + difference
+                    + ". Difference 2: "
+                    + currentDifference);
+          } else {
+            LOGGER.debug(
+                String.format(
+                    "Difference is on dynamic field - continue initialization, left: %s, right: %s. Actual diff values: %s",
+                    difference.getLeftIndexMapping().getIndexName(),
+                    difference.getRightIndexMapping().getIndexName(),
+                    difference.getEntriesDiffering()));
+          }
         }
       }
     }
     return difference;
+  }
+
+  private boolean nonDynamicPropertyDifference(final PropertyDifference propertyDifference) {
+    final Object typeDefinition = propertyDifference.getLeftValue().getTypeDefinition();
+    if (propertyDifference.getLeftValue().getTypeDefinition() instanceof Map) {
+      final Map<String, Object> typeDefMap = (Map<String, Object>) typeDefinition;
+      final Object dynamicValue = typeDefMap.getOrDefault("dynamic", false);
+      if (dynamicValue.equals("true")) {
+        return false;
+      }
+    }
+    return true;
   }
 }

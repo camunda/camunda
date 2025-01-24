@@ -73,7 +73,7 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
   public void setUp() throws Exception {
     indexDescriptor = createIndexDescriptor();
     originalSchemaContent = readSchemaContent();
-    assertThat(originalSchemaContent).doesNotContain("\"prop2\"");
+    assertThat(originalSchemaContent).doesNotContain("\"prop3\"");
   }
 
   @AfterEach
@@ -94,10 +94,10 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
     updateSchemaContent(
         originalSchemaContent.replace(
-            "\"properties\": {", "\"properties\": {\n    \"prop2\": { \"type\": \"keyword\" },"));
+            "\"properties\": {", "\"properties\": {\n    \"prop3\": { \"type\": \"keyword\" },"));
 
     final String newSchemaContent = readSchemaContent();
-    assertThat(newSchemaContent).contains("\"prop2\"");
+    assertThat(newSchemaContent).contains("\"prop3\"");
 
     diff = indexSchemaValidator.validateIndexMappings();
     assertThat(diff).isNotEmpty();
@@ -124,6 +124,21 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
     final String newSchemaContent = readSchemaContent();
     assertThat(newSchemaContent).doesNotContain("\"prop0\"");
+
+    diff = indexSchemaValidator.validateIndexMappings();
+    assertThat(diff).isEmpty();
+  }
+
+  @Test
+  public void shouldSkipDifferenceOnDynamicField() throws Exception {
+    replaceIndexDescriptorsInValidator(Collections.singleton(indexDescriptor));
+    schemaManager.createIndex(indexDescriptor);
+
+    var diff = indexSchemaValidator.validateIndexMappings();
+    assertThat(diff).isEmpty();
+
+    /* Create document on the dynamic property to cause it to expand */
+    createDocument("prop2", Map.of("custom-key", "custom-value"));
 
     diff = indexSchemaValidator.validateIndexMappings();
     assertThat(diff).isEmpty();
@@ -175,7 +190,7 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
         StandardOpenOption.TRUNCATE_EXISTING);
   }
 
-  private void createDocument(final String key, final String value) throws Exception {
+  private void createDocument(final String key, final Object value) throws Exception {
     final Map<String, Object> document = Map.of(key, value);
     final boolean created =
         retryElasticsearchClient.createOrUpdateDocument(
