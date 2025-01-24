@@ -92,7 +92,7 @@ final class UserTenantsMigrationHandlerTest {
   void stopWhenNoMoreRecords() {
     // given
     givenUserTenants();
-    when(tenantServices.getById(any())).thenReturn(new TenantEntity(1L, "", "", null));
+    when(tenantServices.getById(any())).thenReturn(new TenantEntity("", "", null));
     when(tenantServices.createTenant(any()))
         .thenReturn(CompletableFuture.completedFuture(new TenantRecord()));
     when(mappingServices.createMapping(any()))
@@ -160,7 +160,7 @@ final class UserTenantsMigrationHandlerTest {
   void ignoreWhenUserAlreadyAssigned() {
     // given
     givenUserTenants();
-    when(tenantServices.getById(any())).thenReturn(new TenantEntity(1L, "", "", null));
+    when(tenantServices.getById(any())).thenReturn(new TenantEntity("", "", null));
     doThrow(
             new BrokerRejectionException(
                 new BrokerRejection(TenantIntent.ADD_ENTITY, -1, RejectionType.ALREADY_EXISTS, "")))

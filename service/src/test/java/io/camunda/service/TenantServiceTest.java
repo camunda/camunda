@@ -46,7 +46,7 @@ public class TenantServiceTest {
   private TenantSearchClient client;
   private StubbedBrokerClient stubbedBrokerClient;
   private final TenantEntity tenantEntity =
-      new TenantEntity(100L, "tenant-id", "Tenant name", "Tenant description");
+      new TenantEntity("tenant-id", "Tenant name", "Tenant description");
 
   @BeforeEach
   public void before() {
@@ -121,8 +121,7 @@ public class TenantServiceTest {
   @Test
   public void shouldCreateTenant() {
     // given
-    final var tenantDTO =
-        new TenantDTO(100L, "NewTenantName", "NewTenantId", "NewTenantDescription");
+    final var tenantDTO = new TenantDTO("NewTenantName", "NewTenantId", "NewTenantDescription");
 
     // when
     services.createTenant(tenantDTO);
@@ -140,8 +139,7 @@ public class TenantServiceTest {
   public void shouldUpdateTenantName() {
 
     // given
-    final var tenantDTO =
-        new TenantDTO(tenantEntity.key(), tenantEntity.tenantId(), "UpdatedTenantId", null);
+    final var tenantDTO = new TenantDTO(tenantEntity.tenantId(), "UpdatedTenantId", null);
 
     // when
     services.updateTenant(tenantDTO);
@@ -160,8 +158,7 @@ public class TenantServiceTest {
 
     // given
     final var tenantDTO =
-        new TenantDTO(
-            tenantEntity.key(), tenantEntity.tenantId(), "TenantName", "UpdatedTenantDescription");
+        new TenantDTO(tenantEntity.tenantId(), "TenantName", "UpdatedTenantDescription");
 
     // when
     services.updateTenant(tenantDTO);

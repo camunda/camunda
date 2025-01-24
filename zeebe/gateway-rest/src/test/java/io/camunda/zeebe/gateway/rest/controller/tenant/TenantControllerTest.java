@@ -57,7 +57,7 @@ public class TenantControllerTest extends RestControllerTest {
     final var tenantName = "Test Tenant";
     final var tenantId = "tenant-test-id";
     final var tenantDescription = "Test description";
-    when(tenantServices.createTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription)))
+    when(tenantServices.createTenant(new TenantDTO(tenantId, tenantName, tenantDescription)))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new TenantRecord()
@@ -83,7 +83,7 @@ public class TenantControllerTest extends RestControllerTest {
 
     // then
     verify(tenantServices, times(1))
-        .createTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription));
+        .createTenant(new TenantDTO(tenantId, tenantName, tenantDescription));
   }
 
   @Test
@@ -93,7 +93,7 @@ public class TenantControllerTest extends RestControllerTest {
     final var tenantId = "tenant-test-id";
     final var tenantDescription = "Test description";
     final var tenantKey = 100L;
-    when(tenantServices.createTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription)))
+    when(tenantServices.createTenant(new TenantDTO(tenantId, tenantName, tenantDescription)))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new TenantRecord()
@@ -129,7 +129,7 @@ public class TenantControllerTest extends RestControllerTest {
 
     // then
     verify(tenantServices, times(1))
-        .createTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription));
+        .createTenant(new TenantDTO(tenantId, tenantName, tenantDescription));
   }
 
   @Test
@@ -170,7 +170,7 @@ public class TenantControllerTest extends RestControllerTest {
     final var tenantName = "Updated Tenant Name";
     final var tenantId = "tenant-test-id";
     final var tenantDescription = "Updated description";
-    when(tenantServices.updateTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription)))
+    when(tenantServices.updateTenant(new TenantDTO(tenantId, tenantName, tenantDescription)))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new TenantRecord()
@@ -202,7 +202,7 @@ public class TenantControllerTest extends RestControllerTest {
 
     // then
     verify(tenantServices, times(1))
-        .updateTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription));
+        .updateTenant(new TenantDTO(tenantId, tenantName, tenantDescription));
   }
 
   @Test
@@ -277,7 +277,7 @@ public class TenantControllerTest extends RestControllerTest {
     final var tenantDescription = "My tenant description";
     final var tenantKey = 100L;
     final var path = "%s/%s".formatted(TENANT_BASE_URL, tenantId);
-    when(tenantServices.updateTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription)))
+    when(tenantServices.updateTenant(new TenantDTO(tenantId, tenantName, tenantDescription)))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
@@ -299,7 +299,7 @@ public class TenantControllerTest extends RestControllerTest {
         .isNotFound();
 
     verify(tenantServices, times(1))
-        .updateTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription));
+        .updateTenant(new TenantDTO(tenantId, tenantName, tenantDescription));
   }
 
   @Test

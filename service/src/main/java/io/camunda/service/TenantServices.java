@@ -133,9 +133,9 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
     return tenantEntity;
   }
 
-  public record TenantDTO(Long key, String tenantId, String name, String description) {
+  public record TenantDTO(String tenantId, String name, String description) {
     public static TenantDTO fromEntity(final TenantEntity entity) {
-      return new TenantDTO(entity.key(), entity.tenantId(), entity.name(), entity.description());
+      return new TenantDTO(entity.tenantId(), entity.name(), entity.description());
     }
   }
 }

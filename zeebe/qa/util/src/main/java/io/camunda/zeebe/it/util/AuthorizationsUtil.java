@@ -99,13 +99,7 @@ public class AuthorizationsUtil implements CloseableSilently {
 
   public void createTenant(
       final String tenantId, final String tenantName, final String... usernames) {
-    client
-        .newCreateTenantCommand()
-        .tenantId(tenantId)
-        .name(tenantName)
-        .send()
-        .join()
-        .getTenantKey();
+    client.newCreateTenantCommand().tenantId(tenantId).name(tenantName).send().join();
     for (final var username : usernames) {
       client.newAssignUserToTenantCommand(tenantId).username(username).send().join();
     }

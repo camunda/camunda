@@ -48,7 +48,6 @@ class CreateTenantTest {
             .join();
 
     // then
-    assertThat(response.getTenantKey()).isGreaterThan(0);
     ZeebeAssertHelper.assertTenantCreated(
         "tenant-id",
         (tenant) -> {
@@ -64,7 +63,6 @@ class CreateTenantTest {
         client.newCreateTenantCommand().tenantId("tenant-id").name("Tenant Name").send().join();
 
     // then
-    assertThat(response.getTenantKey()).isGreaterThan(0);
     ZeebeAssertHelper.assertTenantCreated(
         "tenant-id",
         (tenant) -> {

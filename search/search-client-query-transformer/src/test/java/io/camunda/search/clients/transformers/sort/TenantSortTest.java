@@ -24,7 +24,6 @@ public class TenantSortTest extends AbstractSortTransformerTest {
 
   private static Stream<Arguments> provideSortParameters() {
     return Stream.of(
-        new TestArguments("key", SortOrder.ASC, s -> s.tenantKey().asc()),
         new TestArguments("tenantId", SortOrder.DESC, s -> s.tenantId().desc()),
         new TestArguments("name", SortOrder.ASC, s -> s.name().asc()));
   }

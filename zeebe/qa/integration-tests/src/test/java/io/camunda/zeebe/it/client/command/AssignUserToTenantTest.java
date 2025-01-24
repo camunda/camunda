@@ -36,34 +36,23 @@ class AssignUserToTenantTest {
 
   @AutoClose private CamundaClient client;
 
-  private long tenantKey;
-  private long userKey;
-
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
 
     // Create Tenant
-    tenantKey =
-        client
-            .newCreateTenantCommand()
-            .tenantId(TENANT_ID)
-            .name("Tenant Name")
-            .send()
-            .join()
-            .getTenantKey();
+    client.newCreateTenantCommand().tenantId(TENANT_ID).name("Tenant Name").send().join();
 
     // Create User
-    userKey =
-        client
-            .newUserCreateCommand()
-            .username(USERNAME)
-            .name("name")
-            .email("email@example.com")
-            .password("password")
-            .send()
-            .join()
-            .getUserKey();
+    client
+        .newUserCreateCommand()
+        .username(USERNAME)
+        .name("name")
+        .email("email@example.com")
+        .password("password")
+        .send()
+        .join()
+        .getUserKey();
   }
 
   @Test

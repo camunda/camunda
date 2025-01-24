@@ -60,10 +60,7 @@ public class CamundaUserDetailsService implements UserDetailsService {
 
     final var tenants =
         tenantServices.getTenantsByMemberKey(userKey).stream()
-            .map(
-                entity ->
-                    new TenantDTO(
-                        entity.key(), entity.tenantId(), entity.name(), entity.description()))
+            .map(entity -> new TenantDTO(entity.tenantId(), entity.name(), entity.description()))
             .toList();
 
     return aCamundaUser()

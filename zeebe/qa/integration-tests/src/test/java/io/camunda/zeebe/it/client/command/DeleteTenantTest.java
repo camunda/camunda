@@ -12,10 +12,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.zeebe.it.util.ZeebeAssertHelper;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,19 +32,11 @@ class DeleteTenantTest {
       new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   @AutoClose private CamundaClient client;
-  private long tenantKey;
 
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
-    tenantKey =
-        client
-            .newCreateTenantCommand()
-            .tenantId(TENANT_ID)
-            .name("Tenant Name")
-            .send()
-            .join()
-            .getTenantKey();
+    client.newCreateTenantCommand().tenantId(TENANT_ID).name("Tenant Name").send().join();
   }
 
   @Test
@@ -52,8 +45,13 @@ class DeleteTenantTest {
     client.newDeleteTenantCommand(TENANT_ID).send().join();
 
     // then
-    ZeebeAssertHelper.assertTenantDeleted(
-        "tenant-id", tenant -> assertThat(tenant.getTenantKey()).isEqualTo(tenantKey));
+
+    assertThat(
+            RecordingExporter.tenantRecords()
+                .withIntent(TenantIntent.DELETED)
+                .withTenantId("tenant-id")
+                .exists())
+        .isTrue();
   }
 
   @Test

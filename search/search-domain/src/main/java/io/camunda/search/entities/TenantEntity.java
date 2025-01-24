@@ -10,4 +10,4 @@ package io.camunda.search.entities;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record TenantEntity(Long key, String tenantId, String name, String description) {}
+public record TenantEntity(String tenantId, String name, String description) {}

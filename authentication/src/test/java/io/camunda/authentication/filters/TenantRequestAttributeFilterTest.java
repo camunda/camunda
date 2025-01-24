@@ -44,8 +44,8 @@ public class TenantRequestAttributeFilterTest {
       new UserEntity(100L, "u1", "Test User", "u1@camunda.test", "secret");
   private final List<TenantDTO> tenants =
       List.of(
-          new TenantDTO(1L, "T1", "Tenant 1", "Tenant 1 description"),
-          new TenantDTO(2L, "T2", "Tenant 2", "Tenant 2 description"));
+          new TenantDTO("T1", "Tenant 1", "Tenant 1 description"),
+          new TenantDTO("T2", "Tenant 2", "Tenant 2 description"));
   private final CamundaUser camundaUser =
       CamundaUser.CamundaUserBuilder.aCamundaUser()
           .withUserKey(user.userKey())
