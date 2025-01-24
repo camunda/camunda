@@ -13,6 +13,7 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
+import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.security.configuration.ConfiguredUser;
@@ -122,13 +123,11 @@ public final class TestSimpleCamundaApplication
   }
 
   @Override
-  protected TestSimpleCamundaApplication withUnauthenticatedAccess(
-      final boolean allowUnauthenticatedAccess) {
-    securityConfig
-        .getAuthentication()
-        .getBasic()
-        .setAllowUnauthenticatedApiAccess(allowUnauthenticatedAccess);
-    return super.withUnauthenticatedAccess(allowUnauthenticatedAccess);
+  public TestSimpleCamundaApplication withProperty(final String key, final Object value) {
+    // Since the security config is not constructed from the properties, we need to manually update
+    // it when we override a property.
+    AuthenticationProperties.applyToSecurityConfig(securityConfig, key, value);
+    return super.withProperty(key, value);
   }
 
   @Override
