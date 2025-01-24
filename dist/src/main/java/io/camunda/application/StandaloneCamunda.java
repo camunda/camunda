@@ -10,7 +10,6 @@ package io.camunda.application;
 import static org.springframework.core.env.AbstractEnvironment.ACTIVE_PROFILES_PROPERTY_NAME;
 
 import io.camunda.application.commons.CommonsModuleConfiguration;
-import io.camunda.application.commons.migration.MigrationsRunner;
 import io.camunda.application.initializers.DefaultAuthenticationInitializer;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
@@ -47,8 +46,7 @@ public class StandaloneCamunda {
                 IdentityModuleConfiguration.class,
                 WebappsModuleConfiguration.class,
                 BrokerModuleConfiguration.class,
-                GatewayModuleConfiguration.class,
-                MigrationsRunner.class)
+                GatewayModuleConfiguration.class)
             .properties(defaultActiveProfiles)
             .initializers(
                 new DefaultAuthenticationInitializer(),
