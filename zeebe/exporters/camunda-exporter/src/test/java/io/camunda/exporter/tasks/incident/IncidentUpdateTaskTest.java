@@ -17,6 +17,7 @@ import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocum
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NoopIncidentUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.PendingIncidentUpdateBatch;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ProcessInstanceDocument;
+import io.camunda.exporter.utils.TestObjectMapper;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
@@ -41,7 +42,7 @@ import org.slf4j.LoggerFactory;
 
 final class IncidentUpdateTaskTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentUpdateTaskTest.class);
-  private final ExporterMetadata metadata = new ExporterMetadata();
+  private final ExporterMetadata metadata = new ExporterMetadata(TestObjectMapper.objectMapper());
   private final TestRepository repository = Mockito.spy(new TestRepository());
 
   @Test

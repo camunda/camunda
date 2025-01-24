@@ -7,11 +7,14 @@
  */
 package io.camunda.exporter;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -26,14 +29,13 @@ import org.slf4j.LoggerFactory;
 @JsonInclude(Include.NON_DEFAULT)
 public final class ExporterMetadata {
   private static final Logger LOGGER = LoggerFactory.getLogger(ExporterMetadata.class);
-  private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final AtomicLongFieldUpdater<ExporterMetadata> INCIDENT_POSITION_SETTER =
       AtomicLongFieldUpdater.newUpdater(ExporterMetadata.class, "lastIncidentUpdatePosition");
-
   private static final int UNSET_POSITION = -1;
 
+  @JsonIgnore private final ObjectWriter objectWriter;
+  @JsonIgnore private final ObjectReader objectReader;
   private volatile long lastIncidentUpdatePosition = UNSET_POSITION;
-
   private Map<TaskImplementation, Long> firstUserTaskKeys =
       new HashMap<>() {
         {
@@ -41,6 +43,12 @@ public final class ExporterMetadata {
           put(TaskImplementation.JOB_WORKER, (long) UNSET_POSITION);
         }
       };
+
+  public ExporterMetadata(final ObjectMapper objectMapper) {
+    // Specialized reader/writer for this class for efficiency
+    objectWriter = objectMapper.writerFor(ExporterMetadata.class);
+    objectReader = objectMapper.readerForUpdating(this);
+  }
 
   public long getLastIncidentUpdatePosition() {
     return lastIncidentUpdatePosition;
@@ -72,7 +80,7 @@ public final class ExporterMetadata {
 
   public void deserialize(final byte[] bytes) {
     try {
-      MAPPER.readerForUpdating(this).readValue(bytes);
+      objectReader.readValue(bytes);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
@@ -81,7 +89,7 @@ public final class ExporterMetadata {
   // TODO: cache serialized version and only re-serialize if values have changed
   public byte[] serialize() {
     try {
-      return MAPPER.writeValueAsBytes(this);
+      return objectWriter.writeValueAsBytes(this);
     } catch (final JsonProcessingException e) {
       throw new UncheckedIOException(e);
     }

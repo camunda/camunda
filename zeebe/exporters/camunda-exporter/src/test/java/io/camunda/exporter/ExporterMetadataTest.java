@@ -9,14 +9,15 @@ package io.camunda.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.exporter.utils.TestObjectMapper;
 import org.junit.jupiter.api.Test;
 
 final class ExporterMetadataTest {
   @Test
   void shouldSerializeToJson() {
     // given
-    final var source = new ExporterMetadata();
-    final var destination = new ExporterMetadata();
+    final var source = new ExporterMetadata(TestObjectMapper.objectMapper());
+    final var destination = new ExporterMetadata(TestObjectMapper.objectMapper());
     source.setLastIncidentUpdatePosition(3);
     destination.setLastIncidentUpdatePosition(-1);
 
@@ -31,7 +32,7 @@ final class ExporterMetadataTest {
   @Test
   void shouldNotUpdateIncidentPositionWithALowerValue() {
     // given
-    final var metadata = new ExporterMetadata();
+    final var metadata = new ExporterMetadata(TestObjectMapper.objectMapper());
     metadata.setLastIncidentUpdatePosition(3);
 
     // when

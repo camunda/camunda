@@ -8,6 +8,7 @@
 package io.camunda.exporter.utils;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
@@ -33,6 +34,8 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
 
   private static ElasticsearchClient elsClient;
   private static OpenSearchClient osClient;
+  private ObjectMapper osObjectMapper;
+  private ObjectMapper esObjectMapper;
 
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
@@ -44,12 +47,16 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
 
     final var config = new ExporterConfiguration();
     config.getConnect().setUrl(elasticsearchContainer.getHttpHostAddress());
-    elsClient = new ElasticsearchConnector(config.getConnect()).createClient();
+    final var esConnector = new ElasticsearchConnector(config.getConnect());
+    esObjectMapper = esConnector.objectMapper();
+    elsClient = esConnector.createClient();
 
     final var osConfig = new ExporterConfiguration();
     osConfig.getConnect().setType("opensearch");
     osConfig.getConnect().setUrl(opensearchContainer.getHttpHostAddress());
-    osClient = new OpensearchConnector(osConfig.getConnect()).createClient();
+    final var osConnector = new OpensearchConnector(osConfig.getConnect());
+    osObjectMapper = osConnector.objectMapper();
+    osClient = osConnector.createClient();
   }
 
   @Override
@@ -62,7 +69,8 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
 
   private void maybeCreateIndexEs(final IndexDescriptor descriptor) {
     try {
-      new ElasticsearchEngineClient(elsClient).createIndex(descriptor, new IndexSettings());
+      new ElasticsearchEngineClient(elsClient, esObjectMapper)
+          .createIndex(descriptor, new IndexSettings());
     } catch (final Exception e) {
       LOGGER.warn("Failed to create index {}", descriptor.getIndexName(), e);
     }
@@ -70,7 +78,8 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
 
   private void maybeCreateIndexOs(final IndexDescriptor descriptor) {
     try {
-      new OpensearchEngineClient(osClient).createIndex(descriptor, new IndexSettings());
+      new OpensearchEngineClient(osClient, osObjectMapper)
+          .createIndex(descriptor, new IndexSettings());
     } catch (final Exception e) {
       LOGGER.warn("Failed to create index {}", descriptor.getIndexName(), e);
     }
@@ -98,6 +107,12 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
     } catch (final Exception e) {
       LOGGER.warn("Failed to delete index {}", indexName, e);
     }
+  }
+
+  @Override
+  public ObjectMapper objectMapper() {
+    // which one to return?
+    return osObjectMapper;
   }
 
   @Override

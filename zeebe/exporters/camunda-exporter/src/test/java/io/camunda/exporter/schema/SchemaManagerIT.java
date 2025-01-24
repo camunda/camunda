@@ -16,6 +16,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.DefaultExporterResourceProvider;
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
@@ -26,6 +27,7 @@ import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
 import io.camunda.exporter.utils.SearchClientAdapter;
 import io.camunda.exporter.utils.SearchDBExtension;
+import io.camunda.exporter.utils.TestObjectMapper;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -53,9 +55,11 @@ public class SchemaManagerIT {
 
   private IndexDescriptor index;
   private IndexTemplateDescriptor indexTemplate;
+  private ObjectMapper objectMapper;
 
   @BeforeEach
   public void refresh() throws IOException {
+    objectMapper = TestObjectMapper.objectMapper();
     indexTemplate =
         SchemaTestUtil.mockIndexTemplate(
             "index_name",
@@ -75,11 +79,15 @@ public class SchemaManagerIT {
 
   private SearchEngineClient searchEngineClientFromConfig(final ExporterConfiguration config) {
     if (config.getConnect().getType().equals(ConnectionTypes.ELASTICSEARCH.getType())) {
-      final var client = new ElasticsearchConnector(config.getConnect()).createClient();
-      return new ElasticsearchEngineClient(client);
+      final var connector = new ElasticsearchConnector(config.getConnect());
+      final var client = connector.createClient();
+      objectMapper = connector.objectMapper();
+      return new ElasticsearchEngineClient(client, objectMapper);
     } else if (config.getConnect().getType().equals(ConnectionTypes.OPENSEARCH.getType())) {
-      final var client = new OpensearchConnector(config.getConnect()).createClient();
-      return new OpensearchEngineClient(client);
+      final var connector = new OpensearchConnector(config.getConnect());
+      final var client = connector.createClient();
+      objectMapper = connector.objectMapper();
+      return new OpensearchEngineClient(client, objectMapper);
     }
     throw new IllegalArgumentException("Unknown connection type: " + config.getConnect().getType());
   }
@@ -94,7 +102,8 @@ public class SchemaManagerIT {
             searchEngineClientFromConfig(config),
             Set.of(index),
             Set.of(),
-            new ExporterConfiguration());
+            new ExporterConfiguration(),
+            objectMapper);
 
     schemaManager.initialiseResources();
 
@@ -126,7 +135,11 @@ public class SchemaManagerIT {
 
     final var schemaManager =
         new SchemaManager(
-            searchEngineClientFromConfig(config), Set.of(index), Set.of(indexTemplate), properties);
+            searchEngineClientFromConfig(config),
+            Set.of(index),
+            Set.of(indexTemplate),
+            properties,
+            objectMapper);
 
     // when
     schemaManager.initialiseResources();
@@ -151,7 +164,11 @@ public class SchemaManagerIT {
 
     final var schemaManager =
         new SchemaManager(
-            searchEngineClientFromConfig(config), Set.of(index), Set.of(indexTemplate), properties);
+            searchEngineClientFromConfig(config),
+            Set.of(index),
+            Set.of(indexTemplate),
+            properties,
+            objectMapper);
 
     // when
     schemaManager.initialiseResources();
@@ -173,7 +190,8 @@ public class SchemaManagerIT {
             searchEngineClientFromConfig(config),
             Set.of(),
             Set.of(indexTemplate),
-            new ExporterConfiguration());
+            new ExporterConfiguration(),
+            objectMapper);
 
     schemaManager.initialiseResources();
 
@@ -201,7 +219,11 @@ public class SchemaManagerIT {
     // given
     final var schemaManager =
         new SchemaManager(
-            searchEngineClientFromConfig(config), Set.of(index), Set.of(indexTemplate), config);
+            searchEngineClientFromConfig(config),
+            Set.of(index),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
 
     // when
     schemaManager.startup();
@@ -226,7 +248,11 @@ public class SchemaManagerIT {
     config.setCreateSchema(true);
     final var schemaManager =
         new SchemaManager(
-            searchEngineClientFromConfig(config), Set.of(index), Set.of(indexTemplate), config);
+            searchEngineClientFromConfig(config),
+            Set.of(index),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
 
     schemaManager.startup();
 
@@ -263,7 +289,8 @@ public class SchemaManagerIT {
     indexTemplates.add(indexTemplate);
 
     final var schemaManager =
-        new SchemaManager(searchEngineClientFromConfig(config), indices, indexTemplates, config);
+        new SchemaManager(
+            searchEngineClientFromConfig(config), indices, indexTemplates, config, objectMapper);
 
     schemaManager.startup();
 
@@ -311,7 +338,11 @@ public class SchemaManagerIT {
 
     final var schemaManager =
         new SchemaManager(
-            searchEngineClientFromConfig(config), Set.of(index), Set.of(indexTemplate), config);
+            searchEngineClientFromConfig(config),
+            Set.of(index),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
 
     schemaManager.startup();
 
@@ -334,7 +365,8 @@ public class SchemaManagerIT {
     config.getRetention().setPolicyName("policy_name");
 
     final var schemaManager =
-        new SchemaManager(searchEngineClientFromConfig(config), Set.of(), Set.of(), config);
+        new SchemaManager(
+            searchEngineClientFromConfig(config), Set.of(), Set.of(), config, objectMapper);
 
     schemaManager.startup();
 
@@ -351,7 +383,11 @@ public class SchemaManagerIT {
 
     final var schemaManager =
         new SchemaManager(
-            searchEngineClientFromConfig(config), Set.of(), Set.of(indexTemplate), config);
+            searchEngineClientFromConfig(config),
+            Set.of(),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
 
     schemaManager.startup();
 
@@ -374,7 +410,11 @@ public class SchemaManagerIT {
 
     final var schemaManager =
         new SchemaManager(
-            searchEngineClientFromConfig(config), Set.of(), Set.of(indexTemplate), config);
+            searchEngineClientFromConfig(config),
+            Set.of(),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
 
     schemaManager.startup();
 
@@ -405,14 +445,16 @@ public class SchemaManagerIT {
         config,
         mock(ExporterEntityCacheProvider.class),
         new SimpleMeterRegistry(),
-        new ExporterMetadata());
+        new ExporterMetadata(objectMapper),
+        objectMapper);
 
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
             provider.getIndexDescriptors(),
             provider.getIndexTemplateDescriptors(),
-            config);
+            config,
+            objectMapper);
 
     schemaManager.startup();
     assertThatNoException().isThrownBy(schemaManager::startup);

@@ -86,6 +86,10 @@ public final class ElasticsearchConnector {
     return new ElasticsearchAsyncClient(transport);
   }
 
+  public ObjectMapper objectMapper() {
+    return objectMapper;
+  }
+
   private RestClient createRestClient(final ConnectConfiguration configuration) {
     final var httpHost = getHttpHost(configuration);
     final var restClientBuilder = RestClient.builder(httpHost);

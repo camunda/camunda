@@ -13,6 +13,7 @@ import static io.camunda.zeebe.protocol.Protocol.USER_TASK_CANDIDATE_USERS_HEADE
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
@@ -41,7 +42,6 @@ import org.slf4j.LoggerFactory;
 
 public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRecordValue> {
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final Logger LOGGER = LoggerFactory.getLogger(UserTaskJobBasedHandler.class);
   private static final Pattern EMBEDDED_FORMS_PATTERN = Pattern.compile("^camunda-forms:bpmn:.*");
   private static final Set<JobIntent> SUPPORTED_INTENTS =
@@ -52,7 +52,7 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
           JobIntent.MIGRATED,
           JobIntent.RECURRED_AFTER_BACKOFF,
           JobIntent.FAILED);
-
+  private final ObjectReader objectReader;
   private final String indexName;
   private final ExporterEntityCache<String, CachedFormEntity> formCache;
   private final ExporterMetadata exporterMetadata;
@@ -60,10 +60,12 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
   public UserTaskJobBasedHandler(
       final String indexName,
       final ExporterEntityCache<String, CachedFormEntity> formCache,
-      final ExporterMetadata exporterMetadata) {
+      final ExporterMetadata exporterMetadata,
+      final ObjectMapper objectMapper) {
     this.indexName = indexName;
     this.formCache = formCache;
     this.exporterMetadata = exporterMetadata;
+    objectReader = objectMapper.readerFor(String[].class);
   }
 
   @Override
@@ -235,7 +237,7 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
   private String[] toStringArray(final String value) {
     if (!ExporterUtil.isEmpty(value)) {
       try {
-        return MAPPER.readValue(value, String[].class);
+        return objectReader.readValue(value);
       } catch (final JsonProcessingException e) {
         LOGGER.warn(String.format("Failed to parse value %s: %s", value, e.getMessage()), e);
       }
