@@ -450,11 +450,6 @@ services:
       - "8092:8092"
     environment:
       - SPRING_PROFILES_ACTIVE=ccsm
-      - CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED=false
-      - CAMUNDA_OPTIMIZE_ENTERPRISE=false
-      - CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED=true
-      # This should only be set if you plan to use JWTs for the public API rather than a statically configured token
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
       - OPTIMIZE_LOG_LEVEL=DEBUG
     depends_on:
       - ${DATABASE}
@@ -463,5 +458,18 @@ services:
     env_file:
       - envs/.env.database.${DATABASE}
       - envs/.env.identity
+    networks:
+      - zeebe_network
+
+  optimize_oauth: 
+    <<: *optimize_identity
+    depends_on:
+      - ${DATABASE}
+      - zeebe_oauth
+      - identity_oauth
+    env_file:
+      - envs/.env.database.${DATABASE}
+      - envs/.env.identity
+      - envs/.env.identity-oauth
     networks:
       - zeebe_network
