@@ -10,7 +10,11 @@ package io.camunda.optimize;
 import static io.camunda.optimize.tomcat.OptimizeResourceConstants.ACTUATOR_PORT_PROPERTY_KEY;
 
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import java.io.File;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.springframework.boot.SpringApplication;
@@ -25,6 +29,25 @@ public class Main {
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(Main.class);
 
   public static void main(final String[] args) {
+    final String cwd = Path.of("").toAbsolutePath().toString();
+    final String root = Path.of(cwd + "/../../../").toAbsolutePath().toString();
+    System.out.println("CWD=" + cwd);
+    System.out.println("ROOT=" + root);
+
+    List.of(
+            root,
+            root + "/dist",
+            root + "/dist/target",
+            root + "/dist/target/camunda-zeebe",
+            root + "/dist/target/camunda-zeebe/bin")
+        .forEach(
+            dir -> {
+              System.out.println(dir + " contents:");
+              Arrays.stream(new File(dir).list())
+                  //        .filter(file -> !file.isDirectory())
+                  .forEach(System.out::println);
+            });
+
     // Temporarily hardcoding this property until we merge into a singleapp
     System.setProperty(
         "spring.web.resources.static-locations", "classpath:/META-INF/resources/optimize/");
