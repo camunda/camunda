@@ -18,8 +18,6 @@ package io.camunda.zeebe.client.impl.search.filter;
 import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
-import java.util.List;
 
 public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserTaskFilterRequest>
     implements UserTaskFilter {
@@ -91,12 +89,6 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
   @Override
   public UserTaskFilter bpmnProcessId(final String bpmnProcessId) {
     filter.processDefinitionId(bpmnProcessId);
-    return this;
-  }
-
-  @Override
-  public UserTaskFilter variables(final List<UserTaskVariableFilterRequest> variableValueFilters) {
-    filter.setVariables(variableValueFilters);
     return this;
   }
 

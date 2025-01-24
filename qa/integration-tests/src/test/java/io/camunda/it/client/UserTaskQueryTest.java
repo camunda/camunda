@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -56,79 +55,6 @@ class UserTaskQueryTest {
     startProcessInstance("bpmProcessVariable");
 
     waitForTasksBeingExported();
-  }
-
-  @Test
-  public void shouldRetrieveTaskByTaskVariable() {
-    final UserTaskVariableFilterRequest variableValueFilter =
-        new UserTaskVariableFilterRequest().name("task02").value("1");
-
-    final var result =
-        camundaClient
-            .newUserTaskQuery()
-            .filter(f -> f.variables(List.of(variableValueFilter)))
-            .send()
-            .join();
-    assertThat(result.items().size()).isEqualTo(1);
-  }
-
-  @Test
-  public void shouldRetrieveTaskByProcessVariable() {
-    final UserTaskVariableFilterRequest variableValueFilter =
-        new UserTaskVariableFilterRequest().name("process01").value("\"pVar\"");
-
-    final var result =
-        camundaClient
-            .newUserTaskQuery()
-            .filter(f -> f.variables(List.of(variableValueFilter)))
-            .send()
-            .join();
-    assertThat(result.items().size()).isEqualTo(1);
-  }
-
-  @Test
-  public void shouldRetrieveTaskByVariableNameSearch() {
-    final UserTaskVariableFilterRequest variableValueFilter =
-        new UserTaskVariableFilterRequest().name("process01");
-
-    final var result =
-        camundaClient
-            .newUserTaskQuery()
-            .filter(f -> f.variables(List.of(variableValueFilter)))
-            .send()
-            .join();
-    assertThat(result.items().size()).isEqualTo(2);
-  }
-
-  @Test
-  public void shouldNoteRetrieveTaskByInvalidVariableValue() {
-    final UserTaskVariableFilterRequest variableValueFilter =
-        new UserTaskVariableFilterRequest().name("process01").value("\"pVariable\"");
-
-    final var result =
-        camundaClient
-            .newUserTaskQuery()
-            .filter(f -> f.variables(List.of(variableValueFilter)))
-            .send()
-            .join();
-    assertThat(result.items().size()).isEqualTo(0);
-  }
-
-  @Test
-  public void shouldRetrieveTaskByOrVariableCondition() {
-    final UserTaskVariableFilterRequest variableValueFilter1 =
-        new UserTaskVariableFilterRequest().name("task02").value("1");
-
-    final UserTaskVariableFilterRequest variableValueFilter2 =
-        new UserTaskVariableFilterRequest().name("task01").value("\"test\"");
-
-    final var result =
-        camundaClient
-            .newUserTaskQuery()
-            .filter(f -> f.variables(List.of(variableValueFilter1, variableValueFilter2)))
-            .send()
-            .join();
-    assertThat(result.items().size()).isEqualTo(2);
   }
 
   @Test
