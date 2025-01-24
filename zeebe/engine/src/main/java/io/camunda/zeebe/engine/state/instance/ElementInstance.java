@@ -55,12 +55,13 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
    * <p>A root process instance has depth 1. Each child instance has the depth of its parent
    * incremented by 1.
    *
-   * @since 8.7
-   * @apiNote This value is added in 8.7, any child process instances created before 8.7 will have a
-   *     depth of 1 rather than a correct value. Child instances created on or after 8.7 will have a
-   *     depth of 1 + the depth of the parent instance. Therefore, child instances created on or
-   *     after 8.7 that are part of a root process instance created prior to 8.7, will not have a
-   *     correct depth.
+   * @since 8.3.22, 8.4.18, 8.5.17, 8.6.12, and 8.7
+   * @apiNote This property is added in 8.7 and backported to 8.6.12, 8.5.17, 8.4.18, and 8.3.22.
+   *     Any child process instances created before 8.7 (or any of these patches) will have a depth
+   *     of 1 rather than a correct value. Child instances created before the property existed will
+   *     have a depth of 1 + the depth of the parent instance. Therefore, child instances created on
+   *     or after the property was added that are part of a root process instance created prior to
+   *     the property existed, will not have a correct depth.
    */
   private final IntegerProperty processDepth = new IntegerProperty("processDepth", 1);
 
