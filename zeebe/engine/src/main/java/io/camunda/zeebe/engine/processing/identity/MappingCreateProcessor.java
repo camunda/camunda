@@ -26,8 +26,11 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class MappingCreateProcessor implements DistributedTypedRecordProcessor<MappingRecord> {
 
-  private static final String MAPPING_ALREADY_EXISTS_ERROR_MESSAGE =
+  private static final String MAPPING_SAME_CLAIM_ALREADY_EXISTS_ERROR_MESSAGE =
       "Expected to create mapping with claimName '%s' and claimValue '%s', but a mapping with this claim already exists.";
+  private static final String MAPPING_SAME_ID_ALREADY_EXISTS_ERROR_MESSAGE =
+      "Expected to create mapping with id '%s' but a mapping with this id already exists.";
+
   private final MappingState mappingState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -65,11 +68,21 @@ public class MappingCreateProcessor implements DistributedTypedRecordProcessor<M
     }
 
     final var record = command.getValue();
-    final var persistedMapping = mappingState.get(record.getClaimName(), record.getClaimValue());
-    if (persistedMapping.isPresent()) {
+    final var persistedMappingWithSameClaim =
+        mappingState.get(record.getClaimName(), record.getClaimValue());
+    if (persistedMappingWithSameClaim.isPresent()) {
       final var errorMessage =
-          MAPPING_ALREADY_EXISTS_ERROR_MESSAGE.formatted(
+          MAPPING_SAME_CLAIM_ALREADY_EXISTS_ERROR_MESSAGE.formatted(
               record.getClaimName(), record.getClaimValue());
+      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
+      return;
+    }
+
+    final var persistedMappingWithSameId = mappingState.get(record.getId());
+    if (persistedMappingWithSameId.isPresent()) {
+      final var errorMessage =
+          MAPPING_SAME_ID_ALREADY_EXISTS_ERROR_MESSAGE.formatted(record.getId());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
@@ -95,7 +108,7 @@ public class MappingCreateProcessor implements DistributedTypedRecordProcessor<M
         .ifPresentOrElse(
             existingMapping -> {
               final var errorMessage =
-                  MAPPING_ALREADY_EXISTS_ERROR_MESSAGE.formatted(
+                  MAPPING_SAME_CLAIM_ALREADY_EXISTS_ERROR_MESSAGE.formatted(
                       existingMapping.getClaimName(), existingMapping.getClaimValue());
               rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
             },

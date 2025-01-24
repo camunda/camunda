@@ -32,9 +32,16 @@ public class MappingTest {
   public void shouldCreateMapping() {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
+    final var id = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
     final var mappingRecord =
-        engine.mapping().newMapping(claimName).withClaimValue(claimValue).withName(name).create();
+        engine
+            .mapping()
+            .newMapping(claimName)
+            .withClaimValue(claimValue)
+            .withId(id)
+            .withName(name)
+            .create();
 
     final var createMapping = mappingRecord.getValue();
     Assertions.assertThat(createMapping)
@@ -42,11 +49,12 @@ public class MappingTest {
         .hasFieldOrProperty("mappingKey")
         .hasFieldOrPropertyWithValue("claimName", claimName)
         .hasFieldOrPropertyWithValue("claimValue", claimValue)
-        .hasFieldOrPropertyWithValue("name", name);
+        .hasFieldOrPropertyWithValue("name", name)
+        .hasFieldOrPropertyWithValue("id", id);
   }
 
   @Test
-  public void shouldNotDuplicate() {
+  public void shouldNotDuplicateWithSameClaim() {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
@@ -67,6 +75,32 @@ public class MappingTest {
             String.format(
                 "Expected to create mapping with claimName '%s' and claimValue '%s', but a mapping with this claim already exists.",
                 claimName, claimValue));
+  }
+
+  @Test
+  public void shouldNotDuplicateWithSameId() {
+    // given
+    final var claimName = UUID.randomUUID().toString();
+    final var claimValue = UUID.randomUUID().toString();
+    final var id = UUID.randomUUID().toString();
+    engine.mapping().newMapping(claimName).withClaimValue(claimValue).withId(id).create();
+
+    // when
+    final var duplicatedMappingRecord =
+        engine
+            .mapping()
+            .newMapping(UUID.randomUUID().toString())
+            .withClaimValue(UUID.randomUUID().toString())
+            .withId(id)
+            .expectRejection()
+            .create();
+
+    assertThat(duplicatedMappingRecord)
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            String.format(
+                "Expected to create mapping with id '%s' but a mapping with this id already exists.",
+                id));
   }
 
   @Test
