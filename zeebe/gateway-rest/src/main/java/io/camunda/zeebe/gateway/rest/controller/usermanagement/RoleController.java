@@ -84,7 +84,11 @@ public class RoleController {
   public ResponseEntity<Object> getRole(@PathVariable final long roleKey) {
     try {
       return ResponseEntity.ok()
-          .body(SearchQueryResponseMapper.toRole(roleServices.getRole(roleKey)));
+          .body(
+              SearchQueryResponseMapper.toRole(
+                  roleServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .getRole(roleKey)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
