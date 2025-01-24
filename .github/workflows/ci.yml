@@ -286,8 +286,8 @@ jobs:
       #
       - name: Run integration test with externalized ES
         run: >
-          ./mvnw -B -T 2 --no-snapshot-updates
-          -D forkCount=7
+          ./mvnw -B -T 1 --no-snapshot-updates
+          -D forkCount=1
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
