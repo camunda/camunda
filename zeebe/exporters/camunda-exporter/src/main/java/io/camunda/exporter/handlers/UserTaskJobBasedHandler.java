@@ -12,10 +12,11 @@ import static io.camunda.zeebe.protocol.Protocol.USER_TASK_CANDIDATE_GROUPS_HEAD
 import static io.camunda.zeebe.protocol.Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
+import io.camunda.exporter.mappers.ExporterObjectMappers;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
@@ -41,7 +42,8 @@ import org.slf4j.LoggerFactory;
 
 public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRecordValue> {
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectReader objectReader =
+      ExporterObjectMappers.getObjectMapper().readerFor(String[].class);
   private static final Logger LOGGER = LoggerFactory.getLogger(UserTaskJobBasedHandler.class);
   private static final Pattern EMBEDDED_FORMS_PATTERN = Pattern.compile("^camunda-forms:bpmn:.*");
   private static final Set<JobIntent> SUPPORTED_INTENTS =
@@ -235,7 +237,7 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
   private String[] toStringArray(final String value) {
     if (!ExporterUtil.isEmpty(value)) {
       try {
-        return MAPPER.readValue(value, String[].class);
+        return objectReader.readValue(value);
       } catch (final JsonProcessingException e) {
         LOGGER.warn(String.format("Failed to parse value %s: %s", value, e.getMessage()), e);
       }

@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.exporter.mappers.ExporterObjectMappers;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
@@ -18,7 +19,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public final class SchemaResourceSerializer {
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = ExporterObjectMappers.getObjectMapper();
 
   private SchemaResourceSerializer() {}
 

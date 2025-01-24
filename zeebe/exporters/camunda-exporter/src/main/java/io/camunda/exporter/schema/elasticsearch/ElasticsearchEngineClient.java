@@ -26,13 +26,14 @@ import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplate
 import co.elastic.clients.elasticsearch.indices.put_index_template.IndexTemplateMapping;
 import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.JsonpDeserializer;
+import co.elastic.clients.json.JsonpMapper;
 import co.elastic.clients.json.jackson.JacksonJsonpGenerator;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.SchemaResourceSerializer;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.IndexSchemaValidationException;
+import io.camunda.exporter.mappers.ExporterObjectMappers;
 import io.camunda.exporter.schema.IndexMapping;
 import io.camunda.exporter.schema.IndexMappingProperty;
 import io.camunda.exporter.schema.MappingSource;
@@ -54,8 +55,9 @@ import org.slf4j.LoggerFactory;
 
 public class ElasticsearchEngineClient implements SearchEngineClient {
   private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchEngineClient.class);
-  private static final ObjectMapper MAPPER = new ObjectMapper();
   private final ElasticsearchClient client;
+  private final JsonpMapper jsonpMapper =
+      new JacksonJsonpMapper(ExporterObjectMappers.getObjectMapper());
 
   public ElasticsearchEngineClient(final ElasticsearchClient client) {
     this.client = client;
@@ -308,8 +310,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     try {
       return SchemaResourceSerializer.serialize(
           (JacksonJsonpGenerator::new),
-          (jacksonJsonpGenerator) ->
-              property.serialize(jacksonJsonpGenerator, new JacksonJsonpMapper(MAPPER)));
+          (jacksonJsonpGenerator) -> property.serialize(jacksonJsonpGenerator, jsonpMapper));
     } catch (final IOException e) {
       throw new ElasticsearchExporterException(
           String.format("Failed to serialize property [%s]", property.toString()), e);

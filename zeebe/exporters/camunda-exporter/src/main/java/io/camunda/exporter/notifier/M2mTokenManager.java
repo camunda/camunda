@@ -9,10 +9,12 @@ package io.camunda.exporter.notifier;
 
 import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfiguration;
 import io.camunda.exporter.exceptions.IncidentNotifierException;
+import io.camunda.exporter.mappers.ExporterObjectMappers;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -30,8 +32,9 @@ public class M2mTokenManager {
   protected static final String FIELD_NAME_CLIENT_SECRET = "client_secret";
   protected static final String FIELD_NAME_AUDIENCE = "audience";
   protected static final String FIELD_NAME_ACCESS_TOKEN = "access_token";
-  private static final ObjectMapper MAPPER =
-      new ObjectMapper().registerModule(new JavaTimeModule());
+  private static final ObjectMapper MAPPER = ExporterObjectMappers.getObjectMapper();
+  private final ObjectWriter objectWriter = MAPPER.writer();
+  private final ObjectReader objectReader = MAPPER.reader();
   private final IncidentNotifierConfiguration configuration;
   private final HttpClient client;
 
@@ -80,7 +83,7 @@ public class M2mTokenManager {
               .header("Content-Type", "application/json")
               .POST(
                   HttpRequest.BodyPublishers.ofString(
-                      MAPPER.writeValueAsString(createGetTokenRequest())))
+                      objectWriter.writeValueAsString(createGetTokenRequest())))
               .build();
 
       final HttpResponse<String> response =
@@ -92,7 +95,7 @@ public class M2mTokenManager {
                 "Unable to get the M2M auth token, response status: %s.", response.statusCode()));
       }
 
-      final Map<String, Object> responseBody = MAPPER.readValue(response.body(), Map.class);
+      final Map<String, Object> responseBody = objectReader.readValue(response.body(), Map.class);
       return (String) responseBody.get(FIELD_NAME_ACCESS_TOKEN);
     } catch (final IOException | InterruptedException e) {
       throw new IncidentNotifierException("Unable to get the M2M auth token", e);

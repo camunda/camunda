@@ -10,6 +10,7 @@ package io.camunda.exporter.utils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
+import io.camunda.exporter.mappers.ExporterObjectMappers;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import java.io.ByteArrayInputStream;
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 
 public final class SearchEngineClientUtils {
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = ExporterObjectMappers.getObjectMapper();
 
   private SearchEngineClientUtils() {}
 

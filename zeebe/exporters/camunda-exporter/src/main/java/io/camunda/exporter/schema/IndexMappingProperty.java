@@ -12,7 +12,8 @@ import static java.util.Map.entry;
 import co.elastic.clients.elasticsearch._types.mapping.Property;
 import co.elastic.clients.json.JsonpMapper;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import io.camunda.exporter.mappers.ExporterObjectMappers;
 import jakarta.json.stream.JsonParser;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -22,10 +23,14 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 
 public record IndexMappingProperty(String name, Object typeDefinition) {
-  private static final ObjectMapper MAPPER = new ObjectMapper();
-  private static final JsonpMapper JSONP_MAPPER = new JacksonJsonpMapper(MAPPER);
+  private static final JsonpMapper JSONP_MAPPER =
+      new JacksonJsonpMapper(ExporterObjectMappers.getObjectMapper());
+
   private static final org.opensearch.client.json.JsonpMapper OPENSEARCH_JSONP_MAPPER =
-      new org.opensearch.client.json.jackson.JacksonJsonpMapper(MAPPER);
+      new org.opensearch.client.json.jackson.JacksonJsonpMapper(
+          ExporterObjectMappers.getObjectMapper());
+
+  private static final ObjectWriter writer = ExporterObjectMappers.getObjectMapper().writer();
 
   public Entry<String, Property> toElasticsearchProperty() {
     final var typeDefinitionParser = getTypeDefinitionParser();
@@ -49,7 +54,7 @@ public record IndexMappingProperty(String name, Object typeDefinition) {
     try {
       final var typeDefinitionJson =
           IOUtils.toInputStream(
-              MAPPER.writeValueAsString(typeDefinition()), StandardCharsets.UTF_8);
+              writer.writeValueAsString(typeDefinition()), StandardCharsets.UTF_8);
 
       return JSONP_MAPPER.jsonProvider().createParser(typeDefinitionJson);
     } catch (final IOException e) {

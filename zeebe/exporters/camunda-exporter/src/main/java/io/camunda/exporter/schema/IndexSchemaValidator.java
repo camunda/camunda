@@ -9,6 +9,7 @@ package io.camunda.exporter.schema;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.exceptions.IndexSchemaValidationException;
+import io.camunda.exporter.mappers.ExporterObjectMappers;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.*;
@@ -48,7 +49,7 @@ import org.slf4j.LoggerFactory;
  */
 public class IndexSchemaValidator {
   private static final Logger LOGGER = LoggerFactory.getLogger(IndexSchemaValidator.class);
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = ExporterObjectMappers.getObjectMapper();
 
   /**
    * Validates existing indices mappings against index/index template mappings defined.

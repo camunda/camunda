@@ -8,11 +8,11 @@
 package io.camunda.exporter.notifier;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfiguration;
+import io.camunda.exporter.mappers.ExporterObjectMappers;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import java.io.IOException;
 import java.net.URI;
@@ -50,8 +50,7 @@ public class IncidentNotifier {
   protected static final String FIELD_NAME_PROCESS_NAME = "processName";
   protected static final String FIELD_NAME_PROCESS_VERSION = "processVersion";
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentNotifier.class);
-  private static final ObjectMapper MAPPER =
-      new ObjectMapper().registerModule(new JavaTimeModule());
+  private static final ObjectWriter objectWriter = ExporterObjectMappers.getObjectMapper().writer();
 
   private final M2mTokenManager m2mTokenManager;
 
@@ -152,6 +151,6 @@ public class IncidentNotifier {
       }
       incidentList.add(incidentFields);
     }
-    return MAPPER.writeValueAsString(Map.of(FIELD_NAME_ALERTS, incidentList));
+    return objectWriter.writeValueAsString(Map.of(FIELD_NAME_ALERTS, incidentList));
   }
 }

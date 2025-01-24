@@ -11,12 +11,14 @@ import static io.camunda.exporter.utils.SearchEngineClientUtils.appendToFileSche
 import static io.camunda.exporter.utils.SearchEngineClientUtils.listIndices;
 import static io.camunda.exporter.utils.SearchEngineClientUtils.mapToSettings;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.camunda.exporter.SchemaResourceSerializer;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.IndexSchemaValidationException;
 import io.camunda.exporter.exceptions.OpensearchExporterException;
+import io.camunda.exporter.mappers.ExporterObjectMappers;
 import io.camunda.exporter.schema.IndexMapping;
 import io.camunda.exporter.schema.IndexMappingProperty;
 import io.camunda.exporter.schema.MappingSource;
@@ -34,6 +36,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonpDeserializer;
+import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.json.jackson.JacksonJsonpGenerator;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
@@ -56,9 +59,12 @@ import org.slf4j.LoggerFactory;
 
 public class OpensearchEngineClient implements SearchEngineClient {
   private static final Logger LOG = LoggerFactory.getLogger(OpensearchEngineClient.class);
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectReader objectReader = ExporterObjectMappers.getObjectMapper().reader();
+  private static final ObjectWriter objectWriter = ExporterObjectMappers.getObjectMapper().writer();
   private static final String OPERATE_DELETE_ARCHIVED_POLICY =
       "/schema/opensearch/create/policy/operate_delete_archived_indices.json";
+  private final JsonpMapper jsonpMapper =
+      new JacksonJsonpMapper(ExporterObjectMappers.getObjectMapper());
   private final OpenSearchClient client;
 
   public OpensearchEngineClient(final OpenSearchClient client) {
@@ -252,7 +258,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
   public Request createIndexStateManagementPolicy(
       final String policyName, final String deletionMinAge) {
     try (final var policyJson = getClass().getResourceAsStream(OPERATE_DELETE_ARCHIVED_POLICY)) {
-      final var jsonMap = MAPPER.readTree(policyJson);
+      final var jsonMap = objectReader.readTree(policyJson);
       final var conditions =
           (ObjectNode)
               jsonMap
@@ -264,7 +270,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
                   .path("conditions");
       conditions.put("min_index_age", deletionMinAge);
 
-      final var policy = MAPPER.writeValueAsBytes(jsonMap);
+      final var policy = objectWriter.writeValueAsBytes(jsonMap);
 
       return Requests.builder()
           .method("PUT")
@@ -318,8 +324,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
     try {
       return SchemaResourceSerializer.serialize(
           (JacksonJsonpGenerator::new),
-          (jacksonJsonpGenerator) ->
-              property.serialize(jacksonJsonpGenerator, new JacksonJsonpMapper(MAPPER)));
+          (jacksonJsonpGenerator) -> property.serialize(jacksonJsonpGenerator, jsonpMapper));
     } catch (final IOException e) {
       throw new OpensearchExporterException(
           String.format("Failed to serialize property [%s]", property.toString()), e);
