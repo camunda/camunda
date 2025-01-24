@@ -33,6 +33,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
+import java.util.UUID;
 import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -192,19 +193,19 @@ public class TenantServiceTest {
       names = {"USER", "MAPPING", "GROUP"})
   public void shouldAddEntityToTenant(final EntityType entityType) {
     // given
-    final var tenantKey = 100L;
-    final var entityKey = 42;
+    final var tenantId = UUID.randomUUID().toString();
+    final var entityId = UUID.randomUUID().toString();
 
     // when
-    services.addMember(tenantKey, entityType, entityKey);
+    services.addMember(tenantId, entityType, entityId);
 
     // then
     final BrokerTenantEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getIntent()).isEqualTo(TenantIntent.ADD_ENTITY);
     assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
     final TenantRecord brokerRequestValue = request.getRequestWriter();
-    assertThat(brokerRequestValue.getTenantKey()).isEqualTo(tenantKey);
-    assertThat(brokerRequestValue.getEntityKey()).isEqualTo(entityKey);
+    assertThat(brokerRequestValue.getTenantId()).isEqualTo(tenantId);
+    assertThat(brokerRequestValue.getEntityId()).isEqualTo(entityId);
     assertThat(brokerRequestValue.getEntityType()).isEqualTo(entityType);
   }
 
@@ -214,19 +215,19 @@ public class TenantServiceTest {
       names = {"USER", "MAPPING", "GROUP"})
   public void shouldRemoveEntityFromTenant(final EntityType entityType) {
     // given
-    final var tenantKey = 100L;
-    final var entityKey = 42;
+    final var tenantId = UUID.randomUUID().toString();
+    final var entityId = UUID.randomUUID().toString();
 
     // when
-    services.removeMember(tenantKey, entityType, entityKey);
+    services.removeMember(tenantId, entityType, entityId);
 
     // then
     final BrokerTenantEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getIntent()).isEqualTo(TenantIntent.REMOVE_ENTITY);
     assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
     final TenantRecord brokerRequestValue = request.getRequestWriter();
-    assertThat(brokerRequestValue.getTenantKey()).isEqualTo(tenantKey);
-    assertThat(brokerRequestValue.getEntityKey()).isEqualTo(entityKey);
+    assertThat(brokerRequestValue.getTenantId()).isEqualTo(tenantId);
+    assertThat(brokerRequestValue.getEntityId()).isEqualTo(entityId);
     assertThat(brokerRequestValue.getEntityType()).isEqualTo(entityType);
   }
 }

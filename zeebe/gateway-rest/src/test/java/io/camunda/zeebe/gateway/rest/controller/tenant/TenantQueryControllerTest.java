@@ -305,7 +305,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
                       "type": "about:blank",
                       "title": "Bad Request",
                       "status": 400,
-                      "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [key, name, tenantId]",
+                      "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [name, tenantId]",
                       "instance": "%s"
                     }""",
                 SEARCH_TENANT_URL)),

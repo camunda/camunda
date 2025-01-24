@@ -34,23 +34,8 @@ public final class BrokerTenantEntityRequest extends BrokerExecuteCommand<Tenant
     return new BrokerTenantEntityRequest(TenantIntent.REMOVE_ENTITY);
   }
 
-  public BrokerTenantEntityRequest setTenantKey(final long tenantKey) {
-    tenantDto.setTenantKey(tenantKey);
-    return this;
-  }
-
   public BrokerTenantEntityRequest setTenantId(final String tenantId) {
     tenantDto.setTenantId(tenantId);
-    return this;
-  }
-
-  public BrokerTenantEntityRequest setEntity(final EntityType entityType, final long entityKey) {
-    if (!ALLOWED_ENTITY_TYPES.contains(entityType)) {
-      throw new IllegalArgumentException(
-          "For now, tenants can only be assigned to %s".formatted(ALLOWED_ENTITY_TYPES));
-    }
-    tenantDto.setEntityType(entityType);
-    tenantDto.setEntityKey(entityKey);
     return this;
   }
 

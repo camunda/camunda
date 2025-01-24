@@ -120,13 +120,12 @@ public class TenantControllerTest extends RestControllerTest {
         .json(
             """
             {
-              "tenantKey": "%d",
               "tenantId": "%s",
               "name": "%s",
               "description": "%s"
             }
             """
-                .formatted(tenantKey, tenantId, tenantName, tenantDescription));
+                .formatted(tenantId, tenantName, tenantDescription));
 
     // then
     verify(tenantServices, times(1))
@@ -194,13 +193,12 @@ public class TenantControllerTest extends RestControllerTest {
         .json(
             """
             {
-              "tenantKey": "%d",
               "tenantId": "%s",
               "name": "%s",
               "description": "%s"
             }
             """
-                .formatted(tenantKey, tenantId, tenantName, tenantDescription));
+                .formatted(tenantId, tenantName, tenantDescription));
 
     // then
     verify(tenantServices, times(1))
@@ -328,31 +326,8 @@ public class TenantControllerTest extends RestControllerTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideAddMemberByKeyTestCases")
-  void testAddMemberToTenantByKey(final EntityType entityType, final String entityPath) {
-    // given
-    final var tenantKey = 100L;
-    final var entityKey = 42L;
-
-    when(tenantServices.addMember(tenantKey, entityType, entityKey))
-        .thenReturn(CompletableFuture.completedFuture(null));
-
-    // when
-    webClient
-        .put()
-        .uri("%s/%s/%s/%s".formatted(TENANT_BASE_URL, tenantKey, entityPath, entityKey))
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isNoContent();
-
-    // then
-    verify(tenantServices, times(1)).addMember(tenantKey, entityType, entityKey);
-  }
-
-  @ParameterizedTest
-  @MethodSource("provideAddMemberByIdTestCases")
-  void testAddMemberToTenantById(final EntityType entityType, final String entityPath) {
+  @MethodSource("provideAddMemberTestCases")
+  void testAddMemberToTenant(final EntityType entityType, final String entityPath) {
     // given
     final var tenantId = "some-tenant-id";
     final var entityId = "some-entity-id";
@@ -374,31 +349,8 @@ public class TenantControllerTest extends RestControllerTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideRemoveMemberByKeyTestCases")
-  void testRemoveMemberByKeyFromTenant(final EntityType entityType, final String entityPath) {
-    // given
-    final var tenantKey = 100L;
-    final var entityKey = 42L;
-
-    when(tenantServices.removeMember(tenantKey, entityType, entityKey))
-        .thenReturn(CompletableFuture.completedFuture(null));
-
-    // when
-    webClient
-        .delete()
-        .uri("%s/%s/%s/%s".formatted(TENANT_BASE_URL, tenantKey, entityPath, entityKey))
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isNoContent();
-
-    // then
-    verify(tenantServices, times(1)).removeMember(tenantKey, entityType, entityKey);
-  }
-
-  @ParameterizedTest
-  @MethodSource("provideRemoveMemberByIdTestCases")
-  void testRemoveMemberByIdFromTenant(final EntityType entityType, final String entityPath) {
+  @MethodSource("provideRemoveMemberTestCases")
+  void testRemoveMemberFromTenant(final EntityType entityType, final String entityPath) {
     // given
     final var tenantId = "some-tenant-id";
     final var entityId = "entity-id";
@@ -419,23 +371,11 @@ public class TenantControllerTest extends RestControllerTest {
     verify(tenantServices, times(1)).removeMember(tenantId, entityType, entityId);
   }
 
-  private static Stream<Arguments> provideAddMemberByKeyTestCases() {
-    return Stream.of(
-        Arguments.of(EntityType.MAPPING, "mapping-rules"),
-        Arguments.of(EntityType.GROUP, "groups"));
-  }
-
-  private static Stream<Arguments> provideAddMemberByIdTestCases() {
+  private static Stream<Arguments> provideAddMemberTestCases() {
     return Stream.of(Arguments.of(EntityType.USER, "users"));
   }
 
-  private static Stream<Arguments> provideRemoveMemberByKeyTestCases() {
-    return Stream.of(
-        Arguments.of(EntityType.MAPPING, "mapping-rules"),
-        Arguments.of(EntityType.GROUP, "groups"));
-  }
-
-  private static Stream<Arguments> provideRemoveMemberByIdTestCases() {
+  private static Stream<Arguments> provideRemoveMemberTestCases() {
     return Stream.of(Arguments.of(EntityType.USER, "users"));
   }
 }
