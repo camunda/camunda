@@ -9,6 +9,7 @@ package io.camunda.authentication.config;
 
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
+import java.util.Optional;
 
 public final class AuthenticationProperties {
   public static final String METHOD = "camunda.security.authentication.method";
@@ -25,7 +26,7 @@ public final class AuthenticationProperties {
       final SecurityConfiguration securityConfig, final String key, final Object value) {
     switch (key) {
       case METHOD ->
-          AuthenticationMethod.parse(String.valueOf(value))
+          Optional.ofNullable(AuthenticationMethod.parse(String.valueOf(value)))
               .ifPresent(securityConfig.getAuthentication()::setMethod);
       case API_UNPROTECTED ->
           securityConfig
