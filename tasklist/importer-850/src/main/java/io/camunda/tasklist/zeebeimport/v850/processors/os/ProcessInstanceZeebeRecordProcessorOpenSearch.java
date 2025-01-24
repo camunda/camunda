@@ -71,8 +71,8 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
 
   @Autowired private ProcessInstanceIndex processInstanceIndex;
 
-  public void processProcessInstanceRecord(Record record, List<BulkOperation> operations)
-      throws PersistenceException {
+  public void processProcessInstanceRecord(
+      final Record record, final List<BulkOperation> operations) throws PersistenceException {
 
     final ProcessInstanceRecordValueImpl recordValue =
         (ProcessInstanceRecordValueImpl) record.getValue();
@@ -102,7 +102,7 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
     return entity;
   }
 
-  private FlowNodeInstanceEntity createFlowNodeInstance(Record record) {
+  private FlowNodeInstanceEntity createFlowNodeInstance(final Record record) {
     final ProcessInstanceRecordValueImpl recordValue =
         (ProcessInstanceRecordValueImpl) record.getValue();
     final FlowNodeInstanceEntity entity = new FlowNodeInstanceEntity();
@@ -120,7 +120,7 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
     return entity;
   }
 
-  private BulkOperation getFlowNodeInstanceQuery(FlowNodeInstanceEntity entity) {
+  private BulkOperation getFlowNodeInstanceQuery(final FlowNodeInstanceEntity entity) {
 
     LOGGER.debug("Flow node instance: id {}", entity.getId());
 
