@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.el.impl.StaticExpression;
 import io.camunda.zeebe.el.util.TestFeelEngineClock;
 import java.util.Map;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class ExpressionLanguageTest {
 
