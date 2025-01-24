@@ -21,6 +21,7 @@ import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
+import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -90,7 +91,7 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   ProcessInstanceFilter endDate(final Consumer<DateTimeProperty> fn);
 
   /** Filter by state */
-  ProcessInstanceFilter state(final String state);
+  ProcessInstanceFilter state(final ProcessInstanceState state);
 
   /** Filter by state using {@link ProcessInstanceStateProperty} consumer */
   ProcessInstanceFilter state(final Consumer<ProcessInstanceStateProperty> fn);

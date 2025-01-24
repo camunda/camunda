@@ -195,7 +195,19 @@ public final class BpmnJobBehavior {
       final JobWorkerProperties jobWorkerProps,
       final BpmnElementContext context,
       final UserTaskRecord taskRecordValue) {
-    return evaluateJobExpressions(jobWorkerProps, context)
+    final var scopeKey = context.getElementInstanceKey();
+    return Either.<Failure, JobProperties>right(new JobProperties())
+        // Evaluate and set basic job properties
+        .flatMap(p -> evalTypeExp(jobWorkerProps.getType(), scopeKey).map(p::type))
+        .flatMap(p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey).map(p::retries))
+        // Handle user task-related properties
+        .map(
+            p ->
+                Optional.of(taskRecordValue.getFormKey())
+                    .filter(formKey -> formKey > 0)
+                    .map(Objects::toString)
+                    .map(p::formKey)
+                    .orElse(p))
         .map(
             p ->
                 Optional.of(taskRecordValue.getAssignee())
@@ -204,13 +216,13 @@ public final class BpmnJobBehavior {
                     .orElse(p))
         .map(
             p ->
-                Optional.ofNullable(taskRecordValue.getCandidateGroupsList())
+                Optional.of(taskRecordValue.getCandidateGroupsList())
                     .map(BpmnJobBehavior::asNotEmptyListLiteralOrNull)
                     .map(p::candidateGroups)
                     .orElse(p))
         .map(
             p ->
-                Optional.ofNullable(taskRecordValue.getCandidateUsersList())
+                Optional.of(taskRecordValue.getCandidateUsersList())
                     .map(BpmnJobBehavior::asNotEmptyListLiteralOrNull)
                     .map(p::candidateUsers)
                     .orElse(p))

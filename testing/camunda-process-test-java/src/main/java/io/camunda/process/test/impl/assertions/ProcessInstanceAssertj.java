@@ -18,13 +18,13 @@ package io.camunda.process.test.impl.assertions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
+import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.impl.client.CamundaClientNotFoundException;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
-import io.camunda.process.test.impl.client.ProcessInstanceState;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
@@ -210,7 +210,7 @@ public class ProcessInstanceAssertj
   }
 
   private static String formatState(final ProcessInstanceState state) {
-    if (state == null) {
+    if (state == null || state == ProcessInstanceState.UNKNOWN_ENUM_VALUE) {
       return "not activated";
     } else if (state == ProcessInstanceState.CANCELED) {
       return "terminated";

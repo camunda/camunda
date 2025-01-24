@@ -17,8 +17,11 @@
       "description": {
         "type": "text"
       },
-      "memberKey": {
-        "type": "long"
+      "memberId": {
+        "type": "keyword"
+      },
+      "memberType": {
+        "type": "keyword"
       },
       "join": {
         "type": "join",

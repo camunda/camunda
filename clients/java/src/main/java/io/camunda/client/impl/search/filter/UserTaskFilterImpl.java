@@ -19,6 +19,7 @@ import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
+import io.camunda.client.api.search.response.UserTaskState;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
@@ -47,8 +48,8 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
   }
 
   @Override
-  public UserTaskFilter state(final String state) {
-    filter.setState((state == null) ? null : UserTaskFilterRequest.StateEnum.fromValue(state));
+  public UserTaskFilter state(final UserTaskState state) {
+    filter.setState(UserTaskState.toProtocolState(state));
     return this;
   }
 

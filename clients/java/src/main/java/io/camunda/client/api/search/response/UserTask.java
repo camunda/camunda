@@ -26,7 +26,7 @@ public interface UserTask {
   String getName();
 
   /** State of the task */
-  String getState();
+  UserTaskState getState();
 
   /** Assignee of the task */
   String getAssignee();

@@ -8,9 +8,7 @@
 package io.camunda.zeebe.engine.state.authorization;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
@@ -199,51 +197,6 @@ public class AuthorizationStateTest {
 
     // then
     assertThat(resourceIds1).isNotEqualTo(resourceIds2);
-  }
-
-  @Test
-  void shouldInsertOwnerTypeByKey() {
-    // given
-    final var ownerKey = 1L;
-    final var ownerType = AuthorizationOwnerType.USER;
-
-    // when
-    authorizationState.insertOwnerTypeByKey(ownerKey, ownerType);
-
-    // then
-    final var persistedOwnerType = authorizationState.getOwnerType(ownerKey);
-    assertThat(persistedOwnerType).contains(ownerType);
-  }
-
-  @Test
-  void shouldNotInsertOwnerTypeByKeyTwice() {
-    // given
-    final var ownerKey = 1L;
-    final var ownerType = AuthorizationOwnerType.USER;
-
-    // when
-    authorizationState.insertOwnerTypeByKey(ownerKey, ownerType);
-
-    // then
-    assertThatThrownBy(() -> authorizationState.insertOwnerTypeByKey(ownerKey, ownerType))
-        .isInstanceOf(ZeebeDbInconsistentException.class)
-        .hasMessageContaining(
-            "Key DbLong{1} in ColumnFamily OWNER_TYPE_BY_OWNER_KEY already exists");
-  }
-
-  @Test
-  void shouldRemoveOwnerTypeByKey() {
-    // given
-    final var ownerKey = 1L;
-    final var ownerType = AuthorizationOwnerType.USER;
-    authorizationState.insertOwnerTypeByKey(ownerKey, ownerType);
-
-    // when
-    authorizationState.deleteOwnerTypeByKey(ownerKey);
-
-    // then
-    final var persistedOwnerType = authorizationState.getOwnerType(ownerKey);
-    assertThat(persistedOwnerType).isEmpty();
   }
 
   @Test
