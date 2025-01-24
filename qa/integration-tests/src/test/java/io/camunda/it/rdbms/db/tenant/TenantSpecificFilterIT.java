@@ -59,8 +59,7 @@ public class TenantSpecificFilterIT {
     createAndSaveRandomTenants(rdbmsWriter, b -> b);
     createAndSaveTenant(
         rdbmsWriter,
-        TenantFixtures.createRandomized(
-            b -> b.tenantKey(42L).tenantId("tenant-42").name("Tenant 42")));
+        TenantFixtures.createRandomized(b -> b.tenantId("tenant-42").name("Tenant 42")));
 
     final var searchResult =
         tenantReader.search(
@@ -69,13 +68,11 @@ public class TenantSpecificFilterIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
-    assertThat(searchResult.items().getFirst().key()).isEqualTo(42L);
+    assertThat(searchResult.items().getFirst().tenantId()).isEqualTo("tenant-42");
   }
 
   static List<TenantFilter> shouldFindTenantWithSpecificFilterParameters() {
     return List.of(
-        TenantFilter.of(b -> b.key(42L)),
-        TenantFilter.of(b -> b.tenantId("tenant-42")),
-        TenantFilter.of(b -> b.name("Tenant 42")));
+        TenantFilter.of(b -> b.tenantId("tenant-42")), TenantFilter.of(b -> b.name("Tenant 42")));
   }
 }

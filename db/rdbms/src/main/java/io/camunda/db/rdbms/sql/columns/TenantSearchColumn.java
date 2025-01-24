@@ -11,7 +11,6 @@ import io.camunda.search.entities.TenantEntity;
 import java.util.function.Function;
 
 public enum TenantSearchColumn implements SearchColumn<TenantEntity> {
-  TENANT_KEY("key", TenantEntity::key),
   TENANT_ID("tenantId", TenantEntity::tenantId),
   NAME("name", TenantEntity::name);
 

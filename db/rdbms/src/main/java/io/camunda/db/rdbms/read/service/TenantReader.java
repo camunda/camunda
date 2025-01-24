@@ -47,6 +47,6 @@ public class TenantReader extends AbstractEntityReader<TenantEntity> {
   }
 
   private TenantEntity map(final TenantDbModel model) {
-    return new TenantEntity(model.tenantKey(), model.tenantId(), model.name(), model.description());
+    return new TenantEntity(model.tenantId(), model.name(), model.description());
   }
 }

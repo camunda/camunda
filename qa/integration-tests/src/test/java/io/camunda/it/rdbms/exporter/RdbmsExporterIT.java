@@ -321,8 +321,6 @@ class RdbmsExporterIT {
             .getTenantReader()
             .findOne(((TenantRecordValue) tenantRecord.getValue()).getTenantId());
     assertThat(tenant).isNotEmpty();
-    assertThat(tenant.get().key()).isEqualTo(tenantRecord.getKey());
-    assertThat(tenant.get().key()).isEqualTo(tenantRecordValue.getTenantKey());
     assertThat(tenant.get().tenantId()).isEqualTo(tenantRecordValue.getTenantId());
     assertThat(tenant.get().name()).isEqualTo(tenantRecordValue.getName());
 
@@ -339,7 +337,6 @@ class RdbmsExporterIT {
             .getTenantReader()
             .findOne(((TenantRecordValue) tenantRecord.getValue()).getTenantId());
     assertThat(updatedTenant).isNotEmpty();
-    assertThat(updatedTenant.get().key()).isEqualTo(updateTenantRecordValue.getTenantKey());
     assertThat(updatedTenant.get().tenantId()).isEqualTo(updateTenantRecordValue.getTenantId());
     assertThat(updatedTenant.get().name()).isEqualTo(updateTenantRecordValue.getName());
   }

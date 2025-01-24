@@ -20,7 +20,6 @@
     resultMap="io.camunda.db.rdbms.sql.TenantMapper.tenantResultMap">
     SELECT * FROM (
     SELECT
-    TENANT_KEY,
     TENANT_ID,
     NAME,
     DESCRIPTION
@@ -34,14 +33,12 @@
 
   <sql id="searchFilter">
     WHERE 1 = 1
-    <if test="filter.key != null">AND TENANT_KEY = #{filter.key}</if>
     <if test="filter.tenantId != null">AND TENANT_ID = #{filter.tenantId}</if>
     <if test="filter.name != null">AND NAME = #{filter.name}</if>
   </sql>
 
   <resultMap id="tenantResultMap" type="io.camunda.db.rdbms.write.domain.TenantDbModel">
     <id column="TENANT_ID" property="tenantId"/>
-    <result column="TENANT_KEY" property="tenantKey"/>
     <result column="NAME" property="name"/>
     <result column="DESCRIPTION" property="description"/>
   </resultMap>
@@ -50,8 +47,8 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.TenantDbModel"
     flushCache="true">
-    INSERT INTO ${prefix}TENANT (TENANT_KEY, TENANT_ID, NAME, DESCRIPTION)
-    VALUES (#{tenantKey}, #{tenantId}, #{name}, #{description})
+    INSERT INTO ${prefix}TENANT (TENANT_ID, NAME, DESCRIPTION)
+    VALUES (#{tenantId}, #{name}, #{description})
   </insert>
 
   <update

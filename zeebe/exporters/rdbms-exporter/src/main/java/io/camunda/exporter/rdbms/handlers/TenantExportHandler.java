@@ -70,7 +70,6 @@ public class TenantExportHandler implements RdbmsExportHandler<TenantRecordValue
 
   private TenantDbModel map(final TenantRecordValue recordValue) {
     return new TenantDbModel.Builder()
-        .tenantKey(recordValue.getTenantKey())
         .tenantId(recordValue.getTenantId())
         .name(recordValue.getName())
         .description(recordValue.getDescription())

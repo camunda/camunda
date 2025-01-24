@@ -138,7 +138,6 @@ public class TenantIT {
         reader.search(
             new TenantQuery(
                 new TenantFilter.Builder()
-                    .key(instance.tenantKey())
                     .tenantId(instance.tenantId())
                     .name(instance.name())
                     .build(),
@@ -147,7 +146,7 @@ public class TenantIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
-    assertThat(searchResult.items().getFirst().key()).isEqualTo(instance.tenantKey());
+    assertThat(searchResult.items().getFirst().tenantId()).isEqualTo(instance.tenantId());
   }
 
   @TestTemplate
@@ -176,9 +175,7 @@ public class TenantIT {
                                 p.size(5)
                                     .searchAfter(
                                         new Object[] {
-                                          instanceAfter.name(),
-                                          instanceAfter.tenantId(),
-                                          instanceAfter.key()
+                                          instanceAfter.name(), instanceAfter.tenantId(),
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);
@@ -189,7 +186,7 @@ public class TenantIT {
   private static void compareTenant(final TenantEntity actual, final TenantDbModel expected) {
     assertThat(actual)
         .usingRecursiveComparison()
-        .ignoringFields("assignedMemberKeys", "key")
+        .ignoringFields("assignedMemberKeys")
         .isEqualTo(expected);
 
     assertThat(actual.tenantId()).isEqualTo(expected.tenantId());

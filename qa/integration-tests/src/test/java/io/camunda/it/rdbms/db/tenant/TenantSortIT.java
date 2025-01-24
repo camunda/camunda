@@ -7,7 +7,6 @@
  */
 package io.camunda.it.rdbms.db.tenant;
 
-import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
 import static io.camunda.it.rdbms.db.fixtures.TenantFixtures.createAndSaveRandomTenants;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,35 +37,9 @@ public class TenantSortIT {
   public static final Long PARTITION_ID = 0L;
 
   @TestTemplate
-  public void shouldSortByTenantKeyAsc(final CamundaRdbmsTestApplication testApplication) {
-    final var aggregator =
-        "AggregatorSortByKeyAsc " + nextStringId(); // Will be used to have isolated test data
-
-    testSorting(
-        testApplication.getRdbmsService(),
-        b -> b.tenantKey().asc(),
-        Comparator.comparing(TenantEntity::key),
-        b -> b.name(aggregator),
-        b -> b.name(aggregator));
-  }
-
-  @TestTemplate
-  public void shouldSortByTenantKeyDesc(final CamundaRdbmsTestApplication testApplication) {
-    final var aggregator =
-        "AggregatorSortByKeyDesc " + nextStringId(); // Will be used to have isolated test data
-
-    testSorting(
-        testApplication.getRdbmsService(),
-        b -> b.tenantKey().desc(),
-        Comparator.comparing(TenantEntity::key).reversed(),
-        b -> b.name(aggregator),
-        b -> b.name(aggregator));
-  }
-
-  @TestTemplate
   public void shouldSortByTenantIdAsc(final CamundaRdbmsTestApplication testApplication) {
     final var aggregator =
-        "AggregatorSortByKeyAsc " + nextStringId(); // Will be used to have isolated test data
+        "AggregatorSortByTenantIdAsc " + nextStringId(); // Will be used to have isolated test data
 
     testSorting(
         testApplication.getRdbmsService(),
@@ -78,14 +51,16 @@ public class TenantSortIT {
 
   @TestTemplate
   public void shouldSortByNameAsc(final CamundaRdbmsTestApplication testApplication) {
-    final var aggregator = nextKey(); // Will be used to have isolated test data
+    final var aggregator =
+        "AggregatorSortByTenantNameAsc "
+            + nextStringId(); // Will be used to have isolated test data
 
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.name().asc(),
         Comparator.comparing(TenantEntity::name),
-        b -> b.tenantKey(aggregator),
-        b -> b.key(aggregator));
+        b -> b.name(aggregator),
+        b -> b.name(aggregator));
   }
 
   private void testSorting(

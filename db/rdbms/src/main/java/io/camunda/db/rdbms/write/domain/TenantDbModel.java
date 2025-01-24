@@ -13,7 +13,6 @@ import java.util.function.Function;
 
 public class TenantDbModel implements DbModel<TenantDbModel> {
 
-  private Long tenantKey;
   private String tenantId;
   private String name;
   private String description;
@@ -23,11 +22,9 @@ public class TenantDbModel implements DbModel<TenantDbModel> {
 
   private TenantDbModel(
       final String tenantId,
-      final Long tenantKey,
       final String name,
       final String description,
       final List<TenantMemberDbModel> members) {
-    this.tenantKey = tenantKey;
     this.tenantId = tenantId;
     this.name = name;
     this.description = description;
@@ -38,21 +35,8 @@ public class TenantDbModel implements DbModel<TenantDbModel> {
   public TenantDbModel copy(
       final Function<ObjectBuilder<TenantDbModel>, ObjectBuilder<TenantDbModel>> builderFunction) {
     return builderFunction
-        .apply(
-            new Builder()
-                .tenantKey(tenantKey)
-                .tenantId(tenantId)
-                .name(name)
-                .description(description))
+        .apply(new Builder().tenantId(tenantId).name(name).description(description))
         .build();
-  }
-
-  public Long tenantKey() {
-    return tenantKey;
-  }
-
-  public void tenantKey(final Long tenantKey) {
-    this.tenantKey = tenantKey;
   }
 
   public String tenantId() {
@@ -89,7 +73,6 @@ public class TenantDbModel implements DbModel<TenantDbModel> {
 
   public static class Builder implements ObjectBuilder<TenantDbModel> {
 
-    private Long tenantKey;
     private String tenantId;
     private String name;
     private String description;
@@ -99,11 +82,6 @@ public class TenantDbModel implements DbModel<TenantDbModel> {
     public Builder() {}
 
     // Builder methods for each field
-    public Builder tenantKey(final Long tenantKey) {
-      this.tenantKey = tenantKey;
-      return this;
-    }
-
     public Builder tenantId(final String tenantId) {
       this.tenantId = tenantId;
       return this;
@@ -126,7 +104,7 @@ public class TenantDbModel implements DbModel<TenantDbModel> {
 
     @Override
     public TenantDbModel build() {
-      return new TenantDbModel(tenantId, tenantKey, name, description, members);
+      return new TenantDbModel(tenantId, name, description, members);
     }
   }
 }
