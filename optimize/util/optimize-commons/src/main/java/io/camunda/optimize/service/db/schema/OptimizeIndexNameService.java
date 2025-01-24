@@ -164,7 +164,7 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
   }
 
   public String getShortIndexPrefix() {
-    // TODO: Reconcile nomenclature in the callers and in this callees, by not returning
+    // TODO: Reconcile nomenclature in the callers and in this callee, by not returning
     //  completeIndexPrefix in the getIndexPrefix(), once Optimize is fully identical to other
     //  applications.
     return indexPrefix;
