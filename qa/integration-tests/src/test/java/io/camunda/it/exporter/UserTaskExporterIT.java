@@ -7,6 +7,7 @@
  */
 package io.camunda.it.exporter;
 
+import static io.camunda.client.api.search.response.UserTaskState.COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -337,12 +338,12 @@ public class UserTaskExporterIT {
           client,
           f -> {
             f.processInstanceKey(Long.parseLong(processInstanceId));
-            f.state("COMPLETED");
+            f.state(COMPLETED);
           });
 
       userTasks = fetchUserTasks(client, Long.parseLong(processInstanceId));
       assertThat(userTasks).hasSize(1);
-      assertThat(userTasks.getFirst().getState()).isEqualTo("COMPLETED");
+      assertThat(userTasks.getFirst().getState()).isEqualTo(COMPLETED);
       assertThat(userTasks.getFirst().getCompletionDate()).isNotNull();
     }
   }

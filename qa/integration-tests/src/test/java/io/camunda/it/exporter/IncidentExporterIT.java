@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.response.IncidentErrorType;
 import io.camunda.it.utils.BrokerITInvocationProvider;
-import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.UUID;
@@ -62,7 +62,7 @@ public class IncidentExporterIT {
     assertThat(incidents).isNotEmpty();
     assertThat(incidents.size()).isEqualTo(1);
     assertThat(incidents.getFirst().getErrorType())
-        .isEqualTo(ErrorType.UNHANDLED_ERROR_EVENT.name());
+        .isEqualTo(IncidentErrorType.UNHANDLED_ERROR_EVENT);
     assertThat(incidents.getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
   }
 
@@ -102,7 +102,7 @@ public class IncidentExporterIT {
     assertThat(incidents).isNotEmpty();
     assertThat(incidents.size()).isEqualTo(1);
     assertThat(incidents.getFirst().getErrorType())
-        .isEqualTo(ErrorType.UNHANDLED_ERROR_EVENT.name());
+        .isEqualTo(IncidentErrorType.UNHANDLED_ERROR_EVENT);
     assertThat(incidents.getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
   }
 

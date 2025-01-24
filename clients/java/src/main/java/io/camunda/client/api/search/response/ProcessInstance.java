@@ -37,7 +37,7 @@ public interface ProcessInstance {
 
   String getEndDate();
 
-  String getState();
+  ProcessInstanceState getState();
 
   Boolean getHasIncident();
 

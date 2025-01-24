@@ -9,7 +9,8 @@ package io.camunda.exporter;
 
 import static io.camunda.exporter.config.ConnectionTypes.ELASTICSEARCH;
 import static io.camunda.exporter.schema.SchemaTestUtil.mappingsMatch;
-import static io.camunda.exporter.utils.CamundaExporterITInvocationProvider.CONFIG_PREFIX;
+import static io.camunda.exporter.utils.SearchDBExtension.CUSTOM_PREFIX;
+import static io.camunda.exporter.utils.SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -17,8 +18,8 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -34,7 +35,7 @@ import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SchemaTestUtil;
-import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
+import io.camunda.exporter.utils.CamundaExporterITTemplateExtension;
 import io.camunda.exporter.utils.SearchClientAdapter;
 import io.camunda.exporter.utils.SearchDBExtension;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -58,18 +59,21 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -80,12 +84,13 @@ import org.testcontainers.containers.GenericContainer;
  * export records using the configured handlers.
  */
 @TestInstance(Lifecycle.PER_CLASS)
-@ExtendWith(CamundaExporterITInvocationProvider.class)
-@DisabledIfSystemProperty(
-    named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
-    matches = "^(?=\\s*\\S).*$",
-    disabledReason = "Excluding from AWS OS IT CI")
 final class CamundaExporterIT {
+
+  @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
+
+  @RegisterExtension
+  private static CamundaExporterITTemplateExtension templateExtension =
+      new CamundaExporterITTemplateExtension(searchDB);
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private IndexDescriptor index;
@@ -99,15 +104,28 @@ final class CamundaExporterIT {
             "test*",
             "template_alias",
             Collections.emptyList(),
-            CONFIG_PREFIX + "-template_name",
+            CUSTOM_PREFIX + "-template_name",
             "/mappings.json");
 
     index =
         SchemaTestUtil.mockIndex(
-            CONFIG_PREFIX + "-qualified_name", "alias", "index_name", "/mappings.json");
+            CUSTOM_PREFIX + "-qualified_name",
+            CUSTOM_PREFIX + "-alias",
+            CUSTOM_PREFIX + "-index_name",
+            "/mappings.json");
 
     when(indexTemplate.getFullQualifiedName())
-        .thenReturn(CONFIG_PREFIX + "-template_index_qualified_name");
+        .thenReturn(CUSTOM_PREFIX + "-template_index_qualified_name");
+  }
+
+  @AfterEach
+  public void afterEach() throws IOException {
+    final var openSearchAwsInstanceUrl =
+        Optional.ofNullable(System.getProperty(IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY)).orElse("");
+    if (openSearchAwsInstanceUrl.isEmpty()) {
+      searchDB.esClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
+    }
+    searchDB.osClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
   }
 
   @TestTemplate
@@ -187,6 +205,10 @@ final class CamundaExporterIT {
 
   @ParameterizedTest
   @MethodSource("containerProvider")
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Container tests not supported in CI")
   void shouldExportRecordIfElasticsearchIsNotInitiallyReachableButThenIsReachableLater(
       final GenericContainer<?> container) {
     // given
@@ -245,6 +267,10 @@ final class CamundaExporterIT {
   }
 
   @TestTemplate
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Ineligible test for AWS OS integration")
   void shouldHaveCorrectSchemaUpdatesWithMultipleExporters(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws Exception {
@@ -274,6 +300,10 @@ final class CamundaExporterIT {
   }
 
   @TestTemplate
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Ineligible test for AWS OS integration")
   void shouldNotErrorIfOldExporterRestartsWhileNewExporterHasAlreadyStarted(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws Exception {
@@ -310,12 +340,14 @@ final class CamundaExporterIT {
   void shouldCreateHarmonizedSchemaEagerlyOnOpen(
       final ExporterConfiguration config, final SearchClientAdapter ignored) {
     // given
+    final var newPrefix = "idx" + RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
+    config.getIndex().setPrefix(newPrefix);
     final CamundaExporter camundaExporter = new CamundaExporter();
     camundaExporter.configure(getContextFromConfig(config));
 
     final var adapter = ClientAdapter.of(config);
     final var mappingsBeforeOpen =
-        adapter.getSearchEngineClient().getMappings(CONFIG_PREFIX + "*", MappingSource.INDEX);
+        adapter.getSearchEngineClient().getMappings(newPrefix + "*", MappingSource.INDEX);
     assertThat(mappingsBeforeOpen.keySet()).isEmpty();
 
     // when
@@ -323,41 +355,41 @@ final class CamundaExporterIT {
 
     // then
     final var mappingsAfterOpen =
-        adapter.getSearchEngineClient().getMappings(CONFIG_PREFIX + "*", MappingSource.INDEX);
+        adapter.getSearchEngineClient().getMappings(newPrefix + "*", MappingSource.INDEX);
     assertThat(mappingsAfterOpen.keySet())
         // we verify the names hard coded on purpose
         // to make sure no index will be accidentally dropped, names are changed or added
         .containsExactlyInAnyOrder(
-            "custom-prefix-camunda-authorization-8.8.0_",
-            "custom-prefix-camunda-group-8.8.0_",
-            "custom-prefix-camunda-mapping-8.8.0_",
-            "custom-prefix-camunda-role-8.8.0_",
-            "custom-prefix-camunda-tenant-8.8.0_",
-            "custom-prefix-camunda-user-8.8.0_",
-            "custom-prefix-camunda-web-session-8.8.0_",
-            "custom-prefix-operate-batch-operation-1.0.0_",
-            "custom-prefix-operate-decision-8.3.0_",
-            "custom-prefix-operate-decision-instance-8.3.0_",
-            "custom-prefix-operate-decision-requirements-8.3.0_",
-            "custom-prefix-operate-event-8.3.0_",
-            "custom-prefix-operate-flownode-instance-8.3.1_",
-            "custom-prefix-operate-import-position-8.3.0_",
-            "custom-prefix-operate-incident-8.3.1_",
-            "custom-prefix-operate-list-view-8.3.0_",
-            "custom-prefix-operate-metric-8.3.0_",
-            "custom-prefix-operate-message-8.5.0_",
-            "custom-prefix-operate-operation-8.4.1_",
-            "custom-prefix-operate-post-importer-queue-8.3.0_",
-            "custom-prefix-operate-process-8.3.0_",
-            "custom-prefix-operate-sequence-flow-8.3.0_",
-            "custom-prefix-operate-variable-8.3.0_",
-            "custom-prefix-operate-job-8.6.0_",
-            "custom-prefix-tasklist-draft-task-variable-8.3.0_",
-            "custom-prefix-tasklist-form-8.4.0_",
-            "custom-prefix-tasklist-metric-8.3.0_",
-            "custom-prefix-tasklist-task-8.5.0_",
-            "custom-prefix-tasklist-task-variable-8.3.0_",
-            "custom-prefix-tasklist-import-position-8.2.0_");
+            newPrefix + "-camunda-authorization-8.8.0_",
+            newPrefix + "-camunda-group-8.8.0_",
+            newPrefix + "-camunda-mapping-8.8.0_",
+            newPrefix + "-camunda-role-8.8.0_",
+            newPrefix + "-camunda-tenant-8.8.0_",
+            newPrefix + "-camunda-user-8.8.0_",
+            newPrefix + "-camunda-web-session-8.8.0_",
+            newPrefix + "-operate-batch-operation-1.0.0_",
+            newPrefix + "-operate-decision-8.3.0_",
+            newPrefix + "-operate-decision-instance-8.3.0_",
+            newPrefix + "-operate-decision-requirements-8.3.0_",
+            newPrefix + "-operate-event-8.3.0_",
+            newPrefix + "-operate-flownode-instance-8.3.1_",
+            newPrefix + "-operate-import-position-8.3.0_",
+            newPrefix + "-operate-incident-8.3.1_",
+            newPrefix + "-operate-list-view-8.3.0_",
+            newPrefix + "-operate-metric-8.3.0_",
+            newPrefix + "-operate-message-8.5.0_",
+            newPrefix + "-operate-operation-8.4.1_",
+            newPrefix + "-operate-post-importer-queue-8.3.0_",
+            newPrefix + "-operate-process-8.3.0_",
+            newPrefix + "-operate-sequence-flow-8.3.0_",
+            newPrefix + "-operate-variable-8.3.0_",
+            newPrefix + "-operate-job-8.6.0_",
+            newPrefix + "-tasklist-draft-task-variable-8.3.0_",
+            newPrefix + "-tasklist-form-8.4.0_",
+            newPrefix + "-tasklist-metric-8.3.0_",
+            newPrefix + "-tasklist-task-8.5.0_",
+            newPrefix + "-tasklist-task-variable-8.3.0_",
+            newPrefix + "-tasklist-import-position-8.2.0_");
   }
 
   @TestTemplate
@@ -623,7 +655,7 @@ final class CamundaExporterIT {
     private final CamundaExporter camundaExporter = new CamundaExporter();
     private final int partitionId = 1;
     private final String importPositionIndexName =
-        new ImportPositionIndex(CONFIG_PREFIX, true).getFullQualifiedName();
+        new ImportPositionIndex(CUSTOM_PREFIX, true).getFullQualifiedName();
 
     @BeforeEach
     void setup() {
@@ -714,6 +746,10 @@ final class CamundaExporterIT {
     }
 
     @TestTemplate
+    @DisabledIfSystemProperty(
+        named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+        matches = "^(?=\\s*\\S).*$",
+        disabledReason = "Ineligible test for AWS OS integration")
     void shouldFailIfWaitingForImportersAndCachedRecordsCountReachesBulkSize(
         final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
         throws IOException {
@@ -723,6 +759,7 @@ final class CamundaExporterIT {
       // if schemas are never created then import position indices do not exist and all checks about
       // whether the importers are completed will return false.
       config.setCreateSchema(false);
+      config.getIndex().setPrefix(RandomStringUtils.randomAlphabetic(10));
       final var context = getContextFromConfig(config);
       camundaExporter.configure(context);
       camundaExporter.open(controller);

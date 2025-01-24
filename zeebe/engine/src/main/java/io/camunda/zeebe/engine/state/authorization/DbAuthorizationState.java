@@ -39,10 +39,6 @@ public class DbAuthorizationState implements MutableAuthorizationState {
           DbCompositeKey<DbCompositeKey<DbString, DbString>, DbString>, Permissions>
       permissionsColumnFamily;
 
-  // owner key + owner id -> owner type
-  private final DbLong ownerKey;
-  private final ColumnFamily<DbLong, DbString> ownerTypeByOwnerKeyColumnFamily;
-
   // authorization key -> authorization
   private final DbLong authorizationKey;
   private final ColumnFamily<DbLong, PersistedAuthorization>
@@ -68,11 +64,6 @@ public class DbAuthorizationState implements MutableAuthorizationState {
             transactionContext,
             ownerTypeOwnerIdAndResourceType,
             new Permissions());
-
-    ownerKey = new DbLong();
-    ownerTypeByOwnerKeyColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.OWNER_TYPE_BY_OWNER_KEY, transactionContext, ownerKey, ownerType);
 
     authorizationKey = new DbLong();
     authorizationByAuthorizationKeyColumnFamily =
@@ -160,13 +151,6 @@ public class DbAuthorizationState implements MutableAuthorizationState {
   }
 
   @Override
-  public void insertOwnerTypeByKey(final long ownerKey, final AuthorizationOwnerType ownerType) {
-    this.ownerKey.wrapLong(ownerKey);
-    this.ownerType.wrapString(ownerType.name());
-    ownerTypeByOwnerKeyColumnFamily.insert(this.ownerKey, this.ownerType);
-  }
-
-  @Override
   public void deleteAuthorizationsByOwnerTypeAndIdPrefix(
       final AuthorizationOwnerType ownerType, final String ownerId) {
     this.ownerType.wrapString(ownerType.name());
@@ -176,12 +160,6 @@ public class DbAuthorizationState implements MutableAuthorizationState {
         (compositeKey, permissions) -> {
           permissionsColumnFamily.deleteExisting(compositeKey);
         });
-  }
-
-  @Override
-  public void deleteOwnerTypeByKey(final long ownerKey) {
-    this.ownerKey.wrapLong(ownerKey);
-    ownerTypeByOwnerKeyColumnFamily.deleteExisting(this.ownerKey);
   }
 
   @Override
@@ -209,17 +187,5 @@ public class DbAuthorizationState implements MutableAuthorizationState {
         : persistedPermissions
             .getPermissions()
             .getOrDefault(permissionType, Collections.emptySet());
-  }
-
-  @Override
-  public Optional<AuthorizationOwnerType> getOwnerType(final long ownerKey) {
-    this.ownerKey.wrapLong(ownerKey);
-    final var ownerType = ownerTypeByOwnerKeyColumnFamily.get(this.ownerKey);
-
-    if (ownerType == null) {
-      return Optional.empty();
-    }
-
-    return Optional.of(AuthorizationOwnerType.valueOf(ownerType.toString()));
   }
 }

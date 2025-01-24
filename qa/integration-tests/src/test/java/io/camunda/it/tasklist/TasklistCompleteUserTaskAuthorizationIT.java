@@ -7,6 +7,7 @@
  */
 package io.camunda.it.tasklist;
 
+import static io.camunda.client.api.search.response.UserTaskState.COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.Profile;
@@ -275,7 +276,7 @@ public class TasklistCompleteUserTaskAuthorizationIT {
               final var result =
                   adminCamundaClient
                       .newUserTaskQuery()
-                      .filter(f -> f.userTaskKey(userTaskKey).state("COMPLETED"))
+                      .filter(f -> f.userTaskKey(userTaskKey).state(COMPLETED))
                       .send()
                       .join();
               assertThat(result.items()).hasSize(1);

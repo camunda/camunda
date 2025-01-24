@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
@@ -17,8 +16,8 @@ public class UserUpdatedApplier implements TypedEventApplier<UserIntent, UserRec
 
   private final MutableUserState userState;
 
-  public UserUpdatedApplier(final MutableProcessingState processingState) {
-    userState = processingState.getUserState();
+  public UserUpdatedApplier(final MutableUserState userState) {
+    this.userState = userState;
   }
 
   @Override

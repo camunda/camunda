@@ -111,7 +111,6 @@ public class RoleAppliersTest {
     final String roleName = "foo";
     final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName(roleName);
     roleState.create(roleRecord);
-    authorizationState.insertOwnerTypeByKey(roleKey, AuthorizationOwnerType.ROLE);
     authorizationState.createOrAddPermission(
         AuthorizationOwnerType.ROLE,
         roleName,
@@ -124,8 +123,6 @@ public class RoleAppliersTest {
 
     // then
     assertThat(roleState.getRole(roleKey)).isEmpty();
-    final var ownerType = authorizationState.getOwnerType(roleKey);
-    assertThat(ownerType).isEmpty();
     final var resourceIdentifiers =
         authorizationState.getResourceIdentifiers(
             AuthorizationOwnerType.ROLE,
