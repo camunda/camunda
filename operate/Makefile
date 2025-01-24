@@ -102,4 +102,4 @@ start-e2e:
 	MANAGEMENT_SERVER_PORT=9601 \
 	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
 	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
-	  -Dspring.profiles.active=operate,broker,consolidated-auth
+	  -Dspring.profiles.active=operate,broker
