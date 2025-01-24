@@ -7,17 +7,17 @@
  */
 package io.camunda.operate.webapp.security.auth;
 
+import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.entity.CamundaUser;
-import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.Permission;
+import io.camunda.security.entity.AuthenticationMethod;
 import java.util.List;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile(OperateProfileService.AUTH_BASIC)
+@ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
 public class BasicAuthenticationUserService extends AuthUserService {
 
   @Override
