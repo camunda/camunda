@@ -442,7 +442,7 @@ services:
       - zeebe_network
     restart: always
 
-  optimize_identity:
+  optimize_identity: &optimize_identity
     container_name: optimize-${DATABASE}
     image: camunda/optimize:8.7.0-SNAPSHOT
     ports:
@@ -461,7 +461,7 @@ services:
     networks:
       - zeebe_network
 
-  optimize_oauth: 
+  optimize_oauth:
     <<: *optimize_identity
     depends_on:
       - ${DATABASE}
