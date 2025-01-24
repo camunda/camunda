@@ -44,7 +44,7 @@ jobs:
     #########################################################################
     # Tear down preview environment
     - name: Tear down Preview Environment
-      uses: camunda/infra-global-github-actions/preview-env/destroy@main
+      uses: camunda/infra-global-github-actions/preview-env/destroy@2475eccdfb5a8d530a0c5d3ed0f7f5397225d205 # main branch
       with:
         revision: ${{ env.BRANCH_NAME }}
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
