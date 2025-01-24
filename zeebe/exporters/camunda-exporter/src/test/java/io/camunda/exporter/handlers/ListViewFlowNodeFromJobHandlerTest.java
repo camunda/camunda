@@ -45,9 +45,37 @@ public class ListViewFlowNodeFromJobHandlerTest {
   @Test
   public void shouldHandlesRecord() {
     // given
-    final Record<JobRecordValue> jobRecord = factory.generateRecord(ValueType.JOB);
+    final Record<JobRecordValue> jobRecord =
+        factory.generateRecord(
+            r ->
+                r.withValueType(ValueType.JOB)
+                    .withValue(
+                        ImmutableJobRecordValue.builder()
+                            .withProcessDefinitionKey(1L)
+                            .withElementInstanceKey(111L)
+                            .withProcessInstanceKey(222L)
+                            .build())
+                    .withKey(111L));
     // when - then
     assertThat(underTest.handlesRecord(jobRecord)).isTrue();
+  }
+
+  @Test
+  public void shouldNotHandlesRecord() {
+    // given
+    final Record<JobRecordValue> jobRecord =
+        factory.generateRecord(
+            r ->
+                r.withValueType(ValueType.JOB)
+                    .withValue(
+                        ImmutableJobRecordValue.builder()
+                            .withProcessDefinitionKey(1L)
+                            .withElementInstanceKey(111L)
+                            .withProcessInstanceKey(111L)
+                            .build())
+                    .withKey(111L));
+    // when - then
+    assertThat(underTest.handlesRecord(jobRecord)).isFalse();
   }
 
   @Test

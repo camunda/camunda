@@ -182,6 +182,10 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   protected Predicate<Object[]> processInstancesAreStartedByProcessId;
 
   @Autowired
+  @Qualifier("listenerJobIsCreated")
+  protected Predicate<Object[]> listenerJobIsCreated;
+
+  @Autowired
   @Qualifier("userTasksAreCreated")
   protected Predicate<Object[]> userTasksAreCreated;
 
