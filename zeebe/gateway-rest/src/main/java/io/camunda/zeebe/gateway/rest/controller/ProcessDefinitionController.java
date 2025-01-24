@@ -114,7 +114,10 @@ public class ProcessDefinitionController {
         return ResponseEntity.ok()
             .body(
                 SearchQueryResponseMapper.toFormItem(
-                    formServices.getLatestVersionByFormId(processDefinition.formId()).get()));
+                    formServices
+                        .withAuthentication(RequestMapper.getAuthentication())
+                        .getLatestVersionByFormId(processDefinition.formId())
+                        .get()));
       } else {
         return ResponseEntity.noContent().build();
       }
