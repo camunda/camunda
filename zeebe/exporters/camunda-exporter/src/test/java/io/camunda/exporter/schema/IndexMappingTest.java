@@ -9,7 +9,7 @@ package io.camunda.exporter.schema;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.exporter.utils.TestObjectMapper;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +22,7 @@ public class IndexMappingTest {
         SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "/mappings.json");
 
     // when
-    final var indexMapping = IndexMapping.from(index, new ObjectMapper());
+    final var indexMapping = IndexMapping.from(index, TestObjectMapper.objectMapper());
 
     // then
     assertThat(indexMapping.dynamic()).isEqualTo("strict");
