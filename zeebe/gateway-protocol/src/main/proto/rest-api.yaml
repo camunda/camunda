@@ -4075,7 +4075,7 @@ components:
     DocumentReference:
       type: object
       properties:
-        documentType:
+        camunda.document.type:
           type: string
           description: Document discriminator. Always set to "camunda".
           enum:
@@ -4086,6 +4086,9 @@ components:
         documentId:
           type: string
           description: The ID of the document.
+        contentHash:
+          type: string
+          description: The hash of the document.
         metadata:
           $ref: "#/components/schemas/DocumentMetadata"
     DocumentMetadata:
@@ -4106,6 +4109,17 @@ components:
           type: integer
           format: int64
           description: The size of the document in bytes.
+        processDefinitionId:
+          type: string
+          description: The ID of the process definition that created the document.
+        processInstanceKey:
+          type: integer
+          format: int64
+          description: The key of the process instance that created the document.
+        customProperties:
+          type: object
+          description: Custom properties of the document.
+          additionalProperties: true
     DocumentLinkRequest:
       type: object
       properties:
