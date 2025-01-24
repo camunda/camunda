@@ -97,6 +97,43 @@ const server = createServer({showLogsInTerminal: ciMode}, {restartBackend});
 
 setVersionInfo().then(setupEnvironment).then(startBackend);
 
+function startBackend_new() {
+  return new Promise((resolve, reject) => {
+  const engineEnv = {
+        cloud: cloudEnv,
+        'self-managed': selfManagedEnv,
+      };
+
+    backendProcess = spawnWithArgs(
+//      `pwd|dist/target/camunda-zeebe/bin/camunda`,
+`pwd`,
+      {
+        cwd: _resolve(__dirname, '..', '..'),
+        shell: true,
+        env: {
+          ...process.env,
+          ...commonEnv,
+          ...engineEnv[mode],
+        },
+      }
+    );
+
+    backendProcess.stdout.on('data', (data) => server.addLog(data, 'backend'));
+    backendProcess.stderr.on('data', (data) => server.addLog(data, 'backend', true));
+    backendProcess.on('close', (code) => {
+      backendProcess = null;
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(code);
+      }
+    });
+
+    // wait for the optimize endpoint to be up before resolving the promise
+    serverCheck('http://localhost:8080/api/readyz', resolve);
+  });
+}
+
 function startBackend() {
   return new Promise((resolve, reject) => {
     const pathSep = platform() === 'win32' ? ';' : ':';
