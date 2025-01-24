@@ -15,6 +15,7 @@ import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.client.protocol.rest.OwnerTypeEnum;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.security.configuration.ConfiguredMapping;
@@ -224,10 +225,12 @@ public class OidcAuthOverRestIT {
             .send()
             .join();
     defaultMappingClient
-        .newAddPermissionsCommand(mapping.getMappingKey())
+        .newCreateAuthorizationCommand()
+        .ownerId(String.valueOf(mapping.getMappingKey()))
+        .ownerType(OwnerTypeEnum.MAPPING)
+        .resourceId("*")
         .resourceType(ResourceTypeEnum.RESOURCE)
         .permission(PermissionTypeEnum.CREATE)
-        .resourceIds(List.of("*"))
         .send()
         .join();
 
