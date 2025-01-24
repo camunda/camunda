@@ -13,7 +13,8 @@ import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.AssertionsForClassTypes.fail;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -36,15 +37,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.stubbing.Answer;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.ErrorResponse;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch.indices.GetIndexRequest;
+import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.opensearch.client.opensearch.snapshot.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -416,6 +417,21 @@ class OpensearchBackupRepositoryTest {
     assertThat(backupState.getState()).isEqualTo(BackupStateDto.FAILED);
   }
 
+  @Test
+  void shouldReturnAvailableIndices() throws IOException {
+    // given
+    when(openSearchClient.indices().get((GetIndexRequest) any()))
+        .thenReturn(GetIndexResponse.of(b -> b));
+
+    // when
+    final var result = repository.checkAllIndicesExist(List.of("missingIndex"));
+
+    // then
+    assertThat(result.size()).isEqualTo(0);
+    verify(openSearchClient.indices(), atLeastOnce())
+        .get((GetIndexRequest) argThat(r -> ((GetIndexRequest) r).ignoreUnavailable()));
+  }
+
   private SnapshotInfo.Builder defaultFields(final SnapshotInfo.Builder b) {
     return defaultFields(b, new Metadata(1L, "1", 1, 1));
   }
@@ -435,58 +451,5 @@ class OpensearchBackupRepositoryTest {
 
   private GetSnapshotResponse emptyResponse() {
     return GetSnapshotResponse.of(this::defaultFields);
-  }
-
-  @Test
-  public void shouldRetryBackupWithRequiredIndicesIfIndexNotFound() throws IOException {
-    final var missingIndex = "missing-index";
-    // given
-    when(openSearchAsyncClient.snapshot().create((CreateSnapshotRequest) any()))
-        .thenAnswer(
-            new Answer<CompletableFuture<CreateSnapshotResponse>>() {
-
-              @Override
-              public CompletableFuture<CreateSnapshotResponse> answer(
-                  final InvocationOnMock invocation) throws Throwable {
-                final var request = (CreateSnapshotRequest) invocation.getArguments()[0];
-                if (request.indices().contains(missingIndex)) {
-                  return CompletableFuture.failedFuture(
-                      new OpenSearchException(
-                          ErrorResponse.of(
-                              b ->
-                                  b.error(
-                                          ErrorCause.of(
-                                              ec ->
-                                                  ec.type("index_not_found_exception")
-                                                      .reason("index not found")))
-                                      .status(1))));
-                } else {
-                  return CompletableFuture.completedFuture(
-                      CreateSnapshotResponse.of(
-                          b ->
-                              b.accepted(true)
-                                  .snapshot(
-                                      SnapshotInfo.of(
-                                          si ->
-                                              si.snapshot(request.snapshot())
-                                                  .uuid("uuid")
-                                                  .indices(request.indices())
-                                                  .state("SUCCESS")
-                                                  .dataStreams(List.of())))));
-                }
-              }
-            });
-
-    final var metadata = new Metadata(1L, "1", 1, 1);
-    final var snapshotRequest =
-        new SnapshotRequest(
-            "repo",
-            snapshotNameProvider.getSnapshotName(metadata),
-            new SnapshotIndexCollection(List.of("required"), List.of(missingIndex)),
-            metadata);
-    repository.executeSnapshotting(
-        snapshotRequest, () -> {}, () -> fail("Expected snapshot to complete"));
-
-    verify(openSearchAsyncClient.snapshot(), times(2)).create((CreateSnapshotRequest) any());
   }
 }
