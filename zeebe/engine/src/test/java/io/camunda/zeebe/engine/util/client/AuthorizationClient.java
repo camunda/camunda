@@ -302,11 +302,6 @@ public final class AuthorizationClient {
       authorizationUpdateRecord = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
     }
 
-    public AuthorizationUpdateClient withOwnerKey(final Long ownerKey) {
-      authorizationUpdateRecord.setOwnerKey(ownerKey);
-      return this;
-    }
-
     public AuthorizationUpdateClient withOwnerId(final String ownerId) {
       authorizationUpdateRecord.setOwnerId(ownerId);
       return this;
