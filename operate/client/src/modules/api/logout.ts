@@ -10,7 +10,7 @@ import {requestAndParse} from 'modules/request';
 
 const logout = async () => {
   return requestAndParse({
-    url: '/api/logout',
+    url: '/logout',
     method: 'POST',
   });
 };

@@ -25,7 +25,7 @@ public class WebappsRequestForwardManager {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(WebappsRequestForwardManager.class);
 
-  private static final String LOGIN_RESOURCE = "/api/login";
+  private static final String LOGIN_RESOURCE = "/login";
 
   @Autowired private WebappsProperties webappsProperties;
 
