@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.HashSet;
+import java.util.Set;
 
 public class PermissionsBehavior {
 
@@ -30,7 +32,9 @@ public class PermissionsBehavior {
       "Expected to remove '%s' permission for resource '%s' and resource identifiers '%s' for owner '%s', but this permission for resource identifiers '%s' is not found. Existing resource ids are: '%s'";
   public static final String AUTHORIZATION_ALREADY_EXISTS_MESSAGE =
       "Expected to create authorization for owner '%s' with permission type '%s' and resource type '%s', but this permission for resource identifiers '%s' already exist. Existing resource ids are: '%s'";
-  private static final String AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE =
+  public static final String AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_UPDATE =
+      "Expected to update authorization with key %s, but an authorization with this key does not exist";
+  public static final String AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_DELETION =
       "Expected to delete authorization with key %s, but an authorization with this key does not exist";
 
   private final AuthorizationState authorizationState;
@@ -52,6 +56,18 @@ public class PermissionsBehavior {
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.AUTHORIZATION, permissionType);
     return authCheckBehavior.isAuthorized(authorizationRequest).map(unused -> command.getValue());
+  }
+
+  public Either<Rejection, PersistedAuthorization> authorizationExists(
+      final AuthorizationRecord authorizationRecord, final String rejectionMessage) {
+    final var key = authorizationRecord.getAuthorizationKey();
+    return authorizationState
+        .get(key)
+        .map(Either::<Rejection, PersistedAuthorization>right)
+        .orElseGet(
+            () ->
+                Either.left(
+                    new Rejection(RejectionType.NOT_FOUND, rejectionMessage.formatted(key))));
   }
 
   public Either<Rejection, AuthorizationRecord> permissionAlreadyExists(
@@ -83,6 +99,7 @@ public class PermissionsBehavior {
     return Either.right(record);
   }
 
+  // TODO: this method needs to be renamed
   public Either<Rejection, AuthorizationRecord> authorizationAlreadyExists(
       final AuthorizationRecord record) {
     for (final PermissionType permission : record.getAuthorizationPermissions()) {
@@ -106,6 +123,7 @@ public class PermissionsBehavior {
     return Either.right(record);
   }
 
+  // TODO: this method needs to be removed
   public Either<Rejection, AuthorizationRecord> permissionDoesNotExist(
       final AuthorizationRecord record) {
     for (final PermissionValue permission : record.getPermissions()) {
@@ -137,32 +155,11 @@ public class PermissionsBehavior {
     return Either.right(record);
   }
 
-  public Either<Rejection, Long> authorizationExist(final AuthorizationRecord record) {
-    final var key = record.getAuthorizationKey();
-    final var persistedAuthorization = authorizationState.get(key);
-    return persistedAuthorization
-        .<Either<Rejection, Long>>map(
-            authorization -> Either.right(authorization.getAuthorizationKey()))
-        .orElseGet(
-            () ->
-                Either.left(
-                    new Rejection(
-                        RejectionType.NOT_FOUND,
-                        AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(key))));
-  }
-
   public Either<Rejection, AuthorizationRecord> hasValidPermissionTypes(
-      final AuthorizationRecord record) {
-    return hasValidPermissionTypes(
-        record,
-        "Expected to add permission types '%s' for resource type '%s', but these permissions are not supported. Supported permission types are: '%s'");
-  }
-
-  public Either<Rejection, AuthorizationRecord> hasValidPermissionTypes(
-      final AuthorizationRecord record, final String rejectionMessage) {
-    final var resourceType = record.getResourceType();
-    final var permissionTypes = record.getAuthorizationPermissions();
-
+      final AuthorizationRecord record,
+      final Set<PermissionType> permissionTypes,
+      final AuthorizationResourceType resourceType,
+      final String rejectionMessage) {
     if (resourceType
         .getSupportedPermissionTypes()
         .containsAll(record.getAuthorizationPermissions())) {
