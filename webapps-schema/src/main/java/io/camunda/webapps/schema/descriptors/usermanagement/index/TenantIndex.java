@@ -17,7 +17,6 @@ public class TenantIndex extends UserManagementIndexDescriptor implements Prio5B
   public static final String INDEX_NAME = "tenant";
   public static final String INDEX_VERSION = "8.8.0";
 
-  public static final String KEY = "key";
   public static final String TENANT_ID = "tenantId";
   public static final String NAME = "name";
   public static final String JOIN = "join";

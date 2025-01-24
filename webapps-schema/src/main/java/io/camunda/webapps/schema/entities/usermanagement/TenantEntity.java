@@ -11,21 +11,11 @@ import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 
 public class TenantEntity extends AbstractExporterEntity<TenantEntity> {
 
-  private Long key;
   private String tenantId;
   private String name;
   private String description;
 
   private EntityJoinRelation<String> join;
-
-  public Long getKey() {
-    return key;
-  }
-
-  public TenantEntity setKey(final Long key) {
-    this.key = key;
-    return this;
-  }
 
   public String getTenantId() {
     return tenantId;
