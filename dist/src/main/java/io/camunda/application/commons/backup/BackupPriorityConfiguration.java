@@ -265,7 +265,8 @@ public class BackupPriorityConfiguration {
                 "tasklist",
                 Optional.ofNullable(tasklistProperties).map(TasklistProperties::getIndexPrefix),
                 "optimize",
-                Optional.ofNullable(optimizeIndexNameService).map(OptimizeIndexNameService::getShortIndexPrefix)),
+                Optional.ofNullable(optimizeIndexNameService)
+                    .map(OptimizeIndexNameService::getShortIndexPrefix)),
             skipEmptyOptional());
     if (indexOptional.isEmpty()) {
       throw new IllegalArgumentException(NO_CONFIG_ERROR_MESSAGE);

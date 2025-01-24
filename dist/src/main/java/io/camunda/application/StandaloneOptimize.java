@@ -37,10 +37,7 @@ public class StandaloneOptimize {
 
     final var standaloneOptimizeApplication =
         MainSupport.createDefaultApplicationBuilder()
-            .sources(
-                CommonsModuleConfiguration.class,
-                OptimizeModuleConfiguration.class
-            )
+            .sources(CommonsModuleConfiguration.class, OptimizeModuleConfiguration.class)
             .profiles(Profile.OPTIMIZE.getId(), Profile.STANDALONE.getId())
             .addCommandLineProperties(true)
             .listeners(new ApplicationErrorListener())
