@@ -36,6 +36,7 @@
 
         <configuration>
           <installDirectory>target</installDirectory>
+          <workingDirectory>client</workingDirectory>
         </configuration>
 
         <executions>
