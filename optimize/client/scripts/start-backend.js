@@ -97,7 +97,7 @@ const server = createServer({showLogsInTerminal: ciMode}, {restartBackend});
 
 setVersionInfo().then(setupEnvironment).then(startBackend);
 
-function startBackend_new() {
+function startBackend() {
   return new Promise((resolve, reject) => {
   const engineEnv = {
         cloud: cloudEnv,
@@ -105,10 +105,9 @@ function startBackend_new() {
       };
 
     backendProcess = spawnWithArgs(
-//      `pwd|dist/target/camunda-zeebe/bin/camunda`,
-`pwd`,
+      `dist/target/camunda-zeebe/bin/optimize`,
       {
-        cwd: _resolve(__dirname, '..', '..'),
+        cwd: _resolve(__dirname, '..', '..', '..'),
         shell: true,
         env: {
           ...process.env,
@@ -134,7 +133,7 @@ function startBackend_new() {
   });
 }
 
-function startBackend() {
+function startBackend_old() {
   return new Promise((resolve, reject) => {
     const pathSep = platform() === 'win32' ? ';' : ':';
     const classPaths = [
