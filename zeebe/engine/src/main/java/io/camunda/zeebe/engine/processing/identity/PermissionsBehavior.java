@@ -58,6 +58,18 @@ public class PermissionsBehavior {
     return authCheckBehavior.isAuthorized(authorizationRequest).map(unused -> command.getValue());
   }
 
+  public Either<Rejection, PersistedAuthorization> authorizationExists(
+      final AuthorizationRecord authorizationRecord, final String rejectionMessage) {
+    final var key = authorizationRecord.getAuthorizationKey();
+    return authorizationState
+        .get(key)
+        .map(Either::<Rejection, PersistedAuthorization>right)
+        .orElseGet(
+            () ->
+                Either.left(
+                    new Rejection(RejectionType.NOT_FOUND, rejectionMessage.formatted(key))));
+  }
+
   public Either<Rejection, AuthorizationRecord> permissionAlreadyExists(
       final AuthorizationRecord record) {
     for (final PermissionValue permission : record.getPermissions()) {
