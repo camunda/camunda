@@ -24,7 +24,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableResourceState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import java.util.Optional;
-import org.agrona.DirectBuffer;
+import java.util.concurrent.ExecutionException;
 
 public class DbResourceState implements MutableResourceState {
 
@@ -129,8 +129,9 @@ public class DbResourceState implements MutableResourceState {
             .build(
                 new CacheLoader<>() {
                   @Override
-                  public PersistedResource load(final TenantIdAndResourceId key) {
-                    return findLatestResourceById(key.resourceId, key.tenantId).orElse(null);
+                  public PersistedResource load(final TenantIdAndResourceId key)
+                      throws ResourceNotFoundException {
+                    return getPersistedResourceById(key.resourceId, key.tenantId);
                   }
                 });
   }
@@ -142,8 +143,7 @@ public class DbResourceState implements MutableResourceState {
     dbPersistedResource.wrap(record);
     resourcesByKey.upsert(tenantAwareResourceKey, dbPersistedResource);
     resourcesByTenantIdAndIdCache.put(
-        new DbResourceState.TenantIdAndResourceId(
-            record.getTenantId(), record.getResourceIdBuffer()),
+        new DbResourceState.TenantIdAndResourceId(record.getTenantId(), record.getResourceId()),
         dbPersistedResource.copy());
   }
 
@@ -193,8 +193,7 @@ public class DbResourceState implements MutableResourceState {
     dbResourceKey.wrapLong(record.getResourceKey());
     resourcesByKey.deleteExisting(tenantAwareResourceKey);
     resourcesByTenantIdAndIdCache.invalidate(
-        new DbResourceState.TenantIdAndResourceId(
-            record.getTenantId(), record.getResourceIdBuffer()));
+        new DbResourceState.TenantIdAndResourceId(record.getTenantId(), record.getResourceId()));
   }
 
   @Override
@@ -233,18 +232,8 @@ public class DbResourceState implements MutableResourceState {
 
   @Override
   public Optional<PersistedResource> findLatestResourceById(
-      final DirectBuffer resourceId, final String tenantId) {
-    tenantIdKey.wrapString(tenantId);
-    final Optional<PersistedResource> cachedResource = getResourceFromCache(tenantId, resourceId);
-    if (cachedResource.isPresent()) {
-      return cachedResource;
-    }
-
-    final PersistedResource persistedResource = getPersistedResourceById(resourceId, tenantId);
-    if (persistedResource == null) {
-      return Optional.empty();
-    }
-    return Optional.of(persistedResource);
+      final String resourceId, final String tenantId) {
+    return getResourceFromCache(tenantId, resourceId);
   }
 
   @Override
@@ -258,9 +247,9 @@ public class DbResourceState implements MutableResourceState {
 
   @Override
   public Optional<PersistedResource> findResourceByIdAndDeploymentKey(
-      final DirectBuffer resourceId, final long deploymentKey, final String tenantId) {
+      final String resourceId, final long deploymentKey, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
-    dbResourceId.wrapBuffer(resourceId);
+    dbResourceId.wrapString(resourceId);
     dbDeploymentKey.wrapLong(deploymentKey);
     return Optional.ofNullable(
             resourceKeyByResourceIdAndDeploymentKeyColumnFamily.get(
@@ -270,9 +259,9 @@ public class DbResourceState implements MutableResourceState {
 
   @Override
   public Optional<PersistedResource> findResourceByIdAndVersionTag(
-      final DirectBuffer resourceId, final String versionTag, final String tenantId) {
+      final String resourceId, final String versionTag, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
-    dbResourceId.wrapBuffer(resourceId);
+    dbResourceId.wrapString(resourceId);
     dbVersionTag.wrapString(versionTag);
     return Optional.ofNullable(
             resourceKeyByResourceIdAndVersionTagColumnFamily.get(
@@ -291,23 +280,38 @@ public class DbResourceState implements MutableResourceState {
     versionManager.clear();
   }
 
-  private PersistedResource getPersistedResourceById(
-      final DirectBuffer resourceId, final String tenantId) {
-    dbResourceId.wrapBuffer(resourceId);
+  private PersistedResource getPersistedResourceById(final String resourceId, final String tenantId)
+      throws ResourceNotFoundException {
+    dbResourceId.wrapString(resourceId);
+    tenantIdKey.wrapString(tenantId);
     final long latestVersion = versionManager.getLatestResourceVersion(resourceId, tenantId);
     resourceVersion.wrapLong(latestVersion);
     final Optional<PersistedResource> persistedResource =
         Optional.ofNullable(resourceByIdAndVersionColumnFamily.get(tenantAwareIdAndVersionKey))
             .flatMap(key -> findResourceByKey(key.inner().wrappedKey().getValue(), tenantId));
-    return persistedResource.map(PersistedResource::copy).orElse(null);
+
+    return persistedResource
+        .map(PersistedResource::copy)
+        .orElseThrow(ResourceNotFoundException::new);
   }
 
   private Optional<PersistedResource> getResourceFromCache(
-      final String tenantId, final DirectBuffer resourceId) {
-    return Optional.ofNullable(
-        resourcesByTenantIdAndIdCache.getIfPresent(
-            new DbResourceState.TenantIdAndResourceId(tenantId, resourceId)));
+      final String tenantId, final String resourceId) {
+    try {
+      return Optional.of(
+          resourcesByTenantIdAndIdCache.get(new TenantIdAndResourceId(tenantId, resourceId)));
+    } catch (final ExecutionException e) {
+      // We reach this when we couldn't load the DRG from the state.
+      return Optional.empty();
+    }
   }
 
-  private record TenantIdAndResourceId(String tenantId, DirectBuffer resourceId) {}
+  private record TenantIdAndResourceId(String tenantId, String resourceId) {}
+
+  /**
+   * This exception is thrown when a DbResourceState cache can't find a PersistedResource in the
+   * state for the given parameters. This must be a checked exception, because of the way the {@link
+   * LoadingCache} works.
+   */
+  private static final class ResourceNotFoundException extends Exception {}
 }

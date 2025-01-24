@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.state.deployment;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -34,8 +33,7 @@ public class ResourceStateTest {
   @Test
   void shouldReturnEmptyIfNoResourceIsDeployedForResourceId() {
     // when
-    final var persistedResource =
-        resourceState.findLatestResourceById(wrapString("form-1"), tenantId);
+    final var persistedResource = resourceState.findLatestResourceById("form-1", tenantId);
 
     // then
     assertThat(persistedResource).isEmpty();
@@ -54,7 +52,7 @@ public class ResourceStateTest {
   void shouldReturnEmptyIfNoResourceIsDeployedForResourceIdAndDeploymentKey() {
     // when
     final var persistedResource =
-        resourceState.findResourceByIdAndDeploymentKey(wrapString("form-1"), 1L, tenantId);
+        resourceState.findResourceByIdAndDeploymentKey("form-1", 1L, tenantId);
 
     // then
     assertThat(persistedResource).isEmpty();
@@ -64,7 +62,7 @@ public class ResourceStateTest {
   void shouldReturnEmptyIfNoResourceIsDeployedForResourceIdAndVersionTag() {
     // when
     final var persistedResource =
-        resourceState.findResourceByIdAndVersionTag(wrapString("form-1"), "v1.0", tenantId);
+        resourceState.findResourceByIdAndVersionTag("form-1", "v1.0", tenantId);
 
     // then
     assertThat(persistedResource).isEmpty();
@@ -93,7 +91,7 @@ public class ResourceStateTest {
     resourceState.storeResourceInResourceByIdAndVersionColumnFamily(resourceRecord);
 
     final Optional<PersistedResource> resourceByKey =
-        resourceState.findLatestResourceById(resourceRecord.getResourceIdBuffer(), tenantId);
+        resourceState.findLatestResourceById(resourceRecord.getResourceId(), tenantId);
     assertThat(resourceByKey).isPresent();
     assertThat(bufferAsString(resourceByKey.get().getResourceId())).isEqualTo("resource-id");
     assertThat(resourceByKey.get().getVersion()).isEqualTo(0);
@@ -103,7 +101,7 @@ public class ResourceStateTest {
     resourceState.deleteResourceInResourceByIdAndVersionColumnFamily(resourceRecord);
     resourceState.clearCache();
     final Optional<PersistedResource> deleted =
-        resourceState.findLatestResourceById(resourceRecord.getResourceIdBuffer(), tenantId);
+        resourceState.findLatestResourceById(resourceRecord.getResourceId(), tenantId);
     assertThat(deleted).isEmpty();
   }
 
@@ -116,7 +114,7 @@ public class ResourceStateTest {
 
     final Optional<PersistedResource> resourceByKey =
         resourceState.findResourceByIdAndDeploymentKey(
-            resourceRecord.getResourceIdBuffer(), 1L, tenantId);
+            resourceRecord.getResourceId(), 1L, tenantId);
     assertThat(resourceByKey).isPresent();
     assertThat(bufferAsString(resourceByKey.get().getResourceId())).isEqualTo("resource-id");
     assertThat(resourceByKey.get().getVersion()).isEqualTo(0);
@@ -127,7 +125,7 @@ public class ResourceStateTest {
         resourceRecord);
     final Optional<PersistedResource> deleted =
         resourceState.findResourceByIdAndDeploymentKey(
-            resourceRecord.getResourceIdBuffer(), 1L, tenantId);
+            resourceRecord.getResourceId(), 1L, tenantId);
     assertThat(deleted).isEmpty();
   }
 
@@ -139,7 +137,7 @@ public class ResourceStateTest {
 
     final Optional<PersistedResource> resourceByKey =
         resourceState.findResourceByIdAndVersionTag(
-            resourceRecord.getResourceIdBuffer(), "v1.0", tenantId);
+            resourceRecord.getResourceId(), "v1.0", tenantId);
     assertThat(resourceByKey).isPresent();
     assertThat(bufferAsString(resourceByKey.get().getResourceId())).isEqualTo("resource-id");
     assertThat(resourceByKey.get().getVersion()).isEqualTo(0);
@@ -149,7 +147,7 @@ public class ResourceStateTest {
     resourceState.deleteResourceInResourceKeyByResourceIdAndVersionTagColumnFamily(resourceRecord);
     final Optional<PersistedResource> deleted =
         resourceState.findResourceByIdAndVersionTag(
-            resourceRecord.getResourceIdBuffer(), "v1.0", tenantId);
+            resourceRecord.getResourceId(), "v1.0", tenantId);
     assertThat(deleted).isEmpty();
   }
 

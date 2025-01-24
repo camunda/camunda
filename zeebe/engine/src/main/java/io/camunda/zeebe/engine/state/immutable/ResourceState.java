@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.deployment.PersistedResource;
 import java.util.Optional;
-import org.agrona.DirectBuffer;
 
 public interface ResourceState {
   /**
@@ -20,8 +19,7 @@ public interface ResourceState {
    * @return the latest version of the resource, or {@link Optional#empty()} if no resource is
    *     deployed with the given id
    */
-  Optional<PersistedResource> findLatestResourceById(
-      DirectBuffer resourceId, final String tenantId);
+  Optional<PersistedResource> findLatestResourceById(String resourceId, final String tenantId);
 
   /**
    * Query Resource by the given resource key and return the resource.
@@ -42,7 +40,7 @@ public interface ResourceState {
    *     with the given deployment
    */
   Optional<PersistedResource> findResourceByIdAndDeploymentKey(
-      DirectBuffer resourceId, long deploymentKey, final String tenantId);
+      String resourceId, long deploymentKey, final String tenantId);
 
   /**
    * Query Resource by the given resource id and version tag and return the resource.
@@ -54,7 +52,7 @@ public interface ResourceState {
    *     tag is deployed
    */
   Optional<PersistedResource> findResourceByIdAndVersionTag(
-      DirectBuffer resourceId, String versionTag, final String tenantId);
+      String resourceId, String versionTag, final String tenantId);
 
   /**
    * Gets the next version a resource of a given id will receive. This is used, for example, when a
