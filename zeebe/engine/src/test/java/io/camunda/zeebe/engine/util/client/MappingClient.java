@@ -61,6 +61,11 @@ public class MappingClient {
       return this;
     }
 
+    public MappingCreateClient withId(final String id) {
+      mappingRecord.setId(id);
+      return this;
+    }
+
     public MappingCreateClient withName(final String name) {
       mappingRecord.setName(name);
       return this;

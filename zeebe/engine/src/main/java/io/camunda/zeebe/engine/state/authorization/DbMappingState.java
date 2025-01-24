@@ -34,38 +34,52 @@ public class DbMappingState implements MutableMappingState {
   private final ColumnFamily<DbLong, DbForeignKey<DbCompositeKey<DbString, DbString>>>
       claimByKeyColumnFamily;
 
+  private final DbString mappingId;
+  private final ColumnFamily<DbString, DbForeignKey<DbCompositeKey<DbString, DbString>>>
+      claimByIdColumnFamily;
+
   public DbMappingState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     claimName = new DbString();
     claimValue = new DbString();
     claim = new DbCompositeKey<>(claimName, claimValue);
+    final PersistedMapping persistedMapping = new PersistedMapping();
     mappingColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MAPPINGS, transactionContext, claim, new PersistedMapping());
+            ZbColumnFamilies.MAPPINGS, transactionContext, claim, persistedMapping);
 
     mappingKey = new DbLong();
     fkClaim = new DbForeignKey<>(claim, ZbColumnFamilies.MAPPINGS);
     claimByKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.CLAIM_BY_KEY, transactionContext, mappingKey, fkClaim);
+
+    mappingId = new DbString();
+    claimByIdColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.CLAIM_BY_KEY, transactionContext, mappingId, fkClaim);
   }
 
   @Override
   public void create(final MappingRecord mappingRecord) {
     final var key = mappingRecord.getMappingKey();
-    final var claimName = mappingRecord.getClaimName();
+    final var id = mappingRecord.getId();
     final var name = mappingRecord.getName();
+    final var claimName = mappingRecord.getClaimName();
     final var value = mappingRecord.getClaimValue();
 
     mappingKey.wrapLong(key);
     this.claimName.wrapString(claimName);
     claimValue.wrapString(value);
+    mappingId.wrapString(id);
     persistedMapping.setMappingKey(key);
     persistedMapping.setClaimName(claimName);
     persistedMapping.setClaimValue(value);
     persistedMapping.setName(name);
+    persistedMapping.setId(id);
 
     mappingColumnFamily.insert(claim, persistedMapping);
+    claimByIdColumnFamily.insert(mappingId, fkClaim);
     claimByKeyColumnFamily.insert(mappingKey, fkClaim);
   }
 
@@ -172,5 +186,15 @@ public class DbMappingState implements MutableMappingState {
     this.claimName.wrapString(claimName);
     this.claimValue.wrapString(claimValue);
     return Optional.ofNullable(mappingColumnFamily.get(claim));
+  }
+
+  @Override
+  public Optional<PersistedMapping> get(final String id) {
+    mappingId.wrapString(id);
+    final var fk = claimByIdColumnFamily.get(mappingId);
+    if (fk != null) {
+      return Optional.of(mappingColumnFamily.get(fk.inner()));
+    }
+    return Optional.empty();
   }
 }
