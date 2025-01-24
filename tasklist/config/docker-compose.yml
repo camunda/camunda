@@ -2,7 +2,6 @@ networks:
   zeebe_network: {}
 
 services:
-
   postgres:
     container_name: postgres
     image: postgres:16.4-alpine
@@ -88,7 +87,7 @@ services:
       KEYCLOAK_ADMIN_USER: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080/auth" ]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/auth"]
       interval: 30s
       timeout: 15s
       retries: 8
@@ -442,3 +441,35 @@ services:
     networks:
       - zeebe_network
     restart: always
+
+  optimize_identity: &optimize_identity
+    container_name: optimize-${DATABASE}
+    image: camunda/optimize:8.7.0-SNAPSHOT
+    ports:
+      - "8086:8090"
+      - "8092:8092"
+    environment:
+      - SPRING_PROFILES_ACTIVE=ccsm
+      - OPTIMIZE_LOG_LEVEL=DEBUG
+    depends_on:
+      - ${DATABASE}
+      - zeebe_identity
+      - identity
+    env_file:
+      - envs/.env.database.${DATABASE}
+      - envs/.env.identity
+    networks:
+      - zeebe_network
+
+  optimize_oauth:
+    <<: *optimize_identity
+    depends_on:
+      - ${DATABASE}
+      - zeebe_oauth
+      - identity_oauth
+    env_file:
+      - envs/.env.database.${DATABASE}
+      - envs/.env.identity
+      - envs/.env.identity-oauth
+    networks:
+      - zeebe_network
