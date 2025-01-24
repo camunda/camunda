@@ -87,5 +87,8 @@ public interface MutableProcessingState extends ProcessingState {
   @Override
   MutableClockState getClockState();
 
+  @Override
+  MutableResourceState getResourceState();
+
   KeyGenerator getKeyGenerator();
 }
