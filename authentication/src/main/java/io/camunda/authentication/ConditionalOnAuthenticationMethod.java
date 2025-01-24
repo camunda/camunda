@@ -42,8 +42,7 @@ public @interface ConditionalOnAuthenticationMethod {
       }
       final Environment env = context.getEnvironment();
       return AuthenticationMethod.parse(env.getProperty(AuthenticationProperties.METHOD))
-          .map(method -> method == attributes.get("value"))
-          .orElse(false);
+          == attributes.get("value");
     }
   }
 }
