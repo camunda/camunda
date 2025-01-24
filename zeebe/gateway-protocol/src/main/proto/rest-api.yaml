@@ -2457,55 +2457,6 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
   /authorizations/{authorizationKey}:
-    patch:
-      tags:
-        - Authorization
-      operationId: updateAuthorization
-      summary: Update authorization
-      description: Manage the permissions assigned to the authorization.
-      parameters:
-        - name: authorizationKey
-          in: path
-          required: true
-          description: The key of the owner of the authorization.
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AuthorizationPatchRequest"
-        required: true
-      responses:
-        "202":
-          description: |
-            The authorization was patched successfully.
-        "400":
-          description: |
-            The authorization could not be patched.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          description: |
-            The owner was not found.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "409":
-          description: |
-            The request to add or remove permissions to an authorization was in conflict.
-            More details are provided in the response body.
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
     delete:
       tags:
         - Authorization
@@ -6169,25 +6120,6 @@ components:
           description: The key of the created authorization.
           type: string
 
-    AuthorizationPatchRequest:
-      type: object
-      properties:
-        action:
-          description: Indicates if permissions should be added or removed.
-          type: string
-          enum:
-            - ADD
-            - REMOVE
-        resourceType:
-          description: The type of resource to add/remove permissions to/from.
-          type: object
-          allOf:
-            - $ref: "#/components/schemas/ResourceTypeEnum"
-        permissions:
-          type: array
-          description: The permissions to add/remove.
-          items:
-            $ref: "#/components/schemas/PermissionDTO"
     AuthorizationSearchQuerySortRequest:
       type: object
       properties:

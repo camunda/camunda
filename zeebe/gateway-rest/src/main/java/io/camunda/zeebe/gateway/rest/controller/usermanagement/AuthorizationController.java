@@ -12,9 +12,7 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
-import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
@@ -23,7 +21,6 @@ import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
-import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import java.util.concurrent.CompletableFuture;
@@ -58,14 +55,6 @@ public class AuthorizationController {
                 .deleteAuthorization(authorizationKey));
   }
 
-  @CamundaPatchMapping(path = "/authorizations/{ownerKey}")
-  public CompletableFuture<ResponseEntity<Object>> patchAuthorization(
-      @PathVariable final long ownerKey,
-      @RequestBody final AuthorizationPatchRequest authorizationPatchRequest) {
-    return RequestMapper.toAuthorizationPatchRequest(ownerKey, authorizationPatchRequest)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::patchAuthorization);
-  }
-
   @CamundaPostMapping(path = "/authorizations/search")
   public ResponseEntity<AuthorizationSearchResponse> searchAuthorizations(
       @RequestBody(required = false) final AuthorizationSearchQueryRequest query) {
@@ -82,15 +71,6 @@ public class AuthorizationController {
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
-  }
-
-  private CompletableFuture<ResponseEntity<Object>> patchAuthorization(
-      final PatchAuthorizationRequest patchAuthorizationRequest) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
-        () ->
-            authorizationServices
-                .withAuthentication(RequestMapper.getAuthentication())
-                .patchAuthorization(patchAuthorizationRequest));
   }
 
   private CompletableFuture<ResponseEntity<Object>> create(

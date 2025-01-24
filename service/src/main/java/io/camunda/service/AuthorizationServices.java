@@ -20,15 +20,11 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationDeleteRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationPatchRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -118,20 +114,6 @@ public class AuthorizationServices
         .collect(Collectors.toSet());
   }
 
-  public CompletableFuture<AuthorizationRecord> patchAuthorization(
-      final PatchAuthorizationRequest request) {
-    final var intent =
-        request.action() == PermissionAction.ADD
-            ? AuthorizationIntent.ADD_PERMISSION
-            : AuthorizationIntent.REMOVE_PERMISSION;
-    final var brokerRequest =
-        new BrokerAuthorizationPatchRequest(intent)
-            .setOwnerKey(request.ownerKey())
-            .setResourceType(request.resourceType());
-    request.permissions().forEach(brokerRequest::addPermissions);
-    return sendBrokerRequest(brokerRequest);
-  }
-
   public CompletableFuture<AuthorizationRecord> createAuthorization(
       final CreateAuthorizationRequest request) {
     final var brokerRequest =
@@ -148,12 +130,6 @@ public class AuthorizationServices
     final var brokerRequest = new BrokerAuthorizationDeleteRequest(authorizationKey);
     return sendBrokerRequest(brokerRequest);
   }
-
-  public record PatchAuthorizationRequest(
-      long ownerKey,
-      PermissionAction action,
-      AuthorizationResourceType resourceType,
-      Map<PermissionType, Set<String>> permissions) {}
 
   public record CreateAuthorizationRequest(
       String ownerId,
