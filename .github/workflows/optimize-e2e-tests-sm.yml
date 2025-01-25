@@ -90,7 +90,7 @@ jobs:
       - name: Start back-end
         working-directory: ./optimize/client
         run: |
-          yarn run start-backend ci
+          yarn run start-backend ci &> ./build/backendLogs.log &
 
       - name: Wait for import to complete
         run: |
