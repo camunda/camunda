@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { TabListVertical } from "@carbon/react";
+import { TabListVertical, TabPanel } from "@carbon/react";
 
 export const TabsTitle = styled.p`
   margin: 20px 0;
@@ -12,7 +12,7 @@ export const CustomTabListVertical = styled(TabListVertical)`
     background: var(--cds-layer-02);
     border: none;
     box-shadow: none;
-    padding-right: 20px;
+    padding-right: 24px;
 
     // Tab selector
     .cds--tabs__nav-item {
@@ -22,7 +22,6 @@ export const CustomTabListVertical = styled(TabListVertical)`
       height: 32px;
       box-shadow: none;
       font-weight: 600;
-      max-width: 254px;
 
       // Tab selector when not selected, disabled or hovered
       &:not(.cds--tabs__nav-item--selected):not(
@@ -37,4 +36,8 @@ export const CustomTabListVertical = styled(TabListVertical)`
       background: var(--cds-layer-selected);
     }
   }
+`;
+
+export const CustomTabPanel = styled(TabPanel)`
+  padding: 0;
 `;

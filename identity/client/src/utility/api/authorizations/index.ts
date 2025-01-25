@@ -6,7 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 import { EntityData } from "src/components/entityList/EntityList";
-import { ApiDefinition, apiPatch, pathBuilder } from "src/utility/api/request";
+import {
+  ApiDefinition,
+  apiPost,
+  apiPatch,
+  pathBuilder,
+  // apiDelete,
+} from "src/utility/api/request";
+import { SearchResponse } from "src/utility/api";
+
+export const AUTHORIZATIONS_ENDPOINT = "/authorizations";
 
 const path = pathBuilder("/authorizations");
 
@@ -34,6 +43,18 @@ export type Authorization = EntityData & {
   permissions: readonly Permission[];
 };
 
+export type AuthorizationParams = {
+  key: string;
+  ownerType: string;
+  ownerId: string;
+  resourceId: string;
+  resourceType: string;
+  permissions: readonly string[];
+};
+
+// @TODO: Remove and consolidate in Authorization type when BE is implemented, change all instances using this type
+export type NewAuthorization = EntityData & AuthorizationParams;
+
 export enum PatchAuthorizationAction {
   ADD = "ADD",
   REMOVE = "REMOVE",
@@ -46,7 +67,22 @@ export type PatchAuthorizationParams = {
   permissions: readonly Permission[];
 };
 
+type CreateAuthorizationParams = Omit<AuthorizationParams, "key">;
+
+export const searchAuthorization: ApiDefinition<
+  SearchResponse<Authorization>
+> = () => apiPost(`${AUTHORIZATIONS_ENDPOINT}/search`);
+
 export const patchAuthorizations: ApiDefinition<
   undefined,
   PatchAuthorizationParams
 > = (params) => apiPatch(path(params.ownerKey), params);
+
+export const createAuthorization: ApiDefinition<
+  undefined,
+  CreateAuthorizationParams
+> = (authorization) => apiPost(AUTHORIZATIONS_ENDPOINT, authorization);
+
+// export const deleteTenant: ApiDefinition<undefined, { tenantKey: string }> = ({
+//   tenantKey,
+// }) => apiDelete(`${AUTHORIZATIONS_ENDPOINT}/${tenantKey}`);
