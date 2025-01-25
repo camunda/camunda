@@ -33,7 +33,7 @@ func DownloadFile(filepath string, url string, authToken string) error {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return fmt.Errorf("DownloadFile: failed to create request for url: %s\n%w\n%s", url)
+		return fmt.Errorf("DownloadFile: failed to create request for url: %s\n%w\n%s", url, err, debug.Stack())
 	}
 
 	if strings.HasPrefix(authToken, "Basic ") {
@@ -114,7 +114,10 @@ func ExtractTarGzArchive(filename string, xpath string) error {
 
 	_, err = os.Stat(absPath)
 	if errors.Is(err, os.ErrNotExist) {
-		os.Mkdir(absPath, ReadWriteMode)
+		err = os.Mkdir(absPath, ReadWriteMode)
+                if err != nil {
+		        return fmt.Errorf("ExtractTarGzArchive: failed to make directory %s\n%w\n%s", absPath, err, debug.Stack())
+                }
 	}
 
 	tr := tar.NewReader(gz)
