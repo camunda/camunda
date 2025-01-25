@@ -91,6 +91,7 @@ const selfManagedEnv = {
   CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED: true,
   SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:
     'http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/certs',
+  MANAGEMENT_SERVER_PORT: '19600',
 };
 
 const server = createServer({showLogsInTerminal: ciMode}, {restartBackend});
