@@ -27,6 +27,10 @@ inputs:
   github-token:
     description: The GitHub token to use to clone camunda
     required: true
+  release:
+    description: true if the build should be uploaded to Nexus, false otherwise
+    required: false
+    default: false
 
 outputs:
   path-to-c8run-build:
@@ -201,6 +205,14 @@ runs:
         name: camunda8-run-build-${{ inputs.os }}
         path: ./c8run/camunda8-run*
         retention-days: 1
+
+    - name: Upload c8run build to Nexus
+      if: ${{ inputs.release == 'true' }}
+      run: |
+        curl -u$JAVA_ARTIFACTS_USER:$JAVA_ARTIFACTS_PASSWORD -T ./c8run/camunda8-run* "https://artifacts.camunda.com/artifactory/internal/$(basename ./c8run/camunda8-run*)"
+      env:
+        JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+        JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
 
     - name: define c8run filepath
       id: path-to-build
