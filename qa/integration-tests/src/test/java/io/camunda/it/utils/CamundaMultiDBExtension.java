@@ -104,7 +104,7 @@ public class CamundaMultiDBExtension
   public static final String DEFAULT_OS_ADMIN_USER = "admin";
   public static final String DEFAULT_OS_ADMIN_PW = "yourStrongPassword123!";
   public static final Duration TIMEOUT_DATABASE_EXPORTER_READINESS = Duration.ofMinutes(1);
-  private static final ObjectMapper objectMapper = new ObjectMapper();
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaMultiDBExtension.class);
 
   private final DatabaseType databaseType;
@@ -202,7 +202,7 @@ public class CamundaMultiDBExtension
       assertThat(statusCode).isBetween(200, 299);
 
       // Get how many indices with given prefix we have
-      final JsonNode jsonNode = objectMapper.readTree(response.body());
+      final JsonNode jsonNode = OBJECT_MAPPER.readTree(response.body());
       final int count = jsonNode.size();
       /*
        * ES exporter indices are only created, on first exporting, so we expect at least the
