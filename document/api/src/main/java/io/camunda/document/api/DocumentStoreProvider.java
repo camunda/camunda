@@ -7,5 +7,11 @@
  */
 package io.camunda.document.api;
 
-public record DocumentReference(
-    String documentId, String contentHash, DocumentMetadataModel metadata) {}
+import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
+import java.util.concurrent.ExecutorService;
+
+public interface DocumentStoreProvider {
+
+  DocumentStore createDocumentStore(
+      DocumentStoreConfigurationRecord configuration, ExecutorService executor);
+}

@@ -1324,15 +1324,16 @@ paths:
   /documents:
     post:
       tags:
-        - Documents
+        - Document
+      operationId: createDocument
       summary: Upload document (alpha)
       description: |
         Upload a document to the Camunda 8 cluster.
 
-        :::note
-        This endpoint is an alpha feature. It currently only supports an in-memory document store,
-        which is not meant for production use.
-        :::
+        Note that this currently only supports an in-memory document store, which is not meant for production use.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
         - name: storeId
           in: query
@@ -1379,18 +1380,95 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /documents/batch:
+    post:
+      tags:
+        - Document
+      operationId: createDocuments
+      summary: Upload multiple documents (alpha)
+      description: |
+        Upload multiple documents to the Camunda 8 cluster.
+
+        The caller must provide a file name for each document, which will be used in case of a multi-status response
+        to identify which documents failed to upload. The file name can be provided in the `Content-Disposition` header
+        of the file part or in the `filename` field of the metadata part. If both are provided, the `filename` field
+        takes precedence.
+
+        In case of a multi-status response, the response body will contain a list of `DocumentBatchProblemDetail` objects,
+        each of which contains the file name of the document that failed to upload and the reason for the failure.
+        The client can choose to retry the whole batch or individual documents based on the response.
+
+        Note that this currently only supports an in-memory document store, which is not meant for production use.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
+      parameters:
+        - name: storeId
+          in: query
+          required: false
+          description: The ID of the document store to upload the documents to.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  description: The documents to upload.
+                  items:
+                    type: string
+                    format: binary
+              required:
+                - files
+            encoding:
+              files:
+                headers:
+                  X-Document-Metadata:
+                    schema:
+                      $ref: "#/components/schemas/DocumentMetadata"
+                  X-Document-Id:
+                    schema:
+                      type: string
+      responses:
+        "201":
+          description: All documents were uploaded successfully.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DocumentCreationBatchResponse"
+        "207":
+          description: >
+            Not all documents were uploaded successfully. More details are provided in the response body.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentCreationBatchResponse"
+        "400":
+          description: >
+            The document upload failed. More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /documents/{documentId}:
     get:
       tags:
-        - Documents
+        - Document
+      operationId: getDocument
       summary: Download document (alpha)
       description: |
         Download a document from the Camunda 8 cluster.
 
-        :::note
-        This endpoint is an alpha feature. It currently only supports an in-memory document store,
-        which is not meant for production use.
-        :::
+        Note that this currently only supports an in-memory document store, which is not meant for production use.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
         - name: documentId
           in: path
@@ -1404,6 +1482,16 @@ paths:
           description: The ID of the document store to download the document from.
           schema:
             type: string
+        - name: contentHash
+          in: query
+          required: false
+          schema:
+            type: string
+          description: >
+            The hash of the document content that was computed by the document store during upload.
+            The hash is part of the document reference that is returned when uploading a document.
+            This header is required when hash verification is enabled for the document store.
+            If hash verification is enabled and the client fails to provide the correct hash, the request will be rejected.
       responses:
         "200":
           description: The document was downloaded successfully.
@@ -1420,23 +1508,20 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
     delete:
       tags:
-        - Documents
+        - Document
+      operationId: deleteDocument
       summary: Delete document (alpha)
       description: |
         Delete a document from the Camunda 8 cluster.
 
-        :::note
-        This endpoint is an alpha feature. It currently only supports an in-memory document store,
-        which is not meant for production use.
-        :::
+        Note that this currently only supports an in-memory document store, which is not meant for production use.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
         - name: documentId
           in: path
@@ -1461,24 +1546,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-  /document/{documentId}/links:
+          $ref: "#/components/responses/InternalServerError"
+
+  /documents/{documentId}/links:
     post:
       tags:
-        - Documents
+        - Document
+      operationId: createDocumentLink
       summary: Create document link (alpha)
       description: |
         Create a link to a document in the Camunda 8 cluster.
 
-        :::note
-        This endpoint is an alpha feature. It currently only supports an in-memory document store,
-        which is not meant for production use.
-        :::
+        Note that this currently only supports an in-memory document store, which is not meant for production use.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
         - name: documentId
           in: path
@@ -1492,6 +1574,16 @@ paths:
           description: The ID of the document store to link the document from.
           schema:
             type: string
+        - name: contentHash
+          in: query
+          required: false
+          schema:
+            type: string
+          description: >
+            The hash of the document content that was computed by the document store during upload.
+            The hash is part of the document reference that is returned when uploading a document.
+            This header is required when hash verification is enabled for the document store.
+            If hash verification is enabled and the client fails to provide the correct hash, the request will be rejected.
       requestBody:
         required: false
         content:
@@ -4075,7 +4167,7 @@ components:
     DocumentReference:
       type: object
       properties:
-        documentType:
+        camunda.document.type:
           type: string
           description: Document discriminator. Always set to "camunda".
           enum:
@@ -4086,11 +4178,41 @@ components:
         documentId:
           type: string
           description: The ID of the document.
+        contentHash:
+          type: string
+          description: The hash of the document.
         metadata:
           $ref: "#/components/schemas/DocumentMetadata"
-    DocumentMetadata:
+
+    DocumentCreationFailureDetail:
       type: object
-      additionalProperties: true
+      properties:
+        filename:
+          type: string
+          description: The name of the file.
+        detail:
+          type: string
+          description: The detail of the failure.
+
+    DocumentCreationBatchResponse:
+      allOf:
+        - type: object
+          properties:
+            createdDocuments:
+              type: array
+              description: Documents that were successfully created.
+              items:
+                $ref: "#/components/schemas/DocumentReference"
+            failedDocuments:
+              type: array
+              description: Documents that failed creation.
+              items:
+                $ref: "#/components/schemas/DocumentCreationFailureDetail"
+
+
+    DocumentMetadata:
+      description: Information about the document.
+      type: object
       properties:
         contentType:
           type: string
@@ -4106,14 +4228,26 @@ components:
           type: integer
           format: int64
           description: The size of the document in bytes.
+        processDefinitionId:
+          type: string
+          description: The ID of the process definition that created the document.
+        processInstanceKey:
+          type: integer
+          format: int64
+          description: The key of the process instance that created the document.
+        customProperties:
+          type: object
+          description: Custom properties of the document.
+          additionalProperties: true
+
     DocumentLinkRequest:
       type: object
       properties:
-        expiresAt:
-          type: string
-          format: date-time
-          description: The date and time when the link expires.
-          nullable: true
+        timeToLive:
+          type: integer
+          format: int64
+          description: The time-to-live of the document link in ms.
+          default: 3600000 # 1 hour
     DocumentLink:
       type: object
       properties:
@@ -4760,6 +4894,14 @@ components:
         signalKey:
           description: The unique ID of the signal that was broadcast.
           type: string
+  responses:
+    InternalServerError:
+      description: >
+        An internal error occurred while processing the request.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
 
   securitySchemes:
     bearerAuth:

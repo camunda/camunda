@@ -5,7 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.document.api;
+package io.camunda.document.store;
 
-public record DocumentReference(
-    String documentId, String contentHash, DocumentMetadataModel metadata) {}
+import io.camunda.document.api.DocumentStoreConfiguration;
+
+@FunctionalInterface
+public interface DocumentStoreConfigurationLoader {
+
+  DocumentStoreConfiguration loadConfiguration();
+}

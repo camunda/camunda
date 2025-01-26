@@ -9,25 +9,29 @@ package io.camunda.service;
 
 import io.camunda.document.api.DocumentCreationRequest;
 import io.camunda.document.api.DocumentError;
+import io.camunda.document.api.DocumentError.StoreDoesNotExist;
 import io.camunda.document.api.DocumentLink;
 import io.camunda.document.api.DocumentMetadataModel;
+import io.camunda.document.api.DocumentReference;
+import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreRecord;
+import io.camunda.document.store.EnvironmentConfigurationLoader;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.util.Either;
 import java.io.InputStream;
-import java.time.ZonedDateTime;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class DocumentServices extends ApiServices<DocumentServices> {
 
-  private final SimpleDocumentStoreRegistry registry = new SimpleDocumentStoreRegistry();
-
-  public DocumentServices(final BrokerClient brokerClient, final CamundaSearchClient searchClient) {
-    this(brokerClient, searchClient, null, null);
-  }
+  private final SimpleDocumentStoreRegistry registry =
+      new SimpleDocumentStoreRegistry(new EnvironmentConfigurationLoader());
 
   public DocumentServices(
       final BrokerClient brokerClient,
@@ -42,6 +46,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
     return new DocumentServices(brokerClient, searchClient, transformers, authentication);
   }
 
+  /** Will return a failed future for any error returned by the store */
   public CompletableFuture<DocumentReferenceResponse> createDocument(
       final DocumentCreateRequest request) {
 
@@ -49,77 +54,145 @@ public class DocumentServices extends ApiServices<DocumentServices> {
         new DocumentCreationRequest(
             request.documentId, request.contentInputStream, request.metadata);
 
-    final DocumentStoreRecord storeRecord = getDocumentStore(request.storeId);
-    return storeRecord
-        .instance()
-        .createDocument(storeRequest)
-        .thenApply(
-            result -> {
-              if (result.isLeft()) {
-                throw new DocumentException("Failed to create document", result.getLeft());
-              } else {
-                return new DocumentReferenceResponse(
-                    result.get().documentId(), storeRecord.storeId(), result.get().metadata());
-              }
-            });
+    return getDocumentStore(request.storeId)
+        .thenCompose(
+            storeRecord ->
+                storeRecord
+                    .instance()
+                    .createDocument(storeRequest)
+                    .thenApply(this::requireRightOrThrow)
+                    .thenApply(
+                        result ->
+                            new DocumentReferenceResponse(
+                                result.documentId(),
+                                storeRecord.storeId(),
+                                result.contentHash(),
+                                result.metadata())));
   }
 
-  public InputStream getDocumentContent(final String documentId, final String storeId) {
+  /** Will never return a failed future; an Either type is returned instead */
+  public CompletableFuture<List<Either<DocumentErrorResponse, DocumentReferenceResponse>>>
+      createDocumentBatch(final List<DocumentCreateRequest> requests) {
 
-    final DocumentStoreRecord storeRecord = getDocumentStore(storeId);
-    return storeRecord
-        .instance()
-        .getDocument(documentId)
-        .thenApply(
-            result -> {
-              if (result.isLeft()) {
-                throw new DocumentException("Failed to get document", result.getLeft());
-              } else {
-                return result.get();
-              }
+    final List<Either<DocumentErrorResponse, DocumentReferenceResponse>> results =
+        new ArrayList<>();
+
+    final List<CompletableFuture<Void>> futures =
+        requests.stream()
+            .map(
+                request -> {
+                  final var storeRequest =
+                      new DocumentCreationRequest(
+                          request.documentId, request.contentInputStream, request.metadata);
+                  return getDocumentStore(request.storeId)
+                      .thenCompose(
+                          storeRecord -> storeRecord.instance().createDocument(storeRequest))
+                      .thenApply(result -> transformResponse(request, result))
+                      .thenAccept(results::add);
+                })
+            .toList();
+
+    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+        .thenApply((ignoredRes) -> results);
+  }
+
+  public DocumentContentResponse getDocumentContent(
+      final String documentId, final String storeId, final String contentHash) {
+
+    return getDocumentStore(storeId)
+        .thenCompose(
+            storeRecord -> {
+              final DocumentStore storeRecordInstance = storeRecord.instance();
+
+              return storeRecordInstance
+                  .verifyContentHash(documentId, contentHash)
+                  .thenCompose(
+                      verification -> {
+                        if (verification.isLeft()) {
+                          return CompletableFuture.completedFuture(
+                              Either.left(verification.getLeft()));
+                        }
+                        return storeRecordInstance.getDocument(documentId);
+                      });
             })
+        .thenApply(this::requireRightOrThrow)
+        .thenApply(
+            documentContent ->
+                new DocumentContentResponse(
+                    documentContent.inputStream(), documentContent.contentType()))
         .join();
   }
 
   public CompletableFuture<Void> deleteDocument(final String documentId, final String storeId) {
 
-    final DocumentStoreRecord storeRecord = getDocumentStore(storeId);
-    return storeRecord
-        .instance()
-        .deleteDocument(documentId)
-        .thenAccept(
-            result -> {
-              if (result.isLeft()) {
-                throw new DocumentException("Failed to delete document", result.getLeft());
-              }
-            });
+    return getDocumentStore(storeId)
+        .thenCompose(
+            storeRecord ->
+                storeRecord
+                    .instance()
+                    .deleteDocument(documentId)
+                    .thenAccept(this::requireRightOrThrow));
   }
 
   public CompletableFuture<DocumentLink> createLink(
-      final String documentId, final String storeId, final DocumentLinkParams params) {
+      final String documentId,
+      final String storeId,
+      final String contentHash,
+      final DocumentLinkParams params) {
 
-    final DocumentStoreRecord storeRecord = getDocumentStore(storeId);
-    final long ttl =
-        params.expiresAt().toInstant().getEpochSecond()
-            - ZonedDateTime.now().toInstant().getEpochSecond();
-    return storeRecord
-        .instance()
-        .createLink(documentId, ttl)
-        .thenApply(
-            result -> {
-              if (result.isLeft()) {
-                throw new DocumentException("Failed to create link", result.getLeft());
-              } else {
-                return result.get();
-              }
+    final long ttl = params.timeToLive().toMillis();
+
+    return getDocumentStore(storeId)
+        .thenCompose(
+            storeRecord -> {
+              final DocumentStore storeRecordInstance = storeRecord.instance();
+
+              return storeRecordInstance
+                  .verifyContentHash(documentId, contentHash)
+                  .thenCompose(
+                      verification ->
+                          verification.isLeft()
+                              ? CompletableFuture.completedFuture(
+                                  Either.left(verification.getLeft()))
+                              : storeRecordInstance.createLink(documentId, ttl))
+                  .thenApply(this::requireRightOrThrow);
             });
   }
 
-  private DocumentStoreRecord getDocumentStore(final String id) {
-    if (id == null) {
-      return registry.getDefaultDocumentStore();
+  private CompletableFuture<DocumentStoreRecord> getDocumentStore(final String id) {
+    final DocumentStoreRecord storeRecord;
+    try {
+      if (id == null) {
+        storeRecord = registry.getDefaultDocumentStore();
+      } else {
+        storeRecord = registry.getDocumentStore(id);
+      }
+      return CompletableFuture.completedStage(storeRecord).toCompletableFuture();
+    } catch (final IllegalArgumentException e) {
+      return CompletableFuture.failedFuture(new DocumentException(new StoreDoesNotExist(id)));
+    }
+  }
+
+  private Either<DocumentErrorResponse, DocumentReferenceResponse> transformResponse(
+      final DocumentCreateRequest request,
+      final Either<DocumentError, DocumentReference> rawResult) {
+    if (rawResult.isLeft()) {
+      return Either.left(new DocumentErrorResponse(request, rawResult.getLeft()));
+    }
+    final var reference = rawResult.get();
+    return Either.right(
+        new DocumentReferenceResponse(
+            reference.documentId(),
+            request.storeId,
+            reference.contentHash(),
+            reference.metadata()));
+  }
+
+  private <T> T requireRightOrThrow(final Either<DocumentError, T> response) {
+    if (response.isLeft()) {
+      throw new DocumentException(response.getLeft());
     } else {
-      return registry.getDocumentStore(id);
+      return response.get();
     }
   }
 
@@ -130,20 +203,17 @@ public class DocumentServices extends ApiServices<DocumentServices> {
       DocumentMetadataModel metadata) {}
 
   public record DocumentReferenceResponse(
-      String documentId, String storeId, DocumentMetadataModel metadata) {}
+      String documentId, String storeId, String contentHash, DocumentMetadataModel metadata) {}
 
-  public record DocumentLinkParams(ZonedDateTime expiresAt) {}
+  public record DocumentContentResponse(InputStream content, String contentType) {}
+
+  public record DocumentLinkParams(Duration timeToLive) {}
 
   public static class DocumentException extends RuntimeException {
 
     private final DocumentError documentError;
 
-    public DocumentException(final String message, final DocumentError error) {
-      documentError = error;
-    }
-
-    public DocumentException(
-        final String message, final DocumentError error, final Throwable cause) {
+    public DocumentException(final DocumentError error) {
       documentError = error;
     }
 
@@ -151,4 +221,6 @@ public class DocumentServices extends ApiServices<DocumentServices> {
       return documentError;
     }
   }
+
+  public record DocumentErrorResponse(DocumentCreateRequest request, DocumentError error) {}
 }

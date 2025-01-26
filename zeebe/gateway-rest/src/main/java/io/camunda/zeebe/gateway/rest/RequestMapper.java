@@ -30,6 +30,7 @@ import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.v
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserCreateRequest;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
@@ -75,6 +76,7 @@ import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
+import io.camunda.zeebe.gateway.rest.validator.DocumentValidator;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
@@ -85,9 +87,11 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.Either;
+import jakarta.servlet.http.Part;
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.ZonedDateTime;
+import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,6 +99,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -275,7 +280,7 @@ public class RequestMapper {
   public static Either<ProblemDetail, DocumentCreateRequest> toDocumentCreateRequest(
       final String documentId,
       final String storeId,
-      final MultipartFile file,
+      final Part file,
       final DocumentMetadata metadata) {
     final InputStream inputStream;
     try {
@@ -290,11 +295,63 @@ public class RequestMapper {
         () -> new DocumentCreateRequest(documentId, storeId, inputStream, internalMetadata));
   }
 
+  public static Either<ProblemDetail, List<DocumentCreateRequest>> toDocumentCreateRequestBatch(
+      final List<Part> parts, final String storeId, final ObjectMapper objectMapper) {
+    final Map<Part, DocumentMetadata> metadataMap =
+        parts.stream()
+            .collect(
+                Collectors.toMap(
+                    part -> part,
+                    part ->
+                        Optional.ofNullable(part.getHeader("X-Document-Metadata"))
+                            .map(
+                                header -> {
+                                  try {
+                                    return objectMapper.readValue(header, DocumentMetadata.class);
+                                  } catch (final IOException e) {
+                                    throw new RuntimeException(e);
+                                  }
+                                })
+                            .orElse(new DocumentMetadata())));
+
+    final ProblemDetail validationErrors =
+        metadataMap.values().stream()
+            .map(DocumentValidator::validateDocumentMetadata)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .reduce( // combine violations from each problem detail
+                ProblemDetail.forStatus(HttpStatus.BAD_REQUEST),
+                (acc, detail) -> {
+                  acc.setDetail(acc.getDetail() + ". " + detail.getDetail());
+                  return acc;
+                });
+
+    if (validationErrors.getDetail() != null) {
+      return Either.left(validationErrors);
+    }
+
+    final var requests = new HashMap<Part, DocumentCreateRequest>();
+    for (final var part : parts) {
+      final var metadata = metadataMap.get(part);
+      final InputStream inputStream;
+      try {
+        inputStream = part.getInputStream();
+      } catch (final IOException e) {
+        return Either.left(createInternalErrorProblemDetail(e, "Failed to read document content"));
+      }
+      requests.put(
+          part,
+          new DocumentCreateRequest(
+              null, storeId, inputStream, toInternalDocumentMetadata(metadata, part)));
+    }
+    return Either.right(List.copyOf(requests.values()));
+  }
+
   public static Either<ProblemDetail, DocumentLinkParams> toDocumentLinkParams(
       final DocumentLinkRequest documentLinkRequest) {
     return getResult(
         validateDocumentLinkParams(documentLinkRequest),
-        () -> new DocumentLinkParams(ZonedDateTime.parse(documentLinkRequest.getExpiresAt())));
+        () -> new DocumentLinkParams(Duration.ofMillis(documentLinkRequest.getTimeToLive())));
   }
 
   public static Either<ProblemDetail, CreateUserRequest> toCreateUserRequest(
@@ -463,25 +520,37 @@ public class RequestMapper {
   }
 
   private static DocumentMetadataModel toInternalDocumentMetadata(
-      final DocumentMetadata metadata, final MultipartFile file) {
+      final DocumentMetadata metadata, final Part file) {
 
     if (metadata == null) {
       return new DocumentMetadataModel(
-          file.getContentType(), file.getOriginalFilename(), null, file.getSize(), Map.of());
+          file.getContentType(),
+          file.getSubmittedFileName(),
+          null,
+          file.getSize(),
+          null,
+          null,
+          Map.of());
     }
-    final ZonedDateTime expiresAt;
+    final OffsetDateTime expiresAt;
     if (metadata.getExpiresAt() == null || metadata.getExpiresAt().isBlank()) {
       expiresAt = null;
     } else {
-      expiresAt = ZonedDateTime.parse(metadata.getExpiresAt());
+      expiresAt = OffsetDateTime.parse(metadata.getExpiresAt());
     }
     final var fileName =
-        Optional.ofNullable(metadata.getFileName()).orElse(file.getOriginalFilename());
+        Optional.ofNullable(metadata.getFileName()).orElse(file.getSubmittedFileName());
     final var contentType =
         Optional.ofNullable(metadata.getContentType()).orElse(file.getContentType());
 
     return new DocumentMetadataModel(
-        contentType, fileName, expiresAt, file.getSize(), metadata.getAdditionalProperties());
+        contentType,
+        fileName,
+        expiresAt,
+        file.getSize(),
+        metadata.getProcessDefinitionId(),
+        metadata.getProcessInstanceKey(),
+        metadata.getCustomProperties());
   }
 
   private static DeployResourcesRequest createDeployResourceRequest(
