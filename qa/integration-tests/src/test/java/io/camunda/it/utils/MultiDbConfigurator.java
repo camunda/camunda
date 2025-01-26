@@ -13,6 +13,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.property.TasklistOpenSearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import java.util.Map;
 import java.util.UUID;
@@ -43,9 +44,11 @@ public class MultiDbConfigurator {
     operateProperties.getElasticsearch().setUrl(elasticsearchUrl);
     operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
     operateProperties.getZeebeElasticsearch().setUrl(elasticsearchUrl);
+    operateProperties.getZeebeElasticsearch().setPrefix(indexPrefix);
     tasklistProperties.getElasticsearch().setUrl(elasticsearchUrl);
     tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
     tasklistProperties.getZeebeElasticsearch().setUrl(elasticsearchUrl);
+    tasklistProperties.getZeebeElasticsearch().setPrefix(indexPrefix);
     testApplication.withExporter(
         "CamundaExporter",
         cfg -> {
@@ -65,6 +68,14 @@ public class MultiDbConfigurator {
                   "bulk",
                   Map.of("size", 1)));
         });
+
+    testApplication.withExporter(
+        "ElasticsearchExporter",
+        cfg -> {
+          cfg.setClassName(ElasticsearchExporter.class.getName());
+          cfg.setArgs(Map.of("url", elasticsearchUrl, "index", Map.of("prefix", indexPrefix)));
+        });
+
     testApplication.withProperty(
         "camunda.database.type",
         io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH);

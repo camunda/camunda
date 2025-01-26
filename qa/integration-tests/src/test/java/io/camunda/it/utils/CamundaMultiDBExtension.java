@@ -7,8 +7,15 @@
  */
 package io.camunda.it.utils;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
@@ -19,10 +26,16 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.stream.StreamSupport;
 import org.agrona.CloseHelper;
+import org.awaitility.Awaitility;
+import org.awaitility.core.ThrowingRunnable;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -84,20 +97,23 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
  */
 public class CamundaMultiDBExtension
     implements AfterAllCallback, BeforeAllCallback, ParameterResolver {
-
   public static final String PROP_CAMUNDA_IT_DATABASE_TYPE =
       "test.integration.camunda.database.type";
   public static final String DEFAULT_ES_URL = "http://localhost:9200";
   public static final String DEFAULT_OS_URL = "http://localhost:9200";
   public static final String DEFAULT_OS_ADMIN_USER = "admin";
   public static final String DEFAULT_OS_ADMIN_PW = "yourStrongPassword123!";
-
+  public static final Duration TIMEOUT_DATABASE_EXPORTER_READINESS = Duration.ofMinutes(1);
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaMultiDBExtension.class);
+
   private final DatabaseType databaseType;
   private final List<AutoCloseable> closeables = new ArrayList<>();
   private final TestStandaloneApplication<?> testApplication;
   private String testPrefix;
   private final MultiDbConfigurator multiDbConfigurator;
+  private ThrowingRunnable databaseSetupReadinessWaitStrategy = () -> {};
+  private final HttpClient httpClient;
 
   public CamundaMultiDBExtension() {
     this(new TestSimpleCamundaApplication());
@@ -115,6 +131,8 @@ public class CamundaMultiDBExtension
     final String property = System.getProperty(PROP_CAMUNDA_IT_DATABASE_TYPE);
     databaseType =
         property == null ? DatabaseType.LOCAL : DatabaseType.valueOf(property.toUpperCase());
+    httpClient = HttpClient.newHttpClient();
+    closeables.add(httpClient);
   }
 
   @Override
@@ -129,10 +147,16 @@ public class CamundaMultiDBExtension
         final String elasticSearchUrl = "http://" + elasticsearchContainer.getHttpHostAddress();
         validateESConnection(elasticSearchUrl);
         multiDbConfigurator.configureElasticsearchSupport(elasticSearchUrl, testPrefix);
+        final var expectedDescriptors = new IndexDescriptors(testPrefix, true).all();
+        databaseSetupReadinessWaitStrategy =
+            () -> validateSchemaCreation(elasticSearchUrl, testPrefix, expectedDescriptors);
       }
       case ES -> {
         validateESConnection(DEFAULT_ES_URL);
         multiDbConfigurator.configureElasticsearchSupport(DEFAULT_ES_URL, testPrefix);
+        final var expectedDescriptors = new IndexDescriptors(testPrefix, true).all();
+        databaseSetupReadinessWaitStrategy =
+            () -> validateSchemaCreation(DEFAULT_ES_URL, testPrefix, expectedDescriptors);
       }
       case OS ->
           multiDbConfigurator.configureOpenSearchSupport(
@@ -143,6 +167,10 @@ public class CamundaMultiDBExtension
     testApplication.start();
     testApplication.awaitCompleteTopology();
 
+    Awaitility.await("Await database and exporter readiness")
+        .timeout(TIMEOUT_DATABASE_EXPORTER_READINESS)
+        .untilAsserted(databaseSetupReadinessWaitStrategy);
+
     injectFields(testClass, null, ModifierSupport::isStatic);
   }
 
@@ -152,6 +180,66 @@ public class CamundaMultiDBExtension
     elasticsearchContainer.start();
     closeables.add(elasticsearchContainer);
     return elasticsearchContainer;
+  }
+
+  /**
+   * Validate the schema creation. Expects harmonized indices to be created. Optimize indices and ES
+   * Exporter are not included.
+   *
+   * <p>ES exporter indices are only created, on first exporting, so we expect at least this amount
+   * or more (to fight race conditions).
+   *
+   * @param url the url to get actual indices
+   * @param testPrefix the test prefix of the actual indices
+   * @param expectedDescriptors expected descriptors
+   */
+  private void validateSchemaCreation(
+      final String url,
+      final String testPrefix,
+      final Collection<IndexDescriptor> expectedDescriptors) {
+    final HttpRequest httpRequest =
+        HttpRequest.newBuilder()
+            .GET()
+            .uri(URI.create(String.format("%s/%s*", url, testPrefix)))
+            .build();
+    try {
+      final HttpResponse<String> response = httpClient.send(httpRequest, BodyHandlers.ofString());
+      final int statusCode = response.statusCode();
+      assertThat(statusCode).isBetween(200, 299);
+
+      // Get how many indices with given prefix we have
+      final JsonNode jsonNode = OBJECT_MAPPER.readTree(response.body());
+      final int count = jsonNode.size();
+      final boolean reachedCount = expectedDescriptors.size() <= count;
+      if (reachedCount) {
+        // Expected indices reached
+        return;
+      }
+
+      LOGGER.debug(
+          "[{}/{}] indices with prefix {} in ES, retry...",
+          count,
+          expectedDescriptors.size(),
+          testPrefix);
+
+      final Iterator<String> stringIterator = jsonNode.fieldNames();
+      final Iterable<String> iterable = () -> stringIterator;
+      final List<String> actualIndices =
+          StreamSupport.stream(iterable.spliterator(), false).toList();
+
+      final var expectedIndexNames =
+          expectedDescriptors.stream().map(IndexDescriptor::getFullQualifiedName).toList();
+      assertThat(actualIndices).as("Missing indices").containsAll(expectedIndexNames);
+    } catch (final IOException | InterruptedException e) {
+      fail(
+          "Expected no exception on validating connection under: "
+              + url
+              + ", failed with: "
+              + e
+              + ": "
+              + e.getMessage(),
+          e);
+    }
   }
 
   private static void validateESConnection(final String url) {
@@ -191,15 +279,19 @@ public class CamundaMultiDBExtension
   @Override
   public void afterAll(final ExtensionContext context) {
     if (databaseType == DatabaseType.ES || databaseType == DatabaseType.OS) {
-      final URI deleteEndpoint = URI.create(String.format("%s/%s*", DEFAULT_ES_URL, testPrefix));
+      final URI deleteEndpoint = URI.create(String.format("%s/%s-*", DEFAULT_ES_URL, testPrefix));
       final HttpRequest httpRequest = HttpRequest.newBuilder().DELETE().uri(deleteEndpoint).build();
       try (final HttpClient httpClient = HttpClient.newHttpClient()) {
         final HttpResponse<String> response = httpClient.send(httpRequest, BodyHandlers.ofString());
         final int statusCode = response.statusCode();
         if (statusCode / 100 == 2) {
-          LOGGER.info("Test data deleted.");
+          LOGGER.info("Test data for prefix {} deleted.", testPrefix);
         } else {
-          LOGGER.warn("Failure on deleting test data. Status code: {}", statusCode);
+          LOGGER.warn(
+              "Failure on deleting test data for prefix {}. Status code: {} [{}]",
+              testPrefix,
+              statusCode,
+              response.body());
         }
       } catch (final IOException | InterruptedException e) {
         LOGGER.warn("Failure on deleting test data.", e);
