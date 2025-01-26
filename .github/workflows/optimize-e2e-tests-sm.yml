@@ -69,7 +69,7 @@ jobs:
 
       - name: Start frontend
         working-directory: ./optimize/client
-        run: yarn start
+        run: yarn start &
 
       - name: Start zeebe, operate, keycloak, identity and Elasticsearch
         uses: ./.github/actions/compose
