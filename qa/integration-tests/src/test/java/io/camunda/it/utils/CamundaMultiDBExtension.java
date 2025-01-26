@@ -7,6 +7,9 @@
  */
 package io.camunda.it.utils;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
@@ -28,12 +31,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
+import org.awaitility.core.ThrowingRunnable;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -110,7 +112,7 @@ public class CamundaMultiDBExtension
   private final TestStandaloneApplication<?> testApplication;
   private String testPrefix;
   private final MultiDbConfigurator multiDbConfigurator;
-  private Callable<Boolean> databaseSetupReadinessWaitStrategy = () -> true;
+  private ThrowingRunnable databaseSetupReadinessWaitStrategy = () -> {};
   private final HttpClient httpClient;
 
   /**
@@ -175,7 +177,7 @@ public class CamundaMultiDBExtension
 
     Awaitility.await("Await database and exporter readiness")
         .timeout(TIMEOUT_DATABASE_EXPORTER_READINESS)
-        .until(databaseSetupReadinessWaitStrategy);
+        .untilAsserted(databaseSetupReadinessWaitStrategy);
 
     injectFields(testClass, null, ModifierSupport::isStatic);
   }
@@ -188,7 +190,7 @@ public class CamundaMultiDBExtension
     return elasticsearchContainer;
   }
 
-  private boolean validateSchemaCreation(final String url, final String testPrefix) {
+  private void validateSchemaCreation(final String url, final String testPrefix) {
     final HttpRequest httpRequest =
         HttpRequest.newBuilder()
             .GET()
@@ -197,9 +199,7 @@ public class CamundaMultiDBExtension
     try {
       final HttpResponse<String> response = httpClient.send(httpRequest, BodyHandlers.ofString());
       final int statusCode = response.statusCode();
-      if (statusCode / 100 != 2) {
-        return false;
-      }
+      assertThat(statusCode).isBetween(200, 299);
 
       // Get how many indices with given prefix we have
       final JsonNode jsonNode = objectMapper.readTree(response.body());
@@ -209,36 +209,35 @@ public class CamundaMultiDBExtension
        * harmonized index amount or more (to fight race conditions).
        */
       final boolean reachedCount = expectedDescriptors.size() <= count;
-      if (!reachedCount) {
-        LOGGER.debug(
-            "[{}/{}] indices with prefix {} in ES, retry...",
-            count,
-            expectedDescriptors.size(),
-            testPrefix);
-
-        final Iterator<String> stringIterator = jsonNode.fieldNames();
-        final Iterable<String> iterable = () -> stringIterator;
-        final List<String> actualIndices =
-            StreamSupport.stream(iterable.spliterator(), false).toList();
-
-        final List<String> missing =
-            expectedDescriptors.stream()
-                .map(IndexDescriptor::getFullQualifiedName)
-                .filter(name -> !actualIndices.contains(name))
-                .collect(Collectors.toList());
-        LOGGER.debug("Missing indices: {}", missing);
+      if (reachedCount) {
+        // Expected indices reached
+        return;
       }
-      return reachedCount;
+
+      LOGGER.debug(
+          "[{}/{}] indices with prefix {} in ES, retry...",
+          count,
+          expectedDescriptors.size(),
+          testPrefix);
+
+      final Iterator<String> stringIterator = jsonNode.fieldNames();
+      final Iterable<String> iterable = () -> stringIterator;
+      final List<String> actualIndices =
+          StreamSupport.stream(iterable.spliterator(), false).toList();
+
+      final var expectedIndexNames =
+          expectedDescriptors.stream().map(IndexDescriptor::getFullQualifiedName).toList();
+      assertThat(actualIndices).as("Missing indices").containsAll(expectedIndexNames);
     } catch (final IOException | InterruptedException e) {
-      assert false
-          : "Expected no exception on validating connection under: "
+      fail(
+          "Expected no exception on validating connection under: "
               + url
               + ", failed with: "
               + e
               + ": "
-              + e.getMessage();
+              + e.getMessage(),
+          e);
     }
-    return false;
   }
 
   private static void validateESConnection(final String url) {
