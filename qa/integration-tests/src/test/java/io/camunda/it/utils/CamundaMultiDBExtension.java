@@ -115,14 +115,6 @@ public class CamundaMultiDBExtension
   private ThrowingRunnable databaseSetupReadinessWaitStrategy = () -> {};
   private final HttpClient httpClient;
 
-  /**
-   * Expected harmonized indices to be created. Optimize indices and ES Exporter are not included.
-   *
-   * <p>ES exporter indices are only created, on first exporting, so we expect at least this amount
-   * or more (to fight race conditions).
-   */
-  private Collection<IndexDescriptor> expectedDescriptors;
-
   public CamundaMultiDBExtension() {
     this(new TestSimpleCamundaApplication());
     closeables.add(testApplication);
@@ -155,16 +147,16 @@ public class CamundaMultiDBExtension
         final String elasticSearchUrl = "http://" + elasticsearchContainer.getHttpHostAddress();
         validateESConnection(elasticSearchUrl);
         multiDbConfigurator.configureElasticsearchSupport(elasticSearchUrl, testPrefix);
-        expectedDescriptors = new IndexDescriptors(testPrefix, true).all();
+        final var expectedDescriptors = new IndexDescriptors(testPrefix, true).all();
         databaseSetupReadinessWaitStrategy =
-            () -> validateSchemaCreation(elasticSearchUrl, testPrefix);
+            () -> validateSchemaCreation(elasticSearchUrl, testPrefix, expectedDescriptors);
       }
       case ES -> {
         validateESConnection(DEFAULT_ES_URL);
         multiDbConfigurator.configureElasticsearchSupport(DEFAULT_ES_URL, testPrefix);
-        expectedDescriptors = new IndexDescriptors(testPrefix, true).all();
+        final var expectedDescriptors = new IndexDescriptors(testPrefix, true).all();
         databaseSetupReadinessWaitStrategy =
-            () -> validateSchemaCreation(DEFAULT_ES_URL, testPrefix);
+            () -> validateSchemaCreation(DEFAULT_ES_URL, testPrefix, expectedDescriptors);
       }
       case OS ->
           multiDbConfigurator.configureOpenSearchSupport(
@@ -190,7 +182,21 @@ public class CamundaMultiDBExtension
     return elasticsearchContainer;
   }
 
-  private void validateSchemaCreation(final String url, final String testPrefix) {
+  /**
+   * Validate the schema creation. Expects harmonized indices to be created. Optimize indices and ES
+   * Exporter are not included.
+   *
+   * <p>ES exporter indices are only created, on first exporting, so we expect at least this amount
+   * or more (to fight race conditions).
+   *
+   * @param url the url to get actual indices
+   * @param testPrefix the test prefix of the actual indices
+   * @param expectedDescriptors expected descriptors
+   */
+  private void validateSchemaCreation(
+      final String url,
+      final String testPrefix,
+      final Collection<IndexDescriptor> expectedDescriptors) {
     final HttpRequest httpRequest =
         HttpRequest.newBuilder()
             .GET()
@@ -204,10 +210,6 @@ public class CamundaMultiDBExtension
       // Get how many indices with given prefix we have
       final JsonNode jsonNode = OBJECT_MAPPER.readTree(response.body());
       final int count = jsonNode.size();
-      /*
-       * ES exporter indices are only created, on first exporting, so we expect at least the
-       * harmonized index amount or more (to fight race conditions).
-       */
       final boolean reachedCount = expectedDescriptors.size() <= count;
       if (reachedCount) {
         // Expected indices reached
