@@ -58,7 +58,6 @@ public class AwsDocumentStore implements DocumentStore {
   public static final String EXPIRES_AT_METADATA_KEY = "expires-at";
   public static final String FILENAME_METADATA_KEY = "filename";
   public static final String SIZE_METADATA_KEY = "size";
-  public static final String CONTENT_TYPE_METADATA_KEY = "content-type";
   private static final Tag NO_AUTO_DELETE_TAG =
       Tag.builder().key("NoAutoDelete").value("true").build();
 
@@ -281,6 +280,7 @@ public class AwsDocumentStore implements DocumentStore {
             .key(resolveKey(documentId))
             .bucket(bucketName)
             .metadata(toS3MetaData(request.metadata(), fileName, contentHash))
+            .contentType(request.metadata().contentType())
             .tagging(generateExpiryTag(request.metadata().expiresAt()))
             .build();
 
@@ -307,7 +307,6 @@ public class AwsDocumentStore implements DocumentStore {
 
     final Map<String, String> metadataMap = new HashMap<>();
 
-    putIfPresent(CONTENT_TYPE_METADATA_KEY, metadata.contentType(), metadataMap);
     putIfPresent(SIZE_METADATA_KEY, metadata.size(), metadataMap);
     putIfPresent(FILENAME_METADATA_KEY, fileName, metadataMap);
     putIfPresent(EXPIRES_AT_METADATA_KEY, metadata.expiresAt(), metadataMap);
