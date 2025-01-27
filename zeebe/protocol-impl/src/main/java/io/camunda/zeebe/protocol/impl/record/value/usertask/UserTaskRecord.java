@@ -54,6 +54,28 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private static final StringValue FOLLOW_UP_DATE_VALUE = new StringValue(FOLLOW_UP_DATE);
   private static final StringValue PRIORITY_VALUE = new StringValue(PRIORITY);
 
+  /**
+   * Defines the mapping between names of attributes that may be modified (updated or corrected) and
+   * their corresponding getter methods. This map enables efficient comparison and updates of
+   * attribute values dynamically based on their names.
+   *
+   * @implNote If a new updatable attribute is introduced in the {@link UserTaskRecord} class:
+   *     <ul>
+   *       <li>The corresponding getter method must also be added to this map.
+   *       <li>To ensure efficiency, prefer getters that return a {@code DirectBuffer}
+   *           representation of the attribute (where applicable) to avoid unnecessary conversions
+   *           during comparisons.
+   *     </ul>
+   */
+  private static final Map<String, Function<UserTaskRecord, ?>> ATTRIBUTE_GETTER_MAP =
+      Map.of(
+          ASSIGNEE, UserTaskRecord::getAssigneeBuffer,
+          CANDIDATE_GROUPS, UserTaskRecord::getCandidateGroupsList,
+          CANDIDATE_USERS, UserTaskRecord::getCandidateUsersList,
+          DUE_DATE, UserTaskRecord::getDueDateBuffer,
+          FOLLOW_UP_DATE, UserTaskRecord::getFollowUpDateBuffer,
+          PRIORITY, UserTaskRecord::getPriority);
+
   private final LongProperty userTaskKeyProp = new LongProperty("userTaskKey", -1);
   private final StringProperty assigneeProp = new StringProperty(ASSIGNEE, EMPTY_STRING);
   private final ArrayProperty<StringValue> candidateGroupsListProp =
@@ -158,14 +180,32 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   public void wrapChangedAttributes(
       final UserTaskRecord record, final boolean includeTrackingProperties) {
     record.getChangedAttributesProp().stream()
-        .forEach(attribute -> updateAttribute(attribute, record));
+        .forEach(attribute -> updateAttribute(bufferAsString(attribute.getValue()), record));
     if (includeTrackingProperties) {
       setChangedAttributesProp(record.getChangedAttributesProp());
     }
   }
 
-  private void updateAttribute(final StringValue attribute, final UserTaskRecord record) {
-    switch (bufferAsString(attribute.getValue())) {
+  /**
+   * Updates the attributes of this {@link UserTaskRecord} based on the given record and adds the
+   * attribute to `changedAttributesProp` only if its value was actually changed.
+   *
+   * @param record the record containing the changed attributes list and new attribute values
+   */
+  public void wrapChangedAttributesIfValueChanged(final UserTaskRecord record) {
+    changedAttributesProp.reset();
+
+    record.getChangedAttributes().stream()
+        .filter(attribute -> isAttributeValueChanged(attribute, record))
+        .forEach(
+            attribute -> {
+              updateAttribute(attribute, record);
+              addChangedAttribute(attribute);
+            });
+  }
+
+  private void updateAttribute(final String attributeName, final UserTaskRecord record) {
+    switch (attributeName) {
       case ASSIGNEE:
         setAssignee(record.getAssigneeBuffer());
         break;
@@ -520,23 +560,33 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public void setDiffAsChangedAttributes(final UserTaskRecord other) {
     changedAttributesProp.reset();
-    addIfAttributeChanged(ASSIGNEE, UserTaskRecord::getAssigneeBuffer, other);
-    addIfAttributeChanged(CANDIDATE_GROUPS, UserTaskRecord::getCandidateGroupsList, other);
-    addIfAttributeChanged(CANDIDATE_USERS, UserTaskRecord::getCandidateUsersList, other);
-    addIfAttributeChanged(DUE_DATE, UserTaskRecord::getDueDateBuffer, other);
-    addIfAttributeChanged(FOLLOW_UP_DATE, UserTaskRecord::getFollowUpDateBuffer, other);
-    addIfAttributeChanged(PRIORITY, UserTaskRecord::getPriority, other);
+    addIfAttributeChanged(ASSIGNEE, other);
+    addIfAttributeChanged(CANDIDATE_GROUPS, other);
+    addIfAttributeChanged(CANDIDATE_USERS, other);
+    addIfAttributeChanged(DUE_DATE, other);
+    addIfAttributeChanged(FOLLOW_UP_DATE, other);
+    addIfAttributeChanged(PRIORITY, other);
   }
 
-  private <T> void addIfAttributeChanged(
-      final String attribute,
-      final Function<UserTaskRecord, T> attributeGetter,
-      final UserTaskRecord other) {
-    final T thisAttribute = attributeGetter.apply(this);
-    final T otherAttribute = attributeGetter.apply(other);
-    if (!Objects.equals(thisAttribute, otherAttribute)) {
+  private void addIfAttributeChanged(final String attribute, final UserTaskRecord other) {
+    if (isAttributeValueChanged(attribute, other)) {
       addChangedAttribute(attribute);
     }
+  }
+
+  private boolean isAttributeValueChanged(final String attribute, final UserTaskRecord other) {
+    final var attributeGetter = resolveAttributeGetter(attribute);
+    final var thisAttributeValue = attributeGetter.apply(this);
+    final var otherAttributeValue = attributeGetter.apply(other);
+    return !Objects.equals(thisAttributeValue, otherAttributeValue);
+  }
+
+  private Function<UserTaskRecord, ?> resolveAttributeGetter(final String attribute) {
+    final Function<UserTaskRecord, ?> getter = ATTRIBUTE_GETTER_MAP.get(attribute);
+    if (getter == null) {
+      throw new IllegalArgumentException("Unknown attribute: " + attribute);
+    }
+    return getter;
   }
 
   @JsonIgnore
