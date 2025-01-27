@@ -79,7 +79,10 @@ public abstract class AbstractIT {
     }
 
     final ConfigurableApplicationContext context =
-        new SpringApplicationBuilder(Main.class).profiles(activeProfile).build().run(arguments);
+        new SpringApplicationBuilder(TestsEntry.class)
+            .profiles(activeProfile)
+            .build()
+            .run(arguments);
 
     embeddedOptimizeExtension.setApplicationContext(context);
     embeddedOptimizeExtension.setCloseContextAfterTest(true);

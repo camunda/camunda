@@ -14,9 +14,13 @@ import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.freemarker.FreeMarkerAutoConfiguration;
+import org.springframework.context.annotation.ComponentScan;
 
-// @ComponentScan(excludeFilters = @ComponentScan.Filter(IgnoreDuringScan.class))
-public class Main {
+@SpringBootApplication(exclude = {FreeMarkerAutoConfiguration.class})
+@ComponentScan(excludeFilters = @ComponentScan.Filter(IgnoreDuringScan.class))
+public class TestsEntry {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(Main.class);
 
