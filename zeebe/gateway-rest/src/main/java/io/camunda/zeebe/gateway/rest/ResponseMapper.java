@@ -22,7 +22,6 @@ import io.camunda.zeebe.gateway.protocol.rest.DeploymentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentProcess;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentResource;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentResponse;
-import io.camunda.zeebe.gateway.protocol.rest.DeploymentRpa;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentReference;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentReference.DocumentTypeEnum;

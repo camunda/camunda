@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.impl.response;
+package io.camunda.zeebe.client.impl.response;
 
-import io.camunda.client.api.response.Resource;
+import io.camunda.zeebe.client.api.response.Resource;
 import java.util.Objects;
 
 public class ResourceImpl implements Resource {
