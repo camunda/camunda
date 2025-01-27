@@ -10,10 +10,8 @@ package io.camunda.zeebe.gateway;
 import static java.util.concurrent.Executors.newThreadPerTaskExecutor;
 
 import com.google.rpc.Code;
-import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.health.GatewayHealthManager;
@@ -387,16 +385,10 @@ public final class Gateway implements CloseableSilently {
     interceptors.add(new ContextInjectingInterceptor(queryApi));
     interceptors.add(MONITORING_SERVER_INTERCEPTOR);
 
-    if (!isUnauthenticatedAccessAllowed()) {
+    if (!securityConfiguration.isUnauthenticatedApiAccessAllowed()) {
       interceptors.add(new AuthenticationInterceptor(userServices, passwordEncoder));
     }
     return ServerInterceptors.intercept(service, interceptors);
-  }
-
-  private boolean isUnauthenticatedAccessAllowed() {
-    final AuthenticationConfiguration authConfig = securityConfiguration.getAuthentication();
-    return authConfig.getMethod() == AuthenticationMethod.BASIC
-        && authConfig.getBasic().getAllowUnauthenticatedApiAccess();
   }
 
   private static StatusException grpcStatusException(final int code, final String msg) {
