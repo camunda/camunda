@@ -177,13 +177,31 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     return copy;
   }
 
+  /**
+   * Updates the attributes of this {@link UserTaskRecord} based on the given record.
+   *
+   * @apiNote If {@code includeTrackingProperties} is {@code true}, all attributes in the given
+   *     record's `changedAttributes` list will be added to this record's `changedAttributesProp`,
+   *     even if their values match the existing values. To update attributes and track only truly
+   *     changed attributes, use the {@link #wrapChangedAttributesIfValueChanged} method instead.
+   * @param record the record containing the changed attributes list and new attribute values
+   * @param includeTrackingProperties whether to include all changed attributes in the tracking list
+   */
   public void wrapChangedAttributes(
       final UserTaskRecord record, final boolean includeTrackingProperties) {
-    record.getChangedAttributesProp().stream()
-        .forEach(attribute -> updateAttribute(bufferAsString(attribute.getValue()), record));
     if (includeTrackingProperties) {
-      setChangedAttributesProp(record.getChangedAttributesProp());
+      changedAttributesProp.reset();
     }
+
+    record
+        .getChangedAttributes()
+        .forEach(
+            attribute -> {
+              updateAttribute(attribute, record);
+              if (includeTrackingProperties) {
+                addChangedAttribute(attribute);
+              }
+            });
   }
 
   /**
