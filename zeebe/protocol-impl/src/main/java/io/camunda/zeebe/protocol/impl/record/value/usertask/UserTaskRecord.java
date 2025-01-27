@@ -578,18 +578,10 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public void setDiffAsChangedAttributes(final UserTaskRecord other) {
     changedAttributesProp.reset();
-    addIfAttributeChanged(ASSIGNEE, other);
-    addIfAttributeChanged(CANDIDATE_GROUPS, other);
-    addIfAttributeChanged(CANDIDATE_USERS, other);
-    addIfAttributeChanged(DUE_DATE, other);
-    addIfAttributeChanged(FOLLOW_UP_DATE, other);
-    addIfAttributeChanged(PRIORITY, other);
-  }
-
-  private void addIfAttributeChanged(final String attribute, final UserTaskRecord other) {
-    if (isAttributeValueChanged(attribute, other)) {
-      addChangedAttribute(attribute);
-    }
+    ATTRIBUTE_GETTER_MAP.keySet().stream()
+        .sorted()
+        .filter(attribute -> isAttributeValueChanged(attribute, other))
+        .forEach(this::addChangedAttribute);
   }
 
   private boolean isAttributeValueChanged(final String attribute, final UserTaskRecord other) {
