@@ -1,3 +1,47 @@
 {
-  "settingsInheritedFrom": "camunda/whitesource-config@main"
+  "settingsInheritedFrom": "camunda/whitesource-config@main",
+"remediateSettings":{
+    "packageRules": [
+     {
+       "groupName": "Mend: high confidence minor and patch dependency updates for operate client",
+       "matchUpdateTypes": ["minor", "patch"],
+       "matchConfidence": ["very high", "high"],
+         "matchFileNames": ["operate/client/package.json"]
+     },
+      {
+       "groupName": "Mend: high confidence minor and patch dependency updates for identity client",
+       "matchUpdateTypes": ["minor", "patch"],
+       "matchConfidence": ["very high", "high"],
+         "matchFileNames": ["identity/client/package.json"]
+     },
+     {
+      "groupName": "Mend: high confidence minor and patch dependency updates for optimize backend",
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchConfidence": ["very high", "high"],
+      "matchFileNames": ["optimize/backend/pom.xml"]
+      },
+      {
+        "groupName": "Mend: high confidence minor and patch dependency updates for optimize",
+        "matchUpdateTypes": ["minor", "patch"],
+        "matchConfidence": ["very high", "high"],
+        "matchFileNames": ["optimize/c4/**", "optimize/c4/**"]
+    },
+    {
+      "groupName": "Mend: high confidence minor and patch dependency updates for task list",
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchConfidence": ["very high", "high"],
+      "matchFileNames": ["tasklist/client/**"]
+  },
+      {
+          "matchConfidence": ["low"],
+          "dependencyDashboardApproval": true,
+          "commitMessagePrefix": "[LOW] "
+      },
+      {
+          "matchConfidence": ["neutral"],
+          "dependencyDashboardApproval": true,
+          "commitMessagePrefix": "[NEUTRAL] "
+      }
+   ]
+  }
 }
