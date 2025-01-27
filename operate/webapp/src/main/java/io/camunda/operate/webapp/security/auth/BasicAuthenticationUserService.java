@@ -13,11 +13,13 @@ import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.security.entity.AuthenticationMethod;
 import java.util.List;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 @Component
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
+@Profile("consolidated-auth")
 public class BasicAuthenticationUserService extends AuthUserService {
 
   @Override
