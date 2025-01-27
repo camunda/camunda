@@ -28,8 +28,8 @@ import io.camunda.zeebe.client.protocol.rest.DeploymentDecisionRequirements;
 import io.camunda.zeebe.client.protocol.rest.DeploymentForm;
 import io.camunda.zeebe.client.protocol.rest.DeploymentMetadata;
 import io.camunda.zeebe.client.protocol.rest.DeploymentProcess;
+import io.camunda.zeebe.client.protocol.rest.DeploymentResource;
 import io.camunda.zeebe.client.protocol.rest.DeploymentResponse;
-import io.camunda.zeebe.client.protocol.rest.DeploymentResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Deployment;
@@ -112,14 +112,14 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                         f.getTenantId())));
   }
 
-  private void addDeployedResource(final DeploymentResourceResult resource) {
+  private void addDeployedResource(final DeploymentResource resource) {
     Optional.ofNullable(resource)
         .ifPresent(
             f ->
                 resources.add(
                     new ResourceImpl(
                         f.getResourceId(),
-                        Long.parseLong(f.getResourceKey()),
+                        f.getResourceKey(),
                         f.getVersion(),
                         f.getResourceName(),
                         f.getTenantId())));

@@ -4292,7 +4292,7 @@ components:
         form:
           $ref: "#/components/schemas/DeploymentForm"
         resource:
-          $ref: "#/components/schemas/DeploymentRpa"
+          $ref: "#/components/schemas/DeploymentResource"
     DeploymentMetadataResult:
       type: object
       properties:
@@ -4305,7 +4305,7 @@ components:
         form:
           $ref: "#/components/schemas/DeploymentFormResult"
         resource:
-          $ref: "#/components/schemas/DeploymentResource"
+          $ref: "#/components/schemas/DeploymentResourceResult"
     DeploymentProcessBase:
       description: Base properties for DeploymentProcess.
       type: object
