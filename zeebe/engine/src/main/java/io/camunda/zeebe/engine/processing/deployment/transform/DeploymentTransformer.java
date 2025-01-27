@@ -85,7 +85,7 @@ public final class DeploymentTransformer {
 
     final var resourceTransformer =
         new RpaTransformer(
-            keyGenerator, stateWriter, checksumGenerator, processingState.getResourceState());
+            keyGenerator, stateWriter, this::getChecksum, processingState.getResourceState());
 
     resourceTransformers =
         Map.ofEntries(

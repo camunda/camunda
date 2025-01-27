@@ -11,7 +11,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.engine.processing.common.Failure;
-import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.ResourceState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -23,22 +22,22 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.LongSupplier;
 import org.agrona.DirectBuffer;
 
 public class RpaTransformer implements DeploymentResourceTransformer {
   private static final int INITIAL_VERSION = 1;
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
-
+  final Function<byte[], DirectBuffer> checksumGenerator;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
-  private final ChecksumGenerator checksumGenerator;
   private final ResourceState resourceState;
 
   public RpaTransformer(
       final KeyGenerator keyGenerator,
       final StateWriter stateWriter,
-      final ChecksumGenerator checksumGenerator,
+      final Function<byte[], DirectBuffer> checksumGenerator,
       final ResourceState resourceState) {
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
@@ -48,9 +47,7 @@ public class RpaTransformer implements DeploymentResourceTransformer {
 
   @Override
   public Either<Failure, Void> createMetadata(
-      final DeploymentResource deploymentResource,
-      final DeploymentRecord deployment,
-      final DeploymentResourceContext context) {
+      final DeploymentResource deploymentResource, final DeploymentRecord deployment) {
     return parseResource(deploymentResource)
         .flatMap(
             resource ->
@@ -66,11 +63,12 @@ public class RpaTransformer implements DeploymentResourceTransformer {
   }
 
   @Override
-  public void writeRecords(final DeploymentResource resource, final DeploymentRecord deployment) {
+  public Either<Failure, Void> writeRecords(
+      final DeploymentResource resource, final DeploymentRecord deployment) {
     if (deployment.hasDuplicatesOnly()) {
-      return;
+      return Either.right(null);
     }
-    final var checksum = checksumGenerator.checksum(resource.getResourceBuffer());
+    final var checksum = checksumGenerator.apply(resource.getResource());
     deployment.resourceMetadata().stream()
         .filter(metadata -> checksum.equals(metadata.getChecksumBuffer()))
         .findFirst()
@@ -89,6 +87,7 @@ public class RpaTransformer implements DeploymentResourceTransformer {
               }
               writeResourceRecord(metadata, resource);
             });
+    return Either.right(null);
   }
 
   private void writeResourceRecord(
@@ -105,8 +104,7 @@ public class RpaTransformer implements DeploymentResourceTransformer {
       final DeploymentResource deploymentResource,
       final DeploymentRecord deploymentRecord) {
     final LongSupplier newResourceKey = keyGenerator::nextKey;
-    final DirectBuffer checksum =
-        checksumGenerator.checksum(deploymentResource.getResourceBuffer());
+    final DirectBuffer checksum = checksumGenerator.apply(deploymentResource.getResource());
     final String tenantId = deploymentRecord.getTenantId();
 
     resourceMetadataRecord.setResourceId(resource.id);
