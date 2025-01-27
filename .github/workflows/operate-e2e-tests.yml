@@ -51,17 +51,6 @@ jobs:
         ports:
           - 9200:9200
           - 9300:9300
-      zeebe:
-        image: camunda/zeebe:SNAPSHOT
-        env:
-          JAVA_TOOL_OPTIONS: "-Xms512m -Xmx512m"
-          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME: io.camunda.exporter.CamundaExporter
-          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL: http://elasticsearch:9200
-          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE: 1
-          ZEEBE_BROKER_BACKPRESSURE_ENABLED: false
-        ports:
-          - 26500:26500
-          - 8086:8080
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
@@ -115,10 +104,12 @@ jobs:
         # we're excluding optimize from the build, not to impact this operate's workflow.
         run: ./mvnw clean install -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Start Operate
-        run: ./mvnw -q -B spring-boot:start -pl dist -Dspring-boot.run.fork=true -Dspring-boot.run.main-class=io.camunda.application.StandaloneOperate
+        run: >
+          ./mvnw -q -B spring-boot:start -pl dist -Dspring-boot.run.fork=true
+          -Dspring-boot.run.main-class=io.camunda.application.StandaloneCamunda
+          -Dspring-boot.run.jvmArguments="-Dspring.profiles.active=operate,consolidated-auth,broker -Dzeebe.broker.exporters.camundaexporter.classname=io.camunda.exporter.CamundaExporter -Dzeebe.broker.exporters.camundaexporter.args.connect.url=http://localhost:9200 -Dzeebe.broker.exporters.camundaexporter.args.bulk.size=100 -Dzeebe.broker.backpressure.enabled=false -Dcamunda.security.authentication.basic.allow-unauthenticated-api-access=true"
         env:
           CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED: false
-          SPRING_PROFILES_ACTIVE: consolidated-auth
       - name: Run tests
         working-directory: ./operate/client
         run: yarn run test:e2e:ci
