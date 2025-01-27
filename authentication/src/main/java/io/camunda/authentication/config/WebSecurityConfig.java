@@ -15,8 +15,6 @@ import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.filters.TenantRequestAttributeFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
-import io.camunda.security.configuration.AuthenticationConfiguration;
-import io.camunda.security.configuration.BasicAuthenticationConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
@@ -27,7 +25,6 @@ import io.camunda.service.UserServices;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -168,7 +165,7 @@ public class WebSecurityConfig {
                         // limitation of Java's HTTP client, which only sends an Authorization
                         // header after the server sends a WWW-Authenticate header in a 401
                         // response.
-                        || !isUnprotectedApiAccessAllowed(securityConfiguration)
+                        || !securityConfiguration.isUnauthenticatedApiAccessAllowed()
                             && isApiRequest(request)
                             && !hasSessionCookie(request)),
             authFailureHandler,
@@ -185,7 +182,7 @@ public class WebSecurityConfig {
       final AuthFailureHandler authFailureHandler,
       final SecurityConfiguration securityConfiguration)
       throws Exception {
-    if (!isUnprotectedApiAccessAllowed(securityConfiguration)) {
+    if (!securityConfiguration.isUnauthenticatedApiAccessAllowed()) {
       return null;
     }
     LOG.warn(
@@ -232,14 +229,6 @@ public class WebSecurityConfig {
   public FilterRegistrationBean<TenantRequestAttributeFilter>
       tenantRequestAttributeFilterRegistration(final MultiTenancyConfiguration configuration) {
     return new FilterRegistrationBean<>(new TenantRequestAttributeFilter(configuration));
-  }
-
-  private static boolean isUnprotectedApiAccessAllowed(final SecurityConfiguration configuration) {
-    return Optional.ofNullable(configuration)
-        .map(SecurityConfiguration::getAuthentication)
-        .map(AuthenticationConfiguration::getBasic)
-        .map(BasicAuthenticationConfiguration::getAllowUnauthenticatedApiAccess)
-        .orElse(false);
   }
 
   private static boolean isBasicAuthRequest(final HttpServletRequest request) {
