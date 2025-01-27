@@ -10,6 +10,7 @@ package io.camunda.operate.qa.util;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static org.testcontainers.images.PullPolicy.alwaysPull;
 
+import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.migration.SemanticVersion;
 import io.camunda.operate.util.RetryOperation;
@@ -524,7 +525,8 @@ public class TestContainerUtil {
           .withEnv("ZEEBE_CLOCK_CONTROLLED", "true")
           .withEnv("ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK", "0.99")
           .withEnv("ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK", "0.98")
-          .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m");
+          .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m")
+          .withEnv(AuthenticationProperties.getAllowUnauthenticatedApiAccessEnvVar(), "true");
 
       if (testContext.getPartitionCount() != null) {
         broker.withEnv(
