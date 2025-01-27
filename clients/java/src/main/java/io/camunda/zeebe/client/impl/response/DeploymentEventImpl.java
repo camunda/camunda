@@ -21,6 +21,7 @@ import io.camunda.client.protocol.rest.DeploymentDecisionResult;
 import io.camunda.client.protocol.rest.DeploymentFormResult;
 import io.camunda.client.protocol.rest.DeploymentMetadataResult;
 import io.camunda.client.protocol.rest.DeploymentProcessResult;
+import io.camunda.client.protocol.rest.DeploymentResourceResult;
 import io.camunda.client.protocol.rest.DeploymentResult;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.Decision;
