@@ -9,8 +9,10 @@ package io.camunda.tasklist.os;
 
 import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
@@ -63,7 +65,7 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
   public void setUp() throws Exception {
     indexDescriptor = createIndexDescriptor();
     originalSchemaContent = readSchemaContent();
-    assertThat(originalSchemaContent).doesNotContain("\"prop3\"");
+    assertThat(originalSchemaContent).doesNotContain("\"prop4\"");
   }
 
   @AfterEach
@@ -80,14 +82,14 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
     var diff = indexSchemaValidator.validateIndexMappings();
     assertThat(diff).isEmpty();
 
-    createDocument("prop0", "test");
+    createDocument(indexDescriptor, "prop0", "test");
 
     updateSchemaContent(
         originalSchemaContent.replace(
-            "\"properties\": {", "\"properties\": {\n    \"prop3\": { \"type\": \"keyword\" },"));
+            "\"properties\":{", "\"properties\": {\"prop4\": {\"type\": \"keyword\" },"));
 
     final String newSchemaContent = readSchemaContent();
-    assertThat(newSchemaContent).contains("\"prop3\"");
+    assertThat(newSchemaContent).contains("\"prop4\"");
 
     diff = indexSchemaValidator.validateIndexMappings();
     assertThat(diff).isNotEmpty();
@@ -102,15 +104,9 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
     var diff = indexSchemaValidator.validateIndexMappings();
     assertThat(diff).isEmpty();
 
-    createDocument("prop0", "test");
+    createDocument(indexDescriptor, "prop0", "test");
 
-    updateSchemaContent(
-        originalSchemaContent.replace(
-            "    \"properties\": {\n"
-                + "      \"prop0\": {\n"
-                + "        \"type\": \"keyword\"\n"
-                + "      },",
-            "\"properties\": {"));
+    updateSchemaContent(originalSchemaContent.replace("{\"prop0\":{\"type\":\"keyword\"},", "{"));
 
     final String newSchemaContent = readSchemaContent();
     assertThat(newSchemaContent).doesNotContain("\"prop0\"");
@@ -128,10 +124,43 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
     assertThat(diff).isEmpty();
 
     /* Create document on the dynamic property to cause it to expand */
-    createDocument("prop2", Map.of("custom-key", "custom-value"));
+    createDocument(indexDescriptor, "prop2", Map.of("custom-key", "custom-value"));
 
     diff = indexSchemaValidator.validateIndexMappings();
     assertThat(diff).isEmpty();
+  }
+
+  @Test
+  public void shouldThrowExceptionOnAmbiguousMappings() throws Exception {
+    replaceIndexDescriptorsInValidator(Collections.singleton(indexDescriptor));
+
+    final var datedDescriptor1 = createDatedIndexDescriptor("-2021-01-01");
+    final var datedDescriptor2 = createDatedIndexDescriptor("-2021-01-02");
+    try {
+      schemaManager.createIndex(datedDescriptor1);
+      createDocument(datedDescriptor1, Map.of("prop0", "test"));
+
+      updateSchemaContent(
+          originalSchemaContent.replace(
+              "{\"prop0\":{\"type\":\"keyword\"},", "{\"prop0\":{\"type\":\"integer\"},"));
+      schemaManager.createIndex(datedDescriptor2);
+      createDocument(datedDescriptor2, Map.of("prop0", 123, "prop1", "test"));
+
+      updateSchemaContent(
+          originalSchemaContent.replace(
+              "\"prop1\":{\"type\":\"keyword\"}", "\"prop1\":{\"type\":\"boolean\"}"));
+      schemaManager.createIndex(indexDescriptor);
+      createDocument(indexDescriptor, Map.of("prop0", 123, "prop1", true));
+
+      restoreOriginalSchemaContent();
+
+      assertThatThrownBy(() -> indexSchemaValidator.validateIndexMappings())
+          .isInstanceOf(TasklistRuntimeException.class)
+          .hasMessageContaining("Ambiguous schema update");
+    } finally {
+      retryOpenSearchClient.deleteIndicesFor(datedDescriptor1.getFullQualifiedName());
+      retryOpenSearchClient.deleteIndicesFor(datedDescriptor2.getFullQualifiedName());
+    }
   }
 
   private IndexDescriptor createIndexDescriptor() {
@@ -158,7 +187,41 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
       @Override
       public String getAllVersionsIndexNameRegexPattern() {
-        return getFullIndexName() + "*";
+        return getFullIndexName() + ".*";
+      }
+
+      @Override
+      public String getVersion() {
+        return "1.0.0";
+      }
+    };
+  }
+
+  private IndexDescriptor createDatedIndexDescriptor(final String suffix) {
+    return new IndexDescriptor() {
+      @Override
+      public String getFullQualifiedName() {
+        return getFullIndexName() + suffix;
+      }
+
+      @Override
+      public String getAlias() {
+        return getFullIndexName() + "-alias";
+      }
+
+      @Override
+      public String getIndexName() {
+        return INDEX_NAME + suffix;
+      }
+
+      @Override
+      public String getMappingsClasspathFilename() {
+        return ORIGINAL_SCHEMA_PATH_OPENSEARCH;
+      }
+
+      @Override
+      public String getAllVersionsIndexNameRegexPattern() {
+        return getFullIndexName() + ".*";
       }
 
       @Override
@@ -170,8 +233,9 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
   private String readSchemaContent() throws Exception {
     return new String(
-        Files.readAllBytes(
-            Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH_OPENSEARCH).toURI())));
+            Files.readAllBytes(
+                Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH_OPENSEARCH).toURI())))
+        .replaceAll("[\\n\\t\\s]+", "");
   }
 
   private void restoreOriginalSchemaContent() throws Exception {
@@ -181,12 +245,19 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
         StandardOpenOption.TRUNCATE_EXISTING);
   }
 
-  private void createDocument(final String key, final Object value) throws Exception {
+  private void createDocument(
+      final IndexDescriptor descriptor, final String key, final Object value) throws Exception {
     final Map<String, Object> document = Map.of(key, value);
     final boolean created =
         retryOpenSearchClient.createOrUpdateDocument(
-            indexDescriptor.getFullQualifiedName(), "id", document);
-    System.out.println("Created: " + created);
+            descriptor.getFullQualifiedName(), "id", document);
+  }
+
+  private void createDocument(final IndexDescriptor descriptor, final Map<String, Object> value)
+      throws Exception {
+    final boolean created =
+        retryOpenSearchClient.createOrUpdateDocument(
+            descriptor.getFullQualifiedName(), "id", value);
   }
 
   private void updateSchemaContent(final String content) throws Exception {
