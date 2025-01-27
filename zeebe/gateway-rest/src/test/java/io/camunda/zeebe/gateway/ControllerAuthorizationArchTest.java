@@ -10,6 +10,8 @@ package io.camunda.zeebe.gateway;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
 
 import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaAccess;
+import com.tngtech.archunit.core.domain.JavaCall;
 import com.tngtech.archunit.core.domain.JavaField;
 import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -21,6 +23,7 @@ import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import io.camunda.service.ApiServices;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
+import java.util.Comparator;
 
 @AnalyzeClasses(
     packages = "io.camunda.zeebe.gateway.rest.controller..",
@@ -118,15 +121,17 @@ public class ControllerAuthorizationArchTest {
         method.getCallsFromSelf().stream()
             .filter(call -> call.getTarget().getOwner().equals(serviceField.getRawType()))
             .sorted(
-                (call1, call2) -> {
-                  if (call1.getName().equals(WITH_AUTHENTICATION_METHOD_NAME)) {
-                    return -1;
-                  } else if (call2.getName().equals(WITH_AUTHENTICATION_METHOD_NAME)) {
-                    return 1;
-                  } else {
-                    return 0;
-                  }
-                })
+                Comparator.<JavaCall<?>>comparingInt(JavaAccess::getLineNumber)
+                    .thenComparing(
+                        (call1, call2) -> {
+                          if (call1.getName().equals(WITH_AUTHENTICATION_METHOD_NAME)) {
+                            return -1;
+                          } else if (call2.getName().equals(WITH_AUTHENTICATION_METHOD_NAME)) {
+                            return 1;
+                          } else {
+                            return 0;
+                          }
+                        }))
             .toList()
             .getFirst();
 
