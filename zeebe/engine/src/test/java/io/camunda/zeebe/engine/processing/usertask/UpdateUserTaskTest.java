@@ -90,7 +90,7 @@ public final class UpdateUserTaskTest {
                     .hasAction(DEFAULT_ACTION)
                     .hasPriority(DEFAULT_PRIORITY)
                     .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
-                    .hasOnlyChangedAttributes(ALL_UPDATABLE_ATTRIBUTES));
+                    .hasNoChangedAttributes());
   }
 
   @Test
@@ -129,7 +129,7 @@ public final class UpdateUserTaskTest {
                     .hasUserTaskKey(userTaskKey)
                     .hasAction("customAction")
                     .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
-                    .hasOnlyChangedAttributes(ALL_UPDATABLE_ATTRIBUTES));
+                    .hasNoChangedAttributes());
   }
 
   @Test
@@ -420,6 +420,116 @@ public final class UpdateUserTaskTest {
                     .hasFollowUpDate("")
                     .hasPriority(DEFAULT_PRIORITY)
                     .hasOnlyChangedAttributes(ALL_UPDATABLE_ATTRIBUTES));
+  }
+
+  @Test
+  public void shouldNotPopulateChangedAttributesWhenNoValuesAreChanged() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(
+                t ->
+                    t.zeebeCandidateGroups("initial_group_A, initial_group_B")
+                        .zeebeCandidateUsers("initial_user_A, initial_user_B")
+                        .zeebeDueDate("2023-03-02T15:35+02:00")
+                        .zeebeFollowUpDate("2023-03-02T16:35+02:00")
+                        .zeebeTaskPriority("84")))
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when: updating the task with the same values as the initial properties
+    final var updatingRecord =
+        ENGINE
+            .userTask()
+            .ofInstance(processInstanceKey)
+            .update(
+                new UserTaskRecord()
+                    .setCandidateGroupsList(List.of("initial_group_A", "initial_group_B"))
+                    .setCandidateUsersList(List.of("initial_user_A", "initial_user_B"))
+                    .setDueDate("2023-03-02T15:35+02:00")
+                    .setFollowUpDate("2023-03-02T16:35+02:00")
+                    .setPriority(84));
+
+    // then
+    Assertions.assertThat(updatingRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(UserTaskIntent.UPDATING);
+
+    final var updatingRecordValue = updatingRecord.getValue();
+    final var updatedRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.UPDATED).getFirst().getValue();
+
+    assertThat(List.of(updatingRecordValue, updatedRecordValue))
+        .describedAs("Ensure both UPDATING and UPDATED records have consistent attribute values")
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .describedAs("Expect user task properties to remain unchanged")
+                    .hasCandidateGroupsList("initial_group_A", "initial_group_B")
+                    .hasCandidateUsersList("initial_user_A", "initial_user_B")
+                    .hasDueDate("2023-03-02T15:35+02:00")
+                    .hasFollowUpDate("2023-03-02T16:35+02:00")
+                    .hasPriority(84)
+                    .describedAs(
+                        "Expect `changedAttributes` to be empty since no values were changed")
+                    .hasNoChangedAttributes());
+  }
+
+  @Test
+  public void shouldOnlyPopulateChangedAttributesForActuallyChangedValues() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(
+                t ->
+                    t.zeebeCandidateGroups("initial_group_A, initial_group_B")
+                        .zeebeCandidateUsers("initial_user_A, initial_user_B")
+                        .zeebeDueDate("2023-03-02T15:35+02:00")
+                        .zeebeFollowUpDate("2023-03-02T16:35+02:00")
+                        .zeebeTaskPriority("10")))
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when: updating the task with only some values changed
+    final var updatingRecord =
+        ENGINE
+            .userTask()
+            .ofInstance(processInstanceKey)
+            .update(
+                new UserTaskRecord()
+                    .setCandidateGroupsList(List.of("updated_group_F")) // changed
+                    .setCandidateUsersList(List.of("initial_user_A", "initial_user_B")) // unchanged
+                    .setDueDate("updated_dueDate") // changed
+                    .setFollowUpDate("2023-03-02T16:35+02:00") // unchanged
+                    .setPriority(55)); // changed
+
+    // then
+    Assertions.assertThat(updatingRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(UserTaskIntent.UPDATING);
+
+    final var updatingRecordValue = updatingRecord.getValue();
+    final var updatedRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.UPDATED).getFirst().getValue();
+
+    assertThat(List.of(updatingRecordValue, updatedRecordValue))
+        .describedAs("Ensure both UPDATING and UPDATED records have consistent attribute values")
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .hasCandidateGroupsList("updated_group_F")
+                    .hasCandidateUsersList("initial_user_A", "initial_user_B")
+                    .hasDueDate("updated_dueDate")
+                    .hasFollowUpDate("2023-03-02T16:35+02:00")
+                    .hasPriority(55)
+                    .describedAs(
+                        "Expect `changedAttributes` to include only the actually updated attributes")
+                    .hasOnlyChangedAttributes(
+                        UserTaskRecord.CANDIDATE_GROUPS,
+                        UserTaskRecord.DUE_DATE,
+                        UserTaskRecord.PRIORITY));
   }
 
   @Test
