@@ -22,14 +22,6 @@ public class MigrationProfilePostProcessor implements EnvironmentPostProcessor {
     if (environment.acceptsProfiles(Profiles.of(Profile.MIGRATION.getId()))) {
       environment.addActiveProfile(Profile.PROCESS_MIGRATION.getId());
       environment.addActiveProfile(Profile.IDENTITY_MIGRATION.getId());
-    } else if (shouldEnableProcessMigration(environment)) {
-      /* Enable 'process-migration' when Tasklist is enabled on non Test setups  */
-      environment.addActiveProfile(Profile.PROCESS_MIGRATION.getId());
     }
-  }
-
-  private boolean shouldEnableProcessMigration(final ConfigurableEnvironment environment) {
-    return environment.acceptsProfiles(Profiles.of(Profile.TASKLIST.getId()))
-        && !environment.acceptsProfiles(Profiles.of(Profile.TEST.getId()));
   }
 }
