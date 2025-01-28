@@ -584,6 +584,10 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .forEach(this::addChangedAttribute);
   }
 
+  public boolean hasChangedAttributes() {
+    return !changedAttributesProp.isEmpty();
+  }
+
   private boolean isAttributeValueChanged(final String attribute, final UserTaskRecord other) {
     final var attributeGetter = resolveAttributeGetter(attribute);
     final var thisAttributeValue = attributeGetter.apply(this);
