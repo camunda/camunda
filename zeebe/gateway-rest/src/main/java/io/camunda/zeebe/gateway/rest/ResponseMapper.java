@@ -20,6 +20,7 @@ import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionRequirements;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentForm;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentProcess;
+import io.camunda.zeebe.gateway.protocol.rest.DeploymentResource;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentReference;
@@ -41,6 +42,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormMetadataRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -165,6 +167,7 @@ public final class ResponseMapper {
     addDeployedDecision(response, brokerResponse.decisionsMetadata());
     addDeployedDecisionRequirements(response, brokerResponse.decisionRequirementsMetadata());
     addDeployedForm(response, brokerResponse.formMetadata());
+    addDeployedResource(response, brokerResponse.resourceMetadata());
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
@@ -190,6 +193,22 @@ public final class ResponseMapper {
                     .resourceName(form.getResourceName())
                     .tenantId(form.getTenantId()))
         .map(deploymentForm -> new DeploymentMetadata().form(deploymentForm))
+        .forEach(response::addDeploymentsItem);
+  }
+
+  private static void addDeployedResource(
+      final DeploymentResponse response,
+      final ValueArray<ResourceMetadataRecord> resourceMetadataRecords) {
+    resourceMetadataRecords.stream()
+        .map(
+            resource ->
+                new DeploymentResource()
+                    .resourceId(resource.getResourceId())
+                    .version(resource.getVersion())
+                    .resourceKey(resource.getResourceKey())
+                    .resourceName(resource.getResourceName())
+                    .tenantId(resource.getTenantId()))
+        .map(deploymentForm -> new DeploymentMetadata().resource(deploymentForm))
         .forEach(response::addDeploymentsItem);
   }
 

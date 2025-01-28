@@ -66,6 +66,13 @@
           "code": "java.class.removed",
           "old": "class io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequestChangeset",
           "justification": "The classes/methods are only internal and are not user-facing, and as such does not need to maintain any backwards compatibility guarantees."
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.attributeValueChanged",
+          "old": "class io.camunda.zeebe.client.protocol.rest.DeploymentMetadata",
+          "new": "class io.camunda.zeebe.client.protocol.rest.DeploymentMetadata",
+          "justification": "Added resource to deployment metadata"
         }
       ]
     }
