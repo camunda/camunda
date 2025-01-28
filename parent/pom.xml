@@ -825,6 +825,13 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>camunda-db-rdbms</artifactId>
+        <version>${project.version}</version>
+        <type>test-jar</type>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>camunda-db-rdbms-schema</artifactId>
         <version>${project.version}</version>
       </dependency>
