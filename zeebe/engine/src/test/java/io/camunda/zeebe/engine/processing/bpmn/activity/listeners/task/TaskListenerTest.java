@@ -53,6 +53,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
@@ -69,6 +70,14 @@ public class TaskListenerTest {
   private static final String PROCESS_ID = "process";
 
   private static final String USER_TASK_ELEMENT_ID = "my_user_task";
+  private static final List<String> ALL_CORRECTABLE_ATTRIBUTES =
+      List.of(
+          UserTaskRecord.ASSIGNEE,
+          UserTaskRecord.CANDIDATE_GROUPS,
+          UserTaskRecord.CANDIDATE_USERS,
+          UserTaskRecord.DUE_DATE,
+          UserTaskRecord.FOLLOW_UP_DATE,
+          UserTaskRecord.PRIORITY);
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -1493,6 +1502,7 @@ public class TaskListenerTest {
             .getFirst();
     final var userTaskKey = String.valueOf(createdUserTaskRecord.getKey());
 
+    // when: performing the user task action
     userTaskAction.accept(ENGINE.userTask().ofInstance(processInstanceKey));
 
     // Step 1: Validate headers of the first listener (initial user task state)
@@ -1586,6 +1596,167 @@ public class TaskListenerTest {
 
     // Step 4: Validate the complete sequence of user task lifecycle intents
     assertUserTaskIntentsSequence(expectedUserTaskIntents.toArray(UserTaskIntent[]::new));
+  }
+
+  @Test
+  public void
+      shouldTrackChangedAttributesOnlyForActuallyCorrectedValuesOnTaskAssignmentAfterCreation() {
+    verifyChangedAttributesAreTrackedOnlyForActuallyCorrectedValues(
+        ZeebeTaskListenerEventType.assigning, true, userTask -> {}, UserTaskIntent.ASSIGNED);
+  }
+
+  @Test
+  public void shouldTrackChangedAttributesOnlyForActuallyCorrectedValuesOnTaskAssignment() {
+    verifyChangedAttributesAreTrackedOnlyForActuallyCorrectedValues(
+        ZeebeTaskListenerEventType.assigning,
+        false,
+        userTask -> userTask.withAssignee("initial_assignee").assign(),
+        UserTaskIntent.ASSIGNED);
+  }
+
+  @Test
+  public void shouldTrackChangedAttributesOnlyForActuallyCorrectedValuesOnTaskClaiming() {
+    verifyChangedAttributesAreTrackedOnlyForActuallyCorrectedValues(
+        ZeebeTaskListenerEventType.assigning,
+        false,
+        userTask -> userTask.withAssignee("initial_assignee").claim(),
+        UserTaskIntent.ASSIGNED);
+  }
+
+  @Test
+  public void shouldTrackChangedAttributesOnlyForActuallyCorrectedValuesOnTaskCompletion() {
+    verifyChangedAttributesAreTrackedOnlyForActuallyCorrectedValues(
+        ZeebeTaskListenerEventType.completing,
+        false,
+        UserTaskClient::complete,
+        UserTaskIntent.COMPLETED);
+  }
+
+  /**
+   * Verifies that only the attributes actually corrected by user task listeners are tracked during
+   * task lifecycle events.
+   *
+   * <p>This method validates the following scenarios:
+   *
+   * <ul>
+   *   <li>Attributes corrected by the first listener are tracked and reflected in the emitted
+   *       `CORRECTED` user task event.
+   *   <li>If the next listener applies the same corrections, the `CORRECTED` intent isn't emitted
+   *       because there are no changes in attribute values.
+   *   <li>Partial corrections made by a subsequent listener include only the attributes that were
+   *       actually modified.
+   * </ul>
+   *
+   * @param eventType the event type of the user task listener
+   * @param isAssigneeConfiguredOnTaskCreation whether the assignee is configured during task
+   *     creation
+   * @param userTaskAction the action performed on the user task
+   * @param terminalActionIntent the final intent for the performed action on the user task
+   */
+  private void verifyChangedAttributesAreTrackedOnlyForActuallyCorrectedValues(
+      final ZeebeTaskListenerEventType eventType,
+      final boolean isAssigneeConfiguredOnTaskCreation,
+      final Consumer<UserTaskClient> userTaskAction,
+      final UserTaskIntent terminalActionIntent) {
+
+    // given: a process instance with a user task configured with listeners and initial properties
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithZeebeUserTask(
+                userTask -> {
+                  if (isAssigneeConfiguredOnTaskCreation) {
+                    userTask.zeebeAssignee("initial_assignee");
+                  }
+                  return userTask
+                      .zeebeCandidateUsers("initial_candidate_user")
+                      .zeebeCandidateGroups("initial_candidate_group")
+                      .zeebeDueDate("2085-09-21T11:22:33+02:00")
+                      .zeebeFollowUpDate("2095-09-21T11:22:33+02:00")
+                      .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType))
+                      .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType + "_2"))
+                      .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType + "_3"));
+                }));
+
+    // Mocking a result that corrects all user task attributes
+    final var correctAllAttributesResult =
+        new JobResult()
+            .setCorrections(
+                new JobResultCorrections()
+                    .setAssignee("new_assignee")
+                    .setCandidateGroupsList(List.of("new_candidate_group"))
+                    .setCandidateUsersList(List.of("new_candidate_user"))
+                    .setDueDate("new_due_date")
+                    .setFollowUpDate("new_follow_up_date")
+                    .setPriority(100))
+            .setCorrectedAttributes(
+                List.of(
+                    "assignee",
+                    "candidateGroupsList",
+                    "candidateUsersList",
+                    "dueDate",
+                    "followUpDate",
+                    "priority"));
+
+    // when: performing the user task action
+    userTaskAction.accept(ENGINE.userTask().ofInstance(processInstanceKey));
+
+    // First listener fully corrects the user task attributes
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(correctAllAttributesResult)
+        .complete();
+
+    // Second listener applies the same corrections
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType + "_2")
+        .withResult(correctAllAttributesResult)
+        .complete();
+
+    // Third listener partially updates the user task
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType + "_3")
+        .withResult(
+            new JobResult()
+                .setCorrections(
+                    new JobResultCorrections()
+                        .setCandidateGroupsList(List.of("modified_candidate_group")) // changed
+                        .setDueDate("modified_due_date") // changed
+                        .setFollowUpDate("new_follow_up_date") // same as the previous correction
+                        .setPriority(88)) // changed
+                .setCorrectedAttributes(
+                    List.of("candidateGroupsList", "dueDate", "followUpDate", "priority")))
+        .complete();
+
+    // then: verify the changed attributes for `COMPLETE_TASK_LISTENER` and `CORRECTED` intents
+    final Predicate<Record<?>> isRelevantUserTaskIntent =
+        record ->
+            record.getIntent() == UserTaskIntent.COMPLETE_TASK_LISTENER
+                || record.getIntent() == UserTaskIntent.CORRECTED;
+    assertThat(
+            RecordingExporter.userTaskRecords().limit(r -> r.getIntent() == terminalActionIntent))
+        .filteredOn(isRelevantUserTaskIntent)
+        .extracting(Record::getIntent, r -> r.getValue().getChangedAttributes())
+        .describedAs(
+            "Expected corrected attributes to be tracked only for values that were actually modified")
+        .containsExactly(
+            // Listener 1: all attributes corrected
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, ALL_CORRECTABLE_ATTRIBUTES),
+            tuple(UserTaskIntent.CORRECTED, ALL_CORRECTABLE_ATTRIBUTES),
+            // Listener 2: attributes corrected again to the same values
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, ALL_CORRECTABLE_ATTRIBUTES),
+            // No `CORRECTED` event was fired because the attributes' values were unchanged
+            // Listener 3: partially corrected attributes
+            tuple(
+                UserTaskIntent.COMPLETE_TASK_LISTENER,
+                List.of("candidateGroupsList", "dueDate", "followUpDate", "priority")),
+            // `followUpDate` isn't present as it has the same value as the previous correction
+            tuple(UserTaskIntent.CORRECTED, List.of("candidateGroupsList", "dueDate", "priority")));
   }
 
   @Test
