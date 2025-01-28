@@ -254,7 +254,7 @@ class ExpressionProcessorTest {
     void testEnvEvaluationContext() {
       final var envVariable = System.getenv().keySet().stream().findFirst().get();
       final Expression expression =
-          EXPRESSION_LANGUAGE.parseExpression(String.format("=%s", envVariable));
+          EXPRESSION_LANGUAGE.parseExpression(String.format("=camunda.%s", envVariable));
 
       final EnvVariableEvaluationContext context =
           new EnvVariableEvaluationContext(Collections.emptyList());
@@ -277,6 +277,20 @@ class ExpressionProcessorTest {
       final var result = processor.evaluateStringExpression(expression, -1L);
 
       assertThat(result).isRight().right().isEqualTo("bar");
+    }
+
+    @Test
+    void testIt() {
+      final var envVariable = System.getenv().keySet().stream().findFirst().get();
+      final Expression expression =
+          EXPRESSION_LANGUAGE.parseExpression(String.format("=env.%s", envVariable));
+
+      final EnvVariableEvaluationContext context =
+          new EnvVariableEvaluationContext(Collections.emptyList());
+      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, context);
+      final var result = processor.evaluateStringExpression(expression, -1L);
+
+      assertThat(result).isRight().right().isEqualTo(System.getenv(envVariable));
     }
   }
 }

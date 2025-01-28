@@ -8,6 +8,8 @@
 package io.camunda.zeebe.el.impl;
 
 import io.camunda.zeebe.el.EvaluationWarning;
+import java.util.ArrayList;
+import java.util.List;
 
 public class FeelEvaluationWarning implements EvaluationWarning {
 
@@ -17,6 +19,22 @@ public class FeelEvaluationWarning implements EvaluationWarning {
   public FeelEvaluationWarning(final String type, final String message) {
     this.type = type;
     this.message = message;
+  }
+
+  public static List<EvaluationWarning> fromResult(
+      final org.camunda.feel.api.EvaluationResult evaluationResult) {
+    final var warnings = new ArrayList<EvaluationWarning>();
+    evaluationResult
+        .suppressedFailures()
+        .foreach(
+            suppressedFailure -> {
+              final var warning =
+                  new FeelEvaluationWarning(
+                      suppressedFailure.failureType().toString(),
+                      suppressedFailure.failureMessage());
+              return warnings.add(warning);
+            });
+    return warnings;
   }
 
   @Override
