@@ -533,6 +533,47 @@ public final class UpdateUserTaskTest {
   }
 
   @Test
+  public void shouldIgnoreAndNotTrackUnknownChangedAttributes() {
+    // given
+    ENGINE.deployment().withXmlResource(process()).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when: updating the user task with both valid and unknown attributes
+    final var updatingRecord =
+        ENGINE
+            .userTask()
+            .ofInstance(processInstanceKey)
+            .update(
+                new UserTaskRecord()
+                    .setCandidateGroupsList(List.of("updated_group"))
+                    .setPriority(99)
+                    .setChangedAttributes(
+                        List.of(
+                            UserTaskRecord.CANDIDATE_GROUPS,
+                            "unknown_attribute",
+                            UserTaskRecord.PRIORITY)));
+
+    // then
+    Assertions.assertThat(updatingRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(UserTaskIntent.UPDATING);
+
+    final var updatingRecordValue = updatingRecord.getValue();
+    final var updatedRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.UPDATED).getFirst().getValue();
+
+    assertThat(List.of(updatingRecordValue, updatedRecordValue))
+        .describedAs("Ensure both UPDATING and UPDATED records have consistent attribute values")
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .describedAs("Expect that unknown attributes are not tracked")
+                    .doesNotHaveChangedAttributes("unknown_attribute")
+                    .hasOnlyChangedAttributes(
+                        UserTaskRecord.CANDIDATE_GROUPS, UserTaskRecord.PRIORITY));
+  }
+
+  @Test
   public void shouldRejectUpdateIfUserTaskIsCompleted() {
     // given
     ENGINE.deployment().withXmlResource(process()).deploy();
