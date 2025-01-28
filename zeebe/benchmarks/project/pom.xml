@@ -67,7 +67,7 @@
 
     <dependency>
       <groupId>io.prometheus</groupId>
-      <artifactId>simpleclient_httpserver</artifactId>
+      <artifactId>prometheus-metrics-exporter-httpserver</artifactId>
     </dependency>
 
     <dependency>
@@ -92,12 +92,7 @@
 
     <dependency>
       <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-registry-prometheus-simpleclient</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.prometheus</groupId>
-      <artifactId>simpleclient</artifactId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
     </dependency>
 
     <dependency>
