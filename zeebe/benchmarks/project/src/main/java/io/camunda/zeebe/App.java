@@ -23,11 +23,14 @@ import io.camunda.zeebe.config.AppConfigLoader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.grpc.ClientInterceptor;
 import io.micrometer.core.instrument.binder.grpc.MetricCollectingClientInterceptor;
+<<<<<<< HEAD
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics;
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics;
+=======
+>>>>>>> 1eb44e77 (refactor: drop usage of old simpleclient)
 import io.micrometer.prometheusmetrics.PrometheusConfig;
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 import io.micrometer.prometheusmetrics.PrometheusRenameFilter;
@@ -68,7 +71,11 @@ abstract class App implements Runnable {
       monitoringServer =
           HTTPServer.builder()
               .port(appCfg.getMonitoringPort())
+<<<<<<< HEAD
               .registry(registry.getPrometheusRegistry())
+=======
+              .registry(prometheusRegistry.getPrometheusRegistry())
+>>>>>>> 1eb44e77 (refactor: drop usage of old simpleclient)
               .buildAndStart();
     } catch (final IOException e) {
       LOG.error("Problem on starting monitoring server.", e);

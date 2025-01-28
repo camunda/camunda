@@ -68,11 +68,14 @@
     <dependency>
       <groupId>io.prometheus</groupId>
       <artifactId>prometheus-metrics-exporter-httpserver</artifactId>
+<<<<<<< HEAD
     </dependency>
 
     <dependency>
       <groupId>io.prometheus</groupId>
       <artifactId>prometheus-metrics-model</artifactId>
+=======
+>>>>>>> 1eb44e77 (refactor: drop usage of old simpleclient)
     </dependency>
 
     <dependency>
