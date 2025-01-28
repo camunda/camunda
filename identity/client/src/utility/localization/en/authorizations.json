@@ -1,0 +1,16 @@
+{
+  "APPLICATION": "Application",
+  "AUTHORIZATION": "Authorization",
+  "BATCH": "Batch",
+  "DECISION_DEFINITION": "Decision definition",
+  "DECISION_REQUIREMENTS_DEFINITION": "Decision requirements definition",
+  "DEPLOYMENT": "Deployments",
+  "GROUP": "Groups",
+  "MAPPING_RULE": "Mapping rules",
+  "MESSAGE": "Message",
+  "PROCESS_DEFINITION": "Process definition",
+  "ROLE": "Role",
+  "SYSTEM": "System",
+  "TENANT": "Tenant",
+  "USER": "User"
+}
