@@ -149,7 +149,8 @@
         </foreach>
       </when>
       <when test="operation.operator.name().equals('LIKE')">
-        VAR_VALUE LIKE #{operation.value} OR VAR_FULL_VALUE LIKE #{operation.value}
+        VAR_VALUE LIKE #{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler}
+        OR VAR_FULL_VALUE LIKE #{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler}
       </when>
     </choose>
   </sql>
