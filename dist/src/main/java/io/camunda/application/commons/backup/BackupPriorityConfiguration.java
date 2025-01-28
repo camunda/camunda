@@ -125,7 +125,7 @@ public class BackupPriorityConfiguration {
   private <A> Function<Map<String, A>, String> differentConfigFor(final String field) {
     return values ->
         String.format(
-            "Expected %s to be configured with the same value in operate and tasklist. Got %s. Active profiles: %s",
+            "Expected %s to be configured with the same value in operate, optimize and tasklist. Got %s. Active profiles: %s",
             field, values, Arrays.asList(profiles));
   }
 
