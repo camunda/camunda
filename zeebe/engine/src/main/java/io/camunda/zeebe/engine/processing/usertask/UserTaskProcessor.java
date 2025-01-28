@@ -102,8 +102,11 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
     if (!command.getValue().getChangedAttributes().isEmpty()) {
       intermediateUserTaskRecord.wrapChangedAttributesIfValueChanged(command.getValue());
-      stateWriter.appendFollowUpEvent(
-          command.getKey(), UserTaskIntent.CORRECTED, intermediateUserTaskRecord);
+
+      if (!intermediateUserTaskRecord.getChangedAttributes().isEmpty()) {
+        stateWriter.appendFollowUpEvent(
+            command.getKey(), UserTaskIntent.CORRECTED, intermediateUserTaskRecord);
+      }
     }
 
     findNextTaskListener(listenerEventType, userTaskElement, userTaskElementInstance)
