@@ -7,16 +7,16 @@
  */
 package io.camunda.it.rdbms.db.variables;
 
-import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.generateRandomString;
-import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
-import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.createAndSaveVariable;
-import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.prepareRandomVariables;
-import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.prepareRandomVariablesAndReturnOne;
+import static io.camunda.db.rdbms.fixtures.CommonFixtures.generateRandomString;
+import static io.camunda.db.rdbms.fixtures.CommonFixtures.nextStringId;
+import static io.camunda.db.rdbms.fixtures.VariableFixtures.createAndSaveVariable;
+import static io.camunda.db.rdbms.fixtures.VariableFixtures.prepareRandomVariables;
+import static io.camunda.db.rdbms.fixtures.VariableFixtures.prepareRandomVariablesAndReturnOne;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.fixtures.VariableFixtures;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
-import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.filter.Operation;
@@ -39,7 +39,7 @@ public class VariableValueFilterIT {
   public void shouldFindVariableWithNameFilter(final CamundaRdbmsTestApplication testApplication) {
     // given 20 random variables
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    prepareRandomVariables(testApplication);
+    prepareRandomVariables(rdbmsService);
 
     // and one variable with a specific name
     final String varName = "var-name-" + nextStringId();
@@ -57,7 +57,7 @@ public class VariableValueFilterIT {
       final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final var randomizedVariable = prepareRandomVariablesAndReturnOne(testApplication);
+    final var randomizedVariable = prepareRandomVariablesAndReturnOne(rdbmsService);
 
     // and an eq value filter
     final Operation<String> operation = Operation.eq(randomizedVariable.value());
@@ -73,8 +73,7 @@ public class VariableValueFilterIT {
     // given 21 variables
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final String varName = "var-name-" + nextStringId();
-    final var randomizedVariable =
-        prepareRandomVariablesAndReturnOne(testApplication, varName, "42");
+    final var randomizedVariable = prepareRandomVariablesAndReturnOne(rdbmsService, varName, "42");
 
     // and an eq value filter
     final Operation<String> operation = Operation.eq("42");
@@ -91,7 +90,7 @@ public class VariableValueFilterIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final String varName = "var-name-" + nextStringId();
     final var randomizedVariable =
-        prepareRandomVariablesAndReturnOne(testApplication, varName, "true");
+        prepareRandomVariablesAndReturnOne(rdbmsService, varName, "true");
 
     // and an eq value filter
     final Operation<String> operation = Operation.eq("true");
@@ -106,7 +105,7 @@ public class VariableValueFilterIT {
       final CamundaRdbmsTestApplication testApplication) {
     // given 20 random variables
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    prepareRandomVariables(testApplication);
+    prepareRandomVariables(rdbmsService);
 
     // and one variable with a specific name
     final String varName = "var-name-" + nextStringId();
@@ -128,7 +127,7 @@ public class VariableValueFilterIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final String varName = "var-name-" + nextStringId();
     final var randomizedVariable =
-        prepareRandomVariablesAndReturnOne(testApplication, varName, "42000");
+        prepareRandomVariablesAndReturnOne(rdbmsService, varName, "42000");
 
     // and a gt value filter
     final Operation<String> operation = Operation.gt("40000");
@@ -144,7 +143,7 @@ public class VariableValueFilterIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final String varName = "var-name-" + nextStringId();
     final var randomizedVariable =
-        prepareRandomVariablesAndReturnOne(testApplication, varName, "42000");
+        prepareRandomVariablesAndReturnOne(rdbmsService, varName, "42000");
 
     // and a gte value filter
     final Operation<String> operation = Operation.gte("42000");
@@ -160,7 +159,7 @@ public class VariableValueFilterIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final String varName = "var-name-" + nextStringId();
     final var randomizedVariable =
-        prepareRandomVariablesAndReturnOne(testApplication, varName, "-42000");
+        prepareRandomVariablesAndReturnOne(rdbmsService, varName, "-42000");
 
     // and a lt value filter
     final Operation<String> operation = Operation.lt("-40000");
@@ -176,7 +175,7 @@ public class VariableValueFilterIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final String varName = "var-name-" + nextStringId();
     final var randomizedVariable =
-        prepareRandomVariablesAndReturnOne(testApplication, varName, "-42000");
+        prepareRandomVariablesAndReturnOne(rdbmsService, varName, "-42000");
 
     // and a lte value filter
     final Operation<String> operation = Operation.lte("-42000");
@@ -190,7 +189,7 @@ public class VariableValueFilterIT {
       final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final var randomizedVariable = prepareRandomVariablesAndReturnOne(testApplication);
+    final var randomizedVariable = prepareRandomVariablesAndReturnOne(rdbmsService);
 
     // and two name filters
     final VariableValueFilter variableValueFilter =
@@ -226,7 +225,7 @@ public class VariableValueFilterIT {
       final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    prepareRandomVariablesAndReturnOne(testApplication);
+    prepareRandomVariablesAndReturnOne(rdbmsService);
     final VariableDbModel randomizedVariable =
         VariableFixtures.createRandomized(b -> b.name("unique-name" + generateRandomString(10)));
     createAndSaveVariable(rdbmsService, randomizedVariable);

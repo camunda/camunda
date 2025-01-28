@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.rdbms.db.fixtures;
+package io.camunda.db.rdbms.fixtures;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,7 +13,6 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.db.rdbms.write.domain.VariableDbModel.VariableDbModelBuilder;
-import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -100,22 +99,17 @@ public final class VariableFixtures extends CommonFixtures {
     rdbmsWriter.flush();
   }
 
-  public static void prepareRandomVariables(final CamundaRdbmsTestApplication testApplication) {
-    VariableFixtures.createAndSaveRandomVariables(testApplication.getRdbmsService(), b -> b);
+  public static void prepareRandomVariables(final RdbmsService rdbmsService) {
+    VariableFixtures.createAndSaveRandomVariables(rdbmsService, b -> b);
   }
 
   public static VariableDbModel prepareRandomVariablesAndReturnOne(
-      final CamundaRdbmsTestApplication testApplication) {
-    return VariableFixtures.createAndSaveRandomVariables(testApplication.getRdbmsService(), b -> b)
-        .getLast();
+      final RdbmsService rdbmsService) {
+    return VariableFixtures.createAndSaveRandomVariables(rdbmsService, b -> b).getLast();
   }
 
   public static VariableDbModel prepareRandomVariablesAndReturnOne(
-      final CamundaRdbmsTestApplication testApplication,
-      final String variableName,
-      final String valueForOne) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-
+      final RdbmsService rdbmsService, final String variableName, final String valueForOne) {
     // 20 variables
     createAndSaveRandomVariables(rdbmsService, variableName);
 

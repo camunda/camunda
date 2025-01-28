@@ -7,15 +7,15 @@
  */
 package io.camunda.it.rdbms.db.flownodeinstance;
 
-import static io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures.createAndSaveFlowNodeInstance;
-import static io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstances;
+import static io.camunda.db.rdbms.fixtures.FlowNodeInstanceFixtures.createAndSaveFlowNodeInstance;
+import static io.camunda.db.rdbms.fixtures.FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstances;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.fixtures.FlowNodeInstanceFixtures;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
-import io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;

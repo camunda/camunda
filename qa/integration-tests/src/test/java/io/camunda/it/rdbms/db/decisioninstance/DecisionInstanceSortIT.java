@@ -7,14 +7,14 @@
  */
 package io.camunda.it.rdbms.db.decisioninstance;
 
-import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
-import static io.camunda.it.rdbms.db.fixtures.DecisionInstanceFixtures.createAndSaveRandomDecisionInstances;
+import static io.camunda.db.rdbms.fixtures.CommonFixtures.nextKey;
+import static io.camunda.db.rdbms.fixtures.DecisionInstanceFixtures.createAndSaveRandomDecisionInstances;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.fixtures.DecisionDefinitionFixtures;
 import io.camunda.db.rdbms.read.service.DecisionInstanceReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
-import io.camunda.it.rdbms.db.fixtures.DecisionDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.DecisionInstanceEntity;

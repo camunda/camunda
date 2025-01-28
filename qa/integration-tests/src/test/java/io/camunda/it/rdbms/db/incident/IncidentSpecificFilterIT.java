@@ -7,17 +7,17 @@
  */
 package io.camunda.it.rdbms.db.incident;
 
-import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.NOW;
-import static io.camunda.it.rdbms.db.fixtures.IncidentFixtures.createAndSaveIncident;
-import static io.camunda.it.rdbms.db.fixtures.IncidentFixtures.createAndSaveRandomIncidents;
+import static io.camunda.db.rdbms.fixtures.CommonFixtures.NOW;
+import static io.camunda.db.rdbms.fixtures.IncidentFixtures.createAndSaveIncident;
+import static io.camunda.db.rdbms.fixtures.IncidentFixtures.createAndSaveRandomIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.fixtures.CommonFixtures;
+import io.camunda.db.rdbms.fixtures.IncidentFixtures;
 import io.camunda.db.rdbms.read.service.IncidentReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
-import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
-import io.camunda.it.rdbms.db.fixtures.IncidentFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;

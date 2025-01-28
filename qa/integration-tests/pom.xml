@@ -246,6 +246,12 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-db-rdbms</artifactId>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-test-util</artifactId>
       <scope>test</scope>
     </dependency>

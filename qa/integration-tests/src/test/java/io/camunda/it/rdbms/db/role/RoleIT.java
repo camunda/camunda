@@ -7,15 +7,15 @@
  */
 package io.camunda.it.rdbms.db.role;
 
-import static io.camunda.it.rdbms.db.fixtures.RoleFixtures.createAndSaveRandomRoles;
-import static io.camunda.it.rdbms.db.fixtures.RoleFixtures.createAndSaveRole;
+import static io.camunda.db.rdbms.fixtures.RoleFixtures.createAndSaveRandomRoles;
+import static io.camunda.db.rdbms.fixtures.RoleFixtures.createAndSaveRole;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.fixtures.RoleFixtures;
 import io.camunda.db.rdbms.read.service.RoleReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.RoleDbModel;
-import io.camunda.it.rdbms.db.fixtures.RoleFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.RoleEntity;

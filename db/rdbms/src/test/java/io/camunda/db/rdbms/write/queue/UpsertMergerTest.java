@@ -10,12 +10,11 @@ package io.camunda.db.rdbms.write.queue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import io.camunda.db.rdbms.fixtures.ProcessInstanceFixtures;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -36,7 +35,7 @@ class UpsertMergerTest {
             ContextType.PROCESS_INSTANCE, 1L, ProcessInstanceDbModel.class, mergerFunction);
 
     final var insertParameter =
-        createRandomized(
+        ProcessInstanceFixtures.createRandomized(
             b ->
                 b.processInstanceKey(1L)
                     .endDate(NOW.minusDays(1))
@@ -79,26 +78,5 @@ class UpsertMergerTest {
         Arguments.of(new QueueItem(ContextType.PROCESS_INSTANCE, 1L, "statement1", null), false),
         Arguments.of(new QueueItem(ContextType.PROCESS_INSTANCE, 2L, "statement1", null), false),
         Arguments.of(new QueueItem(ContextType.FLOW_NODE, 1L, "statement1", null), false));
-  }
-
-  public static ProcessInstanceDbModel createRandomized(
-      final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder>
-          builderFunction) {
-    final var random = new Random();
-    final var builder =
-        new ProcessInstanceDbModelBuilder()
-            .processInstanceKey(random.nextLong())
-            .processInstanceKey(random.nextLong())
-            .processDefinitionKey(random.nextLong())
-            .processDefinitionId("process-" + random.nextInt(10000))
-            .startDate(NOW.plus(random.nextInt(), ChronoUnit.MILLIS))
-            .endDate(NOW.plus(random.nextInt(), ChronoUnit.MILLIS))
-            .state(ProcessInstanceState.COMPLETED)
-            .parentProcessInstanceKey(random.nextLong())
-            .parentElementInstanceKey(random.nextLong())
-            .tenantId("tenant-" + random.nextInt(10000))
-            .version(random.nextInt());
-
-    return builderFunction.apply(builder).build();
   }
 }

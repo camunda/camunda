@@ -8,9 +8,9 @@
 package io.camunda.it.rdbms.db;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.fixtures.ProcessDefinitionFixtures;
+import io.camunda.db.rdbms.fixtures.ProcessInstanceFixtures;
 import io.camunda.db.rdbms.write.RdbmsWriter;
-import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
-import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.query.ProcessDefinitionQuery;

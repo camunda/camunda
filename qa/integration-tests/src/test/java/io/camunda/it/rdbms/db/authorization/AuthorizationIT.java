@@ -7,16 +7,16 @@
  */
 package io.camunda.it.rdbms.db.authorization;
 
-import static io.camunda.it.rdbms.db.fixtures.AuthorizationFixtures.createAndSaveAuthorization;
-import static io.camunda.it.rdbms.db.fixtures.AuthorizationFixtures.createAndSaveRandomAuthorizations;
+import static io.camunda.db.rdbms.fixtures.AuthorizationFixtures.createAndSaveAuthorization;
+import static io.camunda.db.rdbms.fixtures.AuthorizationFixtures.createAndSaveRandomAuthorizations;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.fixtures.AuthorizationFixtures;
 import io.camunda.db.rdbms.read.service.AuthorizationReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
 import io.camunda.db.rdbms.write.domain.AuthorizationPermissionDbModel;
-import io.camunda.it.rdbms.db.fixtures.AuthorizationFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.AuthorizationEntity;

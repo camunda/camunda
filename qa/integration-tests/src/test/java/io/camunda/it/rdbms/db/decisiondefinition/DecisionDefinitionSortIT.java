@@ -7,8 +7,8 @@
  */
 package io.camunda.it.rdbms.db.decisiondefinition;
 
-import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
-import static io.camunda.it.rdbms.db.fixtures.DecisionDefinitionFixtures.createAndSaveRandomDecisionDefinitions;
+import static io.camunda.db.rdbms.fixtures.CommonFixtures.nextKey;
+import static io.camunda.db.rdbms.fixtures.DecisionDefinitionFixtures.createAndSaveRandomDecisionDefinitions;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;

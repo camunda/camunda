@@ -7,8 +7,8 @@
  */
 package io.camunda.it.rdbms.db.group;
 
-import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
-import static io.camunda.it.rdbms.db.fixtures.GroupFixtures.createAndSaveRandomGroups;
+import static io.camunda.db.rdbms.fixtures.CommonFixtures.nextStringId;
+import static io.camunda.db.rdbms.fixtures.GroupFixtures.createAndSaveRandomGroups;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;

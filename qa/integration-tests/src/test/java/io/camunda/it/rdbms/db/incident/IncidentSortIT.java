@@ -7,8 +7,8 @@
  */
 package io.camunda.it.rdbms.db.incident;
 
-import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
-import static io.camunda.it.rdbms.db.fixtures.IncidentFixtures.createAndSaveRandomIncidents;
+import static io.camunda.db.rdbms.fixtures.CommonFixtures.nextKey;
+import static io.camunda.db.rdbms.fixtures.IncidentFixtures.createAndSaveRandomIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
