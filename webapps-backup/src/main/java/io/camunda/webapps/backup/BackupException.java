@@ -7,6 +7,8 @@
  */
 package io.camunda.webapps.backup;
 
+import java.util.Collection;
+
 public sealed class BackupException extends RuntimeException {
   public BackupException(final String message) {
     super(message);
@@ -45,6 +47,12 @@ public sealed class BackupException extends RuntimeException {
   public static final class MissingRepositoryException extends BackupException {
     public MissingRepositoryException(final String message) {
       super(message);
+    }
+  }
+
+  public static final class IndexNotFoundException extends BackupException {
+    public IndexNotFoundException(final Collection<String> missingIndices) {
+      super(String.format("Missing indices: %s", missingIndices));
     }
   }
 }

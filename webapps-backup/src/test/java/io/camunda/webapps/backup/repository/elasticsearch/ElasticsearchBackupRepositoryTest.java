@@ -10,15 +10,16 @@ package io.camunda.webapps.backup.repository.elasticsearch;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.ElasticsearchException;
-import co.elastic.clients.elasticsearch._types.ErrorCause;
-import co.elastic.clients.elasticsearch._types.ErrorResponse;
+import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
+import co.elastic.clients.elasticsearch.indices.GetIndexResponse;
 import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotRequest;
 import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotResponse;
 import co.elastic.clients.elasticsearch.snapshot.GetSnapshotRequest;
@@ -50,9 +51,7 @@ import org.mockito.Answers;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.stubbing.Answer;
 
 @ExtendWith(MockitoExtension.class)
 public class ElasticsearchBackupRepositoryTest {
@@ -99,7 +98,7 @@ public class ElasticsearchBackupRepositoryTest {
         backupRepository.isSnapshotFinishedWithinTimeout(repositoryName, snapshotName);
 
     assertThat(finished).isFalse();
-    Mockito.verify(backupRepository, Mockito.atLeast(5)).findSnapshots(repositoryName, backupId);
+    verify(backupRepository, Mockito.atLeast(5)).findSnapshots(repositoryName, backupId);
   }
 
   @Test
@@ -122,7 +121,7 @@ public class ElasticsearchBackupRepositoryTest {
         backupRepository.isSnapshotFinishedWithinTimeout(repositoryName, snapshotName);
 
     assertThat(finished).isTrue();
-    Mockito.verify(backupRepository, times(3)).findSnapshots(repositoryName, backupId);
+    verify(backupRepository, times(3)).findSnapshots(repositoryName, backupId);
   }
 
   @Test
@@ -251,8 +250,7 @@ public class ElasticsearchBackupRepositoryTest {
 
     // Test
     final var backupState = backupRepository.getBackupState("repository-name", 5L);
-    org.assertj.core.api.Assertions.assertThat(backupState.getState())
-        .isEqualTo(BackupStateDto.INCOMPLETE);
+    assertThat(backupState.getState()).isEqualTo(BackupStateDto.INCOMPLETE);
   }
 
   @Test
@@ -327,50 +325,17 @@ public class ElasticsearchBackupRepositoryTest {
   }
 
   @Test
-  public void shouldRetryBackupWithRequiredIndicesIfIndexNotFound() throws IOException {
-    final var missingIndex = "missing-index";
+  void shouldReturnAvailableIndices() throws IOException {
     // given
-    when(esClient.snapshot().create((CreateSnapshotRequest) any()))
-        .thenAnswer(
-            new Answer<CreateSnapshotResponse>() {
+    when(esClient.indices().get((GetIndexRequest) Mockito.any()))
+        .thenReturn(GetIndexResponse.of(b -> b));
 
-              @Override
-              public CreateSnapshotResponse answer(final InvocationOnMock invocation)
-                  throws Throwable {
-                final var request = (CreateSnapshotRequest) invocation.getArguments()[0];
-                if (request.indices().contains(missingIndex)) {
-                  throw new ElasticsearchException(
-                      "",
-                      ErrorResponse.of(
-                          b ->
-                              b.error(ErrorCause.of(ec -> ec.type("index_not_found_exception")))
-                                  .status(1)));
-                } else {
-                  return CreateSnapshotResponse.of(
-                      b ->
-                          b.accepted(true)
-                              .snapshot(
-                                  SnapshotInfo.of(
-                                      si ->
-                                          si.snapshot(request.snapshot())
-                                              .uuid("uuid")
-                                              .indices(request.indices())
-                                              .state("SUCCESS")
-                                              .dataStreams(List.of()))));
-                }
-              }
-            });
+    // when
+    final var result = backupRepository.checkAllIndicesExist(List.of("missingIndex"));
 
-    final var metadata = new Metadata(1L, "1", 1, 1);
-    final var snapshotRequest =
-        new SnapshotRequest(
-            "repo",
-            snapshotNameProvider.getSnapshotName(metadata),
-            new SnapshotIndexCollection(List.of("required"), List.of(missingIndex)),
-            metadata);
-    backupRepository.executeSnapshotting(
-        snapshotRequest, () -> {}, () -> fail("Expected snapshot to complete"));
-
-    verify(esClient.snapshot(), times(2)).create((CreateSnapshotRequest) ArgumentMatchers.any());
+    // then
+    assertThat(result.size()).isEqualTo(0);
+    verify(esClient.indices(), atLeastOnce())
+        .get((GetIndexRequest) argThat(r -> ((GetIndexRequest) r).ignoreUnavailable()));
   }
 }

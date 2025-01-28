@@ -490,6 +490,9 @@ public final class EventAppliers implements EventApplier {
     register(
         AuthorizationIntent.DELETED,
         new AuthorizationDeletedApplier(state.getAuthorizationState()));
+    register(
+        AuthorizationIntent.UPDATED,
+        new AuthorizationUpdatedApplier(state.getAuthorizationState()));
   }
 
   private void registerEscalationAppliers() {
