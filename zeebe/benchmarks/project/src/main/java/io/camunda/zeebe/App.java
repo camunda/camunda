@@ -23,16 +23,15 @@ import io.camunda.zeebe.config.AppConfigLoader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.grpc.ClientInterceptor;
 import io.micrometer.core.instrument.binder.grpc.MetricCollectingClientInterceptor;
-import io.micrometer.prometheus.PrometheusConfig;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
-import io.micrometer.prometheus.PrometheusRenameFilter;
-import io.prometheus.client.exporter.HTTPServer;
+import io.micrometer.prometheusmetrics.PrometheusConfig;
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
+import io.micrometer.prometheusmetrics.PrometheusRenameFilter;
+import io.prometheus.metrics.exporter.httpserver.HTTPServer;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -62,10 +61,10 @@ abstract class App implements Runnable {
     try {
       // you can set the daemon flag to false if you want the server to block
       monitoringServer =
-          new HTTPServer(
-              new InetSocketAddress(appCfg.getMonitoringPort()),
-              prometheusRegistry.getPrometheusRegistry(),
-              true);
+          HTTPServer.builder()
+              .port(appCfg.getMonitoringPort())
+              .registry(prometheusRegistry.getPrometheusRegistry())
+              .buildAndStart();
     } catch (final IOException e) {
       LOG.error("Problem on starting monitoring server.", e);
     }
