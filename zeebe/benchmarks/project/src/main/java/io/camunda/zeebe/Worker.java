@@ -55,7 +55,7 @@ public class Worker extends App {
     final ZeebeClient client = createZeebeClient();
     final JobWorkerMetrics metrics =
         JobWorkerMetrics.micrometer()
-            .withMeterRegistry(prometheusRegistry)
+            .withMeterRegistry(registry)
             .withTags(Tags.of("workerName", workerCfg.getWorkerName(), "jobType", jobType))
             .build();
     printTopology(client);
