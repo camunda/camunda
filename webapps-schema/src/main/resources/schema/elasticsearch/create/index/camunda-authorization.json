@@ -5,6 +5,9 @@
       "id": {
         "type": "keyword"
       },
+      "ownerId": {
+        "type": "keyword"
+      },
       "ownerKey": {
         "type": "long"
       },
@@ -12,6 +15,12 @@
         "type": "keyword"
       },
       "resourceType": {
+        "type": "keyword"
+      },
+      "resourceId": {
+        "type": "keyword"
+      },
+      "authorizationPermissions": {
         "type": "keyword"
       },
       "permissions": {
