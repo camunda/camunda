@@ -589,18 +589,14 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   }
 
   private boolean isAttributeValueChanged(final String attribute, final UserTaskRecord other) {
-    final var attributeGetter = resolveAttributeGetter(attribute);
+    final var attributeGetter = ATTRIBUTE_GETTER_MAP.get(attribute);
+    if (attributeGetter == null) {
+      return false;
+    }
+
     final var thisAttributeValue = attributeGetter.apply(this);
     final var otherAttributeValue = attributeGetter.apply(other);
     return !Objects.equals(thisAttributeValue, otherAttributeValue);
-  }
-
-  private Function<UserTaskRecord, ?> resolveAttributeGetter(final String attribute) {
-    final Function<UserTaskRecord, ?> getter = ATTRIBUTE_GETTER_MAP.get(attribute);
-    if (getter == null) {
-      throw new IllegalArgumentException("Unknown attribute: " + attribute);
-    }
-    return getter;
   }
 
   @JsonIgnore
