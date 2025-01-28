@@ -12,7 +12,6 @@ import static java.util.concurrent.Executors.newThreadPerTaskExecutor;
 import com.google.rpc.Code;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.health.GatewayHealthManager;
@@ -385,10 +384,10 @@ public final class Gateway implements CloseableSilently {
     Collections.reverse(interceptors);
     interceptors.add(new ContextInjectingInterceptor(queryApi));
     interceptors.add(MONITORING_SERVER_INTERCEPTOR);
-    if (!securityConfiguration.getAuthentication().getMethod().equals(AuthenticationMethod.NONE)) {
+
+    if (!securityConfiguration.isUnauthenticatedApiAccessAllowed()) {
       interceptors.add(new AuthenticationInterceptor(userServices, passwordEncoder));
     }
-
     return ServerInterceptors.intercept(service, interceptors);
   }
 

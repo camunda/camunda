@@ -7,6 +7,8 @@
  */
 package io.camunda.security.configuration;
 
+import io.camunda.security.entity.AuthenticationMethod;
+
 public class SecurityConfiguration {
 
   private AuthenticationConfiguration authentication = new AuthenticationConfiguration();
@@ -44,5 +46,10 @@ public class SecurityConfiguration {
 
   public void setMultiTenancy(final MultiTenancyConfiguration multiTenancy) {
     this.multiTenancy = multiTenancy;
+  }
+
+  public boolean isUnauthenticatedApiAccessAllowed() {
+    return authentication.getMethod() == AuthenticationMethod.BASIC
+        && authentication.getBasic().getAllowUnauthenticatedApiAccess();
   }
 }

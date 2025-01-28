@@ -41,6 +41,7 @@ public final class CreateDeploymentTest {
   @TestZeebe
   final TestStandaloneBroker zeebe =
       new TestStandaloneBroker()
+          .withUnauthenticatedAccess()
           .withRecordingExporter(true)
           .withBrokerConfig(b -> b.getNetwork().setMaxMessageSize(DataSize.ofMegabytes(1)));
 
@@ -133,7 +134,8 @@ public final class CreateDeploymentTest {
     // then
     assertThatThrownBy(command::join)
         .isInstanceOf(ClientException.class)
-        .hasMessageContaining("Must have exactly one 'zeebe:taskDefinition' extension element");
+        .hasMessageContaining(
+            "Must have either one 'zeebe:linkedResources' or one 'zeebe:taskDefinition' extension element");
   }
 
   @ParameterizedTest

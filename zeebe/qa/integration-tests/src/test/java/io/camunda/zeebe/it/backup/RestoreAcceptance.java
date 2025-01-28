@@ -52,6 +52,7 @@ public interface RestoreAcceptance {
     try (final var zeebe =
         new TestStandaloneBroker()
             .withBrokerConfig(this::configureBackupStore)
+            .withUnauthenticatedAccess()
             .start()
             .awaitCompleteTopology()) {
       final var actuator = BackupActuator.of(zeebe);

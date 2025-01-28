@@ -29,7 +29,9 @@ import org.junit.jupiter.api.BeforeEach;
 @ZeebeIntegration
 final class FormLinkingIT {
 
-  @TestZeebe private final TestStandaloneBroker zeebe = new TestStandaloneBroker();
+  @TestZeebe
+  private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withUnauthenticatedAccess();
+
   private final PartitionsActuator partitions = PartitionsActuator.of(zeebe);
   @AutoClose private CamundaClient client;
 

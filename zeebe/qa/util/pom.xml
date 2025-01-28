@@ -24,6 +24,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-authentication</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-elasticsearch</artifactId>
     </dependency>
 

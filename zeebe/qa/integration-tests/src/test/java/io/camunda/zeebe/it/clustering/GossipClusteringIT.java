@@ -38,6 +38,7 @@ final class GossipClusteringIT {
                               .setProbeInterval(Duration.ofMillis(250))))
           .withBrokersCount(3)
           .withReplicationFactor(3)
+          .withUnauthenticatedAccess()
           .build();
 
   @AutoClose private CamundaClient client;

@@ -49,6 +49,7 @@ public class ClusterPurgeIT {
           .withReplicationFactor(REPLICATION_FACTOR)
           .withEmbeddedGateway(true)
           .withBrokerConfig(TestStandaloneBroker::withRdbmsExporter)
+          .withUnauthenticatedAccess()
           .build();
 
   @AutoClose CamundaClient client;

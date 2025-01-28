@@ -11,13 +11,13 @@ import static org.springframework.security.web.util.matcher.AntPathRequestMatche
 
 import com.google.common.collect.Sets;
 import io.camunda.authentication.CamundaUserDetailsService;
+import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.filters.TenantRequestAttributeFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
-import io.camunda.security.configuration.AuthenticationConfiguration;
-import io.camunda.security.configuration.BasicAuthenticationConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
@@ -25,7 +25,6 @@ import io.camunda.service.UserServices;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,13 +45,14 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@Profile("auth-basic|auth-oidc")
+@Profile("consolidated-auth")
 public class WebSecurityConfig {
   public static final String SESSION_COOKIE = "camunda-session";
 
@@ -92,7 +92,7 @@ public class WebSecurityConfig {
   }
 
   @Bean
-  @Profile("auth-basic")
+  @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
   public CamundaUserDetailsService camundaUserDetailsService(
       final UserServices userServices,
       final AuthorizationServices authorizationServices,
@@ -103,8 +103,16 @@ public class WebSecurityConfig {
   }
 
   @Bean
+  @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
+  public ClientRegistrationRepository clientRegistrationRepository(
+      final SecurityConfiguration securityConfiguration) {
+    return new InMemoryClientRegistrationRepository(
+        OidcClientRegistration.create(securityConfiguration.getAuthentication().getOidc()));
+  }
+
+  @Bean
   @Primary
-  @Profile("auth-oidc")
+  @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
   public SecurityFilterChain oidcHttpSecurity(
       final HttpSecurity httpSecurity,
       final AuthFailureHandler authFailureHandler,
@@ -117,7 +125,7 @@ public class WebSecurityConfig {
                     jwtConfigurer ->
                         jwtConfigurer.jwkSetUri(
                             clientRegistrationRepository
-                                .findByRegistrationId("oidcclient")
+                                .findByRegistrationId(OidcClientRegistration.REGISTRATION_ID)
                                 .getProviderDetails()
                                 .getJwkSetUri())))
         .oauth2Login(oauthLoginConfigurer -> {})
@@ -139,7 +147,7 @@ public class WebSecurityConfig {
   }
 
   @Bean
-  @Profile("auth-basic")
+  @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
   @Order(1)
   public SecurityFilterChain httpBasicAuthSecurityFilterChain(
       final HttpSecurity httpSecurity,
@@ -157,7 +165,7 @@ public class WebSecurityConfig {
                         // limitation of Java's HTTP client, which only sends an Authorization
                         // header after the server sends a WWW-Authenticate header in a 401
                         // response.
-                        || !isUnprotectedApiAccessAllowed(securityConfiguration)
+                        || !securityConfiguration.isUnauthenticatedApiAccessAllowed()
                             && isApiRequest(request)
                             && !hasSessionCookie(request)),
             authFailureHandler,
@@ -167,18 +175,19 @@ public class WebSecurityConfig {
   }
 
   @Bean
-  @Profile("auth-basic")
+  @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
   @Order(2)
   public SecurityFilterChain unprotectedApiAccessSecurityFilterChain(
       final HttpSecurity httpSecurity,
       final AuthFailureHandler authFailureHandler,
       final SecurityConfiguration securityConfiguration)
       throws Exception {
-    if (!isUnprotectedApiAccessAllowed(securityConfiguration)) {
+    if (!securityConfiguration.isUnauthenticatedApiAccessAllowed()) {
       return null;
     }
     LOG.warn(
-        "The API is accessible without authentication. Please disable camunda.security.authentication.basic.allow-unauthenticated-api-access for any deployment.");
+        "The API is accessible without authentication. Please disable {} for any deployment.",
+        AuthenticationProperties.API_UNPROTECTED);
     return baseHttpSecurity(
             withSecurityMatcher(
                 httpSecurity, request -> isApiRequest(request) && !hasSessionCookie(request)),
@@ -188,7 +197,7 @@ public class WebSecurityConfig {
   }
 
   @Bean
-  @Profile("auth-basic")
+  @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
   @Order(3)
   public SecurityFilterChain loginAuthSecurityFilterChain(
       final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
@@ -220,14 +229,6 @@ public class WebSecurityConfig {
   public FilterRegistrationBean<TenantRequestAttributeFilter>
       tenantRequestAttributeFilterRegistration(final MultiTenancyConfiguration configuration) {
     return new FilterRegistrationBean<>(new TenantRequestAttributeFilter(configuration));
-  }
-
-  private static boolean isUnprotectedApiAccessAllowed(final SecurityConfiguration configuration) {
-    return Optional.ofNullable(configuration)
-        .map(SecurityConfiguration::getAuthentication)
-        .map(AuthenticationConfiguration::getBasic)
-        .map(BasicAuthenticationConfiguration::getAllowUnauthenticatedApiAccess)
-        .orElse(false);
   }
 
   private static boolean isBasicAuthRequest(final HttpServletRequest request) {
