@@ -7,8 +7,8 @@
  */
 package io.camunda.it.rdbms.db.usertask;
 
-import static io.camunda.it.rdbms.db.fixtures.UserTaskFixtures.createAndSaveRandomUserTasks;
-import static io.camunda.it.rdbms.db.fixtures.UserTaskFixtures.nextStringId;
+import static io.camunda.db.rdbms.fixtures.UserTaskFixtures.createAndSaveRandomUserTasks;
+import static io.camunda.db.rdbms.fixtures.UserTaskFixtures.nextStringId;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;

@@ -7,15 +7,15 @@
  */
 package io.camunda.it.rdbms.db.group;
 
-import static io.camunda.it.rdbms.db.fixtures.GroupFixtures.createAndSaveGroup;
-import static io.camunda.it.rdbms.db.fixtures.GroupFixtures.createAndSaveRandomGroups;
+import static io.camunda.db.rdbms.fixtures.GroupFixtures.createAndSaveGroup;
+import static io.camunda.db.rdbms.fixtures.GroupFixtures.createAndSaveRandomGroups;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.fixtures.GroupFixtures;
 import io.camunda.db.rdbms.read.service.GroupReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
-import io.camunda.it.rdbms.db.fixtures.GroupFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.page.SearchQueryPage;

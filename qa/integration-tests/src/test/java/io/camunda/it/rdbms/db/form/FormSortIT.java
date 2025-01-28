@@ -7,12 +7,12 @@
  */
 package io.camunda.it.rdbms.db.form;
 
-import static io.camunda.it.rdbms.db.fixtures.FormFixtures.createAndSaveRandomForms;
+import static io.camunda.db.rdbms.fixtures.FormFixtures.createAndSaveRandomForms;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.fixtures.FormFixtures;
 import io.camunda.db.rdbms.read.service.FormReader;
-import io.camunda.it.rdbms.db.fixtures.FormFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.FormEntity;

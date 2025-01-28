@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.exporter;
 
-import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
+import static io.camunda.db.rdbms.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getAuthorizationRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionDefinitionCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionRequirementsCreatedRecord;

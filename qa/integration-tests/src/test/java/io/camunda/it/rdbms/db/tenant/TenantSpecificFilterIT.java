@@ -7,15 +7,15 @@
  */
 package io.camunda.it.rdbms.db.tenant;
 
-import static io.camunda.it.rdbms.db.fixtures.TenantFixtures.createAndSaveRandomTenants;
-import static io.camunda.it.rdbms.db.fixtures.TenantFixtures.createAndSaveTenant;
+import static io.camunda.db.rdbms.fixtures.TenantFixtures.createAndSaveRandomTenants;
+import static io.camunda.db.rdbms.fixtures.TenantFixtures.createAndSaveTenant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.fixtures.TenantFixtures;
 import io.camunda.db.rdbms.read.service.TenantReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
-import io.camunda.it.rdbms.db.fixtures.TenantFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.page.SearchQueryPage;

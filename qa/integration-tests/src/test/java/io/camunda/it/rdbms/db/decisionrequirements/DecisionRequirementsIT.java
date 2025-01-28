@@ -7,14 +7,14 @@
  */
 package io.camunda.it.rdbms.db.decisionrequirements;
 
-import static io.camunda.it.rdbms.db.fixtures.DecisionRequirementsFixtures.createAndSaveDecisionRequirement;
-import static io.camunda.it.rdbms.db.fixtures.DecisionRequirementsFixtures.createAndSaveRandomDecisionRequirements;
+import static io.camunda.db.rdbms.fixtures.DecisionRequirementsFixtures.createAndSaveDecisionRequirement;
+import static io.camunda.db.rdbms.fixtures.DecisionRequirementsFixtures.createAndSaveRandomDecisionRequirements;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.fixtures.DecisionRequirementsFixtures;
 import io.camunda.db.rdbms.read.service.DecisionRequirementsReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
-import io.camunda.it.rdbms.db.fixtures.DecisionRequirementsFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.filter.DecisionRequirementsFilter;

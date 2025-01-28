@@ -7,15 +7,15 @@
  */
 package io.camunda.it.rdbms.db.processinstance;
 
-import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAndSaveProcessDefinition;
-import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveProcessInstances;
+import static io.camunda.db.rdbms.fixtures.ProcessDefinitionFixtures.createAndSaveProcessDefinition;
+import static io.camunda.db.rdbms.fixtures.ProcessInstanceFixtures.createAndSaveProcessInstances;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.fixtures.ProcessDefinitionFixtures;
+import io.camunda.db.rdbms.fixtures.ProcessInstanceFixtures;
 import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
-import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
-import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.ProcessInstanceEntity;

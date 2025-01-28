@@ -7,15 +7,15 @@
  */
 package io.camunda.it.rdbms.db.mapping;
 
-import static io.camunda.it.rdbms.db.fixtures.MappingFixtures.createAndSaveMapping;
-import static io.camunda.it.rdbms.db.fixtures.MappingFixtures.createAndSaveRandomMappings;
+import static io.camunda.db.rdbms.fixtures.MappingFixtures.createAndSaveMapping;
+import static io.camunda.db.rdbms.fixtures.MappingFixtures.createAndSaveRandomMappings;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.fixtures.MappingFixtures;
 import io.camunda.db.rdbms.read.service.MappingReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.MappingDbModel;
-import io.camunda.it.rdbms.db.fixtures.MappingFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.filter.MappingFilter;

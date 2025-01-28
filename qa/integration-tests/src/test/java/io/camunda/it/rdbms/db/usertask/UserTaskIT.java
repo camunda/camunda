@@ -7,20 +7,20 @@
  */
 package io.camunda.it.rdbms.db.usertask;
 
-import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.NOW;
-import static io.camunda.it.rdbms.db.fixtures.UserTaskFixtures.createAndSaveRandomUserTasks;
-import static io.camunda.it.rdbms.db.fixtures.UserTaskFixtures.createAndSaveUserTask;
+import static io.camunda.db.rdbms.fixtures.CommonFixtures.NOW;
+import static io.camunda.db.rdbms.fixtures.UserTaskFixtures.createAndSaveRandomUserTasks;
+import static io.camunda.db.rdbms.fixtures.UserTaskFixtures.createAndSaveUserTask;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.fixtures.UserTaskFixtures;
+import io.camunda.db.rdbms.fixtures.VariableFixtures;
 import io.camunda.db.rdbms.read.domain.UserTaskDbQuery;
 import io.camunda.db.rdbms.read.service.UserTaskReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel.UserTaskState;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
-import io.camunda.it.rdbms.db.fixtures.UserTaskFixtures;
-import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.UserTaskEntity;

@@ -7,15 +7,15 @@
  */
 package io.camunda.it.rdbms.db.user;
 
-import static io.camunda.it.rdbms.db.fixtures.UserFixtures.createAndSaveRandomUsers;
-import static io.camunda.it.rdbms.db.fixtures.UserFixtures.createAndSaveUser;
+import static io.camunda.db.rdbms.fixtures.UserFixtures.createAndSaveRandomUsers;
+import static io.camunda.db.rdbms.fixtures.UserFixtures.createAndSaveUser;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.fixtures.UserFixtures;
 import io.camunda.db.rdbms.read.service.UserReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.UserDbModel;
-import io.camunda.it.rdbms.db.fixtures.UserFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.UserEntity;

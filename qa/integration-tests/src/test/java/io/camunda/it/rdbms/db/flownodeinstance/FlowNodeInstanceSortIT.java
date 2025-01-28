@@ -7,8 +7,8 @@
  */
 package io.camunda.it.rdbms.db.flownodeinstance;
 
-import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
-import static io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstances;
+import static io.camunda.db.rdbms.fixtures.CommonFixtures.nextKey;
+import static io.camunda.db.rdbms.fixtures.FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstances;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;

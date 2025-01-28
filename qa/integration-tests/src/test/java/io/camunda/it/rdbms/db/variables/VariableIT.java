@@ -7,17 +7,17 @@
  */
 package io.camunda.it.rdbms.db.variables;
 
-import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.generateRandomString;
-import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.createAndSaveVariable;
-import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.prepareRandomVariablesAndReturnOne;
+import static io.camunda.db.rdbms.fixtures.CommonFixtures.generateRandomString;
+import static io.camunda.db.rdbms.fixtures.VariableFixtures.createAndSaveVariable;
+import static io.camunda.db.rdbms.fixtures.VariableFixtures.prepareRandomVariablesAndReturnOne;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.fixtures.VariableFixtures;
 import io.camunda.db.rdbms.read.service.VariableReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.db.rdbms.write.domain.VariableDbModel.VariableDbModelBuilder;
-import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.VariableEntity;
@@ -35,7 +35,8 @@ public class VariableIT {
 
   @TestTemplate
   public void shouldSaveAndFindVariableByKey(final CamundaRdbmsTestApplication testApplication) {
-    final VariableDbModel randomizedVariable = prepareRandomVariablesAndReturnOne(testApplication);
+    final VariableDbModel randomizedVariable =
+        prepareRandomVariablesAndReturnOne(testApplication.getRdbmsService());
 
     final var instance =
         testApplication
@@ -52,7 +53,8 @@ public class VariableIT {
   @TestTemplate
   public void shouldUpdateAndFindVariableByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final VariableDbModel randomizedVariable = prepareRandomVariablesAndReturnOne(testApplication);
+    final VariableDbModel randomizedVariable =
+        prepareRandomVariablesAndReturnOne(testApplication.getRdbmsService());
 
     final var newValue = "new value";
     final VariableDbModel updatedVariable =
