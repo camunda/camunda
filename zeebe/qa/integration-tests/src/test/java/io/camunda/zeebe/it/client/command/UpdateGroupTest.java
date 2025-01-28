@@ -28,7 +28,8 @@ class UpdateGroupTest {
   private static final String UPDATED_GROUP_NAME = "Updated Group Name";
 
   @TestZeebe
-  private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+  private final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   @AutoClose private CamundaClient client;
 

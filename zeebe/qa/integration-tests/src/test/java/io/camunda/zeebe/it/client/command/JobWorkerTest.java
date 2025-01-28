@@ -58,7 +58,7 @@ final class JobWorkerTest {
 
   @SuppressWarnings("unused")
   static void initTestStandaloneBroker() {
-    zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+    zeebe = new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
   }
 
   @BeforeAll

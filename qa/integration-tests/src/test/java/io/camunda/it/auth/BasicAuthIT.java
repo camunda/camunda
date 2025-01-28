@@ -37,7 +37,10 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 @SpringBootTest(
     classes = {CommonsModuleConfiguration.class},
-    properties = {"spring.profiles.active=auth-basic"})
+    properties = {
+      "spring.profiles.active=consolidated-auth",
+      "camunda.security.authentication.method=basic"
+    })
 @WebAppConfiguration
 @AutoConfigureMockMvc
 public class BasicAuthIT {

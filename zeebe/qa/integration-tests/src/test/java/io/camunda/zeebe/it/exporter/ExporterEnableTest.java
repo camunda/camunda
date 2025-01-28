@@ -62,6 +62,7 @@ final class ExporterEnableTest {
                       .withExporter(
                           EXPORTER_ID_2,
                           config -> config.setClassName(TestExporter.class.getName())))
+          .withUnauthenticatedAccess()
           .build();
 
   @AutoClose private CamundaClient client;

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.network;
 
+import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
@@ -42,6 +43,8 @@ final class DefaultAdvertisedAddressIT {
               node -> {
                 node.getEnvMap().remove("ZEEBE_GATEWAY_CLUSTER_ADVERTISEDHOST");
                 node.getEnvMap().remove("ZEEBE_GATEWAY_CLUSTER_HOST");
+                node.withEnv(
+                    AuthenticationProperties.getAllowUnauthenticatedApiAccessEnvVar(), "true");
               })
           .build();
 

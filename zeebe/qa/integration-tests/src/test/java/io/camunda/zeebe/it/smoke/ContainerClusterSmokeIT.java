@@ -10,6 +10,7 @@ package io.camunda.zeebe.it.smoke;
 import static io.camunda.zeebe.it.util.ZeebeContainerUtil.newClientBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
@@ -33,6 +34,10 @@ final class ContainerClusterSmokeIT {
           .withPartitionsCount(1)
           .withEmbeddedGateway(false)
           .withImage(ZeebeTestContainerDefaults.defaultTestImage())
+          .withGatewayConfig(
+              gateway ->
+                  gateway.withEnv(
+                      AuthenticationProperties.getAllowUnauthenticatedApiAccessEnvVar(), "true"))
           .build();
 
   /** A smoke test which checks that a gateway of a cluster can be accessed. */
@@ -44,7 +49,7 @@ final class ContainerClusterSmokeIT {
       final var topology = client.newTopologyRequest().send();
 
       // then
-      final var result = topology.join(5L, TimeUnit.SECONDS);
+      final var result = topology.join(10L, TimeUnit.SECONDS);
       assertThat(result.getBrokers()).as("There is one connected broker").hasSize(1);
     }
   }
@@ -80,6 +85,6 @@ final class ContainerClusterSmokeIT {
   private CamundaClient createCamundaClient() {
     // increased request timeout as container tests might be less responsive when emulation is
     // involved e.g. emulation of ARM64
-    return newClientBuilder(cluster).defaultRequestTimeout(Duration.ofMinutes(1)).build();
+    return newClientBuilder(cluster).defaultRequestTimeout(Duration.ofMinutes(2)).build();
   }
 }

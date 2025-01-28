@@ -59,6 +59,7 @@ final class QueryApiIT {
     broker =
         new TestStandaloneBroker()
             .withBrokerConfig(cfg -> cfg.getExperimental().getQueryApi().setEnabled(true))
+            .withUnauthenticatedAccess()
             .withBrokerConfig(
                 cfg -> {
                   final var config = new InterceptorCfg();

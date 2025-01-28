@@ -29,6 +29,7 @@ final class GatewayIntegrationTest {
           .withEmbeddedGateway(false)
           .withGatewaysCount(1)
           .withBrokersCount(1)
+          .withUnauthenticatedAccess()
           .build();
 
   @Test

@@ -41,6 +41,7 @@ final class DynamicClusterConfigurationServiceTest {
           .withBrokersCount(3)
           .withPartitionsCount(PARTITIONS_COUNT)
           .withReplicationFactor(1)
+          .withUnauthenticatedAccess()
           .withBrokerConfig(this::configureDynamicClusterTopology)
           .build();
 
@@ -75,6 +76,7 @@ final class DynamicClusterConfigurationServiceTest {
     // when
     cluster.brokers().get(MemberId.from("1")).stop();
     Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
               final var topology = client.newTopologyRequest().send().join();
