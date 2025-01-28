@@ -22,7 +22,7 @@ public class ClassResolver {
   public JavaDelegate loadJavaDelegate(String delegateName) {
     final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
     try {
-      Class<? extends JavaDelegate> clazz =
+      final Class<? extends JavaDelegate> clazz =
           (Class<? extends JavaDelegate>) contextClassLoader.loadClass(delegateName);
       return artifactFactory.getArtifact(clazz);
     } catch (Exception e) {
@@ -34,7 +34,7 @@ public class ClassResolver {
   public ExecutionListener loadExecutionListener(String listenerName) {
     final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
     try {
-      Class<? extends ExecutionListener> clazz =
+      final Class<? extends ExecutionListener> clazz =
           (Class<? extends ExecutionListener>) contextClassLoader.loadClass(listenerName);
       return artifactFactory.getArtifact(clazz);
     } catch (Exception e) {

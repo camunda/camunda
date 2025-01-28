@@ -22,8 +22,8 @@ public class ExternalTaskHandlerWrapper implements JobHandler {
 
   @Override
   public void handle(JobClient client, ActivatedJob job) {
-    ExternalTask externalTask = new JobWrappingExternalTask(job, businessKeyVariableName);
-    ExternalTaskService externalTaskService =
+    final ExternalTask externalTask = new JobWrappingExternalTask(job, businessKeyVariableName);
+    final ExternalTaskService externalTaskService =
         new JobClientWrappingExternalTaskService(client, externalTask);
     externalTaskHandler.execute(externalTask, externalTaskService);
   }

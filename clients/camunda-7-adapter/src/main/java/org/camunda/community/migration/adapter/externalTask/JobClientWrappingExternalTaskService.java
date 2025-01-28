@@ -118,7 +118,7 @@ public class JobClientWrappingExternalTaskService implements ExternalTaskService
       long retryTimeout,
       Map<String, Object> variables,
       Map<String, Object> localVariables) {
-    String composedErrorMessage = errorMessage + "\n\n" + errorDetails;
+    final String composedErrorMessage = errorMessage + "\n\n" + errorDetails;
     setVariables(Optional.empty(), false, variables);
     setVariables(Optional.empty(), true, localVariables);
     client

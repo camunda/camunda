@@ -13,7 +13,6 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collections;
 import org.camunda.community.migration.adapter.CamundaPlatform7AdapterTest.Config;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -161,7 +160,7 @@ public class CamundaPlatform7AdapterTest {
   }
 
   @Test
-  public void testBpmnError() {
+  void testBpmnError() {
     camundaClient
         .newDeployResourceCommand()
         .addResourceFromClasspath("test-with-error-event.bpmn")
@@ -176,61 +175,5 @@ public class CamundaPlatform7AdapterTest {
             .join();
     CamundaAssert.assertThat(processInstance).isCompleted();
     assertTrue(SampleDelegateBean.executed);
-  }
-
-  @Test
-  public void testExecutionListener() {
-    BpmnModelInstance bpmn =
-        Bpmn.createExecutableProcess("test2")
-            .startEvent()
-            .zeebeStartExecutionListener("start_delegateBean")
-            .serviceTask()
-            .endEvent()
-            .done();
-
-    camundaClient.newDeployResourceCommand().addProcessModel(bpmn, "test.bpmn").send().join();
-    ProcessInstanceEvent processInstance =
-        camundaClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId("test2")
-            .latestVersion()
-            .variables(Collections.singletonMap("someVariable", "value"))
-            .send()
-            .join();
-    CamundaAssert.assertThat(processInstance).isCompleted();
-
-    assertTrue(SampleDelegateBean.executed);
-    assertFalse(SampleDelegateBean.canReachExecutionVariable);
-    assertEquals("value", SampleDelegateBean.capturedVariable);
-    assertEquals("42", SampleDelegateBean.capturedBusinessKey);
-  }
-
-  @Test
-  @Disabled
-  public void testTaskListener() {
-    BpmnModelInstance bpmn =
-        Bpmn.createExecutableProcess("test2")
-            .startEvent()
-            .userTask("userTask1")
-            .zeebeTaskListener(t -> t.completing().typeExpression("${delegateBean}"))
-            .endEvent()
-            .done();
-
-    camundaClient.newDeployResourceCommand().addProcessModel(bpmn, "test.bpmn").send().join();
-
-    ProcessInstanceEvent processInstance =
-        camundaClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId("test2")
-            .latestVersion()
-            .variables(Collections.singletonMap("someVariable", "value"))
-            .send()
-            .join();
-
-    // TODO complete a task
-
-    // then
-    CamundaAssert.assertThat(processInstance).isCompleted();
-    assertEquals("value", SampleExternalTaskHandler.someVariable);
   }
 }

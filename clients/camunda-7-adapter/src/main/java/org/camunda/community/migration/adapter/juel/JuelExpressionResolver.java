@@ -26,11 +26,11 @@ public class JuelExpressionResolver {
   }
 
   public Object evaluate(String expressionString, DelegateExecution execution) {
-    ValueExpression valueExpression =
+    final ValueExpression valueExpression =
         expressionFactory.createValueExpression(elContext, expressionString, Object.class);
 
     // required because (in C7) we can use juel like `${execution.xxx()}`
-    VariableScope variableScope = new SimpleVariableScope(execution.getVariables());
+    final VariableScope variableScope = new SimpleVariableScope(execution.getVariables());
     variableScope.setVariable("execution", execution);
 
     return new EnginelessJuelExpression(valueExpression, expressionManager, expressionString)

@@ -58,7 +58,7 @@ public class ExternalTaskWorkerRegistration extends AbstractZeebeAnnotationProce
   public void start(CamundaClient camundaClient) {
     springTopicSubscriptions.forEach(
         (beanName, bean) -> {
-          JobWorkerBuilderStep3 builder =
+          final JobWorkerBuilderStep3 builder =
               camundaClient
                   .newWorker()
                   .jobType(bean.getTopicName())

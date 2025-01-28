@@ -36,12 +36,12 @@ public class CamundaPlatform7DelegationWorker {
   public void delegateToCamundaPlatformCode(final JobClient client, final ActivatedJob job)
       throws Exception {
     // Read config
-    String delegateClass = job.getCustomHeaders().get("class");
-    String delegateExpression = job.getCustomHeaders().get("delegateExpression");
-    String expression = job.getCustomHeaders().get("expression");
-    String resultVariable = job.getCustomHeaders().get("resultVariable");
-    String startListener = job.getCustomHeaders().get("executionListener.start");
-    String endListener = job.getCustomHeaders().get("executionListener.end");
+    final String delegateClass = job.getCustomHeaders().get("class");
+    final String delegateExpression = job.getCustomHeaders().get("delegateExpression");
+    final String expression = job.getCustomHeaders().get("expression");
+    final String resultVariable = job.getCustomHeaders().get("resultVariable");
+    final String startListener = job.getCustomHeaders().get("executionListener.start");
+    final String endListener = job.getCustomHeaders().get("executionListener.end");
     // and delegate depending on exact way of implementation
 
     final DelegateExecution execution = new ZeebeJobDelegateExecution(job, variableTyper);
@@ -54,21 +54,21 @@ public class CamundaPlatform7DelegationWorker {
       }
 
       if (startListener != null) {
-        ExecutionListener executionListener =
+        final ExecutionListener executionListener =
             (ExecutionListener) expressionResolver.evaluate(startListener, execution);
 
         executionListener.notify(execution);
       }
 
       if (delegateClass != null) {
-        JavaDelegate javaDelegate = classResolver.loadJavaDelegate(delegateClass);
+        final JavaDelegate javaDelegate = classResolver.loadJavaDelegate(delegateClass);
         javaDelegate.execute(execution);
       } else if (delegateExpression != null) {
-        JavaDelegate javaDelegate =
+        final JavaDelegate javaDelegate =
             (JavaDelegate) expressionResolver.evaluate(delegateExpression, execution);
         javaDelegate.execute(execution);
       } else if (expression != null) {
-        Object result = expressionResolver.evaluate(expression, execution);
+        final Object result = expressionResolver.evaluate(expression, execution);
 
         if (resultVariable != null) {
           execution.setVariable(resultVariable, result);
@@ -76,12 +76,12 @@ public class CamundaPlatform7DelegationWorker {
       }
 
       if (endListener != null) {
-        ExecutionListener executionListener =
+        final ExecutionListener executionListener =
             (ExecutionListener) expressionResolver.evaluate(endListener, execution);
         executionListener.notify(execution);
       }
 
-      CompleteJobCommandStep1 completeCommand = client.newCompleteCommand(job.getKey());
+      final CompleteJobCommandStep1 completeCommand = client.newCompleteCommand(job.getKey());
       completeCommand.variables(execution.getVariables());
       completeCommand.send().join();
     } catch (BpmnError e) {

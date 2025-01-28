@@ -21,7 +21,7 @@ public class EnginelessJuelExpression extends JuelExpression {
 
   @Override
   public Object getValue(VariableScope variableScope) {
-    ELContext elContext = expressionManager.getElContext(variableScope);
+    final ELContext elContext = expressionManager.getElContext(variableScope);
     try {
       return valueExpression.getValue(elContext);
     } catch (PropertyNotFoundException pnfe) {

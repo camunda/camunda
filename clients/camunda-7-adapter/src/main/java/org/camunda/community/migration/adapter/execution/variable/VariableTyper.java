@@ -22,11 +22,11 @@ public class VariableTyper {
   }
 
   public Map<String, Object> typeVariables(String bpmnProcessId, Map<String, Object> variables) {
-    Map<String, Object> result = new HashMap<>();
+    final Map<String, Object> result = new HashMap<>();
     variables.forEach(
         (variableName, variableValue) -> {
           LOG.debug("Handling variable {} of process {}", variableName, bpmnProcessId);
-          DefaultVariableTypingContext context =
+          final DefaultVariableTypingContext context =
               new DefaultVariableTypingContext(bpmnProcessId, variableName, variableValue);
           rules.forEach(rule -> rule.handle(context));
           result.put(
