@@ -69,6 +69,13 @@
         },
         {
           "ignore": true,
+          "code": "java.annotation.attributeValueChanged",
+          "old": "class io.camunda.zeebe.client.protocol.rest.DeploymentMetadata",
+          "new": "class io.camunda.zeebe.client.protocol.rest.DeploymentMetadata",
+          "justification": "Added resource to deployment metadata"
+        },
+        {
+          "ignore": true,
           "code": "java.field.removedWithConstant",
           "old": "field io.camunda.zeebe.client.protocol.rest.DocumentLinkRequest.JSON_PROPERTY_EXPIRES_AT",
           "justification": "Backport changes from 8.7"
