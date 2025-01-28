@@ -151,56 +151,49 @@ const AddAuthorizationModal: FC<UseModalProps> = ({
           labelText={`Read process definition`}
           id="read-process-definition"
           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            handleChangeCheckbox(e.target.checked, "read-process-definition")
+            handleChangeCheckbox(e.target.checked, "READ_PROCESS_DEFINITION")
           }
         />
         <Checkbox
           labelText={`Read process instance`}
           id="read-process-instance"
           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            handleChangeCheckbox(e.target.checked, "read-process-instance")
+            handleChangeCheckbox(e.target.checked, "READ_PROCESS_INSTANCE")
           }
         />
         <Checkbox
           labelText={`Read user task`}
           id="read-user-task"
           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            handleChangeCheckbox(e.target.checked, "read-user-task")
-          }
-        />
-        <Checkbox
-          labelText={`Read document`}
-          id="read-document"
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            handleChangeCheckbox(e.target.checked, "read-document")
+            handleChangeCheckbox(e.target.checked, "READ_USER_TASK")
           }
         />
         <Checkbox
           labelText={`Update process instance`}
           id="update-process-instance"
           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            handleChangeCheckbox(e.target.checked, "update-process-instance")
+            handleChangeCheckbox(e.target.checked, "UPDATE_PROCESS_INSTANCE")
           }
         />
         <Checkbox
           labelText={`Update user task`}
           id="update-user-task"
           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            handleChangeCheckbox(e.target.checked, "update-user-task")
+            handleChangeCheckbox(e.target.checked, "UPDATE_USER_TASK")
           }
         />
         <Checkbox
           labelText={`Create process instance`}
           id="create-process-instance"
           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            handleChangeCheckbox(e.target.checked, "create-process-instance")
+            handleChangeCheckbox(e.target.checked, "CREATE_PROCESS_INSTANCE")
           }
         />
         <Checkbox
           labelText={`Delete process instance`}
           id="delete-process-instance"
           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            handleChangeCheckbox(e.target.checked, "delete-process-instance")
+            handleChangeCheckbox(e.target.checked, "DELETE_PROCESS_INSTANCE")
           }
         />
       </CheckboxGroup>
