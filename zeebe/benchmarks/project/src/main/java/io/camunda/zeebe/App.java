@@ -34,7 +34,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -66,10 +65,10 @@ abstract class App implements Runnable {
     try {
       // you can set the daemon flag to false if you want the server to block
       monitoringServer =
-          new HTTPServer(
-              new InetSocketAddress(appCfg.getMonitoringPort()),
-              prometheusRegistry.getPrometheusRegistry(),
-              true);
+          new HTTPServer.Builder()
+              .withPort(appCfg.getMonitoringPort())
+              .withRegistry(prometheusRegistry.getPrometheusRegistry())
+              .build();
     } catch (final IOException e) {
       LOG.error("Problem on starting monitoring server.", e);
     }
