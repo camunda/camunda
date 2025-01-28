@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 package org.camunda.community.migration.adapter;
 
 import static org.assertj.core.api.Assertions.*;
@@ -23,48 +30,48 @@ public class ExternalTaskHandlerWrapperTest {
     try {
       return Resources.toString(
           Resources.getResource("test-variables.json"), Charset.defaultCharset());
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
   }
 
   @Test
   public void shouldResolveVariables() {
-    JobClient client = mock(JobClient.class);
-    ActivatedJob job =
+    final JobClient client = mock(JobClient.class);
+    final ActivatedJob job =
         new ActivatedJobImpl(
             new CamundaObjectMapper(),
             GatewayOuterClass.ActivatedJob.newBuilder()
                 .setVariables(loadVariableContent())
                 .setCustomHeaders("{}")
                 .build());
-    ExternalTaskHandlerWrapper wrapper =
+    final ExternalTaskHandlerWrapper wrapper =
         new ExternalTaskHandlerWrapper(
             (externalTask, externalTaskService) -> {
-              String stringVar = externalTask.getVariable("stringVar");
-              TypedValue typedStringVar = externalTask.getVariableTyped("stringVar");
+              final String stringVar = externalTask.getVariable("stringVar");
+              final TypedValue typedStringVar = externalTask.getVariableTyped("stringVar");
               assertThat(typedStringVar.getValue()).isEqualTo(stringVar);
 
-              Map<String, Object> objectVar = externalTask.getVariable("objectVar");
-              TypedValue typedObjectVar = externalTask.getVariableTyped("objectVar");
+              final Map<String, Object> objectVar = externalTask.getVariable("objectVar");
+              final TypedValue typedObjectVar = externalTask.getVariableTyped("objectVar");
               assertThat(typedObjectVar.getValue()).isEqualTo(objectVar);
 
-              Number numberVar = externalTask.getVariable("numberVar");
-              TypedValue typedNumberVar = externalTask.getVariableTyped("numberVar");
+              final Number numberVar = externalTask.getVariable("numberVar");
+              final TypedValue typedNumberVar = externalTask.getVariableTyped("numberVar");
               assertThat(typedNumberVar.getValue()).isEqualTo(numberVar);
 
-              Boolean booleanVar = externalTask.getVariable("booleanVar");
-              TypedValue typedBooleanVar = externalTask.getVariableTyped("booleanVar");
+              final Boolean booleanVar = externalTask.getVariable("booleanVar");
+              final TypedValue typedBooleanVar = externalTask.getVariableTyped("booleanVar");
               assertThat(typedBooleanVar.getValue()).isEqualTo(booleanVar);
 
-              List<Object> listVar = externalTask.getVariable("listVar");
-              TypedValue typedListVar = externalTask.getVariableTyped("listVar");
+              final List<Object> listVar = externalTask.getVariable("listVar");
+              final TypedValue typedListVar = externalTask.getVariableTyped("listVar");
               assertThat(typedListVar.getValue()).isEqualTo(listVar);
 
-              Object nullVar = externalTask.getVariable("nullVar");
-              TypedValue typedNullVar = externalTask.getVariableTyped("nullVar");
+              final Object nullVar = externalTask.getVariable("nullVar");
+              final TypedValue typedNullVar = externalTask.getVariableTyped("nullVar");
               assertThat(typedNullVar.getValue()).isEqualTo(nullVar);
-              String businessKey = externalTask.getBusinessKey();
+              final String businessKey = externalTask.getBusinessKey();
               assertThat(businessKey).isNotNull().isEqualTo("12345");
             },
             Optional.of("businessKey"));

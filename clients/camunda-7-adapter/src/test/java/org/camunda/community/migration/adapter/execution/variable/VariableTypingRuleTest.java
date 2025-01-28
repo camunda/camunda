@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 package org.camunda.community.migration.adapter.execution.variable;
 
 import static org.assertj.core.api.Assertions.*;
@@ -16,26 +23,27 @@ import org.junit.jupiter.api.Test;
 
 public class VariableTypingRuleTest {
 
-  private static Map<String, Object> testVariables(String value) {
-    Map<String, Object> variables = new HashMap<>();
+  private static Map<String, Object> testVariables(final String value) {
+    final Map<String, Object> variables = new HashMap<>();
     variables.put("varName", rawVariableDto(value));
     variables.put("varName2", "123");
     return variables;
   }
 
-  private static Map<String, Object> rawVariableDto(String value) {
-    Map<String, Object> variableDto = new HashMap<>();
+  private static Map<String, Object> rawVariableDto(final String value) {
+    final Map<String, Object> variableDto = new HashMap<>();
     variableDto.put("value", value);
     return variableDto;
   }
 
   @Test
   void shouldHandleGlobalVariableTyping() {
-    String value = "abc";
-    VariableTypingRule globalRule =
+    final String value = "abc";
+    final VariableTypingRule globalRule =
         new SimpleGlobalVariableTypingRule("varName", new ObjectMapper(), VariableDto.class);
-    VariableTyper variableTyper = new VariableTyper(Collections.singleton(globalRule));
-    Map<String, Object> typedVariables = variableTyper.typeVariables("any", testVariables(value));
+    final VariableTyper variableTyper = new VariableTyper(Collections.singleton(globalRule));
+    final Map<String, Object> typedVariables =
+        variableTyper.typeVariables("any", testVariables(value));
     assertThat(typedVariables)
         .containsKey("varName")
         .extracting(v -> v.get("varName"))
@@ -46,21 +54,21 @@ public class VariableTypingRuleTest {
 
   @Test
   void shouldHandleMultiProcessVariableTyping() {
-    String value = "1d3";
-    Set<String> bpmnProcessIds = new HashSet<>();
+    final String value = "1d3";
+    final Set<String> bpmnProcessIds = new HashSet<>();
     bpmnProcessIds.add("foo");
     bpmnProcessIds.add("bar");
-    VariableTypingRule multiProcessRule =
+    final VariableTypingRule multiProcessRule =
         new SimpleMultiProcessVariableTypingRule(
             bpmnProcessIds, "varName", new ObjectMapper(), VariableDto.class);
-    VariableTyper variableTyper = new VariableTyper(Collections.singleton(multiProcessRule));
-    Map<String, Object> anyTypedVariables =
+    final VariableTyper variableTyper = new VariableTyper(Collections.singleton(multiProcessRule));
+    final Map<String, Object> anyTypedVariables =
         variableTyper.typeVariables("any", testVariables(value));
     assertThat(anyTypedVariables)
         .containsKey("varName")
         .extracting(v -> v.get("varName"))
         .isInstanceOf(Map.class);
-    Map<String, Object> fooTypedVariables =
+    final Map<String, Object> fooTypedVariables =
         variableTyper.typeVariables("foo", testVariables(value));
     assertThat(fooTypedVariables)
         .containsKey("varName")
@@ -70,18 +78,18 @@ public class VariableTypingRuleTest {
 
   @Test
   void shouldHandleSingleProcessVariableTyping() {
-    String value = "1d3";
-    VariableTypingRule multiProcessRule =
+    final String value = "1d3";
+    final VariableTypingRule multiProcessRule =
         new SimpleSingleProcessVariableTypingRule(
             "foo", "varName", new ObjectMapper(), VariableDto.class);
-    VariableTyper variableTyper = new VariableTyper(Collections.singleton(multiProcessRule));
-    Map<String, Object> anyTypedVariables =
+    final VariableTyper variableTyper = new VariableTyper(Collections.singleton(multiProcessRule));
+    final Map<String, Object> anyTypedVariables =
         variableTyper.typeVariables("any", testVariables(value));
     assertThat(anyTypedVariables)
         .containsKey("varName")
         .extracting(v -> v.get("varName"))
         .isInstanceOf(Map.class);
-    Map<String, Object> fooTypedVariables =
+    final Map<String, Object> fooTypedVariables =
         variableTyper.typeVariables("foo", testVariables(value));
     assertThat(fooTypedVariables)
         .containsKey("varName")

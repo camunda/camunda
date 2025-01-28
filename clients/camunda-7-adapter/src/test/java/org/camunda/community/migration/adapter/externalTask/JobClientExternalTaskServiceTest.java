@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 package org.camunda.community.migration.adapter.externalTask;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -63,8 +70,8 @@ public class JobClientExternalTaskServiceTest {
   @Test
   public void testComplete() {
     setupSetVariablesCommand();
-    CompleteJobCommandStep1 command = mock(CompleteJobCommandStep1.class);
-    CamundaFuture<CompleteJobResponse> future = mock(CamundaFuture.class);
+    final CompleteJobCommandStep1 command = mock(CompleteJobCommandStep1.class);
+    final CamundaFuture<CompleteJobResponse> future = mock(CamundaFuture.class);
 
     when(externalTask.getId()).thenReturn("123");
     when(externalTask.getProcessInstanceId()).thenReturn("456");
@@ -95,9 +102,9 @@ public class JobClientExternalTaskServiceTest {
   @Test
   public void testHandleFailure() {
     setupSetVariablesCommand();
-    FailJobCommandStep1 failJobCommandStep1 = mock(FailJobCommandStep1.class);
-    FailJobCommandStep2 failJobCommandStep2 = mock(FailJobCommandStep2.class);
-    CamundaFuture<FailJobResponse> future = mock(CamundaFuture.class);
+    final FailJobCommandStep1 failJobCommandStep1 = mock(FailJobCommandStep1.class);
+    final FailJobCommandStep2 failJobCommandStep2 = mock(FailJobCommandStep2.class);
+    final CamundaFuture<FailJobResponse> future = mock(CamundaFuture.class);
 
     when(externalTask.getId()).thenReturn("123");
     when(externalTask.getProcessInstanceId()).thenReturn("456");
@@ -107,8 +114,8 @@ public class JobClientExternalTaskServiceTest {
     when(failJobCommandStep2.requestTimeout(any())).thenReturn(failJobCommandStep2);
     when(failJobCommandStep2.send()).thenReturn(future);
 
-    String errorMessage = "errorMessage";
-    String errorDetails = "errorDetails";
+    final String errorMessage = "errorMessage";
+    final String errorDetails = "errorDetails";
     service.handleFailure(externalTask, errorMessage, errorDetails, 2, 2000L);
     service.handleFailure(externalTask.getId(), errorMessage, errorDetails, 2, 2000L);
     service.handleFailure(
@@ -124,9 +131,9 @@ public class JobClientExternalTaskServiceTest {
   @Test
   public void testHandleBpmnError() {
     setupSetVariablesCommand();
-    ThrowErrorCommandStep1 throwErrorCommandStep1 = mock(ThrowErrorCommandStep1.class);
-    ThrowErrorCommandStep2 throwErrorCommandStep2 = mock(ThrowErrorCommandStep2.class);
-    CamundaFuture<Void> future = mock(CamundaFuture.class);
+    final ThrowErrorCommandStep1 throwErrorCommandStep1 = mock(ThrowErrorCommandStep1.class);
+    final ThrowErrorCommandStep2 throwErrorCommandStep2 = mock(ThrowErrorCommandStep2.class);
+    final CamundaFuture<Void> future = mock(CamundaFuture.class);
 
     when(externalTask.getId()).thenReturn("123");
     when(externalTask.getProcessInstanceId()).thenReturn("456");
@@ -136,8 +143,8 @@ public class JobClientExternalTaskServiceTest {
     when(throwErrorCommandStep2.errorMessage(isNull())).thenReturn(throwErrorCommandStep2);
     when(throwErrorCommandStep2.send()).thenReturn(future);
 
-    String errorCode = "my-error-code";
-    String errorMessage = "Well this failed, let's move to the error event";
+    final String errorCode = "my-error-code";
+    final String errorMessage = "Well this failed, let's move to the error event";
     service.handleBpmnError(externalTask, errorCode);
     service.handleBpmnError(externalTask, errorCode, errorMessage);
     service.handleBpmnError(externalTask, errorCode, errorMessage, testVariables());
@@ -153,9 +160,9 @@ public class JobClientExternalTaskServiceTest {
   }
 
   private void setupSetVariablesCommand() {
-    CamundaFuture<SetVariablesResponse> future = mock(CamundaFuture.class);
-    SetVariablesCommandStep1 setVariablesCommandStep1 = mock(SetVariablesCommandStep1.class);
-    SetVariablesCommandStep2 setVariablesCommandStep2 = mock(SetVariablesCommandStep2.class);
+    final CamundaFuture<SetVariablesResponse> future = mock(CamundaFuture.class);
+    final SetVariablesCommandStep1 setVariablesCommandStep1 = mock(SetVariablesCommandStep1.class);
+    final SetVariablesCommandStep2 setVariablesCommandStep2 = mock(SetVariablesCommandStep2.class);
 
     when(client.newSetVariablesCommand(anyLong())).thenReturn(setVariablesCommandStep1);
     when(setVariablesCommandStep1.variables(anyMap())).thenReturn(setVariablesCommandStep2);

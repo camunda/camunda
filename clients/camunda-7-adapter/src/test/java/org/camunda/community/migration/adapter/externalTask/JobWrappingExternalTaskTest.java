@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 package org.camunda.community.migration.adapter.externalTask;
 
 import static org.assertj.core.api.Assertions.*;
@@ -47,18 +54,18 @@ public class JobWrappingExternalTaskTest {
   }
 
   private static Map<String, Object> variables() {
-    ObjectMapper objectMapper = new ObjectMapper();
+    final ObjectMapper objectMapper = new ObjectMapper();
     try {
       return objectMapper.readValue(
           Resources.getResource("test-variables.json"),
           new TypeReference<Map<String, Object>>() {});
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
 
   private static Stream<DynamicTest> dynamicTest(
-      ThrowingConsumer<Entry<String, Object>> testFunction) {
+      final ThrowingConsumer<Entry<String, Object>> testFunction) {
     return DynamicTest.stream(inputStream(), displayNameGenerator(), testFunction);
   }
 
@@ -73,7 +80,7 @@ public class JobWrappingExternalTaskTest {
   @Test
   public void testActivityId() {
     when(job.getElementId()).thenReturn(TEST_ID);
-    String activityId = externalTask.getActivityId();
+    final String activityId = externalTask.getActivityId();
     assertThat(activityId).isEqualTo(TEST_ID);
     verify(job, times(1)).getElementId();
   }
@@ -81,7 +88,7 @@ public class JobWrappingExternalTaskTest {
   @Test
   public void testActivityInstanceId() {
     when(job.getElementInstanceKey()).thenReturn(ZEEBE_TEST_KEY);
-    String activityInstanceId = externalTask.getActivityInstanceId();
+    final String activityInstanceId = externalTask.getActivityInstanceId();
     assertThat(activityInstanceId).isEqualTo(ZEEBE_TEST_KEY_STRING);
     verify(job, times(1)).getElementInstanceKey();
   }
@@ -104,16 +111,16 @@ public class JobWrappingExternalTaskTest {
   @Test
   public void testId() {
     when(job.getKey()).thenReturn(ZEEBE_TEST_KEY);
-    String id = externalTask.getId();
+    final String id = externalTask.getId();
     assertThat(id).isEqualTo(ZEEBE_TEST_KEY_STRING);
     verify(job, times(1)).getKey();
   }
 
   @Test
   public void testLockExpirationTime() {
-    long currentTimeMillis = System.currentTimeMillis();
+    final long currentTimeMillis = System.currentTimeMillis();
     when(job.getDeadline()).thenReturn(currentTimeMillis);
-    Date lockExpirationTime = externalTask.getLockExpirationTime();
+    final Date lockExpirationTime = externalTask.getLockExpirationTime();
     assertThat(lockExpirationTime).isEqualTo(Instant.ofEpochMilli(currentTimeMillis));
     verify(job, times(1)).getDeadline();
   }
@@ -121,7 +128,7 @@ public class JobWrappingExternalTaskTest {
   @Test
   public void testProcessDefinitionId() {
     when(job.getProcessDefinitionKey()).thenReturn(ZEEBE_TEST_KEY);
-    String processDefinitionId = externalTask.getProcessDefinitionId();
+    final String processDefinitionId = externalTask.getProcessDefinitionId();
     assertThat(processDefinitionId).isEqualTo(ZEEBE_TEST_KEY_STRING);
     verify(job, times(1)).getProcessDefinitionKey();
   }
@@ -129,7 +136,7 @@ public class JobWrappingExternalTaskTest {
   @Test
   public void testProcessDefinitionKey() {
     when(job.getBpmnProcessId()).thenReturn(TEST_ID);
-    String processDefinitionKey = externalTask.getProcessDefinitionKey();
+    final String processDefinitionKey = externalTask.getProcessDefinitionKey();
     assertThat(processDefinitionKey).isEqualTo(TEST_ID);
     verify(job, times(1)).getBpmnProcessId();
   }
@@ -143,7 +150,7 @@ public class JobWrappingExternalTaskTest {
   @Test
   public void testProcessInstanceId() {
     when(job.getProcessInstanceKey()).thenReturn(ZEEBE_TEST_KEY);
-    String processInstanceId = externalTask.getProcessInstanceId();
+    final String processInstanceId = externalTask.getProcessInstanceId();
     assertThat(processInstanceId).isEqualTo(ZEEBE_TEST_KEY_STRING);
     verify(job, times(1)).getProcessInstanceKey();
   }
@@ -151,7 +158,7 @@ public class JobWrappingExternalTaskTest {
   @Test
   public void testRetries() {
     when(job.getRetries()).thenReturn(3);
-    Integer retries = externalTask.getRetries();
+    final Integer retries = externalTask.getRetries();
     assertThat(retries).isEqualTo(3);
     verify(job, times(1)).getRetries();
   }
@@ -159,7 +166,7 @@ public class JobWrappingExternalTaskTest {
   @Test
   public void testWorkerId() {
     when(job.getWorker()).thenReturn(TEST_ID);
-    String workerId = externalTask.getWorkerId();
+    final String workerId = externalTask.getWorkerId();
     assertThat(workerId).isEqualTo(TEST_ID);
     verify(job, times(1)).getWorker();
   }
@@ -167,7 +174,7 @@ public class JobWrappingExternalTaskTest {
   @Test
   public void testTopicName() {
     when(job.getType()).thenReturn(TEST_ID);
-    String topicName = externalTask.getTopicName();
+    final String topicName = externalTask.getTopicName();
     assertThat(topicName).isEqualTo(TEST_ID);
     verify(job, times(1)).getType();
   }
@@ -175,7 +182,7 @@ public class JobWrappingExternalTaskTest {
   @Test
   public void testTenantId() {
     when(job.getTenantId()).thenReturn(TEST_ID);
-    String tenantId = externalTask.getTenantId();
+    final String tenantId = externalTask.getTenantId();
     assertThat(tenantId).isEqualTo(TEST_ID);
     verify(job, times(1)).getTenantId();
   }
@@ -190,7 +197,7 @@ public class JobWrappingExternalTaskTest {
     when(job.getVariablesAsMap()).thenReturn(variables());
     return dynamicTest(
         e -> {
-          Object variable = externalTask.getVariable(e.getKey());
+          final Object variable = externalTask.getVariable(e.getKey());
           assertThat(variable).isEqualTo(e.getValue());
         });
   }
@@ -200,7 +207,7 @@ public class JobWrappingExternalTaskTest {
     when(job.getVariablesAsMap()).thenReturn(variables());
     return dynamicTest(
         e -> {
-          TypedValue variable = externalTask.getVariableTyped(e.getKey());
+          final TypedValue variable = externalTask.getVariableTyped(e.getKey());
           assertThat(variable.getValue()).isEqualTo(e.getValue());
         });
   }
@@ -208,35 +215,35 @@ public class JobWrappingExternalTaskTest {
   @Test
   public void testAllVariables() {
     when(job.getVariablesAsMap()).thenReturn(variables());
-    Map<String, Object> allVariables = externalTask.getAllVariables();
+    final Map<String, Object> allVariables = externalTask.getAllVariables();
     assertThat(allVariables).isEqualTo(variables());
   }
 
   @Test
   public void testAllVariablesTyped() {
     when(job.getVariablesAsMap()).thenReturn(variables());
-    VariableMap allVariablesTyped = externalTask.getAllVariablesTyped();
+    final VariableMap allVariablesTyped = externalTask.getAllVariablesTyped();
     assertThat(allVariablesTyped).isEqualTo(variables());
   }
 
   @Test
   public void testBusinessKey() {
     when(job.getVariablesAsMap()).thenReturn(variables());
-    String businessKey = externalTask.getBusinessKey();
+    final String businessKey = externalTask.getBusinessKey();
     assertThat(businessKey).isEqualTo(variables().get(BUSINESS_KEY_VAR_NAME));
   }
 
   @Test
   public void testExtensionProperty() {
     when(job.getCustomHeaders()).thenReturn(Collections.singletonMap("key", "value"));
-    String extensionProperty = externalTask.getExtensionProperty("key");
+    final String extensionProperty = externalTask.getExtensionProperty("key");
     assertThat(extensionProperty).isEqualTo("value");
   }
 
   @Test
   public void testExtensionProperties() {
     when(job.getCustomHeaders()).thenReturn(Collections.singletonMap("key", "value"));
-    Map<String, String> extensionProperties = externalTask.getExtensionProperties();
+    final Map<String, String> extensionProperties = externalTask.getExtensionProperties();
     assertThat(extensionProperties).hasFieldOrProperty("key").hasSize(1).containsValue("value");
   }
 }

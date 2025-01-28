@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 package org.camunda.community.migration.adapter;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -23,14 +30,6 @@ import org.springframework.context.annotation.Import;
 @CamundaSpringProcessTest
 public class CamundaPlatform7AdapterTest {
 
-  @Import({CamundaPlatform7AdapterConfig.class})
-  static class Config {
-    @Bean
-    public MeterRegistry meterRegistry() { // TODO what's used for?
-      return new SimpleMeterRegistry();
-    }
-  }
-
   @Autowired private CamundaClient camundaClient;
 
   @BeforeEach
@@ -49,7 +48,7 @@ public class CamundaPlatform7AdapterTest {
 
   @Test
   public void testDelegateClass() {
-    BpmnModelInstance bpmn =
+    final BpmnModelInstance bpmn =
         Bpmn.createExecutableProcess("test")
             .startEvent()
             .serviceTask()
@@ -59,9 +58,9 @@ public class CamundaPlatform7AdapterTest {
             .done();
 
     camundaClient.newDeployResourceCommand().addProcessModel(bpmn, "test.bpmn").send().join();
-    VariableDto variableValue = new VariableDto();
+    final VariableDto variableValue = new VariableDto();
     variableValue.setValue("value");
-    ProcessInstanceEvent processInstance =
+    final ProcessInstanceEvent processInstance =
         camundaClient
             .newCreateInstanceCommand()
             .bpmnProcessId("test")
@@ -79,7 +78,7 @@ public class CamundaPlatform7AdapterTest {
 
   @Test
   public void testDelegateExpression() {
-    BpmnModelInstance bpmn =
+    final BpmnModelInstance bpmn =
         Bpmn.createExecutableProcess("test2")
             .startEvent()
             .serviceTask()
@@ -90,7 +89,7 @@ public class CamundaPlatform7AdapterTest {
 
     camundaClient.newDeployResourceCommand().addProcessModel(bpmn, "test.bpmn").send().join();
 
-    ProcessInstanceEvent processInstance =
+    final ProcessInstanceEvent processInstance =
         camundaClient
             .newCreateInstanceCommand()
             .bpmnProcessId("test2")
@@ -108,7 +107,7 @@ public class CamundaPlatform7AdapterTest {
 
   @Test
   public void testExpression() {
-    BpmnModelInstance bpmn =
+    final BpmnModelInstance bpmn =
         Bpmn.createExecutableProcess("test2")
             .startEvent()
             .serviceTask()
@@ -119,7 +118,7 @@ public class CamundaPlatform7AdapterTest {
 
     camundaClient.newDeployResourceCommand().addProcessModel(bpmn, "test.bpmn").send().join();
 
-    ProcessInstanceEvent processInstance =
+    final ProcessInstanceEvent processInstance =
         camundaClient
             .newCreateInstanceCommand()
             .bpmnProcessId("test2")
@@ -136,7 +135,7 @@ public class CamundaPlatform7AdapterTest {
 
   @Test
   public void testExternalTaskHandlerWrapper() {
-    BpmnModelInstance bpmn =
+    final BpmnModelInstance bpmn =
         Bpmn.createExecutableProcess("test2")
             .startEvent()
             .serviceTask()
@@ -146,7 +145,7 @@ public class CamundaPlatform7AdapterTest {
 
     camundaClient.newDeployResourceCommand().addProcessModel(bpmn, "test.bpmn").send().join();
 
-    ProcessInstanceEvent processInstance =
+    final ProcessInstanceEvent processInstance =
         camundaClient
             .newCreateInstanceCommand()
             .bpmnProcessId("test2")
@@ -166,7 +165,7 @@ public class CamundaPlatform7AdapterTest {
         .addResourceFromClasspath("test-with-error-event.bpmn")
         .send()
         .join();
-    ProcessInstanceEvent processInstance =
+    final ProcessInstanceEvent processInstance =
         camundaClient
             .newCreateInstanceCommand()
             .bpmnProcessId("error-test")
@@ -175,5 +174,13 @@ public class CamundaPlatform7AdapterTest {
             .join();
     CamundaAssert.assertThat(processInstance).isCompleted();
     assertTrue(SampleDelegateBean.executed);
+  }
+
+  @Import({CamundaPlatform7AdapterConfig.class})
+  static class Config {
+    @Bean
+    public MeterRegistry meterRegistry() { // TODO what's used for?
+      return new SimpleMeterRegistry();
+    }
   }
 }

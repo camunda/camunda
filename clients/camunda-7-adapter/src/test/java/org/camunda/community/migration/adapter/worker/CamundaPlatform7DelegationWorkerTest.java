@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 package org.camunda.community.migration.adapter.worker;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,29 +45,30 @@ class CamundaPlatform7DelegationWorkerTest {
 
   @Test // TODO do we need to test end
   void shouldExecuteExecutionListenerOnStart() throws Exception {
-    long jobKey = 0L;
-    Map<String, String> headers = new HashMap<>();
+    final long jobKey = 0L;
+    final Map<String, String> headers = new HashMap<>();
     headers.put("delegateExpression", "${myDelegate}");
     headers.put("executionListener.start", "${myStartListener}");
 
-    ActivatedJob job = job(headers, Variables.putValue("hello", "World").putValue("value", 1));
+    final ActivatedJob job =
+        job(headers, Variables.putValue("hello", "World").putValue("value", 1));
 
     when(juelExpressionResolver.evaluate(eq("${myStartListener}"), any(DelegateExecution.class)))
         .thenReturn(
             (ExecutionListener)
                 execution -> {
-                  int value = (int) execution.getVariable("value");
+                  final int value = (int) execution.getVariable("value");
                   execution.setVariable("value", value + 41);
                 });
     when(juelExpressionResolver.evaluate(eq("${myDelegate}"), any(DelegateExecution.class)))
         .thenReturn(
             (JavaDelegate)
                 execution -> {
-                  int value = (int) execution.getVariable("value");
+                  final int value = (int) execution.getVariable("value");
                   execution.setVariable("value", value * 2);
                 });
 
-    JobCommandStepFake fake = new JobCommandStepFake();
+    final JobCommandStepFake fake = new JobCommandStepFake();
     when(client.newCompleteCommand(jobKey)).thenReturn(fake);
 
     worker.delegateToCamundaPlatformCode(client, job);
@@ -68,7 +76,8 @@ class CamundaPlatform7DelegationWorkerTest {
     assertThat(fake.variables.get("value")).isEqualTo(84);
   }
 
-  private ActivatedJob job(Map<String, String> customHeaders, Map<String, Object> variables) {
+  private ActivatedJob job(
+      final Map<String, String> customHeaders, final Map<String, Object> variables) {
     return new ActivatedJob() {
       @Override
       public long getKey() {
@@ -141,12 +150,12 @@ class CamundaPlatform7DelegationWorkerTest {
       }
 
       @Override
-      public <T> T getVariablesAsType(Class<T> variableType) {
+      public <T> T getVariablesAsType(final Class<T> variableType) {
         return null;
       }
 
       @Override
-      public Object getVariable(String name) {
+      public Object getVariable(final String name) {
         return variables.get(name);
       }
 
@@ -162,37 +171,37 @@ class CamundaPlatform7DelegationWorkerTest {
     };
   }
 
-  private static class JobCommandStepFake implements CompleteJobCommandStep1 {
+  private static final class JobCommandStepFake implements CompleteJobCommandStep1 {
     public Map<String, Object> variables;
 
     @Override
-    public CompleteJobCommandStep1 variables(InputStream variables) {
+    public CompleteJobCommandStep1 variables(final InputStream variables) {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public CompleteJobCommandStep1 variables(String variables) {
+    public CompleteJobCommandStep1 variables(final String variables) {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public CompleteJobCommandStep1 variables(Map<String, Object> variables) {
+    public CompleteJobCommandStep1 variables(final Map<String, Object> variables) {
       this.variables = variables;
       return this;
     }
 
     @Override
-    public CompleteJobCommandStep1 variables(Object variables) {
+    public CompleteJobCommandStep1 variables(final Object variables) {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public CompleteJobCommandStep1 variable(String key, Object value) {
+    public CompleteJobCommandStep1 variable(final String key, final Object value) {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public FinalCommandStep<CompleteJobResponse> requestTimeout(Duration requestTimeout) {
+    public FinalCommandStep<CompleteJobResponse> requestTimeout(final Duration requestTimeout) {
       throw new UnsupportedOperationException();
     }
 
@@ -217,12 +226,13 @@ class CamundaPlatform7DelegationWorkerTest {
     }
 
     @Override
-    public CompleteJobCommandStep1 withResult(CompleteJobResult jobResult) {
+    public CompleteJobCommandStep1 withResult(final CompleteJobResult jobResult) {
       return null;
     }
 
     @Override
-    public CompleteJobCommandStep1 withResult(UnaryOperator<CompleteJobResult> jobResultModifier) {
+    public CompleteJobCommandStep1 withResult(
+        final UnaryOperator<CompleteJobResult> jobResultModifier) {
       return null;
     }
   }
