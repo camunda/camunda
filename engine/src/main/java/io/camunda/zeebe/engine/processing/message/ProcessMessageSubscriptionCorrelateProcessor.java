@@ -101,6 +101,10 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
     } else if (hasAlreadyBeenCorrelated(record, subscription)) {
       rejectionWriter.appendRejection(
           command, RejectionType.INVALID_STATE, "Already correlated this message");
+      // while we don't accept the command on this partition, we still need to acknowledge it to
+      // attempt recovering from a previous acknowledgment that didn't make it to the other
+      // partition.
+      sendAcknowledgeCommand(record);
 
     } else {
       final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
@@ -185,6 +189,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
 
   private void sendAcknowledgeCommand(final ProcessMessageSubscriptionRecord subscription) {
     subscriptionCommandSender.correlateMessageSubscription(
+        subscription.getMessageKey(),
         subscription.getSubscriptionPartitionId(),
         subscription.getProcessInstanceKey(),
         subscription.getElementInstanceKey(),

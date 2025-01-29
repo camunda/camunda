@@ -198,6 +198,7 @@ public class SubscriptionCommandSender {
   }
 
   public boolean correlateMessageSubscription(
+      final long messageKey,
       final int subscriptionPartitionId,
       final long processInstanceKey,
       final long elementInstanceKey,
@@ -212,7 +213,7 @@ public class SubscriptionCommandSender {
             .setProcessInstanceKey(processInstanceKey)
             .setElementInstanceKey(elementInstanceKey)
             .setBpmnProcessId(bpmnProcessId)
-            .setMessageKey(-1)
+            .setMessageKey(messageKey)
             .setMessageName(messageName)
             .setTenantId(tenantId));
   }
