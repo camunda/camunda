@@ -265,6 +265,8 @@ public class CamundaExporter implements Exporter {
   private void checkImportersCompletedAndReschedule() {
     if (!configuration.getIndex().shouldWaitForImporters()) {
       importersCompleted = true;
+      scheduleDelayedFlush();
+      return;
     }
     if (!importersCompleted) {
       scheduleImportersCompletedCheck();
