@@ -17,6 +17,7 @@ import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.clients.FormSearchClient;
 import io.camunda.search.clients.GroupSearchClient;
+import io.camunda.search.clients.InMemoryAlertDefinitionClient;
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
@@ -287,6 +288,11 @@ public class CamundaServicesConfiguration {
   public AuthorizationChecker authorizationChecker(
       final AuthorizationSearchClient authorizationSearchClient) {
     return new AuthorizationChecker(authorizationSearchClient);
+  }
+
+  @Bean
+  AlertDefinitionClient alertDefinitionClient() {
+    return new InMemoryAlertDefinitionClient();
   }
 
   @Bean

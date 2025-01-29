@@ -23,11 +23,12 @@ public class IncidentAlertingControllerTest extends RestControllerTest {
     final var request =
         """
           {
-             "filter": {
-                "processDefinitionKey": "processDefinitionKey123"
-             },
+             "filters": [{
+                  "processDefinitionKey": "processDefinitionKey123"
+               }],
              "channel": {
-                "email": "test@example.com"
+                "type": "email",
+                "value": "test@example.com"
              }
            }
         """;
@@ -54,10 +55,17 @@ public class IncidentAlertingControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-                {
-                    "processDefinitionKey123": {
-                        "email": "test@example.com"
-                    }
-                }""");
+                [
+                  {
+                   "filters": [{
+                        "processDefinitionKey": "processDefinitionKey123"
+                     }],
+                   "channel": {
+                      "type": "email",
+                      "value": "test@example.com"
+                   }
+                 }
+                ]
+                """);
   }
 }

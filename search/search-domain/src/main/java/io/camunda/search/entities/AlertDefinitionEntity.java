@@ -10,7 +10,7 @@ package io.camunda.search.entities;
 import java.util.List;
 
 public record AlertDefinitionEntity(List<Filter> filters, Channel channel) {
-  public record Channel(String type) {}
+  public record Channel(String type, String value) {}
 
   public record Filter(String processDefinitionKey) {}
 }
