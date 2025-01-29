@@ -20,6 +20,7 @@ import picocli.CommandLine.ScopeType;
 
 public final class OutputMixin {
   private static final OutputStream output = System.out;
+
   @Option(
       names = "--format",
       description =
