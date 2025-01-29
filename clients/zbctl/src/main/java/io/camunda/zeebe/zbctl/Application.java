@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.zbctl;
 
+import io.camunda.zeebe.zbctl.cmd.ActivateCommand;
 import io.camunda.zeebe.zbctl.cmd.BroadcastCommand;
 import io.camunda.zeebe.zbctl.cmd.CancelCommand;
 import io.camunda.zeebe.zbctl.cmd.CompleteCommand;
@@ -42,6 +43,7 @@ import picocli.CommandLine.HelpCommand;
     usageHelpAutoWidth = true,
     subcommands = {
       HelpCommand.class,
+      ActivateCommand.class,
       CreateCommand.class,
       DeployCommand.class,
       PublishCommand.class,

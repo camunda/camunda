@@ -21,9 +21,11 @@
 @Json.Import(ProblemDetail.class)
 @Json.Import(ReflectConfigGenerator.ClassReflectionConfig.class)
 @Json.Import(ReflectConfigGenerator.MethodReflectionConfig.class)
+@Json.Import(ActivateJobsResponse.class)
 package io.camunda.zeebe.zbctl.serde;
 
 import io.avaje.jsonb.Json;
+import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.client.api.response.Decision;
