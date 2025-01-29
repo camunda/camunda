@@ -12,8 +12,8 @@ import {t} from 'translation';
 
 import './Visualization.scss';
 
-export default function Visualization({report, onChange}) {
-  const visualizations = reportConfig.visualization;
+export default function Visualization({type, report, onChange}) {
+  const visualizations = reportConfig[type].visualization;
   const selectedOption = report.view ? visualizations.find(({matcher}) => matcher(report)) : null;
 
   return (
@@ -21,7 +21,7 @@ export default function Visualization({report, onChange}) {
       labelText={t(`report.visualization.label`).toString()}
       className="Visualization"
       onChange={(value) => {
-        onChange(createReportUpdate(report, 'visualization', value));
+        onChange(createReportUpdate(type, report, 'visualization', value));
       }}
       value={selectedOption?.key}
       disabled={!selectedOption}

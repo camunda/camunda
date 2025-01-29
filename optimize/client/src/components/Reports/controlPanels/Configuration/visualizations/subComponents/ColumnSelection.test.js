@@ -92,6 +92,44 @@ it('should call onChange with an empty included if all columns are excluded', ()
   });
 });
 
+it('should provide a sane interface for decision tables', () => {
+  const node = shallow(
+    <ColumnSelection
+      report={{
+        data,
+        result: {
+          data: [
+            {
+              decisionDefinitionId: 'foo',
+              decisionDefinitionKey: 'bar',
+              inputVariables: {
+                crypticId: {name: 'Cool Name'},
+              },
+              outputVariables: {
+                clause7: {name: 'Klaus Seven'},
+              },
+              flowNodeDurations: {
+                dur1: {name: 'dur1', value: null},
+              },
+            },
+          ],
+        },
+      }}
+    />
+  );
+
+  const columns = node.find('ColumnSwitch');
+  const sections = node.find('CollapsibleSection');
+
+  expect(columns.at(0).prop('label')).toBe('Decision definition Id');
+  expect(columns.at(1).prop('label')).toBe('Decision definition key');
+  expect(columns.at(2).prop('label')).toBe('Cool Name');
+  expect(columns.at(3).prop('label')).toBe('Klaus Seven');
+
+  expect(sections.at(0).prop('sectionTitle')).toBe('Input variables:');
+  expect(sections.at(1).prop('sectionTitle')).toBe('Output variables:');
+});
+
 it('should update configuration when changing include variables checkbox', () => {
   const spy = jest.fn();
   const node = shallow(

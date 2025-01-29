@@ -82,7 +82,7 @@ export function getHyperTableProps(
     const {data, result, name} = report;
 
     // build 2d array of all labels
-    const viewString = reportConfig.view.find(({matcher}) => matcher(data)).label();
+    const viewString = reportConfig.process.view.find(({matcher}) => matcher(data)).label();
 
     const viewLabels = result.measures
       .map((measure) => {
@@ -115,7 +115,7 @@ export function getHyperTableProps(
         return '';
       })
       .flat();
-    const groupByLabel = reportConfig.group.find(({matcher}) => matcher(data)).label();
+    const groupByLabel = reportConfig.process.group.find(({matcher}) => matcher(data)).label();
     const labels = [...prevReport.labels, [groupByLabel, ...viewLabels]];
 
     // 2d array of all names
@@ -208,13 +208,13 @@ export const getNoDataMessage = () => ({
   noData: <NoDataNotice type="info">{t('report.table.noData')}</NoDataNotice>,
 });
 
-export function cockpitLink(endpoints, instance) {
-  const content = instance['processInstanceId'];
+export function cockpitLink(endpoints, instance, type) {
+  const content = instance[type + 'InstanceId'];
   const {endpoint, engineName} = endpoints[instance.engineName] || {};
   if (endpoint) {
     return (
       <a
-        href={`${endpoint}/app/cockpit/${engineName}/#/process-instance/${content}`}
+        href={`${endpoint}/app/cockpit/${engineName}/#/${type}-instance/${content}`}
         target="_blank"
         rel="noopener noreferrer"
       >

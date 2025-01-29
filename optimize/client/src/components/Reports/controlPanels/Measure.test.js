@@ -57,7 +57,7 @@ it('should call updateMeasure with correct payload for deleting a measure', () =
 
   node.find('SelectionPreview').first().simulate('click');
 
-  expect(createReportUpdate.mock.calls[0][3].view.properties.$set).toEqual(['duration']);
+  expect(createReportUpdate.mock.calls[0][4].view.properties.$set).toEqual(['duration']);
   expect(props.onChange).toHaveBeenCalled();
 });
 
@@ -72,7 +72,7 @@ it('should call updateMeasure with correct payload for switching measures', () =
 
   node.find('Select').at(0).simulate('change', 'duration');
 
-  expect(createReportUpdate.mock.calls[0][3].view.properties.$set).toEqual(['duration']);
+  expect(createReportUpdate.mock.calls[0][4].view.properties.$set).toEqual(['duration']);
   expect(props.onChange).toHaveBeenCalled();
 });
 
@@ -82,7 +82,7 @@ it('should keep a correct order of measures', () => {
   );
 
   node.find('Select').at(1).simulate('change', 'frequency');
-  expect(createReportUpdate.mock.calls[0][3].view.properties.$set).toEqual([
+  expect(createReportUpdate.mock.calls[0][4].view.properties.$set).toEqual([
     'frequency',
     'duration',
   ]);

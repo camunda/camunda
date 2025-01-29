@@ -11,7 +11,7 @@ import equals from 'fast-deep-equal';
 
 import {Popover} from 'components';
 import {FilterList} from 'filter';
-import {loadVariables} from 'services';
+import {loadVariables, loadInputVariables, loadOutputVariables} from 'services';
 import {t} from 'translation';
 import {useErrorHandling} from 'hooks';
 import {showError} from 'notifications';
@@ -33,7 +33,7 @@ export default function InstanceCount({
   const [variables, setVariables] = useState();
   const {mightFail} = useErrorHandling();
 
-  const {data} = report;
+  const {data, reportType} = report;
 
   const {key, versions, tenantIds} = data.definitions?.[0] ?? {};
 
@@ -46,17 +46,32 @@ export default function InstanceCount({
       return;
     }
 
-    const payload = {
-      processesToQuery: [
+    if (reportType === 'process') {
+      const payload = {
+        processesToQuery: [
+          {
+            processDefinitionKey: key,
+            processDefinitionVersions: versions,
+            tenantIds: tenantIds,
+          },
+        ],
+        filter: data.filter,
+      };
+      mightFail(loadVariables(payload), setVariables, showError);
+    } else if (reportType === 'decision') {
+      const payload = [
         {
-          processDefinitionKey: key,
-          processDefinitionVersions: versions,
+          decisionDefinitionKey: key,
+          decisionDefinitionVersions: versions,
           tenantIds: tenantIds,
         },
-      ],
-      filter: data.filter,
-    };
-    mightFail(loadVariables(payload), setVariables, showError);
+      ];
+      mightFail(
+        Promise.all([loadInputVariables(payload), loadOutputVariables(payload)]),
+        ([inputVariable, outputVariable]) => setVariables({inputVariable, outputVariable}),
+        showError
+      );
+    }
   }
 
   // for dashboards, we need to separate report level and dashboard level (additional) filters
@@ -106,10 +121,13 @@ export default function InstanceCount({
             {showHeader && (
               <div className="countString">
                 {typeof instanceCount === 'number' &&
-                  t(`report.instanceCount.process.label${totalCount !== 1 ? '-plural' : ''}`, {
-                    count: instanceCount,
-                    totalCount,
-                  })}
+                  t(
+                    `report.instanceCount.${reportType}.label${totalCount !== 1 ? '-plural' : ''}`,
+                    {
+                      count: instanceCount,
+                      totalCount,
+                    }
+                  )}
               </div>
             )}
             {reportFilters.length > 0 && (
@@ -146,7 +164,7 @@ export default function InstanceCount({
       <span className="countString">
         {typeof instanceCount === 'number' &&
           t(
-            `report.instanceCount.process.label${totalCount !== 1 ? '-plural' : ''}${
+            `report.instanceCount.${reportType}.label${totalCount !== 1 ? '-plural' : ''}${
               hasFilter ? '-withFilter' : ''
             }`,
             {

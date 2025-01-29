@@ -15,8 +15,15 @@ import {getVariableLabel} from 'variables';
 import {isCategoricalBar, isCategorical} from '../reportService';
 
 import * as reportOptions from './process';
+import * as decisionOptions from './decision';
 
-export function createReportUpdate(report, updateType, newValue, payloadAdjustment) {
+const reportOptionsMap = {
+  process: processOptions,
+  decision: decisionOptions,
+};
+
+export function createReportUpdate(reportType, report, updateType, newValue, payloadAdjustment) {
+  const reportOptions = reportOptionsMap[reportType];
   let newPayload = reportOptions[updateType].find(({key}) => key === newValue).payload(report);
 
   if (payloadAdjustment) {
@@ -36,24 +43,26 @@ export function createReportUpdate(report, updateType, newValue, payloadAdjustme
   }
 
   // ensure distribution is still valid
-  const oldDistribution = reportOptions.distribution.find(({matcher}) => matcher(newReport));
-  if (
-    !oldDistribution?.visible(newReport) ||
-    !oldDistribution?.enabled(newReport) ||
-    (updateType === 'view' &&
-      reportOptions.view.find(({matcher}) => matcher(report)) !==
-        reportOptions.view.find(({matcher}) => matcher(newReport)) &&
-      oldDistribution.key === 'none') || // try to find distribution when switching view
-    (updateType === 'group' &&
-      ['flowNodes', 'userTasks'].includes(
-        reportOptions.group.find(({matcher}) => matcher(report))?.key
-      )) // try to find distribution when switching away from flowNodes
-  ) {
-    const possibleDistributions = reportOptions.distribution
-      .filter(({visible, enabled}) => visible(newReport) && enabled(newReport))
-      .sort((a, b) => a.priority - b.priority);
+  if (reportType === 'process') {
+    const oldDistribution = reportOptions.distribution.find(({matcher}) => matcher(newReport));
+    if (
+      !oldDistribution?.visible(newReport) ||
+      !oldDistribution?.enabled(newReport) ||
+      (updateType === 'view' &&
+        reportOptions.view.find(({matcher}) => matcher(report)) !==
+          reportOptions.view.find(({matcher}) => matcher(newReport)) &&
+        oldDistribution.key === 'none') || // try to find distribution when switching view
+      (updateType === 'group' &&
+        ['flowNodes', 'userTasks'].includes(
+          reportOptions.group.find(({matcher}) => matcher(report))?.key
+        )) // try to find distribution when switching away from flowNodes
+    ) {
+      const possibleDistributions = reportOptions.distribution
+        .filter(({visible, enabled}) => visible(newReport) && enabled(newReport))
+        .sort((a, b) => a.priority - b.priority);
 
-    newReport = {...newReport, ...possibleDistributions[0].payload(newReport)};
+      newReport = {...newReport, ...possibleDistributions[0].payload(newReport)};
+    }
   }
 
   // ensure visualization is still valid
@@ -70,17 +79,19 @@ export function createReportUpdate(report, updateType, newValue, payloadAdjustme
   // update y label on view change
   if (updateType === 'view' && ['duration', 'frequency'].includes(newReport.view.properties[0])) {
     let label = reportOptions.view.find(({matcher}) => matcher(newReport)).label() + ' ';
-    if (newReport.view.properties[0] === 'frequency') {
-      label += t('report.view.count');
-    } else if (newReport.view.properties[0] === 'duration') {
-      label += t('report.view.duration');
+    if (reportType === 'process') {
+      if (newReport.view.properties[0] === 'frequency') {
+        label += t('report.view.count');
+      } else if (newReport.view.properties[0] === 'duration') {
+        label += t('report.view.duration');
+      }
     }
     newReport.configuration.yLabel = label;
   }
 
   // update x label on group and view update
   if (['view', 'group'].includes(updateType)) {
-    if (newReport.groupBy.type === 'variable') {
+    if (['variable', 'inputVariable', 'outputVariable'].includes(newReport.groupBy.type)) {
       const {name, type} = newReport.groupBy.value;
       newReport.configuration.xLabel = getVariableLabel(name, type);
     } else {
@@ -92,7 +103,7 @@ export function createReportUpdate(report, updateType, newValue, payloadAdjustme
 
   // set default sorting if not a sorting update
   if (updateType !== 'sortingOrder') {
-    newReport.configuration.sorting = getDefaultSorting({data: newReport});
+    newReport.configuration.sorting = getDefaultSorting({reportType, data: newReport});
   }
 
   newReport.configuration.horizontalBar = isCategoricalBar(newReport);
@@ -100,61 +111,63 @@ export function createReportUpdate(report, updateType, newValue, payloadAdjustme
   // reset tablecolumnorder
   newReport.configuration.tableColumns.columnOrder = [];
 
-  // disable and reset heatmap target values if no heatmap target values are allowed
-  if (!isDurationHeatmap(newReport)) {
-    newReport.configuration.heatmapTargetValue = {active: false, values: {}};
-  }
-
-  // remove sum aggregation from incident view
-  if (newReport.view.entity === 'incident') {
-    newReport.configuration.aggregationTypes = newReport.configuration.aggregationTypes.filter(
-      (agg) => agg.type !== 'sum'
-    );
-
-    if (newReport.configuration.aggregationTypes.length === 0) {
-      newReport.configuration.aggregationTypes = [{type: 'avg', value: null}];
+  if (reportType === 'process') {
+    // disable and reset heatmap target values if no heatmap target values are allowed
+    if (!isDurationHeatmap(newReport)) {
+      newReport.configuration.heatmapTargetValue = {active: false, values: {}};
     }
-  }
 
-  // remove percentile aggregation from group by process
-  if (newReport.distributedBy.type === 'process') {
-    newReport.configuration.aggregationTypes = newReport.configuration.aggregationTypes.filter(
-      (agg) => agg.type !== 'percentile'
-    );
+    // remove sum aggregation from incident view
+    if (newReport.view.entity === 'incident') {
+      newReport.configuration.aggregationTypes = newReport.configuration.aggregationTypes.filter(
+        (agg) => agg.type !== 'sum'
+      );
 
-    if (newReport.configuration.aggregationTypes.length === 0) {
-      newReport.configuration.aggregationTypes = [{type: 'avg', value: null}];
+      if (newReport.configuration.aggregationTypes.length === 0) {
+        newReport.configuration.aggregationTypes = [{type: 'avg', value: null}];
+      }
     }
-  }
 
-  // remove percentage measure if it is not supported
-  if (
-    newReport.view.properties.includes('percentage') &&
-    newReport.view.entity !== 'processInstance'
-  ) {
-    newReport.view.properties = newReport.view.properties.filter(
-      (measure) => measure !== 'percentage'
-    );
-    if (newReport.view.properties.length === 0) {
-      newReport.view.properties = ['frequency'];
+    // remove percentile aggregation from group by process
+    if (newReport.distributedBy.type === 'process') {
+      newReport.configuration.aggregationTypes = newReport.configuration.aggregationTypes.filter(
+        (agg) => agg.type !== 'percentile'
+      );
+
+      if (newReport.configuration.aggregationTypes.length === 0) {
+        newReport.configuration.aggregationTypes = [{type: 'avg', value: null}];
+      }
     }
-  }
 
-  // remove process part if its not allowed
-  if (!isProcessInstanceDuration(newReport) || newReport.definitions.length > 1) {
-    newReport.configuration.processPart = null;
-  }
+    // remove percentage measure if it is not supported
+    if (
+      newReport.view.properties.includes('percentage') &&
+      newReport.view.entity !== 'processInstance'
+    ) {
+      newReport.view.properties = newReport.view.properties.filter(
+        (measure) => measure !== 'percentage'
+      );
+      if (newReport.view.properties.length === 0) {
+        newReport.view.properties = ['frequency'];
+      }
+    }
 
-  // remove goals for multi-measure reports
-  if (newReport.view.properties.length > 1) {
-    newReport.configuration.targetValue.active = false;
-  }
+    // remove process part if its not allowed
+    if (!isProcessInstanceDuration(newReport) || newReport.definitions.length > 1) {
+      newReport.configuration.processPart = null;
+    }
 
-  // disable bucket size config on group update
-  // reason: group by variable bucket size does not make sense for group by duration
-  if (updateType === 'group') {
-    newReport.configuration.customBucket.active = false;
-    newReport.configuration.distributeByCustomBucket.active = false;
+    // remove goals for multi-measure reports
+    if (newReport.view.properties.length > 1) {
+      newReport.configuration.targetValue.active = false;
+    }
+
+    // disable bucket size config on group update
+    // reason: group by variable bucket size does not make sense for group by duration
+    if (updateType === 'group') {
+      newReport.configuration.customBucket.active = false;
+      newReport.configuration.distributeByCustomBucket.active = false;
+    }
   }
 
   return {
@@ -181,14 +194,15 @@ function isProcessInstanceDuration({view}) {
   return view && view.entity === 'processInstance' && view.properties[0] === 'duration';
 }
 
-export function getDefaultSorting({data}) {
+export function getDefaultSorting({reportType, data}) {
   const {view, groupBy, visualization} = data;
   if (visualization === 'table' && ['flowNodes', 'userTasks'].includes(groupBy?.type)) {
     return {by: 'label', order: 'asc'};
   }
 
   if ((view?.properties?.[0] ?? view?.property) === 'rawData') {
-    return {by: 'startDate', order: 'desc'};
+    const by = reportType === 'process' ? 'startDate' : 'evaluationDateTime';
+    return {by, order: 'desc'};
   }
 
   if (visualization !== 'table' && isCategorical(data)) {

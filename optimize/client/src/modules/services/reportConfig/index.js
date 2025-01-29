@@ -7,6 +7,12 @@
  */
 
 import * as processOptions from './process';
-
-export default processOptions;
+import * as decisionOptions from './decision';
 export {createReportUpdate, getDefaultSorting} from './reportConfig';
+
+const config = {
+  process: processOptions,
+  decision: decisionOptions,
+};
+
+export default config;

@@ -382,7 +382,7 @@ export const sortingOrder = [
     enabled: () => true,
     payload: (report) => {
       const {configuration} = report;
-      const {by: defaultBy} = getDefaultSorting({data: report});
+      const {by: defaultBy} = getDefaultSorting({reportType: 'process', data: report});
       return {
         configuration: {
           ...configuration,
@@ -402,7 +402,7 @@ export const sortingOrder = [
     enabled: () => true,
     payload: (report) => {
       const {configuration} = report;
-      const {by: defaultBy} = getDefaultSorting({data: report});
+      const {by: defaultBy} = getDefaultSorting({reportType: 'process', data: report});
       return {
         configuration: {
           ...configuration,

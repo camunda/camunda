@@ -23,22 +23,34 @@ import {
 
 const {duration} = formatters;
 
-const instanceColumns = [
-  'processDefinitionKey',
-  'processDefinitionId',
-  'processInstanceId',
-  'businessKey',
-  'startDate',
-  'endDate',
-  'duration',
-  'engineName',
-  'tenantId',
-];
+const instanceColumns = {
+  process: [
+    'processDefinitionKey',
+    'processDefinitionId',
+    'processInstanceId',
+    'businessKey',
+    'startDate',
+    'endDate',
+    'duration',
+    'engineName',
+    'tenantId',
+  ],
+  decision: [
+    'decisionDefinitionKey',
+    'decisionDefinitionId',
+    'decisionInstanceId',
+    'processInstanceId',
+    'evaluationDateTime',
+    'engineName',
+    'tenantId',
+  ],
+};
 
 export const OBJECT_VARIABLE_IDENTIFIER = '<<OBJECT_VARIABLE_VALUE>>';
 
 export default function processRawData({
   report: {
+    reportType,
     data: {
       configuration: {tableColumns},
     },
@@ -48,13 +60,25 @@ export default function processRawData({
   processVariables = [],
   onVariableView,
 }) {
-  const instanceProps = instanceColumns.filter((entry) => isVisibleColumn(entry, tableColumns));
+  const instanceProps = instanceColumns[reportType].filter((entry) =>
+    isVisibleColumn(entry, tableColumns)
+  );
 
-  const {counts, variables, flowNodeDurations} = result[0] || {};
+  const {
+    counts,
+    variables,
+    flowNodeDurations,
+    inputVariables: inputVars,
+    outputVariables: outputVars,
+  } = result[0] || {};
 
   const countKeys = getVisibleColumns(counts, tableColumns, 'count');
 
   const variableNames = getVisibleColumns(variables, tableColumns, 'variable');
+
+  const inputVariables = getVisibleColumns(inputVars, tableColumns, 'input');
+
+  const outputVariables = getVisibleColumns(outputVars, tableColumns, 'output');
 
   const flowNodeDurationNames = getVisibleColumns(flowNodeDurations || {}, tableColumns, 'dur');
 
@@ -63,6 +87,8 @@ export default function processRawData({
     instanceProps.length +
       countKeys.length +
       variableNames.length +
+      inputVariables.length +
+      outputVariables.length +
       flowNodeDurationNames.length ===
     0
   ) {
@@ -72,10 +98,17 @@ export default function processRawData({
   const body = result.map((instance) => {
     const row = instanceProps.map((entry) => {
       if (entry === 'processInstanceId') {
-        return cockpitLink(camundaEndpoints, instance);
+        return cockpitLink(camundaEndpoints, instance, 'process');
       }
 
-      if ((entry === 'startDate' || entry === 'endDate') && instance[entry]) {
+      if (entry === 'decisionInstanceId') {
+        return cockpitLink(camundaEndpoints, instance, 'decision');
+      }
+
+      if (
+        (entry === 'startDate' || entry === 'endDate' || entry === 'evaluationDateTime') &&
+        instance[entry]
+      ) {
         return format(parseISO(instance[entry]), "yyyy-MM-dd HH:mm:ss 'UTC'X");
       }
 
@@ -93,6 +126,8 @@ export default function processRawData({
       ...row,
       ...getVariableValues(countKeys, instance.counts),
       ...getVariableValues(variableNames, instance.variables, onVariableClick),
+      ...getVariableValues(inputVariables, instance.inputVariables),
+      ...getVariableValues(outputVariables, instance.outputVariables),
       ...flowNodeDurationNames.map((key) => duration(instance.flowNodeDurations[key]?.value)),
     ];
   });
@@ -121,6 +156,30 @@ export default function processRawData({
         label: getLabelWithType(getVariableLabel(processVariables, name) || name, 'variable'),
         title: name,
       }))
+    )
+    .concat(
+      inputVariables.map((key) => {
+        const {name, id} = inputVars[key];
+        const label = name || id;
+        return {
+          type: 'inputVariables',
+          id: 'inputVariable:' + id,
+          label: getLabelWithType(label, 'inputVariable'),
+          title: label,
+        };
+      })
+    )
+    .concat(
+      outputVariables.map((key) => {
+        const {name, id} = outputVars[key];
+        const label = name || id;
+        return {
+          type: 'outputVariables',
+          id: 'outputVariable:' + id,
+          label: getLabelWithType(label, 'outputVariable'),
+          title: label,
+        };
+      })
     )
     .concat(
       flowNodeDurationNames.map((key) => {

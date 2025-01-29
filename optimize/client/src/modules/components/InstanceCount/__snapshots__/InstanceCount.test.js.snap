@@ -1,5 +1,24 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`should load variable names for decision reports 1`] = `
+Object {
+  "inputVariable": Array [
+    Object {
+      "id": "input1",
+      "name": "Input 1",
+      "type": "String",
+    },
+  ],
+  "outputVariable": Array [
+    Object {
+      "id": "output1",
+      "name": "Output 1",
+      "type": "String",
+    },
+  ],
+}
+`;
+
 exports[`should separate report and dashboard level filters 1`] = `
 Array [
   Object {

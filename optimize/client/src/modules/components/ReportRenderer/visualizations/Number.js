@@ -22,10 +22,10 @@ import ProgressBar from './ProgressBar';
 import './Number.scss';
 
 export function Number({report, formatter, mightFail}) {
-  const {data, result} = report;
+  const {data, result, reportType} = report;
   const {targetValue, precision} = data.configuration;
   const [processVariable, setProcessVariable] = useState();
-  const processVariableReport = data.view.entity === 'variable';
+  const processVariableReport = reportType === 'process' && data.view.entity === 'variable';
   const isMultiMeasure = result?.measures.length > 1;
 
   useEffect(() => {
@@ -107,11 +107,13 @@ export function Number({report, formatter, mightFail}) {
           } else {
             const view = reportConfig.view.find(({matcher}) => matcher(data));
             let measureString = '';
-            measureString = t(
-              'report.view.' + (measure.property === 'frequency' ? 'count' : 'duration')
-            );
-            if (view.key === 'incident' && measure.property === 'duration') {
-              measureString = t('report.view.resolutionDuration');
+            if (reportType === 'process') {
+              measureString = t(
+                'report.view.' + (measure.property === 'frequency' ? 'count' : 'duration')
+              );
+              if (view.key === 'incident' && measure.property === 'duration') {
+                measureString = t('report.view.resolutionDuration');
+              }
             }
 
             viewString = `${view.label()} ${measureString}`;

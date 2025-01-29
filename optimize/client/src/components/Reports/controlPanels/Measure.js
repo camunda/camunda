@@ -19,14 +19,14 @@ import './Measure.scss';
 const measureOrder = ['frequency', 'percentage', 'duration'];
 
 export default function Measure({report, onChange}) {
-  const selectedView = reportConfig.view.find(({matcher}) => matcher(report));
+  const selectedView = reportConfig.process.view.find(({matcher}) => matcher(report));
   const firstMeasure = report.view.properties?.[0];
   const secondMeasure = report.view.properties?.[1];
   const isIncidentReport = report.view.entity === 'incident';
 
   function updateMeasure(newMeasures) {
     onChange(
-      createReportUpdate(report, 'view', selectedView.key, {
+      createReportUpdate('process', report, 'view', selectedView.key, {
         view: {properties: {$set: newMeasures}},
       })
     );

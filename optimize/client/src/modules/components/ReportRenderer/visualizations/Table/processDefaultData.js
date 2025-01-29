@@ -15,7 +15,7 @@ import {formatLabelsForTableBody, sortColumns} from './service';
 const {formatReportResult, getRelativeValue, frequency, duration} = formatters;
 
 export default function processDefaultData({report}, processVariables = []) {
-  const {data, result} = report;
+  const {data, result, reportType} = report;
   const {configuration, view, groupBy} = data;
   const {
     hideAbsoluteValue,
@@ -26,16 +26,17 @@ export default function processDefaultData({report}, processVariables = []) {
 
   const groupedByDuration = groupBy.type === 'duration';
   const instanceCount = result.instanceCount || 0;
+  const config = reportConfig[reportType];
 
   const isMultiMeasure = result.measures.length > 1;
 
-  const viewString = reportConfig.view.find(({matcher}) => matcher(data)).label();
-  const groupString = reportConfig.group.find(({matcher}) => matcher(data)).label();
+  const viewString = config.view.find(({matcher}) => matcher(data)).label();
+  const groupString = config.group.find(({matcher}) => matcher(data)).label();
 
   const head = [];
   let body = [];
 
-  if (groupBy.type === 'duration' || groupBy.type.includes('Date')) {
+  if (reportType === 'process' && (groupBy.type === 'duration' || groupBy.type.includes('Date'))) {
     head.push(viewString + ' ' + groupString);
   } else if (view.entity === 'processInstance' && groupBy.type === 'variable') {
     head.push(
@@ -43,6 +44,8 @@ export default function processDefaultData({report}, processVariables = []) {
         getVariableLabel(processVariables, groupBy.value) || groupBy.value.name
       }`
     );
+  } else if (['inputVariable', 'outputVariable'].includes(groupBy.type)) {
+    head.push(`${t('report.groupBy.' + groupBy.type)}: ${groupBy.value.name}`);
   } else if (view.entity === 'incident' && groupBy.type === 'flowNodes') {
     head.push(t('common.incident.byFlowNode'));
   } else {

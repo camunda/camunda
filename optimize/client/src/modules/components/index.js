@@ -11,6 +11,7 @@ export {Modal} from './Modal';
 export {Deleter} from './Deleter';
 export {Select} from './Select';
 export {BPMNDiagram, ClickBehavior, PartHighlight} from './BPMNDiagram';
+export {DMNDiagram} from './DMNDiagram';
 export {CopyToClipboard} from './CopyToClipboard';
 export {ReportRenderer, NoDataNotice} from './ReportRenderer';
 export {ErrorBoundary} from './ErrorBoundary';

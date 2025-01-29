@@ -76,7 +76,8 @@
       "dashboard": "Dashboard",
       "report": {
         "default": "Bericht",
-        "process": "Prozessbericht"
+        "process": "Prozessbericht",
+        "decision": "Entscheidungsbericht"
       }
     },
     "title": "Sammlungen, Dashboards, und Berichte",
@@ -100,6 +101,7 @@
     },
     "types": {
       "process": "Prozessbericht",
+      "decision": "Entscheidungsbericht",
       "unknown": "Unbekannte Entität"
     },
     "roles": {
@@ -118,6 +120,7 @@
     },
     "sources": {
       "title": "Datenquellen",
+      "decision": "Entscheidungstabelle",
       "process": "Prozess",
       "notCreated": "Es wurden noch keine Quellen hinzugefügt",
       "addSources": "Sie können der Sammlung eine oder mehrere Quellen hinzufügen",
@@ -266,6 +269,12 @@
         "label-plural": "Zeigt Daten von {count} Instanzen.",
         "label-withFilter": "Zeigt Daten von {count} aus {totalCount} Instanz.",
         "label-plural-withFilter": "Zeigt Daten von {count} aus {totalCount} Instanzen."
+      },
+      "decision": {
+        "label": "Zeigt Daten von {count} Evaluierung.",
+        "label-plural": "Zeigt Daten von {count} Evaluierungen.",
+        "label-withFilter": "Zeigt Daten von {count} aus {totalCount} Evaluierung.",
+        "label-plural-withFilter": "Zeigt Daten von {count} aus {totalCount} Evaluierungen."
       }
     },
     "view": {
@@ -282,7 +291,8 @@
       "multi": "Anzahl und Dauer",
       "evaluationCount": "Evaluierungsanzahl",
       "variable": "Variable",
-      "process": "Prozessansicht"
+      "process": "Prozessansicht",
+      "decision": "Entscheidungsansicht"
     },
     "groupBy": {
       "label": "Gruppiere nach",
@@ -366,13 +376,16 @@
     "incompleteNotice": "Die Berichtskonfiguration ist unvollständig",
     "setupNotice": "Konfigurieren Sie Ihren Bericht",
     "totalCount": {
-      "instance": "Gesamtanzahl der Instanzen: <b>{count}</b>"
+      "instance": "Gesamtanzahl der Instanzen: <b>{count}</b>",
+      "evaluation": "Gesamtanzahl</br> Evaluierungen: <b>{count}</b>"
     },
     "definition": {
       "add": "{type} hinzufügen",
       "search": "Nach {type} suchen",
       "process": "Prozessdefinition",
       "process-plural": "Prozessdefinitionen",
+      "decision": "Entscheidungsdefinition",
+      "decision-plural": "Entscheidungsdefinitionen",
       "variables": {
         "rename": "Variablen umbenennen",
         "variableName": "Variablennamen",
@@ -386,7 +399,8 @@
       }
     },
     "noDefinitionMessage": {
-      "process": "Wählen Sie eine <b>Prozessdefinition</b> aus."
+      "process": "Wählen Sie eine <b>Prozessdefinition</b> aus.",
+      "decision": "Wählen Sie eine <b>Entscheidungsdefinition</b> aus."
     },
     "saveConflict": {
       "header": "Inkompatible Änderungen",
@@ -416,6 +430,9 @@
         "processDefinitionKey": "Prozess Definitions Schlüssel",
         "processDefinitionId": "Prozess Definitions Id",
         "processInstanceId": "Prozess Instanz Id",
+        "decisionDefinitionKey": "Entscheidungs Definitions Schlüssel",
+        "decisionDefinitionId": "Entscheidungs Definitions Id",
+        "decisionInstanceId": "Entscheidungs Instanz Id",
         "evaluationDateTime": "Auswertungszeitpunkt",
         "businessKey": "Fachlicher Schlüssel",
         "startDate": "Startdatum",
@@ -444,7 +461,8 @@
       "buttonTooltip": "Konfigurationsoptionen",
       "reset": "Zurücksetzen auf Standardwerte",
       "showCount": {
-        "instance": "Instanzanzahl anzeigen"
+        "instance": "Instanzanzahl anzeigen",
+        "evaluation": "Zeige Evaluierungsanzahl"
       },
       "aggregation": {
         "label": "Aggregation",
@@ -478,7 +496,8 @@
       "tooltips": {
         "legend": "Tooltips",
         "showRelative": {
-          "process": "Relativen Wert basierend auf der Anzahl der Prozessinstanzen anzeigen"
+          "process": "Relativen Wert basierend auf der Anzahl der Prozessinstanzen anzeigen",
+          "decision": "Relativen Wert basierend auf der Anzahl der Entscheidungsevaluierungen anzeigen"
         },
         "showAbsolute": "Absolutwert anzeigen"
       },
@@ -950,6 +969,10 @@
       "label": "Prozess",
       "label-plural": "Prozesse"
     },
+    "decision": {
+      "label": "Entscheidung",
+      "label-plural": "Entscheidungen"
+    },
     "errors": {
       "inValidLink": "Dieser Link ist nicht gültig",
       "number": "Eine Zahl eingeben",
@@ -1002,6 +1025,7 @@
       "createdBy": "Erstellt von",
       "viewRawData": "Rohdaten",
       "viewModel": {
+        "decision": "Entscheidungstabelle",
         "process": "Prozessmodell",
         "model": "Modell"
       },
@@ -1167,7 +1191,8 @@
         "endDateWarning": "Berichte mit einem aktiven Enddatumsfilter zeigen nur abgeschlossene Instanzen an.",
         "info": {
           "instanceStartDate": "Prozessinstanzen <b>gestartet</b>",
-          "instanceEndDate": "Prozessinstanzen <b>beendet</b>"
+          "instanceEndDate": "Prozessinstanzen <b>beendet</b>",
+          "evaluationDateTime": "Entscheidungsinstanzen <b>evaluierte</b>"
         },
         "to": "bis",
         "invalidDate": "Gültiges Datum eingeben",
@@ -1271,15 +1296,18 @@
       },
       "dropdownLabel": {
         "instance": "Prozessinstanzen filtern",
-        "view": "Prozessknoten-Daten filtern"
+        "view": "Prozessknoten-Daten filtern",
+        "decision": "Entscheidungsevaluierungen filtern"
       },
       "allVisible": {
         "instance": "Alle Instanzen sichtbar",
-        "view": "Alle Prozessknoten-Daten sichtbar"
+        "view": "Alle Prozessknoten-Daten sichtbar",
+        "decision": "Alle Evaluierungen sichtbar"
       },
       "linkingTip": "Filter sind durch 'und' Logik verbunden",
       "incompatibleFilters": "Es werden keine Daten angezeigt, da diese Filter nicht miteinander kombinierbar sind.",
       "instanceFilter": "Prozessinstanzen Filter",
+      "decisionFilter": "Entscheidungsevaluierungen Filter",
       "flowNodeFilter": "Prozessknoten-Daten Filter",
       "excludedFlowNodes": "Ausgeschlossene Prozessknoten",
       "selectedFlowNodes": "Ausgewählte Prozessknoten",
@@ -1292,6 +1320,7 @@
       "limitReached": "Prozessdefinitionsgrenze erreicht. Nur {maxNumProcesses} Prozesse erlaubt.",
       "select": {
         "process": "Prozess auswählen",
+        "decision": "Entscheidung auswählen",
         "multiProcess": "Einen oder mehrere Prozesse auswählen "
       },
       "version": {

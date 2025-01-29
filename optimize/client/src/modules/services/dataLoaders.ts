@@ -29,6 +29,32 @@ export async function loadProcessDefinitionXml(
   }
 }
 
+export async function loadDecisionDefinitionXml(
+  key: string,
+  version?: string,
+  tenantId?: string | null
+): Promise<string | null> {
+  const payload: {key: string; version?: string; tenantId?: string} = {key, version};
+  if (tenantId) {
+    payload.tenantId = tenantId;
+  }
+  try {
+    const response = await get('api/definition/decision/xml', payload);
+
+    return await response.text();
+  } catch (e) {
+    return null;
+  }
+}
+
+const loadVariablesFrom =
+  <P>(endpoint: string) =>
+  async (payload: P) => {
+    const response = await post(endpoint, payload);
+
+    return (await response.json()) as Variable[];
+  };
+
 type Process = {
   processDefinitionKey: string;
   processDefinitionVersions: string[];
@@ -45,3 +71,14 @@ export const loadVariables = async (payload: LoadVariablesPayload) => {
 
   return (await response.json()) as Variable[];
 };
+type LoadDecisionVariablesPayload = {
+  decisionDefinitionKey: string;
+  decisionDefinitionVersions: string[];
+  tenantIds: (string | null)[];
+};
+export const loadInputVariables = loadVariablesFrom<LoadDecisionVariablesPayload>(
+  'api/decision-variables/inputs/names'
+);
+export const loadOutputVariables = loadVariablesFrom<LoadDecisionVariablesPayload>(
+  'api/decision-variables/outputs/names'
+);

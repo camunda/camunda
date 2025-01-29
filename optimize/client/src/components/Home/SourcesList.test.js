@@ -40,11 +40,14 @@ jest.mock('./service', () => ({
       ],
     },
     {
-      id: 'process:defKey1',
-      definitionType: 'process',
-      definitionKey: 'defKey1',
-      definitionName: 'definition 1',
-      tenants: [{id: 'tenant1', name: 'Sales'}],
+      id: 'decision:defKey2',
+      definitionType: 'decision',
+      definitionKey: 'defKey2',
+      definitionName: 'decision report',
+      tenants: [
+        {id: null, name: 'Not defined'},
+        {id: 'tenant1', name: 'Marketing'},
+      ],
     },
   ]),
   removeSource: jest.fn(),
@@ -83,7 +86,7 @@ it('should pass entity to Deleter', async () => {
 
   node.find(EntityList).prop('rows')[1].actions[1].action();
 
-  expect(node.find(Deleter).prop('entity').id).toBe('process:defKey1');
+  expect(node.find(Deleter).prop('entity').id).toBe('decision:defKey2');
 });
 
 it('should delete source', () => {

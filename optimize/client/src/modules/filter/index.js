@@ -8,5 +8,6 @@
 
 export {default as Filter} from './Filter';
 export {default as FilterList} from './FilterList';
+export {default as DecisionFilter} from './DecisionFilter';
 export {VariableFilter, VariablePreview, AssigneeFilter, NodeSelection, DateFilter} from './modals';
 export {default as AssigneeFilterPreview} from './AssigneeFilterPreview';

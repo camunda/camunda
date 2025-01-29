@@ -8,7 +8,7 @@
 
 import {Component} from 'react';
 import {Button, Stack} from '@carbon/react';
-import {Db2Database, Edit, TableSplit, TrashCan} from '@carbon/icons-react';
+import {Db2Database, DecisionTree, Edit, TableSplit, TrashCan} from '@carbon/icons-react';
 
 import {t} from 'translation';
 import {Deleter, BulkDeleter, Modal, EntityList, EmptyState} from 'components';
@@ -185,7 +185,7 @@ export default withErrorHandling(
                   id,
                   entityType: 'process',
                   className: definitionType,
-                  icon: <TableSplit />,
+                  icon: definitionType === 'decision' ? <TableSplit /> : <DecisionTree />,
                   type: formatType(definitionType),
                   name: definitionName || definitionKey,
                   meta: [tenantsAvailable && formatTenants(tenants)],
@@ -273,6 +273,8 @@ function formatType(type) {
   switch (type) {
     case 'process':
       return t('home.sources.process');
+    case 'decision':
+      return t('home.sources.decision');
     default:
       return t('home.types.unknown');
   }

@@ -17,6 +17,7 @@ export {EntityNameForm} from './EntityNameForm';
 export {DocsLink} from './DocsLink';
 export {UserTypeahead} from './UserTypeahead';
 export {BPMNDiagram, ClickBehavior} from './BPMNDiagram';
+export {DMNDiagram} from './DMNDiagram';
 export {DownloadButton} from './DownloadButton';
 export {NoDataNotice} from './ReportRenderer';
 export {Table} from './Table';

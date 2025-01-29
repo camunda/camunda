@@ -30,6 +30,7 @@ export default function TableConfig({report, onChange, autoPreviewDisabled}) {
         <FormGroup legendText="">
           <Stack gap={4}>
             <RelativeAbsoluteSelection
+              reportType={report.reportType}
               absolute={!report.data.configuration.hideAbsoluteValue}
               relative={!report.data.configuration.hideRelativeValue}
               onChange={(type, value) => {

@@ -76,7 +76,8 @@
       "dashboard": "Dashboard",
       "report": {
         "default": "Report",
-        "process": "Process report"
+        "process": "Process report",
+        "decision": "Decision report"
       }
     },
     "title": "Collections, dashboards, and reports",
@@ -100,6 +101,7 @@
     },
     "types": {
       "process": "Process report",
+      "decision": "Decision report",
       "unknown": "Unknown entity"
     },
     "roles": {
@@ -118,6 +120,7 @@
     },
     "sources": {
       "title": "Data sources",
+      "decision": "Decision table",
       "process": "Process",
       "notCreated": "There are no sources added yet",
       "addSources": "You can add one or more sources to the collection",
@@ -266,6 +269,12 @@
         "label-plural": "Displaying data from {count} instances.",
         "label-withFilter": "Displaying data from {count} of {totalCount} instance.",
         "label-plural-withFilter": "Displaying data from {count} of {totalCount} instances."
+      },
+      "decision": {
+        "label": "Displaying data from {count} evaluation.",
+        "label-plural": "Displaying data from {count} evaluations.",
+        "label-withFilter": "Displaying data from {count} of {totalCount} evaluation.",
+        "label-plural-withFilter": "Displaying data from {count} of {totalCount} evaluations."
       }
     },
     "view": {
@@ -282,7 +291,8 @@
       "multi": "Count and duration",
       "evaluationCount": "Evaluation count",
       "variable": "Variable",
-      "process": "Process view"
+      "process": "Process view",
+      "decision": "Decision view"
     },
     "groupBy": {
       "label": "Group by",
@@ -366,13 +376,16 @@
     "incompleteNotice": "Report configuration is incomplete",
     "setupNotice": "Set up your report",
     "totalCount": {
-      "instance": "Total instance</br> count: <b>{count}</b>"
+      "instance": "Total instance</br> count: <b>{count}</b>",
+      "evaluation": "Total evaluation</br> count: <b>{count}</b>"
     },
     "definition": {
       "add": "Add {type}",
       "search": "Search for {type}",
       "process": "Process definition",
       "process-plural": "Process definitions",
+      "decision": "Decision definition",
+      "decision-plural": "Decision definitions",
       "variables": {
         "rename": "Rename variables",
         "variableName": "Variable name",
@@ -386,7 +399,8 @@
       }
     },
     "noDefinitionMessage": {
-      "process": "Select a <b>process definition</b>."
+      "process": "Select a <b>process definition</b>.",
+      "decision": "Select a <b>decision definition</b>."
     },
     "saveConflict": {
       "header": "Destructive changes",
@@ -416,6 +430,9 @@
         "processDefinitionKey": "Process definition key",
         "processDefinitionId": "Process definition Id",
         "processInstanceId": "Process instance Id",
+        "decisionDefinitionKey": "Decision definition key",
+        "decisionDefinitionId": "Decision definition Id",
+        "decisionInstanceId": "Decision instance Id",
         "evaluationDateTime": "Evaluation date",
         "businessKey": "Business key",
         "startDate": "Start date",
@@ -444,7 +461,8 @@
       "buttonTooltip": "Configuration options",
       "reset": "Reset to defaults",
       "showCount": {
-        "instance": "Show instance count"
+        "instance": "Show instance count",
+        "evaluation": "Show evaluation count"
       },
       "aggregation": {
         "label": "Aggregation",
@@ -478,7 +496,8 @@
       "tooltips": {
         "legend": "Tooltips",
         "showRelative": {
-          "process": "Show relative value based on process instance count"
+          "process": "Show relative value based on process instance count",
+          "decision": "Show relative value based on decision evaluation count"
         },
         "showAbsolute": "Show absolute value"
       },
@@ -950,6 +969,10 @@
       "label": "Process",
       "label-plural": "Processes"
     },
+    "decision": {
+      "label": "Decision",
+      "label-plural": "Decisions"
+    },
     "errors": {
       "inValidLink": "This link is not valid.",
       "number": "Enter a number",
@@ -1002,6 +1025,7 @@
       "createdBy": "Created by",
       "viewRawData": "View raw data",
       "viewModel": {
+        "decision": "View decision table",
         "process": "View process model",
         "model": "View model"
       },
@@ -1167,7 +1191,8 @@
         "endDateWarning": "Reports with an active end date filter will only show completed instances.",
         "info": {
           "instanceStartDate": "Process instances <b>started</b>",
-          "instanceEndDate": "Process instances <b>ended</b>"
+          "instanceEndDate": "Process instances <b>ended</b>",
+          "evaluationDateTime": "Decision instances <b>evaluated</b>"
         },
         "to": "to",
         "invalidDate": "Enter a valid date",
@@ -1271,15 +1296,18 @@
       },
       "dropdownLabel": {
         "instance": "Filter process instances",
-        "view": "Filter flow nodes"
+        "view": "Filter flow nodes",
+        "decision": "Filter decision evaluations"
       },
       "allVisible": {
         "instance": "All instances visible",
-        "view": "All flow node data visible"
+        "view": "All flow node data visible",
+        "decision": "All evaluations visible"
       },
       "linkingTip": "Filters are linked by 'and' logic",
       "incompatibleFilters": "No data shown due to incompatible filters",
       "instanceFilter": "Process instance filter",
+      "decisionFilter": "Decision instance filter",
       "flowNodeFilter": "Flow node data filter",
       "excludedFlowNodes": "excluded flow node(s)",
       "selectedFlowNodes": "selected flow node(s)",
@@ -1292,6 +1320,7 @@
       "limitReached": "Process definition limit reached. Only {maxNumProcesses} processes allowed.",
       "select": {
         "process": "Select process",
+        "decision": "Select decision",
         "multiProcess": "Select one or more processes"
       },
       "version": {

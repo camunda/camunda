@@ -20,7 +20,13 @@ export {
 } from './entityService';
 export {UNAUTHORIZED_TENANT_ID} from './tenantService';
 export * as formatters from './formatters';
-export {loadProcessDefinitionXml, loadVariables} from './dataLoaders';
+export {
+  loadProcessDefinitionXml,
+  loadDecisionDefinitionXml,
+  loadInputVariables,
+  loadOutputVariables,
+  loadVariables,
+} from './dataLoaders';
 export {numberParser} from './NumberParser';
 export {
   TEXT_REPORT_MAX_CHARACTERS,

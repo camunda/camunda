@@ -24,12 +24,14 @@ jest.mock('services', () => {
       duration: (data) => data,
     },
     reportConfig: {
-      view: [
-        {
-          matcher: () => true,
-          label: () => 'Process instance',
-        },
-      ],
+      process: {
+        view: [
+          {
+            matcher: () => true,
+            label: () => 'Process instance',
+          },
+        ],
+      },
     },
   };
 });

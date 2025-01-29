@@ -11,13 +11,20 @@ import {shallow} from 'enzyme';
 
 import update from 'immutability-helper';
 
-import {loadVariables} from 'services';
+import {loadVariables, loadInputVariables, loadOutputVariables} from 'services';
+import {useErrorHandling} from 'hooks';
 
 import InstanceCount from './InstanceCount';
 
 jest.mock('services', () => {
   return {
     ...jest.requireActual('services'),
+    loadInputVariables: jest
+      .fn()
+      .mockReturnValue([{id: 'input1', name: 'Input 1', type: 'String'}]),
+    loadOutputVariables: jest
+      .fn()
+      .mockReturnValue([{id: 'output1', name: 'Output 1', type: 'String'}]),
     loadVariables: jest.fn().mockReturnValue([{name: 'variable1', type: 'String'}]),
   };
 });
@@ -29,6 +36,8 @@ jest.mock('hooks', () => ({
 }));
 
 beforeEach(() => {
+  loadInputVariables.mockClear();
+  loadOutputVariables.mockClear();
   loadVariables.mockClear();
 });
 
@@ -162,6 +171,30 @@ it('should not load variables if definition is incomplete', async () => {
   await flushPromises();
 
   expect(loadVariables).not.toHaveBeenCalled();
+});
+
+it('should load variable names for decision reports', async () => {
+  useErrorHandling.mockReturnValueOnce({mightFail: async (data, cb) => cb(await data)});
+  const decisionReport = update(props.report, {
+    reportType: {$set: 'decision'},
+  });
+  const node = shallow(<InstanceCount {...props} report={decisionReport} />);
+
+  node.find('span').first().simulate('click');
+
+  await flushPromises();
+
+  const payload = [
+    {
+      decisionDefinitionKey: 'aKey',
+      decisionDefinitionVersions: ['1'],
+      tenantIds: ['tenantId'],
+    },
+  ];
+
+  expect(loadInputVariables).toHaveBeenCalledWith(payload);
+  expect(loadOutputVariables).toHaveBeenCalledWith(payload);
+  expect(node.find('FilterList').prop('variables')).toMatchSnapshot();
 });
 
 it('should use a custom trigger if passed', () => {

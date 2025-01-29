@@ -51,7 +51,7 @@ const config = {
 };
 
 beforeEach(() => {
-  reportConfig.group = [
+  reportConfig.process.group = [
     {
       key: 'none',
       matcher: jest.fn().mockReturnValue(false),
@@ -88,7 +88,7 @@ beforeEach(() => {
       label: jest.fn().mockReturnValue('assignee'),
     },
   ];
-  reportConfig.distribution = [
+  reportConfig.process.distribution = [
     {
       key: 'none',
       matcher: jest.fn().mockReturnValue(false),
@@ -109,7 +109,7 @@ beforeEach(() => {
 });
 
 it('should disable options which would create a wrong combination', () => {
-  reportConfig.group[1].enabled.mockReturnValue(false);
+  reportConfig.process.group[1].enabled.mockReturnValue(false);
 
   const node = shallow(<GroupBy {...config} />);
 
@@ -141,7 +141,7 @@ it('invoke configUpdate with the correct variable data', async () => {
 
   node.find(Select).simulate('change', 'variable_testName');
 
-  expect(createReportUpdate.mock.calls[0][3].groupBy.value.$set).toEqual(SelectedOption.value);
+  expect(createReportUpdate.mock.calls[0][4].groupBy.value.$set).toEqual(SelectedOption.value);
   expect(spy).toHaveBeenCalledWith({content: 'change'});
 });
 
@@ -151,7 +151,7 @@ it('should use the distributedBy value when removing the groupBy', () => {
 
   node.find(Button).simulate('click');
 
-  expect(createReportUpdate.mock.calls[0][3].groupBy.$set).toEqual({type: 'distribution'});
+  expect(createReportUpdate.mock.calls[0][4].groupBy.$set).toEqual({type: 'distribution'});
 });
 
 it('should pass null as a value to Select if groupBy is null', () => {
@@ -161,7 +161,7 @@ it('should pass null as a value to Select if groupBy is null', () => {
 });
 
 it('should not fail if variables are null', () => {
-  reportConfig.group = [
+  reportConfig.process.group = [
     {
       key: 'none',
       matcher: jest.fn().mockReturnValue(false),

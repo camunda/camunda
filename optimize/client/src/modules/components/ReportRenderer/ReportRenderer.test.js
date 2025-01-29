@@ -41,6 +41,16 @@ it('should render ProcessReportRenderer if the report type is process', () => {
   expect(node.find('ProcessReportRenderer')).toExist();
 });
 
+it('should render DecisionReportRenderer if the report type is decision', () => {
+  const report = {
+    ...reportTemplate,
+    reportType: 'decision',
+  };
+  const node = shallow(<ReportRenderer report={report} />);
+
+  expect(node.find('DecisionReportRenderer')).toExist();
+});
+
 it('should include the instance count if indicated in the config', () => {
   const report = {
     ...reportTemplate,

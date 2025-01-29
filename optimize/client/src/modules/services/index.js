@@ -9,6 +9,9 @@
 export {
   getFlowNodeNames,
   checkDeleteConflict,
+  loadDecisionDefinitionXml,
+  loadInputVariables,
+  loadOutputVariables,
   loadProcessDefinitionXml,
   loadVariables,
 } from './dataLoaders';

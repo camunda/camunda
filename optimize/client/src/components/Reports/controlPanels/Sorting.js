@@ -10,23 +10,24 @@ import {Select} from 'components';
 import {createReportUpdate, getDefaultSorting, reportConfig} from 'services';
 import {t} from 'translation';
 
-export default function Sorting({report, onChange}) {
+export default function Sorting({type: reportType, report, onChange}) {
   if (!report.view) {
     return null;
   }
 
-  const sortingOrder = reportConfig.sortingOrder;
+  const sortingOrder = reportConfig[reportType].sortingOrder;
   const options = sortingOrder.filter(({visible}) => visible(report));
 
   if (!options.length) {
     return null;
   }
 
-  const defaultSorting = getDefaultSorting({data: report});
+  const defaultSorting = getDefaultSorting({reportType, data: report});
 
   const {order} = report.configuration.sorting || defaultSorting;
 
-  const onSortingChange = (type) => (value) => onChange(createReportUpdate(report, type, value));
+  const onSortingChange = (type) => (value) =>
+    onChange(createReportUpdate(reportType, report, type, value));
 
   return (
     <li className="sortingOrder">

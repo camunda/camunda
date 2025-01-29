@@ -43,23 +43,27 @@ jest.mock('../reportService', () => ({
 }));
 
 it('should update the payload when selecting a new report setting', () => {
-  expect(createReportUpdate(report, 'visualization', 'table').visualization.$set).toBe('table');
+  expect(createReportUpdate('process', report, 'visualization', 'table').visualization.$set).toBe(
+    'table'
+  );
 });
 
 it('should augment change with custom payload adjustment', () => {
   expect(
-    createReportUpdate(report, 'group', 'variable', {
+    createReportUpdate('process', report, 'group', 'variable', {
       groupBy: {value: {$set: {name: 'boolVar', type: 'Boolean'}}},
     }).groupBy.$set
   ).toEqual({type: 'variable', value: {name: 'boolVar', type: 'Boolean'}});
 });
 
 it('should ensure that groups stay valid', () => {
-  expect(createReportUpdate(report, 'view', 'rawData').groupBy.$set).toEqual({
+  expect(createReportUpdate('process', report, 'view', 'rawData').groupBy.$set).toEqual({
     type: 'none',
     value: null,
   });
-  expect(createReportUpdate(report, 'view', 'flowNode').groupBy.$set).toEqual(report.groupBy);
+  expect(createReportUpdate('process', report, 'view', 'flowNode').groupBy.$set).toEqual(
+    report.groupBy
+  );
 });
 
 it('should ensure that distributions stay valid', () => {
@@ -68,24 +72,24 @@ it('should ensure that distributions stay valid', () => {
     distributedBy: {type: 'variable', value: {name: 'integerVar', type: 'Integer'}},
   };
   expect(
-    createReportUpdate(reportWithDistribution, 'group', 'duration').distributedBy.$set
+    createReportUpdate('process', reportWithDistribution, 'group', 'duration').distributedBy.$set
   ).toEqual({
     type: 'none',
     value: null,
   });
 
-  expect(createReportUpdate(reportWithDistribution, 'group', 'endDate').distributedBy.$set).toEqual(
-    reportWithDistribution.distributedBy
-  );
+  expect(
+    createReportUpdate('process', reportWithDistribution, 'group', 'endDate').distributedBy.$set
+  ).toEqual(reportWithDistribution.distributedBy);
 });
 
 it('should ensure that visualizations stay valid', () => {
-  expect(createReportUpdate(report, 'group', 'none').visualization.$set).toBe('number');
-  expect(createReportUpdate(report, 'group', 'endDate').visualization.$set).toBe('bar');
+  expect(createReportUpdate('process', report, 'group', 'none').visualization.$set).toBe('number');
+  expect(createReportUpdate('process', report, 'group', 'endDate').visualization.$set).toBe('bar');
 });
 
 it('should reset distribution when switching view and distribution is none', () => {
-  expect(createReportUpdate(report, 'view', 'flowNode').distributedBy.$set).toEqual({
+  expect(createReportUpdate('process', report, 'view', 'flowNode').distributedBy.$set).toEqual({
     type: 'flowNode',
     value: null,
   });
@@ -97,7 +101,9 @@ it('should reset distribution when switching group away from flowNodes', () => {
     view: {entity: 'flowNode', properties: ['frequency']},
     groupBy: {type: 'flowNodes', value: null},
   };
-  expect(createReportUpdate(flowNodeReport, 'group', 'startDate').distributedBy.$set).toEqual({
+  expect(
+    createReportUpdate('process', flowNodeReport, 'group', 'startDate').distributedBy.$set
+  ).toEqual({
     type: 'flowNode',
     value: null,
   });
@@ -105,7 +111,7 @@ it('should reset distribution when switching group away from flowNodes', () => {
 
 it('should update y axis labels', () => {
   expect(
-    createReportUpdate(report, 'view', 'userTask', {
+    createReportUpdate('process', report, 'view', 'userTask', {
       view: {properties: {$set: ['duration']}},
     }).configuration.$set.yLabel
   ).toBe('User task Duration');
@@ -113,14 +119,14 @@ it('should update y axis labels', () => {
 
 it('should update x axis labels', () => {
   expect(
-    createReportUpdate(report, 'group', 'endDate', null, {
+    createReportUpdate('process', report, 'group', 'endDate', null, {
       variables: [],
     }).configuration.$set.xLabel
   ).toBe('End date');
 
   getVariableLabel.mockReturnValueOnce('boolVarLabel');
   expect(
-    createReportUpdate(report, 'group', 'variable', {
+    createReportUpdate('process', report, 'group', 'variable', {
       groupBy: {value: {$set: {name: 'boolVar', type: 'Boolean'}}},
     }).configuration.$set.xLabel
   ).toBe('boolVarLabel');
@@ -128,7 +134,9 @@ it('should update x axis labels', () => {
 
 describe('default sorting', () => {
   it('should sort raw data a descending order by the start date', () => {
-    expect(createReportUpdate(report, 'view', 'rawData').configuration.$set.sorting).toEqual({
+    expect(
+      createReportUpdate('process', report, 'view', 'rawData').configuration.$set.sorting
+    ).toEqual({
       by: 'startDate',
       order: 'desc',
     });
@@ -137,7 +145,7 @@ describe('default sorting', () => {
   it('should sort categorical chart reports by value in a descending order', () => {
     isCategorical.mockReturnValueOnce(true);
     expect(
-      createReportUpdate(report, 'visualization', 'barChart').configuration.$set.sorting
+      createReportUpdate('process', report, 'visualization', 'barChart').configuration.$set.sorting
     ).toEqual({
       by: 'value',
       order: 'desc',
@@ -147,6 +155,7 @@ describe('default sorting', () => {
   it('should sort number variable by key in ascending order', () => {
     expect(
       createReportUpdate(
+        'process',
         {...report, groupBy: {type: 'variable', value: {type: 'Double'}}},
         'visualization',
         'barChart'
@@ -160,6 +169,7 @@ describe('default sorting', () => {
   it('should sort flow node table report by label in ascending order', () => {
     expect(
       createReportUpdate(
+        'process',
         {
           ...report,
           view: {entity: 'flowNode', properties: ['frequency']},
@@ -178,16 +188,17 @@ describe('default sorting', () => {
 describe('horizonalBarChart', () => {
   it('should keep horizontalBar config as false for non categorical reports', () => {
     isCategoricalBar.mockReturnValueOnce(false);
-    expect(createReportUpdate(report, 'group', 'endDate').configuration.$set.horizontalBar).toBe(
-      false
-    );
+    expect(
+      createReportUpdate('process', report, 'group', 'endDate').configuration.$set.horizontalBar
+    ).toBe(false);
   });
 
   it('should set horizontalBar config to true for catogorical bar chart reports', () => {
     isCategoricalBar.mockReturnValueOnce(true);
 
     expect(
-      createReportUpdate(report, 'visualization', 'barChart').configuration.$set.horizontalBar
+      createReportUpdate('process', report, 'visualization', 'barChart').configuration.$set
+        .horizontalBar
     ).toEqual(true);
   });
 });
@@ -206,7 +217,7 @@ describe('process exclusive updates', () => {
     };
 
     expect(
-      createReportUpdate(heatmapReport, 'visualization', 'barChart').configuration.$set
+      createReportUpdate('process', heatmapReport, 'visualization', 'barChart').configuration.$set
         .heatmapTargetValue
     ).toEqual({active: false, values: {}});
   });
@@ -226,7 +237,8 @@ describe('process exclusive updates', () => {
     };
 
     expect(
-      createReportUpdate(durationReport, 'view', 'incident').configuration.$set.aggregationTypes
+      createReportUpdate('process', durationReport, 'view', 'incident').configuration.$set
+        .aggregationTypes
     ).toEqual([
       {type: 'avg', value: null},
       {type: 'min', value: null},
@@ -244,7 +256,8 @@ describe('process exclusive updates', () => {
     };
 
     expect(
-      createReportUpdate(durationReport, 'view', 'incident').configuration.$set.aggregationTypes
+      createReportUpdate('process', durationReport, 'view', 'incident').configuration.$set
+        .aggregationTypes
     ).toEqual([{type: 'avg', value: null}]);
   });
 
@@ -266,7 +279,8 @@ describe('process exclusive updates', () => {
     };
 
     expect(
-      createReportUpdate(processReport, 'group', 'process').configuration.$set.aggregationTypes
+      createReportUpdate('process', processReport, 'group', 'process').configuration.$set
+        .aggregationTypes
     ).toEqual([
       {type: 'avg', value: null},
       {type: 'sum', value: null},
@@ -286,7 +300,8 @@ describe('process exclusive updates', () => {
     };
 
     expect(
-      createReportUpdate(processReport, 'group', 'process').configuration.$set.aggregationTypes
+      createReportUpdate('process', processReport, 'group', 'process').configuration.$set
+        .aggregationTypes
     ).toEqual([{type: 'avg', value: null}]);
   });
 
@@ -300,9 +315,9 @@ describe('process exclusive updates', () => {
       },
     };
 
-    expect(createReportUpdate(processReport, 'view', 'incident').view.$set.properties).toEqual([
-      'duration',
-    ]);
+    expect(
+      createReportUpdate('process', processReport, 'view', 'incident').view.$set.properties
+    ).toEqual(['duration']);
   });
 
   it('should use frequency measure by default for non process instance reports', () => {
@@ -315,9 +330,9 @@ describe('process exclusive updates', () => {
       },
     };
 
-    expect(createReportUpdate(processReport, 'view', 'incident').view.$set.properties).toEqual([
-      'frequency',
-    ]);
+    expect(
+      createReportUpdate('process', processReport, 'view', 'incident').view.$set.properties
+    ).toEqual(['frequency']);
   });
 
   it('should remove process parts if report setup does not support it', () => {
@@ -333,11 +348,12 @@ describe('process exclusive updates', () => {
     };
 
     expect(
-      createReportUpdate(processPartReport, 'group', 'startDate').configuration.$set.processPart
+      createReportUpdate('process', processPartReport, 'group', 'startDate').configuration.$set
+        .processPart
     ).toEqual(processPartReport.configuration.processPart);
 
     expect(
-      createReportUpdate(processPartReport, 'view', 'processInstance', {
+      createReportUpdate('process', processPartReport, 'view', 'processInstance', {
         view: {properties: {$set: ['frequency']}},
       }).configuration.$set.processPart
     ).toBe(null);
@@ -356,13 +372,13 @@ describe('process exclusive updates', () => {
     };
 
     expect(
-      createReportUpdate(targetValueReport, 'view', 'processInstance', {
+      createReportUpdate('process', targetValueReport, 'view', 'processInstance', {
         view: {properties: {$set: ['duration']}},
       }).configuration.$set.targetValue
     ).toEqual(targetValueReport.configuration.targetValue);
 
     expect(
-      createReportUpdate(targetValueReport, 'view', 'processInstance', {
+      createReportUpdate('process', targetValueReport, 'view', 'processInstance', {
         view: {properties: {$set: ['frequency', 'duration']}},
       }).configuration.$set.targetValue.active
     ).toBe(false);
@@ -380,16 +396,19 @@ describe('process exclusive updates', () => {
     };
 
     expect(
-      createReportUpdate(bucketSizeReport, 'group', 'duration').configuration.$set.customBucket
+      createReportUpdate('process', bucketSizeReport, 'group', 'duration').configuration.$set
+        .customBucket
     ).toEqual({active: false});
     expect(
-      createReportUpdate(bucketSizeReport, 'group', 'duration').configuration.$set
+      createReportUpdate('process', bucketSizeReport, 'group', 'duration').configuration.$set
         .distributeByCustomBucket
     ).toEqual({active: false});
   });
 
   it('should not set the default sorting for sorting update', () => {
-    expect(createReportUpdate(report, 'sortingOrder', 'asc').configuration.$set.sorting).toEqual({
+    expect(
+      createReportUpdate('process', report, 'sortingOrder', 'asc').configuration.$set.sorting
+    ).toEqual({
       by: 'key',
       order: 'asc',
     });

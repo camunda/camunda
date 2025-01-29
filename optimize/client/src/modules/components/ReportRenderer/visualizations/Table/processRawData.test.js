@@ -196,3 +196,201 @@ describe('Process table', () => {
     expect(flowNodeDurationColumns[0].sortable).toBe(false);
   });
 });
+
+describe('Decision table', () => {
+  const data = {
+    configuration: {
+      tableColumns: {
+        includeNewVariables: true,
+        includedColumns: [],
+        excludedColumns: [
+          'processDefinitionKey',
+          'processDefinitionId',
+          'processInstanceId',
+          'businessKey',
+          'startDate',
+          'numberOfIncidents',
+          'numberOfOpenIncidents',
+          'numberOfUserTasks',
+          'endDate',
+          'duration',
+          'engineName',
+          'tenantId',
+          'variable:var1',
+          'variable:var2',
+          'dur:dur1',
+        ],
+        columnOrder: [],
+      },
+    },
+  };
+
+  it('should show no data message when all column are excluded', () => {
+    const result = {
+      data: [{decisionInstanceId: 'foo', decisionDefinitionId: 'bar'}],
+    };
+
+    expect(processRawData({report: {reportType: 'process', data, result}})).toEqual({
+      body: [],
+      head: [],
+      noData: <NoDataNotice type="info">You need to enable at least one table column</NoDataNotice>,
+    });
+  });
+
+  it('should show default instances column headers for empty results', () => {
+    expect(
+      processRawData({report: {reportType: 'process', data, result: {data: []}}})
+    ).toMatchSnapshot();
+  });
+
+  it('should display decision and process instance ids as links for decision tables', () => {
+    const data = {
+      configuration: {
+        tableColumns: {
+          includeNewVariables: false,
+          includedColumns: ['decisionInstanceId', 'processInstanceId', 'engineName'],
+          excludedColumns: [],
+          columnOrder: [],
+        },
+      },
+    };
+
+    const cell = processRawData({
+      report: {
+        reportType: 'decision',
+        result: {
+          data: [{decisionInstanceId: '123', processInstanceId: '456', engineName: 'a'}],
+        },
+        data,
+      },
+      camundaEndpoints: {a: {endpoint: 'http://camunda.com', engineName: 'a'}},
+    }).body[0];
+
+    expect(cell[0].type).toBe('a');
+    expect(cell[0].props.href).toBe('http://camunda.com/app/cockpit/a/#/decision-instance/123');
+    expect(cell[1].props.href).toBe('http://camunda.com/app/cockpit/a/#/process-instance/456');
+  });
+
+  it('should return correct table props', () => {
+    const data = {
+      configuration: {
+        tableColumns: {
+          includeNewVariables: false,
+          includedColumns: [
+            'decisionDefinitionId',
+            'decisionInstanceId',
+            'processInstanceId',
+            'engineName',
+            'input:var1',
+            'input:var2',
+            'output:result',
+            'dur:dur1',
+          ],
+          excludedColumns: [],
+          columnOrder: [],
+        },
+      },
+    };
+
+    const result = {
+      data: [
+        {
+          decisionInstanceId: 'foo',
+          processInstanceId: '456',
+          decisionDefinitionId: 'bar',
+          engineName: '1',
+          inputVariables: {
+            var1: {id: 'var1', value: 12, name: 'Var 1'},
+            var2: {id: 'var2', value: null, name: 'Var 2'},
+          },
+          outputVariables: {
+            result: {id: 'result', values: [1], name: 'Result'},
+          },
+          flowNodeDurations: {
+            dur1: {name: 'dur1name', value: 1000},
+            dur2: {name: null, value: null},
+          },
+        },
+        {
+          decisionInstanceId: 'xyz',
+          processInstanceId: '456',
+          decisionDefinitionId: 'abc',
+          engineName: '1',
+          inputVariables: {
+            var1: {id: 'var1', value: null, name: 'Var 1'},
+            var2: {id: 'var2', value: true, name: 'Var 2'},
+          },
+          outputVariables: {
+            result: {id: 'result', values: [8], name: 'Result'},
+          },
+          flowNodeDurations: {
+            dur1: {name: 'dur1Name', value: null},
+            dur2: {name: null, value: 2000},
+          },
+        },
+      ],
+    };
+
+    expect(processRawData({report: {result, reportType: 'decision', data}})).toMatchSnapshot();
+  });
+
+  it('should show no data message when all column are excluded', () => {
+    const result = {
+      data: [
+        {
+          decisionInstanceId: 'foo',
+          decisionDefinitionId: 'bar',
+          inputVariables: {
+            var1: {id: 'var1', value: 12, name: 'Var 1'},
+          },
+          outputVariables: {
+            result: {id: 'result', values: [1], name: 'Result'},
+          },
+          flowNodeDurations: {
+            dur1: {name: 'dur1Name', value: null},
+          },
+        },
+      ],
+    };
+    expect(
+      processRawData({
+        report: {
+          reportType: 'decision',
+          result,
+          data: {
+            configuration: {
+              tableColumns: {
+                columnOrder: [],
+                includeNewVariables: true,
+                includedColumns: [],
+                excludedColumns: [
+                  'decisionDefinitionKey',
+                  'decisionDefinitionId',
+                  'decisionInstanceId',
+                  'processInstanceId',
+                  'evaluationDateTime',
+                  'engineName',
+                  'tenantId',
+                  'input:var1',
+                  'input:var2',
+                  'output:result',
+                  'dur:dur1',
+                ],
+              },
+            },
+          },
+        },
+      })
+    ).toEqual({
+      body: [],
+      head: [],
+      noData: <NoDataNotice type="info">You need to enable at least one table column</NoDataNotice>,
+    });
+  });
+
+  it('should only show instance table column if result data is empty', () => {
+    expect(
+      processRawData({report: {data, reportType: 'decision', result: {data: []}}})
+    ).toMatchSnapshot();
+  });
+});

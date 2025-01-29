@@ -93,12 +93,25 @@ export function calculateLinePosition(chart) {
   return firstMeasureAxis.getPixelForValue(chart.options.lineAt);
 }
 
-export function canBeInterpolated({type, value}) {
+export function canBeInterpolated({type, value}, xml, decisionDefinitionKey) {
   if (type === 'flowNodes' || type === 'userTasks') {
     return false;
   }
   if (type === 'variable' && value.type === 'String') {
     return false;
+  }
+  if (type === 'inputVariable' || type === 'outputVariable') {
+    return (
+      new DOMParser()
+        .parseFromString(xml, 'text/xml')
+        .querySelector(
+          `decision[id="${decisionDefinitionKey}"] [id="${value.id}"] ${
+            type === 'inputVariable' ? 'inputExpression' : ''
+          }`
+        )
+        .getAttribute('typeRef')
+        .toLowerCase() !== 'string'
+    );
   }
   return true;
 }

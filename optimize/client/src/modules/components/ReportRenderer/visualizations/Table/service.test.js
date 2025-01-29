@@ -24,18 +24,20 @@ jest.mock('services', () => {
   return {
     ...rest,
     reportConfig: {
-      view: [
-        {
-          matcher: () => true,
-          label: () => 'Flow Node',
-        },
-      ],
-      group: [
-        {
-          matcher: () => true,
-          label: () => 'foo',
-        },
-      ],
+      process: {
+        view: [
+          {
+            matcher: () => true,
+            label: () => 'Flow Node',
+          },
+        ],
+        group: [
+          {
+            matcher: () => true,
+            label: () => 'foo',
+          },
+        ],
+      },
     },
   };
 });

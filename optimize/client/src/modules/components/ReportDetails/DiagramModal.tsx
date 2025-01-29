@@ -9,11 +9,11 @@
 import {useEffect, useState} from 'react';
 import {Button} from '@carbon/react';
 
-import {Modal, BPMNDiagram, Loading} from 'components';
+import {Modal, BPMNDiagram, Loading, DMNDiagram} from 'components';
 import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
 import {t} from 'translation';
 import {showError} from 'notifications';
-import {loadProcessDefinitionXml} from 'services';
+import {loadProcessDefinitionXml, loadDecisionDefinitionXml} from 'services';
 
 import './DiagramModal.scss';
 
@@ -21,17 +21,17 @@ type Definition = {key: string; name: string; versions: string[]; tenantIds: (st
 
 interface DiagramModalProps extends WithErrorHandlingProps {
   definition: Definition;
+  type: string;
   open: boolean;
   onClose: () => void;
 }
 
-export function DiagramModal({definition, open, onClose, mightFail}: DiagramModalProps) {
+export function DiagramModal({definition, type, open, onClose, mightFail}: DiagramModalProps) {
   const [xml, setXml] = useState<string | null>(null);
 
   useEffect(() => {
-    const {key, versions, tenantIds} = definition;
-    mightFail(loadProcessDefinitionXml(key, versions[0], tenantIds[0]), setXml, showError);
-  }, [mightFail, definition]);
+    mightFail(loadXML(type, definition), setXml, showError);
+  }, [mightFail, definition, type]);
 
   return (
     <Modal className="DiagramModal" open={open} size="lg" onClose={onClose}>
@@ -39,7 +39,11 @@ export function DiagramModal({definition, open, onClose, mightFail}: DiagramModa
       <Modal.Content>
         {!xml && <Loading />}
 
-        <BPMNDiagram xml={xml} />
+        {type === 'decision' ? (
+          <DMNDiagram xml={xml} decisionDefinitionKey={definition.key} />
+        ) : (
+          <BPMNDiagram xml={xml} />
+        )}
       </Modal.Content>
       <Modal.Footer>
         <Button kind="secondary" onClick={onClose}>
@@ -51,3 +55,13 @@ export function DiagramModal({definition, open, onClose, mightFail}: DiagramModa
 }
 
 export default withErrorHandling(DiagramModal);
+
+function loadXML(reportType: string, definition: Definition) {
+  const {key, versions, tenantIds} = definition;
+
+  if (reportType === 'decision') {
+    return loadDecisionDefinitionXml(key, versions[0], tenantIds[0]);
+  } else {
+    return loadProcessDefinitionXml(key, versions[0], tenantIds[0]);
+  }
+}

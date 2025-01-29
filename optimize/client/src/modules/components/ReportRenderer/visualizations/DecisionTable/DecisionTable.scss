@@ -1,0 +1,24 @@
+@import 'shared-styles/shared-styles.scss';
+
+.DecisionTable {
+  @include scrollable;
+
+  .dmn-decision-table-container .tjs-container {
+    width: 100%;
+
+    table {
+      width: 100%;
+
+      thead {
+        .annotation {
+          width: 192px !important;
+        }
+      }
+    }
+  }
+
+  tfoot td:first-child {
+    padding-left: 5px;
+    border-right: solid 1px var(--table-cell-border-color);
+  }
+}

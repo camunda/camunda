@@ -398,7 +398,7 @@ export default function ReportControlPanel({report, updateReport, setLoading}) {
               )}
               <GroupBy
                 type="process"
-                report={report.data}
+                type="process"report={report.data}
                 onChange={(change) => updateReport(change, true)}
                 variables={{variable: variables}}
               />

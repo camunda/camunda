@@ -11,8 +11,9 @@ import {Select} from 'components';
 
 import './View.scss';
 
-export default function View({report, onChange, variables}) {
-  const views = reportConfig.view;
+export default function View({type, report, onChange, variables}) {
+  const reportType = type;
+  const views = reportConfig[type].view;
   const selectedOption = report.view ? views.find(({matcher}) => matcher(report)) : null;
 
   return (
@@ -33,7 +34,7 @@ export default function View({report, onChange, variables}) {
           };
         }
 
-        onChange(createReportUpdate(report, 'view', type, adjustment));
+        onChange(createReportUpdate(reportType, report, 'view', type, adjustment));
       }}
       value={getValue(selectedOption?.key, report.view)}
       disabled={report.definitions.length === 0 || !report.definitions[0].key}

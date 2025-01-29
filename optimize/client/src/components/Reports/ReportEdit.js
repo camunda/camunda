@@ -28,6 +28,7 @@ import {useErrorHandling, useChangedState} from 'hooks';
 import {track} from 'tracking';
 
 import ReportControlPanel from './controlPanels/ReportControlPanel';
+import DecisionControlPanel from './controlPanels/DecisionControlPanel';
 import ConflictModal from './ConflictModal';
 import {Configuration} from './controlPanels/Configuration';
 import ReportWarnings from './ReportWarnings';
@@ -91,8 +92,8 @@ export function ReportEdit({report: initialReport, isNew, error, updateOverview}
   const save = useCallback(
     function save() {
       return new Promise((resolve, reject) => {
-        const {id, name, description, data} = report;
-        const endpoint = `report/process/single`;
+        const {id, name, description, data, reportType} = report;
+        const endpoint = `report/${reportType}/single`;
 
         if (isNew) {
           const collectionId = getCollection(location.pathname);
@@ -304,96 +305,117 @@ export function ReportEdit({report: initialReport, isNew, error, updateOverview}
     history.push(redirect);
   }
 
-  const {name, description, data} = report;
+  const {name, description, data, reportType} = report;
 
-  return (
-    <div className="ReportEdit Report">
-      <div className="reportHeader">
-        <div className="headerTopLine">
-          <EntityNameForm
-            name={name}
-            entity="Report"
-            isNew={isNew}
-            onChange={updateName}
-            onSave={saveAndGoBack}
-            onCancel={cancel}
-            description={description}
-            onDescriptionChange={updateDescription}
-          />
-          {!shouldAutoReloadPreview && (
-            <Button
-              kind="primary"
-              size="md"
-              className="RunPreviewButton"
-              disabled={loadingReportData || !isReportComplete(report)}
-              onClick={runReportPreviewUpdate}
-            >
-              {t('report.updateReportPreview.buttonLabel')}
-            </Button>
-          )}
+    return (
+      <div className="ReportEdit Report">
+        <div className="reportHeader">
+          <div className="headerTopLine">
+            <EntityNameForm
+              name={name}
+              entity="Report"
+              isNew={isNew}
+              onChange={updateName}
+              onSave={saveAndGoBack}
+              onCancel={cancel}
+              description={description}
+              onDescriptionChange={updateDescription}
+            />
+            {!shouldAutoReloadPreview && (
+              <Button
+                kind="primary"
+                size="md"
+                className="RunPreviewButton"
+                disabled={loadingReportData || !this.isReportComplete(report)}
+                onClick={runReportPreviewUpdate}
+              >
+                {t('report.updateReportPreview.buttonLabel')}
+              </Button>
+            )}
+          </div>
+          <div className="headerBottomLine">
+            <InstanceCount noInfo report={report} />
+            <Toggle
+              id="updatePreview"
+              className="updatePreview"
+              size="sm"
+              toggled={shouldAutoReloadPreview}
+              onToggle={toggleAutoPreviewUpdate}
+              labelText={t('report.updateReportPreview.switchLabel')}
+              hideLabel
+            />
+          </div>
         </div>
-        <div className="headerBottomLine">
-          <InstanceCount noInfo report={report} />
-          <Toggle
-            id="updatePreview"
-            className="updatePreview"
-            size="sm"
-            toggled={shouldAutoReloadPreview}
-            onToggle={toggleAutoPreviewUpdate}
-            labelText={t('report.updateReportPreview.switchLabel')}
-            hideLabel
-          />
-        </div>
-      </div>
-      <div className="Report__view" ref={containerRef}>
-        <div className="viewsContainer">
-          <div className="mainView">
-            <div className={classnames('Report__content', {hidden: !showReportRenderer})}>
-              <div className="visualization">
-                <Visualization report={data} onChange={(change) => updateReport(change, true)} />
-                <Configuration
-                  type={data.visualization}
-                  onChange={updateReport}
-                  disabled={loadingReportData}
-                  report={report}
-                  autoPreviewDisabled={!shouldAutoReloadPreview}
-                />
-              </div>
+        <div className="Report__view" ref={containerRef}>
+          <div className="viewsContainer">
+            <div className="mainView">
+              <div className={classnames('Report__content', {hidden: !showReportRenderer})}>
+                <div className="visualization">
+                  <Visualization
+                    report={data}
+                    onChange={(change) => updateReport(change, true)}
+                  />
+                  <Configuration
+                    type={data.visualization}
+                    onChange={updateReport}
+                    disabled={loadingReportData}
+                    report={report}
+                    autoPreviewDisabled={!shouldAutoReloadPreview}
+                  />
+                </div>
 
               {isReportComplete(report) && <ReportWarnings report={report} />}
 
-              {(shouldAutoReloadPreview || runButtonLoading) && loadingReportData ? (
-                <Loading />
-              ) : (
-                showReportRenderer && (
-                  <ReportRenderer
-                    error={serverError}
-                    report={shouldAutoReloadPreview ? report : frozenReport}
-                    updateReport={updateReport}
-                    loadReport={loadReport}
-                  />
-                )
-              )}
+                {(shouldAutoReloadPreview || runButtonLoading) && loadingReportData ? (
+                  <Loading />
+                ) : (
+                  showReportRenderer && (
+                    <ReportRenderer
+                      error={serverError}
+                      report={shouldAutoReloadPreview ? report : frozenReport}
+                      updateReport={updateReport}
+                      loadReport={loadReport}
+                    />
+                  )
+                )}
+              </div>
             </div>
+            {typeof report.result !== 'undefined' && report.data?.visualization !== 'table' && (
+              <CollapsibleContainer
+                maxHeight={containerRef.current?.offsetHeight}
+                initialState="minimized"
+                onTransitionEnd={showTable}
+                onExpand={handleTableExpand}
+                onCollapse={handleTableCollapse}
+                title={t('report.view.rawData')}
+              >
+                <InstanceViewTable report={shouldAutoReloadPreview ? report : frozenReport} />
+              </CollapsibleContainer>
+            )}
           </div>
-          {typeof report.result !== 'undefined' && report.data?.visualization !== 'table' && (
-            <CollapsibleContainer
-              maxHeight={containerRef.current?.offsetHeight}
-              initialState="minimized"
-              onTransitionEnd={showTable}
-              onExpand={handleTableExpand}
-              onCollapse={handleTableCollapse}
-              title={t('report.view.rawData')}
-            >
-              <InstanceViewTable report={shouldAutoReloadPreview ? report : frozenReport} />
-            </CollapsibleContainer>
+          {reportType === 'process' && (
+            <ReportControlPanel
+              report={report}
+              updateReport={updateReport}
+              setLoading={setLoading}
+            />
+          )}
+          {reportType === 'decision' && (
+            <DecisionControlPanel
+              report={report}
+              updateReport={updateReport}
+              setLoading={setLoading}
+            />
           )}
         </div>
-        <ReportControlPanel report={report} updateReport={updateReport} setLoading={setLoading} />
+        <ConflictModal
+          conflicts={conflict}
+          onClose={closeConflictModal}
+          onConfirm={saveAndGoBack}
+        />
       </div>
-      <ConflictModal conflicts={conflict} onClose={closeConflictModal} onConfirm={saveAndGoBack} />
-    </div>
-  );
+    );
+  }
 }
 
 export default ReportEdit;

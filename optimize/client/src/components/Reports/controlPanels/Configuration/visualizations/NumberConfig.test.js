@@ -75,6 +75,14 @@ it('should not show kpi config for reports with variable view', () => {
   expect(node.find({label: 'Display as a process KPI'})).not.toExist();
 });
 
+it('should not show kpi config for decision reports', () => {
+  const node = shallow(
+    <NumberConfig {...props} report={update(props.report, {reportType: {$set: 'decision'}})} />
+  );
+
+  expect(node.find({label: 'Display as a process KPI'})).not.toExist();
+});
+
 it('should not show kpi config for multi process reports', () => {
   const node = shallow(
     <NumberConfig

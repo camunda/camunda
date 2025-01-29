@@ -106,6 +106,12 @@ it('should contain a Control Panel in edit mode for a single report', () => {
   expect(node).toIncludeText('ControlPanel');
 });
 
+it('should contain a decision control panel in edit mode for decision reports', () => {
+  const node = shallow(<ReportEdit {...props} report={{...report, reportType: 'decision'}} />);
+
+  expect(node).toIncludeText('DecisionControlPanel');
+});
+
 it('should update the report', () => {
   const node = shallow(<ReportEdit {...props} />);
 

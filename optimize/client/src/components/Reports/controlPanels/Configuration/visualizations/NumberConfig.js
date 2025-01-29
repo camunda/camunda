@@ -46,7 +46,7 @@ export default function NumberConfig({report, onChange}) {
     >
       <Stack gap={4}>
         <TargetSelection report={report} onChange={onChange} />
-        {view.entity !== 'variable' && isSingleProcessReport && (
+        {view.entity !== 'variable' && report.reportType !== 'decision' && isSingleProcessReport && (
           <Checkbox
             id="setKpiCheckbox"
             labelText={t('report.config.goal.setKpi')}

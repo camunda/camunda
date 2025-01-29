@@ -64,24 +64,54 @@ it('should display date preview if the filter is a date filter', () => {
   expect(dateFilterPreview.prop('filter').end).toBe(endDate);
 });
 
+it('should display date preview for decision date time filter', () => {
+  const data = [
+    {
+      type: 'evaluationDateTime',
+      data: {
+        type: 'relative',
+        value: 0,
+        unit: 'days',
+      },
+    },
+  ];
+
+  const node = shallow(<FilterList data={data} />);
+  expect(node.find('DateFilterPreview')).toExist();
+});
+
 it('should use the variables prop to resolve variable names', () => {
   const data = [
     {
-      type: 'variables',
-      data: {name: 'variableName', type: 'String'},
+      type: 'inputVariable',
+      data: {name: 'notANameButAnId', type: 'String'},
       appliedTo: ['definition'],
     },
   ];
 
-  const node = shallow(<FilterList {...props} variables={[]} data={data} />);
+  const node = shallow(<FilterList {...props} variables={{inputVariable: []}} data={data} />);
 
   expect(node.find('VariablePreview').prop('variableName')).toBe('Missing variable');
+
+  node.setProps({
+    variables: {
+      inputVariable: [{id: 'notANameButAnId', name: 'Resolved Name', type: 'String'}],
+    },
+  });
+
+  expect(node.find('VariablePreview').prop('variableName')).toBe('Resolved Name');
+
+  node.setProps({
+    variables: {inputVariable: [{id: 'notANameButAnId', name: null, type: 'String'}]},
+  });
+
+  expect(node.find('VariablePreview').prop('variableName')).toBe('notANameButAnId');
 
   node.setProps({
     variables: null,
   });
 
-  expect(node.find('VariablePreview').prop('variableName')).toBe('variableName');
+  expect(node.find('VariablePreview').prop('variableName')).toBe('notANameButAnId');
 });
 
 it('should disable editing and pass a warning to variablePreview if variable does not exist', () => {

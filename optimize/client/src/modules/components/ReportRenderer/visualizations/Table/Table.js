@@ -21,12 +21,14 @@ import './Table.scss';
 export function Table(props) {
   const {report, mightFail, loadReport, context} = props;
   const {
+    reportType,
     data: {view, groupBy, definitions, distributedBy, filter},
     result,
   } = report;
 
   const isRawDataReport = view?.properties?.[0] === 'rawData';
-  const processVariableReport = isRawDataReport || groupBy?.type === 'variable';
+  const processVariableReport =
+    reportType === 'process' && (isRawDataReport || groupBy?.type === 'variable');
 
   const [isSorting, setIsSorting] = useState(false);
   const [processVariables, setProcessVariables] = useState();
@@ -43,7 +45,7 @@ export function Table(props) {
       };
       mightFail(loadVariables(payload), setProcessVariables, showError);
     }
-  }, [definitions, processVariableReport, mightFail, filter]);
+  }, [definitions, processVariableReport, mightFail, reportType, filter]);
 
   const isDisrtibutedByProcess = distributedBy?.type === 'process';
   const updateSorting = async (by, order) => {

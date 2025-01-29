@@ -25,7 +25,7 @@ const config = {
 };
 
 it('should disable variable submenu if there are no number variables', () => {
-  reportConfig.view = [
+  reportConfig.process.view = [
     {
       key: 'variable',
       matcher: jest.fn().mockReturnValue(false),

@@ -21,6 +21,8 @@ import './ColumnSelection.scss';
 
 const labels = {
   counts: 'count',
+  inputVariables: 'input',
+  outputVariables: 'output',
   variables: 'variable',
   flowNodeDurations: 'dur',
 };
@@ -85,6 +87,12 @@ export default function ColumnSelection({report, onChange, disabled}) {
             if (isSection) {
               let sectionType = 'variable';
               switch (groupKey) {
+                case 'inputVariables':
+                  sectionType = 'inputVariable';
+                  break;
+                case 'outputVariables':
+                  sectionType = 'outputVariable';
+                  break;
                 case 'flowNodeDurations':
                   sectionType = 'dur';
                   break;
