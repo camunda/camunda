@@ -27,10 +27,15 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ExcludeAuthorizationCheck
 public final class MessageSubscriptionCorrelateProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(MessageSubscriptionCorrelateProcessor.class);
 
   private static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
       "Expected to correlate subscription for element with key '%d' and message name '%s', "
@@ -71,10 +76,39 @@ public final class MessageSubscriptionCorrelateProcessor
     if (subscription == null) {
       rejectCommand(record);
       return;
+
+    } else if (subscription.getRecord().getMessageKey() != record.getValue().getMessageKey()) {
+      // This concerns the acknowledgement of a retried correlate process message subscription
+      // command. The message subscription was already marked as correlated for this message, and
+      // another message has started correlating. There's no need to update the state.
+      LOG.warn(
+          """
+          Expected to acknowledge correlating message with key '{}' to subscription with key '{}' \
+          but the subscription is already correlating to another message with key '{}'""",
+          record.getValue().getMessageKey(),
+          subscription.getKey(),
+          subscription.getRecord().getMessageKey());
+      rejectCommand(record);
+      return;
+
+    } else if (!subscription.isCorrelating()) {
+      // This concerns the acknowledgement of a retried correlate process message subscription
+      // command. The message subscription was already marked as correlated. No need to update the
+      // state.
+      LOG.debug(
+          """
+          Expected to acknowledge correlating message with key '{}' to subscription with key '{}' \
+          but the subscription is already correlating'""",
+          record.getValue().getMessageKey(),
+          subscription.getKey());
+      rejectCommand(record);
+      return;
     }
 
-    // todo: move the conditions we just added to the applier to here and don't write the event
-    //  under those conditions
+    LOG.info(
+        "Acknowledged correlating message with key '{}' to subscription with key '{}'",
+        record.getValue().getMessageKey(),
+        subscription.getKey());
 
     final var messageSubscription = subscription.getRecord();
     stateWriter.appendFollowUpEvent(
