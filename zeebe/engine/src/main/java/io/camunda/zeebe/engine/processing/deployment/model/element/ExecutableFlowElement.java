@@ -20,4 +20,6 @@ public interface ExecutableFlowElement {
   ExecutableFlowElement getFlowScope();
 
   BpmnEventType getEventType();
+
+  DirectBuffer getName();
 }
