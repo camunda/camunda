@@ -415,7 +415,6 @@ export function ReportEdit({report: initialReport, isNew, error, updateOverview}
         />
       </div>
     );
-  }
 }
 
 export default ReportEdit;
