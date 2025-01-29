@@ -167,3 +167,23 @@ $ENTRY_FOCUSED_BORDER_WIDTH: 2px;
   vertical-align: text-bottom;
   margin-right: var(--cds-spacing-01);
 }
+
+.risk-URGENT {
+  fill: var(--cds-support-error);
+}
+
+.risk-HIGH {
+  fill: var(--cds-support-caution-major);
+}
+
+.risk-MEDIUM {
+  fill: var(--cds-support-warning);
+}
+
+.risk-LOW {
+  fill: var(--cds-support-success);
+}
+
+.risk-VERYLOW {
+  fill: var(--cds-support-info);
+}

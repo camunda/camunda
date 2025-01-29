@@ -33,6 +33,7 @@ import {PriorityLabel} from './PriorityLabel';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 import {useIsCurrentTaskOpen} from './useIsCurrentTaskOpen';
+import {RiskLabel} from './RiskLabel';
 
 type Props = {
   taskId: TaskType['id'];
@@ -45,6 +46,7 @@ type Props = {
   dueDate: TaskType['dueDate'];
   completionDate: TaskType['completionDate'];
   priority: TaskType['priority'];
+  risk: TaskType['risk'];
   currentUser: CurrentUser;
   position: number;
 };
@@ -120,6 +122,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
       dueDate: dueDateString,
       completionDate: completionDateString,
       priority,
+      risk,
       currentUser,
       position,
     },
@@ -201,6 +204,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
             <div className={cn(styles.flex, styles.flexRow)}>
               <AssigneeTag currentUser={currentUser} assignee={assignee} />
               {priority === null ? null : <PriorityLabel priority={priority} />}
+              {<RiskLabel risk={risk} />}
             </div>
             <div
               data-testid="dates"

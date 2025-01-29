@@ -25,6 +25,8 @@ type Props = {
   loading: boolean;
 };
 
+const MOCKED_RISK: TaskType['risk'] = 'HIGH'; // TODO: remove and integrate with new field on API endpoint
+
 const AvailableTasks: React.FC<Props> = ({
   loading,
   onScrollDown,
@@ -97,6 +99,7 @@ const AvailableTasks: React.FC<Props> = ({
                     priority={task.priority}
                     currentUser={data!}
                     position={i}
+                    risk={MOCKED_RISK}
                   />
                 );
               })}
