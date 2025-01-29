@@ -8,10 +8,12 @@
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.expression.ScopedEvaluationContext;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -70,14 +72,24 @@ public class ProcessEvaluationContext implements ScopedEvaluationContext {
   }
 
   private static Map<String, Object> getElement(final AbstractFlowElement flowElement) {
-    return Map.ofEntries(
-        Map.entry("id", BufferUtil.bufferAsString(flowElement.getId())),
-        Map.entry(
-            "name",
-            Optional.ofNullable(flowElement.getName())
-                .filter(buffer -> buffer.capacity() > 0)
-                .map(BufferUtil::bufferAsString)
-                .orElse("")),
-        Map.entry("type", flowElement.getElementType().name()));
+    final Map<String, Object> context = new HashMap<>();
+    context.put("id", BufferUtil.bufferAsString(flowElement.getId()));
+    context.put(
+        "name",
+        Optional.ofNullable(flowElement.getName())
+            .filter(buffer -> buffer.capacity() > 0)
+            .map(BufferUtil::bufferAsString)
+            .orElse(""));
+    context.put("type", flowElement.getElementType().name());
+
+    if (flowElement instanceof final ExecutableAdHocSubProcess adHocSubProcess) {
+      context.put(
+          "adHocActivities",
+          adHocSubProcess.getAdHocActivitiesById().values().stream()
+              .map(ProcessEvaluationContext::getElement)
+              .toList());
+    }
+
+    return context;
   }
 }
