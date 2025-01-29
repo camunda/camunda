@@ -8,18 +8,81 @@
 package io.camunda.exporter.tasks.incident;
 
 import io.camunda.exporter.tasks.BackgroundTask;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
+import jakarta.mail.Authenticator;
+import jakarta.mail.Message;
+import jakarta.mail.MessagingException;
+import jakarta.mail.PasswordAuthentication;
+import jakarta.mail.Session;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
+import java.time.Instant;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 public class IncidentAlertTask implements BackgroundTask {
 
+  final IncidentUpdateRepository incidentUpdateRepository;
+
+  public IncidentAlertTask(final IncidentUpdateRepository incidentUpdateRepository) {
+    this.incidentUpdateRepository = incidentUpdateRepository;
+  }
+
   @Override
   public CompletionStage<Integer> execute() {
     try {
-      System.out.println("Incident alert task executed");
+      System.out.println("Incident alert task is executing");
+      final Map<String, IncidentDocument> incidents =
+          incidentUpdateRepository
+              .getIncidentDocumentsBefore(Instant.now().toEpochMilli())
+              .toCompletableFuture()
+              .join();
+
+      incidents.forEach(
+          (id, incident) -> {
+            System.out.println("berkay Incident: " + id + " - " + incident);
+            sendEmail(incident.incident().getErrorMessage());
+          });
       return CompletableFuture.completedFuture(1);
     } catch (final Exception e) {
       return CompletableFuture.failedFuture(e);
+    }
+  }
+
+  private void sendEmail(final String incidentMessage) {
+    final String to = "ana.vinogradova@camunda.com";
+    final String from = "anatest409@gmail.com";
+    final String host = "smtp.gmail.com";
+
+    final Properties properties = System.getProperties();
+    properties.put("mail.smtp.host", host);
+    properties.put("mail.smtp.port", "465");
+    properties.put("mail.smtp.ssl.enable", "true");
+    properties.put("mail.smtp.auth", "true");
+
+    final Session session =
+        Session.getInstance(
+            properties,
+            new Authenticator() {
+              @Override
+              protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication("anatest409@gmail.com", "sxus xrqz ozcb qdiu");
+              }
+            });
+
+    try {
+      final MimeMessage message = new MimeMessage(session);
+      message.setFrom(new InternetAddress(from));
+      message.addRecipient(Message.RecipientType.TO, new InternetAddress(to));
+      message.setSubject("Camunda Alert");
+      message.setText(incidentMessage);
+
+      Transport.send(message);
+    } catch (final MessagingException mex) {
+      mex.printStackTrace();
     }
   }
 }
