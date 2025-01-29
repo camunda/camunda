@@ -1,0 +1,18 @@
+[
+{
+  "name":"io.camunda.zeebe.zbctl.Application",
+  "methods":[{"name":"main","parameterTypes":["java.lang.String[]"] }]
+},
+{
+  "name":"java.lang.Boolean",
+  "methods":[{"name":"getBoolean","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"java.lang.String",
+  "methods":[{"name":"lastIndexOf","parameterTypes":["int"] }, {"name":"substring","parameterTypes":["int"] }]
+},
+{
+  "name":"java.lang.System",
+  "methods":[{"name":"getProperty","parameterTypes":["java.lang.String"] }, {"name":"setProperty","parameterTypes":["java.lang.String","java.lang.String"] }]
+}
+]
