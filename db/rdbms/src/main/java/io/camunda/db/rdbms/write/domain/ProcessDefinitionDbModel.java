@@ -8,7 +8,6 @@
 package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.util.ObjectBuilder;
-
 import java.util.Objects;
 
 public final class ProcessDefinitionDbModel {
@@ -23,16 +22,17 @@ public final class ProcessDefinitionDbModel {
   private final String formId;
   private final String legacyId;
 
-  public ProcessDefinitionDbModel(Long processDefinitionKey,
-                                  String processDefinitionId,
-                                  String resourceName,
-                                  String name,
-                                  String tenantId,
-                                  String versionTag,
-                                  int version,
-                                  String bpmnXml,
-                                  String formId,
-                                  String legacyId) {
+  public ProcessDefinitionDbModel(
+      Long processDefinitionKey,
+      String processDefinitionId,
+      String resourceName,
+      String name,
+      String tenantId,
+      String versionTag,
+      int version,
+      String bpmnXml,
+      String formId,
+      String legacyId) {
     this.processDefinitionKey = processDefinitionKey;
     this.processDefinitionId = processDefinitionId;
     this.resourceName = resourceName;
@@ -87,33 +87,77 @@ public final class ProcessDefinitionDbModel {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj == this)
+    if (obj == this) {
       return true;
-    if (obj == null || obj.getClass() != this.getClass())
+    }
+    if (obj == null || obj.getClass() != this.getClass()) {
       return false;
-    var that = (ProcessDefinitionDbModel) obj;
-    return Objects.equals(this.processDefinitionKey, that.processDefinitionKey) && Objects.equals(this.processDefinitionId,
-        that.processDefinitionId) && Objects.equals(this.resourceName, that.resourceName) && Objects.equals(this.name,
-        that.name) && Objects.equals(this.tenantId, that.tenantId) && Objects.equals(this.versionTag, that.versionTag) &&
-        this.version == that.version && Objects.equals(this.bpmnXml, that.bpmnXml) && Objects.equals(this.formId, that.formId) && Objects.equals(this.legacyId,
-        that.legacyId);
+    }
+    final var that = (ProcessDefinitionDbModel) obj;
+    return Objects.equals(this.processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(this.processDefinitionId, that.processDefinitionId)
+        && Objects.equals(this.resourceName, that.resourceName)
+        && Objects.equals(this.name, that.name)
+        && Objects.equals(this.tenantId, that.tenantId)
+        && Objects.equals(this.versionTag, that.versionTag)
+        && this.version == that.version
+        && Objects.equals(this.bpmnXml, that.bpmnXml)
+        && Objects.equals(this.formId, that.formId)
+        && Objects.equals(this.legacyId, that.legacyId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(processDefinitionKey, processDefinitionId, resourceName, name, tenantId, versionTag, version,
-        bpmnXml, formId, legacyId);
+    return Objects.hash(
+        processDefinitionKey,
+        processDefinitionId,
+        resourceName,
+        name,
+        tenantId,
+        versionTag,
+        version,
+        bpmnXml,
+        formId,
+        legacyId);
   }
 
   @Override
   public String toString() {
-    return "ProcessDefinitionDbModel[" + "processDefinitionKey=" + processDefinitionKey + ", " + "processDefinitionId="
-        + processDefinitionId + ", " + "resourceName=" + resourceName + ", " + "name=" + name + ", " + "tenantId="
-        + tenantId + ", " + "versionTag=" + versionTag + ", " + "version=" + version + ", " + "bpmnXml=" + bpmnXml
-        + ", " + "formId=" + formId + ", " + "legacyId=" + legacyId + ']';
+    return "ProcessDefinitionDbModel["
+        + "processDefinitionKey="
+        + processDefinitionKey
+        + ", "
+        + "processDefinitionId="
+        + processDefinitionId
+        + ", "
+        + "resourceName="
+        + resourceName
+        + ", "
+        + "name="
+        + name
+        + ", "
+        + "tenantId="
+        + tenantId
+        + ", "
+        + "versionTag="
+        + versionTag
+        + ", "
+        + "version="
+        + version
+        + ", "
+        + "bpmnXml="
+        + bpmnXml
+        + ", "
+        + "formId="
+        + formId
+        + ", "
+        + "legacyId="
+        + legacyId
+        + ']';
   }
 
-  public static class ProcessDefinitionDbModelBuilder implements ObjectBuilder<ProcessDefinitionDbModel> {
+  public static class ProcessDefinitionDbModelBuilder
+      implements ObjectBuilder<ProcessDefinitionDbModel> {
 
     private Long processDefinitionKey;
     private String processDefinitionId;
@@ -127,8 +171,7 @@ public final class ProcessDefinitionDbModel {
     private String legacyId;
 
     // Public constructor to initialize the builder
-    public ProcessDefinitionDbModelBuilder() {
-    }
+    public ProcessDefinitionDbModelBuilder() {}
 
     // Builder methods for each field
     public ProcessDefinitionDbModelBuilder processDefinitionKey(final Long processDefinitionKey) {
@@ -184,8 +227,17 @@ public final class ProcessDefinitionDbModel {
     // Build method to create the record
     @Override
     public ProcessDefinitionDbModel build() {
-      return new ProcessDefinitionDbModel(processDefinitionKey, processDefinitionId, resourceName, name, tenantId,
-          versionTag, version, bpmnXml, formId, legacyId);
+      return new ProcessDefinitionDbModel(
+          processDefinitionKey,
+          processDefinitionId,
+          resourceName,
+          name,
+          tenantId,
+          versionTag,
+          version,
+          bpmnXml,
+          formId,
+          legacyId);
     }
   }
 }

@@ -22,7 +22,6 @@ public class ProcessDefinitionEntityMapper {
         dbModel.version(),
         dbModel.versionTag(),
         dbModel.tenantId(),
-        dbModel.formId()
-    );
+        dbModel.formId());
   }
 }

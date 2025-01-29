@@ -7,11 +7,8 @@
  */
 package io.camunda.db.rdbms.read.mapper;
 
-import io.camunda.db.rdbms.read.domain.FlowNodeInstanceDbQuery;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
-import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
-import io.camunda.search.entities.ProcessInstanceEntity;
 
 public class FlowNodeInstanceEntityMapper {
 
@@ -29,7 +26,6 @@ public class FlowNodeInstanceEntityMapper {
         dbModel.hasIncident(),
         dbModel.incidentKey(),
         dbModel.processDefinitionId(),
-        dbModel.tenantId()
-    );
+        dbModel.tenantId());
   }
 }

@@ -82,6 +82,10 @@ public final class VariableDbModel {
         .build();
   }
 
+  public VariableDbModel truncateValue(final int sizeLimit) {
+    return null;
+  }
+
   public Long variableKey() {
     return variableKey;
   }

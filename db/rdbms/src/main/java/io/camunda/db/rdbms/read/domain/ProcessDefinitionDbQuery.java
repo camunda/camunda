@@ -77,6 +77,5 @@ public record ProcessDefinitionDbQuery(
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
       return new ProcessDefinitionDbQuery(filter, sort, page, legacyId);
     }
-
   }
 }
