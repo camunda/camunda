@@ -129,6 +129,12 @@ public final class FlowElementInstantiationTransformer
           .map(BufferUtil::wrapString)
           .ifPresent(executableElement::setName);
 
+      Optional.ofNullable(element.getDocumentations())
+          .flatMap(documentations -> documentations.stream().findFirst())
+          .flatMap(documentation -> Optional.ofNullable(documentation.getTextContent()))
+          .map(BufferUtil::wrapString)
+          .ifPresent(executableElement::setDocumentation);
+
       process.addFlowElement(executableElement);
     }
   }

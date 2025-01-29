@@ -22,4 +22,6 @@ public interface ExecutableFlowElement {
   BpmnEventType getEventType();
 
   DirectBuffer getName();
+
+  DirectBuffer getDocumentation();
 }
