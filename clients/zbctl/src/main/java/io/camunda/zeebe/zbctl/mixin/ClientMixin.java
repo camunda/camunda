@@ -71,7 +71,7 @@ public final class ClientMixin {
       names = "--host",
       description =
           "Specify the host part of the gateway address. If omitted, will read from the environment variable 'ZEEBE_HOST'",
-      defaultValue = "127.0.0.1",
+      defaultValue = "http://127.0.0.1",
       scope = ScopeType.INHERIT)
   private String host;
 
@@ -79,7 +79,7 @@ public final class ClientMixin {
       names = "--port",
       description =
           "Specify the port part of the gateway address. If omitted, will read from the environment variable 'ZEEBE_PORT'",
-      defaultValue = "26500",
+      defaultValue = "8080",
       type = Integer.class,
       scope = ScopeType.INHERIT)
   private int port;
