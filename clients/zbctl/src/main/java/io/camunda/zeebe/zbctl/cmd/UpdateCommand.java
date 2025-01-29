@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.zbctl.cmd;
 
+import io.camunda.client.api.response.UpdateJobResponse;
 import io.camunda.client.api.response.UpdateUserTaskResponse;
+import io.camunda.client.protocol.rest.JobChangeset;
 import io.camunda.zeebe.zbctl.converters.ListConverter;
 import io.camunda.zeebe.zbctl.mixin.ClientMixin;
 import io.camunda.zeebe.zbctl.mixin.OutputMixin;
@@ -161,6 +163,54 @@ public class UpdateCommand {
       }
 
       return ExitCode.OK;
+    }
+
+    @Command(name = "job", description = "Updates a job defined by the job key")
+    public static class JobCommand implements Callable<Integer> {
+
+      @Mixin private ClientMixin clientMixin;
+      @Mixin private OutputMixin outputMixin;
+
+      @Parameters(
+          paramLabel = "<job_key>",
+          description = "The key of the job to update",
+          type = Long.class)
+      private long jobKey;
+
+      @Option(
+          names = {"--retries"},
+          paramLabel = "<retries>",
+          description = "The number of retries for the job",
+          type = Integer.class)
+      private Integer retries;
+
+      @Option(
+          names = {"--timeout"},
+          paramLabel = "<timeout>",
+          description = "The timeout for the job in milliseconds",
+          type = Long.class)
+      private Long timeout;
+
+      @Override
+      public Integer call() throws Exception {
+        try (final var client = clientMixin.client()) {
+          final var command = client.newUpdateJobCommand(jobKey);
+
+          final var changeset = new JobChangeset();
+          if (retries != null && retries >= 0) {
+            changeset.retries(retries);
+          }
+
+          if (timeout != null && timeout >= 0) {
+            changeset.timeout(timeout);
+          }
+
+          final var response = command.update(changeset).send().join(30, TimeUnit.SECONDS);
+          outputMixin.formatter().write(response, UpdateJobResponse.class);
+        }
+
+        return ExitCode.OK;
+      }
     }
   }
 }

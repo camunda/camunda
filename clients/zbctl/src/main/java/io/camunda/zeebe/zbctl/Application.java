@@ -63,7 +63,6 @@ import picocli.CommandLine.HelpCommand;
       BroadcastCommand.class,
       AssignCommand.class,
       UnassignCommand.class,
-      BroadcastCommand.class,
       ThrowErrorCommand.class,
       UpdateCommand.class
     })
