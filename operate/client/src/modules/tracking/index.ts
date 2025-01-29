@@ -46,7 +46,8 @@ type Events =
         | 'decisions'
         | 'process-details'
         | 'decision-details'
-        | 'login';
+        | 'login'
+        | 'alerts';
     }
   | {
       eventName: 'theme-toggle';

@@ -33,6 +33,9 @@ const Paths = {
   decisionInstance(decisionInstanceId: string = ':decisionInstanceId') {
     return `/decisions/${decisionInstanceId}`;
   },
+  alerts() {
+    return '/alerts';
+  },
 } as const;
 
 const Locations = {

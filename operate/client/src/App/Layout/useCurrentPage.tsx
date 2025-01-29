@@ -19,6 +19,7 @@ const useCurrentPage = () => {
     | 'process-details'
     | 'decision-details'
     | 'login'
+    | 'alerts'
     | undefined {
     if (matchPath(Paths.dashboard(), location.pathname) !== null) {
       return 'dashboard';
@@ -30,6 +31,10 @@ const useCurrentPage = () => {
 
     if (matchPath(Paths.decisions(), location.pathname) !== null) {
       return 'decisions';
+    }
+
+    if (matchPath(Paths.alerts(), location.pathname) !== null) {
+      return 'alerts';
     }
 
     if (matchPath(Paths.processInstance(), location.pathname) !== null) {

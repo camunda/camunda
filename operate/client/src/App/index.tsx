@@ -46,6 +46,10 @@ const CarbonProcesses = loadable(() => import('./Processes/index'), {
   resolveComponent: (components) => components.Processes,
 });
 
+const CarbonAlerts = loadable(() => import('./Alerts/index'), {
+  resolveComponent: (components) => components.Alerts,
+});
+
 const CarbonProcessInstance = loadable(
   () => import('./ProcessInstance/index'),
   {
@@ -101,6 +105,7 @@ const App: React.FC = () => {
               path={Paths.decisionInstance()}
               element={<CarbonDecisionInstance />}
             />
+            <Route path={Paths.alerts()} element={<CarbonAlerts />} />
           </Route>
         </Routes>
       </HistoryRouter>

@@ -110,6 +110,14 @@ const AppHeader: React.FC = observer(() => {
               },
             },
           },
+          {
+            key: 'alerts',
+            label: 'Alerts',
+            isCurrentPage: currentPage === 'alerts',
+            routeProps: {
+              to: Paths.alerts(),
+            },
+          },
         ],
         licenseTag: {
           show: licenseTagStore.state.isTagVisible,
