@@ -10,6 +10,7 @@ package io.camunda.zeebe.zbctl.cmd;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.zbctl.cmd.QueryCommand.ProcessDefinitionCommand;
 import io.camunda.zeebe.zbctl.cmd.QueryCommand.ProcessInstanceCommand;
+import io.camunda.zeebe.zbctl.cmd.QueryCommand.UserTaskCommand;
 import io.camunda.zeebe.zbctl.mixin.ClientMixin;
 import io.camunda.zeebe.zbctl.mixin.OutputMixin;
 import java.util.concurrent.Callable;
@@ -20,7 +21,11 @@ import picocli.CommandLine.Mixin;
 @Command(
     name = "query",
     description = "Query resources",
-    subcommands = {ProcessDefinitionCommand.class, ProcessInstanceCommand.class})
+    subcommands = {
+      ProcessDefinitionCommand.class,
+      ProcessInstanceCommand.class,
+      UserTaskCommand.class
+    })
 public class QueryCommand {
 
   @Command(
@@ -59,6 +64,28 @@ public class QueryCommand {
       try (final var client = clientMixin.client()) {
         // TODO filter, page support
         final var response = client.newProcessInstanceQuery().send().join(30, TimeUnit.SECONDS);
+        // outputMixin.formatter().write(response.page());
+        outputMixin.formatter().write(response, SearchQueryResponse.class);
+      }
+
+      return 0;
+    }
+  }
+
+  @Command(
+      name = "usertask",
+      aliases = {"user-tasks", "ut"},
+      description = "Query user tasks")
+  public static class UserTaskCommand implements Callable<Integer> {
+
+    @Mixin private ClientMixin clientMixin;
+    @Mixin private OutputMixin outputMixin;
+
+    @Override
+    public Integer call() throws Exception {
+      try (final var client = clientMixin.client()) {
+        // TODO filter, page support
+        final var response = client.newUserTaskQuery().send().join(30, TimeUnit.SECONDS);
         // outputMixin.formatter().write(response.page());
         outputMixin.formatter().write(response, SearchQueryResponse.class);
       }
