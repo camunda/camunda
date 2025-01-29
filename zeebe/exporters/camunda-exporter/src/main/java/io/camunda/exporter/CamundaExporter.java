@@ -49,7 +49,6 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VisibleForTesting;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Set;
 import org.agrona.CloseHelper;
@@ -245,15 +244,7 @@ public class CamundaExporter implements Exporter {
 
   private ExporterBatchWriter createBatchWriter() {
     final var builder = ExporterBatchWriter.Builder.begin();
-
-    final var partitionIdProvider = new DefaultExporterResourceProvider();
-
-    partitionIdProvider.init(
-        configuration,
-        clientAdapter.getExporterEntityCacheProvider(),
-        new SimpleMeterRegistry(),
-        metadata);
-    partitionIdProvider.getExportHandlers().forEach(builder::withHandler);
+    provider.getExportHandlers().forEach(builder::withHandler);
     builder.withCustomErrorHandlers(provider.getCustomErrorHandlers());
     return builder.build();
   }
