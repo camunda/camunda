@@ -71,6 +71,9 @@ public final class MessageSubscriptionCorrelateProcessor
       return;
     }
 
+    // todo: move the conditions we just added to the applier to here and don't write the event
+    //  under those conditions
+
     final var messageSubscription = subscription.getRecord();
     stateWriter.appendFollowUpEvent(
         subscription.getKey(), MessageSubscriptionIntent.CORRELATED, messageSubscription);
