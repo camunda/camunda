@@ -498,17 +498,23 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-core-component-tests:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+  core-component-tests:
+    name: Run tests
+    runs-on: 'ubuntu-latest'
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        version: ['${{ github.event.inputs.c8Version }}']
+        project: ['chromium']
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
       - name: Run tests
-      - uses: ./.github/actions/core-component-test-suite
+        uses: ./.github/actions/core-component-test-suite
         with:
-         version: ["${{ github.event.inputs.c8Version }}"]
-         project: ["chromium"]
+          version: ${{ matrix.version }}
+          project: ${{ matrix.project }}
 
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"
