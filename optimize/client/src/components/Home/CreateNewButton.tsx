@@ -6,10 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ComponentProps} from 'react';
-import {MenuButton, MenuItem} from '@carbon/react';
+import {ComponentProps, useEffect, useState} from 'react';
+import {Link, MenuButton, MenuItem} from '@carbon/react';
 
 import {t} from 'translation';
+import {getOptimizeProfile} from 'config';
 
 interface CreateNewButtonProps
   extends Pick<ComponentProps<typeof MenuButton>, 'kind' | 'size' | 'tabIndex' | 'disabled'> {
@@ -17,6 +18,14 @@ interface CreateNewButtonProps
   collection?: string;
   importEntity: () => void;
 }
+
+const [optimizeProfile, setOptimizeProfile] = useState<'platform' | 'cloud' | 'ccsm'>();
+
+useEffect(() => {
+  (async () => {
+    setOptimizeProfile(await getOptimizeProfile());
+  })();
+}, []);
 
 export default function CreateNewButton({
   create,
@@ -46,10 +55,32 @@ export default function CreateNewButton({
         onClick={() => create('dashboard')}
         label={t('home.createBtn.dashboard').toString()}
       />
-      <MenuItem
-        onClick={() => create('report')}
-        label={t('home.createBtn.report.default').toString()}
-      />
+      {optimizeProfile === 'platform' ? (
+        <MenuItem label={t('home.createBtn.report.default').toString()}>
+          <MenuItem
+            onClick={() => create('report')}
+            label={t('home.createBtn.report.process').toString()}
+          />
+          <MenuItem
+            onClick={() => create('kpi')}
+            label={t('report.kpiTemplates.processKpi').toString()}
+          />
+          <Link to="report/new-decision/edit">
+            <MenuItem label={t('home.createBtn.report.decision').toString()} />
+          </Link>
+        </MenuItem>
+      ) : (
+        <>
+          <MenuItem
+            onClick={() => create('report')}
+            label={t('home.createBtn.report.default').toString()}
+          />
+          <MenuItem
+            onClick={() => create('kpi')}
+            label={t('report.kpiTemplates.processKpi').toString()}
+          />
+        </>
+      )}
       <MenuItem
         onClick={() => create('kpi')}
         label={t('report.kpiTemplates.processKpi').toString()}
