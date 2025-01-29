@@ -47,14 +47,14 @@ public class ThrowError {
         names = {"--errorCode"},
         paramLabel = "<error_code>",
         description = "Specify the code of the error that will be thrown.",
-        defaultValue = "-1")
+        required = true)
     private String errorCode;
 
     @Option(
         names = {"--errorMsg"},
         paramLabel = "<error_msg>",
         description = "Specify the message of the error that will be thrown.",
-        defaultValue = "")
+        required = true)
     private String errorMsg;
 
     @Override
