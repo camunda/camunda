@@ -99,4 +99,32 @@ public class ZeebeTaskListenersValidationTest {
                     + "and 'assignment', 'complete' deprecated event types are supported.",
                 unsupportedEventType)));
   }
+
+  @DisplayName("task listener with supported `eventType` property")
+  @ParameterizedTest(name = "supported event type: ''{0}''")
+  @EnumSource(
+      value = ZeebeTaskListenerEventType.class,
+      // supported event types
+      names = {
+        "assigning", "completing",
+        // deprecated event types
+        "assignment", "complete"
+      })
+  void testEventTypeSupported(final ZeebeTaskListenerEventType supportedEventType) {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask(
+                "user_task",
+                ut ->
+                    ut.zeebeUserTask()
+                        .zeebeTaskListener(
+                            l -> l.eventType(supportedEventType).type("supported_listener")))
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
 }
