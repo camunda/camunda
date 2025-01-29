@@ -26,7 +26,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-public class AuthorizationAddPermissionAuthorizationTest {
+public class AuthorizationUpdateAuthorizationTest {
 
   private static final ConfiguredUser DEFAULT_USER =
       new ConfiguredUser(
@@ -44,71 +44,95 @@ public class AuthorizationAddPermissionAuthorizationTest {
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldBeAuthorizedToAddPermissionsWithDefaultUser() {
+  public void shouldBeAuthorizedToUpdateAuthorizationWithDefaultUser() {
     // given
     final var user = createUser();
+    final var authorizationKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId(user.getUsername())
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withResourceId("*")
+            .withPermissions(PermissionType.CREATE)
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getAuthorizationKey();
 
     // when
     engine
         .authorization()
-        .permission()
-        .withOwnerKey(user.getUserKey())
-        .withOwnerId(user.getUsername())
-        .withOwnerType(AuthorizationOwnerType.USER)
-        .withResourceType(AuthorizationResourceType.RESOURCE)
-        .withPermission(PermissionType.CREATE, "*")
-        .add(DEFAULT_USER.getUsername());
+        .updateAuthorization(authorizationKey)
+        .withPermissions(PermissionType.DELETE_FORM)
+        .update(DEFAULT_USER.getUsername());
 
     // then
     assertThat(
-            RecordingExporter.authorizationRecords(AuthorizationIntent.PERMISSION_ADDED)
-                .withOwnerKey(user.getUserKey())
+            RecordingExporter.authorizationRecords(AuthorizationIntent.UPDATED)
+                .withOwnerId(user.getUsername())
                 .exists())
         .isTrue();
   }
 
   @Test
-  public void shouldBeAuthorizedToAddPermissionsWithUser() {
+  public void shouldBeAuthorizedToUpdateAuthorizationWithUser() {
     // given
     final var user = createUser();
-    addPermissionToUser(user, AuthorizationResourceType.AUTHORIZATION, PermissionType.UPDATE);
+    addAuthorizationToUser(user, AuthorizationResourceType.AUTHORIZATION, PermissionType.UPDATE);
+    final var authorizationKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId(user.getUsername())
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withResourceId("*")
+            .withPermissions(PermissionType.CREATE)
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getAuthorizationKey();
 
     // when
     engine
         .authorization()
-        .permission()
-        .withOwnerKey(user.getUserKey())
-        .withOwnerId(user.getUsername())
-        .withOwnerType(AuthorizationOwnerType.USER)
-        .withResourceType(AuthorizationResourceType.RESOURCE)
-        .withPermission(PermissionType.CREATE, "*")
-        .add(user.getUsername());
+        .updateAuthorization(authorizationKey)
+        .withPermissions(PermissionType.DELETE_FORM)
+        .update(user.getUsername());
 
     // then
     assertThat(
-            RecordingExporter.authorizationRecords(AuthorizationIntent.PERMISSION_ADDED)
-                .withOwnerKey(user.getUserKey())
+            RecordingExporter.authorizationRecords(AuthorizationIntent.UPDATED)
+                .withOwnerId(user.getUsername())
                 .exists())
         .isTrue();
   }
 
   @Test
-  public void shouldBeForbiddenToAddPermissionsIfNoPermissions() {
+  public void shouldBeForbiddenToUpdateAuthorizationIfNoPermissions() {
     // given
     final var user = createUser();
+    final var authorizationKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId(user.getUsername())
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withResourceId("*")
+            .withPermissions(PermissionType.CREATE)
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getAuthorizationKey();
 
     // when
     final var rejection =
         engine
             .authorization()
-            .permission()
-            .withOwnerKey(user.getUserKey())
-            .withOwnerId(user.getUsername())
-            .withOwnerType(AuthorizationOwnerType.USER)
-            .withResourceType(AuthorizationResourceType.RESOURCE)
-            .withPermission(PermissionType.DELETE, "*")
+            .updateAuthorization(authorizationKey)
+            .withPermissions(PermissionType.DELETE_FORM)
             .expectRejection()
-            .add(user.getUsername());
+            .update(user.getUsername());
 
     // then
     Assertions.assertThat(rejection)
@@ -128,18 +152,18 @@ public class AuthorizationAddPermissionAuthorizationTest {
         .getValue();
   }
 
-  private void addPermissionToUser(
+  private void addAuthorizationToUser(
       final UserRecordValue user,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType) {
     engine
         .authorization()
-        .permission()
-        .withOwnerKey(user.getUserKey())
+        .newAuthorization()
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
-        .withPermission(permissionType, "*")
-        .add(DEFAULT_USER.getUsername());
+        .withResourceId("*")
+        .withPermissions(permissionType)
+        .create(DEFAULT_USER.getUsername());
   }
 }
