@@ -9,16 +9,19 @@
 import {requestAndParse} from 'modules/request';
 
 type Alert = {
-  filter: {
-    processDefinitionKey: string;
-  };
+  filters: [
+    {
+      processDefinitionKey: string;
+    },
+  ];
   channel: {
+    type: string;
     email: string;
   };
 };
 
 const fetchAlerts = async () => {
-  return requestAndParse<Alert>({
+  return requestAndParse<Alert[]>({
     method: 'GET',
     url: `/v2/incident-alerting`,
   });
@@ -34,7 +37,10 @@ const setAlert = async ({
   return requestAndParse({
     url: `/v2/incident-alerting/config`,
     method: 'POST',
-    body: {filter: {processDefinitionKey}, channel: {email}},
+    body: {
+      filters: [{processDefinitionKey}],
+      channel: {type: 'email', value: email},
+    },
   });
 };
 

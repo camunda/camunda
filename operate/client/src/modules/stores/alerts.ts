@@ -10,11 +10,11 @@ import {makeObservable, observable} from 'mobx';
 import {Alert, fetchAlerts, setAlert} from 'modules/api/v2/incident-alerting';
 
 type State = {
-  alert?: Alert;
+  alerts?: Alert[];
 };
 
 const DEFAULT_STATE: State = {
-  alert: undefined,
+  alerts: undefined,
 };
 
 class Alerts {
@@ -24,7 +24,7 @@ class Alerts {
     const response = await fetchAlerts();
 
     if (response.isSuccess) {
-      this.setAlert(response.data);
+      this.setAlerts(response.data);
     }
   }
 
@@ -32,8 +32,8 @@ class Alerts {
     await setAlert({processDefinitionKey, email});
   };
 
-  setAlert(alert: Alert) {
-    this.state.alert = alert;
+  setAlerts(alerts: Alert[]) {
+    this.state.alerts = alerts;
   }
 
   constructor() {

@@ -19,14 +19,21 @@ const Alerts = observer(() => {
 
   return (
     <div>
-      {alertsStore.state.alert && (
-        <>
-          Email: {alertsStore.state.alert?.channel.email}
-          <br />
-          Process Definition Key:{' '}
-          {alertsStore.state.alert?.filter.processDefinitionKey}
-        </>
-      )}
+      <ul>
+        {alertsStore.state.alerts?.map((alert) => (
+          <li>
+            <div>
+              {alert.channel.type}: {alert.channel.value}
+            </div>
+            <div>
+              {alert.filters.map((filter) => (
+                <div>{filter.processDefinitionKey}</div>
+              ))}
+            </div>
+            <hr />
+          </li>
+        ))}
+      </ul>
     </div>
   );
 });
