@@ -11,14 +11,9 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class MessageSubscriptionCorrelatedApplier
     implements TypedEventApplier<MessageSubscriptionIntent, MessageSubscriptionRecord> {
-
-  private static final Logger LOG =
-      LoggerFactory.getLogger(MessageSubscriptionCorrelatedApplier.class);
 
   private final MutableMessageSubscriptionState messageSubscriptionState;
 
@@ -33,37 +28,6 @@ public final class MessageSubscriptionCorrelatedApplier
     // - workaround: load the subscription from the state instead of using the record directly
     final var subscription =
         messageSubscriptionState.get(value.getElementInstanceKey(), value.getMessageNameBuffer());
-
-    if (subscription.getRecord().getMessageKey() != value.getMessageKey()) {
-      // This concerns the acknowledgement of a retried correlate process message subscription
-      // command. The message subscription was already marked as correlated for this message, and
-      // another message has started correlating. There's no need to update the state.
-      LOG.warn(
-          """
-          Expected to acknowledge correlating message with key '{}' to subscription with key '{}' \
-          but the subscription is already correlating to another message with key '{}'""",
-          value.getMessageKey(),
-          key,
-          subscription.getRecord().getMessageKey());
-      return;
-
-    } else if (!subscription.isCorrelating()) {
-      // This concerns the acknowledgement of a retried correlate process message subscription
-      // command. The message subscription was already marked as correlated. No need to update the
-      // state.
-      LOG.debug(
-          """
-          Expected to acknowledge correlating message with key '{}' to subscription with key '{}' \
-          but the subscription is already correlating'""",
-          value.getMessageKey(),
-          key);
-      return;
-    }
-
-    LOG.info(
-        "Acknowledged correlating message with key '{}' to subscription with key '{}'",
-        value.getMessageKey(),
-        key);
 
     if (value.isInterrupting()) {
       messageSubscriptionState.remove(subscription);
