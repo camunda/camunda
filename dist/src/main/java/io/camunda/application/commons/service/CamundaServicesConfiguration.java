@@ -9,6 +9,7 @@ package io.camunda.application.commons.service;
 
 import io.camunda.document.store.EnvironmentConfigurationLoader;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
+import io.camunda.search.clients.AlertDefinitionClient;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
@@ -28,6 +29,7 @@ import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
+import io.camunda.service.AlertDefinitionServices;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.ClockServices;
 import io.camunda.service.DecisionDefinitionServices;
@@ -285,5 +287,14 @@ public class CamundaServicesConfiguration {
   public AuthorizationChecker authorizationChecker(
       final AuthorizationSearchClient authorizationSearchClient) {
     return new AuthorizationChecker(authorizationSearchClient);
+  }
+
+  @Bean
+  public AlertDefinitionServices alertDefinitionServices(
+      final AlertDefinitionClient alertDefinitionClient,
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider) {
+    return new AlertDefinitionServices(
+        alertDefinitionClient, brokerClient, securityContextProvider, null);
   }
 }
