@@ -78,7 +78,8 @@ public class IndexDescriptors {
                 new TenantIndex(indexPrefix, isElasticsearch),
                 new UserIndex(indexPrefix, isElasticsearch),
                 new VariableTemplate(indexPrefix, isElasticsearch),
-                new MessageTemplate(indexPrefix, isElasticsearch))
+                new MessageTemplate(indexPrefix, isElasticsearch),
+                new AlertDefinitionIndex(indexPrefix, isElasticsearch))
             .collect(Collectors.toMap(Object::getClass, Function.identity()));
   }
 

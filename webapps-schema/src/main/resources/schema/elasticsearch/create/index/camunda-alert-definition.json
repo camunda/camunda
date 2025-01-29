@@ -1,0 +1,29 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "channel": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "keyword"
+          },
+          "value": {
+            "type": "keyword"
+          }
+        }
+      },
+      "filters": {
+        "type": "object",
+        "properties": {
+          "processDefinitionKey": {
+            "type": "keyword"
+          }
+        }
+      }
+    }
+  }
+}
