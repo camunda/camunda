@@ -67,8 +67,8 @@ public class FuzzyLib {
     }
 
     // Set input values
-    fis.setVariable("Due", 2);       // Example: DueDate = 3
-    fis.setVariable("Priority", 57); // Example: Priority = 80
+    fis.setVariable("Due", 9);       // Example: DueDate = 3
+    fis.setVariable("Priority", 10); // Example: Priority = 80
 
     // Evaluate the fuzzy system
 
