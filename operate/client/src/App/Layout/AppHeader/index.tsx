@@ -112,7 +112,7 @@ const AppHeader: React.FC = observer(() => {
           },
           {
             key: 'alerts',
-            label: 'Alerts',
+            label: 'Incident alerts',
             isCurrentPage: currentPage === 'alerts',
             routeProps: {
               to: Paths.alerts(),
