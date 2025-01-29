@@ -7,7 +7,7 @@
  */
 
 import {t} from 'i18next';
-import type {Task} from 'modules/types';
+import type {TaskRiskClassification} from 'modules/types';
 
 type RiskLabel = {
   short: string;
@@ -21,26 +21,26 @@ type RiskLabel = {
  *
  * @returns The risk label
  */
-const getRiskLabel = (risk: Task['risk']): RiskLabel => {
-  if (risk === 'URGENT') {
+const getRiskLabel = (classification: TaskRiskClassification): RiskLabel => {
+  if (classification === 'URGENT') {
     return {
       short: t('taskRiskUrgentShort'),
       long: t('taskRiskUrgentLong'),
       key: 'urgent',
     };
-  } else if (risk === 'HIGH') {
+  } else if (classification === 'HIGH') {
     return {
       short: t('taskRiskHighShort'),
       long: t('taskRiskHighLong'),
       key: 'high',
     };
-  } else if (risk === 'MEDIUM') {
+  } else if (classification === 'MEDIUM') {
     return {
       short: t('taskRiskMediumShort'),
       long: t('taskRiskMediumLong'),
       key: 'medium',
     };
-  } else if (risk === 'LOW') {
+  } else if (classification === 'LOW') {
     return {
       short: t('taskRiskLowShort'),
       long: t('taskRiskLowLong'),

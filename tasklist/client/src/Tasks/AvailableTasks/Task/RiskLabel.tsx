@@ -12,10 +12,10 @@ import {WarningHexFilled} from '@carbon/icons-react';
 import {LabelWithPopover} from './LabelWithPopover';
 import {getRiskLabel} from 'modules/utils/getRiskLabel';
 
-import type {Task as TaskType} from 'modules/types';
+import type {TaskRiskClassification} from 'modules/types';
 
 type PriorityLabelProps = {
-  risk: TaskType['risk'];
+  risk: TaskRiskClassification;
   align?: React.ComponentProps<typeof Popover>['align'];
 };
 

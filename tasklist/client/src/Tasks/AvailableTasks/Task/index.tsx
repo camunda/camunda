@@ -24,7 +24,11 @@ import {
   formatISODateTime,
 } from 'modules/utils/formatDateRelative';
 import {unraw} from 'modules/utils/unraw';
-import type {CurrentUser, Task as TaskType} from 'modules/types';
+import type {
+  CurrentUser,
+  TaskRiskClassification,
+  Task as TaskType,
+} from 'modules/types';
 import {type TaskFilters, useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {encodeTaskOpenedRef} from 'modules/utils/reftags';
 import {AssigneeTag} from 'Tasks/AssigneeTag';
@@ -46,7 +50,7 @@ type Props = {
   dueDate: TaskType['dueDate'];
   completionDate: TaskType['completionDate'];
   priority: TaskType['priority'];
-  risk: TaskType['risk'];
+  risk: TaskRiskClassification;
   currentUser: CurrentUser;
   position: number;
 };

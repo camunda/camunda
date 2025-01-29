@@ -47,7 +47,9 @@ type Variable = FullVariable | TruncatedVariable;
 
 type TaskState = 'CREATED' | 'COMPLETED' | 'CANCELED';
 
-type TaskRisk = 'VERYLOW' | 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+type TaskRiskClassification = 'VERYLOW' | 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+
+type TaskRisk = {classification: TaskRiskClassification; precedence: number};
 
 type Task = {
   id: string;
@@ -155,6 +157,7 @@ type License = {
 export type {
   CurrentUser,
   Variable,
+  TaskRiskClassification,
   TaskRisk,
   Task,
   TaskState,
