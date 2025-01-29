@@ -69,7 +69,11 @@ public class ZeebeTaskListenersValidationTest {
       value = ZeebeTaskListenerEventType.class,
       mode = EnumSource.Mode.EXCLUDE,
       // supported event types
-      names = {"assigning", "assignment", "completing", "complete"})
+      names = {
+        "assigning", "completing",
+        // deprecated event types
+        "assignment", "complete"
+      })
   void testEventTypeNotSupported(final ZeebeTaskListenerEventType unsupportedEventType) {
     // given
     final BpmnModelInstance process =
