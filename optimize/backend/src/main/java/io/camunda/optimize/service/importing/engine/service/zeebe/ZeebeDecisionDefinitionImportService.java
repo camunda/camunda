@@ -123,12 +123,10 @@ public class ZeebeDecisionDefinitionImportService
         .deleted(false)
         .inputVariableNames(
             DmnModelUtil.extractInputVariables(
-                dmnModelInstance, String.valueOf(recordData.getDecisionRequirementsId())
-        ))
+                dmnModelInstance, String.valueOf(recordData.getDecisionRequirementsId())))
         .outputVariableNames(
             DmnModelUtil.extractOutputVariables(
-                    dmnModelInstance, String.valueOf(recordData.getDecisionRequirementsId())
-        ))
+                dmnModelInstance, String.valueOf(recordData.getDecisionRequirementsId())))
         .build();
   }
 }
