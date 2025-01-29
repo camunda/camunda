@@ -24,10 +24,10 @@ public class IncidentAlertingControllerTest extends RestControllerTest {
         """
           {
              "filter": {
-                       "processDefinitionKey": "testKey"
-                   },
-                   "channel": {
-                       "email": "test@example.com"
+                "processDefinitionKey": "processDefinitionKey123"
+             },
+             "channel": {
+                "email": "test@example.com"
              }
            }
         """;
@@ -55,7 +55,7 @@ public class IncidentAlertingControllerTest extends RestControllerTest {
         .json(
             """
                 {
-                    "testKey": {
+                    "processDefinitionKey123": {
                         "email": "test@example.com"
                     }
                 }""");

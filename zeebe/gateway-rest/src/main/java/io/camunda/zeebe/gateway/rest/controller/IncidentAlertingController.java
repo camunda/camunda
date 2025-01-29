@@ -19,17 +19,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping(path = {"/v2/incident-alerting"})
 public class IncidentAlertingController {
 
-  private static final Map<String, AlertingChannel> storage = new ConcurrentHashMap<>();
+  private static final Map<String, AlertingChannel> STORAGE = new ConcurrentHashMap<>();
 
   @CamundaPostMapping(path = "/config")
   public ResponseEntity<Object> storeConfig(@RequestBody final IncidentAlertingConfig config) {
-    storage.put(config.getFilter().getProcessDefinitionKey(), config.getChannel());
+    STORAGE.put(config.getFilter().getProcessDefinitionKey(), config.getChannel());
     return ResponseEntity.ok().build();
   }
 
   @CamundaGetMapping()
   public ResponseEntity<Object> getConfig() {
-    return ResponseEntity.ok(storage);
+    return ResponseEntity.ok(STORAGE);
   }
 }
 
