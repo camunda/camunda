@@ -10,7 +10,7 @@ import {
   ApiDefinition,
   apiPost,
   apiPatch,
-  pathBuilder,
+  pathBuilder, apiDelete,
   // apiDelete,
 } from "src/utility/api/request";
 import { SearchResponse } from "src/utility/api";
@@ -52,8 +52,10 @@ export type AuthorizationParams = {
   permissions: readonly string[];
 };
 
+export type DeleteAuthorizationParams = AuthorizationParams;
+
 // @TODO: Remove and consolidate in Authorization type when BE is implemented, change all instances using this type
-export type NewAuthorization = EntityData & AuthorizationParams;
+export type NewAuthorization = AuthorizationParams;
 
 export enum PatchAuthorizationAction {
   ADD = "ADD",
@@ -70,7 +72,7 @@ export type PatchAuthorizationParams = {
 type CreateAuthorizationParams = Omit<AuthorizationParams, "key">;
 
 export const searchAuthorization: ApiDefinition<
-  SearchResponse<Authorization>
+  SearchResponse<NewAuthorization>
 > = () => apiPost(`${AUTHORIZATIONS_ENDPOINT}/search`);
 
 export const patchAuthorizations: ApiDefinition<
@@ -83,6 +85,6 @@ export const createAuthorization: ApiDefinition<
   CreateAuthorizationParams
 > = (authorization) => apiPost(AUTHORIZATIONS_ENDPOINT, authorization);
 
-// export const deleteTenant: ApiDefinition<undefined, { tenantKey: string }> = ({
-//   tenantKey,
-// }) => apiDelete(`${AUTHORIZATIONS_ENDPOINT}/${tenantKey}`);
+export const deleteAuthorization: ApiDefinition<undefined, { authKey: string }> = ({
+   authKey,
+ }) => apiDelete(`${AUTHORIZATIONS_ENDPOINT}/${authKey}`);

@@ -148,6 +148,34 @@ const AddAuthorizationModal: FC<UseModalProps> = ({
       </PermissionsSectionLabel>
       <CheckboxGroup>
         <Checkbox
+            labelText={`Read`}
+            id="read"
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                handleChangeCheckbox(e.target.checked, "READ")
+            }
+        />
+        <Checkbox
+            labelText={`Update`}
+            id="update"
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                handleChangeCheckbox(e.target.checked, "UPDATE")
+            }
+        />
+        <Checkbox
+            labelText={`Create`}
+            id="create"
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                handleChangeCheckbox(e.target.checked, "CREATE")
+            }
+        />
+        <Checkbox
+            labelText={`Delete`}
+            id="delete"
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                handleChangeCheckbox(e.target.checked, "DELETE")
+            }
+        />
+        <Checkbox
           labelText={`Read process definition`}
           id="read-process-definition"
           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
