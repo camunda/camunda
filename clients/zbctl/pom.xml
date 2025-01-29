@@ -179,7 +179,7 @@
             <configuration>
               <skipNativeTests>${skipNativeTests}</skipNativeTests>
               <mainClass>io.camunda.zeebe.zbctl.Application</mainClass>
-              <imageName>${build.finalName}</imageName>
+              <imageName>zbctl</imageName>
               <quickBuild>${quickly}</quickBuild>
               <metadataRepository>
                 <enabled>true</enabled>
@@ -206,6 +206,16 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>exec-maven-plugin</artifactId>
+            <configuration>
+              <skip>${skipUpx}</skip>
+              <executable>upx</executable>
+              <arguments>
+                <argument>-9</argument>
+                <argument>-o</argument>
+                <argument>${project.build.directory}/zbctl-upx</argument>
+                <argument>${project.build.directory}/zbctl</argument>
+              </arguments>
+            </configuration>
             <executions>
               <execution>
                 <id>generate-config</id>

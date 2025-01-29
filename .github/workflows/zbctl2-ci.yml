@@ -11,13 +11,13 @@ jobs:
         include:
           - os: macos
             runner: macos-latest
-            skipCompression: true
+            skipCompression: 'true'
           - os: windows
             runner: windows-latest
-            skipCompression: true
+            skipCompression: 'true'
           - os: linux
             runner: ubuntu-latest
-            skipCompression: false
+            skipCompression: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: graalvm/setup-graalvm@v1
@@ -26,12 +26,11 @@ jobs:
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Package zbctl
-        run: mvn package -DskipTests -DskipChecks -DskipUpx=${{ matrix.skipCompression}} -am -pl clients/zbctl -Pnative
+        run: mvn package -DskipTests -DskipChecks -DskipUpx=${{ matrix.skipCompression }} -am -pl clients/zbctl -Pnative
       - name: Upload zbctl
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: zbctl-${{ matrix.os }}
-          path: |
-            clients/zbctl/target/zbctl
+          path: clients/zbctl/target/zbctl*
           retention-days: 2
 
