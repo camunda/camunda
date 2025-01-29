@@ -24,11 +24,11 @@ test.beforeAll(async () => {
 });
 
 test.describe('HTO User Flow Tests', () => {
-  /* test.beforeEach(async ({page, taskListLoginPage, taskPanelPage}) => {
+  test.beforeEach(async ({page, taskListLoginPage, taskPanelPage}) => {
     await navigateToApp(page, 'tasklist');
     await taskListLoginPage.login('demo', 'demo');
     await taskPanelPage.taskListBannerIsVisible();
-  });*/
+  });
 
   test.afterEach(async ({page}, testInfo) => {
     await captureScreenshot(page, testInfo);
@@ -49,18 +49,20 @@ test.describe('HTO User Flow Tests', () => {
     taskPanelPage,
     operateProcessInstancePage,
     page,
+    operateLoginPage,
+    taskListLoginPage,
   }) => {
     await test.step('View Process Instance in Operate, complete User Task in Tasklist & assert process complete in Operate', async () => {
       await navigateToApp(page, 'operate');
-      //await operateLoginPage.login('demo', 'demo');
-      //await operateHomePage.operateBannerIsVisible();
+      await operateLoginPage.login('demo', 'demo');
+      await operateHomePage.operateBannerIsVisible();
       await expect(operateHomePage.processesTab).toBeVisible({timeout: 180000});
       await operateHomePage.clickProcessesTab();
       await operateProcessesPage.clickProcessInstanceLink('Job_Worker_Process');
       await operateProcessInstancePage.activeIconAssertion();
 
       await navigateToApp(page, 'tasklist');
-      //await taskListLoginPage.login('demo', 'demo');
+      await taskListLoginPage.login('demo', 'demo');
       await taskPanelPage.openTask('Job_Worker_Process');
       await taskDetailsPage.clickAssignToMeButton();
       await taskDetailsPage.clickCompleteTaskButton();
@@ -69,7 +71,7 @@ test.describe('HTO User Flow Tests', () => {
       });
 
       await navigateToApp(page, 'operate');
-      //await operateLoginPage.login('demo', 'demo');
+      await operateLoginPage.login('demo', 'demo');
 
       await expect(operateHomePage.processesTab).toBeVisible({timeout: 120000});
       await operateHomePage.clickProcessesTab();
@@ -87,10 +89,12 @@ test.describe('HTO User Flow Tests', () => {
     operateProcessInstancePage,
     taskPanelPage,
     taskDetailsPage,
+    operateLoginPage,
+    taskListLoginPage,
   }) => {
     await test.step('View Process Instance in Operate, Edit the Variable & Assert the Variable is Updated in Tasklist', async () => {
       await navigateToApp(page, 'operate');
-      //await operateLoginPage.login('demo', 'demo');
+      await operateLoginPage.login('demo', 'demo');
       await expect(operateHomePage.processesTab).toBeVisible({timeout: 180000});
       await operateHomePage.clickProcessesTab();
       await operateProcessesPage.clickProcessInstanceLink('Variable_Process');
@@ -120,7 +124,7 @@ test.describe('HTO User Flow Tests', () => {
       await sleep(10000);
 
       await navigateToApp(page, 'tasklist');
-      //await taskListLoginPage.login('demo', 'demo');
+      await taskListLoginPage.login('demo', 'demo');
 
       await taskPanelPage.openTask('Variable_Process');
       await taskDetailsPage.clickAssignToMeButton();
@@ -146,10 +150,12 @@ test.describe('HTO User Flow Tests', () => {
     operateProcessesPage,
     operateProcessInstancePage,
     page,
+    taskListLoginPage,
+    operateLoginPage,
   }) => {
     await test.step('View Process Instance in Operate and complete User Task in Tasklist', async () => {
       await navigateToApp(page, 'operate');
-      //await operateLoginPage.login('demo', 'demo');
+      await operateLoginPage.login('demo', 'demo');
       await expect(operateHomePage.processesTab).toBeVisible({timeout: 180000});
       await operateHomePage.clickProcessesTab();
       await operateProcessesPage.clickProcessInstanceLink('Form_User_Task');
@@ -157,7 +163,7 @@ test.describe('HTO User Flow Tests', () => {
       await operateProcessInstancePage.activeIconAssertion();
 
       await navigateToApp(page, 'tasklist');
-      //await taskListLoginPage.login('demo', 'demo');
+      await taskListLoginPage.login('demo', 'demo');
       await taskPanelPage.openTask('Form_User_Task');
       await taskDetailsPage.clickAssignToMeButton();
       await taskDetailsPage.clickTextInput();
@@ -168,7 +174,7 @@ test.describe('HTO User Flow Tests', () => {
       });
 
       await navigateToApp(page, 'operate');
-      //await operateLoginPage.login('demo', 'demo');
+      await operateLoginPage.login('demo', 'demo');
       await operateHomePage.clickProcessesTab();
       await operateProcessesPage.clickProcessCompletedCheckbox();
       await sleep(1000);
