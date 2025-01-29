@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.expression;
 
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import org.agrona.DirectBuffer;
 
 public class VariableStateEvaluationContext implements ScopedEvaluationContext {
 
@@ -26,12 +25,14 @@ public class VariableStateEvaluationContext implements ScopedEvaluationContext {
   }
 
   @Override
-  public DirectBuffer getVariable(final String variableName) {
+  public Object getVariable(final String variableName) {
     if (scopeKey < 0) {
       return null;
     }
 
-    return variableState.getVariable(scopeKey, BufferUtil.wrapString(variableName));
+    final var value = variableState.getVariable(scopeKey, BufferUtil.wrapString(variableName));
+
+    return value.capacity() > 0 ? value : null;
   }
 
   @Override

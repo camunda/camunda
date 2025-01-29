@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import org.agrona.DirectBuffer;
 
 public final class CombinedEvaluationContext implements ScopedEvaluationContext {
 
@@ -36,7 +35,7 @@ public final class CombinedEvaluationContext implements ScopedEvaluationContext 
   }
 
   @Override
-  public DirectBuffer getVariable(final String variableName) {
+  public Object getVariable(final String variableName) {
     return contexts.stream()
         .map(context -> context.getVariable(variableName))
         .filter(Objects::nonNull)

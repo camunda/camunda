@@ -16,7 +16,6 @@ import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.expression.CombinedEvaluationContext;
-import io.camunda.zeebe.engine.processing.expression.EnvVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.expression.VariableStateEvaluationContext;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
@@ -69,8 +68,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new ExpressionProcessor(
             ExpressionLanguageFactory.createExpressionLanguage(new ZeebeFeelEngineClock(clock)),
             CombinedEvaluationContext.withContexts(
-                new VariableStateEvaluationContext(processingState.getVariableState()),
-                new EnvVariableEvaluationContext()));
+                //                "camunda" => Namespace(
+                //                    "env" => new EnvVariableEvaluationContext(),
+                //                    "error" => new ErrorContext()) ,
+                new VariableStateEvaluationContext(processingState.getVariableState())));
 
     variableBehavior =
         new VariableBehavior(
