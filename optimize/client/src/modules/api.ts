@@ -6,6 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+export function getFullURL(url: string) {
+  if (typeof window.location.origin !== 'string') {
+    throw new Error('window.location.origin is not a set');
+  }
+
+  return new URL(url, window.location.origin).toString();
+}
+
 export function getAbsoluteURL(url: string) {
   try {
     const absoluteURL = new URL(url);
