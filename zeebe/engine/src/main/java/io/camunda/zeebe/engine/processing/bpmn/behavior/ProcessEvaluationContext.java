@@ -81,6 +81,12 @@ public class ProcessEvaluationContext implements ScopedEvaluationContext {
             .map(BufferUtil::bufferAsString)
             .orElse(""));
     context.put("type", flowElement.getElementType().name());
+    context.put(
+        "documentation",
+        Optional.ofNullable(flowElement.getDocumentation())
+            .filter(buffer -> buffer.capacity() > 0)
+            .map(BufferUtil::bufferAsString)
+            .orElse(""));
 
     if (flowElement instanceof final ExecutableAdHocSubProcess adHocSubProcess) {
       context.put(

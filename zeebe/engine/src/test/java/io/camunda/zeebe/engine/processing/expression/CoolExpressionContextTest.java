@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -30,18 +32,20 @@ public class CoolExpressionContextTest {
   @Test
   public void shouldAccessTheElement() {
     // given
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess("process")
-                .startEvent("start")
-                .name("Start")
-                .zeebeOutputExpression("camunda.process.elements[type=\"START_EVENT\"]", "elements")
-                .sequenceFlowId("start-to-end")
-                .endEvent("end")
-                .name("End")
-                .done())
-        .deploy();
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .name("Start")
+            .zeebeOutputExpression("camunda.process.elements[type=\"START_EVENT\"]", "elements")
+            .sequenceFlowId("start-to-end")
+            .endEvent("end")
+            .name("End")
+            .done();
+
+    final StartEvent startEvent = process.getModelElementById("start");
+    startEvent.builder().documentation("A start event.");
+
+    ENGINE.deployment().withXmlResource(process).deploy();
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
 
@@ -61,7 +65,8 @@ public class CoolExpressionContextTest {
                 .withName("elements")
                 .limit(1))
         .extracting(r -> r.getValue().getValue())
-        .contains("[{\"name\":\"Start\",\"id\":\"start\",\"type\":\"START_EVENT\"}]");
+        .contains(
+            "[{\"documentation\":\"A start event.\",\"name\":\"Start\",\"id\":\"start\",\"type\":\"START_EVENT\"}]");
   }
 
   @Test
