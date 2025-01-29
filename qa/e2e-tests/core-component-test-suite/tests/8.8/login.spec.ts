@@ -1,4 +1,4 @@
-import {test} from '@fixtures/8.7';
+import {test} from '@fixtures/8.8';
 import {navigateToApp} from '@pages/8.7/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 

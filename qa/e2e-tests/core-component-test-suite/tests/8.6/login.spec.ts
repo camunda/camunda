@@ -1,5 +1,5 @@
 import {test} from '@fixtures/8.6';
-import {navigateToApp} from '@pages/c8Run-8.6/UtilitiesPage';
+import {navigateToApp} from '@pages/8.6/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 
 test.describe('Login Tests', () => {

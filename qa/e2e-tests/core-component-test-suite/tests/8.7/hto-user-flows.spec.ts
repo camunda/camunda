@@ -24,7 +24,7 @@ test.beforeAll(async () => {
 });
 
 test.describe('HTO User Flow Tests', () => {
- /* test.beforeEach(async ({page, taskListLoginPage, taskPanelPage}) => {
+  /* test.beforeEach(async ({page, taskListLoginPage, taskPanelPage}) => {
     await navigateToApp(page, 'tasklist');
     await taskListLoginPage.login('demo', 'demo');
     await taskPanelPage.taskListBannerIsVisible();
@@ -43,13 +43,11 @@ test.describe('HTO User Flow Tests', () => {
   });
 
   test('User Task Most Common Flow', async ({
-    operateLoginPage,
     operateHomePage,
     operateProcessesPage,
     taskDetailsPage,
     taskPanelPage,
     operateProcessInstancePage,
-    taskListLoginPage,
     page,
   }) => {
     await test.step('View Process Instance in Operate, complete User Task in Tasklist & assert process complete in Operate', async () => {
@@ -88,8 +86,6 @@ test.describe('HTO User Flow Tests', () => {
     operateProcessesPage,
     operateProcessInstancePage,
     taskPanelPage,
-    taskListLoginPage,
-    operateLoginPage,
     taskDetailsPage,
   }) => {
     await test.step('View Process Instance in Operate, Edit the Variable & Assert the Variable is Updated in Tasklist', async () => {
@@ -149,8 +145,6 @@ test.describe('HTO User Flow Tests', () => {
     operateHomePage,
     operateProcessesPage,
     operateProcessInstancePage,
-    taskListLoginPage,
-    operateLoginPage,
     page,
   }) => {
     await test.step('View Process Instance in Operate and complete User Task in Tasklist', async () => {
@@ -188,7 +182,6 @@ test.describe('HTO User Flow Tests', () => {
     operateProcessesPage,
     operateProcessInstancePage,
     page,
-    operateLoginPage,
   }) => {
     await test.step('View Process Instance in Operate and check if process is complete', async () => {
       await navigateToApp(page, 'operate');
@@ -209,8 +202,6 @@ test.describe('HTO User Flow Tests', () => {
     operateProcessInstancePage,
     taskDetailsPage,
     taskPanelPage,
-    operateLoginPage,
-    taskListLoginPage,
   }) => {
     await test.step('View Process Instance in Operate, complete User Task in Tasklist', async () => {
       await navigateToApp(page, 'operate');
@@ -246,7 +237,6 @@ test.describe('HTO User Flow Tests', () => {
     operateProcessInstancePage,
     taskDetailsPage,
     taskPanelPage,
-    operateLoginPage,
   }) => {
     await test.step('Complete User Task in Tasklist & assert process complete in Operate', async () => {
       await expect(

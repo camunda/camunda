@@ -53,20 +53,6 @@ test.skip('API tests', () => {
     await assertResponseStatus(incidentsList, 200);
   });
 
-  test('Get connectors status', async ({request}) => {
-    const connectorsStatus = await request.get(
-      process.env.C8RUN_CONNECTORS_API_URL + '/actuator/health',
-    );
-    await assertResponseStatus(connectorsStatus, 200);
-  });
-
-  test('Get a inbound connectors list', async ({request}) => {
-    const connectorsInboundList = await request.get(
-      process.env.C8RUN_CONNECTORS_API_URL + '/inbound',
-    );
-    await assertResponseStatus(connectorsInboundList, 200);
-  });
-
   test('Search for tasks', async ({request}) => {
     const taskList = await request.post('/v1/tasks/search');
     await assertResponseStatus(taskList, 200);

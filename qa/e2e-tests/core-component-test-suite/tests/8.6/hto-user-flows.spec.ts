@@ -1,7 +1,7 @@
 import {expect} from '@playwright/test';
 import {test} from '@fixtures/8.6';
 import {createInstances, deploy} from 'utils/zeebeClient';
-import {navigateToApp} from '@pages/c8Run-8.6/UtilitiesPage';
+import {navigateToApp} from '@pages/8.6/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 

@@ -8,13 +8,13 @@
 
 import {test as base} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import {OperateLoginPage} from '@pages/8.7/OperateLoginPage';
-import {OperateHomePage} from '@pages/8.7/OperateHomePage';
-import {TaskPanelPage} from '@pages/8.7/TaskPanelPage';
-import {TaskListLoginPage} from '@pages/8.7/TaskListLoginPage';
-import {OperateProcessesPage} from '@pages/8.7/OperateProcessesPage';
-import {OperateProcessInstancePage} from '@pages/8.7/OperateProcessInstancePage';
-import {TaskDetailsPage} from '@pages/8.7/TaskDetailsPage';
+import {OperateLoginPage} from '@pages/8.8/OperateLoginPage';
+import {OperateHomePage} from '@pages/8.8/OperateHomePage';
+import {TaskPanelPage} from '@pages/8.8/TaskPanelPage';
+import {TaskListLoginPage} from '@pages/8.8/TaskListLoginPage';
+import {OperateProcessesPage} from '@pages/8.8/OperateProcessesPage';
+import {OperateProcessInstancePage} from '@pages/8.8/OperateProcessInstancePage';
+import {TaskDetailsPage} from '@pages/8.8/TaskDetailsPage';
 
 type PlaywrightFixtures = {
   makeAxeBuilder: () => AxeBuilder;
