@@ -25,7 +25,7 @@ public class NamespacedContext implements ScopedEvaluationContext {
 
   @Override
   public ScopedEvaluationContext getVariable(final String variableName) {
-    return namespaces.get(variableName);
+    return namespaces.getOrDefault(variableName, ScopedEvaluationContext.none());
   }
 
   @Override
