@@ -2714,7 +2714,8 @@ final class JsonSerializableToJsonTest {
                             .addResourceId("bpmnProcessId:foo"))
                     .addPermission(
                         new Permission().setPermissionType(PermissionType.READ).addResourceId("*"))
-                    .setAuthorizationPermissions(Set.of(PermissionType.CREATE)),
+                    .setAuthorizationPermissions(Set.of(PermissionType.CREATE))
+                    .setChangedAttributes(Set.of(AuthorizationRecord.OWNER_TYPE)),
         """
         {
           "authorizationKey": 1,
@@ -2735,6 +2736,9 @@ final class JsonSerializableToJsonTest {
           ],
           "authorizationPermissions": [
             "CREATE"
+          ],
+          "changedAttributes": [
+            "ownerType"
           ]
         }
         """
@@ -2758,7 +2762,8 @@ final class JsonSerializableToJsonTest {
           "resourceId": "",
           "resourceType": "RESOURCE",
           "permissions": [],
-          "authorizationPermissions": []
+          "authorizationPermissions": [],
+          "changedAttributes": []
         }
         """
       },
@@ -2837,6 +2842,7 @@ final class JsonSerializableToJsonTest {
                     .setTenantKey(123L)
                     .setTenantId("tenant-abc")
                     .setName("Test Tenant")
+                    .setDescription("Test Description")
                     .setEntityKey(456L)
                     .setEntityId("entity-xyz")
                     .setEntityType(EntityType.USER),
@@ -2845,6 +2851,7 @@ final class JsonSerializableToJsonTest {
           "tenantKey": 123,
           "tenantId": "tenant-abc",
           "name": "Test Tenant",
+          "description": "Test Description",
           "entityKey": 456,
           "entityId": "entity-xyz",
           "entityType": "USER"
@@ -2862,6 +2869,7 @@ final class JsonSerializableToJsonTest {
             "tenantKey": -1,
             "tenantId": "",
             "name": "",
+            "description": "",
             "entityKey": -1,
             "entityId": "",
             "entityType": "UNSPECIFIED"
@@ -3064,6 +3072,7 @@ final class JsonSerializableToJsonTest {
           "tenantKey": 5,
           "tenantId": "id",
           "name": "name",
+          "description": "",
           "entityKey": -1,
           "entityId": "",
           "entityType": "UNSPECIFIED"
@@ -3104,6 +3113,7 @@ final class JsonSerializableToJsonTest {
               "tenantKey": -1,
               "tenantId": "",
               "name": "",
+              "description": "",
               "entityKey": -1,
               "entityId": "",
               "entityType": "UNSPECIFIED"

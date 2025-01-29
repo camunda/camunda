@@ -23,12 +23,12 @@
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.FormDbModel">
-    INSERT INTO FORM (FORM_ID, FORM_KEY, TENANT_ID, SCHEMA, VERSION, IS_DELETED)
+    INSERT INTO ${prefix}FORM (FORM_ID, FORM_KEY, TENANT_ID, SCHEMA, VERSION, IS_DELETED)
     VALUES (#{formId}, #{formKey}, #{tenantId}, #{schema}, #{version}, #{isDeleted})
   </insert>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.FormDbModel">
-    UPDATE FORM
+    UPDATE ${prefix}FORM
     SET FORM_ID = #{formId},
         TENANT_ID  = #{tenantId},
         SCHEMA     = #{schema},
@@ -39,7 +39,7 @@
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.FormDbQuery" resultType="long">
     SELECT COUNT(*)
-    FROM FORM
+    FROM ${prefix}FORM
     <include refid="io.camunda.db.rdbms.sql.FormMapper.searchFilter"/>
   </select>
 
@@ -52,7 +52,7 @@
     FORM_ID,
     SCHEMA,
     VERSION
-    FROM FORM
+    FROM ${prefix}FORM
     <include refid="io.camunda.db.rdbms.sql.FormMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>

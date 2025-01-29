@@ -11,9 +11,7 @@ import io.camunda.migration.identity.dto.UserResourceAuthorization;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
-import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Collection;
@@ -76,14 +74,15 @@ public class AuthorizationMigrationHandler extends MigrationHandler<UserResource
                                 Collectors.flatMapping(
                                     e -> e.getValue().stream(), Collectors.toSet())));
                 final long ownerKey = getOwnerKeyForUsername(owner);
-                authorizationService
-                    .patchAuthorization(
-                        new PatchAuthorizationRequest(
-                            ownerKey,
-                            PermissionAction.ADD,
-                            convertResourceType(resourceType),
-                            permissions))
-                    .join();
+                // TODO: this part needs to be revisited
+                //                authorizationService
+                //                    .patchAuthorization(
+                //                        new PatchAuthorizationRequest(
+                //                            ownerKey,
+                //                            PermissionAction.ADD,
+                //                            convertResourceType(resourceType),
+                //                            permissions))
+                //                    .join();
 
                 final Collection<UserResourceAuthorization> migrated =
                     permissionAndResources.entrySet().stream()

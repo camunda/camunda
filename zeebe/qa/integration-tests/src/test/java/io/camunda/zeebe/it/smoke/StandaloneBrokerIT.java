@@ -30,7 +30,9 @@ import org.junit.jupiter.api.BeforeEach;
 @ZeebeIntegration
 final class StandaloneBrokerIT {
 
-  @TestZeebe private final TestStandaloneBroker broker = new TestStandaloneBroker();
+  @TestZeebe
+  private final TestStandaloneBroker broker =
+      new TestStandaloneBroker().withUnauthenticatedAccess();
 
   @AutoClose private CamundaClient client;
 

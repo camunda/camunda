@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -20,7 +20,7 @@
     <module>schema</module>
     <module>data-generator</module>
     <module>importer-common</module>
-    <module>importer-8_6</module>
+    <module>importer-8_7</module>
     <module>importer</module>
     <module>webapp</module>
     <module>mvc-auth-commons</module>

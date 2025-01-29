@@ -16,7 +16,6 @@ import static io.camunda.client.protocol.rest.ResourceTypeEnum.RESOURCE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
@@ -24,10 +23,12 @@ import io.camunda.it.utils.BrokerITInvocationProvider;
 import io.camunda.it.utils.CamundaClientTestFactory.Authenticated;
 import io.camunda.it.utils.CamundaClientTestFactory.Permissions;
 import io.camunda.it.utils.CamundaClientTestFactory.User;
+import io.camunda.security.entity.AuthenticationMethod;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
@@ -35,6 +36,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.function.Executable;
 
 @TestInstance(Lifecycle.PER_CLASS)
+@Disabled("https://github.com/camunda/camunda/issues/27289")
 class DecisionAuthorizationIT {
 
   private static final String DECISION_DEFINITION_ID_1 = "decision_1";
@@ -65,7 +67,7 @@ class DecisionAuthorizationIT {
   static final BrokerITInvocationProvider PROVIDER =
       new BrokerITInvocationProvider()
           .withoutRdbmsExporter()
-          .withAdditionalProfiles(Profile.AUTH_BASIC)
+          .withAuthenticationMethod(AuthenticationMethod.BASIC)
           .withAuthorizationsEnabled()
           .withUsers(ADMIN_USER, RESTRICTED_USER);
 

@@ -19,12 +19,14 @@ public class PersistedTenant extends UnpackedObject implements DbValue {
   private final LongProperty tenantKeyProp = new LongProperty("tenantKey");
   private final StringProperty tenantIdProp = new StringProperty("tenantId");
   private final StringProperty nameProp = new StringProperty("name", "");
+  private final StringProperty descriptionProp = new StringProperty("description", "");
 
   public PersistedTenant() {
-    super(3);
+    super(4);
     declareProperty(tenantKeyProp);
     declareProperty(tenantIdProp);
     declareProperty(nameProp);
+    declareProperty(descriptionProp);
   }
 
   public PersistedTenant copy() {
@@ -93,6 +95,15 @@ public class PersistedTenant extends UnpackedObject implements DbValue {
     return this;
   }
 
+  public String getDescription() {
+    return BufferUtil.bufferAsString(descriptionProp.getValue());
+  }
+
+  public PersistedTenant setDescription(final String description) {
+    descriptionProp.setValue(description);
+    return this;
+  }
+
   /**
    * Wraps the provided TenantRecord into this PersistedTenant instance. Copies the tenant key,
    * tenant ID, and tenant name from the TenantRecord to the corresponding properties of this
@@ -104,5 +115,6 @@ public class PersistedTenant extends UnpackedObject implements DbValue {
     tenantKeyProp.setValue(tenantRecord.getTenantKey());
     tenantIdProp.setValue(tenantRecord.getTenantId());
     nameProp.setValue(tenantRecord.getName());
+    descriptionProp.setValue(tenantRecord.getDescription());
   }
 }

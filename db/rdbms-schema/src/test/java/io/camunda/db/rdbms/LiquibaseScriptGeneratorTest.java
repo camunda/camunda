@@ -20,11 +20,22 @@ class LiquibaseScriptGeneratorTest {
     // given
 
     // when
-    final String sqlScript = LiquibaseScriptGenerator.generateSqlScript("h2", "test.xml");
+    final String sqlScript = LiquibaseScriptGenerator.generateSqlScript("h2", "test.xml", "");
 
     // then
-    System.out.println(sqlScript);
     final var expected = Files.readString(Paths.get("src/test/resources/test.h2.sql"));
+    assertThat(sqlScript).isEqualTo(expected);
+  }
+
+  @Test
+  public void testGenerateSqlScriptWithPrefix() throws Exception {
+    // given
+
+    // when
+    final String sqlScript = LiquibaseScriptGenerator.generateSqlScript("h2", "test.xml", "C8_");
+
+    // then
+    final var expected = Files.readString(Paths.get("src/test/resources/test_prefix.h2.sql"));
     assertThat(sqlScript).isEqualTo(expected);
   }
 }

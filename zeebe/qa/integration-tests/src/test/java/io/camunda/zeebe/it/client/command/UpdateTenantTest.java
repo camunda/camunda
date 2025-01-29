@@ -25,32 +25,36 @@ import org.junit.jupiter.api.Test;
 class UpdateTenantTest {
 
   private static final String UPDATED_TENANT_NAME = "Updated Tenant Name";
+  private static final String UPDATED_TENANT_DESCRIPTION = "Updated Tenant Description";
   private static final String TENANT_ID = "tenant-id";
 
   @TestZeebe
-  private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+  private final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   @AutoClose private CamundaClient client;
-
-  private long tenantKey;
 
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
-    tenantKey =
-        client
-            .newCreateTenantCommand()
-            .tenantId(TENANT_ID)
-            .name("Initial Tenant Name")
-            .send()
-            .join()
-            .getTenantKey();
+    client
+        .newCreateTenantCommand()
+        .tenantId(TENANT_ID)
+        .name("Initial Tenant Name")
+        .send()
+        .join()
+        .getTenantKey();
   }
 
   @Test
-  void shouldUpdateTenantName() {
+  void shouldUpdateTenantNameAndDescription() {
     // when
-    client.newUpdateTenantCommand(TENANT_ID).name(UPDATED_TENANT_NAME).send().join();
+    client
+        .newUpdateTenantCommand(TENANT_ID)
+        .name(UPDATED_TENANT_NAME)
+        .description(UPDATED_TENANT_DESCRIPTION)
+        .send()
+        .join();
 
     // then
     ZeebeAssertHelper.assertTenantUpdated(
@@ -60,9 +64,24 @@ class UpdateTenantTest {
   @Test
   void shouldRejectUpdateIfNameIsNull() {
     // when / then
-    assertThatThrownBy(() -> client.newUpdateTenantCommand(TENANT_ID).name(null).send().join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("name must not be null");
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUpdateTenantCommand(TENANT_ID)
+                    .description("new description")
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("No name provided");
+  }
+
+  @Test
+  void shouldRejectUpdateIfDescriptionIsNull() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newUpdateTenantCommand(TENANT_ID).name("new name").send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("No description provided");
   }
 
   @Test
@@ -74,6 +93,7 @@ class UpdateTenantTest {
                 client
                     .newUpdateTenantCommand(notExistingTenantId)
                     .name("Non-Existent Tenant Name")
+                    .description("Some Description")
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)

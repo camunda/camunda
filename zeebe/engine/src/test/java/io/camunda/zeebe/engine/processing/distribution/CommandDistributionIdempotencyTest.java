@@ -14,7 +14,10 @@ import static org.assertj.core.api.Assertions.fail;
 import io.camunda.zeebe.engine.processing.clock.ClockProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationAddPermissionProcessor;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCreateProcessor;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationDeleteProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRemovePermissionProcessor;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationUpdateProcessor;
 import io.camunda.zeebe.engine.processing.identity.GroupAddEntityProcessor;
 import io.camunda.zeebe.engine.processing.identity.GroupCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.GroupDeleteProcessor;
@@ -62,6 +65,7 @@ import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -131,6 +135,76 @@ public class CommandDistributionIdempotencyTest {
     return Arrays.asList(
         new Object[][] {
           {
+            "Authorization.CREATE is idempotent",
+            new Scenario(
+                ValueType.AUTHORIZATION,
+                AuthorizationIntent.CREATE,
+                () -> {
+                  final var user = createUser();
+                  ENGINE
+                      .authorization()
+                      .newAuthorization()
+                      .withOwnerKey(user.getKey())
+                      .withOwnerId(user.getValue().getUsername())
+                      .withResourceId("*")
+                      .withResourceType(AuthorizationResourceType.USER)
+                      .withPermissions(PermissionType.READ)
+                      .create();
+                },
+                2),
+            AuthorizationCreateProcessor.class
+          },
+          {
+            "Authorization.DELETE is idempotent",
+            new Scenario(
+                ValueType.AUTHORIZATION,
+                AuthorizationIntent.DELETE,
+                () -> {
+                  final var user = createUser();
+                  final var key =
+                      ENGINE
+                          .authorization()
+                          .newAuthorization()
+                          .withOwnerKey(user.getKey())
+                          .withOwnerId(user.getValue().getUsername())
+                          .withResourceId("*")
+                          .withResourceType(AuthorizationResourceType.USER)
+                          .withPermissions(PermissionType.READ)
+                          .create()
+                          .getValue()
+                          .getAuthorizationKey();
+
+                  ENGINE.authorization().deleteAuthorization(key).delete();
+                },
+                3),
+            AuthorizationDeleteProcessor.class
+          },
+          {
+            "Authorization.UPDATE is idempotent",
+            new Scenario(
+                ValueType.AUTHORIZATION,
+                AuthorizationIntent.UPDATE,
+                () -> {
+                  final var user = createUser();
+                  final var key =
+                      ENGINE
+                          .authorization()
+                          .newAuthorization()
+                          .withOwnerKey(user.getKey())
+                          .withOwnerId(user.getValue().getUsername())
+                          .withResourceId("*")
+                          .withResourceType(AuthorizationResourceType.USER)
+                          .withPermissions(PermissionType.READ)
+                          .create()
+                          .getValue()
+                          .getAuthorizationKey();
+
+                  ENGINE.authorization().updateAuthorization(key).update();
+                },
+                3),
+            AuthorizationUpdateProcessor.class
+          },
+          {
             "Authorization.ADD_PERMISSION is idempotent",
             new Scenario(
                 ValueType.AUTHORIZATION,
@@ -141,6 +215,8 @@ public class CommandDistributionIdempotencyTest {
                       .authorization()
                       .permission()
                       .withOwnerKey(user.getKey())
+                      .withOwnerId(user.getValue().getUsername())
+                      .withOwnerType(AuthorizationOwnerType.USER)
                       .withResourceType(AuthorizationResourceType.USER)
                       .withPermission(PermissionType.READ, "*")
                       .add();
@@ -159,6 +235,8 @@ public class CommandDistributionIdempotencyTest {
                       .authorization()
                       .permission()
                       .withOwnerKey(user.getKey())
+                      .withOwnerId(user.getValue().getUsername())
+                      .withOwnerType(AuthorizationOwnerType.USER)
                       .withResourceType(AuthorizationResourceType.USER)
                       .withPermission(PermissionType.READ, user.getValue().getUsername())
                       .remove();

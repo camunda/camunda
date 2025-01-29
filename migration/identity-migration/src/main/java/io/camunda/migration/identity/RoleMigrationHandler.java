@@ -7,8 +7,6 @@
  */
 package io.camunda.migration.identity;
 
-import static io.camunda.migration.identity.transformer.AuthorizationTransformer.transform;
-
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
@@ -18,7 +16,6 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -67,9 +64,10 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
     }
 
     try {
-      transform(roleKey, role.permissions()).stream()
-          .map(authorizationServices::patchAuthorization)
-          .forEach(CompletableFuture::join);
+      // TODO: this part needs to be revisited
+      //      transform(roleKey, role.permissions()).stream()
+      //          .map(authorizationServices::patchAuthorization)
+      //          .forEach(CompletableFuture::join);
     } catch (final Exception e) {
       LOG.error("patch authorization for role failed", e);
       if (!isConflictError(e)) {

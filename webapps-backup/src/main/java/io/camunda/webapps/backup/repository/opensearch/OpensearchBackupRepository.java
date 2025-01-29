@@ -24,6 +24,7 @@ import io.camunda.webapps.backup.BackupException;
 import io.camunda.webapps.backup.BackupException.*;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.BackupService;
+import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDetailDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
@@ -31,6 +32,7 @@ import io.camunda.webapps.backup.Metadata;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import io.camunda.webapps.util.ExceptionSupplier;
+import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -42,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -49,6 +52,7 @@ import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch.indices.GetIndexRequest;
 import org.opensearch.client.opensearch.snapshot.GetSnapshotResponse;
 import org.opensearch.client.opensearch.snapshot.SnapshotInfo;
 import org.slf4j.Logger;
@@ -166,6 +170,38 @@ public class OpensearchBackupRepository implements BackupRepository {
   }
 
   @Override
+  public Optional<Metadata> getMetadata(final String repositoryName, final Long backupId) {
+    final var snapshots = findSnapshots(repositoryName, backupId);
+    if (snapshots.isEmpty()) {
+      return Optional.empty();
+    } else {
+      final var first = snapshots.getFirst();
+      return Optional.of(
+          MetadataMarshaller.fromMetadata(
+              first.getMetadata(), openSearchClient._transport().jsonpMapper()));
+    }
+  }
+
+  @Override
+  public Set<String> checkAllIndicesExist(final List<String> indices) {
+    try {
+      final var response =
+          openSearchClient
+              .indices()
+              .get(
+                  GetIndexRequest.of(
+                      b ->
+                          b.index(indices)
+                              // setting this to true to not receive an exception, but only the list
+                              // of available indices
+                              .ignoreUnavailable(true)));
+      return response.result().keySet();
+    } catch (final IOException e) {
+      throw new BackupRepositoryConnectionException("Unable to connect to Elasticsearch", e);
+    }
+  }
+
+  @Override
   public List<GetBackupStateResponseDto> getBackups(final String repositoryName) {
     final var requestBuilder =
         getSnapshotRequestBuilder(repositoryName, snapshotNameProvider.snapshotNamePrefix() + "*")
@@ -219,10 +255,7 @@ public class OpensearchBackupRepository implements BackupRepository {
 
   @Override
   public void executeSnapshotting(
-      final BackupService.SnapshotRequest snapshotRequest,
-      final boolean onlyRequired,
-      final Runnable onSuccess,
-      final Runnable onFailure) {
+      final SnapshotRequest snapshotRequest, final Runnable onSuccess, final Runnable onFailure) {
     final Long backupId = backupId(snapshotRequest);
     final Map<String, JsonData> metadataJson =
         MetadataMarshaller.asJson(
@@ -232,7 +265,7 @@ public class OpensearchBackupRepository implements BackupRepository {
         createSnapshotRequestBuilder(
                 snapshotRequest.repositoryName(),
                 snapshotRequest.snapshotName(),
-                snapshotRequest.indices(onlyRequired))
+                snapshotRequest.indices().allIndices())
             .ignoreUnavailable(
                 false) // ignoreUnavailable = false - indices defined by their exact name MUST be
             // present
@@ -289,11 +322,6 @@ public class OpensearchBackupRepository implements BackupRepository {
                     break;
                   }
                 }
-              } else if (isErrorType(e, INDEX_MISSING_EXCEPTION_TYPE) && !onlyRequired) {
-                LOGGER.debug(
-                    "Failed to execute snapshot because some index is missing, retry only with required indices",
-                    e);
-                executeSnapshotting(snapshotRequest, true, onSuccess, onFailure);
               } else {
                 LOGGER.error(
                     "Exception while creating snapshot [{}] for backup id [{}].",

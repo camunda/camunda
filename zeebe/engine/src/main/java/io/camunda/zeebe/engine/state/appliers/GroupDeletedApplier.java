@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 
 public class GroupDeletedApplier implements TypedEventApplier<GroupIntent, GroupRecord> {
 
@@ -29,10 +30,12 @@ public class GroupDeletedApplier implements TypedEventApplier<GroupIntent, Group
     // get the record key from the GroupRecord, as the key argument
     // may belong to the distribution command
     final var groupKey = value.getGroupKey();
+    // TODO: refactor when Groups use String-based IDs
+    final var groupId = String.valueOf(groupKey);
 
     // delete group from authorization state
-    authorizationState.deleteAuthorizationsByOwnerKeyPrefix(groupKey);
-    authorizationState.deleteOwnerTypeByKey(groupKey);
+    authorizationState.deleteAuthorizationsByOwnerTypeAndIdPrefix(
+        AuthorizationOwnerType.GROUP, groupId);
 
     // delete group from group state
     groupState.delete(groupKey);

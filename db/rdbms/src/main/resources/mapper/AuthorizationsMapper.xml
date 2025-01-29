@@ -13,7 +13,7 @@
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.AuthorizationDbQuery">
     SELECT COUNT(*) FROM (
     SELECT DISTINCT OWNER_KEY, OWNER_TYPE, RESOURCE_TYPE
-    FROM AUTHORIZATIONS a
+    FROM ${prefix}AUTHORIZATIONS a
     <include refid="io.camunda.db.rdbms.sql.AuthorizationMapper.searchFilter"/>
     ) t
   </select>
@@ -32,7 +32,7 @@
     OWNER_KEY,
     OWNER_TYPE,
     RESOURCE_TYPE
-    FROM AUTHORIZATIONS
+    FROM ${prefix}AUTHORIZATIONS
     <include refid="io.camunda.db.rdbms.sql.AuthorizationMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -40,7 +40,7 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
     ) t
-    JOIN AUTHORIZATIONS a ON t.OWNER_KEY = a.OWNER_KEY AND t.OWNER_TYPE = a.OWNER_TYPE AND
+    JOIN ${prefix}AUTHORIZATIONS a ON t.OWNER_KEY = a.OWNER_KEY AND t.OWNER_TYPE = a.OWNER_TYPE AND
     t.RESOURCE_TYPE = a.RESOURCE_TYPE
     <!-- outer orderBy for actual sorting -->
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
@@ -82,7 +82,7 @@
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.AuthorizationDbModel"
     flushCache="true">
-    INSERT INTO AUTHORIZATIONS (OWNER_KEY, OWNER_TYPE, RESOURCE_TYPE, PERMISSION_TYPE, RESOURCE_ID)
+    INSERT INTO ${prefix}AUTHORIZATIONS (OWNER_KEY, OWNER_TYPE, RESOURCE_TYPE, PERMISSION_TYPE, RESOURCE_ID)
     VALUES
     <foreach collection="permissions" item="permission" separator=",">
       <foreach collection="permission.resourceIds" item="resourceId" separator=",">
@@ -94,7 +94,7 @@
   <delete id="delete" parameterType="io.camunda.db.rdbms.write.domain.AuthorizationDbModel"
     flushCache="true">
     DELETE
-    FROM AUTHORIZATIONS
+    FROM ${prefix}AUTHORIZATIONS
     WHERE OWNER_KEY = #{ownerKey}
     AND OWNER_TYPE = #{ownerType}
     AND RESOURCE_TYPE = #{resourceType}

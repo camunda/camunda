@@ -68,12 +68,17 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
 
   public CompletableFuture<TenantRecord> createTenant(final TenantDTO request) {
     return sendBrokerRequest(
-        new BrokerTenantCreateRequest().setTenantId(request.tenantId()).setName(request.name()));
+        new BrokerTenantCreateRequest()
+            .setTenantId(request.tenantId())
+            .setName(request.name())
+            .setDescription(request.description()));
   }
 
   public CompletableFuture<TenantRecord> updateTenant(final TenantDTO request) {
     return sendBrokerRequest(
-        new BrokerTenantUpdateRequest(request.tenantId()).setName(request.name()));
+        new BrokerTenantUpdateRequest(request.tenantId())
+            .setName(request.name())
+            .setDescription(request.description()));
   }
 
   public CompletableFuture<TenantRecord> deleteTenant(final String tenantId) {
@@ -136,9 +141,9 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
     return tenantEntity;
   }
 
-  public record TenantDTO(Long key, String tenantId, String name) {
+  public record TenantDTO(Long key, String tenantId, String name, String description) {
     public static TenantDTO fromEntity(final TenantEntity entity) {
-      return new TenantDTO(entity.key(), entity.tenantId(), entity.name());
+      return new TenantDTO(entity.key(), entity.tenantId(), entity.name(), entity.description());
     }
   }
 }

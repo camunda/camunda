@@ -12,7 +12,7 @@
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.TenantDbQuery">
     SELECT COUNT(*)
-    FROM TENANT t
+    FROM ${prefix}TENANT t
     <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchFilter"/>
   </select>
 
@@ -20,14 +20,11 @@
     resultMap="io.camunda.db.rdbms.sql.TenantMapper.tenantResultMap">
     SELECT * FROM (
     SELECT
-    t.TENANT_KEY,
-    t.TENANT_ID,
-    t.NAME,
-    tm.TENANT_ID AS MEMBER_TENANT_ID,
-    tm.ENTITY_KEY AS MEMBER_ENTITY_KEY,
-    tm.ENTITY_TYPE AS MEMBER_ENTITY_TYPE
-    FROM TENANT t
-    LEFT JOIN TENANT_MEMBER tm ON t.TENANT_ID = tm.TENANT_ID
+    TENANT_KEY,
+    TENANT_ID,
+    NAME,
+    DESCRIPTION
+    FROM ${prefix}TENANT
     <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -37,46 +34,40 @@
 
   <sql id="searchFilter">
     WHERE 1 = 1
-    <if test="filter.key != null">AND t.TENANT_KEY = #{filter.key}</if>
-    <if test="filter.tenantId != null">AND t.TENANT_ID = #{filter.tenantId}</if>
-    <if test="filter.name != null">AND t.NAME = #{filter.name}</if>
+    <if test="filter.key != null">AND TENANT_KEY = #{filter.key}</if>
+    <if test="filter.tenantId != null">AND TENANT_ID = #{filter.tenantId}</if>
+    <if test="filter.name != null">AND NAME = #{filter.name}</if>
   </sql>
 
   <resultMap id="tenantResultMap" type="io.camunda.db.rdbms.write.domain.TenantDbModel">
     <id column="TENANT_ID" property="tenantId"/>
     <result column="TENANT_KEY" property="tenantKey"/>
     <result column="NAME" property="name"/>
-    <collection property="members" ofType="io.camunda.db.rdbms.write.domain.TenantMemberDbModel"
-      javaType="java.util.List">
-      <constructor>
-        <idArg column="MEMBER_TENANT_ID" javaType="java.lang.String"/>
-        <idArg column="MEMBER_ENTITY_KEY" javaType="java.lang.Long"/>
-        <arg column="MEMBER_ENTITY_TYPE" javaType="java.lang.String"/>
-      </constructor>
-    </collection>
+    <result column="DESCRIPTION" property="description"/>
   </resultMap>
 
   <insert
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.TenantDbModel"
     flushCache="true">
-    INSERT INTO TENANT (TENANT_KEY, TENANT_ID, NAME)
-    VALUES (#{tenantKey}, #{tenantId}, #{name})
+    INSERT INTO ${prefix}TENANT (TENANT_KEY, TENANT_ID, NAME, DESCRIPTION)
+    VALUES (#{tenantKey}, #{tenantId}, #{name}, #{description})
   </insert>
 
   <update
     id="update"
     parameterType="io.camunda.db.rdbms.write.domain.TenantDbModel"
     flushCache="true">
-    UPDATE TENANT SET
+    UPDATE ${prefix}TENANT SET
                     TENANT_ID = #{tenantId},
-                    NAME = #{name}
+                    NAME = #{name},
+                    DESCRIPTION = #{description}
     WHERE TENANT_ID = #{tenantId}
   </update>
 
   <delete id="delete" parameterType="java.lang.String" flushCache="true">
     DELETE
-    FROM TENANT
+    FROM ${prefix}TENANT
     WHERE TENANT_ID = #{tenantId}
   </delete>
 
@@ -84,8 +75,8 @@
     id="insertMember"
     parameterType="io.camunda.db.rdbms.write.domain.TenantMemberDbModel"
     flushCache="true">
-    INSERT INTO TENANT_MEMBER (TENANT_ID, ENTITY_KEY, ENTITY_TYPE)
-    VALUES (#{tenantId}, #{entityKey}, #{entityType})
+    INSERT INTO ${prefix}TENANT_MEMBER (TENANT_ID, ENTITY_ID, ENTITY_TYPE)
+    VALUES (#{tenantId}, #{entityID}, #{entityType})
   </insert>
 
   <delete
@@ -93,9 +84,9 @@
     parameterType="io.camunda.db.rdbms.write.domain.TenantMemberDbModel"
     flushCache="true">
     DELETE
-    FROM TENANT_MEMBER
+    FROM ${prefix}TENANT_MEMBER
     WHERE TENANT_ID = #{tenantId}
-      AND ENTITY_KEY = #{entityKey}
+      AND ENTITY_ID = #{entityId}
       AND ENTITY_TYPE = #{entityType}
   </delete>
 
@@ -104,7 +95,7 @@
     parameterType="java.lang.String"
     flushCache="true">
     DELETE
-    FROM TENANT_MEMBER
+    FROM ${prefix}TENANT_MEMBER
     WHERE TENANT_ID = #{tenantId}
   </delete>
 

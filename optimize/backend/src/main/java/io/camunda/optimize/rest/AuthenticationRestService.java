@@ -10,7 +10,6 @@ package io.camunda.optimize.rest;
 import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
-import io.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import io.camunda.optimize.service.security.authentication.AbstractAuthenticationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -18,7 +17,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,23 +27,12 @@ public class AuthenticationRestService {
 
   public static final String AUTHENTICATION_PATH = "/authentication";
   public static final String LOGOUT = "/logout";
-  public static final String TEST = "/test";
   public static final String CALLBACK = "/callback";
 
   private final AbstractAuthenticationService authenticationService;
 
   public AuthenticationRestService(final AbstractAuthenticationService authenticationService) {
     this.authenticationService = authenticationService;
-  }
-
-  @PostMapping()
-  public void authenticateUser(final CredentialsRequestDto credentials) {
-    authenticationService.authenticateUser(credentials);
-  }
-
-  @GetMapping(path = TEST)
-  public String testAuthentication() {
-    return authenticationService.testAuthentication();
   }
 
   @GetMapping(path = CALLBACK)

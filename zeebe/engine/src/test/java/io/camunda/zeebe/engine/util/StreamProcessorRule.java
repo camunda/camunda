@@ -21,6 +21,7 @@ import io.camunda.zeebe.logstreams.util.TestLogStream;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
@@ -57,7 +58,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   private final TemporaryFolder tempFolder;
   private final AutoCloseableRule closeables = new AutoCloseableRule();
   private final ControlledActorClock clock = new ControlledActorClock();
-  private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(clock);
+  private final ActorSchedulerRule actorSchedulerRule;
   private final ZeebeDbFactory zeebeDbFactory;
   private final int startPartitionId;
   private final int partitionCount;
@@ -100,6 +101,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final TemporaryFolder temporaryFolder) {
     this.startPartitionId = startPartitionId;
     this.partitionCount = partitionCount;
+    actorSchedulerRule = new ActorSchedulerRule(partitionCount, clock);
 
     final SetupRule rule = new SetupRule(startPartitionId, partitionCount);
 
@@ -367,6 +369,10 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
 
   public void maxCommandsInBatch(final int maxCommandsInBatch) {
     this.maxCommandsInBatch = maxCommandsInBatch;
+  }
+
+  public ActorScheduler getActorScheduler() {
+    return actorSchedulerRule.get();
   }
 
   private class SetupRule extends ExternalResource {

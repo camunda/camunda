@@ -107,22 +107,28 @@ public class RoleAppliersTest {
   void shouldDeleteRole() {
     // given
     final long roleKey = 11L;
-    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName("foo");
+    final String roleId = String.valueOf(roleKey);
+    final String roleName = "foo";
+    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName(roleName);
     roleState.create(roleRecord);
-    authorizationState.insertOwnerTypeByKey(roleKey, AuthorizationOwnerType.ROLE);
     authorizationState.createOrAddPermission(
-        roleKey, AuthorizationResourceType.ROLE, PermissionType.DELETE, Set.of("role1", "role2"));
+        AuthorizationOwnerType.ROLE,
+        roleName,
+        AuthorizationResourceType.ROLE,
+        PermissionType.DELETE,
+        Set.of("role1", "role2"));
 
     // when
     roleDeletedApplier.applyState(roleKey, roleRecord);
 
     // then
     assertThat(roleState.getRole(roleKey)).isEmpty();
-    final var ownerType = authorizationState.getOwnerType(roleKey);
-    assertThat(ownerType).isEmpty();
     final var resourceIdentifiers =
         authorizationState.getResourceIdentifiers(
-            roleKey, AuthorizationResourceType.ROLE, PermissionType.DELETE);
+            AuthorizationOwnerType.ROLE,
+            roleId,
+            AuthorizationResourceType.ROLE,
+            PermissionType.DELETE);
     assertThat(resourceIdentifiers).isEmpty();
   }
 

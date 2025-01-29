@@ -33,7 +33,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
-import java.util.Set;
 import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +45,7 @@ public class TenantServiceTest {
   private TenantSearchClient client;
   private StubbedBrokerClient stubbedBrokerClient;
   private final TenantEntity tenantEntity =
-      new TenantEntity(100L, "tenant-id", "Tenant name", Set.of());
+      new TenantEntity(100L, "tenant-id", "Tenant name", "Tenant description");
 
   @BeforeEach
   public void before() {
@@ -121,7 +120,8 @@ public class TenantServiceTest {
   @Test
   public void shouldCreateTenant() {
     // given
-    final var tenantDTO = new TenantDTO(100L, "NewTenantName", "NewTenantId");
+    final var tenantDTO =
+        new TenantDTO(100L, "NewTenantName", "NewTenantId", "NewTenantDescription");
 
     // when
     services.createTenant(tenantDTO);
@@ -139,10 +139,8 @@ public class TenantServiceTest {
   public void shouldUpdateTenantName() {
 
     // given
-    final var result =
-        new SearchQueryResult<>(1, List.of(tenantEntity), Arrays.array(), Arrays.array());
     final var tenantDTO =
-        new TenantDTO(tenantEntity.key(), tenantEntity.tenantId(), "UpdatedTenantId");
+        new TenantDTO(tenantEntity.key(), tenantEntity.tenantId(), "UpdatedTenantId", null);
 
     // when
     services.updateTenant(tenantDTO);
@@ -154,6 +152,26 @@ public class TenantServiceTest {
     final TenantRecord brokerRequestValue = request.getRequestWriter();
     assertThat(brokerRequestValue.getTenantId()).isEqualTo(tenantDTO.tenantId());
     assertThat(brokerRequestValue.getName()).isEqualTo(tenantDTO.name());
+  }
+
+  @Test
+  public void shouldUpdateTenantDescription() {
+
+    // given
+    final var tenantDTO =
+        new TenantDTO(
+            tenantEntity.key(), tenantEntity.tenantId(), "TenantName", "UpdatedTenantDescription");
+
+    // when
+    services.updateTenant(tenantDTO);
+
+    // then
+    final BrokerTenantUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
+    assertThat(request.getIntent()).isEqualTo(TenantIntent.UPDATE);
+    assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
+    final TenantRecord brokerRequestValue = request.getRequestWriter();
+    assertThat(brokerRequestValue.getTenantId()).isEqualTo(tenantDTO.tenantId());
+    assertThat(brokerRequestValue.getDescription()).isEqualTo(tenantDTO.description());
   }
 
   @Test

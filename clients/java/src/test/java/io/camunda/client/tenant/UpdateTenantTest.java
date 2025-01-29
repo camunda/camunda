@@ -29,9 +29,10 @@ public class UpdateTenantTest extends ClientRestTest {
 
   private static final String TENANT_ID = "my-tenant-id";
   private static final String UPDATED_NAME = "Updated Tenant Name";
+  private static final String UPDATED_DESCRIPTION = "Updated Tenant Description";
 
   @Test
-  void shouldUpdateTenant() {
+  void shouldUpdateTenantName() {
     // when
     client.newUpdateTenantCommand(TENANT_ID).name(UPDATED_NAME).send().join();
 
@@ -41,11 +42,29 @@ public class UpdateTenantTest extends ClientRestTest {
   }
 
   @Test
-  void shouldRaiseExceptionOnNullName() {
-    // when / then
-    assertThatThrownBy(() -> client.newUpdateTenantCommand(TENANT_ID).name(null).send().join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("name must not be null");
+  void shouldUpdateTenantDescription() {
+    // when
+    client.newUpdateTenantCommand(TENANT_ID).description(UPDATED_DESCRIPTION).send().join();
+
+    // then
+    final TenantUpdateRequest request = gatewayService.getLastRequest(TenantUpdateRequest.class);
+    assertThat(request.getDescription()).isEqualTo(UPDATED_DESCRIPTION);
+  }
+
+  @Test
+  void shouldUpdateTenantNameAndDescription() {
+    // when
+    client
+        .newUpdateTenantCommand(TENANT_ID)
+        .name(UPDATED_NAME)
+        .description(UPDATED_DESCRIPTION)
+        .send()
+        .join();
+
+    // then
+    final TenantUpdateRequest request = gatewayService.getLastRequest(TenantUpdateRequest.class);
+    assertThat(request.getName()).isEqualTo(UPDATED_NAME);
+    assertThat(request.getDescription()).isEqualTo(UPDATED_DESCRIPTION);
   }
 
   @Test

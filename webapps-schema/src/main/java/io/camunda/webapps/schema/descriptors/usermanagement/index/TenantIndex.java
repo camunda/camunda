@@ -15,7 +15,7 @@ import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.Enti
 public class TenantIndex extends UserManagementIndexDescriptor implements Prio5Backup {
 
   public static final String INDEX_NAME = "tenant";
-  public static final String INDEX_VERSION = "8.7.0";
+  public static final String INDEX_VERSION = "8.8.0";
 
   public static final String KEY = "key";
   public static final String TENANT_ID = "tenantId";
@@ -23,8 +23,8 @@ public class TenantIndex extends UserManagementIndexDescriptor implements Prio5B
   public static final String JOIN = "join";
   public static final String MEMBER_KEY = "memberKey";
 
-  public static final EntityJoinRelationFactory JOIN_RELATION_FACTORY =
-      new EntityJoinRelationFactory(
+  public static final EntityJoinRelationFactory<String> JOIN_RELATION_FACTORY =
+      new EntityJoinRelationFactory<>(
           EntityJoinRelation.IdentityJoinRelationshipType.TENANT,
           EntityJoinRelation.IdentityJoinRelationshipType.MEMBER);
 

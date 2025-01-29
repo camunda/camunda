@@ -270,8 +270,8 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerUserAppliers(final MutableProcessingState state) {
-    register(UserIntent.CREATED, new UserCreatedApplier(state));
-    register(UserIntent.UPDATED, new UserUpdatedApplier(state));
+    register(UserIntent.CREATED, new UserCreatedApplier(state.getUserState()));
+    register(UserIntent.UPDATED, new UserUpdatedApplier(state.getUserState()));
     register(UserIntent.DELETED, new UserDeletedApplier(state));
   }
 
@@ -484,6 +484,15 @@ public final class EventAppliers implements EventApplier {
     register(AuthorizationIntent.PERMISSION_ADDED, new AuthorizationPermissionAddedApplier(state));
     register(
         AuthorizationIntent.PERMISSION_REMOVED, new AuthorizationPermissionRemovedApplier(state));
+    register(
+        AuthorizationIntent.CREATED,
+        new AuthorizationCreatedApplier(state.getAuthorizationState()));
+    register(
+        AuthorizationIntent.DELETED,
+        new AuthorizationDeletedApplier(state.getAuthorizationState()));
+    register(
+        AuthorizationIntent.UPDATED,
+        new AuthorizationUpdatedApplier(state.getAuthorizationState()));
   }
 
   private void registerEscalationAppliers() {
@@ -502,9 +511,7 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerRoleAppliers(final MutableProcessingState state) {
-    register(
-        RoleIntent.CREATED,
-        new RoleCreatedApplier(state.getRoleState(), state.getAuthorizationState()));
+    register(RoleIntent.CREATED, new RoleCreatedApplier(state.getRoleState()));
     register(RoleIntent.UPDATED, new RoleUpdatedApplier(state.getRoleState()));
     register(RoleIntent.ENTITY_ADDED, new RoleEntityAddedApplier(state));
     register(RoleIntent.ENTITY_REMOVED, new RoleEntityRemovedApplier(state));
@@ -514,9 +521,7 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerGroupAppliers(final MutableProcessingState state) {
-    register(
-        GroupIntent.CREATED,
-        new GroupCreatedApplier(state.getGroupState(), state.getAuthorizationState()));
+    register(GroupIntent.CREATED, new GroupCreatedApplier(state.getGroupState()));
     register(GroupIntent.UPDATED, new GroupUpdatedApplier(state.getGroupState()));
     register(GroupIntent.ENTITY_ADDED, new GroupEntityAddedApplier(state));
     register(GroupIntent.ENTITY_REMOVED, new GroupEntityRemovedApplier(state));
@@ -532,9 +537,7 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerTenantAppliers(final MutableProcessingState state) {
-    register(
-        TenantIntent.CREATED,
-        new TenantCreatedApplier(state.getTenantState(), state.getAuthorizationState()));
+    register(TenantIntent.CREATED, new TenantCreatedApplier(state.getTenantState()));
     register(TenantIntent.UPDATED, new TenantUpdatedApplier(state.getTenantState()));
     register(TenantIntent.ENTITY_ADDED, new TenantEntityAddedApplier(state));
     register(TenantIntent.ENTITY_REMOVED, new TenantEntityRemovedApplier(state));
@@ -544,9 +547,7 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerMappingAppliers(final MutableProcessingState state) {
-    register(
-        MappingIntent.CREATED,
-        new MappingCreatedApplier(state.getMappingState(), state.getAuthorizationState()));
+    register(MappingIntent.CREATED, new MappingCreatedApplier(state.getMappingState()));
     register(MappingIntent.DELETED, new MappingDeletedApplier(state));
   }
 

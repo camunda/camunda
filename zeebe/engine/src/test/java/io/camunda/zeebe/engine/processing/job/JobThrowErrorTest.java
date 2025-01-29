@@ -70,6 +70,7 @@ public final class JobThrowErrorTest {
         .withPermission(PermissionType.UPDATE_PROCESS_INSTANCE, PROCESS_ID)
         .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
         .withOwnerKey(user.getUserKey())
+        .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .add();
   }

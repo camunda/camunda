@@ -7,9 +7,9 @@
  */
 package io.camunda.it.tasklist;
 
+import static io.camunda.client.api.search.response.UserTaskState.COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
@@ -29,8 +29,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled("https://github.com/camunda/camunda/issues/27289")
 @ZeebeIntegration
 public class TasklistCompleteUserTaskAuthorizationIT {
 
@@ -57,7 +59,7 @@ public class TasklistCompleteUserTaskAuthorizationIT {
       new TestStandaloneCamunda()
           .withCamundaExporter()
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
-          .withAdditionalProfile(Profile.AUTH_BASIC);
+          .withUnauthenticatedAccess();
 
   @BeforeEach
   public void beforeAll() {
@@ -155,6 +157,7 @@ public class TasklistCompleteUserTaskAuthorizationIT {
     // given
     adminAuthClient.createPermissions(
         testUserKey,
+        TEST_USER_NAME,
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,
             PermissionTypeEnum.UPDATE_USER_TASK,
@@ -177,6 +180,7 @@ public class TasklistCompleteUserTaskAuthorizationIT {
     // given
     adminAuthClient.createPermissions(
         testUserKey,
+        TEST_USER_NAME,
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,
             PermissionTypeEnum.UPDATE_USER_TASK,
@@ -271,7 +275,7 @@ public class TasklistCompleteUserTaskAuthorizationIT {
               final var result =
                   adminCamundaClient
                       .newUserTaskQuery()
-                      .filter(f -> f.userTaskKey(userTaskKey).state("COMPLETED"))
+                      .filter(f -> f.userTaskKey(userTaskKey).state(COMPLETED))
                       .send()
                       .join();
               assertThat(result.items()).hasSize(1);

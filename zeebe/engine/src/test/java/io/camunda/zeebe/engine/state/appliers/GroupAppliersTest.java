@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -31,7 +30,6 @@ public class GroupAppliersTest {
   private MutableProcessingState processingState;
 
   private MutableGroupState groupState;
-  private MutableAuthorizationState authorizationState;
   private MutableUserState userState;
   private MutableMappingState mappingState;
 
@@ -44,11 +42,10 @@ public class GroupAppliersTest {
   @BeforeEach
   public void setup() {
     groupState = processingState.getGroupState();
-    authorizationState = processingState.getAuthorizationState();
     userState = processingState.getUserState();
     mappingState = processingState.getMappingState();
 
-    groupCreatedApplier = new GroupCreatedApplier(groupState, authorizationState);
+    groupCreatedApplier = new GroupCreatedApplier(groupState);
     groupUpdatedApplier = new GroupUpdatedApplier(groupState);
     groupEntityAddedApplier = new GroupEntityAddedApplier(processingState);
     groupEntityRemovedApplier = new GroupEntityRemovedApplier(processingState);

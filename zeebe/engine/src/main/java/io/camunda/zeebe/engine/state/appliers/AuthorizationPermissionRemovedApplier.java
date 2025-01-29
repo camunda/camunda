@@ -25,13 +25,16 @@ public final class AuthorizationPermissionRemovedApplier
   @Override
   public void applyState(final long key, final AuthorizationRecord value) {
     final var ownerKey = value.getOwnerKey();
+    final var ownerType = value.getOwnerType();
+    final var ownerId = value.getOwnerId();
     final var resourceType = value.getResourceType();
     final var permissions = value.getPermissions();
 
     permissions.forEach(
         permission ->
             authorizationState.removePermission(
-                ownerKey,
+                ownerType,
+                ownerId,
                 resourceType,
                 permission.getPermissionType(),
                 permission.getResourceIds()));

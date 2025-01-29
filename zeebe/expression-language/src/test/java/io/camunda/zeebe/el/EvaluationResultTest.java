@@ -11,13 +11,16 @@ import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.el.util.TestFeelEngineClock;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 public class EvaluationResultTest {
 
@@ -90,6 +93,7 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getString()).isNull();
     assertThat(evaluationResult.getNumber()).isNull();
     assertThat(evaluationResult.getList()).isNull();
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("\"PT2H\""));
   }
 
   @Test
@@ -103,6 +107,7 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getString()).isNull();
     assertThat(evaluationResult.getNumber()).isNull();
     assertThat(evaluationResult.getList()).isNull();
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("\"P2M\""));
   }
 
   @Test
@@ -119,6 +124,8 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getString()).isNull();
     assertThat(evaluationResult.getNumber()).isNull();
     assertThat(evaluationResult.getList()).isNull();
+    assertThat(evaluationResult.toBuffer())
+        .isEqualTo(asMsgPack("\"2020-04-01T10:31:10+02:00[Europe/Berlin]\""));
   }
 
   @Test
@@ -134,6 +141,7 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getString()).isNull();
     assertThat(evaluationResult.getNumber()).isNull();
     assertThat(evaluationResult.getList()).isNull();
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("\"2020-04-01T10:31:10\""));
   }
 
   @Test
@@ -225,6 +233,32 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getNumber()).isNull();
     assertThat(evaluationResult.getList()).isNull();
     assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("{'x':\"2020-04-02\"}"));
+  }
+
+  @CsvSource({"P5D,P5D", "PT120H,P5D", "PT119H,P4DT23H", "P4DT3H2M,P4DT3H2M"})
+  @ParameterizedTest
+  public void shouldReturnNormalizedDuration(final String expression, final String expected) {
+    final var evaluationResult = evaluateExpression("=duration(\"" + expression + "\")");
+
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.DURATION);
+    assertThat(evaluationResult.toBuffer())
+        .describedAs(
+            "Expected <%s> but was <%s>",
+            expected, BufferUtil.bufferAsString(evaluationResult.toBuffer()))
+        .isEqualTo(asMsgPack("\"" + expected + "\""));
+  }
+
+  @CsvSource({"P2Y,P2Y", "P24M,P2Y", "P25M,P2Y1M", "P2Y3M,P2Y3M"})
+  @ParameterizedTest
+  public void shouldReturnNormalizedPeriod(final String expression, final String expected) {
+    final var evaluationResult = evaluateExpression("=duration(\"" + expression + "\")");
+
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.PERIOD);
+    assertThat(evaluationResult.toBuffer())
+        .describedAs(
+            "Expected <%s> but was <%s>",
+            expected, BufferUtil.bufferAsString(evaluationResult.toBuffer()))
+        .isEqualTo(asMsgPack("\"" + expected + "\""));
   }
 
   private EvaluationResult evaluateExpression(final String expression) {

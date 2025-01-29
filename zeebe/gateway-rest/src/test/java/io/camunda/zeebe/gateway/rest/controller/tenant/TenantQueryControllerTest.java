@@ -42,9 +42,9 @@ public class TenantQueryControllerTest extends RestControllerTest {
 
   private static final List<TenantEntity> TENANT_ENTITIES =
       List.of(
-          new TenantEntity(100L, "tenant-id-1", "Tenant 1", Set.of()),
-          new TenantEntity(200L, "tenant-id-2", "Tenant 2", Set.of(1L, 2L)),
-          new TenantEntity(300L, "tenant-id-3", "Tenant 12", Set.of(3L)));
+          new TenantEntity(100L, "tenant-id-1", "Tenant 1", "Description 1"),
+          new TenantEntity(200L, "tenant-id-2", "Tenant 2", "Description 2"),
+          new TenantEntity(300L, "tenant-id-3", "Tenant 12", "Description 3"));
 
   private static final String RESPONSE =
       """
@@ -53,20 +53,20 @@ public class TenantQueryControllerTest extends RestControllerTest {
            {
              "tenantKey": %s,
              "name": "%s",
-             "tenantId": "%s",
-             "assignedMemberKeys": %s
+             "description": "%s",
+             "tenantId": "%s"
            },
            {
              "tenantKey": %s,
              "name": "%s",
-             "tenantId": "%s",
-             "assignedMemberKeys": %s
+             "description": "%s",
+             "tenantId": "%s"
            },
            {
              "tenantKey": %s,
              "name": "%s",
-             "tenantId": "%s",
-             "assignedMemberKeys": %s
+             "description": "%s",
+             "tenantId": "%s"
            }
          ],
          "page": {
@@ -80,31 +80,31 @@ public class TenantQueryControllerTest extends RestControllerTest {
       RESPONSE.formatted(
           "\"%s\"".formatted(TENANT_ENTITIES.get(0).key()),
           TENANT_ENTITIES.get(0).name(),
+          TENANT_ENTITIES.get(0).description(),
           TENANT_ENTITIES.get(0).tenantId(),
-          formatSet(TENANT_ENTITIES.get(0).assignedMemberKeys(), true),
           "\"%s\"".formatted(TENANT_ENTITIES.get(1).key()),
           TENANT_ENTITIES.get(1).name(),
+          TENANT_ENTITIES.get(1).description(),
           TENANT_ENTITIES.get(1).tenantId(),
-          formatSet(TENANT_ENTITIES.get(1).assignedMemberKeys(), true),
           "\"%s\"".formatted(TENANT_ENTITIES.get(2).key()),
           TENANT_ENTITIES.get(2).name(),
+          TENANT_ENTITIES.get(2).description(),
           TENANT_ENTITIES.get(2).tenantId(),
-          formatSet(TENANT_ENTITIES.get(2).assignedMemberKeys(), true),
           TENANT_ENTITIES.size());
   private static final String EXPECTED_RESPONSE_NUMBER_KEYS =
       RESPONSE.formatted(
           TENANT_ENTITIES.get(0).key(),
           TENANT_ENTITIES.get(0).name(),
+          TENANT_ENTITIES.get(0).description(),
           TENANT_ENTITIES.get(0).tenantId(),
-          formatSet(TENANT_ENTITIES.get(0).assignedMemberKeys(), false),
           TENANT_ENTITIES.get(1).key(),
           TENANT_ENTITIES.get(1).name(),
+          TENANT_ENTITIES.get(1).description(),
           TENANT_ENTITIES.get(1).tenantId(),
-          formatSet(TENANT_ENTITIES.get(1).assignedMemberKeys(), false),
           TENANT_ENTITIES.get(2).key(),
           TENANT_ENTITIES.get(2).name(),
+          TENANT_ENTITIES.get(2).description(),
           TENANT_ENTITIES.get(2).tenantId(),
-          formatSet(TENANT_ENTITIES.get(2).assignedMemberKeys(), false),
           TENANT_ENTITIES.size());
 
   @MockBean private TenantServices tenantServices;
@@ -128,7 +128,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
     // given
     final var tenantName = "Tenant Name";
     final var tenantId = "tenant-id";
-    final var tenant = new TenantEntity(100L, tenantId, tenantName, Set.of());
+    final var tenantDescription = "Tenant Description";
+    final var tenant = new TenantEntity(100L, tenantId, tenantName, tenantDescription);
     when(tenantServices.getById(tenant.tenantId())).thenReturn(tenant);
 
     // when
@@ -145,11 +146,11 @@ public class TenantQueryControllerTest extends RestControllerTest {
             {
               "tenantKey": "%d",
               "name": "%s",
-              "tenantId": "%s",
-              "assignedMemberKeys": []
+              "description": "%s",
+              "tenantId": "%s"
             }
             """
-                .formatted(tenant.key(), tenantName, tenantId));
+                .formatted(tenant.key(), tenantName, tenantDescription, tenantId));
 
     // then
     verify(tenantServices, times(1)).getById(tenant.tenantId());

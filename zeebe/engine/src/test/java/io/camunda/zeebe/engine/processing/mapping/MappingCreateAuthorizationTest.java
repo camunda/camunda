@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -69,8 +70,7 @@ public class MappingCreateAuthorizationTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var user = createUser();
-    addPermissionsToUser(
-        user.getUserKey(), AuthorizationResourceType.MAPPING_RULE, PermissionType.CREATE);
+    addPermissionsToUser(user, AuthorizationResourceType.MAPPING_RULE, PermissionType.CREATE);
 
     // when
     engine.mapping().newMapping(claimName).withClaimValue(claimValue).create(user.getUsername());
@@ -119,13 +119,15 @@ public class MappingCreateAuthorizationTest {
   }
 
   private void addPermissionsToUser(
-      final long userKey,
+      final UserRecordValue user,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType) {
     engine
         .authorization()
         .permission()
-        .withOwnerKey(userKey)
+        .withOwnerKey(user.getUserKey())
+        .withOwnerId(user.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
         .withPermission(permissionType, "*")
         .add(DEFAULT_USER.getUsername());

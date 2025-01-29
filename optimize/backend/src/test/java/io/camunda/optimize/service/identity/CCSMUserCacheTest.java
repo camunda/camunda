@@ -118,7 +118,7 @@ public class CCSMUserCacheTest {
     // then
     assertThat(searchResult)
         .usingRecursiveFieldByFieldElementComparator()
-        .containsExactly(TEST_USER_1, TEST_USER_2);
+        .containsExactlyInAnyOrder(TEST_USER_1, TEST_USER_2);
     verify(identity, never()).users();
   }
 
@@ -136,7 +136,7 @@ public class CCSMUserCacheTest {
     // then
     assertThat(searchResult)
         .usingRecursiveFieldByFieldElementComparator()
-        .containsExactly(TEST_USER_1, TEST_USER_2);
+        .containsExactlyInAnyOrder(TEST_USER_1, TEST_USER_2);
   }
 
   @Test
@@ -174,7 +174,7 @@ public class CCSMUserCacheTest {
     // then
     assertThat(searchResult)
         .usingRecursiveFieldByFieldElementComparator()
-        .containsExactly(TEST_USER_1, TEST_USER_2);
+        .containsExactlyInAnyOrder(TEST_USER_1, TEST_USER_2);
     verify(identity, never()).users();
   }
 

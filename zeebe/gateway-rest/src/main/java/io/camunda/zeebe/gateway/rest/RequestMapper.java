@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationAssignRequest;
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationCreateRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
@@ -41,7 +40,6 @@ import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authentication.Builder;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
-import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
@@ -61,7 +59,6 @@ import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.auth.ClaimTransformer;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
@@ -110,7 +107,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.Either;
 import jakarta.servlet.http.Part;
@@ -335,28 +331,6 @@ public class RequestMapper {
     return permissions.stream()
         .map(permission -> PermissionType.valueOf(permission.name()))
         .collect(Collectors.toSet());
-  }
-
-  public static Either<ProblemDetail, PatchAuthorizationRequest> toAuthorizationPatchRequest(
-      final long ownerKey, final AuthorizationPatchRequest authorizationPatchRequest) {
-    return getResult(
-        validateAuthorizationAssignRequest(authorizationPatchRequest),
-        () -> {
-          final Map<PermissionType, Set<String>> permissions = new HashMap<>();
-          authorizationPatchRequest
-              .getPermissions()
-              .forEach(
-                  permission ->
-                      permissions.put(
-                          PermissionType.valueOf(permission.getPermissionType().name()),
-                          permission.getResourceIds()));
-
-          return new PatchAuthorizationRequest(
-              ownerKey,
-              PermissionAction.valueOf(authorizationPatchRequest.getAction().name()),
-              AuthorizationResourceType.valueOf(authorizationPatchRequest.getResourceType().name()),
-              permissions);
-        });
   }
 
   public static Either<ProblemDetail, DocumentCreateRequest> toDocumentCreateRequest(
@@ -775,14 +749,23 @@ public class RequestMapper {
     return getResult(
         TenantRequestValidator.validateTenantCreateRequest(tenantCreateRequest),
         () ->
-            new TenantDTO(null, tenantCreateRequest.getTenantId(), tenantCreateRequest.getName()));
+            new TenantDTO(
+                null,
+                tenantCreateRequest.getTenantId(),
+                tenantCreateRequest.getName(),
+                tenantCreateRequest.getDescription()));
   }
 
   public static Either<ProblemDetail, TenantDTO> toTenantUpdateDto(
       final String tenantId, final TenantUpdateRequest tenantUpdateRequest) {
     return getResult(
         TenantRequestValidator.validateTenantUpdateRequest(tenantUpdateRequest),
-        () -> new TenantDTO(null, tenantId, tenantUpdateRequest.getName()));
+        () ->
+            new TenantDTO(
+                null,
+                tenantId,
+                tenantUpdateRequest.getName(),
+                tenantUpdateRequest.getDescription()));
   }
 
   private static List<ProcessInstanceModificationActivateInstruction>

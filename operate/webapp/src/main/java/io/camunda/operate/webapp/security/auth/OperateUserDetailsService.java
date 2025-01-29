@@ -38,7 +38,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
       + " & !"
       + OperateProfileService.IDENTITY_AUTH_PROFILE
       + " & !"
-      + OperateProfileService.AUTH_BASIC
+      + OperateProfileService.CONSOLIDATED_AUTH
 })
 public class OperateUserDetailsService implements UserDetailsService {
 

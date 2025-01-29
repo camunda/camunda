@@ -118,6 +118,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
     final var authorizationRecord =
         new AuthorizationRecord()
             .setOwnerKey(key)
+            .setOwnerId(username)
             .setOwnerType(AuthorizationOwnerType.USER)
             .setResourceType(AuthorizationResourceType.USER)
             .addPermission(

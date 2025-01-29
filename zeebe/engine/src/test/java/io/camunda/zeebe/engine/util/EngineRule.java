@@ -52,6 +52,7 @@ import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.StreamClock;
@@ -521,6 +522,10 @@ public final class EngineRule extends ExternalResource {
 
   public ClockClient clock() {
     return new ClockClient(environmentRule);
+  }
+
+  public ActorScheduler actorScheduler() {
+    return environmentRule.getActorScheduler();
   }
 
   private static final class VersatileBlob implements DbKey, DbValue {

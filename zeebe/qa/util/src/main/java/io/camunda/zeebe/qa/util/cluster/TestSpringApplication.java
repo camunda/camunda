@@ -10,6 +10,8 @@ package io.camunda.zeebe.qa.util.cluster;
 import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
+import io.camunda.authentication.config.AuthenticationProperties;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer.Bean;
 import io.camunda.zeebe.qa.util.cluster.util.RelaxedCollectorRegistry;
@@ -169,6 +171,27 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   public T withAdditionalInitializer(final ApplicationContextInitializer<?> initializer) {
     additionalInitializers.add(initializer);
     return self();
+  }
+
+  public T withAuthenticationMethod(final AuthenticationMethod authenticationMethod) {
+    return withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
+        .withProperty(AuthenticationProperties.METHOD, authenticationMethod.name());
+  }
+
+  protected T withUnauthenticatedAccess(final boolean allowUnauthenticatedAccess) {
+    if (allowUnauthenticatedAccess) {
+      withAuthenticationMethod(AuthenticationMethod.BASIC);
+    }
+    return withProperty(
+        AuthenticationProperties.API_UNPROTECTED, String.valueOf(allowUnauthenticatedAccess));
+  }
+
+  public final T withUnauthenticatedAccess() {
+    return withUnauthenticatedAccess(true);
+  }
+
+  public final T withAuthenticatedAccess() {
+    return withUnauthenticatedAccess(false);
   }
 
   /** Returns the command line arguments that will be passed when the application is started. */

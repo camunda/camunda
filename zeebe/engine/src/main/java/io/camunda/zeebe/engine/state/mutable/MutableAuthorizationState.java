@@ -21,14 +21,17 @@ public interface MutableAuthorizationState extends AuthorizationState {
    * does, adds the resourceIds to this entry. If it does not, creates a new Permission with the
    * provided resourceIds.
    *
-   * @param ownerKey the key of the owner of the permissions. This could be a userKey, a roleKey or
-   *     a groupKey
+   * @param ownerType the type of the owner of the permissions. This could be a user, a role, or a
+   *     group
+   * @param ownerId the ID of the owner of the permissions. This could be a username, a roleId or a
+   *     groupId
    * @param resourceType the type of resource the permissions are for (Eg. Process definition, Job)
    * @param permissionType The type of permission being granted (Eg. READ, WRITE)
    * @param resourceIds A set of resourceIds the permissions are granted for (Eg. bpmnProcessId, *)
    */
   void createOrAddPermission(
-      long ownerKey,
+      AuthorizationOwnerType ownerType,
+      String ownerId,
       AuthorizationResourceType resourceType,
       PermissionType permissionType,
       Set<String> resourceIds);
@@ -45,37 +48,25 @@ public interface MutableAuthorizationState extends AuthorizationState {
    * Removes the resource ids for the provided ownerKey, resourceType, permissionType. If there are
    * no other resourceIds left for this entry, the entire entry will be deleted.
    *
-   * @param ownerKey the key of the owner of the permissions. This could be a userKey, a roleKey or
-   *     a groupKey
+   * @param ownerId the ID of the owner of the permissions. This could be a username, a roleId or a
+   *     groupId
    * @param resourceType the type of resource the permissions are for (Eg. Process definition, Job)
    * @param permissionType The type of permission being granted (Eg. READ, WRITE)
    * @param resourceIds A set of resourceIds the permissions are granted for (Eg. bpmnProcessId, *)
    */
   void removePermission(
-      long ownerKey,
+      AuthorizationOwnerType ownerType,
+      String ownerId,
       AuthorizationResourceType resourceType,
       PermissionType permissionType,
       Set<String> resourceIds);
 
   /**
-   * Stores the owner type for a new owner in the state.
-   *
-   * @param ownerKey the key of the owner
-   * @param ownerType the type of the owner
-   */
-  void insertOwnerTypeByKey(final long ownerKey, final AuthorizationOwnerType ownerType);
-
-  /**
    * Removes all permissions for the provided ownerKey.
    *
-   * @param ownerKey the key of the owner of the authorizations
+   * @param ownerType the type of the owner of the authorizations
+   * @param ownerId the ID of the owner of the authorizations
    */
-  void deleteAuthorizationsByOwnerKeyPrefix(final long ownerKey);
-
-  /**
-   * Removes the owner type for the provided ownerKey.
-   *
-   * @param ownerKey the key of the owner
-   */
-  void deleteOwnerTypeByKey(final long ownerKey);
+  void deleteAuthorizationsByOwnerTypeAndIdPrefix(
+      final AuthorizationOwnerType ownerType, final String ownerId);
 }

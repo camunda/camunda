@@ -9,7 +9,6 @@ package io.camunda.it.tasklist.compatibility;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
@@ -29,8 +28,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled("https://github.com/camunda/camunda/issues/27289")
 @ZeebeIntegration
 public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
 
@@ -60,7 +61,7 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
           .withCamundaExporter()
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
           .withProperty("camunda.tasklist.zeebe.compatibility.enabled", true)
-          .withAdditionalProfile(Profile.AUTH_BASIC);
+          .withUnauthenticatedAccess();
 
   @BeforeEach
   public void beforeAll() {
@@ -158,6 +159,7 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
     // given
     adminAuthClient.createPermissions(
         testUserKey,
+        TEST_USER_NAME,
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,
             PermissionTypeEnum.UPDATE_USER_TASK,

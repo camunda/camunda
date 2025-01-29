@@ -22,10 +22,13 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
+import io.camunda.client.api.search.response.FlowNodeInstanceState;
+import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
-import io.camunda.process.test.impl.client.ProcessInstanceState;
+import io.camunda.process.test.impl.client.VariableDto;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
@@ -468,6 +471,109 @@ public class ProcessInstanceAssertTest {
           .hasMessage(
               "Process instance [key: %d] should be terminated but was not activated.",
               PROCESS_INSTANCE_KEY);
+    }
+  }
+
+  @Nested
+  class FluentAssertions {
+
+    private final FlowNodeInstanceDto activeFlowNodeInstance = new FlowNodeInstanceDto();
+    private final VariableDto variable = new VariableDto();
+
+    @BeforeEach
+    void configureMocks() throws IOException {
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY)));
+
+      activeFlowNodeInstance.setFlowNodeId("A");
+      activeFlowNodeInstance.setState(FlowNodeInstanceState.ACTIVE);
+
+      variable.setName("x");
+      variable.setValue("1");
+    }
+
+    @Test
+    void shouldAssertStateAndElements() throws IOException {
+      // given
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(activeFlowNodeInstance));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).isActive().hasActiveElements("A");
+    }
+
+    @Test
+    void shouldAssertStateAndVariables() throws IOException {
+      // given
+      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).isActive().hasVariable("x", 1);
+    }
+
+    @Test
+    void shouldAssertElementsAndState() throws IOException {
+      // given
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(activeFlowNodeInstance));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A").isActive();
+    }
+
+    @Test
+    void shouldAssertVariablesAndState() throws IOException {
+      // given
+      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).hasVariable("x", 1).isActive();
+    }
+
+    @Test
+    void shouldAssertElementsAndVariables() throws IOException {
+      // given
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(activeFlowNodeInstance));
+
+      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A").hasVariable("x", 1);
+    }
+
+    @Test
+    void shouldAssertVariablesAndElements() throws IOException {
+      // given
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(activeFlowNodeInstance));
+
+      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).hasVariable("x", 1).hasActiveElements("A");
     }
   }
 }

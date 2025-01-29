@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -113,11 +114,12 @@ public class TenantAppliersTest {
 
     // then
     assertThat(tenantState.getTenantByKey(tenantKey)).isEmpty();
-    final var ownerType = authorizationState.getOwnerType(tenantKey);
-    assertThat(ownerType).isEmpty();
     final var resourceIdentifiers =
         authorizationState.getResourceIdentifiers(
-            tenantKey, AuthorizationResourceType.TENANT, PermissionType.DELETE);
+            AuthorizationOwnerType.TENANT,
+            tenantId,
+            AuthorizationResourceType.TENANT,
+            PermissionType.DELETE);
     assertThat(resourceIdentifiers).isEmpty();
   }
 
@@ -189,7 +191,7 @@ public class TenantAppliersTest {
             .setTenantKey(tenantKey)
             .setTenantId(tenantId)
             .setName("Tenant-" + tenantId);
-    new TenantCreatedApplier(tenantState, authorizationState).applyState(tenantKey, tenantRecord);
+    new TenantCreatedApplier(tenantState).applyState(tenantKey, tenantRecord);
     return tenantRecord;
   }
 
@@ -201,7 +203,7 @@ public class TenantAppliersTest {
             .setName("User-" + username)
             .setEmail(username + "@test.com")
             .setPassword("password");
-    new UserCreatedApplier(processingState).applyState(userKey, userRecord);
+    new UserCreatedApplier(userState).applyState(userKey, userRecord);
   }
 
   private void associateUserWithTenant(

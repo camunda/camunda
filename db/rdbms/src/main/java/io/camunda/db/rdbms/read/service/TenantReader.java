@@ -11,12 +11,10 @@ import io.camunda.db.rdbms.read.domain.TenantDbQuery;
 import io.camunda.db.rdbms.sql.TenantMapper;
 import io.camunda.db.rdbms.sql.columns.TenantSearchColumn;
 import io.camunda.db.rdbms.write.domain.TenantDbModel;
-import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,10 +47,6 @@ public class TenantReader extends AbstractEntityReader<TenantEntity> {
   }
 
   private TenantEntity map(final TenantDbModel model) {
-    return new TenantEntity(
-        model.tenantKey(),
-        model.tenantId(),
-        model.name(),
-        model.members().stream().map(TenantMemberDbModel::entityKey).collect(Collectors.toSet()));
+    return new TenantEntity(model.tenantKey(), model.tenantId(), model.name(), model.description());
   }
 }

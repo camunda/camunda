@@ -14,7 +14,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.OK;
 
-import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
 import io.camunda.qa.util.cluster.TestRestOperateClient;
@@ -29,9 +28,11 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
+@Disabled("https://github.com/camunda/camunda/issues/27289")
 public class OperatePermissionsIT {
 
   private static final String SUPER_USER = "super";
@@ -52,7 +53,7 @@ public class OperatePermissionsIT {
     testInstance =
         new TestStandaloneCamunda()
             .withCamundaExporter()
-            .withAdditionalProfile(Profile.AUTH_BASIC)
+            .withUnauthenticatedAccess()
             .withAuthorizationsEnabled();
   }
 

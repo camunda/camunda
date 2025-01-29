@@ -9,6 +9,7 @@ package io.camunda.it.utils;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CredentialsProvider;
+import io.camunda.client.protocol.rest.OwnerTypeEnum;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.security.configuration.InitializationConfiguration;
@@ -111,10 +112,12 @@ public final class CamundaClientTestFactory implements AutoCloseable {
 
     for (final Permissions permission : permissions) {
       defaultClient
-          .newAddPermissionsCommand(userCreateResponse.getUserKey())
+          .newCreateAuthorizationCommand()
+          .ownerId(username)
+          .ownerType(OwnerTypeEnum.USER)
+          .resourceId("*")
           .resourceType(permission.resourceType())
           .permission(permission.permissionType())
-          .resourceIds(permission.resourceIds())
           .send()
           .join();
     }

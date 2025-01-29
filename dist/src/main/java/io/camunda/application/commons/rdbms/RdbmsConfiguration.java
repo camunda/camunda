@@ -8,6 +8,7 @@
 package io.camunda.application.commons.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.service.AuthorizationReader;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionReader;
 import io.camunda.db.rdbms.read.service.DecisionInstanceReader;
@@ -155,9 +156,11 @@ public class RdbmsConfiguration {
   public RdbmsWriterFactory rdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
       final ExporterPositionMapper exporterPositionMapper,
+      final VendorDatabaseProperties vendorDatabaseProperties,
       final PurgeMapper purgeMapper,
       final RdbmsWriterMetrics metrics) {
-    return new RdbmsWriterFactory(sqlSessionFactory, exporterPositionMapper, purgeMapper, metrics);
+    return new RdbmsWriterFactory(
+        sqlSessionFactory, exporterPositionMapper, vendorDatabaseProperties, purgeMapper, metrics);
   }
 
   @Bean

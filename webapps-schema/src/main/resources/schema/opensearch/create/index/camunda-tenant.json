@@ -14,8 +14,14 @@
       "name": {
         "type": "keyword"
       },
-      "memberKey": {
-        "type": "long"
+      "description": {
+        "type": "text"
+      },
+      "memberId": {
+        "type": "keyword"
+      },
+      "memberType": {
+        "type": "keyword"
       },
       "join": {
         "type": "join",

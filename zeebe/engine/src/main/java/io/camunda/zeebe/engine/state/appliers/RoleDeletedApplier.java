@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 
 public class RoleDeletedApplier implements TypedEventApplier<RoleIntent, RoleRecord> {
 
@@ -26,11 +27,12 @@ public class RoleDeletedApplier implements TypedEventApplier<RoleIntent, RoleRec
 
   @Override
   public void applyState(final long key, final RoleRecord value) {
-    final var roleKey = value.getRoleKey();
-
     // delete role from authorization state
-    authorizationState.deleteAuthorizationsByOwnerKeyPrefix(roleKey);
-    authorizationState.deleteOwnerTypeByKey(roleKey);
+    // TODO: refactor when Mapping Rules use String-based IDs
+    final var roleId = String.valueOf(value.getRoleKey());
+    authorizationState.deleteAuthorizationsByOwnerTypeAndIdPrefix(
+        AuthorizationOwnerType.ROLE, roleId);
+
     roleState.delete(value);
   }
 }

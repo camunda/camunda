@@ -52,6 +52,12 @@ public final class UpdateTenantCommandImpl implements UpdateTenantCommandStep1 {
   }
 
   @Override
+  public UpdateTenantCommandStep1 description(final String description) {
+    request.setDescription(description);
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<UpdateTenantResponse> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
@@ -59,7 +65,6 @@ public final class UpdateTenantCommandImpl implements UpdateTenantCommandStep1 {
 
   @Override
   public CamundaFuture<UpdateTenantResponse> send() {
-    ArgumentUtil.ensureNotNull("name", request.getName());
     final HttpCamundaFuture<UpdateTenantResponse> result = new HttpCamundaFuture<>();
     final UpdateTenantResponseImpl response = new UpdateTenantResponseImpl();
 

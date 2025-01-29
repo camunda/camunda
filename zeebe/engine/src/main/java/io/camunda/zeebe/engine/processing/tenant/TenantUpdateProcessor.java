@@ -103,6 +103,10 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
     if (!updatedName.isEmpty()) {
       existingTenant.setName(updatedName);
     }
+    final var updatedDescription = updateRecord.getDescription();
+    if (!existingTenant.getDescription().equals(updatedDescription)) {
+      existingTenant.setDescription(updatedDescription);
+    }
   }
 
   private void updateStateAndDistribute(
@@ -111,7 +115,8 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
         new TenantRecord()
             .setTenantKey(persistedTenant.getTenantKey())
             .setTenantId(persistedTenant.getTenantId())
-            .setName(persistedTenant.getName());
+            .setName(persistedTenant.getName())
+            .setDescription(persistedTenant.getDescription());
 
     stateWriter.appendFollowUpEvent(
         persistedTenant.getTenantKey(), TenantIntent.UPDATED, updatedRecord);

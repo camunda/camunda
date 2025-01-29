@@ -41,6 +41,8 @@ public interface AuthorizationRecordValue extends RecordValue {
 
   Set<PermissionType> getAuthorizationPermissions();
 
+  Set<String> getChangedAttributes();
+
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutablePermissionValue.Builder.class)
   interface PermissionValue {

@@ -33,7 +33,7 @@ public class OperationReferenceTest {
 
   @SuppressWarnings("unused")
   static void initTestStandaloneBroker() {
-    zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+    zeebe = new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
   }
 
   @Test

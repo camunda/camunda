@@ -17,7 +17,7 @@
         http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd">
 
   <changeSet id="create_process_deployment_table" author="cthiel">
-    <createTable tableName="PROCESS_DEFINITION">
+    <createTable tableName="${prefix}PROCESS_DEFINITION">
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
@@ -31,13 +31,13 @@
       <column name="FORM_ID" type="VARCHAR(200)" />
     </createTable>
 
-    <createIndex tableName="PROCESS_DEFINITION" indexName="IDX_PROCESS_DEFINITION_ID">
+    <createIndex tableName="${prefix}PROCESS_DEFINITION" indexName="${prefix}IDX_PROCESS_DEFINITION_ID">
       <column name="PROCESS_DEFINITION_ID" />
     </createIndex>
   </changeSet>
 
   <changeSet id="create_process_instance_table" author="cthiel">
-    <createTable tableName="PROCESS_INSTANCE">
+    <createTable tableName="${prefix}PROCESS_INSTANCE">
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>

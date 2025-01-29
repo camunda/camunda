@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-bom</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
     <relativePath>../bom/pom.xml</relativePath>
   </parent>
 
@@ -98,8 +98,8 @@
     <version.postgressql-testcontainer>1.20.1</version.postgressql-testcontainer>
     <version.netflix.concurrency>0.5.3</version.netflix.concurrency>
     <version.zeebe-test-container>3.6.5</version.zeebe-test-container>
-    <version.feel-scala>1.19.0</version.feel-scala>
-    <version.dmn-scala>1.10.0</version.dmn-scala>
+    <version.feel-scala>1.19.1</version.feel-scala>
+    <version.dmn-scala>1.10.1</version.dmn-scala>
     <version.rest-assured>5.5.0</version.rest-assured>
     <version.spring>6.1.14</version.spring>
     <version.spring-security>6.4.2</version.spring-security>
@@ -182,7 +182,7 @@
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>10.0.1</version.nimbus-jose-jwt>
-    <version.nimbus-sdk>11.21</version.nimbus-sdk>
+    <version.nimbus-sdk>11.21.2</version.nimbus-sdk>
     <version.keycloak>25.0.6</version.keycloak>
     <version.jna>5.16.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
@@ -228,7 +228,7 @@
     <extension.version.os-maven-plugin>1.7.1</extension.version.os-maven-plugin>
 
     <!-- version against which backwards compatibility is checked -->
-    <backwards.compat.version>8.6.0</backwards.compat.version>
+    <backwards.compat.version>8.7.0-SNAPSHOT</backwards.compat.version>
     <ignored.changes.file>ignored-changes.json</ignored.changes.file>
 
     <!--
@@ -598,7 +598,7 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>operate-importer-8_6</artifactId>
+        <artifactId>operate-importer-8_7</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -722,7 +722,7 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>tasklist-importer-860</artifactId>
+        <artifactId>tasklist-importer-870</artifactId>
         <version>${project.version}</version>
       </dependency>
 
