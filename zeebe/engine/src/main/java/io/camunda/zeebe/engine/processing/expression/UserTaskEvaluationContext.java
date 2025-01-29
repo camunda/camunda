@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.expression;
 
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.Optional;
 
@@ -38,7 +37,7 @@ public class UserTaskEvaluationContext implements ScopedEvaluationContext {
 
   @Override
   public ScopedEvaluationContext scoped(final long scopeKey) {
-    return new UserTaskEvaluationContext(processingState, this.scopeKey);
+    return new UserTaskEvaluationContext(processingState, scopeKey);
   }
 
   private Optional<Object> resolveVariable(final String variableName) {
@@ -55,9 +54,12 @@ public class UserTaskEvaluationContext implements ScopedEvaluationContext {
   }
 
   private Optional<UserTaskRecord> findUserTask() {
-    return Optional.ofNullable(scopeKey)
-        .map(elementKey -> processingState.getElementInstanceState().getInstance(elementKey))
-        .map(ElementInstance::getUserTaskKey)
-        .map(userTaskKey -> processingState.getUserTaskState().getUserTask(userTaskKey));
+    final var userTask = processingState.getElementInstanceState().getInstance(scopeKey);
+    final var userTaskKey = userTask.getUserTaskKey();
+    if (userTaskKey < 0L) {
+      return Optional.empty();
+    } else {
+      return Optional.of(processingState.getUserTaskState().getUserTask(userTaskKey));
+    }
   }
 }

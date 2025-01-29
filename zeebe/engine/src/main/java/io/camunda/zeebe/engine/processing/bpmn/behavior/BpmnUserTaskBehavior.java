@@ -180,6 +180,12 @@ public final class BpmnUserTaskBehavior {
         .map(optionalDate -> optionalDate.map(ZonedDateTime::toString).orElse(null));
   }
 
+  public void complete(final ElementInstance elementInstance) {
+    final var record = userTaskState.getUserTask(elementInstance.getUserTaskKey());
+    stateWriter.appendFollowUpEvent(
+        elementInstance.getUserTaskKey(), UserTaskIntent.COMPLETED, record);
+  }
+
   public Either<Failure, Long> evaluateFormIdExpressionToFormKey(
       final Expression formIdExpression,
       final ZeebeBindingType bindingType,

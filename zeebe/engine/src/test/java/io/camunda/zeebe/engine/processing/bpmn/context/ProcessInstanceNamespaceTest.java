@@ -37,6 +37,5 @@ public class ProcessInstanceNamespaceTest {
     final var record = RecordingExporter.variableRecords().withName("key").getFirst();
 
     assertThat(record.getValue().getValue()).isEqualTo(Long.toString(processInstanceKey));
-    System.out.println(record);
   }
 }

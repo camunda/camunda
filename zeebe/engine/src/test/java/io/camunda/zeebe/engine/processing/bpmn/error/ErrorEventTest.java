@@ -26,6 +26,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -716,7 +717,8 @@ public class ErrorEventTest {
                         b.error(ERROR_CODE)
                             .zeebeOutputExpression("camunda.error.code", "code")
                             .zeebeOutputExpression("camunda.error.message", "message")
-                            .zeebeOutputExpression("camunda.error", "error")
+                            //                            .zeebeOutputExpression("camunda.error",
+                            // "error")
                             .endEvent())
                 .done())
         .deploy();
@@ -733,11 +735,13 @@ public class ErrorEventTest {
         .throwError();
 
     // then
-    RecordingExporter.variableRecords(VariableIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .limit(3)
-        .asList();
+    final var variables =
+        RecordingExporter.variableRecords(VariableIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(3)
+            .collect(Collectors.toMap(r -> r.getValue().getName(), c -> c.getValue().getValue()));
 
-    assert false;
+    final var expected = Map.of("code", "\"ERROR\"", "message", "\"my msg\"");
+    assertThat(variables).containsAllEntriesOf(expected);
   }
 }
