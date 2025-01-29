@@ -31,7 +31,7 @@ const DeleteAuthorizationModal: FC<UseEntityModalProps<DeleteAuthorizationParams
       enqueueNotification({
         kind: "success",
         title: t("Authorization deleted"),
-        subtitle: t("You have successfully deleted authorization {{ name }}", {
+        subtitle: t("You have successfully deleted authorization {{ key }}", {
           key,
         }),
       });
@@ -42,7 +42,7 @@ const DeleteAuthorizationModal: FC<UseEntityModalProps<DeleteAuthorizationParams
   return (
     <Modal
       open={open}
-      headline={t('Are you sure you want to delete the tenant "{{ name }}"?', {
+      headline={t('Are you sure you want to delete the authorization "{{ key }}"?', {
         key,
       })}
       onSubmit={handleSubmit}
