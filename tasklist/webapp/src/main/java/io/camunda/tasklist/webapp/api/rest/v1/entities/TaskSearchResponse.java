@@ -114,6 +114,9 @@ public class TaskSearchResponse {
   @Schema(description = "The assigned priority of the task. Only for Zeebe User Tasks.")
   private int priority;
 
+  @Schema(description = "The assigned precedence.")
+  private Risk risk;
+
   public String getId() {
     return id;
   }
@@ -339,6 +342,11 @@ public class TaskSearchResponse {
     return this;
   }
 
+  public Risk getRisk() {
+    Precedence precedence = new Precedence(40D, 30D, 12D);
+    return new Risk(precedence, "Medium");
+  }
+
   @Override
   public int hashCode() {
     int result =
@@ -435,6 +443,7 @@ public class TaskSearchResponse {
         .add("variables=" + Arrays.toString(variables))
         .add("taskContext='" + context + "'")
         .add("priority='" + priority + "'")
+        .add("risk='" + risk + "'")
         .toString();
   }
 }
