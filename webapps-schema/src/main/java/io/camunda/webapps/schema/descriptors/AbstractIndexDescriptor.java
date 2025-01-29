@@ -20,6 +20,7 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   protected String indexPrefix;
   protected boolean isElasticsearch;
+  protected int partitionId;
 
   public AbstractIndexDescriptor(final String indexPrefix, final boolean isElasticsearch) {
     this.indexPrefix = indexPrefix;
@@ -28,12 +29,14 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   @Override
   public String getFullQualifiedName() {
-    return String.format(
-        FULL_QUALIFIED_INDEX_NAME_PATTERN,
-        formattedIndexPrefix(),
-        getComponentName(),
-        getIndexName(),
-        getVersion());
+    return partitionId
+        + "-"
+        + String.format(
+            FULL_QUALIFIED_INDEX_NAME_PATTERN,
+            formattedIndexPrefix(),
+            getComponentName(),
+            getIndexName(),
+            getVersion());
   }
 
   @Override
@@ -60,6 +63,11 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
   @Override
   public String getVersion() {
     return "1.0.0";
+  }
+
+  @Override
+  public void setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
   }
 
   private String formattedIndexPrefix() {

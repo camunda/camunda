@@ -204,6 +204,9 @@ public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
       public String getVersion() {
         return "1.0.0";
       }
+
+      @Override
+      public void setPartitionId(final int partitionId) {}
     };
   }
 

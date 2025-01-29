@@ -641,6 +641,9 @@ abstract class IncidentUpdateRepositoryIT {
         public String getVersion() {
           return source.getVersion();
         }
+
+        @Override
+        public void setPartitionId(final int partitionId) {}
       };
     }
   }

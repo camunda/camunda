@@ -38,4 +38,6 @@ public interface IndexDescriptor {
   default Optional<String> getTenantIdField() {
     return Optional.empty();
   }
+
+  void setPartitionId(int partitionId);
 }

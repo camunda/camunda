@@ -207,6 +207,9 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
       public String getVersion() {
         return "1.0.0";
       }
+
+      @Override
+      public void setPartitionId(final int partitionId) {}
     };
   }
 

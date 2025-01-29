@@ -100,6 +100,11 @@ public class CamundaExporter implements Exporter {
         context.getMeterRegistry(),
         metadata);
 
+    provider.getIndexDescriptors().forEach(descriptor -> descriptor.setPartitionId(partitionId));
+    provider
+        .getIndexTemplateDescriptors()
+        .forEach(descriptor -> descriptor.setPartitionId(partitionId));
+
     taskManager =
         new BackgroundTaskManagerFactory(
                 context.getPartitionId(),
@@ -193,6 +198,9 @@ public class CamundaExporter implements Exporter {
     writer.addRecord(record);
 
     lastPosition = record.getPosition();
+    // change the index referred to in the descriptor to also take a partition Id (in a setter) and
+    // have it
+    // prepend the partition Id.
 
     if (shouldFlush()) {
       try (final var ignored = metrics.measureFlushDuration()) {
