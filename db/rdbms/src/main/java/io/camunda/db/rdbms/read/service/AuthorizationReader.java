@@ -63,6 +63,8 @@ public class AuthorizationReader extends AbstractEntityReader<AuthorizationEntit
 
   private AuthorizationEntity map(final AuthorizationDbModel model) {
     return new AuthorizationEntity(
+        // FIXME
+        1L,
         model.ownerKey(),
         model.ownerType(),
         model.resourceType(),

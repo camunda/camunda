@@ -19,6 +19,7 @@ public class AuthorizationEntityTransformer
   public AuthorizationEntity apply(
       final io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity value) {
     return new AuthorizationEntity(
+        value.getId(),
         value.getOwnerId(),
         value.getOwnerType(),
         value.getResourceType(),

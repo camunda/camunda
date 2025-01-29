@@ -57,7 +57,6 @@ import io.camunda.zeebe.gateway.protocol.rest.MappingItem;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.PermissionDTO;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResponse;
@@ -82,7 +81,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class SearchQueryResponseMapper {
@@ -632,16 +630,14 @@ public final class SearchQueryResponseMapper {
 
   public static AuthorizationResponse toAuthorization(final AuthorizationEntity authorization) {
     return new AuthorizationResponse()
+        .key(authorization.id())
         .ownerType(OwnerTypeEnum.fromValue(authorization.ownerType()))
         .ownerId(authorization.ownerKey())
         .resourceType(ResourceTypeEnum.valueOf(authorization.resourceType()))
+        .resourceId(authorization.resourceId())
         .permissions(
             authorization.permissions().stream()
-                .map(
-                    p ->
-                        new PermissionDTO()
-                            .permissionType(PermissionTypeEnum.fromValue(p.name()))
-                            .resourceIds(Set.of(authorization.resourceId())))
+                .map(p -> PermissionTypeEnum.fromValue(p.name()))
                 .toList());
   }
 

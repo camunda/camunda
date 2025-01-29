@@ -6196,6 +6196,8 @@ components:
     AuthorizationResponseBase:
       type: "object"
       properties:
+        key:
+          type: string
         ownerType:
           description: The type of the owner of permissions.
           type: object
@@ -6206,11 +6208,13 @@ components:
           type: object
           allOf:
             - $ref: "#/components/schemas/ResourceTypeEnum"
+        resourceId:
+          type: string
         permissions:
           type: array
           description: The permissions.
           items:
-            $ref: "#/components/schemas/PermissionDTO"
+            $ref: "#/components/schemas/PermissionTypeEnum"
     AuthorizationResponse:
       type: "object"
       allOf:

@@ -14,17 +14,20 @@ import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record AuthorizationEntity(
+    String id,
     String ownerKey,
     String ownerType,
     String resourceType,
     String resourceId,
     List<PermissionType> permissions) {
   public AuthorizationEntity(
+      final Long id,
       final Long ownerKey,
       final String ownerType,
       final String resourceType,
       final List<Permission> permissions) {
     this(
+        Long.toString(id),
         Long.toString(ownerKey),
         ownerType,
         resourceType,
