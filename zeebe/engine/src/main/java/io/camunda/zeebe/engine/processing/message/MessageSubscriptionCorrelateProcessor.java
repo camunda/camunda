@@ -62,7 +62,12 @@ public final class MessageSubscriptionCorrelateProcessor
         subscriptionState.get(command.getElementInstanceKey(), command.getMessageNameBuffer());
 
     if (subscription == null) {
-      rejectCommand(record);
+      final var reason =
+          String.format(
+              NO_SUBSCRIPTION_FOUND_MESSAGE,
+              record.getValue().getElementInstanceKey(),
+              BufferUtil.bufferAsString(record.getValue().getMessageNameBuffer()));
+      rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, reason);
       return;
 
     } else if (subscription.getRecord().getMessageKey() != record.getValue().getMessageKey()) {
@@ -76,7 +81,12 @@ public final class MessageSubscriptionCorrelateProcessor
           record.getValue().getMessageKey(),
           subscription.getKey(),
           subscription.getRecord().getMessageKey());
-      rejectCommand(record);
+      final var reason =
+          String.format(
+              NO_SUBSCRIPTION_FOUND_MESSAGE,
+              record.getValue().getElementInstanceKey(),
+              BufferUtil.bufferAsString(record.getValue().getMessageNameBuffer()));
+      rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, reason);
       return;
 
     } else if (!subscription.isCorrelating()) {
@@ -89,7 +99,12 @@ public final class MessageSubscriptionCorrelateProcessor
           but the subscription is already correlating'""",
           record.getValue().getMessageKey(),
           subscription.getKey());
-      rejectCommand(record);
+      final var reason =
+          String.format(
+              NO_SUBSCRIPTION_FOUND_MESSAGE,
+              record.getValue().getElementInstanceKey(),
+              BufferUtil.bufferAsString(record.getValue().getMessageNameBuffer()));
+      rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, reason);
       return;
     }
 
@@ -105,16 +120,5 @@ public final class MessageSubscriptionCorrelateProcessor
     if (!messageSubscription.isInterrupting()) {
       messageCorrelator.correlateNextMessage(subscription.getKey(), messageSubscription);
     }
-  }
-
-  private void rejectCommand(final TypedRecord<MessageSubscriptionRecord> record) {
-    final var subscription = record.getValue();
-    final var reason =
-        String.format(
-            NO_SUBSCRIPTION_FOUND_MESSAGE,
-            subscription.getElementInstanceKey(),
-            BufferUtil.bufferAsString(subscription.getMessageNameBuffer()));
-
-    rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, reason);
   }
 }
