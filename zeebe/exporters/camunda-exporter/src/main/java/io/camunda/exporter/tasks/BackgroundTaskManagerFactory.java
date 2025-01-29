@@ -25,6 +25,7 @@ import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
 import io.camunda.exporter.tasks.batchoperations.ElasticsearchBatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.batchoperations.OpensearchBatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.incident.ElasticsearchIncidentUpdateRepository;
+import io.camunda.exporter.tasks.incident.IncidentAlertTask;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
 import io.camunda.exporter.tasks.incident.OpenSearchIncidentUpdateRepository;
@@ -98,6 +99,7 @@ public final class BackgroundTaskManagerFactory {
     int threadCount = 1;
 
     tasks.add(buildIncidentMarkerTask());
+    tasks.add(new ReschedulingTask(new IncidentAlertTask(), 1, 5000, 5000, executor, logger));
 
     if (config.getArchiver().isRolloverEnabled()) {
       threadCount = 2;
