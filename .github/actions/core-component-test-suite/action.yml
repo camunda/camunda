@@ -19,17 +19,12 @@ runs:
 
     - name: Install Playwright Browsers
       shell: bash
-      run: npx playwright install --with-deps Chromium
-    - name: Python setup
-      if: always()
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.x"
+      run: npx playwright install --with-deps ${{ inputs.project }}
     - name: Set minor version
       shell: bash
       run: |
         c8_version="${{ github.event.inputs.c8Version }}"
-        minor_version="c8Run-${c8_version}"
+        minor_version=${c8_version}
         echo "minor_version=$minor_version" >> $GITHUB_ENV
     - name: Run tests
       shell: bash
