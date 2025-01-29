@@ -9,12 +9,14 @@ package io.camunda.zeebe.engine.processing.expression;
 
 import io.camunda.zeebe.el.EvaluationContext;
 
+@FunctionalInterface
 public interface ScopedEvaluationContext extends EvaluationContext {
+
   default ScopedEvaluationContext scoped(final long scopeKey) {
     return this;
   }
 
   static ScopedEvaluationContext none() {
-    return variableName -> null;
+    return unused -> null;
   }
 }
