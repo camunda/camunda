@@ -21,8 +21,8 @@ import io.camunda.zeebe.zbctl.cmd.PublishCommand;
 import io.camunda.zeebe.zbctl.cmd.ResolveCommand;
 import io.camunda.zeebe.zbctl.cmd.SetCommand;
 import io.camunda.zeebe.zbctl.cmd.StatusCommand;
-import io.camunda.zeebe.zbctl.cmd.UnassignCommand;
 import io.camunda.zeebe.zbctl.cmd.ThrowErrorCommand;
+import io.camunda.zeebe.zbctl.cmd.UnassignCommand;
 import io.camunda.zeebe.zbctl.cmd.UpdateCommand;
 import io.camunda.zeebe.zbctl.cmd.VersionCommand;
 import picocli.CommandLine;
@@ -62,7 +62,7 @@ import picocli.CommandLine.HelpCommand;
       SetCommand.class,
       BroadcastCommand.class,
       AssignCommand.class,
-      UnassignCommand.class
+      UnassignCommand.class,
       BroadcastCommand.class,
       ThrowErrorCommand.class,
       UpdateCommand.class
