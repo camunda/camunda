@@ -20,14 +20,9 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class MessageSubscriptionCorrelateProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
-
-  private static final Logger LOG =
-      LoggerFactory.getLogger(MessageSubscriptionCorrelateProcessor.class);
 
   private static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
       "Expected to correlate subscription for element with key '%d' and message name '%s', "
@@ -74,44 +69,29 @@ public final class MessageSubscriptionCorrelateProcessor
       // This concerns the acknowledgement of a retried correlate process message subscription
       // command. The message subscription was already marked as correlated for this message, and
       // another message has started correlating. There's no need to update the state.
-      LOG.warn(
-          """
-          Expected to acknowledge correlating message with key '{}' to subscription with key '{}' \
-          but the subscription is already correlating to another message with key '{}'""",
-          record.getValue().getMessageKey(),
-          subscription.getKey(),
-          subscription.getRecord().getMessageKey());
       final var reason =
-          String.format(
-              NO_SUBSCRIPTION_FOUND_MESSAGE,
-              record.getValue().getElementInstanceKey(),
-              BufferUtil.bufferAsString(record.getValue().getMessageNameBuffer()));
-      rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, reason);
+          """
+          Expected to acknowledge correlating message with key '%d' to subscription with key '%d' \
+          but the subscription is already correlating to another message with key '%d'"""
+              .formatted(
+                  record.getValue().getMessageKey(),
+                  subscription.getKey(),
+                  subscription.getRecord().getMessageKey());
+      rejectionWriter.appendRejection(record, RejectionType.INVALID_STATE, reason);
       return;
 
     } else if (!subscription.isCorrelating()) {
       // This concerns the acknowledgement of a retried correlate process message subscription
       // command. The message subscription was already marked as correlated. No need to update the
       // state.
-      LOG.debug(
-          """
-          Expected to acknowledge correlating message with key '{}' to subscription with key '{}' \
-          but the subscription is already correlating'""",
-          record.getValue().getMessageKey(),
-          subscription.getKey());
       final var reason =
-          String.format(
-              NO_SUBSCRIPTION_FOUND_MESSAGE,
-              record.getValue().getElementInstanceKey(),
-              BufferUtil.bufferAsString(record.getValue().getMessageNameBuffer()));
-      rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, reason);
+          """
+          Expected to acknowledge correlating message with key '%d' to subscription with key '%d' \
+          but the subscription is already correlating'"""
+              .formatted(record.getValue().getMessageKey(), subscription.getKey());
+      rejectionWriter.appendRejection(record, RejectionType.INVALID_STATE, reason);
       return;
     }
-
-    LOG.info(
-        "Acknowledged correlating message with key '{}' to subscription with key '{}'",
-        record.getValue().getMessageKey(),
-        subscription.getKey());
 
     final var messageSubscription = subscription.getRecord();
     stateWriter.appendFollowUpEvent(
