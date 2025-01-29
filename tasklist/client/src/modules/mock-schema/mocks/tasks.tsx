@@ -36,6 +36,7 @@ const tasks: Task[] = [
     candidateUsers: [],
     tenantId: DEFAULT_TENANT_ID,
     context: 'My Task',
+    risk: 'LOW',
   },
   {
     id: '1',
@@ -61,6 +62,7 @@ const tasks: Task[] = [
     candidateUsers: [],
     tenantId: DEFAULT_TENANT_ID,
     context: 'My Task',
+    risk: 'LOW',
   },
   {
     id: '2',
@@ -86,6 +88,7 @@ const tasks: Task[] = [
     candidateUsers: [],
     tenantId: DEFAULT_TENANT_ID,
     context: 'My Task',
+    risk: 'LOW',
   },
 ];
 
@@ -130,6 +133,7 @@ const generateTask = (id: string, name?: string): Task => {
     candidateUsers: [],
     tenantId: DEFAULT_TENANT_ID,
     context: 'My Task',
+    risk: 'LOW',
   };
 };
 
