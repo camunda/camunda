@@ -18,29 +18,29 @@ zeebe:
             createTemplate: true
             command: false
             commandDistribution: false
-            decision: false
-            decisionEvaluation: false
-            decisionRequirements: false
-            deploymentDistribution: false
+            decision: true
+            decisionEvaluation: true
+            decisionRequirements: true
+            deploymentDistribution: true
             event: true
-            escalation: false
-            rejection: false
-            deployment: false
+            escalation: true
+            rejection: true
+            deployment: true
             process: true
-            error: false
+            error: true
             incident: true
-            job: false
-            jobBatch: false
-            message: false
-            messageSubscription: false
-            signal: false
-            signalSubscription: false
-            timer: false
+            job: true
+            jobBatch: true
+            message: true
+            messageSubscription: true
+            signal: true
+            signalSubscription: true
+            timer: true
             userTask: true
             variable: true
-            variableDocument: false
+            variableDocument: true
             processInstance: true
-            processInstanceCreation: false
+            processInstanceCreation: true
             processMessageSubscription: true
-            processInstanceModification: false
+            processInstanceModification: true
             bulkSize: 1

@@ -51,6 +51,7 @@ public final class DatabaseConstants {
   public static final String PROCESS_OVERVIEW_INDEX_NAME = "process-overview";
   public static final String INSTANT_DASHBOARD_INDEX_NAME = "instant-dashboard";
   public static final String ZEEBE_PROCESS_DEFINITION_INDEX_NAME = "process";
+  public static final String ZEEBE_DECISION_DEFINITION_INDEX_NAME = "decision-requirements";
   public static final String ZEEBE_PROCESS_INSTANCE_INDEX_NAME = "process-instance";
   public static final String ZEEBE_VARIABLE_INDEX_NAME = "variable";
   public static final String ZEEBE_INCIDENT_INDEX_NAME = "incident";
