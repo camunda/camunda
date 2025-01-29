@@ -53,7 +53,7 @@ public class IncidentAlertTask implements BackgroundTask {
   }
 
   private void sendEmail(final String incidentMessage) {
-    final String to = "ana.vinogradova@camunda.com";
+    final String to = "berkay.can@camunda.com";
     final String from = "anatest409@gmail.com";
     final String host = "smtp.gmail.com";
 
