@@ -16,7 +16,10 @@ import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.expression.CombinedEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.EnvVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.expression.NamespacedContext;
+import io.camunda.zeebe.engine.processing.expression.ProcessInstanceEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.VariableStateEvaluationContext;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -68,9 +71,16 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new ExpressionProcessor(
             ExpressionLanguageFactory.createExpressionLanguage(new ZeebeFeelEngineClock(clock)),
             CombinedEvaluationContext.withContexts(
-                //                "camunda" => Namespace(
-                //                    "env" => new EnvVariableEvaluationContext(),
-                //                    "error" => new ErrorContext()) ,
+                NamespacedContext.create()
+                    .register(
+                        "camunda",
+                        NamespacedContext.create()
+                            .register("env", new EnvVariableEvaluationContext())
+                            .register(
+                                "processInstance",
+                                new ProcessInstanceEvaluationContext(
+                                    processingState.getElementInstanceState()))), // process context
+                //                    .register("error", null), // error context
                 new VariableStateEvaluationContext(processingState.getVariableState())));
 
     variableBehavior =
