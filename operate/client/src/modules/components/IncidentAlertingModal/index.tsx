@@ -16,6 +16,7 @@ import {
   TextInput,
 } from '@carbon/react';
 import {alertsStore} from 'modules/stores/alerts';
+import {notificationsStore} from 'modules/stores/notifications';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {useState} from 'react';
@@ -54,6 +55,12 @@ const IncidentAlertingModal: React.FC<Props> = ({isOpen, onClose}) => {
               alertsStore.postAlert(processDefinitionKey ?? '', email);
               setEmail('');
               onClose();
+
+              notificationsStore.displayNotification({
+                kind: 'success',
+                title: 'Alert scheduled',
+                isDismissable: true,
+              });
             }}
           >
             <Stack gap={5}>
