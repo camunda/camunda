@@ -13,8 +13,11 @@ import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import java.util.StringJoiner;
 
 public class TaskSearchResponse {
@@ -344,7 +347,10 @@ public class TaskSearchResponse {
 
   public Risk getRisk() {
     Precedence precedence = new Precedence(40D, 30D, 12D);
-    return new Risk(precedence, "Medium");
+    List<String> classifications = new ArrayList<>(Arrays.asList("VERYLOW", "LOW", "MEDIUM", "HIGH", "URGENT"));
+    Random random = new Random();
+    String randomClassification = classifications.get(random.nextInt(classifications.size()));
+    return new Risk(precedence, randomClassification);
   }
 
   @Override
