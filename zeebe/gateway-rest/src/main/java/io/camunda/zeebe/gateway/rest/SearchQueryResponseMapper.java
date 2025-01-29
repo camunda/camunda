@@ -82,6 +82,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class SearchQueryResponseMapper {
@@ -632,15 +633,15 @@ public final class SearchQueryResponseMapper {
   public static AuthorizationResponse toAuthorization(final AuthorizationEntity authorization) {
     return new AuthorizationResponse()
         .ownerType(OwnerTypeEnum.fromValue(authorization.ownerType()))
-        .ownerKey(authorization.ownerKey())
+        .ownerId(authorization.ownerKey())
         .resourceType(ResourceTypeEnum.valueOf(authorization.resourceType()))
         .permissions(
             authorization.permissions().stream()
                 .map(
                     p ->
                         new PermissionDTO()
-                            .permissionType(PermissionTypeEnum.fromValue(p.type().name()))
-                            .resourceIds(p.resourceIds()))
+                            .permissionType(PermissionTypeEnum.fromValue(p.name()))
+                            .resourceIds(Set.of(authorization.resourceId())))
                 .toList());
   }
 

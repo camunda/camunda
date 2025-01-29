@@ -172,8 +172,13 @@ public class PermissionsService {
     if (!isAuthorized()) {
       return ResourcesAllowed.withIds(Set.of());
     }
-
-    final PermissionType permissionType = getPermission(identityPermission);
+    final PermissionType permissionType;
+    if (resourceType == AuthorizationResourceType.PROCESS_DEFINITION
+        && identityPermission == IdentityPermission.READ) {
+      permissionType = PermissionType.READ_PROCESS_DEFINITION;
+    } else {
+      permissionType = getPermission(identityPermission);
+    }
     final Authorization authorization = new Authorization(resourceType, permissionType);
     final SecurityContext securityContext = getSecurityContext(authorization);
     final List<String> ids = authorizationChecker.retrieveAuthorizedResourceKeys(securityContext);
@@ -212,6 +217,18 @@ public class PermissionsService {
     return null;
   }
 
+  private String getAuthenticatedUserName() {
+    final Authentication requestAuthentication =
+        SecurityContextHolder.getContext().getAuthentication();
+    if (requestAuthentication != null) {
+      final Object principal = requestAuthentication.getPrincipal();
+      if (principal instanceof final CamundaUser authenticatedPrincipal) {
+        return authenticatedPrincipal.getUsername();
+      }
+    }
+    return null;
+  }
+
   private List<Long> getAuthenticatedUserRoleKeys() {
     final Authentication requestAuthentication =
         SecurityContextHolder.getContext().getAuthentication();
@@ -245,6 +262,7 @@ public class PermissionsService {
     final List<String> authorizedTenants = tenantService.tenantIds();
     // groups  will come later
     return new io.camunda.security.auth.Authentication.Builder()
+        .claims(Map.of("authorized_username", getAuthenticatedUserName()))
         .user(authenticatedUserKey)
         .roleKeys(authenticatedRoleKeys)
         .tenants(authorizedTenants)

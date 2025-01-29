@@ -14,7 +14,6 @@ import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.entity.Permission;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.ArrayList;
@@ -54,16 +53,10 @@ public class AuthorizationChecker {
                 q ->
                     q.filter(
                         f ->
-                            f.ownerKeys(ownerKeys)
+                            f.ownerIds(ownerKeys)
                                 .resourceType(resourceType.name())
                                 .permissionType(permissionType))));
-    return authorizationEntities.stream()
-        .flatMap(
-            e ->
-                e.permissions().stream()
-                    .filter(permission -> permissionType.equals(permission.type()))
-                    .flatMap(permission -> permission.resourceIds().stream()))
-        .toList();
+    return authorizationEntities.stream().map(AuthorizationEntity::resourceId).toList();
   }
 
   /**
@@ -85,7 +78,7 @@ public class AuthorizationChecker {
                     q ->
                         q.filter(
                                 f ->
-                                    f.ownerKeys(ownerKeys)
+                                    f.ownerIds(ownerKeys)
                                         .resourceType(resourceType.name())
                                         .permissionType(permissionType)
                                         .resourceIds(List.of(WILDCARD, resourceId)))
@@ -114,7 +107,7 @@ public class AuthorizationChecker {
                 q ->
                     q.filter(
                         f ->
-                            f.ownerKeys(ownerKeys)
+                            f.ownerIds(ownerKeys)
                                 .resourceType(resourceType.name())
                                 .resourceIds(List.of(WILDCARD, resourceId)))));
 
@@ -125,15 +118,15 @@ public class AuthorizationChecker {
       final List<AuthorizationEntity> authorizationEntities) {
     return authorizationEntities.stream()
         .flatMap(a -> a.permissions().stream())
-        .map(Permission::type)
         .collect(Collectors.toSet());
   }
 
-  private List<Long> collectOwnerKeys(final Authentication authentication) {
-    final List<Long> ownerKeys = new ArrayList<>();
-    ownerKeys.add(authentication.authenticatedUserKey());
-    ownerKeys.addAll(authentication.authenticatedGroupKeys());
-    ownerKeys.addAll(authentication.authenticatedRoleKeys());
+  private List<String> collectOwnerKeys(final Authentication authentication) {
+    final var ownerKeys = new ArrayList<String>();
+    ownerKeys.add((String) authentication.claims().get("authorized_username"));
+    //    ownerKeys.add(authentication.authenticatedUserKey());
+    //    ownerKeys.addAll(authentication.authenticatedGroupKeys());
+    //    ownerKeys.addAll(authentication.authenticatedRoleKeys());
     return ownerKeys;
   }
 }

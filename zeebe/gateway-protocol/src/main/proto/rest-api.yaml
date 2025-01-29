@@ -6220,6 +6220,8 @@ components:
           description: The ID of the owner of permissions.
           type: integer
           format: int64
+        ownerId:
+          type: string
     AuthorizationResult:
       type: "object"
       allOf:

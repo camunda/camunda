@@ -16,6 +16,7 @@ import java.util.List;
 
 public record AuthorizationFilter(
     List<Long> ownerKeys,
+    List<String> ownerIds,
     String ownerType,
     List<String> resourceIds,
     String resourceType,
@@ -23,6 +24,7 @@ public record AuthorizationFilter(
     implements FilterBase {
   public static final class Builder implements ObjectBuilder<AuthorizationFilter> {
     private List<Long> ownerKeys;
+    private List<String> ownerIds;
     private String ownerType;
     private List<String> resourceIds;
     private String resourceType;
@@ -30,6 +32,11 @@ public record AuthorizationFilter(
 
     public Builder ownerKeys(final List<Long> value) {
       ownerKeys = addValuesToList(ownerKeys, value);
+      return this;
+    }
+
+    public Builder ownerIds(final List<String> value) {
+      ownerIds = addValuesToList(ownerIds, value);
       return this;
     }
 
@@ -64,7 +71,7 @@ public record AuthorizationFilter(
     @Override
     public AuthorizationFilter build() {
       return new AuthorizationFilter(
-          ownerKeys, ownerType, resourceIds, resourceType, permissionType);
+          ownerKeys, ownerIds, ownerType, resourceIds, resourceType, permissionType);
     }
   }
 }
