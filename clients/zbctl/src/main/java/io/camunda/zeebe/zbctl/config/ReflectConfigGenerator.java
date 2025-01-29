@@ -1,6 +1,8 @@
 package io.camunda.zeebe.zbctl.config;
 
+import com.google.common.collect.Streams;
 import io.avaje.jsonb.Jsonb;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,6 +17,7 @@ public class ReflectConfigGenerator {
 
   public static final String CONFIG_FILE =
       "clients/zbctl/src/main/resources/META-INF/native-image/io.camunda/zeebe-cli/reflect-config.json";
+  public static final String CONSTRUCTOR_NAME = "<init>";
   private static final String PACKAGE_NAME = "io.camunda.client.protocol.rest";
   private static final Jsonb JSONB = Jsonb.builder().build();
 
@@ -32,12 +35,18 @@ public class ReflectConfigGenerator {
   }
 
   private static ClassReflectionConfig generateClass(final Class<?> clazz) {
-    return new ClassReflectionConfig(
-        clazz.getName(),
-        true,
-        true,
-        true,
-        Arrays.stream(clazz.getMethods()).map(ReflectConfigGenerator::generateMethods).toList());
+    final var constructorStream =
+        Arrays.stream(clazz.getConstructors()).map(ReflectConfigGenerator::generateConstructors);
+    final var methodStream =
+        Arrays.stream(clazz.getMethods()).map(ReflectConfigGenerator::generateMethods);
+    final var methodReflections = Streams.concat(constructorStream, methodStream).toList();
+    return new ClassReflectionConfig(clazz.getName(), true, true, true, methodReflections);
+  }
+
+  private static MethodReflectionConfig generateConstructors(final Constructor<?> constructor) {
+    return new MethodReflectionConfig(
+        CONSTRUCTOR_NAME,
+        Arrays.stream(constructor.getParameterTypes()).map(Class::getName).toList());
   }
 
   private static MethodReflectionConfig generateMethods(final Method method) {
