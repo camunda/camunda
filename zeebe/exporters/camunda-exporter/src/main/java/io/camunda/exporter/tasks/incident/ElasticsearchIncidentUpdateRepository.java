@@ -247,7 +247,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
                         .gte(
                             JsonData.of(
                                 OffsetDateTime.ofInstant(
-                                    Instant.ofEpochMilli(timestamp - 500), ZoneOffset.UTC)))
+                                    Instant.ofEpochMilli(timestamp - 5000), ZoneOffset.UTC)))
                         .lte(
                             JsonData.of(
                                 OffsetDateTime.ofInstant(

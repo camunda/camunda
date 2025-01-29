@@ -69,7 +69,8 @@ public class IncidentAlertTask implements BackgroundTask {
             new Authenticator() {
               @Override
               protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication("anatest409@gmail.com", "sxus xrqz ozcb qdiu");
+                return new PasswordAuthentication(
+                    "camunda.alerts@gmail.com", "qqmx qpiy llml uegn");
               }
             });
 
