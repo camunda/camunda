@@ -8,6 +8,7 @@
 package io.camunda.zeebe.zbctl;
 
 import io.camunda.zeebe.zbctl.cmd.ActivateCommand;
+import io.camunda.zeebe.zbctl.cmd.AssignCommand;
 import io.camunda.zeebe.zbctl.cmd.BroadcastCommand;
 import io.camunda.zeebe.zbctl.cmd.CancelCommand;
 import io.camunda.zeebe.zbctl.cmd.CompleteCommand;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.zbctl.cmd.PublishCommand;
 import io.camunda.zeebe.zbctl.cmd.ResolveCommand;
 import io.camunda.zeebe.zbctl.cmd.SetCommand;
 import io.camunda.zeebe.zbctl.cmd.StatusCommand;
+import io.camunda.zeebe.zbctl.cmd.UnassignCommand;
 import io.camunda.zeebe.zbctl.cmd.VersionCommand;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -56,7 +58,9 @@ import picocli.CommandLine.HelpCommand;
       FailCommand.class,
       CompleteCommand.class,
       SetCommand.class,
-      BroadcastCommand.class
+      BroadcastCommand.class,
+      AssignCommand.class,
+      UnassignCommand.class
     })
 public final class Application {
 
