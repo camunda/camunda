@@ -32,7 +32,7 @@ public class VariableStateEvaluationContext implements ScopedEvaluationContext {
 
     final var value = variableState.getVariable(scopeKey, BufferUtil.wrapString(variableName));
 
-    return value.capacity() > 0 ? value : null;
+    return value != null && value.capacity() > 0 ? value : null;
   }
 
   @Override
