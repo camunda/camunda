@@ -181,6 +181,7 @@
               <skipNativeTests>${skipNativeTests}</skipNativeTests>
               <mainClass>io.camunda.zeebe.zbctl.Application</mainClass>
               <imageName>${build.finalName}</imageName>
+              <quickBuild>${quickly}</quickBuild>
               <metadataRepository>
                 <enabled>true</enabled>
               </metadataRepository>
