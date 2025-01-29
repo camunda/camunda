@@ -24,7 +24,7 @@ import picocli.CommandLine.Parameters;
 public class CancelCommand {
 
   @Command(
-      name = "process-instance",
+      name = "instance",
       aliases = {"pi"},
       description = "Cancel a process instance by key")
   public static class ProcessInstanceCommand implements Callable<Integer> {
