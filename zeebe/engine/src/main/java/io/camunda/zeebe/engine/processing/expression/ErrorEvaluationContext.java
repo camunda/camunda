@@ -21,12 +21,26 @@ public class ErrorEvaluationContext implements ScopedEvaluationContext {
   @Override
   public Object getVariable(final String variableName) {
     return switch (variableName) {
-      case "code" ->
-          eventScopeInstanceState.getTriggeringCatchEvent(scopeKey).getRecord().getErrorCode();
-      case "message" ->
-          eventScopeInstanceState.getTriggeringCatchEvent(scopeKey).getRecord().getErrorMessage();
+      case "code" -> getErrorCode();
+      case "message" -> getErrorMessage();
       default -> throw new IllegalArgumentException("Mustafa did this");
     };
+  }
+
+  private String getErrorCode() {
+    final var catchEvent = eventScopeInstanceState.getTriggeringCatchEventByScopeKey(scopeKey);
+    if (catchEvent == null) {
+      return null;
+    }
+    return catchEvent.getRecord().getErrorCode();
+  }
+
+  private String getErrorMessage() {
+    final var catchEvent = eventScopeInstanceState.getTriggeringCatchEventByScopeKey(scopeKey);
+    if (catchEvent == null) {
+      return null;
+    }
+    return catchEvent.getRecord().getErrorMessage();
   }
 
   @Override

@@ -101,7 +101,6 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
       final long jobKey,
       final Intent intent,
       final JobRecord job) {
-    final var eventTriggerKey = keyGenerator.nextKey();
 
     jobMetrics.jobErrorThrown(job.getType(), job.getJobKind());
 
@@ -111,13 +110,14 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     }
 
     final var catchEventTuple = foundCatchEvent.get();
-    eventPublicationBehavior.throwErrorEvent(catchEventTuple, job.getVariablesBuffer());
+    final var processEventKey =
+        eventPublicationBehavior.throwErrorEvent(catchEventTuple, job.getVariablesBuffer());
 
     stateWriter.appendFollowUpEvent(
-        eventTriggerKey,
+        processEventKey,
         CatchEventIntent.TRIGGERING,
         new CatchEventRecord()
-            .setScopeKey(catchEventTuple.getElementInstance().getKey())
+            .setScopeKey(keyGenerator.nextKey())
             .setErrorCode(job.getErrorCode())
             .setErrorMessage(job.getErrorMessage()));
   }

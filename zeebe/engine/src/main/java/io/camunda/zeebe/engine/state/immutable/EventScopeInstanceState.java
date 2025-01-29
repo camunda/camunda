@@ -40,5 +40,7 @@ public interface EventScopeInstanceState {
    */
   boolean canTriggerEvent(long eventScopeKey, final DirectBuffer elementId);
 
-  CatchEventRecordValue getTriggeringCatchEvent(long scopeKey);
+  CatchEventRecordValue getTriggeringCatchEvent(long catchEventKey);
+
+  CatchEventRecordValue getTriggeringCatchEventByScopeKey(long scopeKey);
 }

@@ -188,9 +188,23 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
   }
 
   @Override
-  public CatchEventRecordValue getTriggeringCatchEvent(final long scopeKey) {
-    catchEventKey.wrapLong(scopeKey);
-    return catchEventRecordColumnFamily.get(catchEventKey);
+  public CatchEventRecordValue getTriggeringCatchEvent(final long catchEventKey) {
+    this.catchEventKey.wrapLong(catchEventKey);
+    return catchEventRecordColumnFamily.get(this.catchEventKey);
+  }
+
+  @Override
+  public CatchEventRecordValue getTriggeringCatchEventByScopeKey(final long scopeKey) {
+    catchEventKey.wrapLong(-1);
+    catchEventRecordColumnFamily.whileTrue(
+        (key, value) -> {
+          if (value.getRecord().getScopeKey() == scopeKey) {
+            catchEventKey.wrapLong(key.getValue());
+            return false;
+          }
+          return true;
+        });
+    return catchEvent;
   }
 
   /**
