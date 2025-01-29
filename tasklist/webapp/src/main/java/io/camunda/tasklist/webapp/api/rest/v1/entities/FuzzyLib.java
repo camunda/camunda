@@ -51,6 +51,7 @@ public class FuzzyLib {
             "    RULE 3 : IF Due IS Medium AND Priority IS High THEN Output IS Medium;\n" +
             "    RULE 4 : IF Due IS Medium AND Priority IS Medium THEN Output IS Low;\n" +
             "    RULE 5 : IF Due IS High AND Priority IS Low THEN Output IS Very_Low;\n" +
+            "    RULE 6 : IF Due IS High AND Priority IS Medium THEN Output IS Low;\n" +
             "END_RULEBLOCK\n" +
             "\n" +
             "END_FUNCTION_BLOCK\n";  // This was missing in the previous version
@@ -66,7 +67,7 @@ public class FuzzyLib {
     }
 
     // Set input values
-    fis.setVariable("Due", 8);       // Example: DueDate = 3
+    fis.setVariable("Due", 2);       // Example: DueDate = 3
     fis.setVariable("Priority", 57); // Example: Priority = 80
 
     // Evaluate the fuzzy system
