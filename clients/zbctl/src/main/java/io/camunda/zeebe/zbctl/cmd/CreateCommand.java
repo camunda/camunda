@@ -9,14 +9,17 @@ package io.camunda.zeebe.zbctl.cmd;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.api.command.CreateGroupCommandStep1;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceWithResultCommandStep1;
 import io.camunda.client.api.command.CreateTenantCommandStep1;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.CreateGroupResponse;
 import io.camunda.client.api.response.CreateTenantResponse;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.client.api.worker.JobHandler;
+import io.camunda.zeebe.zbctl.cmd.CreateCommand.GroupCommand;
 import io.camunda.zeebe.zbctl.cmd.CreateCommand.InstanceCommand;
 import io.camunda.zeebe.zbctl.cmd.CreateCommand.TenantCommand;
 import io.camunda.zeebe.zbctl.cmd.CreateCommand.WorkerCommand;
@@ -41,7 +44,12 @@ import picocli.CommandLine.Parameters;
 @Command(
     name = "create",
     description = "Create resources",
-    subcommands = {InstanceCommand.class, WorkerCommand.class, TenantCommand.class})
+    subcommands = {
+      InstanceCommand.class,
+      WorkerCommand.class,
+      TenantCommand.class,
+      GroupCommand.class
+    })
 public class CreateCommand {
 
   @Command(
@@ -258,6 +266,32 @@ public class CreateCommand {
 
     private CreateTenantCommandStep1 prepareTheCommand(final CamundaClient client) {
       return client.newCreateTenantCommand().tenantId(tenantId).name(name);
+    }
+  }
+
+  @Command(name = "group", description = "Creates a new group")
+  public static class GroupCommand implements Callable<Integer> {
+    @Mixin private ClientMixin clientMixin;
+    @Mixin private OutputMixin outputMixin;
+
+    @Option(
+        names = {"--name"},
+        paramLabel = "<name>",
+        description = "Specify the name of the group",
+        required = true)
+    private String name;
+
+    @Override
+    public Integer call() throws Exception {
+      try (final var client = clientMixin.client()) {
+        final var response = prepareTheCommand(client).send().join();
+        outputMixin.formatter().write(response, CreateGroupResponse.class);
+      }
+      return 0;
+    }
+
+    private CreateGroupCommandStep1 prepareTheCommand(final CamundaClient client) {
+      return client.newCreateGroupCommand().name(name);
     }
   }
 }
