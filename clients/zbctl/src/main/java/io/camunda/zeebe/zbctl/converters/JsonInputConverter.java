@@ -8,12 +8,15 @@
 package io.camunda.zeebe.zbctl.converters;
 
 import com.google.errorprone.annotations.MustBeClosed;
+import io.avaje.jsonb.Jsonb;
 import io.camunda.zeebe.zbctl.converters.JsonInputConverter.JsonInput;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import picocli.CommandLine.ITypeConverter;
 
 public final class JsonInputConverter implements ITypeConverter<JsonInput> {
@@ -33,6 +36,14 @@ public final class JsonInputConverter implements ITypeConverter<JsonInput> {
     public InputStream open() throws Exception {
       return Files.newInputStream(path);
     }
+
+    @Override
+    public Map<String, Object> get() throws IOException {
+      final var json = Files.readString(path);
+      final Map<String, Object> variableMap =
+          Jsonb.builder().build().type(Map.class).fromJson(json);
+      return variableMap;
+    }
   }
 
   private record JsonStringInput(String json) implements JsonInput {
@@ -41,10 +52,19 @@ public final class JsonInputConverter implements ITypeConverter<JsonInput> {
     public InputStream open() {
       return new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
     }
+
+    @Override
+    public Map<String, Object> get() {
+      final Map<String, Object> variableMap =
+          Jsonb.builder().build().type(Map.class).fromJson(json);
+      return variableMap;
+    }
   }
 
   public interface JsonInput {
     @MustBeClosed
     InputStream open() throws Exception;
+
+    Map<String, Object> get() throws IOException;
   }
 }
