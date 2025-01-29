@@ -8,13 +8,24 @@
 package io.camunda.zeebe.zbctl.serde;
 
 import io.avaje.jsonb.Jsonb;
+import io.camunda.client.api.search.response.SearchQueryResponse;
+import io.camunda.client.impl.search.response.ProcessDefinitionImpl;
+import io.camunda.client.impl.search.response.ProcessInstanceImpl;
+import io.camunda.zeebe.zbctl.json.adapter.ProcessDefinitionImplJsonAdapter;
+import io.camunda.zeebe.zbctl.json.adapter.ProcessInstanceImplJsonAdapter;
+import io.camunda.zeebe.zbctl.json.adapter.SearchQueryResponseJsonAdapter;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.Writer;
 
 public final class JsonOutputFormatter implements OutputFormatter {
 
-  private final Jsonb jsonb = Jsonb.builder().build();
+  private final Jsonb jsonb =
+      Jsonb.builder()
+          .add(SearchQueryResponse.class, SearchQueryResponseJsonAdapter::new)
+          .add(ProcessDefinitionImpl.class, ProcessDefinitionImplJsonAdapter::new)
+          .add(ProcessInstanceImpl.class, ProcessInstanceImplJsonAdapter::new)
+          .build();
   private final BufferedWriter writer;
 
   public JsonOutputFormatter(final Writer writer) {

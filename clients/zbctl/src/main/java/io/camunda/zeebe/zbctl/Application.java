@@ -18,6 +18,7 @@ import io.camunda.zeebe.zbctl.cmd.DeployCommand;
 import io.camunda.zeebe.zbctl.cmd.EvaluateCommand;
 import io.camunda.zeebe.zbctl.cmd.FailCommand;
 import io.camunda.zeebe.zbctl.cmd.PublishCommand;
+import io.camunda.zeebe.zbctl.cmd.QueryCommand;
 import io.camunda.zeebe.zbctl.cmd.ResolveCommand;
 import io.camunda.zeebe.zbctl.cmd.SetCommand;
 import io.camunda.zeebe.zbctl.cmd.StatusCommand;
@@ -64,7 +65,8 @@ import picocli.CommandLine.HelpCommand;
       ThrowErrorCommand.class,
       UnassignCommand.class,
       UpdateCommand.class,
-      VersionCommand.class
+      VersionCommand.class,
+      QueryCommand.class,
     })
 public final class Application {
 
