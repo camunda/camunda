@@ -47,6 +47,8 @@ type Variable = FullVariable | TruncatedVariable;
 
 type TaskState = 'CREATED' | 'COMPLETED' | 'CANCELED';
 
+type TaskRisk = 'VERYLOW' | 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+
 type Task = {
   id: string;
   name: string;
@@ -57,6 +59,7 @@ type Task = {
   dueDate: string | null;
   completionDate: string | null;
   priority: number | null;
+  risk: TaskRisk;
   assignee: string | null;
   taskState: TaskState;
   sortValues: [string, string];
@@ -152,6 +155,7 @@ type License = {
 export type {
   CurrentUser,
   Variable,
+  TaskRisk,
   Task,
   TaskState,
   Form,
