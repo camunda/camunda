@@ -18,6 +18,7 @@
 @Json.Import(Form.class)
 @Json.Import(ActivatedJob.class)
 @Json.Import(Resource.class)
+@Json.Import(ProblemDetail.class)
 package io.camunda.zeebe.zbctl.serde;
 
 import io.avaje.jsonb.Json;
@@ -34,3 +35,4 @@ import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.client.api.response.PublishMessageResponse;
 import io.camunda.client.api.response.Resource;
 import io.camunda.client.api.response.Topology;
+import io.camunda.client.protocol.rest.ProblemDetail;

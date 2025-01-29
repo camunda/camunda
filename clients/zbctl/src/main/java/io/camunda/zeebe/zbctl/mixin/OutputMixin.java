@@ -19,6 +19,7 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.ScopeType;
 
 public final class OutputMixin {
+  private static final OutputStream output = System.out;
   @Option(
       names = "--format",
       description =
@@ -27,13 +28,11 @@ public final class OutputMixin {
       scope = ScopeType.INHERIT)
   private OutputFormat outputFormat;
 
-  private final OutputStream output = System.out;
-
   public OutputFormatter formatter() {
     return outputFormat.format(writer());
   }
 
-  public Writer writer() {
+  public static Writer writer() {
     return new OutputStreamWriter(output, StandardCharsets.UTF_8);
   }
 

@@ -42,7 +42,10 @@ public final class Application {
 
   public static void main(final String... args) {
     final var exitCode =
-        new CommandLine(new Application()).setCaseInsensitiveEnumValuesAllowed(true).execute(args);
+        new CommandLine(new Application())
+            .setCaseInsensitiveEnumValuesAllowed(true)
+            .setExecutionExceptionHandler(new ExceptionHandler())
+            .execute(args);
     System.exit(exitCode);
   }
 }
