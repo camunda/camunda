@@ -128,7 +128,7 @@ public class ZeebeDecisionDefinitionImportService
         .outputVariableNames(
             DmnModelUtil.extractOutputVariables(
                     dmnModelInstance, String.valueOf(recordData.getDecisionRequirementsId())
-        )
+        ))
         .build();
   }
 }
