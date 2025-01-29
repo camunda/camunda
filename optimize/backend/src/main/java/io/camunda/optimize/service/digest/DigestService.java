@@ -94,8 +94,8 @@ public class DigestService implements ConfigurationReloadable {
 
   @PostConstruct
   public void init() {
-    initTaskScheduler();
-    initExistingDigests();
+    // initTaskScheduler();
+    // initExistingDigests();
   }
 
   @PreDestroy

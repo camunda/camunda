@@ -326,9 +326,7 @@ public class InstantPreviewDashboardService {
   public void deleteInstantPreviewDashboardsAndEntitiesForChangedTemplates() {
     final List<Long> templateFileChecksums = getCurrentFileChecksums();
     try {
-      final List<String> dashboardsToDelete =
-          instantDashboardMetadataWriter.deleteOutdatedTemplateEntriesAndGetExistingDashboardIds(
-              templateFileChecksums);
+      final List<String> dashboardsToDelete = new ArrayList<>();
       for (final String dashboardIdToDelete : dashboardsToDelete) {
         final DashboardDefinitionRestDto dashboardDefinition =
             dashboardService.getDashboardDefinitionAsService(dashboardIdToDelete);

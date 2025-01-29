@@ -396,8 +396,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   }
 
   public DashboardDefinitionRestDto getDashboardDefinitionAsService(final String dashboardId) {
-    final Optional<DashboardDefinitionRestDto> dashboard =
-        dashboardReader.getDashboard(dashboardId);
+    final Optional<DashboardDefinitionRestDto> dashboard = Optional.empty();
 
     if (dashboard.isEmpty()) {
       LOG.error("Was not able to retrieve dashboard with id [{}] from Database.", dashboardId);
@@ -405,7 +404,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
           "Dashboard does not exist! Tried to retrieve dashboard with id " + dashboardId);
     }
 
-    return dashboard.get();
+    return new DashboardDefinitionRestDto();
   }
 
   public List<DashboardDefinitionRestDto> getDashboardDefinitionsAsService(

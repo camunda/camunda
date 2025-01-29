@@ -54,7 +54,7 @@ public class TerminatedSessionService extends AbstractScheduledService {
 
   @Override
   protected void run() {
-    cleanup();
+    // cleanup();
   }
 
   @Override

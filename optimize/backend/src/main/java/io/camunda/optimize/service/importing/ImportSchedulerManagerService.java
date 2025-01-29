@@ -65,7 +65,7 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
     this.configurationService = configurationService;
     this.ingestedMediatorFactories = ingestedMediatorFactories;
     this.zeebeMediatorFactories = zeebeMediatorFactories;
-    initSchedulers();
+    // initSchedulers();
   }
 
   @PreDestroy

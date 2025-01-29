@@ -152,7 +152,7 @@ public class OnboardingSchedulerService extends AbstractScheduledService
   @Override
   protected void run() {
     LOG.info("Checking whether new data would trigger onboarding");
-    onboardNewProcesses();
+    // onboardNewProcesses();
     LOG.info("Onboarding check completed");
   }
 

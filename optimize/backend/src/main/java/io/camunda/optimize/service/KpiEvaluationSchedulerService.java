@@ -7,20 +7,11 @@
  */
 package io.camunda.optimize.service;
 
-import static io.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
-
-import io.camunda.optimize.dto.optimize.SimpleDefinitionDto;
-import io.camunda.optimize.dto.optimize.importing.LastKpiEvaluationResultsDto;
-import io.camunda.optimize.dto.optimize.query.processoverview.KpiResultDto;
 import io.camunda.optimize.service.db.writer.ProcessOverviewWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
@@ -64,6 +55,7 @@ public class KpiEvaluationSchedulerService extends AbstractScheduledService {
 
   @Override
   protected void run() {
+    /*
     LOG.debug("Scheduling KPI evaluation tasks for all existing processes.");
     final List<String> processDefinitionKeys =
         definitionService.getAllDefinitionsWithTenants(PROCESS).stream()
@@ -82,6 +74,8 @@ public class KpiEvaluationSchedulerService extends AbstractScheduledService {
       definitionKeyToKpis.put(processDefinitionKey, lastKpiEvaluationResultsDto);
     }
     processOverviewWriter.updateKpisForProcessDefinitions(definitionKeyToKpis);
+
+     */
   }
 
   @Override

@@ -74,8 +74,7 @@ public class UIConfigurationService {
     final UIConfigurationResponseDto uiConfigurationDto = new UIConfigurationResponseDto();
     uiConfigurationDto.setLogoutHidden(configurationService.getUiConfiguration().isLogoutHidden());
     uiConfigurationDto.setEmailEnabled(configurationService.getEmailEnabled());
-    uiConfigurationDto.setSharingEnabled(
-        settingService.getSettings().getSharingEnabled().orElse(false));
+    uiConfigurationDto.setSharingEnabled(false);
     uiConfigurationDto.setTenantsAvailable(tenantService.isMultiTenantEnvironment());
     uiConfigurationDto.setOptimizeVersion(versionService.getRawVersion());
     uiConfigurationDto.setOptimizeDocsVersion(versionService.getDocsVersion());

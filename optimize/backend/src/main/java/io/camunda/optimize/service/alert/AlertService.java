@@ -36,7 +36,6 @@ import io.camunda.optimize.rest.exceptions.BadRequestException;
 import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.db.reader.AlertReader;
 import io.camunda.optimize.service.db.writer.AlertWriter;
-import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.relations.ReportReferencingService;
 import io.camunda.optimize.service.report.ReportService;
@@ -66,7 +65,6 @@ import org.quartz.TriggerKey;
 import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
-import org.springframework.scheduling.quartz.SpringBeanJobFactory;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -108,6 +106,7 @@ public class AlertService implements ReportReferencingService {
 
   @PostConstruct
   public void init() {
+    /*
     final List<AlertDefinitionDto> alerts = alertReader.getStoredAlerts();
     checkAlertWebhooksAllExist(alerts);
     try {
@@ -156,6 +155,8 @@ public class AlertService implements ReportReferencingService {
       }
       throw new OptimizeRuntimeException(e);
     }
+
+     */
   }
 
   @PreDestroy

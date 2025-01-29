@@ -70,7 +70,7 @@ public final class OptimizeElasticsearchClientFactory {
     final boolean initSchemaEnabled =
         configurationService.getElasticSearchConfiguration().getConnection().isInitSchemaEnabled();
     if (initSchemaEnabled) {
-      elasticSearchSchemaManager.initializeSchema(prefixedClient);
+      // elasticSearchSchemaManager.initializeSchema(prefixedClient);
     } else {
       LOG.info("Schema initialization disabled, skipping");
     }

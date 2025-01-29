@@ -9,7 +9,6 @@ package io.camunda.optimize.rest;
 
 import static io.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto.SORT_BY;
 import static io.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto.SORT_ORDER;
-import static io.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
 import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import io.camunda.optimize.dto.optimize.query.processoverview.InitialProcessOwnerDto;
@@ -24,6 +23,7 @@ import io.camunda.optimize.service.security.SessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,9 +60,7 @@ public class ProcessOverviewRestService {
       final HttpServletRequest request) {
     final String userId = userService.getCurrentUser().getUserId();
     // final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
-    final List<ProcessOverviewResponseDto> processOverviewResponseDtos =
-        processOverviewService.getAllProcessOverviews(
-            userId, request.getHeader(X_OPTIMIZE_CLIENT_LOCALE));
+    final List<ProcessOverviewResponseDto> processOverviewResponseDtos = new ArrayList<>();
     final ProcessOverviewSorter processOverviewSorter =
         new ProcessOverviewSorter(sortBy, sortOrder);
     return processOverviewSorter.applySort(processOverviewResponseDtos);
