@@ -58,8 +58,55 @@ public class CoolExpressionContextTest {
     assertThat(
             RecordingExporter.variableRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .withName("elements"))
+                .withName("elements")
+                .limit(1))
         .extracting(r -> r.getValue().getValue())
         .contains("[{\"name\":\"Start\",\"id\":\"start\",\"type\":\"START_EVENT\"}]");
+  }
+
+  @Test
+  public void shouldAccessAdHocActivities() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("process")
+                .startEvent("start")
+                .name("Start")
+                .zeebeOutputExpression(
+                    "camunda.process.elements[type=\"AD_HOC_SUB_PROCESS\"][1].adHocActivities.id",
+                    "adHocActivities")
+                .adHocSubProcess(
+                    "ad-hoc",
+                    adHocSubProcess -> {
+                      adHocSubProcess.zeebeActiveElementsCollectionExpression("[\"task_A\"]");
+                      adHocSubProcess.task("task_A").name("A");
+                      adHocSubProcess.task("task_B").name("B");
+                      adHocSubProcess.task("task_C").name("C");
+                    })
+                .endEvent("end")
+                .name("End")
+                .done())
+        .deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+
+    // when
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .filterRootScope()
+                .limitToProcessInstanceCompleted())
+        .extracting(Record::getIntent)
+        .contains(ProcessInstanceIntent.ELEMENT_COMPLETED);
+
+    // then
+    assertThat(
+            RecordingExporter.variableRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("adHocActivities")
+                .limit(1))
+        .extracting(r -> r.getValue().getValue())
+        .contains("[\"task_B\",\"task_C\",\"task_A\"]");
   }
 }
