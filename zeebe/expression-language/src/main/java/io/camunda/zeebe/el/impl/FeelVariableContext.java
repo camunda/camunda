@@ -31,23 +31,17 @@ final class FeelVariableContext extends CustomContext {
 
     @Override
     public Option<Object> getVariable(final String name) {
-      if ("env".equals(name)) {
-        return Option.apply(getNamespaceFromContext(name));
-      }
+      final var value = context.getVariable(name);
 
-      // be carefull this might be too strong of a fallback
-      return getVariableFromContext(name);
+      if (value != null && value instanceof EvaluationContext) {
+        return Option.apply(new ValContext(new FeelVariableContext((EvaluationContext) value)));
+      }
+      return Option.apply(value);
     }
 
     @Override
     public Iterable<String> keys() {
       return List$.MODULE$.empty();
-    }
-
-    private Option<Object> getVariableFromContext(final String name) {
-      return Option.apply(context.getVariable(name))
-          .filter(variable -> variable.capacity() > 0)
-          .map(variable -> variable);
     }
 
     private ValContext getNamespaceFromContext(final String name) {

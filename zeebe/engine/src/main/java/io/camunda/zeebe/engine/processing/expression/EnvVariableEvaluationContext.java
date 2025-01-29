@@ -7,11 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.expression;
 
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import java.util.List;
 import java.util.Objects;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class EnvVariableEvaluationContext implements ScopedEvaluationContext {
   public static final List<String> ALLOWED_ENVIRONMENT_VARIABLE_PREFIXES =
@@ -28,23 +25,16 @@ public class EnvVariableEvaluationContext implements ScopedEvaluationContext {
   }
 
   @Override
-  public DirectBuffer getVariable(final String variableName) {
+  public Object getVariable(final String variableName) {
     Objects.requireNonNull(variableName);
 
     if (isAllowed(variableName)) {
       final String value = System.getenv(variableName);
 
-      if (value != null) {
-        return asMsgPack(value);
-      }
+      return value;
     }
 
     return null;
-  }
-
-  private static UnsafeBuffer asMsgPack(final String value) {
-    // @TODO is this the best way to convert to MsgPack?
-    return new UnsafeBuffer(MsgPackConverter.convertToMsgPack(String.format("\"%s\"", value)));
   }
 
   private boolean isAllowed(final String variableName) {
