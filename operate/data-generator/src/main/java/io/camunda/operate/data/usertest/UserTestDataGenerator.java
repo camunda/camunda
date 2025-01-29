@@ -918,14 +918,14 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   protected void deployVersion2() {
     // deploy processes v.2
-    ZeebeTestUtil.deployProcess(
-        true, client, getTenant(DEFAULT_TENANT_ID), "usertest/orderProcess_v_2.bpmn");
-
-    ZeebeTestUtil.deployProcess(
-        true, client, getTenant(DEFAULT_TENANT_ID), "usertest/registerPassenger_v_2.bpmn");
-
-    ZeebeTestUtil.deployProcess(
-        true, client, getTenant(TENANT_B), "usertest/multiInstance_v_2.bpmn");
+    //    ZeebeTestUtil.deployProcess(
+    //        true, client, getTenant(DEFAULT_TENANT_ID), "usertest/orderProcess_v_2.bpmn");
+    //
+    //    ZeebeTestUtil.deployProcess(
+    //        true, client, getTenant(DEFAULT_TENANT_ID), "usertest/registerPassenger_v_2.bpmn");
+    //
+    //    ZeebeTestUtil.deployProcess(
+    //        true, client, getTenant(TENANT_B), "usertest/multiInstance_v_2.bpmn");
 
     ZeebeTestUtil.deployDecision(
         client, getTenant(TENANT_B), "usertest/invoiceBusinessDecisions_v_1.dmn");

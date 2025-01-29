@@ -6,7 +6,7 @@ WORKDIR /
 
 ARG VERSION=""
 ARG DISTRO=production
-ARG ARTIFACT_PATH=./optimize-distro/target
+ARG ARTIFACT_PATH=./optimize/../optimize-distro/target
 
 ENV TMP_DIR=/tmp/optimize \
     BUILD_DIR=/tmp/build
