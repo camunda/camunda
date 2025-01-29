@@ -11,11 +11,14 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceWithResultCommandStep1;
+import io.camunda.client.api.command.CreateTenantCommandStep1;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.CreateTenantResponse;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.zeebe.zbctl.cmd.CreateCommand.InstanceCommand;
+import io.camunda.zeebe.zbctl.cmd.CreateCommand.TenantCommand;
 import io.camunda.zeebe.zbctl.cmd.CreateCommand.WorkerCommand;
 import io.camunda.zeebe.zbctl.converters.DurationConverter;
 import io.camunda.zeebe.zbctl.converters.JsonInputConverter;
@@ -38,7 +41,7 @@ import picocli.CommandLine.Parameters;
 @Command(
     name = "create",
     description = "Create resources",
-    subcommands = {InstanceCommand.class, WorkerCommand.class})
+    subcommands = {InstanceCommand.class, WorkerCommand.class, TenantCommand.class})
 public class CreateCommand {
 
   @Command(
@@ -222,6 +225,39 @@ public class CreateCommand {
         outputMixin.formatter().write(job, ActivatedJob.class);
         client.newCompleteCommand(job).send().join();
       };
+    }
+  }
+
+  @Command(name = "tenant", description = "Creates a new tenant")
+  public static class TenantCommand implements Callable<Integer> {
+    @Mixin private ClientMixin clientMixin;
+    @Mixin private OutputMixin outputMixin;
+
+    @Option(
+        names = {"--name"},
+        paramLabel = "<name>",
+        description = "Specify the name of the tenant",
+        required = true)
+    private String name;
+
+    @Option(
+        names = {"--tenantId"},
+        paramLabel = "<tenantId>",
+        description = "Specify the ID of the tenant",
+        required = true)
+    private String tenantId;
+
+    @Override
+    public Integer call() throws Exception {
+      try (final var client = clientMixin.client()) {
+        final var response = prepareTheCommand(client).send().join();
+        outputMixin.formatter().write(response, CreateTenantResponse.class);
+      }
+      return 0;
+    }
+
+    private CreateTenantCommandStep1 prepareTheCommand(final CamundaClient client) {
+      return client.newCreateTenantCommand().tenantId(tenantId).name(name);
     }
   }
 }

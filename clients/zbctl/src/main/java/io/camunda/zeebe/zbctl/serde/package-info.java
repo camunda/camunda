@@ -22,12 +22,14 @@
 @Json.Import(ReflectConfigGenerator.ClassReflectionConfig.class)
 @Json.Import(ReflectConfigGenerator.MethodReflectionConfig.class)
 @Json.Import(ActivateJobsResponse.class)
+@Json.Import(CreateTenantResponse.class)
 package io.camunda.zeebe.zbctl.serde;
 
 import io.avaje.jsonb.Json;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.BrokerInfo;
+import io.camunda.client.api.response.CreateTenantResponse;
 import io.camunda.client.api.response.Decision;
 import io.camunda.client.api.response.DecisionRequirements;
 import io.camunda.client.api.response.DeploymentEvent;

@@ -15,7 +15,9 @@
  */
 package io.camunda.client.impl.http;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.NoopCredentialsProvider;
@@ -68,7 +70,10 @@ public class HttpClientFactory {
   /** The versioned base REST API context path the client uses for requests */
   public static final String REST_API_PATH = "/v2";
 
-  private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+  private static final ObjectMapper JSON_MAPPER =
+      new ObjectMapper()
+          .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+          .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
   private final CamundaClientConfiguration config;
 
