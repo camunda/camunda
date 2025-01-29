@@ -1,6 +1,19 @@
 [
 {
+  "name":"[B"
+},
+{
+  "name":"[Ljava.lang.String;"
+},
+{
+  "name":"[Lsun.security.pkcs.SignerInfo;"
+},
+{
   "name":"android.app.Application"
+},
+{
+  "name":"apple.security.AppleProvider",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
   "name":"com.fasterxml.jackson.databind.ext.Java7SupportImpl",
@@ -35,14 +48,64 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"com.sun.crypto.provider.DHParameters",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
   "name":"com.sun.crypto.provider.GaloisCounterMode$AESGCM",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.crypto.provider.HmacCore$HmacSHA384",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.crypto.provider.TlsMasterSecretGenerator",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
   "name":"com.sun.jndi.dns.DnsContextFactory"
 },
 {
+  "name":"com.sun.security.cert.internal.x509.X509V1CertImpl"
+},
+{
   "name":"groovy.lang.Closure"
+},
+{
+  "name":"io.camunda.client.impl.CamundaClientCredentials",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"getAccessToken","parameterTypes":[] }, {"name":"getExpiry","parameterTypes":[] }, {"name":"getTokenType","parameterTypes":[] }, {"name":"setExpiresIn","parameterTypes":["java.lang.String"] }, {"name":"setExpiry","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"io.camunda.client.impl.oauth.OAuthCredentialsCache$OAuthCachedCredentials",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":["java.util.Map"] }, {"name":"getCredentials","parameterTypes":[] }]
+},
+{
+  "name":"io.camunda.client.protocol.rest.BrokerInfo",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setHost","parameterTypes":["java.lang.String"] }, {"name":"setNodeId","parameterTypes":["java.lang.Integer"] }, {"name":"setPartitions","parameterTypes":["java.util.List"] }, {"name":"setPort","parameterTypes":["java.lang.Integer"] }, {"name":"setVersion","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"io.camunda.client.protocol.rest.CreateProcessInstanceRequest",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"getAwaitCompletion","parameterTypes":[] }, {"name":"getFetchVariables","parameterTypes":[] }, {"name":"getOperationReference","parameterTypes":[] }, {"name":"getProcessDefinitionId","parameterTypes":[] }, {"name":"getProcessDefinitionKey","parameterTypes":[] }, {"name":"getProcessDefinitionVersion","parameterTypes":[] }, {"name":"getRequestTimeout","parameterTypes":[] }, {"name":"getStartInstructions","parameterTypes":[] }, {"name":"getTenantId","parameterTypes":[] }, {"name":"getVariables","parameterTypes":[] }]
+},
+{
+  "name":"io.camunda.client.protocol.rest.CreateProcessInstanceResult",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setProcessDefinitionId","parameterTypes":["java.lang.String"] }, {"name":"setProcessDefinitionKey","parameterTypes":["java.lang.String"] }, {"name":"setProcessDefinitionVersion","parameterTypes":["java.lang.Integer"] }, {"name":"setProcessInstanceKey","parameterTypes":["java.lang.String"] }, {"name":"setTenantId","parameterTypes":["java.lang.String"] }, {"name":"setVariables","parameterTypes":["java.util.Map"] }]
 },
 {
   "name":"io.camunda.client.protocol.rest.DeploymentDecisionRequirementsResult",
@@ -90,6 +153,39 @@
   "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setDeploymentKey","parameterTypes":["java.lang.String"] }, {"name":"setDeployments","parameterTypes":["java.util.List"] }, {"name":"setTenantId","parameterTypes":["java.lang.String"] }]
 },
 {
+  "name":"io.camunda.client.protocol.rest.Partition",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setHealth","parameterTypes":["io.camunda.client.protocol.rest.Partition$HealthEnum"] }, {"name":"setPartitionId","parameterTypes":["java.lang.Integer"] }, {"name":"setRole","parameterTypes":["io.camunda.client.protocol.rest.Partition$RoleEnum"] }]
+},
+{
+  "name":"io.camunda.client.protocol.rest.Partition$HealthEnum",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"fromValue","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"io.camunda.client.protocol.rest.Partition$RoleEnum",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"fromValue","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"io.camunda.client.protocol.rest.ProblemDetail",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setDetail","parameterTypes":["java.lang.String"] }, {"name":"setInstance","parameterTypes":["java.net.URI"] }, {"name":"setStatus","parameterTypes":["java.lang.Integer"] }, {"name":"setTitle","parameterTypes":["java.lang.String"] }, {"name":"setType","parameterTypes":["java.net.URI"] }]
+},
+{
+  "name":"io.camunda.client.protocol.rest.TopologyResponse",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setBrokers","parameterTypes":["java.util.List"] }, {"name":"setClusterSize","parameterTypes":["java.lang.Integer"] }, {"name":"setGatewayVersion","parameterTypes":["java.lang.String"] }, {"name":"setPartitionsCount","parameterTypes":["java.lang.Integer"] }, {"name":"setReplicationFactor","parameterTypes":["java.lang.Integer"] }]
+},
+{
   "name":"io.camunda.zeebe.zbctl.Application",
   "allDeclaredFields":true,
   "queryAllDeclaredMethods":true
@@ -103,7 +199,8 @@
 {
   "name":"io.camunda.zeebe.zbctl.cmd.CreateCommand",
   "allDeclaredFields":true,
-  "queryAllDeclaredMethods":true
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
   "name":"io.camunda.zeebe.zbctl.cmd.CreateCommand$InstanceCommand",
@@ -190,11 +287,52 @@
   "name":"io.grpc.util.SecretRoundRobinLoadBalancerProvider$Provider"
 },
 {
+  "name":"io.netty.buffer.AbstractByteBufAllocator",
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"io.netty.buffer.AbstractReferenceCountedByteBuf",
+  "fields":[{"name":"refCnt"}]
+},
+{
   "name":"io.netty.channel.epoll.Epoll"
 },
 {
   "name":"io.netty.channel.socket.nio.NioSocketChannel",
   "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.netty.internal.tcnative.CertificateCallback"
+},
+{
+  "name":"io.netty.internal.tcnative.CertificateCallbackTask"
+},
+{
+  "name":"io.netty.internal.tcnative.SSLContext"
+},
+{
+  "name":"io.netty.internal.tcnative.SSLPrivateKeyMethodDecryptTask"
+},
+{
+  "name":"io.netty.internal.tcnative.SSLPrivateKeyMethodSignTask"
+},
+{
+  "name":"io.netty.internal.tcnative.SSLPrivateKeyMethodTask"
+},
+{
+  "name":"io.netty.internal.tcnative.SSLTask"
+},
+{
+  "name":"io.netty.util.AbstractReferenceCounted",
+  "fields":[{"name":"refCnt"}]
+},
+{
+  "name":"io.netty.util.DefaultAttributeMap",
+  "fields":[{"name":"attributes"}]
+},
+{
+  "name":"io.netty.util.Recycler$DefaultHandle",
+  "fields":[{"name":"state"}]
 },
 {
   "name":"io.netty.util.concurrent.DefaultPromise",
@@ -203,6 +341,10 @@
 {
   "name":"io.netty.util.concurrent.SingleThreadEventExecutor",
   "fields":[{"name":"state"}, {"name":"threadProperties"}]
+},
+{
+  "name":"io.netty.util.internal.NativeLibraryUtil",
+  "methods":[{"name":"loadLibrary","parameterTypes":["java.lang.String","boolean"] }]
 },
 {
   "name":"io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueColdProducerFields",
@@ -221,9 +363,28 @@
   "methods":[{"name":"isTerminal","parameterTypes":[] }]
 },
 {
+  "name":"java.io.Serializable",
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"java.lang.Exception"
+},
+{
+  "name":"java.lang.IllegalArgumentException"
+},
+{
+  "name":"java.lang.NullPointerException"
+},
+{
   "name":"java.lang.Object",
   "allDeclaredFields":true,
   "queryAllDeclaredMethods":true
+},
+{
+  "name":"java.lang.OutOfMemoryError"
+},
+{
+  "name":"java.lang.String"
 },
 {
   "name":"java.lang.System",
@@ -267,7 +428,22 @@
   "name":"java.security.SecureRandomParameters"
 },
 {
+  "name":"java.security.interfaces.ECPrivateKey"
+},
+{
+  "name":"java.security.interfaces.ECPublicKey"
+},
+{
+  "name":"java.security.interfaces.RSAPrivateKey"
+},
+{
+  "name":"java.security.interfaces.RSAPublicKey"
+},
+{
   "name":"java.sql.Connection"
+},
+{
+  "name":"java.sql.Date"
 },
 {
   "name":"java.sql.Driver"
@@ -341,6 +517,24 @@
   "methods":[{"name":"parse","parameterTypes":["java.lang.CharSequence"] }]
 },
 {
+  "name":"java.util.AbstractMap",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"java.util.Collections$SingletonMap",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"java.util.Date"
+},
+{
+  "name":"java.util.Map",
+  "queryAllDeclaredMethods":true
+},
+{
   "name":"java.util.concurrent.ForkJoinTask",
   "fields":[{"name":"aux"}, {"name":"status"}]
 },
@@ -363,6 +557,14 @@
 },
 {
   "name":"javax.naming.directory.InitialDirContext"
+},
+{
+  "name":"javax.net.ssl.SSLContext",
+  "fields":[{"name":"contextSpi"}]
+},
+{
+  "name":"javax.net.ssl.SSLParameters",
+  "methods":[{"name":"setEnableRetransmissions","parameterTypes":["boolean"] }]
 },
 {
   "name":"javax.security.auth.x500.X500Principal",
@@ -401,6 +603,22 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"sun.security.provider.DSA$SHA224withDSA",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.DSA$SHA256withDSA",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.JavaKeyStore$DualFormatJKS",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.JavaKeyStore$JKS",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
   "name":"sun.security.provider.NativePRNG",
   "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"<init>","parameterTypes":["java.security.SecureRandomParameters"] }]
 },
@@ -409,7 +627,31 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"sun.security.provider.SHA2$SHA224",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.SHA2$SHA256",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.SHA5$SHA384",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.SHA5$SHA512",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
   "name":"sun.security.provider.X509Factory",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.certpath.PKIXCertPathValidator",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.rsa.PSSParameters",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
@@ -417,12 +659,48 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"sun.security.rsa.RSAPSSSignature",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.rsa.RSASignature$SHA224withRSA",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.rsa.RSASignature$SHA256withRSA",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.ssl.KeyManagerFactoryImpl$SunX509",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.ssl.SSLContextImpl",
+  "fields":[{"name":"trustManager"}]
+},
+{
+  "name":"sun.security.ssl.SSLContextImpl$AbstractTLSContext",
+  "fields":[{"name":"trustManager"}]
+},
+{
+  "name":"sun.security.ssl.SSLContextImpl$CustomizedTLSContext",
+  "fields":[{"name":"trustManager"}]
+},
+{
+  "name":"sun.security.ssl.SSLContextImpl$DefaultSSLContext",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
   "name":"sun.security.ssl.SSLContextImpl$TLSContext",
+  "fields":[{"name":"trustManager"}],
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
   "name":"sun.security.ssl.TrustManagerFactoryImpl$PKIXFactory",
   "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.util.ObjectIdentifier"
 },
 {
   "name":"sun.security.x509.AuthorityInfoAccessExtension",
@@ -439,6 +717,9 @@
 {
   "name":"sun.security.x509.CRLDistributionPointsExtension",
   "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+},
+{
+  "name":"sun.security.x509.CertificateExtensions"
 },
 {
   "name":"sun.security.x509.CertificatePoliciesExtension",

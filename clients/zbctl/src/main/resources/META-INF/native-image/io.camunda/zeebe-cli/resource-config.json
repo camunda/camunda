@@ -1,13 +1,14 @@
 {
   "resources":{
-  "includes":[
-    {
-      "pattern": ".*\\.json$"
-    },
-    {
-      "pattern": ".*\\.properties$"
-    },
-    {
+  "includes":[{
+    "pattern":".*\\.json$"
+  }, {
+    "pattern":".*\\.properties$"
+  }, {
+    "pattern":"\\QMETA-INF/native/libnetty_tcnative_osx_aarch_64.dylib\\E"
+  }, {
+    "pattern":"\\QMETA-INF/native/libnetty_tcnative_osx_aarch_64.jnilib\\E"
+  }, {
     "pattern":"\\QMETA-INF/services/io.avaje.jsonb.spi.JsonbExtension\\E"
   }, {
     "pattern":"\\QMETA-INF/services/io.grpc.LoadBalancerProvider\\E"
@@ -15,6 +16,8 @@
     "pattern":"\\QMETA-INF/services/io.grpc.NameResolverProvider\\E"
   }, {
     "pattern":"\\QMETA-INF/services/java.lang.System$LoggerFinder\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.net.spi.InetAddressResolverProvider\\E"
   }, {
     "pattern":"\\QMETA-INF/services/java.net.spi.URLStreamHandlerProvider\\E"
   }, {
@@ -31,6 +34,14 @@
     "pattern":"\\Qsimplelogger.properties\\E"
   }, {
     "pattern":"java.base:\\Qjdk/internal/icu/impl/data/icudt72b/nfc.nrm\\E"
+  }, {
+    "pattern":"java.base:\\Qjdk/internal/icu/impl/data/icudt72b/nfkc.nrm\\E"
+  }, {
+    "pattern":"java.base:\\Qjdk/internal/icu/impl/data/icudt72b/uprops.icu\\E"
+  }, {
+    "pattern":"java.base:\\Qsun/net/idn/uidna.spp\\E"
+  }, {
+    "pattern":"java.base:\\Qsun/text/resources/LineBreakIteratorData\\E"
   }]},
   "bundles":[]
 }
