@@ -145,6 +145,14 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
         zeebeMediatorList.addAll(
             createZeebeMediatorList(new ZeebeDataSourceDto(zeebeConfig.getName(), partitionId)));
       }
+      LOG.info("==============");
+      LOG.info(
+          "Mediator List: {}",
+          zeebeMediatorList.stream()
+              .map(ImportMediator::getClass)
+              .map(Class::getName)
+              .collect(Collectors.joining(", ")));
+      LOG.info("==============");
       final ZeebeImportScheduler zeebeImportScheduler =
           new ZeebeImportScheduler(
               zeebeMediatorList,

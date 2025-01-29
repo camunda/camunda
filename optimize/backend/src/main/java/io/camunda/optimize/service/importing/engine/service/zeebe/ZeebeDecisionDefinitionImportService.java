@@ -17,12 +17,14 @@ import io.camunda.optimize.service.importing.DatabaseImportJob;
 import io.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import io.camunda.optimize.service.importing.engine.service.ImportService;
 import io.camunda.optimize.service.importing.job.DecisionDefinitionDatabaseImportJob;
+import io.camunda.optimize.service.util.DmnModelUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.slf4j.Logger;
 
 public class ZeebeDecisionDefinitionImportService
@@ -106,6 +108,7 @@ public class ZeebeDecisionDefinitionImportService
       final ZeebeDecisionDefinitionRecordDto zeebeDecisionDefinitionRecord) {
     final ZeebeDecisionDefinitionDataDto recordData = zeebeDecisionDefinitionRecord.getValue();
     final String dmn = new String(recordData.getResource(), StandardCharsets.UTF_8);
+    final DmnModelInstance dmnModelInstance = DmnModelUtil.parseDmnModel(dmn);
     return DecisionDefinitionOptimizeDto.builder()
         .id(String.valueOf(recordData.getDecisionRequirementsKey()))
         .key(String.valueOf(recordData.getDecisionRequirementsId()))
@@ -118,6 +121,14 @@ public class ZeebeDecisionDefinitionImportService
                 configurationService.getConfiguredZeebe().getName(), partitionId))
         .tenantId(recordData.getTenantId())
         .deleted(false)
+        .inputVariableNames(
+            DmnModelUtil.extractInputVariables(
+                dmnModelInstance, String.valueOf(recordData.getDecisionRequirementsId())
+        ))
+        .outputVariableNames(
+            DmnModelUtil.extractOutputVariables(
+                    dmnModelInstance, String.valueOf(recordData.getDecisionRequirementsId())
+        )
         .build();
   }
 }
