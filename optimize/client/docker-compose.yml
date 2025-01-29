@@ -191,9 +191,9 @@ services:
       - SERVER_SERVLET_CONTEXT_PATH=/
       - CAMUNDA_OPERATE_CLUSTERNODE_PARTITIONIDS=1,2
     ports:
-      - '8080:8080'
+      - '28080:8080'
     healthcheck:
-      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:8080/actuator/health/readiness'"]
+      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:28080/actuator/health/readiness'"]
       interval: 30s
       timeout: 1s
       retries: 5
@@ -223,9 +223,9 @@ services:
       - SERVER_SERVLET_CONTEXT_PATH=/
       - CAMUNDA_OPERATE_CLUSTERNODE_PARTITIONIDS=1,2
     ports:
-      - '8080:8080'
+      - '28080:8080'
     healthcheck:
-      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:8080/actuator/health/readiness'"]
+      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:28080/actuator/health/readiness'"]
       interval: 30s
       timeout: 1s
       retries: 5
