@@ -12,11 +12,6 @@ public class OptimizeUserOrGroupIdNotFoundException extends OptimizeRuntimeExcep
     super(message);
   }
 
-  public OptimizeUserOrGroupIdNotFoundException(
-      final String detailedErrorMessage, final Throwable e) {
-    super(detailedErrorMessage, e);
-  }
-
   @Override
   public String getErrorCode() {
     return "userOrGroupIdNotFound";
