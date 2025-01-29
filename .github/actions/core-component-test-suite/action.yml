@@ -19,7 +19,7 @@ runs:
 
     - name: Install Playwright Browsers
       shell: bash
-      run: npx playwright install --with-deps
+      run: npx playwright install --with-deps Chromium
     - name: Python setup
       if: always()
       uses: actions/setup-python@v3
