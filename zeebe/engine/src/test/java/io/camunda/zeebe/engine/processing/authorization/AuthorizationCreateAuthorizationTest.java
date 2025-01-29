@@ -26,7 +26,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-public class AuthorizationRemovePermissionAuthorizationTest {
+public class AuthorizationCreateAuthorizationTest {
+
   private static final ConfiguredUser DEFAULT_USER =
       new ConfiguredUser(
           UUID.randomUUID().toString(),
@@ -43,63 +44,56 @@ public class AuthorizationRemovePermissionAuthorizationTest {
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldBeAuthorizedToRemovePermissionsWithDefaultUser() {
+  public void shouldBeAuthorizedToCreateAuthorizationWithDefaultUser() {
     // given
-    final var resourceId = "resourceId";
-    final var resourceType = AuthorizationResourceType.RESOURCE;
-    final var permissionType = PermissionType.CREATE;
     final var user = createUser();
-    addPermissionsToUser(user, resourceType, permissionType, resourceId);
 
     // when
     engine
         .authorization()
-        .permission()
-        .withOwnerKey(user.getUserKey())
+        .newAuthorization()
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
-        .withResourceType(resourceType)
-        .withPermission(permissionType, resourceId)
-        .remove(DEFAULT_USER.getUsername());
-
-    // when
-    assertThat(
-            RecordingExporter.authorizationRecords(AuthorizationIntent.PERMISSION_REMOVED)
-                .withOwnerKey(user.getUserKey())
-                .exists())
-        .isTrue();
-  }
-
-  @Test
-  public void shouldBeAuthorizedToRemovePermissionsWithUser() {
-    // given
-    final var resourceId = "resourceId";
-    final var resourceType = AuthorizationResourceType.AUTHORIZATION;
-    final var permissionType = PermissionType.UPDATE;
-    final var user = createUser();
-    addPermissionsToUser(user, resourceType, permissionType, resourceId, "*");
-
-    // when
-    engine
-        .authorization()
-        .permission()
-        .withOwnerKey(user.getUserKey())
-        .withOwnerId(user.getUsername())
-        .withOwnerType(AuthorizationOwnerType.USER)
-        .withResourceType(resourceType)
-        .withPermission(permissionType, resourceId)
-        .remove(user.getUsername());
+        .withResourceType(AuthorizationResourceType.RESOURCE)
+        .withResourceId("*")
+        .withPermissions(PermissionType.CREATE)
+        .create(DEFAULT_USER.getUsername());
 
     // then
     assertThat(
-            RecordingExporter.authorizationRecords(AuthorizationIntent.PERMISSION_REMOVED)
-                .withOwnerKey(user.getUserKey())
+            RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
+                .withOwnerId(user.getUsername())
                 .exists())
         .isTrue();
   }
 
   @Test
-  public void shouldBeUnauthorizedToRemovePermissionsIfNoPermissions() {
+  public void shouldBeAuthorizedToCreateAuthorizationWithUser() {
+    // given
+    final var user = createUser();
+    addAuthorizationToUser(user, AuthorizationResourceType.AUTHORIZATION, PermissionType.CREATE);
+
+    // when
+    engine
+        .authorization()
+        .newAuthorization()
+        .withOwnerId(user.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceType(AuthorizationResourceType.RESOURCE)
+        .withResourceId("*")
+        .withPermissions(PermissionType.CREATE)
+        .create(user.getUsername());
+
+    // then
+    assertThat(
+            RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
+                .withOwnerId(user.getUsername())
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldBeForbiddenToCreateAuthorizationIfNoPermissions() {
     // given
     final var user = createUser();
 
@@ -107,20 +101,20 @@ public class AuthorizationRemovePermissionAuthorizationTest {
     final var rejection =
         engine
             .authorization()
-            .permission()
-            .withOwnerKey(user.getUserKey())
+            .newAuthorization()
             .withOwnerId(user.getUsername())
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceType(AuthorizationResourceType.RESOURCE)
-            .withPermission(PermissionType.DELETE, "*")
+            .withResourceId("*")
+            .withPermissions(PermissionType.CREATE)
             .expectRejection()
-            .remove(user.getUsername());
+            .create(user.getUsername());
 
     // then
     Assertions.assertThat(rejection)
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
-            "Insufficient permissions to perform operation 'UPDATE' on resource 'AUTHORIZATION'");
+            "Insufficient permissions to perform operation 'CREATE' on resource 'AUTHORIZATION'");
   }
 
   private UserRecordValue createUser() {
@@ -134,19 +128,18 @@ public class AuthorizationRemovePermissionAuthorizationTest {
         .getValue();
   }
 
-  private void addPermissionsToUser(
+  private void addAuthorizationToUser(
       final UserRecordValue user,
       final AuthorizationResourceType authorization,
-      final PermissionType permissionType,
-      final String... resourceIds) {
+      final PermissionType permissionType) {
     engine
         .authorization()
-        .permission()
-        .withOwnerKey(user.getUserKey())
+        .newAuthorization()
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
-        .withPermission(permissionType, resourceIds)
-        .add(DEFAULT_USER.getUsername());
+        .withResourceId("*")
+        .withPermissions(permissionType)
+        .create(DEFAULT_USER.getUsername());
   }
 }

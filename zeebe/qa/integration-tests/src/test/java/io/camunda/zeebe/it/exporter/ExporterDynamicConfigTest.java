@@ -22,7 +22,9 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 final class ExporterDynamicConfigTest {
 
-  @TestZeebe private final TestStandaloneBroker zeebe = new TestStandaloneBroker();
+  @TestZeebe
+  private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withUnauthenticatedAccess();
+
   @AutoClose private CamundaClient client;
 
   @BeforeEach

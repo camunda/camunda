@@ -27,7 +27,8 @@ class DeleteTenantTest {
   private static final String TENANT_ID = "tenant-id";
 
   @TestZeebe
-  private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+  private final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   @AutoClose private CamundaClient client;
   private long tenantKey;

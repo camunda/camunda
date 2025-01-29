@@ -11,7 +11,7 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddres
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.SystemContext;
@@ -223,7 +223,7 @@ final class PartitionLeaveTest {
             actorScheduler,
             atomixCluster,
             brokerClient,
-            new SecurityConfiguration(),
+            SecurityConfigurations.unauthenticated(),
             null,
             null);
 

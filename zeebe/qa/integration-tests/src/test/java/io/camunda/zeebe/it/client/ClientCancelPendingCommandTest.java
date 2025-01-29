@@ -31,7 +31,7 @@ final class ClientCancelPendingCommandTest {
 
   @SuppressWarnings("unused")
   static void initTestStandaloneBroker() {
-    zeebe = new TestStandaloneBroker();
+    zeebe = new TestStandaloneBroker().withUnauthenticatedAccess().withUnauthenticatedAccess();
   }
 
   @Test

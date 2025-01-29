@@ -14,6 +14,7 @@ import io.camunda.application.commons.configuration.BrokerBasedConfiguration.Bro
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
@@ -84,6 +85,14 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
       case CLUSTER -> config.getNetwork().getInternalApi().getPort();
       default -> super.mappedPort(port);
     };
+  }
+
+  @Override
+  public TestStandaloneBroker withProperty(final String key, final Object value) {
+    // Since the security config is not constructed from the properties, we need to manually update
+    // it when we override a property.
+    AuthenticationProperties.applyToSecurityConfig(securityConfig, key, value);
+    return super.withProperty(key, value);
   }
 
   @Override

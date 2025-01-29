@@ -35,6 +35,7 @@ final class SnapshotAfterScalingTest {
           .withReplicationFactor(1)
           .withPartitionsCount(2)
           .withGatewaysCount(1)
+          .withUnauthenticatedAccess()
           .build()
           .start()
           .awaitCompleteTopology();

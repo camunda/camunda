@@ -120,6 +120,7 @@ public class GatewayAuthenticationNoneIT {
   @TestZeebe(autoStart = false) // must configure in BeforeAll once containers have been started
   private final TestStandaloneBroker zeebe =
       new TestStandaloneBroker()
+          .withUnauthenticatedAccess()
           .withAdditionalProfile(Profile.IDENTITY_AUTH)
           .withProperty("zeebe.gateway.security.authentication.mode", "none")
           .withProperty("camunda.identity.issuerBackendUrl", getKeycloakRealmAddress())

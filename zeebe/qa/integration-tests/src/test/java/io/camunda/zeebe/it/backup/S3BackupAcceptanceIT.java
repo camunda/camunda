@@ -61,6 +61,7 @@ final class S3BackupAcceptanceIT implements BackupAcceptance {
           .withPartitionsCount(2)
           .withEmbeddedGateway(false)
           .withNodeConfig(this::configureNode)
+          .withUnauthenticatedAccess()
           .build();
 
   private S3BackupStore store;

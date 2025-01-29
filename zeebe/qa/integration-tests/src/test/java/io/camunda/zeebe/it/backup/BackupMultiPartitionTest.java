@@ -91,6 +91,7 @@ class BackupMultiPartitionTest {
           .withPartitionsCount(2)
           .withReplicationFactor(1)
           .withBrokerConfig(b -> b.withBrokerConfig(this::configureBackupStore))
+          .withUnauthenticatedAccess()
           .build();
 
   private void configureBackupStore(final BrokerCfg config) {

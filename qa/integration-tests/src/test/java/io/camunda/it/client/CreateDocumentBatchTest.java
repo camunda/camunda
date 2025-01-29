@@ -31,7 +31,7 @@ public class CreateDocumentBatchTest {
 
   @SuppressWarnings("unused")
   static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda();
+    testStandaloneCamunda = new TestStandaloneCamunda().withUnauthenticatedAccess();
   }
 
   @Test

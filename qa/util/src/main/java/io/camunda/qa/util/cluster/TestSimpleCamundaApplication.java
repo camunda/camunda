@@ -13,6 +13,7 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
+import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.security.configuration.ConfiguredUser;
@@ -100,7 +101,8 @@ public final class TestSimpleCamundaApplication
         .withAdditionalProfile(Profile.BROKER)
         .withAdditionalProfile(Profile.OPERATE)
         .withAdditionalProfile(Profile.TASKLIST)
-        .withAdditionalInitializer(new WebappsConfigurationInitializer());
+        .withAdditionalInitializer(new WebappsConfigurationInitializer())
+        .withUnauthenticatedAccess();
   }
 
   @Override
@@ -118,6 +120,14 @@ public final class TestSimpleCamundaApplication
       case CLUSTER -> brokerProperties.getNetwork().getInternalApi().getPort();
       default -> super.mappedPort(port);
     };
+  }
+
+  @Override
+  public TestSimpleCamundaApplication withProperty(final String key, final Object value) {
+    // Since the security config is not constructed from the properties, we need to manually update
+    // it when we override a property.
+    AuthenticationProperties.applyToSecurityConfig(securityConfig, key, value);
+    return super.withProperty(key, value);
   }
 
   @Override

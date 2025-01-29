@@ -32,6 +32,7 @@ public class FilterIT {
           .withEmbeddedGateway(false)
           .withGatewaysCount(1)
           .withBrokersCount(1)
+          .withUnauthenticatedAccess()
           .withGatewayConfig(
               (memberId, testGateway) -> {
                 final var firstFilterCfg = new FilterCfg();

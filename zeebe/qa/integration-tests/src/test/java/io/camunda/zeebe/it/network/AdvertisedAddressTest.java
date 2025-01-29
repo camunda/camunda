@@ -56,6 +56,7 @@ final class AdvertisedAddressTest {
           .withReplicationFactor(3)
           .withBrokerConfig(this::configureBroker)
           .withGatewayConfig(this::configureGateway)
+          .withUnauthenticatedAccess()
           .build();
 
   /**
