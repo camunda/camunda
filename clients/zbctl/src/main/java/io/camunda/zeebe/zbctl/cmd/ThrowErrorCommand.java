@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.zbctl.cmd;
 
-import io.camunda.zeebe.zbctl.cmd.ThrowError.JobCommand;
+import io.camunda.zeebe.zbctl.cmd.ThrowErrorCommand.JobCommand;
 import io.camunda.zeebe.zbctl.converters.JsonInputConverter;
 import io.camunda.zeebe.zbctl.converters.JsonInputConverter.JsonInput;
 import io.camunda.zeebe.zbctl.mixin.ClientMixin;
@@ -24,7 +24,7 @@ import picocli.CommandLine.Parameters;
     name = "throwError",
     description = "Throws an error within a resource",
     subcommands = {JobCommand.class})
-public class ThrowError {
+public class ThrowErrorCommand {
 
   @Command(name = "job", description = "Throws an error in a job defined by the job key")
   public static class JobCommand implements Callable<Integer> {
