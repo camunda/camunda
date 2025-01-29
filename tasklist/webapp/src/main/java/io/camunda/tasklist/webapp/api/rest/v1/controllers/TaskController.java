@@ -156,8 +156,6 @@ public class TaskController extends ApiErrorController {
             .map(taskMapper::toTaskSearchResponse)
             .collect(Collectors.toList());
 
-
-
     tasks.stream()
         .map(TaskSearchResponse::getVariables)
         .filter(Objects::nonNull)

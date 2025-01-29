@@ -8,35 +8,12 @@
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
 public class Precedence {
-  Double high;
-  Double medium;
-  Double low;
-
-  public Precedence(Double high, Double medium, Double low) {
-    this.high = high;
-    this.medium = medium;
-    this.low = low;
+  Double value;
+  public Precedence(final Double value) {
+    this.value = value;
   }
 
-  public Double getHigh() {
-    return high;
-  }
-
-  public void setHigh(Double high) {
-    this.high = high;
-  }
-
-  public Double getMedium() {
-    return medium;
-  }
-
-  public void setMedium(Double medium) {
-    this.medium = medium;
-  }
-  public Double getLow() {
-    return low;
-  }
-  public void setLow(Double low) {
-    this.low = low;
+  public Double getValue() {
+    return value;
   }
 }

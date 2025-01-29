@@ -8,17 +8,23 @@
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.StringJoiner;
+import net.sourceforge.jFuzzyLogic.FIS;
+import net.sourceforge.jFuzzyLogic.rule.Variable;
+import org.antlr.runtime.RecognitionException;
+
 
 public class TaskSearchResponse {
   @Schema(description = "The unique identifier of the task.")
@@ -345,13 +351,12 @@ public class TaskSearchResponse {
     return this;
   }
 
-  public Risk getRisk() {
-    Precedence precedence = new Precedence(40D, 30D, 12D);
-    List<String> classifications = new ArrayList<>(Arrays.asList("VERYLOW", "LOW", "MEDIUM", "HIGH", "URGENT"));
-    Random random = new Random();
-    String randomClassification = classifications.get(random.nextInt(classifications.size()));
-    return new Risk(precedence, randomClassification);
+  public Risk getRisk() throws RecognitionException {
+
+    return new Risk(new Precedence(0.0), calculateTaskRisk(dueDate, priority));
   }
+
+
 
   @Override
   public int hashCode() {
@@ -452,4 +457,105 @@ public class TaskSearchResponse {
         .add("risk='" + risk + "'")
         .toString();
   }
+
+  private String calculateTaskRisk(final OffsetDateTime dueDate, final int priority) throws RecognitionException {
+    // Define the FCL rules as a string
+    final String fclRules =
+        "FUNCTION_BLOCK TaskPriority\n"
+            + "\n"
+            + "VAR_INPUT\n"
+            + "    Due : REAL;\n"
+            + "    Priority : REAL;\n"
+            + "END_VAR\n"
+            + "\n"
+            + "VAR_OUTPUT\n"
+            + "    Output : REAL;\n"
+            + "END_VAR\n"
+            + "\n"
+            + "FUZZIFY Due\n"
+            + "    TERM Short_Time := (0,1) (2,1) (5,0);\n"
+            + "    TERM Medium := (2,0) (5,1) (8,0);\n"
+            + "    TERM High := (5,0) (8,1) (10,1);\n"
+            + "END_FUZZIFY\n"
+            + "\n"
+            + "FUZZIFY Priority\n"
+            + "    TERM Low := (0,1) (20,1) (50,0);\n"
+            + "    TERM Medium := (20,0) (50,1) (80,0);\n"
+            + "    TERM High := (50,0) (80,1) (100,1);\n"
+            + "END_FUZZIFY\n"
+            + "\n"
+            + "DEFUZZIFY Output\n"
+            + "    TERM Very_Low := (0,1) (2,1) (4,0);\n"
+            + "    TERM Low := (2,0) (4,1) (6,0);\n"
+            + "    TERM Medium := (4,0) (6,1) (8,0);\n"
+            + "    TERM High := (6,0) (8,1) (10,0);\n"
+            + "    TERM Urgent := (8,0) (10,1) (10,1);\n"
+            + "    METHOD : COG;\n"
+            + "END_DEFUZZIFY\n"
+            + "\n"
+            + "RULEBLOCK Rules\n"
+            + "    AND : MIN;\n"
+            + "    ACT : MIN;\n"
+            + "    ACCU : MAX;\n"
+            + "\n"
+            + "    RULE 1 : IF Due IS Short_Time AND Priority IS High THEN Output IS Urgent;\n"
+            + "    RULE 2 : IF Due IS Short_Time AND Priority IS Medium THEN Output IS High;\n"
+            + "    RULE 3 : IF Due IS Medium AND Priority IS High THEN Output IS Medium;\n"
+            + "    RULE 4 : IF Due IS Medium AND Priority IS Medium THEN Output IS Low;\n"
+            + "    RULE 5 : IF Due IS High AND Priority IS Low THEN Output IS Very_Low;\n"
+            + "    RULE 6 : IF Due IS High AND Priority IS Medium THEN Output IS Low;\n"
+            + "END_RULEBLOCK\n"
+            + "\n"
+            + "END_FUNCTION_BLOCK\n"; // This was missing in the previous version
+
+    // Create FIS from string
+    final FIS fis = FIS.createFromString(fclRules, true);
+
+    // Check if successfully created
+    if (fis == null) {
+      System.err.println("Error: Could not create FIS from the provided string.");
+      return "Error";
+    }
+
+    if (dueDate != null) {
+      final long daysUntilDue =
+          ChronoUnit.DAYS.between(OffsetDateTime.now(), dueDate); // Example: DueDate = 3
+
+      if (dueDate.isAfter(OffsetDateTime.now())) {
+        fis.setVariable("Due", daysUntilDue);
+      } else {
+        fis.setVariable("Due", 0);
+      }
+    } else {
+      fis.setVariable("Due", 10);
+    }
+    // Example: Priority = 80
+    fis.setVariable("Priority", priority); // Example: Priority = 80
+
+    // Evaluate the fuzzy system
+
+    fis.evaluate();
+
+    // Get the crisp output
+    final Variable output = fis.getVariable("Output");
+
+    // transform output to double
+    final double outputValue = output.getValue();
+
+    // Print results
+    // Classify my task
+    if (outputValue >= 0 && outputValue < 2) {
+      return "VERYLOW";
+    } else if (outputValue >= 2 && outputValue < 4) {
+      return "LOW";
+    } else if (outputValue >= 4 && outputValue < 6) {
+      return "MEDIUM";
+    } else if (outputValue >= 6 && outputValue < 8) {
+      return "HIGH";
+    } else {
+      return "URGENT";
+    }
+
+  }
+
 }
