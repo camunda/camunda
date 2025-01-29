@@ -16,7 +16,10 @@ import io.camunda.client.api.response.DeleteDocumentResponse;
 import io.camunda.client.api.response.DeleteGroupResponse;
 import io.camunda.client.api.response.DeleteResourceResponse;
 import io.camunda.client.api.response.DeleteTenantResponse;
-import io.camunda.zeebe.zbctl.cmd.CreateCommand.InstanceCommand;
+import io.camunda.zeebe.zbctl.cmd.DeleteCommand.DocumentCommand;
+import io.camunda.zeebe.zbctl.cmd.DeleteCommand.GroupCommand;
+import io.camunda.zeebe.zbctl.cmd.DeleteCommand.ResourceCommand;
+import io.camunda.zeebe.zbctl.cmd.DeleteCommand.TenantCommand;
 import io.camunda.zeebe.zbctl.mixin.ClientMixin;
 import io.camunda.zeebe.zbctl.mixin.OutputMixin;
 import java.util.concurrent.Callable;
@@ -29,7 +32,7 @@ import picocli.CommandLine.Parameters;
 @Command(
     name = "delete",
     description = "Delete resources",
-    subcommands = {InstanceCommand.class})
+    subcommands = {ResourceCommand.class, GroupCommand.class, TenantCommand.class, DocumentCommand.class})
 public class DeleteCommand {
 
   @Command(name = "resource", description = "Deletes a resource defined by the resource key")
@@ -43,7 +46,7 @@ public class DeleteCommand {
     @Override
     public Integer call() throws Exception {
       try (final var client = clientMixin.client()) {
-        var command = prepareCommand(client);
+        final var command = prepareCommand(client);
 
         final var response = command.send().join(30, TimeUnit.SECONDS);
         outputMixin.formatter().write(response, DeleteResourceResponse.class);
@@ -74,7 +77,7 @@ public class DeleteCommand {
     @Override
     public Integer call() throws Exception {
       try (final var client = clientMixin.client()) {
-        var command = prepareCommand(client);
+        final var command = prepareCommand(client);
 
         final var response = command.send().join(30, TimeUnit.SECONDS);
         outputMixin.formatter().write(response, DeleteGroupResponse.class);
@@ -100,7 +103,7 @@ public class DeleteCommand {
     @Override
     public Integer call() throws Exception {
       try (final var client = clientMixin.client()) {
-        var command = prepareCommand(client);
+        final var command = prepareCommand(client);
 
         final var response = command.send().join(30, TimeUnit.SECONDS);
         outputMixin.formatter().write(response, DeleteTenantResponse.class);
@@ -126,7 +129,7 @@ public class DeleteCommand {
     @Override
     public Integer call() throws Exception {
       try (final var client = clientMixin.client()) {
-        var command = prepareCommand(client);
+        final var command = prepareCommand(client);
 
         final var response = command.send().join(30, TimeUnit.SECONDS);
         outputMixin.formatter().write(response, DeleteDocumentResponse.class);
