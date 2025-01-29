@@ -1,19 +1,23 @@
 name: GraalVM build
-on: [push, pull_request]
+on: [pull_request]
 jobs:
   build:
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.runner }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ macos, windows, linux ]
         include:
           - os: macos
             runner: macos-latest
+            skipCompression: true
           - os: windows
             runner: windows-latest
+            skipCompression: true
           - os: linux
             runner: ubuntu-latest
+            skipCompression: false
     steps:
       - uses: actions/checkout@v4
       - uses: graalvm/setup-graalvm@v1
@@ -22,11 +26,12 @@ jobs:
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Package zbctl
-        run: mvn package -DskipTests -DskipChecks -DskipUpx=false -am -pl clients/zbctl -Pnative
+        run: mvn package -DskipTests -DskipChecks -DskipUpx=${{ matrix.skipCompression}} -am -pl clients/zbctl -Pnative
       - name: Upload zbctl
         uses: actions/upload-artifact@v3
         with:
           name: zbctl-${{ matrix.os }}
           path: |
             clients/zbctl/target/zbctl
+          retention-days: 2
 
