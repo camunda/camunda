@@ -28,8 +28,8 @@ public class FuzzyLib {
             "\n" +
             "FUZZIFY Priority\n" +
             "    TERM Low := (0,1) (20,1) (50,0);\n" +
-            "    TERM Medium := (30,0) (50,1) (70,0);\n" +
-            "    TERM High := (60,0) (80,1) (100,1);\n" +
+            "    TERM Medium := (20,0) (50,1) (80,0);\n" +
+            "    TERM High := (50,0) (80,1) (100,1);\n" +
             "END_FUZZIFY\n" +
             "\n" +
             "DEFUZZIFY Output\n" +
@@ -66,8 +66,8 @@ public class FuzzyLib {
     }
 
     // Set input values
-    fis.setVariable("Due", 9);       // Example: DueDate = 3
-    fis.setVariable("Priority", 55); // Example: Priority = 80
+    fis.setVariable("Due", 8);       // Example: DueDate = 3
+    fis.setVariable("Priority", 57); // Example: Priority = 80
 
     // Evaluate the fuzzy system
 
