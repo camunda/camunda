@@ -79,7 +79,9 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
                             .register(
                                 "processInstance",
                                 new ProcessInstanceEvaluationContext(
-                                    processingState.getElementInstanceState()))), // process context
+                                    processingState.getElementInstanceState())) // process context
+                            .register(
+                                "process", new ProcessEvaluationContext(this::stateBehavior))),
                 //                    .register("error", null), // error context
                 new VariableStateEvaluationContext(processingState.getVariableState())));
 
