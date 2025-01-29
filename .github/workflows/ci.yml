@@ -499,7 +499,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   core-component-tests:
-    needs: [detect-changes]
+    needs: [integration-tests]
     name: Run tests
     runs-on: 'ubuntu-latest'
     strategy:
@@ -509,8 +509,12 @@ jobs:
         version: ['${{ github.event.inputs.c8Version }}']
         project: ['chromium']
     steps:
-      - name: Check out repository code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+            node-version: 20
+            cache: 'npm'
+            cache-dependency-path: qa/e2e-tests/core-component-test-suite/package-lock.json
       - name: Run tests
         uses: ./.github/actions/core-component-test-suite
         with:

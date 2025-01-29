@@ -105,6 +105,6 @@ export default defineConfig({
 function getBaseURL(): string {
   if (typeof process.env.PLAYWRIGHT_BASE_URL === 'string') {
     return process.env.PLAYWRIGHT_BASE_URL;
-  }  
+  }
   return 'http://localhost:8080';
 }

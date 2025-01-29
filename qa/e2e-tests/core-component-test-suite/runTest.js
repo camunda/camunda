@@ -82,7 +82,5 @@ function getBaseURL() {
   if (typeof process.env.PLAYWRIGHT_BASE_URL === 'string') {
     return process.env.PLAYWRIGHT_BASE_URL;
   }
-  if (process.env.MINOR_VERSION && process.env.MINOR_VERSION.includes('Run')) {
-    return 'http://localhost:8080';
-  }
+  return 'http://localhost:8080';
 }
