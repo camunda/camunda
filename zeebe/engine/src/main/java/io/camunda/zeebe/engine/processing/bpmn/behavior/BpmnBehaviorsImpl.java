@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.expression.EnvVariableEvaluationContex
 import io.camunda.zeebe.engine.processing.expression.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.expression.NamespacedContext;
 import io.camunda.zeebe.engine.processing.expression.ProcessInstanceEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.UserTaskEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.VariableStateEvaluationContext;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
@@ -82,8 +83,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
                                 "processInstance",
                                 new ProcessInstanceEvaluationContext(
                                     processingState.getElementInstanceState())) // process context
-                            .register(
-                                "process", new ProcessEvaluationContext(this::stateBehavior))),
+                            .register("process", new ProcessEvaluationContext(this::stateBehavior))
+                            .register("userTask", new UserTaskEvaluationContext(processingState))),
                 //                    .register("error", null), // error context
                 new VariableStateEvaluationContext(processingState.getVariableState())));
 
