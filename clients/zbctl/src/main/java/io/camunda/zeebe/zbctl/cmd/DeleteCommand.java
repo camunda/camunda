@@ -32,7 +32,12 @@ import picocli.CommandLine.Parameters;
 @Command(
     name = "delete",
     description = "Delete resources",
-    subcommands = {ResourceCommand.class, GroupCommand.class, TenantCommand.class, DocumentCommand.class})
+    subcommands = {
+      ResourceCommand.class,
+      GroupCommand.class,
+      TenantCommand.class,
+      DocumentCommand.class
+    })
 public class DeleteCommand {
 
   @Command(name = "resource", description = "Deletes a resource defined by the resource key")
@@ -40,7 +45,10 @@ public class DeleteCommand {
     @Mixin private ClientMixin clientMixin;
     @Mixin private OutputMixin outputMixin;
 
-    @Parameters(paramLabel = "<resource key>", description = "The key of the resource")
+    @Parameters(
+        paramLabel = "<resource key>",
+        description = "The key of the resource",
+        type = Long.class)
     private long resourceKey;
 
     @Override
@@ -71,7 +79,7 @@ public class DeleteCommand {
     @Mixin private ClientMixin clientMixin;
     @Mixin private OutputMixin outputMixin;
 
-    @Parameters(paramLabel = "<group key>", description = "The group key")
+    @Parameters(paramLabel = "<group key>", description = "The group key", type = Long.class)
     private long groupKey;
 
     @Override
@@ -97,7 +105,7 @@ public class DeleteCommand {
     @Mixin private ClientMixin clientMixin;
     @Mixin private OutputMixin outputMixin;
 
-    @Parameters(paramLabel = "<tenant key>", description = "The tenant key")
+    @Parameters(paramLabel = "<tenant key>", description = "The tenant key", type = Long.class)
     private long tenantKey;
 
     @Override
@@ -123,7 +131,10 @@ public class DeleteCommand {
     @Mixin private ClientMixin clientMixin;
     @Mixin private OutputMixin outputMixin;
 
-    @Parameters(paramLabel = "<document id>", description = "The unique identifier of the document")
+    @Parameters(
+        paramLabel = "<document id>",
+        description = "The unique identifier of the document",
+        type = String.class)
     private String documentId;
 
     @Override

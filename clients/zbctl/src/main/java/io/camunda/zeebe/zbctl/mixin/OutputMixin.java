@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.zbctl.mixin;
 
@@ -19,7 +19,7 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.ScopeType;
 
 public final class OutputMixin {
-  private static final OutputStream output = System.out;
+  private static final OutputStream OUTPUT = System.out;
 
   @Option(
       names = "--format",
@@ -34,7 +34,7 @@ public final class OutputMixin {
   }
 
   public static Writer writer() {
-    return new OutputStreamWriter(output, StandardCharsets.UTF_8);
+    return new OutputStreamWriter(OUTPUT, StandardCharsets.UTF_8);
   }
 
   public enum OutputFormat {
