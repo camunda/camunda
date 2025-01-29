@@ -7,4 +7,25 @@
  */
 package io.camunda.search.clients;
 
-public class InMemoryAlertDefinitionClient implements AlertDefinitionClient {}
+import io.camunda.search.entities.AlertDefinitionEntity;
+import java.util.ArrayList;
+import java.util.List;
+
+public class InMemoryAlertDefinitionClient implements AlertDefinitionClient {
+
+  private final List<AlertDefinitionEntity> alertDefinitions;
+
+  public InMemoryAlertDefinitionClient() {
+    alertDefinitions = new ArrayList<>();
+  }
+
+  @Override
+  public void store(final AlertDefinitionEntity alertDefinition) {
+    alertDefinitions.add(alertDefinition);
+  }
+
+  @Override
+  public List<AlertDefinitionEntity> query() {
+    return alertDefinitions;
+  }
+}

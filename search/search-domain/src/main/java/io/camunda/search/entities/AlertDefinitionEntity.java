@@ -5,14 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.clients;
+package io.camunda.search.entities;
 
-import io.camunda.search.entities.AlertDefinitionEntity;
 import java.util.List;
 
-public interface AlertDefinitionClient {
+public record AlertDefinitionEntity(List<Filter> filters, Channel channel) {
+  public record Channel(String type) {}
 
-  void store(AlertDefinitionEntity alertDefinition);
-
-  List<AlertDefinitionEntity> query();
+  public record Filter(String processDefinitionKey) {}
 }
