@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.zbctl;
 
+import io.camunda.zeebe.zbctl.cmd.BroadcastCommand;
 import io.camunda.zeebe.zbctl.cmd.CancelCommand;
 import io.camunda.zeebe.zbctl.cmd.CompleteCommand;
 import io.camunda.zeebe.zbctl.cmd.CreateCommand;
@@ -53,6 +54,7 @@ import picocli.CommandLine.HelpCommand;
       FailCommand.class,
       CompleteCommand.class,
       SetCommand.class,
+      BroadcastCommand.class
     })
 public final class Application {
 
