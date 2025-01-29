@@ -225,6 +225,9 @@ jobs:
           - group: core-component-test
             name: "E2E QA - Core Component Tests"
           - uses: ./.github/actions/core-component-test-suite
+            with:
+              version: ${{ matrix.version }}
+              project: ${{ matrix.project }}
             runs-on: gcp-perf-core-8-default
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test

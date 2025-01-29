@@ -28,9 +28,12 @@ runs:
     - name: Set minor version
       shell: bash
       run: |
-        version="${{ inputs.version }}"
-        echo "Input version: $version"
-        echo "minor_version=$version" >> $GITHUB_ENV
+        c8_version="${{ github.event.inputs.c8Version }}"
+        minor_version="c8Run-${c8_version}"
+        echo "minor_version=$minor_version" >> $GITHUB_ENV
     - name: Run tests
       shell: bash
-      run: npm run test -- --project=${{ inputs.version }}
+      env:
+        CLUSTER_VERSION: ${{ inputs.version }}
+        MINOR_VERSION: ${{ env.minor_version }}
+      run: npm run test -- --project=${{ inputs.project }}
