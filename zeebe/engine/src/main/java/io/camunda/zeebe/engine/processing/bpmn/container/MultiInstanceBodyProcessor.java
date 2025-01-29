@@ -396,8 +396,7 @@ public final class MultiInstanceBodyProcessor
 
     if (completionCondition.isPresent()) {
       return expressionBehavior
-          .withPrimaryContext(
-              (variableName -> getVariable(context.getFlowScopeKey(), variableName)))
+          .withPrimaryContext(variableName -> getVariable(context.getFlowScopeKey(), variableName))
           .evaluateBooleanExpression(completionCondition.get(), context.getElementInstanceKey());
     }
     return Either.right(false);

@@ -27,4 +27,13 @@ public class NamespacedContext implements ScopedEvaluationContext {
   public ScopedEvaluationContext getVariable(final String variableName) {
     return namespaces.get(variableName);
   }
+
+  @Override
+  public ScopedEvaluationContext scoped(final long scopeKey) {
+    final var context = new NamespacedContext();
+    for (final var entry : namespaces.entrySet()) {
+      context.register(entry.getKey(), entry.getValue().scoped(scopeKey));
+    }
+    return context;
+  }
 }
