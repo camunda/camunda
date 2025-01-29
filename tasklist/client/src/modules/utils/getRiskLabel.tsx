@@ -7,7 +7,7 @@
  */
 
 import {t} from 'i18next';
-import type {TaskRiskClassification} from 'modules/types';
+import type {TaskRisk} from 'modules/types';
 
 type RiskLabel = {
   short: string;
@@ -21,7 +21,9 @@ type RiskLabel = {
  *
  * @returns The risk label
  */
-const getRiskLabel = (classification: TaskRiskClassification): RiskLabel => {
+const getRiskLabel = (
+  classification: TaskRisk['classification'],
+): RiskLabel => {
   if (classification === 'URGENT') {
     return {
       short: t('taskRiskUrgentShort'),

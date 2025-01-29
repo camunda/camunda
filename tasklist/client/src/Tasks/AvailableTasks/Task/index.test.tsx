@@ -53,7 +53,7 @@ describe('<Task />', () => {
         priority={50}
         currentUser={userMocks.currentUser}
         position={0}
-        risk="LOW"
+        risk={{classification: 'LOW'}}
       />,
       {
         wrapper: createWrapper(),
@@ -86,7 +86,7 @@ describe('<Task />', () => {
         priority={50}
         currentUser={userMocks.currentUser}
         position={0}
-        risk="LOW"
+        risk={{classification: 'LOW'}}
       />,
       {
         wrapper: createWrapper(),
@@ -111,7 +111,7 @@ describe('<Task />', () => {
         priority={50}
         currentUser={userMocks.currentUser}
         position={0}
-        risk="LOW"
+        risk={{classification: 'LOW'}}
       />,
       {
         wrapper: createWrapper(),
@@ -136,7 +136,7 @@ describe('<Task />', () => {
         priority={50}
         currentUser={userMocks.currentUser}
         position={0}
-        risk="LOW"
+        risk={{classification: 'LOW'}}
       />,
       {
         wrapper: createWrapper(),
@@ -162,7 +162,7 @@ describe('<Task />', () => {
         priority={50}
         currentUser={userMocks.currentUser}
         position={0}
-        risk="LOW"
+        risk={{classification: 'LOW'}}
       />,
       {
         wrapper: createWrapper(['/?filter=all-open']),
@@ -191,7 +191,7 @@ describe('<Task />', () => {
         priority={50}
         currentUser={userMocks.currentUser}
         position={0}
-        risk="LOW"
+        risk={{classification: 'LOW'}}
       />,
       {
         wrapper: createWrapper(),
@@ -216,7 +216,7 @@ describe('<Task />', () => {
         priority={50}
         currentUser={userMocks.currentUser}
         position={0}
-        risk="LOW"
+        risk={{classification: 'LOW'}}
       />,
       {
         wrapper: createWrapper(['/?sortBy=due']),
@@ -243,7 +243,7 @@ describe('<Task />', () => {
         priority={50}
         currentUser={userMocks.currentUser}
         position={0}
-        risk="LOW"
+        risk={{classification: 'LOW'}}
       />,
       {
         wrapper: createWrapper(['/?sortBy=follow-up']),
@@ -272,7 +272,7 @@ describe('<Task />', () => {
         priority={50}
         currentUser={userMocks.currentUser}
         position={0}
-        risk="LOW"
+        risk={{classification: 'LOW'}}
       />,
       {
         wrapper: createWrapper(),
@@ -300,7 +300,7 @@ describe('<Task />', () => {
         priority={50}
         currentUser={userMocks.currentUser}
         position={0}
-        risk="LOW"
+        risk={{classification: 'LOW'}}
       />,
       {
         wrapper: createWrapper(),

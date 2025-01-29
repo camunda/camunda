@@ -12,15 +12,15 @@ import {WarningHexFilled} from '@carbon/icons-react';
 import {LabelWithPopover} from './LabelWithPopover';
 import {getRiskLabel} from 'modules/utils/getRiskLabel';
 
-import type {TaskRiskClassification} from 'modules/types';
+import type {Task} from 'modules/types';
 
 type PriorityLabelProps = {
-  risk: TaskRiskClassification;
+  risk: Task['risk'];
   align?: React.ComponentProps<typeof Popover>['align'];
 };
 
 const RiskLabel: React.FC<PriorityLabelProps> = ({risk, align = 'top-end'}) => {
-  const riskLabel = getRiskLabel(risk);
+  const riskLabel = getRiskLabel(risk.classification);
 
   return (
     <LabelWithPopover
@@ -32,7 +32,7 @@ const RiskLabel: React.FC<PriorityLabelProps> = ({risk, align = 'top-end'}) => {
     >
       <WarningHexFilled
         className={`
-      ${styles['inlineIcon']} ${styles[`risk-${risk}`]}
+      ${styles['inlineIcon']} ${styles[`risk-${risk.classification}`]}
       `}
       />
       {riskLabel.short}

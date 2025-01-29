@@ -97,7 +97,7 @@ const AvailableTasks: React.FC<Props> = ({
                     priority={task.priority}
                     currentUser={data!}
                     position={i}
-                    risk={task.risk.classification}
+                    risk={task.risk}
                   />
                 );
               })}

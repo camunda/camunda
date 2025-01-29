@@ -49,7 +49,7 @@ type TaskState = 'CREATED' | 'COMPLETED' | 'CANCELED';
 
 type TaskRiskClassification = 'VERYLOW' | 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
-type TaskRisk = {classification: TaskRiskClassification; precedence: number};
+type TaskRisk = {classification: TaskRiskClassification; precedence?: number};
 
 type Task = {
   id: string;
@@ -157,7 +157,6 @@ type License = {
 export type {
   CurrentUser,
   Variable,
-  TaskRiskClassification,
   TaskRisk,
   Task,
   TaskState,

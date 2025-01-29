@@ -44,7 +44,7 @@ const unassignedTask = (
   candidateUsers: ['jane candidate'],
   tenantId: DEFAULT_TENANT_ID,
   context: 'My Task',
-  risk: 'LOW',
+  risk: {classification: 'LOW'},
 });
 
 const unassignedTaskWithForm = (
@@ -73,7 +73,7 @@ const unassignedTaskWithForm = (
   candidateUsers: [],
   tenantId: DEFAULT_TENANT_ID,
   context: 'My Task',
-  risk: 'LOW',
+  risk: {classification: 'LOW'},
 });
 
 const unassignedTaskWithFormDeployed = (
@@ -102,7 +102,7 @@ const unassignedTaskWithFormDeployed = (
   candidateUsers: [],
   tenantId: DEFAULT_TENANT_ID,
   context: 'My Task',
-  risk: 'LOW',
+  risk: {classification: 'LOW'},
 });
 
 const completedTask = (
@@ -131,7 +131,7 @@ const completedTask = (
   candidateUsers: [],
   tenantId: DEFAULT_TENANT_ID,
   context: 'My Task',
-  risk: 'LOW',
+  risk: {classification: 'LOW'},
 });
 
 const completedTaskWithForm = (
@@ -160,7 +160,7 @@ const completedTaskWithForm = (
   candidateUsers: [],
   tenantId: DEFAULT_TENANT_ID,
   context: 'My Task',
-  risk: 'LOW',
+  risk: {classification: 'LOW'},
 });
 
 const completedTaskWithFormDeployed = (
@@ -189,7 +189,7 @@ const completedTaskWithFormDeployed = (
   candidateUsers: [],
   tenantId: DEFAULT_TENANT_ID,
   context: 'My Task',
-  risk: 'LOW',
+  risk: {classification: 'LOW'},
 });
 
 const assignedTask = (
@@ -218,7 +218,7 @@ const assignedTask = (
   candidateUsers: [],
   tenantId: DEFAULT_TENANT_ID,
   context: 'My Task',
-  risk: 'LOW',
+  risk: {classification: 'LOW'},
 });
 
 const assignedTaskWithForm = (
@@ -247,7 +247,7 @@ const assignedTaskWithForm = (
   candidateUsers: [],
   tenantId: DEFAULT_TENANT_ID,
   context: 'My Task',
-  risk: 'LOW',
+  risk: {classification: 'LOW'},
 });
 
 const assignedTaskWithFormDeployed = (
@@ -276,7 +276,7 @@ const assignedTaskWithFormDeployed = (
   candidateUsers: [],
   tenantId: DEFAULT_TENANT_ID,
   context: 'My Task',
-  risk: 'LOW',
+  risk: {classification: 'LOW'},
 });
 
 export {
