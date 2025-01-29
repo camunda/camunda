@@ -11,6 +11,7 @@ import io.camunda.zeebe.zbctl.cmd.CreateCommand;
 import io.camunda.zeebe.zbctl.cmd.DeployCommand;
 import io.camunda.zeebe.zbctl.cmd.PublishCommand;
 import io.camunda.zeebe.zbctl.cmd.StatusCommand;
+import io.camunda.zeebe.zbctl.cmd.VersionCommand;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
@@ -36,7 +37,8 @@ import picocli.CommandLine.HelpCommand;
       CreateCommand.class,
       DeployCommand.class,
       PublishCommand.class,
-      StatusCommand.class
+      StatusCommand.class,
+      VersionCommand.class,
     })
 public final class Application {
 
