@@ -9,6 +9,7 @@ package io.camunda.zeebe.zbctl.mixin;
 
 import io.camunda.zeebe.zbctl.serde.JsonOutputFormatter;
 import io.camunda.zeebe.zbctl.serde.OutputFormatter;
+import io.camunda.zeebe.zbctl.serde.PlaintextOutputFormatter;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
@@ -37,7 +38,8 @@ public final class OutputMixin {
   }
 
   public enum OutputFormat {
-    JSON(JsonOutputFormatter::new);
+    JSON(JsonOutputFormatter::new),
+    PLAINTEXT(PlaintextOutputFormatter::new);
 
     private final Function<Writer, OutputFormatter> factory;
 
