@@ -27,7 +27,8 @@ class CreateTenantTest {
   @AutoClose CamundaClient client;
 
   @TestZeebe
-  private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+  private final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   @BeforeEach
   void initClientAndInstances() {

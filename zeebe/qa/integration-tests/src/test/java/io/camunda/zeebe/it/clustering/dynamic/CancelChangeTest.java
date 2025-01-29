@@ -24,6 +24,7 @@ final class CancelChangeTest {
           .useRecordingExporter(true)
           .withEmbeddedGateway(true)
           .withBrokersCount(1)
+          .withUnauthenticatedAccess()
           .build();
 
   @Test

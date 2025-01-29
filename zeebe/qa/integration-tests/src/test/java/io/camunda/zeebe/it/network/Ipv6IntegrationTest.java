@@ -13,6 +13,7 @@ import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Network.Ipam;
 import com.github.dockerjava.api.model.Network.Ipam.Config;
+import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.client.api.response.Topology;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
@@ -125,6 +126,7 @@ final class Ipv6IntegrationTest {
         .withEnv("ZEEBE_GATEWAY_NETWORK_HOST", INADDR6_ANY)
         .withEnv("ZEEBE_GATEWAY_NETWORK_ADVERTISEDHOST", hostName)
         .withEnv("ZEEBE_GATEWAY_CLUSTER_HOST", hostName)
+        .withEnv(AuthenticationProperties.getAllowUnauthenticatedApiAccessEnvVar(), "true")
         .withCreateContainerCmdModifier(cmd -> configureHostForIPv6(cmd, GATEWAY_IP));
   }
 }

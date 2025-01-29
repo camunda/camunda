@@ -34,7 +34,8 @@ public final class CancelProcessInstanceTest {
   @AutoClose CamundaClient client;
 
   @TestZeebe
-  final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+  final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   ZeebeResourcesHelper resourcesHelper;
   private long processDefinitionKey;

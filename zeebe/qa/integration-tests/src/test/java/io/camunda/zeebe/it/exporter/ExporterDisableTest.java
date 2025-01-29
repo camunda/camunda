@@ -44,6 +44,7 @@ final class ExporterDisableTest {
           // We have to restart brokers in the test. So use standalone gateway to avoid potentially
           // accessing an unavailable broker
           .withGatewaysCount(1)
+          .withUnauthenticatedAccess()
           .build();
 
   @AutoClose private CamundaClient client;

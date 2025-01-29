@@ -24,7 +24,8 @@ import org.junit.jupiter.api.BeforeEach;
 final class StandaloneGatewayIT {
 
   @TestZeebe(awaitReady = false, awaitCompleteTopology = false) // no brokers
-  private final TestStandaloneGateway gateway = new TestStandaloneGateway();
+  private final TestStandaloneGateway gateway =
+      new TestStandaloneGateway().withUnauthenticatedAccess();
 
   @AutoClose private CamundaClient client;
 

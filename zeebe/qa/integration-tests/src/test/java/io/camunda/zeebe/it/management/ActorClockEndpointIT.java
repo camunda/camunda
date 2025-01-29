@@ -36,6 +36,7 @@ public class ActorClockEndpointIT {
             .withBrokerConfig(
                 testStandaloneBroker ->
                     testStandaloneBroker.withProperty("zeebe.clock.controlled", true))
+            .withUnauthenticatedAccess()
             .build();
   }
 

@@ -42,6 +42,7 @@ public final class TopologyClusterTest {
           .withBrokersCount(3)
           .withPartitionsCount(3)
           .withReplicationFactor(3)
+          .withUnauthenticatedAccess()
           .build();
 
   @BeforeAll
