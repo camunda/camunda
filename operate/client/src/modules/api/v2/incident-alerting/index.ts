@@ -16,7 +16,7 @@ type Alert = {
   ];
   channel: {
     type: string;
-    email: string;
+    value: string;
   };
 };
 
