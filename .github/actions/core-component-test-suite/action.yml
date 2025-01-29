@@ -1,0 +1,36 @@
+name: "Run Cross component test suite"
+description: "A Github action to run E2E tests"
+
+inputs:
+  version:
+    description: "C8 version"
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: "npm"
+    - name: Install dependencies
+      shell: bash
+      run: npm ci
+
+    - name: Install Playwright Browsers
+      shell: bash
+      run: npx playwright install --with-deps Chromium
+    - name: Python setup
+      if: always()
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.x"
+    - name: Set minor version
+      shell: bash
+      run: |
+        version="${{ inputs.version }}"
+        echo "Input version: $version"
+        echo "minor_version=$version" >> $GITHUB_ENV
+    - name: Run tests
+      shell: bash
+      run: npm run test -- --project=${{ inputs.version }}
