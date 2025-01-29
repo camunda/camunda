@@ -15,6 +15,7 @@ import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
+import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.ElasticSearchAlertDefinitionClient;
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
@@ -296,8 +297,10 @@ public class CamundaServicesConfiguration {
 
   @Bean
   AlertDefinitionClient alertDefinitionClient(
-      final DocumentBasedWriteClient writeClient, final AlertDefinitionIndex alertDefinitionIndex) {
-    return new ElasticSearchAlertDefinitionClient(writeClient, alertDefinitionIndex);
+      final DocumentBasedWriteClient writeClient,
+      final DocumentBasedSearchClient readClient,
+      final AlertDefinitionIndex alertDefinitionIndex) {
+    return new ElasticSearchAlertDefinitionClient(writeClient, readClient, alertDefinitionIndex);
   }
 
   @Bean
