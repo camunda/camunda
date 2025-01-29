@@ -9,7 +9,9 @@ package io.camunda.zeebe.zbctl.cmd;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
+import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.api.response.CompleteUserTaskResponse;
+import io.camunda.zeebe.zbctl.cmd.CompleteCommand.JobCommand;
 import io.camunda.zeebe.zbctl.cmd.CompleteCommand.UserTaskCommand;
 import io.camunda.zeebe.zbctl.converters.JsonInputConverter;
 import io.camunda.zeebe.zbctl.converters.JsonInputConverter.JsonInput;
@@ -27,7 +29,7 @@ import picocli.CommandLine.Parameters;
 @Command(
     name = "complete",
     description = "Complete actions",
-    subcommands = {UserTaskCommand.class})
+    subcommands = {UserTaskCommand.class, JobCommand.class})
 public class CompleteCommand {
 
   @Command(name = "userTask", description = "Completes a user task defined by the user task key")
@@ -80,6 +82,49 @@ public class CompleteCommand {
 
     private CompleteUserTaskCommandStep1 prepareCommand(final CamundaClient client) {
       return client.newUserTaskCompleteCommand(userTaskKey);
+    }
+  }
+
+  @Command(name = "job", description = "Completes a job defined by the job key")
+  public static class JobCommand implements Callable<Integer> {
+
+    @Mixin private ClientMixin clientMixin;
+    @Mixin private OutputMixin outputMixin;
+
+    @Parameters(paramLabel = "<job key>", description = "The key of the job", type = Long.class)
+    private long jobKey;
+
+    @Option(
+        names = {"--variables"},
+        paramLabel = "<variables>",
+        description = "Specify job variables as JSON string or path to JSON file",
+        defaultValue = "{}",
+        converter = JsonInputConverter.class)
+    private JsonInput variables;
+
+    // TODO: implement withResult
+    //    @Option(
+    //        names = {"--withResult"},
+    //        paramLabel = "<withResult>",
+    //        description =
+    //            "Specify to await result of process, optional a list of variable names can be
+    // provided to limit the returned variables")
+    //    private String[] withResult;
+
+    @Override
+    public Integer call() throws Exception {
+      try (final var client = clientMixin.client()) {
+        final var command = client.newCompleteCommand(jobKey);
+
+        try (final var variablesInput = variables.open()) {
+          command.variables(variablesInput);
+        }
+
+        final var response = command.send().join(30, TimeUnit.SECONDS);
+        outputMixin.formatter().write(response, CompleteJobResponse.class);
+      }
+
+      return ExitCode.OK;
     }
   }
 }
