@@ -64,7 +64,7 @@ class OperateProcessesPage {
     while (retryCount < maxRetries) {
       try {
         await this.page
-          .locator('td:right-of(:text("' + processName + '"))')
+          .locator(`td:right-of(:text("${processName}"))`)
           .first()
           .click({timeout: 90000});
         return; // Exit the function if the click is successful
