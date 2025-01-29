@@ -25,6 +25,7 @@ import io.camunda.optimize.dto.optimize.rest.definition.DefinitionWithTenantsRes
 import io.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRequestDto;
 import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.rest.providers.CacheRequest;
+import io.camunda.optimize.rest.security.newwork.UserService;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.collection.CollectionScopeService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -38,6 +39,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -62,6 +64,8 @@ public class DefinitionRestService {
   private final DefinitionService definitionService;
   private final CollectionScopeService collectionScopeService;
   private final SessionService sessionService;
+
+  @Autowired private UserService userService;
 
   public DefinitionRestService(
       final DefinitionService definitionService,
@@ -177,7 +181,7 @@ public class DefinitionRestService {
       @PathVariable(name = "type") final DefinitionType type,
       @RequestParam(name = "filterByCollectionScope", required = false) final String collectionId,
       final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = userService.getCurrentUser().getUserId();
 
     final List<DefinitionResponseDto> definitions = getDefinitions(type, collectionId, userId);
     return definitions.stream()

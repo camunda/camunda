@@ -17,12 +17,14 @@ import io.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import io.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import io.camunda.optimize.rest.mapper.EntityRestMapper;
+import io.camunda.optimize.rest.security.newwork.UserService;
 import io.camunda.optimize.service.entities.EntitiesService;
 import io.camunda.optimize.service.security.SessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -42,6 +44,8 @@ public class EntitiesRestService {
   private final SessionService sessionService;
   private final EntityRestMapper entityRestMapper;
 
+  @Autowired private UserService userService;
+
   public EntitiesRestService(
       final EntitiesService entitiesService,
       final SessionService sessionService,
@@ -57,7 +61,7 @@ public class EntitiesRestService {
       @RequestParam(name = "sortOrder", required = false) final SortOrder sortOrder,
       final HttpServletRequest request) {
     final EntitySorter entitySorter = new EntitySorter(sortBy, sortOrder);
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = userService.getCurrentUser().getUserId();
     final List<EntityResponseDto> entities = entitiesService.getAllEntities(userId);
     entities.forEach(entityRestMapper::prepareRestResponse);
     return entitySorter.applySort(entities);
