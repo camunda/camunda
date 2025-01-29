@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.expression.CombinedEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.EnvVariableEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.ErrorEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.expression.NamespacedContext;
 import io.camunda.zeebe.engine.processing.expression.ProcessInstanceEvaluationContext;
@@ -82,8 +83,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
                                 new ProcessInstanceEvaluationContext(
                                     processingState.getElementInstanceState())) // process context
                             .register("process", new ProcessEvaluationContext(this::stateBehavior))
-                            .register("userTask", new UserTaskEvaluationContext(processingState))),
-                //                    .register("error", null), // error context
+                            .register("userTask", new UserTaskEvaluationContext(processingState))
+                            .register(
+                                "error",
+                                new ErrorEvaluationContext(
+                                    processingState.getEventScopeInstanceState()))),
                 new VariableStateEvaluationContext(processingState.getVariableState())));
 
     variableBehavior =

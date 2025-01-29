@@ -25,9 +25,11 @@ import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.protocol.impl.record.value.events.CatchEventRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.CatchEventIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -99,6 +101,8 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
       final long jobKey,
       final Intent intent,
       final JobRecord job) {
+    final var eventTriggerKey = keyGenerator.nextKey();
+
     jobMetrics.jobErrorThrown(job.getType(), job.getJobKind());
 
     if (NO_CATCH_EVENT_FOUND.equals(job.getElementId())) {
@@ -106,7 +110,16 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
       return;
     }
 
-    eventPublicationBehavior.throwErrorEvent(foundCatchEvent.get(), job.getVariablesBuffer());
+    final var catchEventTuple = foundCatchEvent.get();
+    eventPublicationBehavior.throwErrorEvent(catchEventTuple, job.getVariablesBuffer());
+
+    stateWriter.appendFollowUpEvent(
+        eventTriggerKey,
+        CatchEventIntent.TRIGGERING,
+        new CatchEventRecord()
+            .setScopeKey(catchEventTuple.getElementInstance().getKey())
+            .setErrorCode(job.getErrorCode())
+            .setErrorMessage(job.getErrorMessage()));
   }
 
   private void acceptCommand(
