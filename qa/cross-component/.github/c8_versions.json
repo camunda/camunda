@@ -1,0 +1,14 @@
+{
+  "8.7": "Cross Component Test Suite",
+  "8.6": "Camunda 8.6+gen6",
+  "8.5": "Camunda 8.5+gen14",
+  "8.4": "Camunda 8.4+gen17",
+  "8.3": "Camunda 8.3+gen20",
+  "SM-8.7": "SM-8.7",
+  "SM-8.6": "SM-8.6",
+  "SM-8.5": "SM-8.5",
+  "SM-8.4": "SM-8.4",
+  "SM-8.3": "SM-8.3",
+  "c8Run-8.6": "c8Run-8.6",
+  "c8Run-8.7": "c8Run-8.7"
+}

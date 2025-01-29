@@ -1,0 +1,148 @@
+name: C8 e2e Cross-Component testing (OS/ES)
+
+on:
+  workflow_call:
+    inputs:
+      camunda_plaform_branch:
+        required: true
+        type: string
+      version:
+        type: string
+        description: ElasticSearch/OpenSearch version
+        required: false
+      search_db:
+        description: Application search engine
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      camunda_plaform_branch:
+        description: "Branch from camunda-platform repository"
+        default: main
+        required: true
+      version:
+        description: ElasticSearch/OpenSearch version
+        required: false
+      search_db:
+        description: Application search engine
+        type: choice
+        options:
+          - ElasticSearch
+          - OpenSearch
+
+run-name: C8 e2e ${{ inputs.search_db }} ${{ inputs.version }} crosscomponent testing
+
+env:
+  MODELER_ENDPOINT: http://localhost:8070/
+  OPERATE_ENDPOINT: http://localhost:8081/
+  TASKLIST_ENDPOINT: http://localhost:8082/
+  OPTIMIZE_ENDPOINT: http://localhost:8083/
+  IDENTITY_ENDPOINT: http://localhost:8084/
+  ENV_PASSWORD: ${{ secrets.ENV_PASSWORD }}
+  CLIENTS_SECRET: ${{ secrets.CLIENTS_SECRET }}
+  CLIENT_ID: ${{ secrets.CLIENT_ID }}
+  SEARCH_DB_VERSION: ${{ inputs.version }}
+
+jobs:
+  testing:
+    name: "E2E ${{ inputs.search_db }} crosscomponent testing job  "
+    runs-on: ubuntu-latest
+    steps:
+    - name: Import secrets from Vault
+      id: secrets
+      uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/products/web-modeler/ci/common CAMUNDA_CONTAINER_REGISTRY_USER;
+          secret/data/products/web-modeler/ci/common CAMUNDA_CONTAINER_REGISTRY_PASSWORD;
+
+    - name: "Login to Camunda registry"
+      uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
+      with:
+        registry: registry.camunda.cloud
+        username: ${{ steps.secrets.outputs.CAMUNDA_CONTAINER_REGISTRY_USER }}
+        password: ${{ steps.secrets.outputs.CAMUNDA_CONTAINER_REGISTRY_PASSWORD }}
+
+    - name: "Checkout test repo"
+      uses: actions/checkout@v4
+    
+    - name: "Checkout app repo"
+      uses: actions/checkout@v4
+      with:
+        repository: camunda/camunda-platform
+        ref: ${{ inputs.camunda_plaform_branch }}
+        path: camunda-platform
+    
+    - name: "Change version of ElasticSearch/OpenSearch image"
+      run: |
+        source camunda-platform/.env
+        EL_VER="${SEARCH_DB_VERSION:-$ELASTIC_VERSION}"
+        OS_VER="${SEARCH_DB_VERSION:-$OPENSEARCH_VERSION}"
+        sed -i "s/ELASTIC_VERSION\=\([0-9]\{1,3\}\).\([0-9]\{1,3\}\).\([0-9]\{1,3\}\)/ELASTIC_VERSION\=$EL_VER/" camunda-platform/.env
+        sed -i "s/OPENSEARCH_VERSION\=\([0-9]\{1,3\}\).\([0-9]\{1,3\}\).\([0-9]\{1,3\}\)/OPENSEARCH_VERSION\=$OS_VER/" camunda-platform/.env
+
+    - name: "Release busy port"
+      run: |
+        sudo systemctl stop mono-xsp4.service 
+        sudo systemctl disable mono-xsp4.service
+        sudo kill $(ps aux | grep /usr/bin/mono | grep www-data | awk '{print $2}')
+        sudo netstat -lpn
+    
+    - name: "Run application with ElasticSearch"
+      if: ${{ contains(inputs.search_db, 'Elasticsearch') }}
+      run: |
+        sed -i 's/SEARCH_DB=opensearch/SEARCH_DB=elasticsearch/g' camunda-platform/.env
+        docker compose -f camunda-platform/docker-compose.yaml -f camunda-platform/docker-compose-web-modeler.yaml up --quiet-pull -d
+    
+    - name: "Run application with OpenSearch"
+      if: ${{ contains(inputs.search_db, 'OpenSearch') }}
+      run: |
+        sed -i 's/SEARCH_DB=elasticsearch/SEARCH_DB=opensearch/g' camunda-platform/.env
+        docker compose -f camunda-platform/docker-compose.yaml -f camunda-platform/docker-compose-web-modeler.yaml --profile opensearch up --quiet-pull -d
+
+    - name: "Check if containers started"
+      run: >-
+        while [ "$(docker container ls | grep "health: starting")" != "" ];
+        do
+        sleep 5;
+        done
+
+    - name: "Print container status"
+      run: >-
+        docker container ls --format "table {{.Image}}\t{{.Status}}" | tee status
+
+    - name: "Check to see if all containers are healthy"
+      run: >-
+        test
+        "$(cat status |
+        grep
+        -e "unhealthy"
+        -e "health: starting")"
+        =
+        ""
+
+    - name: "Setup Node"
+      uses: actions/setup-node@v4
+
+    - name: "Install dependencies"
+      run: npm ci
+
+    - name: "Install playwright browsers"
+      run: npx playwright install --with-deps
+
+    - name: "Run tests"
+      run: npx playwright test --project=chromium tests/Search
+    
+    - name: "Store test report"
+      uses: actions/upload-artifact@v4
+      if: ${{ !cancelled() }}
+      with:
+        name: test-results
+        path: |
+          test-results
+          html-report
+        retention-days: 10

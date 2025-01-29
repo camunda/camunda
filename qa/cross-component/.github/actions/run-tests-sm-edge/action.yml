@@ -1,0 +1,142 @@
+name: 'Run E2E tests'
+description: 'A Github action to run E2E tests and publish results to TestRail'
+
+inputs:
+  project:
+    description: 'Chromium, Firefox, or Edge'
+    required: true
+  version:
+    description: 'C8 version'
+    required: true
+  c8_username:
+    description: 'Test user username'
+    required: true
+  c8_password:
+    description: 'Test user password'
+    required: true
+  c8_username_test:
+    description: 'Second test user username'
+    required: true
+  c8_password_test:
+    description: 'Second test user password'
+    required: true
+  c8_invalid_username:
+    description: 'Invalid test user username'
+    required: true
+  testrail_qa_email:
+    description: 'TestRail QA email'
+    required: true
+  testrail_qa_key:
+    description: 'TestRail QA key'
+    required: true
+  sm_password:
+    description: 'SM test user password'
+    required: true
+  sm_password_sceond_user:
+    description: 'SM test user password'
+    required: true
+  sm_password_third_user:
+    description: 'SM third test user password'
+    required: true
+  sm_client_secret:
+    description: 'SM client secret'
+    required: true
+  cluster_endpoint:
+    description: 'Cluster endpoint'
+    required: true
+  oauth_url:
+    description: 'OAuth url'
+    required: true
+  base_url:
+    description: 'Base url'
+    required: true
+  slack_webhook_url:
+    description: 'Slack webhook url'
+    required: true
+  operateBaseUrl:
+    description: 'Operate Base Url'
+    required: true
+  tasklistBaseUrl:
+    description: 'Tasklist Base Url'
+    required: true
+  zeebeRestUrl:
+    description: 'Zeebe Rest Url'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'npm'
+    - name: Install dependencies
+      shell: bash
+      run: npm ci
+    - name: Install Playwright Browsers
+      shell: bash
+      run: npx playwright install --with-deps ${{ inputs.project }}
+    - name: Python setup
+      if: always()
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.x'
+    - name: Set minor version
+      shell: bash
+      run: |
+        version=${{ inputs.version }}
+        minor_version=$(echo "$version" | cut -d '.' -f 1,2)
+        echo "minor_version=$minor_version" >> $GITHUB_ENV
+    - name: Run tests and generate JUnit results
+      shell: bash
+      env:
+        C8_USERNAME: ${{ inputs.c8_username }}
+        C8_PASSWORD: ${{ inputs.c8_password }}
+        C8_USERNAME_TEST: ${{ inputs.c8_username_test }}
+        C8_PASSWORD_TEST: ${{ inputs.c8_password_test }}
+        C8_INVALID_USERNAME: ${{ inputs.c8_invalid_username }}
+        CLUSTER_VERSION: ${{ inputs.version }}
+        MINOR_VERSION: ${{ env.minor_version }}
+        DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD: ${{ inputs.sm_password }}
+        DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD: ${{ inputs.sm_password_second_user }}
+        DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD: ${{ inputs.sm_password_third_user }}
+        DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET: ${{ inputs.sm_client_secret }}
+        CLUSTER_ENDPOINT: ${{ inputs.cluster_endpoint }}
+        OAUTH_URL: ${{ inputs.oauth_url }}
+        BASE_URL: ${{ inputs.base_url }}
+        SLACK_WEBHOOK_URL: ${{ inputs.slack_webhook_url }}
+        INCLUDE_SLACK_REPORTER: true
+        OPERATE_BASE_URL: ${{ inputs.operateBaseUrl }}
+        TASKLIST_BASE_URL: ${{ inputs.tasklistBaseUrl }}
+        ZEEBE_REST_URL: ${{ inputs.zeebeRestUrl }}
+      run: |
+        npx playwright install
+        npm run test -- --project=${{ inputs.project }}
+    - name: Publish test results to TestRail
+      if: always()
+      shell: bash
+      env:
+        TESTRAIL_HOST: 'https://camunda.testrail.com/'
+        TESTRAIL_USERNAME: ${{ inputs.testrail_qa_email }}
+        TESTRAIL_KEY: ${{ inputs.testrail_qa_key }}
+        JUNIT_RESULTS_FILE: './test-results/junit-report.xml'
+      run: |
+        pip install trcli
+        trcli -y -h $TESTRAIL_HOST \
+          --project 'C8' \
+          --username $TESTRAIL_USERNAME \
+          --key $TESTRAIL_KEY \
+          parse_junit --title "Nightly Self-Managed with Helm Edge Run Test Results - $(date '+%Y-%m-%d %H:%M:%S')" \
+          --close-run \
+          -f $JUNIT_RESULTS_FILE
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: Playwright Report
+        path: ./html-report
+        retention-days: 30
+    - name: Python setup
+      if: always()
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.x'

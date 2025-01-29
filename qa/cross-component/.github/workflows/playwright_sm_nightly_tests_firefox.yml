@@ -1,0 +1,114 @@
+name: C8 Self-Managed With Helm Nightly Test Run - Firefox
+
+on:
+  schedule:
+    # Set the cron schedule to run nightly at 1am CEST (11 PM UTC)
+    - cron: '0 2 * * *'
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  init:
+    name: Template Helm chart values
+    runs-on: ubuntu-latest
+    outputs:
+      values: ${{ steps.template.outputs.values }}
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Template values
+        id: template
+        uses: ./.github/actions/template-helm-chart-values
+        with:
+          E2E_TESTS_CAMUNDA_HELM_DIR: "camunda-platform-alpha"
+          E2E_TESTS_KEYCLOAK_CLIENTS_SECRET: "${{ vars.DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET }}"
+          E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD: "${{ vars.DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD }}"
+          E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD: "${{ vars.DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD }}"
+          E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD: "${{ vars.DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD }}"
+
+  helm-deploy:
+    needs: init
+    name: Helm chart Integration Tests
+    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
+    secrets: inherit
+    with:
+      infra-type: standard
+      identifier: qa-e2e-${{ github.run_id }}
+      camunda-helm-dir: camunda-platform-alpha
+      deployment-ttl: 1d
+      test-enabled: true
+      extra-values: |
+        ${{ needs.init.outputs.values }}
+
+  set-versions-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-versions-matrix.outputs.matrix }}
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Read JSON and set Matrix
+        id: set-versions-matrix
+        run: |
+          echo "Setting matrix from JSON"
+          MATRIX=$(jq -r 'to_entries|map(.value)|map("\"" + . + "\"")|join(",")' ./.github/c8_versions.json)
+          echo "matrix=[$MATRIX"] >> $GITHUB_OUTPUT
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run ESLint
+        run: npx eslint . --ext .ts
+
+  run-tests-sm-firefox:
+    name: Run tests
+    needs: [lint, set-versions-matrix, helm-deploy]
+    runs-on: 'gcp-core-32-longrunning-big-ssd'
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        version: ['SM-8.7']
+        project: ['firefox']
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Set PLAYWRIGHT_BASE_URL
+        run: echo "BASE_URL=qa-e2e-${{ github.run_id }}" >> $GITHUB_ENV
+      - name: Set PROJECT environment variable
+        run: echo "PROJECT=Firefox" >> $GITHUB_ENV
+      - name: Run tests
+        uses: ./.github/actions/run-tests-sm-firefox
+        with:
+          version: ${{ matrix.version }}
+          project: ${{ matrix.project }}
+          c8_username: ${{ secrets.C8_USERNAME }}
+          c8_password: ${{ secrets.C8_PASSWORD }}
+          c8_username_test: ${{ secrets.C8_USERNAME_TEST }}
+          c8_password_test: ${{ secrets.C8_PASSWORD_TEST }}
+          c8_invalid_username: ${{ secrets.C8_INVALID_USERNAME }}
+          testrail_qa_email: ${{ secrets.TESTRAIL_QA_EMAIL }}
+          testrail_qa_key: ${{ secrets.TESTRAIL_QA_KEY }}
+          sm_password: ${{ vars.DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD }}
+          sm_password_second_user: ${{ vars.DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD }}
+          sm_password_third_user: ${{ vars.DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD }}
+          sm_client_secret: ${{ vars.DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET }}
+          cluster_endpoint: ${{ secrets.CLUSTER_ENDPOINT }}
+          oauth_url: ${{ secrets.OAUTH_URL }}
+          base_url: qa-e2e-${{ github.run_id }}
+          slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          operateBaseUrl: ${{ secrets.OPERATE_BASE_URL }}
+          tasklistBaseUrl: ${{ secrets.TASKLIST_BASE_URL }}
+          zeebeRestUrl: ${{ secrets.ZEEBE_REST_URL }}

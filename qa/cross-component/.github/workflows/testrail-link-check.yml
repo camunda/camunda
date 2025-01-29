@@ -1,0 +1,37 @@
+
+name: Testrail Link Check
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]  # Triggers on PR open, new comits on PR and when the PR description is edited
+
+jobs:
+  check-testrail-link:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Ensure file permissions
+        run: chmod 644 .github/configs/camunda-platform-default-values.yml
+
+      - name: Check which folders have been changed and PR description for Testrail link
+        id: check_changed_files
+        run: |
+          git fetch origin main
+          echo "Checking changed files from JSON"
+          changed_files=$(git diff --name-only origin/main ${{ github.sha }})
+          changed_folders=$(echo "${changed_files}" | awk -F'/' '/^(tests|pages)\/[^/]+/{print $2}')
+
+          if [ -z "${changed_folders}" ]; then
+          echo "No test files/pages changed. Skipping Testrail link check."
+          exit 0
+          fi
+          
+          if echo "${{ github.event.pull_request.body }}" | grep -Eq "https:\/\/camunda\.testrail\.com/index\.php\?/cases/view/[0-9]+"; then
+            echo "Testrail link found in PR description."
+          else
+            echo "Error: PR description must contain a valid Testrail link."
+            exit 1
+          fi

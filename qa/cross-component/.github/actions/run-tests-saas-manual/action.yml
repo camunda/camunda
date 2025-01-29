@@ -1,0 +1,124 @@
+name: 'Run E2E tests'
+description: 'A Github action to run SaaS E2E tests and publish results to TestRail'
+
+inputs:
+  project:
+    description: 'Chromium, Firefox, or Edge'
+    required: true
+  version:
+    description: 'C8 version'
+    required: true
+  c8_username:
+    description: 'Test user username'
+    required: true
+  c8_password:
+    description: 'Test user password'
+    required: true
+  c8_username_test:
+    description: 'Second test user username'
+    required: true
+  c8_password_test:
+    description: 'Second test user password'
+    required: true
+  c8_username_test_2:
+    description: 'Third test user username'
+    required: true
+  c8_password_test_2:
+    description: 'Third test user password'
+    required: true
+  c8_invalid_username:
+    description: 'Invalid test user username'
+    required: true
+  testrail_qa_email:
+    description: 'TestRail QA email'
+    required: true
+  testrail_qa_key:
+    description: 'TestRail QA key'
+    required: true
+  c8Version:
+    description: 'C8 Version'
+    required: true
+  clusterGenerationName:
+    description: 'Cluster Generation Name'
+    required: true
+  regionSelection:
+    description: 'Region Selection'
+    required: true
+  external_console_api_client_id:
+    description: 'Console api client id'
+    required: true
+  external_console_api_client_secret:
+    description: 'Console api client secret'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'npm'
+    - name: Install dependencies
+      shell: bash
+      run: npm ci
+    - name: Install Playwright Browsers
+      shell: bash
+      run: npx playwright install --with-deps ${{ inputs.project }}
+    - name: Python setup
+      if: always()
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.x'
+    - name: Set minor version
+      shell: bash
+      run: |
+        version="${{ github.event.inputs.clusterGenerationName }}"
+        minor_version="${{ github.event.inputs.c8Version }}"
+        echo "minor_version=$minor_version" >> $GITHUB_ENV
+    - name: Run tests and generate JUnit results
+      shell: bash
+      env:
+        C8_USERNAME: ${{ inputs.c8_username }}
+        C8_PASSWORD: ${{ inputs.c8_password }}
+        C8_USERNAME_TEST: ${{ inputs.c8_username_test }}
+        C8_PASSWORD_TEST: ${{ inputs.c8_password_test }}
+        C8_USERNAME_TEST_2: ${{ inputs.c8_username_test_2 }}
+        C8_PASSWORD_TEST_2: ${{ inputs.c8_password_test_2 }}
+        C8_INVALID_USERNAME: ${{ inputs.c8_invalid_username }}
+        CLUSTER_VERSION: ${{ github.event.inputs.clusterGenerationName }}
+        MINOR_VERSION: ${{ env.minor_version }}
+        ORG_NAME: ${{ inputs.org_name }}
+        ORG_ID: ${{ inputs.org_id }}
+        MAIL_SLURP_API_KEY: ${{ inputs.mail_slurp_api_key }}
+        REGION_SELECTION: ${{ inputs.regionSelection }}
+        EXTERNAL_CONSOLE_API_CLIENT_ID: ${{ inputs.external_console_api_client_id }}
+        EXTERNAL_CONSOLE_API_CLIENT_SECRET: ${{ inputs.external_console_api_client_secret }}
+      run: npm run test -- --project=${{ inputs.project }}
+    - name: Publish test results to TestRail
+      if: always()
+      shell: bash
+      env:
+        TESTRAIL_HOST: 'https://camunda.testrail.com/'
+        TESTRAIL_USERNAME: ${{ inputs.testrail_qa_email }}
+        TESTRAIL_KEY: ${{ inputs.testrail_qa_key }}
+        JUNIT_RESULTS_FILE: './test-results/junit-report.xml'
+      run: |
+        pip install trcli
+        trcli -y -h $TESTRAIL_HOST \
+          --project 'C8' \
+          --username $TESTRAIL_USERNAME \
+          --key $TESTRAIL_KEY \
+          parse_junit --title "SaaS Manual Run Test Results - ${{ github.event.inputs.clusterGenerationName }} - $(date '+%Y-%m-%d %H:%M:%S') - Run Number ${{ github.run_number }}" \
+          --close-run \
+          -f $JUNIT_RESULTS_FILE
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: junit-report
+        path: ./test-results
+        retention-days: 30
+    - name: Python setup
+      if: always()
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.x'

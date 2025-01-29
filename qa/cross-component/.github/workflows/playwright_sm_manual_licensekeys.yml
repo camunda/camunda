@@ -1,0 +1,356 @@
+name: C8 Self-Managed License Key
+
+on:
+  workflow_dispatch:
+    inputs:
+      helmRepositoryBranchName:
+        description: 'Branch Name in the Helm Repository'
+        required: true
+      helmRepositoryDirName:
+        description: 'Directory in the Helm Repository'
+        required: true
+      zeebeVersion:
+        description: 'Zeebe Version'
+        required: true
+      tasklistVersion:
+        description: 'Tasklist Version'
+        required: true
+      operateVersion:
+        description: 'Operate Version'
+        required: true
+      webModelerVersion:
+        description: 'Web Modeler Version'
+        required: true
+      consoleVersion:
+        description: 'Console Version'
+        required: false
+      identityVersion:
+        description: 'Identity Version'
+        required: true
+      connectorsVersion:
+        description: 'Connectors Version'
+        required: true
+      optimizeVersion:
+        description: 'Optimize Version'
+        required: true
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  helm-deploy:
+    name: Helm chart Integration Tests
+    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
+    secrets: inherit
+    with:
+      infra-type: standard
+      camunda-helm-git-ref: ${{ github.event.inputs.helmRepositoryBranchName }}
+      identifier: qa-e2e-${{ github.run_id }}
+      camunda-helm-dir: ${{ github.event.inputs.helmRepositoryDirName }}
+      deployment-ttl: 2d
+      test-enabled: true
+      extra-values: |
+        global:
+          env:
+            - name: CAMUNDA_LICENSE_KEY
+              value: 'camunda-license'
+          image:
+            pullPolicy: Always
+        # Console is still pre-alpha, and it has a different test flow.
+        zeebe:
+          image:
+            tag: ${{ github.event.inputs.zeebeVersion }}
+        tasklist:
+          image:
+            tag: ${{ github.event.inputs.tasklistVersion }}
+        operate:
+          image:
+            tag: ${{ github.event.inputs.operateVersion }}
+        webModeler:
+          restapi:
+            image:
+              tag: ${{ github.event.inputs.webModelerVersion }}
+          webapp:
+            image:
+              tag: ${{ github.event.inputs.webModelerVersion }}
+          websockets:
+            image:
+              tag: ${{ github.event.inputs.webModelerVersion }}
+        console:
+          image:
+            tag: ${{ github.event.inputs.consoleVersion }}
+        optimize:
+          image:
+            tag: ${{ github.event.inputs.optimizeVersion }}
+        identity:
+          image:
+            tag: ${{ github.event.inputs.identityVersion }}
+          firstUser:
+            existingSecret: null
+            user: demo
+            password: ${{ vars.DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD }}
+          # Keycloak client seed which is used to query Camunda APIs. 
+          env:
+          # TODO: Remove the KEYCLOAK_USERS env vars in favor of relying on the default configmap values
+          - name: KEYCLOAK_USERS_0_USERNAME
+            value: 'demo'
+          - name: KEYCLOAK_USERS_0_EMAIL
+            value: 'demo@example.com'
+          - name: KEYCLOAK_USERS_0_FIRSTNAME
+            value: 'Demo'
+          - name: KEYCLOAK_USERS_0_LASTNAME
+            value: 'User'
+          - name: KEYCLOAK_USERS_0_PASSWORD
+            value: ${{ vars.DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD }}
+          - name: KEYCLOAK_USERS_0_ROLES_0
+            value: Identity
+          - name: KEYCLOAK_USERS_0_ROLES_1
+            value: Operate
+          - name: KEYCLOAK_USERS_0_ROLES_2
+            value: Tasklist
+          - name: KEYCLOAK_USERS_0_ROLES_3
+            value: Optimize
+          - name: KEYCLOAK_USERS_0_ROLES_4
+            value: Web Modeler
+          - name: KEYCLOAK_USERS_0_ROLES_5
+            value: Console
+          - name: KEYCLOAK_CLIENTS_2_ID
+            value: venom
+          - name: KEYCLOAK_CLIENTS_2_NAME
+            value: Venom
+          - name: KEYCLOAK_CLIENTS_2_SECRET
+          - name: KEYCLOAK_CLIENTS_2_ID
+            value: venom
+          - name: KEYCLOAK_CLIENTS_2_NAME
+            value: Venom
+          - name: KEYCLOAK_CLIENTS_2_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: integration-test-credentials
+                key: identity-admin-client-password
+          - name: KEYCLOAK_CLIENTS_2_REDIRECT_URIS_0
+            value: /dummy
+          - name: KEYCLOAK_CLIENTS_2_ROOT_URL
+            value: http://dummy
+          - name: KEYCLOAK_CLIENTS_2_TYPE
+            value: CONFIDENTIAL
+          # Identity access.
+          - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_0_RESOURCE_SERVER_ID
+            value: camunda-identity-resource-server
+          - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_0_DEFINITION
+            value: read
+          - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_1_RESOURCE_SERVER_ID
+            value: camunda-identity-resource-server
+          - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_1_DEFINITION
+            value: write
+          # Operate access.
+          - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_2_RESOURCE_SERVER_ID
+            value: operate-api
+          - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_2_DEFINITION
+            value: "read:*"
+          - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_3_RESOURCE_SERVER_ID
+            value: operate-api
+          - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_3_DEFINITION
+            value: "write:*"
+          # Tasklist access.
+          - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_4_RESOURCE_SERVER_ID
+            value: tasklist-api
+          - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_4_DEFINITION
+            value: "read:*"
+          - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_5_RESOURCE_SERVER_ID
+            value: tasklist-api
+          - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_5_DEFINITION
+            value: "write:*"
+          # Optimize access.
+          - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_6_RESOURCE_SERVER_ID
+            value: optimize-api
+          - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_6_DEFINITION
+            value: "write:*"
+          # Zeebe access.
+          - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_7_RESOURCE_SERVER_ID
+            value: zeebe-api
+          - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_7_DEFINITION
+            value: "write:*"
+          # WebModeler access.
+          # NOTE: This actually should be only in the chart-with-web-modeler scenarios,
+          # but since Helm doesn't support merge lists it's added here.
+          # It could be removed later when the env vars could be configured via ConfigMap.
+          - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_8_RESOURCE_SERVER_ID
+            value: web-modeler-api
+          - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_8_DEFINITION
+            value: "write:*"
+          # Console access.
+          - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_9_RESOURCE_SERVER_ID
+            value: console-api
+          - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_9_DEFINITION
+            value: "write:*"
+          - name: KEYCLOAK_CLIENTS_3_ID
+            value: test
+          - name: KEYCLOAK_CLIENTS_3_NAME
+            value: Test
+          - name: KEYCLOAK_CLIENTS_3_SECRET
+            value: ${{ vars.DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET }}
+          - name: KEYCLOAK_CLIENTS_3_REDIRECT_URIS_0
+            value: /dummy
+          - name: KEYCLOAK_CLIENTS_3_ROOT_URL
+            value: http://dummy
+          - name: KEYCLOAK_CLIENTS_3_TYPE
+            value: CONFIDENTIAL
+          # Identity access.
+          - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_0_RESOURCE_SERVER_ID
+            value: camunda-identity-resource-server
+          - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_0_DEFINITION
+            value: read
+          - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_1_RESOURCE_SERVER_ID
+            value: camunda-identity-resource-server
+          - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_1_DEFINITION
+            value: write
+          # Operate access.
+          - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_2_RESOURCE_SERVER_ID
+            value: operate-api
+          - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_2_DEFINITION
+            value: "read:*"
+          - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_3_RESOURCE_SERVER_ID
+            value: operate-api
+          - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_3_DEFINITION
+            value: "write:*"
+          # Tasklist access.
+          - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_4_RESOURCE_SERVER_ID
+            value: tasklist-api
+          - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_4_DEFINITION
+            value: "read:*"
+          - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_5_RESOURCE_SERVER_ID
+            value: tasklist-api
+          - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_5_DEFINITION
+            value: "write:*"
+          # Optimize access.
+          - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_6_RESOURCE_SERVER_ID
+            value: optimize-api
+          - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_6_DEFINITION
+            value: "write:*"
+          # Zeebe access.
+          - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_7_RESOURCE_SERVER_ID
+            value: zeebe-api
+          - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_7_DEFINITION
+            value: "write:*"
+          # WebModeler access.
+          - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_8_RESOURCE_SERVER_ID
+            value: web-modeler-api
+          - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_8_DEFINITION
+            value: "write:*"
+          # Console access.
+          - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_9_RESOURCE_SERVER_ID
+            value: console-api
+          - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_9_DEFINITION
+            value: "write:*"
+        connectors:
+          image:
+            tag: ${{ github.event.inputs.connectorsVersion }}
+          env:
+          - name: username
+            value: username
+          - name: password
+            value: password
+  set-versions-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      helm_dir: ${{ steps.set-helm-dir.outputs.helm_dir }}
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Read JSON and set Matrix
+        id: set-helm-dir
+        run: |
+          helmRepositoryDirName="${{ github.event.inputs.helmRepositoryDirName }}"
+          echo "helmRepositoryDirName=${helmRepositoryDirName}"
+          
+          helm_dir=null
+          if [ "$helmRepositoryDirName" = "camunda-platform-alpha" ]; then
+            helm_dir='["SM-8.7"]'
+          elif [ "$helmRepositoryDirName" = "camunda-platform-8.6" ]; then
+            helm_dir='["SM-8.6"]'
+          elif [ "$helmRepositoryDirName" = "camunda-platform-8.5" ]; then
+            helm_dir='["SM-8.5"]'
+          elif [ "$helmRepositoryDirName" = "camunda-platform-8.4" ]; then
+            helm_dir='["SM-8.4"]'
+          elif [ "$helmRepositoryDirName" = "camunda-platform-8.3" ]; then
+            helm_dir='["SM-8.3"]'
+          elif [ "$helmRepositoryDirName" = "camunda-platform-8.2" ]; then
+            helm_dir='["SM-8.2"]'
+          else
+            echo "Unknown helmRepositoryDirName: $helmRepositoryDirName"
+            exit 1
+          fi
+
+          echo "Matrix: $helm_dir"
+          echo "helm_dir=$helm_dir" >> $GITHUB_OUTPUT
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run ESLint
+        run: npx eslint . --ext .ts
+
+  run-tests-sm:
+    name: Run tests
+    needs: [lint, set-versions-matrix, helm-deploy]
+    runs-on: 'gcp-core-32-longrunning-big-ssd'
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        version: ${{ fromJson(needs.set-versions-matrix.outputs.helm_dir) }}
+        project: ['chromium']
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Clear Playwright Cache
+        run: rm -rf $HOME/.cache/ms-playwright
+      - name: Set PLAYWRIGHT_BASE_URL
+        run: echo "BASE_URL=qa-e2e-${{ github.run_id }}" >> $GITHUB_ENV
+      - name: Authenticate to GKE
+        uses: camunda/camunda-platform-helm/.github/actions/gke-login@main
+        with:
+          cluster-name: ${{ secrets.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+          cluster-location: ${{ secrets.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+          workload-identity-provider: ${{ secrets.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service-account: ${{ secrets.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
+      - name: Create Camunda License Secret
+        run: |
+          echo "$CAMUNDA_LICENSE_CONTENT" > license.txt
+          kubectl create secret generic camunda-license \
+            --from-file=license=license.txt \
+            -n qa-e2e-${{ github.run_id }}
+        env:
+          CAMUNDA_LICENSE_CONTENT: ${{ secrets.LICENSE_KEY_INVALID_EXPIRED }}
+      - name: Run tests
+        uses: ./.github/actions/run-tests-sm
+        with:
+          version: ${{ matrix.version }}
+          project: ${{ matrix.project }}
+          c8_username: ${{ secrets.C8_USERNAME }}
+          c8_password: ${{ secrets.C8_PASSWORD }}
+          c8_username_test: ${{ secrets.C8_USERNAME_TEST }}
+          c8_password_test: ${{ secrets.C8_PASSWORD_TEST }}
+          c8_invalid_username: ${{ secrets.C8_INVALID_USERNAME }}
+          testrail_qa_email: ${{ secrets.TESTRAIL_QA_EMAIL }}
+          testrail_qa_key: ${{ secrets.TESTRAIL_QA_KEY }}
+          sm_password: ${{ vars.DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD }}
+          sm_client_secret: ${{ vars.DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET }}
+          cluster_endpoint: ${{ secrets.CLUSTER_ENDPOINT }}
+          oauth_url: ${{ secrets.OAUTH_URL }}
+          base_url: qa-e2e-${{ github.run_id }}
+          slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          operateBaseUrl: ${{ secrets.OPERATE_BASE_URL }}
+          tasklistBaseUrl: ${{ secrets.TASKLIST_BASE_URL }}
+          zeebeRestUrl: ${{ secrets.ZEEBE_REST_URL }}

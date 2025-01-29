@@ -1,0 +1,167 @@
+name: C8 SaaS Connectors Specific Test Run
+
+on:
+  workflow_dispatch:
+    inputs:
+      c8Version:
+        description: 'C8 Minor Version'
+        required: true
+      clusterGenerationName:
+        description: 'Cluster Generation Name'
+        required: true
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run ESLint
+        run: npx eslint . --ext .ts
+  create-organization:
+    runs-on: ubuntu-latest
+    outputs:
+      org_id: ${{ steps.extract_uuid.outputs.UUID }}
+      org_name: ${{ steps.org_name.outputs.ORG_NAME }}
+      org_token: ${{ steps.getAccessTokenRequest.outputs.response.access_token }}
+    steps:
+      - name: Generate Org Name
+        id: org_name
+        run: echo "::set-output name=ORG_NAME::$(openssl rand -hex 4)"
+      - name: Get access token for console
+        id: getAccessTokenRequest
+        uses: fjogeleit/http-request-action@v1.14.0
+        with:
+          url: 'https://weblogin.cloud.ultrawombat.com/oauth/token'
+          method: 'POST'
+          customHeaders: '{"Content-Type": "application/json"}'
+          data: |
+            {
+              "grant_type":"client_credentials", 
+              "audience":"cloud.ultrawombat.com", 
+              "client_id":"${{secrets.EXTERNAL_CONSOLE_API_CLIENT_ID}}",
+              "client_secret":"${{secrets.EXTERNAL_CONSOLE_API_CLIENT_SECRET}}"
+            }
+      - name: Set Token as Variable
+        id: set_variable
+        run: |
+          echo "TOKEN=${{ fromJson(steps.getAccessTokenRequest.outputs.response).access_token }}" >> $GITHUB_ENV
+      - name: Create Org
+        id: createOrgRequest
+        uses: fjogeleit/http-request-action@v1.14.0
+        with:
+          url: 'https://accounts.cloud.ultrawombat.com/external/qa/organizations'
+          method: 'POST'
+          customHeaders: |
+            {
+              "Content-Type": "application/json",
+              "Authorization": "Bearer ${{ env.TOKEN }}"
+            }
+          data: |
+            {
+              "name": "${{ steps.org_name.outputs.ORG_NAME }}",
+              "salesPlanType": "enterprise",
+              "users": [
+                {
+                  "roles": ["admin"],
+                  "userId": "auth0|662658e41ab98f3005316c28"
+                },
+                {
+                  "roles": ["developer"],
+                  "userId": "auth0|66265864be1d0453e75aba4c"
+                }
+              ]
+            }
+          timeout: 60000
+      - name: Extract UUID from Response
+        id: extract_uuid
+        run: echo "::set-output name=UUID::$(echo '${{ steps.createOrgRequest.outputs.response }}' | jq -r '.data.org.uuid')"
+
+      - name: Set UUID as Output
+        run: echo "ORG_ID=${{ steps.extract_uuid.outputs.UUID }}" >> $GITHUB_ENV
+
+  run-tests-connectors:
+    name: Run tests
+    needs: [lint, create-organization]
+    runs-on: 'gcp-core-32-longrunning-big-ssd'
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        version: ['${{ github.event.inputs.clusterGenerationName }}']
+        project: ['chromium']
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Run tests
+        uses: ./.github/actions/run-tests-connectors
+        with:
+          version: ${{ github.event.inputs.c8Version }}
+          project: ${{ matrix.project }}
+          c8_username: ${{ secrets.C8_USERNAME_CONNECTORS }}
+          c8_password: ${{ secrets.C8_PASSWORD }}
+          c8_username_test: ${{ secrets.C8_USERNAME_TEST_CONNECTORS }}
+          c8_password_test: ${{ secrets.C8_PASSWORD_TEST }}
+          c8_invalid_username: ${{ secrets.C8_INVALID_USERNAME }}
+          testrail_qa_email: ${{ secrets.TESTRAIL_QA_EMAIL }}
+          testrail_qa_key: ${{ secrets.TESTRAIL_QA_KEY }}
+          sm_password: ${{ vars.DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD }}
+          sm_client_secret: ${{ vars.DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET }}
+          cluster_endpoint: ${{ secrets.CLUSTER_ENDPOINT }}
+          oauth_url: ${{ secrets.OAUTH_URL }}
+          c8Version: ${{ github.event.inputs.c8Version }}
+          clusterGenerationName: ${{ github.event.inputs.clusterGenerationName }}
+          org_name: ${{ needs.create-organization.outputs.org_name }}
+          org_id: ${{ needs.create-organization.outputs.org_id }}
+          regionSelection: ${{ secrets.REGION_SELECTION }}
+  delete-organization:
+    runs-on: ubuntu-latest
+    needs: [create-organization, run-tests-connectors]
+    if: always()
+    steps:
+      - name: Get access token for console
+        id: getAccessTokenRequest
+        uses: fjogeleit/http-request-action@v1.14.0
+        with:
+          url: 'https://weblogin.cloud.ultrawombat.com/oauth/token'
+          method: 'POST'
+          customHeaders: '{"Content-Type": "application/json"}'
+          data: |
+            {
+              "grant_type":"client_credentials", 
+              "audience":"cloud.ultrawombat.com", 
+              "client_id":"${{secrets.EXTERNAL_CONSOLE_API_CLIENT_ID}}",
+              "client_secret":"${{secrets.EXTERNAL_CONSOLE_API_CLIENT_SECRET}}"
+            }
+      - name: Set Token as Variable
+        id: set_variable
+        run: |
+          echo "DELETE_ORG_TOKEN=${{ fromJson(steps.getAccessTokenRequest.outputs.response).access_token }}" >> $GITHUB_ENV
+      - name: Delete Org
+        id: deleteOrgRequest
+        uses: fjogeleit/http-request-action@v1.14.0
+        with:
+          url: 'https://accounts.cloud.ultrawombat.com/external/qa/organizations/${{ needs.create-organization.outputs.org_id }}'
+          method: 'DELETE'
+          customHeaders: |
+            {
+              "Content-Type": "application/json",
+              "Authorization": "Bearer ${{ env.DELETE_ORG_TOKEN }}"
+            }
+          data: |
+            {
+              "orgId": "${{ needs.create-organization.outputs.org_id }}"
+            }
+          timeout: 60000
