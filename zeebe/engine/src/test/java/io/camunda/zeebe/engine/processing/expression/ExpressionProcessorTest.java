@@ -288,7 +288,7 @@ class ExpressionProcessorTest {
     void testIt() {
       final var envVariable = System.getenv().keySet().stream().findFirst().get();
       final Expression expression =
-          EXPRESSION_LANGUAGE.parseExpression(String.format("=env.%s", envVariable));
+          EXPRESSION_LANGUAGE.parseExpression(String.format("=%s", envVariable));
 
       final EnvVariableEvaluationContext context =
           new EnvVariableEvaluationContext(Collections.emptyList());
