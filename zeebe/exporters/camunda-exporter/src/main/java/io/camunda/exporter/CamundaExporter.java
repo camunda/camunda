@@ -98,11 +98,8 @@ public class CamundaExporter implements Exporter {
         configuration,
         clientAdapter.getExporterEntityCacheProvider(),
         context.getMeterRegistry(),
-        metadata);
-    provider.getIndexDescriptors().forEach(descriptor -> descriptor.setPartitionId(partitionId));
-    provider
-        .getIndexTemplateDescriptors()
-        .forEach(descriptor -> descriptor.setPartitionId(partitionId));
+        metadata,
+        partitionId);
 
     taskManager =
         new BackgroundTaskManagerFactory(

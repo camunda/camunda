@@ -20,11 +20,20 @@ import java.util.function.BiConsumer;
 
 public interface ExporterResourceProvider {
 
+  default void init(
+      final ExporterConfiguration configuration,
+      final ExporterEntityCacheProvider entityCacheProvider,
+      final MeterRegistry meterRegistry,
+      final ExporterMetadata exporterMetadata) {
+    init(configuration, entityCacheProvider, meterRegistry, exporterMetadata, 1); // muhahahahaha
+  }
+
   void init(
       final ExporterConfiguration configuration,
       final ExporterEntityCacheProvider entityCacheProvider,
       final MeterRegistry meterRegistry,
-      final ExporterMetadata exporterMetadata);
+      final ExporterMetadata exporterMetadata,
+      final int partitionId);
 
   void close();
 

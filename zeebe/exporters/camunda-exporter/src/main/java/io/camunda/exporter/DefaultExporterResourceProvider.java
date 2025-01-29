@@ -123,11 +123,13 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
       final ExporterConfiguration configuration,
       final ExporterEntityCacheProvider entityCacheProvider,
       final MeterRegistry meterRegistry,
-      final ExporterMetadata exporterMetadata) {
+      final ExporterMetadata exporterMetadata,
+      final int partitionId) {
     final var globalPrefix = configuration.getIndex().getPrefix();
     final var isElasticsearch =
         ConnectionTypes.isElasticSearch(configuration.getConnect().getType());
     indexDescriptors = new IndexDescriptors(globalPrefix, isElasticsearch);
+    indexDescriptors.all().forEach(d -> d.setPartitionId(partitionId));
     this.exporterMetadata = exporterMetadata;
 
     final var processCache =
