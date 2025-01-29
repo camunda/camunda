@@ -91,6 +91,7 @@ const selfManagedEnv = {
   CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED: true,
   SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:
     'http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/certs',
+  MANAGEMENT_SERVER_PORT: '19600',
 };
 
 const server = createServer({showLogsInTerminal: ciMode}, {restartBackend});
@@ -98,6 +99,42 @@ const server = createServer({showLogsInTerminal: ciMode}, {restartBackend});
 setVersionInfo().then(setupEnvironment).then(startBackend);
 
 function startBackend() {
+  return new Promise((resolve, reject) => {
+  const engineEnv = {
+        cloud: cloudEnv,
+        'self-managed': selfManagedEnv,
+      };
+
+    backendProcess = spawnWithArgs(
+      `dist/target/camunda-zeebe/bin/optimize`,
+      {
+        cwd: _resolve(__dirname, '..', '..', '..'),
+        shell: true,
+        env: {
+          ...process.env,
+          ...commonEnv,
+          ...engineEnv[mode],
+        },
+      }
+    );
+
+    backendProcess.stdout.on('data', (data) => server.addLog(data, 'backend'));
+    backendProcess.stderr.on('data', (data) => server.addLog(data, 'backend', true));
+    backendProcess.on('close', (code) => {
+      backendProcess = null;
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(code);
+      }
+    });
+
+    // wait for the optimize endpoint to be up before resolving the promise
+    serverCheck('http://localhost:8080/api/readyz', resolve);
+  });
+}
+
+function startBackend_old() {
   return new Promise((resolve, reject) => {
     const pathSep = platform() === 'win32' ? ';' : ':';
     const classPaths = [
