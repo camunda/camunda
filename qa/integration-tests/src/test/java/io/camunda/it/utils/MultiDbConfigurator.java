@@ -58,9 +58,6 @@ public class MultiDbConfigurator {
     tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
     tasklistProperties.getZeebeElasticsearch().setUrl(elasticsearchUrl);
     tasklistProperties.getZeebeElasticsearch().setPrefix(indexPrefix);
-    tasklistProperties.getElasticsearch().setUrl(elasticsearchUrl);
-    tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
-    tasklistProperties.getZeebeElasticsearch().setUrl(elasticsearchUrl);
     // application
     testApplication.withExporter(
         "CamundaExporter",
