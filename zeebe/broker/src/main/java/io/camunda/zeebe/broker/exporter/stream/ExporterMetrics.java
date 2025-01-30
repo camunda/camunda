@@ -7,59 +7,85 @@
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
+import io.camunda.zeebe.broker.exporter.stream.ExporterMetricsDoc.ExporterActionKeyNames;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.prometheus.client.Counter;
-import io.prometheus.client.Gauge;
+import io.camunda.zeebe.util.collection.Table;
+import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class ExporterMetrics {
+  private static final String LABEL_NAME_EXPORTER = "exporter";
+  private static final String LABEL_NAME_ACTION = "action";
+  private static final String LABEL_NAME_VALUE_TYPE = "valueType";
 
-  private static final Counter EXPORTER_EVENTS =
-      Counter.build()
-          .namespace("zeebe")
-          .name("exporter_events_total")
-          .help("Number of events processed by exporter")
-          .labelNames("action", "partition", "valueType")
-          .register();
+  private final Map<String, AtomicLong> lastExportedPositions = new HashMap<>();
+  private final Map<String, AtomicLong> lastUpdatedExportedPositions = new HashMap<>();
+  private final Table<Counter, ExporterActionKeyNames, ValueType> exporterEvents =
+      Table.ofEnum(ExporterActionKeyNames.class, ValueType.class, Counter[]::new);
 
-  private static final Gauge LAST_EXPORTED_POSITION =
-      Gauge.build()
-          .namespace("zeebe")
-          .name("exporter_last_exported_position")
-          .help("The last exported position by exporter and partition.")
-          .labelNames("exporter", "partition")
-          .register();
+  private final MeterRegistry meterRegistry;
 
-  private static final Gauge LAST_UPDATED_EXPORTED_POSITION =
-      Gauge.build()
-          .namespace("zeebe")
-          .name("exporter_last_updated_exported_position")
-          .help("The last exported position which was also updated/commited by the exporter.")
-          .labelNames("exporter", "partition")
-          .register();
-
-  private final String partitionIdLabel;
-
-  public ExporterMetrics(final int partitionId) {
-    partitionIdLabel = String.valueOf(partitionId);
-  }
-
-  private void event(final String action, final ValueType valueType) {
-    EXPORTER_EVENTS.labels(action, partitionIdLabel, valueType.name()).inc();
+  public ExporterMetrics(final MeterRegistry meterRegistry) {
+    this.meterRegistry = Objects.requireNonNull(meterRegistry, "must specify a meter registry");
   }
 
   public void eventExported(final ValueType valueType) {
-    event("exported", valueType);
+    event(ExporterActionKeyNames.EXPORTED, valueType);
   }
 
   public void eventSkipped(final ValueType valueType) {
-    event("skipped", valueType);
+    event(ExporterActionKeyNames.SKIPPED, valueType);
   }
 
   public void setLastUpdatedExportedPosition(final String exporter, final long position) {
-    LAST_UPDATED_EXPORTED_POSITION.labels(exporter, partitionIdLabel).set(position);
+    lastUpdatedExportedPositions
+        .computeIfAbsent(
+            exporter,
+            id ->
+                registerPerExporterGauge(
+                    ExporterMetricsDoc.LAST_UPDATED_EXPORTED_POSITION, id, position))
+        .set(position);
   }
 
   public void setLastExportedPosition(final String exporter, final long position) {
-    LAST_EXPORTED_POSITION.labels(exporter, partitionIdLabel).set(position);
+    lastExportedPositions
+        .computeIfAbsent(
+            exporter,
+            id -> registerPerExporterGauge(ExporterMetricsDoc.LAST_EXPORTED_POSITION, id, position))
+        .set(position);
+  }
+
+  private void event(final ExporterActionKeyNames action, final ValueType valueType) {
+    exporterEvents
+        .computeIfAbsent(action, valueType, this::registerExporterEventCounter)
+        .increment();
+  }
+
+  private Counter registerExporterEventCounter(
+      final ExporterActionKeyNames action, final ValueType valueType) {
+    final var meterDoc = ExporterMetricsDoc.EXPORTER_EVENTS;
+    return Counter.builder(meterDoc.getName())
+        .description(meterDoc.getDescription())
+        .tag(LABEL_NAME_ACTION, action.name())
+        .tag(LABEL_NAME_VALUE_TYPE, valueType.name())
+        .register(meterRegistry);
+  }
+
+  private AtomicLong registerPerExporterGauge(
+      final ExtendedMeterDocumentation meterDoc,
+      final String exporterId,
+      final long initialPosition) {
+    final var position = new AtomicLong(initialPosition);
+    Gauge.builder(meterDoc.getName(), position, Number::longValue)
+        .tag(LABEL_NAME_EXPORTER, exporterId)
+        .description(meterDoc.getDescription())
+        .register(meterRegistry);
+    return position;
   }
 }
