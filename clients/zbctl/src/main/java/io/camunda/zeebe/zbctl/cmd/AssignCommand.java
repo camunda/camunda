@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 package io.camunda.zeebe.zbctl.cmd;
 
 import io.camunda.client.api.response.AssignUserTaskResponse;
@@ -12,7 +19,7 @@ import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-@Command(name = "assign", description = "Create resources")
+@Command(name = "assign", description = "Assign a user task")
 public class AssignCommand {
 
   @Command(name = "userTask", description = "Assign a user task")
