@@ -9,6 +9,7 @@ package io.camunda.exporter.tasks.incident;
 
 import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
 import jakarta.mail.Authenticator;
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
@@ -25,10 +26,14 @@ import java.util.concurrent.CompletionStage;
 
 public class IncidentAlertTask implements BackgroundTask {
 
-  final IncidentUpdateRepository incidentUpdateRepository;
+  private final IncidentUpdateRepository incidentUpdateRepository;
+  private final ConnectConfiguration connectConfiguration;
 
-  public IncidentAlertTask(final IncidentUpdateRepository incidentUpdateRepository) {
+  public IncidentAlertTask(
+      final IncidentUpdateRepository incidentUpdateRepository,
+      final ConnectConfiguration connectConfiguration) {
     this.incidentUpdateRepository = incidentUpdateRepository;
+    this.connectConfiguration = connectConfiguration;
   }
 
   @Override
@@ -44,7 +49,16 @@ public class IncidentAlertTask implements BackgroundTask {
       incidents.forEach(
           (id, incident) -> {
             System.out.println("berkay Incident: " + id + " - " + incident);
-            sendEmail(incident.incident().getErrorMessage());
+            final String errorMessage = incident.incident().getErrorMessage();
+
+            sendEmail(
+                errorMessage
+                    + " \n \n"
+                    + "See incident in Operate for more details: "
+                    + "http://localhost:8080" // TODO - it needs to be added to the config as such
+                    // .connectConfiguration.getOperateFrontendUrl()
+                    + "/operate/processes/"
+                    + incident.incident().getProcessInstanceKey());
           });
       return CompletableFuture.completedFuture(1);
     } catch (final Exception e) {
@@ -79,6 +93,7 @@ public class IncidentAlertTask implements BackgroundTask {
       message.setFrom(new InternetAddress(from));
       message.addRecipient(Message.RecipientType.TO, new InternetAddress(to));
       message.setSubject("Camunda Alert");
+      final String messageText = incidentMessage;
       message.setText(incidentMessage);
 
       Transport.send(message);

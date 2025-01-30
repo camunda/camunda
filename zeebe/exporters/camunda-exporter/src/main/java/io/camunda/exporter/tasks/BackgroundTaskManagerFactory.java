@@ -101,7 +101,12 @@ public final class BackgroundTaskManagerFactory {
     tasks.add(buildIncidentMarkerTask());
     tasks.add(
         new ReschedulingTask(
-            new IncidentAlertTask(incidentRepository), 1, 5000, 5000, executor, logger));
+            new IncidentAlertTask(incidentRepository, config.getConnect()),
+            1,
+            5000,
+            5000,
+            executor,
+            logger));
 
     if (config.getArchiver().isRolloverEnabled()) {
       threadCount = 2;
