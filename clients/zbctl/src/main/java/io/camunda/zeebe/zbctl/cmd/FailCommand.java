@@ -7,8 +7,11 @@
  */
 package io.camunda.zeebe.zbctl.cmd;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.camunda.client.api.response.FailJobResponse;
 import io.camunda.zeebe.zbctl.cmd.FailCommand.JobCommand;
+import io.camunda.zeebe.zbctl.converters.JsonInputConverter;
 import io.camunda.zeebe.zbctl.mixin.ClientMixin;
 import io.camunda.zeebe.zbctl.mixin.OutputMixin;
 import java.time.Duration;
@@ -18,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.ExitCode;
 import picocli.CommandLine.Mixin;
+import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 @Command(
@@ -35,18 +39,53 @@ public class FailCommand {
     @Parameters(paramLabel = "<job key>", description = "The job key", type = Long.class)
     private Long jobKey;
 
+    @Option(
+        names = {"--retries"},
+        paramLabel = "<retries>",
+        description = "Specify the retries left",
+        type = Integer.class)
+    private int retries;
+
+    @Option(
+        names = {"--errorMessage"},
+        paramLabel = "<errorMessage>",
+        description = "Specifies an error message for the failure",
+        type = String.class)
+    private String errorMessage;
+
+    @Option(
+        names = {"--variables"},
+        paramLabel = "<variables>",
+        description = "Specify an optional fail variables as JSON string or path to JSON file",
+        defaultValue = "{}",
+        converter = JsonInputConverter.class)
+    private JsonInputConverter.JsonInput variables;
+
     @Override
     public Integer call() throws Exception {
       try (final var client = clientMixin.client()) {
-        final var command =
-            client
-                .newFailCommand(jobKey)
-                .retries(3)
-                .retryBackoff(Duration.of(3, ChronoUnit.SECONDS));
+        final var command = prepareCommand(client);
         final var response = command.send().join(30, TimeUnit.SECONDS);
         outputMixin.formatter().write(response, FailJobResponse.class);
       }
       return ExitCode.OK;
+    }
+
+    private FailJobCommandStep2 prepareCommand(final CamundaClient client) throws Exception {
+      final var command =
+          client
+              .newFailCommand(jobKey)
+              .retries(retries)
+              .retryBackoff(Duration.of(3, ChronoUnit.SECONDS));
+
+      if (errorMessage != null) {
+        command.errorMessage(errorMessage);
+      }
+      try (final var variablesInput = variables.open()) {
+        command.variables(variablesInput);
+      }
+
+      return command;
     }
   }
 }
