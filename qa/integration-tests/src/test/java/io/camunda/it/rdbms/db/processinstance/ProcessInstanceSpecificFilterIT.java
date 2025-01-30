@@ -65,7 +65,7 @@ public class ProcessInstanceSpecificFilterIT {
                     .processDefinitionId("test-process-987654321")
                     .name("Test Process 987654321")
                     .versionTag("Version 1")));
-    createAndSaveRandomProcessInstances(rdbmsWriter);
+    createAndSaveRandomProcessInstances(rdbmsWriter, b -> b.state(ProcessInstanceState.COMPLETED));
     createAndSaveProcessInstance(
         rdbmsWriter,
         ProcessInstanceFixtures.createRandomized(

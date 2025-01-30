@@ -41,7 +41,7 @@
         IN <foreach collection="operation.values" item="value" open="(" separator=", " close=")">#{value}</foreach>
       </when>
       <when test="operation.operator.name().equals('LIKE')">
-        LIKE #{operation.value}
+        LIKE #{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler}
       </when>
     </choose>
   </sql>

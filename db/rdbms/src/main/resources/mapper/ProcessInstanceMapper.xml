@@ -109,11 +109,13 @@
         AND TENANT_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
-    <if test="filter.hasIncident != null and filter.hasIncident == true">
-      AND NUM_INCIDENTS > 0
-    </if>
-    <if test="filter.hasIncident != null and filter.hasIncident == false">
-      AND NUM_INCIDENTS = 0
+    <if test="filter.hasIncident != null">
+      <if test="filter.hasIncident == true">
+        AND pi.NUM_INCIDENTS > 0
+      </if>
+      <if test="filter.hasIncident == false">
+        AND pi.NUM_INCIDENTS = 0
+      </if>
     </if>
 
     <!-- date filters -->
@@ -142,6 +144,26 @@
     <if test="filter.processDefinitionVersionTagOperations != null and !filter.processDefinitionVersionTagOperations.isEmpty()">
       <foreach collection="filter.processDefinitionVersionTagOperations" item="operation">
         AND pd.VERSION_TAG <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+
+    <!-- Variable filters -->
+    <if test="filter.variableFilters != null and !filter.variableFilters.isEmpty()">
+      <foreach collection="filter.variableFilters" item="variableFilter"
+        open="AND (" separator=" OR " close=")">
+        EXISTS (
+        SELECT 1
+        FROM ${prefix}VARIABLE v
+        WHERE v.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
+        AND v.VAR_NAME = #{variableFilter.name}
+        <if
+          test="variableFilter.valueOperations != null and !variableFilter.valueOperations.isEmpty()">
+          <foreach collection="variableFilter.valueOperations" item="operation">
+            AND
+            <include refid="io.camunda.db.rdbms.sql.Commons.variableOperationCondition"/>
+          </foreach>
+        </if>
+        )
       </foreach>
     </if>
   </sql>
