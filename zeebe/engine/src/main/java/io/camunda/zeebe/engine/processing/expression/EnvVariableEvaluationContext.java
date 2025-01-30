@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.expression;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public class EnvVariableEvaluationContext implements ScopedEvaluationContext {
   public static final List<String> ALLOWED_ENVIRONMENT_VARIABLE_PREFIXES =
@@ -35,6 +36,11 @@ public class EnvVariableEvaluationContext implements ScopedEvaluationContext {
     }
 
     return null;
+  }
+
+  @Override
+  public Stream<String> getVariables() {
+    return Stream.empty();
   }
 
   private boolean isAllowed(final String variableName) {

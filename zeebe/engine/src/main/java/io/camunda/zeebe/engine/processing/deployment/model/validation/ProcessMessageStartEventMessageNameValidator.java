@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
+import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
@@ -64,7 +65,7 @@ final class ProcessMessageStartEventMessageNameValidator
     final Expression parseResult = expressionLanguage.parseExpression(nameExpression);
 
     final EvaluationResult evaluationResult =
-        expressionLanguage.evaluateExpression(parseResult, var -> null);
+        expressionLanguage.evaluateExpression(parseResult, EvaluationContext.empty());
 
     if (evaluationResult.isFailure()) {
       resultCollector.addError(

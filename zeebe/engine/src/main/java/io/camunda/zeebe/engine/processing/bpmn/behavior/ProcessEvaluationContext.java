@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 public class ProcessEvaluationContext implements ScopedEvaluationContext {
 
@@ -46,6 +47,11 @@ public class ProcessEvaluationContext implements ScopedEvaluationContext {
     }
 
     return null;
+  }
+
+  @Override
+  public Stream<String> getVariables() {
+    return Stream.of("elements");
   }
 
   private Object getElements() {

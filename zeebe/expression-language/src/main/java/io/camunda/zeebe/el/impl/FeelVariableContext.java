@@ -13,7 +13,6 @@ import org.camunda.feel.context.VariableProvider;
 import org.camunda.feel.syntaxtree.ValContext;
 import scala.Option;
 import scala.collection.Iterable;
-import scala.collection.immutable.List$;
 
 final class FeelVariableContext extends CustomContext {
   private final EvaluationContext context;
@@ -41,7 +40,7 @@ final class FeelVariableContext extends CustomContext {
 
     @Override
     public Iterable<String> keys() {
-      return List$.MODULE$.empty();
+      return scala.jdk.javaapi.CollectionConverters.asScala(context.getVariables().toList());
     }
 
     private ValContext getNamespaceFromContext(final String name) {

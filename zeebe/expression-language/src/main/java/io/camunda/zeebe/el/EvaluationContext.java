@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.el;
 
+import java.util.Map;
+import java.util.stream.Stream;
+
 /** The context for evaluating an expression. */
 public interface EvaluationContext {
   /**
@@ -17,4 +20,26 @@ public interface EvaluationContext {
    *     not present
    */
   Object getVariable(String variableName);
+
+  default Stream<String> getVariables() {
+    return Stream.empty();
+  }
+
+  static <A> EvaluationContext ofMap(final Map<String, A> map) {
+    return new EvaluationContext() {
+      @Override
+      public Object getVariable(final String variableName) {
+        return map.get(variableName);
+      }
+
+      @Override
+      public Stream<String> getVariables() {
+        return map.keySet().stream();
+      }
+    };
+  }
+
+  static EvaluationContext empty() {
+    return variableName -> null;
+  }
 }

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.expression;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 
 public class NamespacedContext implements ScopedEvaluationContext {
 
@@ -26,6 +27,11 @@ public class NamespacedContext implements ScopedEvaluationContext {
   @Override
   public ScopedEvaluationContext getVariable(final String variableName) {
     return namespaces.get(variableName);
+  }
+
+  @Override
+  public Stream<String> getVariables() {
+    return namespaces.keySet().stream();
   }
 
   @Override

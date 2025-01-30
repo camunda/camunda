@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 
 public class FeelExpressionTest {
 
-  private static final EvaluationContext EMPTY_CONTEXT = name -> null;
+  private static final EvaluationContext EMPTY_CONTEXT = EvaluationContext.empty();
 
   private final TestFeelEngineClock clock = new TestFeelEngineClock();
 
@@ -69,7 +69,7 @@ public class FeelExpressionTest {
   @Test
   public void pathExpression() {
     final var context = Map.of("x", asMsgPack(Map.of("y", "z")));
-    final var evaluationResult = evaluateExpression("x.y", context::get);
+    final var evaluationResult = evaluateExpression("x.y", EvaluationContext.ofMap(context));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("z");
@@ -78,7 +78,7 @@ public class FeelExpressionTest {
   @Test
   public void comparison() {
     final var context = Map.of("x", asMsgPack("2"));
-    final var evaluationResult = evaluateExpression("x < 4", context::get);
+    final var evaluationResult = evaluateExpression("x < 4", EvaluationContext.ofMap(context));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isEqualTo(true);
@@ -90,7 +90,7 @@ public class FeelExpressionTest {
         Map.of(
             "x", asMsgPack("true"),
             "y", asMsgPack("false"));
-    final var evaluationResult = evaluateExpression("x and y", context::get);
+    final var evaluationResult = evaluateExpression("x and y", EvaluationContext.ofMap(context));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isEqualTo(false);
@@ -102,7 +102,7 @@ public class FeelExpressionTest {
         Map.of(
             "x", asMsgPack("true"),
             "y", asMsgPack("false"));
-    final var evaluationResult = evaluateExpression("x or y", context::get);
+    final var evaluationResult = evaluateExpression("x or y", EvaluationContext.ofMap(context));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isEqualTo(true);
@@ -111,7 +111,8 @@ public class FeelExpressionTest {
   @Test
   public void someExpression() {
     final var context = Map.of("xs", asMsgPack("[1, 2, 3]"));
-    final var evaluationResult = evaluateExpression("some x in xs satisfies x > 2", context::get);
+    final var evaluationResult =
+        evaluateExpression("some x in xs satisfies x > 2", EvaluationContext.ofMap(context));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isEqualTo(true);
@@ -120,7 +121,8 @@ public class FeelExpressionTest {
   @Test
   public void everyExpression() {
     final var context = Map.of("xs", asMsgPack("[1, 2, 3]"));
-    final var evaluationResult = evaluateExpression("every x in xs satisfies x > 2", context::get);
+    final var evaluationResult =
+        evaluateExpression("every x in xs satisfies x > 2", EvaluationContext.ofMap(context));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isEqualTo(false);
@@ -129,7 +131,8 @@ public class FeelExpressionTest {
   @Test
   public void builtinFunctionInvocation() {
     final var context = Map.of("x", asMsgPack("\"foo\""));
-    final var evaluationResult = evaluateExpression("upper case(x)", context::get);
+    final var evaluationResult =
+        evaluateExpression("upper case(x)", EvaluationContext.ofMap(context));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("FOO");
@@ -138,7 +141,7 @@ public class FeelExpressionTest {
   @Test
   public void accessListElement() {
     final var context = Map.of("x", asMsgPack("[\"a\",\"b\"]"));
-    final var evaluationResult = evaluateExpression("x[1]", context::get);
+    final var evaluationResult = evaluateExpression("x[1]", EvaluationContext.ofMap(context));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("a");
@@ -147,7 +150,7 @@ public class FeelExpressionTest {
   @Test
   public void accessPropertyOfListElement() {
     final var context = Map.of("x", asMsgPack("[{\"y\":\"a\"},{\"y\":\"b\"}]"));
-    final var evaluationResult = evaluateExpression("x[2].y", context::get);
+    final var evaluationResult = evaluateExpression("x[2].y", EvaluationContext.ofMap(context));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("b");
@@ -156,7 +159,7 @@ public class FeelExpressionTest {
   @Test
   public void listProjection() {
     final var context = Map.of("x", asMsgPack("[{\"y\":1},{\"y\":2}]"));
-    final var evaluationResult = evaluateExpression("x.y", context::get);
+    final var evaluationResult = evaluateExpression("x.y", EvaluationContext.ofMap(context));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.ARRAY);
     assertThat(evaluationResult.getList()).isEqualTo(List.of(asMsgPack("1"), asMsgPack("2")));
@@ -222,7 +225,8 @@ public class FeelExpressionTest {
   public void checkIfDefinedWithNullVariable() {
     final var context = Map.of("x", asMsgPack("null"));
 
-    final var evaluationResult = evaluateExpression("is defined(x)", context::get);
+    final var evaluationResult =
+        evaluateExpression("is defined(x)", EvaluationContext.ofMap(context));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isFalse();

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
+import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
@@ -38,7 +39,7 @@ public final class SignalTransformer implements ModelElementTransformer<Signal> 
 
       if (signalNameExpression.isStatic()) {
         final EvaluationResult signalNameResult =
-            expressionLanguage.evaluateExpression(signalNameExpression, variable -> null);
+            expressionLanguage.evaluateExpression(signalNameExpression, EvaluationContext.empty());
 
         if (signalNameResult.getType() == ResultType.STRING) {
           final String signalName = signalNameResult.getString();

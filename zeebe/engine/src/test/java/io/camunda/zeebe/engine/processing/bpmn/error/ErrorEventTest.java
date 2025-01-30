@@ -717,8 +717,7 @@ public class ErrorEventTest {
                         b.error(ERROR_CODE)
                             .zeebeOutputExpression("camunda.error.code", "code")
                             .zeebeOutputExpression("camunda.error.message", "message")
-                            //                            .zeebeOutputExpression("camunda.error",
-                            // "error")
+                            .zeebeOutputExpression("camunda.error", "error")
                             .endEvent())
                 .done())
         .deploy();
@@ -741,7 +740,14 @@ public class ErrorEventTest {
             .limit(3)
             .collect(Collectors.toMap(r -> r.getValue().getName(), c -> c.getValue().getValue()));
 
-    final var expected = Map.of("code", "\"ERROR\"", "message", "\"my msg\"");
+    final var expected =
+        Map.of(
+            "code",
+            "\"ERROR\"",
+            "message",
+            "\"my msg\"",
+            "error",
+            "{\"code\":\"ERROR\",\"message\":\"my msg\"}");
     assertThat(variables).containsAllEntriesOf(expected);
   }
 }

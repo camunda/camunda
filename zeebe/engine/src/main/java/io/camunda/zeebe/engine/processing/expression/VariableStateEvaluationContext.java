@@ -8,7 +8,9 @@
 package io.camunda.zeebe.engine.processing.expression;
 
 import io.camunda.zeebe.engine.state.immutable.VariableState;
+import io.camunda.zeebe.engine.state.immutable.VariableState.Variable;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.stream.Stream;
 
 public class VariableStateEvaluationContext implements ScopedEvaluationContext {
 
@@ -33,6 +35,13 @@ public class VariableStateEvaluationContext implements ScopedEvaluationContext {
     final var value = variableState.getVariable(scopeKey, BufferUtil.wrapString(variableName));
 
     return value != null && value.capacity() > 0 ? value : null;
+  }
+
+  @Override
+  public Stream<String> getVariables() {
+    return variableState.getVariablesLocal(scopeKey).stream()
+        .map(Variable::name)
+        .map(BufferUtil::bufferAsString);
   }
 
   @Override

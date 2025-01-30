@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.expression;
 
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import java.util.stream.Stream;
 
 public class ProcessInstanceEvaluationContext implements ScopedEvaluationContext {
 
@@ -37,6 +38,11 @@ public class ProcessInstanceEvaluationContext implements ScopedEvaluationContext
       case "elementType" -> getRecord().getBpmnElementType();
       default -> null;
     };
+  }
+
+  @Override
+  public Stream<String> getVariables() {
+    return Stream.of("key", "elementType");
   }
 
   private ProcessInstanceRecord getRecord() {

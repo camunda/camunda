@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.MultiInstanceOutputColle
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.expression.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.expression.ScopedEvaluationContext;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -395,14 +397,31 @@ public final class MultiInstanceBodyProcessor
         element.getLoopCharacteristics().getCompletionCondition();
 
     if (completionCondition.isPresent()) {
+      final var primaryContext =
+          new ScopedEvaluationContext() {
+
+            @Override
+            public Object getVariable(final String variableName) {
+              return getVariableFrom(context.getFlowScopeKey(), variableName);
+            }
+
+            @Override
+            public Stream<String> getVariables() {
+              return Stream.of(
+                  "numberOfInstances",
+                  "numberOfActiveInstances",
+                  "numberOfCompletedInstances",
+                  "numberOfTerminatedInstances");
+            }
+          };
       return expressionBehavior
-          .withPrimaryContext(variableName -> getVariable(context.getFlowScopeKey(), variableName))
+          .withPrimaryContext(primaryContext)
           .evaluateBooleanExpression(completionCondition.get(), context.getElementInstanceKey());
     }
     return Either.right(false);
   }
 
-  private DirectBuffer getVariable(final long elementInstanceKey, final String variableName) {
+  private DirectBuffer getVariableFrom(final long elementInstanceKey, final String variableName) {
     return switch (variableName) {
       case "numberOfInstances" -> getNumberOfInstancesVariable(elementInstanceKey);
 

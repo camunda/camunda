@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.expression;
 
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
+import java.util.stream.Stream;
 
 public class ErrorEvaluationContext implements ScopedEvaluationContext {
 
@@ -25,6 +26,11 @@ public class ErrorEvaluationContext implements ScopedEvaluationContext {
       case "message" -> getErrorMessage();
       default -> throw new IllegalArgumentException("Mustafa did this");
     };
+  }
+
+  @Override
+  public Stream<String> getVariables() {
+    return Stream.of("code", "message");
   }
 
   private String getErrorCode() {

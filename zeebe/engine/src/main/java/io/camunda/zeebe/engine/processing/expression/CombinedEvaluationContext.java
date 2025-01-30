@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.expression;
 
+import io.camunda.zeebe.el.EvaluationContext;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public final class CombinedEvaluationContext implements ScopedEvaluationContext {
 
@@ -41,5 +43,10 @@ public final class CombinedEvaluationContext implements ScopedEvaluationContext 
         .filter(Objects::nonNull)
         .findFirst()
         .orElse(null);
+  }
+
+  @Override
+  public Stream<String> getVariables() {
+    return contexts.stream().flatMap(EvaluationContext::getVariables);
   }
 }

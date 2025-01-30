@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 
 public class ExpressionLanguageTest {
 
-  private static final EvaluationContext EMPTY_CONTEXT = name -> null;
+  private static final EvaluationContext EMPTY_CONTEXT = EvaluationContext.empty();
 
   private final ExpressionLanguage expressionLanguage =
       ExpressionLanguageFactory.createExpressionLanguage(new TestFeelEngineClock());
@@ -159,7 +159,8 @@ public class ExpressionLanguageTest {
   public void shouldEvaluateExpression() {
     final var expression = expressionLanguage.parseExpression("=x");
     final var evaluationResult =
-        expressionLanguage.evaluateExpression(expression, Map.of("x", asMsgPack("\"x\""))::get);
+        expressionLanguage.evaluateExpression(
+            expression, EvaluationContext.ofMap(Map.of("x", asMsgPack("\"x\""))));
 
     assertThat(evaluationResult).isNotNull();
     assertThat(evaluationResult.isFailure()).isFalse();

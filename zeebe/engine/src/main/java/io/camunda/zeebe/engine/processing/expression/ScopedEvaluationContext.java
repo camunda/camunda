@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.expression;
 
 import io.camunda.zeebe.el.EvaluationContext;
 
-@FunctionalInterface
 public interface ScopedEvaluationContext extends EvaluationContext {
 
   default ScopedEvaluationContext scoped(final long scopeKey) {
@@ -17,6 +16,11 @@ public interface ScopedEvaluationContext extends EvaluationContext {
   }
 
   static ScopedEvaluationContext none() {
-    return unused -> null;
+    return new ScopedEvaluationContext() {
+      @Override
+      public Object getVariable(final String variableName) {
+        return null;
+      }
+    };
   }
 }

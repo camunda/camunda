@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.expression;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public class UserTaskEvaluationContext implements ScopedEvaluationContext {
 
@@ -36,21 +37,22 @@ public class UserTaskEvaluationContext implements ScopedEvaluationContext {
   }
 
   @Override
+  public Stream<String> getVariables() {
+    return Stream.of("assignee");
+  }
+
+  @Override
   public ScopedEvaluationContext scoped(final long scopeKey) {
     return new UserTaskEvaluationContext(processingState, scopeKey);
   }
 
   private Optional<Object> resolveVariable(final String variableName) {
-    switch (variableName) {
-      case "assignee":
-        return findUserTask().map(UserTaskRecord::getAssignee);
-      case "priority":
-        return findUserTask().map(UserTaskRecord::getPriority);
-      case "formKey":
-        return findUserTask().map(UserTaskRecord::getFormKey);
-      default:
-        return Optional.empty();
-    }
+    return switch (variableName) {
+      case "assignee" -> findUserTask().map(UserTaskRecord::getAssignee);
+      case "priority" -> findUserTask().map(UserTaskRecord::getPriority);
+      case "formKey" -> findUserTask().map(UserTaskRecord::getFormKey);
+      default -> Optional.empty();
+    };
   }
 
   private Optional<UserTaskRecord> findUserTask() {
