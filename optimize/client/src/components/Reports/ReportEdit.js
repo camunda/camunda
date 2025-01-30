@@ -301,9 +301,11 @@ export function ReportEdit({report: initialReport, isNew, error, updateOverview}
     isMounted.current = true;
   }, [loadUpdatedReport, report, save]);
 
-  if (redirect) {
-    history.push(redirect);
-  }
+  useEffect(() => {
+    if (redirect) {
+      history.push(redirect);
+    }
+  }, [redirect]);
 
   const {name, description, data, reportType} = report;
 
