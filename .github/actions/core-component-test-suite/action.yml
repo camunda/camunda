@@ -1,5 +1,5 @@
 name: "Run Cross component test suite"
-description: "A Github action to run E2E tests"
+description: "A GitHub action to run E2E tests"
 
 inputs:
   version:
@@ -12,21 +12,28 @@ runs:
     - uses: actions/setup-node@v4
       with:
         node-version: 20
+        cache: 'npm'
+
     - name: Install dependencies
       shell: bash
-      run: npm i
+      working-directory: qa/e2e
+      run: npm ci
 
     - name: Install Playwright Browsers
       shell: bash
+      working-directory: qa/e2e
       run: npx playwright install --with-deps ${{ inputs.project }}
+
     - name: Set minor version
       shell: bash
       run: |
         c8_version="${{ github.event.inputs.c8Version }}"
         minor_version=${c8_version}
         echo "minor_version=$minor_version" >> $GITHUB_ENV
+
     - name: Run tests
       shell: bash
+      working-directory: qa/e2e
       env:
         CLUSTER_VERSION: ${{ inputs.version }}
         MINOR_VERSION: ${{ env.minor_version }}
