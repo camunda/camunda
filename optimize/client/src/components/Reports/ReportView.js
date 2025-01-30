@@ -148,7 +148,7 @@ export default function ReportView({report, error, loadReport}) {
                 kind="ghost"
                 hasIconOnly
                 href={constructCSVDownloadLink()}
-                totalCount={getTotalEntries(report)}
+                totalCount={report.result? getTotalEntries(report) : 0}
                 user={user}
               />
             )}
