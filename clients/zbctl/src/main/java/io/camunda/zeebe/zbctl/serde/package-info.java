@@ -27,6 +27,8 @@
 @Json.Import(AssignUserTaskResponse.class)
 @Json.Import(DocumentReferenceResponse.class)
 @Json.Import(DocumentMetadata.class)
+@Json.Import(CompleteJobResponse.class)
+@Json.Import(FailJobResponse.class)
 package io.camunda.zeebe.zbctl.serde;
 
 import io.avaje.jsonb.Json;
@@ -34,6 +36,7 @@ import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.AssignUserTaskResponse;
 import io.camunda.client.api.response.BrokerInfo;
+import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.api.response.CompleteUserTaskResponse;
 import io.camunda.client.api.response.CreateGroupResponse;
 import io.camunda.client.api.response.CreateTenantResponse;
@@ -42,6 +45,7 @@ import io.camunda.client.api.response.DecisionRequirements;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.DocumentMetadata;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.api.response.FailJobResponse;
 import io.camunda.client.api.response.Form;
 import io.camunda.client.api.response.PartitionInfo;
 import io.camunda.client.api.response.Process;

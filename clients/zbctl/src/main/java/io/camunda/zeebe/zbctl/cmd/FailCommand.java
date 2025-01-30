@@ -32,15 +32,15 @@ public class FailCommand {
     @Mixin private ClientMixin clientMixin;
     @Mixin private OutputMixin outputMixin;
 
-    @Parameters(paramLabel = "<job key>", description = "The job key")
-    private String jobKey;
+    @Parameters(paramLabel = "<job key>", description = "The job key", type = Long.class)
+    private Long jobKey;
 
     @Override
     public Integer call() throws Exception {
       try (final var client = clientMixin.client()) {
         final var command =
             client
-                .newFailCommand(Integer.parseInt(jobKey))
+                .newFailCommand(jobKey)
                 .retries(3)
                 .retryBackoff(Duration.of(3, ChronoUnit.SECONDS));
         final var response = command.send().join(30, TimeUnit.SECONDS);
