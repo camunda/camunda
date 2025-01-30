@@ -12,6 +12,27 @@
   <artifactId>camunda-7-adapter</artifactId>
   <packaging>jar</packaging>
   <name>Camunda 7 to 8 Adapter</name>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>analyze-dependencies</id>
+            <goals>
+              <goal>analyze-only</goal>
+            </goals>
+            <configuration>
+              <ignoredDependencies>
+                <ignoredDependency>jakarta.xml.bind:jakarta.xml.bind-api:jar:4.0.2</ignoredDependency>
+              </ignoredDependencies>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
   <dependencies>
 
     <dependency>
@@ -160,25 +181,4 @@
     </dependency>
 
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>analyze-dependencies</id>
-            <goals>
-              <goal>analyze-only</goal>
-            </goals>
-            <configuration>
-              <ignoredDependencies>
-                <ignoredDependency>jakarta.xml.bind:jakarta.xml.bind-api:jar:4.0.2</ignoredDependency>
-              </ignoredDependencies>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 </project>
