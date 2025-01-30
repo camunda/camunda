@@ -689,6 +689,48 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
     assertThat(updatedFni.getPositionJob()).isEqualTo(2L);
   }
 
+  @Test
+  public void shouldNotClearVariableValueDuringMigration()
+      throws PersistenceException, IOException {
+    // having
+    final long processInstanceKey = 333L;
+    final VariableForListViewEntity variableEntity = createVariableForListView(processInstanceKey);
+
+    final String variableValue = "varValue";
+    variableEntity.setVarValue(variableValue);
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        listViewTemplate.getFullQualifiedName(),
+        variableEntity.getId(),
+        variableEntity,
+        String.valueOf(processInstanceKey));
+
+    final Record<VariableRecordValue> zeebeRecord =
+        (Record)
+            ImmutableRecord.builder()
+                .withKey(variableEntity.getKey())
+                .withPosition(1L)
+                .withIntent(VariableIntent.MIGRATED)
+                .withValue(
+                    ImmutableVariableRecordValue.builder()
+                        .withBpmnProcessId("bpmnId")
+                        .withName(variableEntity.getVarName())
+                        .withProcessDefinitionKey(123L)
+                        .withProcessInstanceKey(processInstanceKey)
+                        .withScopeKey(processInstanceKey)
+                        .withValue(null) // migrated Zeebe variable records have a null value
+                        .build())
+                .build();
+
+    // when
+    importVariableZeebeRecord(zeebeRecord);
+
+    // then
+    // the variable value has not been set to null but is still the old value
+    final VariableForListViewEntity persistedVariable = variableById(variableEntity.getId());
+    // old values
+    assertThat(persistedVariable.getVarValue()).isEqualTo(variableValue);
+  }
+
   @NotNull
   private ProcessInstanceForListViewEntity findProcessInstanceByKey(final long key)
       throws IOException {
