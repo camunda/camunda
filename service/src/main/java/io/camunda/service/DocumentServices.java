@@ -15,7 +15,6 @@ import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreRecord;
-import io.camunda.document.store.EnvironmentConfigurationLoader;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.security.auth.Authentication;
@@ -30,20 +29,21 @@ import java.util.concurrent.CompletableFuture;
 
 public class DocumentServices extends ApiServices<DocumentServices> {
 
-  private final SimpleDocumentStoreRegistry registry =
-      new SimpleDocumentStoreRegistry(new EnvironmentConfigurationLoader());
+  private final SimpleDocumentStoreRegistry registry;
 
   public DocumentServices(
       final BrokerClient brokerClient,
       final CamundaSearchClient searchClient,
       final ServiceTransformers transformers,
-      final Authentication authentication) {
+      final Authentication authentication,
+      final SimpleDocumentStoreRegistry registry) {
     super(brokerClient, searchClient, transformers, authentication);
+    this.registry = registry;
   }
 
   @Override
   public DocumentServices withAuthentication(final Authentication authentication) {
-    return new DocumentServices(brokerClient, searchClient, transformers, authentication);
+    return new DocumentServices(brokerClient, searchClient, transformers, authentication, registry);
   }
 
   /** Will return a failed future for any error returned by the store */
