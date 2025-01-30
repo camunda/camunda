@@ -9,63 +9,68 @@ package io.camunda.zeebe.broker.jobstream;
 
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
-import io.prometheus.client.Counter;
-import io.prometheus.client.Gauge;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class JobStreamMetrics implements RemoteStreamMetrics {
-  private static final String NAMESPACE = "zeebe_broker";
+  private final AtomicInteger streamCount = new AtomicInteger(0);
+  private final Map<ErrorCode, Counter> pushTryFailedCount = new EnumMap<>(ErrorCode.class);
 
-  private static final Gauge STREAM_COUNT =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .name("open_job_stream_count")
-          .help("Number of open job streams in broker")
-          .register();
+  private final MeterRegistry registry;
+  private final Counter pushSuccessCount;
+  private final Counter pushFailedCount;
 
-  private static final Counter PUSH_SUCCESS_COUNT =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("jobs_pushed_count")
-          .help("Total number of jobs pushed to all streams")
-          .register();
+  public JobStreamMetrics(final MeterRegistry registry) {
+    this.registry = registry;
 
-  private static final Counter PUSH_FAILED_COUNT =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("jobs_push_fail_count")
-          .help("Total number of failures when pushing jobs to the streams")
-          .register();
+    pushSuccessCount = registerCounter(JobStreamMetricsDoc.PUSH_SUCCESS_COUNT);
+    pushFailedCount = registerCounter(JobStreamMetricsDoc.PUSH_FAILED_COUNT);
 
-  private static final Counter PUSH_TRY_FAILED_COUNT =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("jobs_push_fail_try_count")
-          .help("Total number of failed attempts when pushing jobs to the streams, grouped by code")
-          .labelNames("code")
-          .register();
+    final var streamCountDoc = JobStreamMetricsDoc.STREAM_COUNT;
+    Gauge.builder(streamCountDoc.getName(), streamCount, Number::intValue)
+        .description(streamCountDoc.getDescription())
+        .register(registry);
+  }
+
+  private Counter registerCounter(final JobStreamMetricsDoc doc, final Tag... tags) {
+    final var builder = Counter.builder(doc.getName()).description(doc.getDescription());
+    for (final var tag : tags) {
+      builder.tag(tag.getKey(), tag.getValue());
+    }
+
+    return builder.register(registry);
+  }
 
   @Override
   public void addStream() {
-    STREAM_COUNT.inc();
+    streamCount.incrementAndGet();
   }
 
   @Override
   public void removeStream() {
-    STREAM_COUNT.dec();
+    streamCount.decrementAndGet();
   }
 
   @Override
   public void pushSucceeded() {
-    PUSH_SUCCESS_COUNT.inc();
+    pushSuccessCount.increment();
   }
 
   @Override
   public void pushFailed() {
-    PUSH_FAILED_COUNT.inc();
+    pushFailedCount.increment();
   }
 
   @Override
   public void pushTryFailed(final ErrorCode code) {
-    PUSH_TRY_FAILED_COUNT.labels(code.name()).inc();
+    final var meterDoc = JobStreamMetricsDoc.PUSH_TRY_FAILED_COUNT;
+    pushTryFailedCount
+        .computeIfAbsent(code, ignored -> registerCounter(meterDoc, Tag.of("code", code.name())))
+        .increment();
   }
 }
