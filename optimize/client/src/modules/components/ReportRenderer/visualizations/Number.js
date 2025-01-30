@@ -9,7 +9,7 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import fitty from 'fitty';
 
-import {formatters, loadVariables, reportConfig} from 'services';
+import {formatters, loadVariables} from 'services';
 import {Loading} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
@@ -20,6 +20,7 @@ import {formatValue} from '../service';
 import ProgressBar from './ProgressBar';
 
 import './Number.scss';
+import {reportConfig} from "../../../services/index.js";
 
 export function Number({report, formatter, mightFail}) {
   const {data, result, reportType} = report;
@@ -105,7 +106,7 @@ export function Number({report, formatter, mightFail}) {
           } else if (measure.property === 'percentage') {
             viewString = t('report.percentageOfInstances');
           } else {
-            const view = reportConfig.view.find(({matcher}) => matcher(data));
+            const view = reportConfig.decision.view.find(({matcher}) => matcher(data));
             let measureString = '';
             if (reportType === 'process') {
               measureString = t(
