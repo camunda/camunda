@@ -108,6 +108,7 @@ class DocumentAuthorizationQueryStrategyTest {
                     null,
                     null,
                     null,
+                    null,
                     List.of(
                         new Permission(READ_PROCESS_DEFINITION, Set.of("foo", "*")),
                         new Permission(CREATE, Set.of("bar"))))));
@@ -163,6 +164,7 @@ class DocumentAuthorizationQueryStrategyTest {
         .thenReturn(
             List.of(
                 new AuthorizationEntity(
+                    null,
                     null,
                     null,
                     null,
