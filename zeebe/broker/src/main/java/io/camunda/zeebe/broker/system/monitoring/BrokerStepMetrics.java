@@ -30,31 +30,11 @@ public class BrokerStepMetrics {
           .labelNames(STEP_NAME_LABEL)
           .register();
 
-  /**
-   * Meter the time to start for a single step.
-   *
-   * @param stepName the name of the step
-   * @param startupDuration the step start duration in ms
-   */
-  public void observeDurationForStarStep(final String stepName, final long startupDuration) {
-    STARTUP_METRIC.labels(stepName).set(startupDuration);
-  }
-
   public Timer createStartupTimer(final String stepName) {
     return STARTUP_METRIC.labels(stepName).startTimer();
   }
 
   public Timer createCloseTimer(final String stepName) {
     return CLOSE_METRICS.labels(stepName).startTimer();
-  }
-
-  /**
-   * Meter the the time to close for a single step.
-   *
-   * @param stepName the name of the step
-   * @param closeDuration the step close duration in ms
-   */
-  public void observeDurationForCloseStep(final String stepName, final long closeDuration) {
-    CLOSE_METRICS.labels(stepName).set(closeDuration);
   }
 }
