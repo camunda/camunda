@@ -8,6 +8,7 @@
 package io.camunda.zeebe.zbctl.cmd;
 
 import io.camunda.client.api.response.AssignUserTaskResponse;
+import io.camunda.zeebe.zbctl.cmd.AssignCommand.UserTask;
 import io.camunda.zeebe.zbctl.mixin.ClientMixin;
 import io.camunda.zeebe.zbctl.mixin.OutputMixin;
 import java.util.concurrent.Callable;
@@ -18,7 +19,10 @@ import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-@Command(name = "assign", description = "Assign a user task")
+@Command(
+    name = "assign",
+    description = "Assign a user task",
+    subcommands = {UserTask.class})
 public class AssignCommand {
 
   @Command(name = "userTask", description = "Assign a user task")
