@@ -23,7 +23,7 @@ import java.util.function.Function;
 public class ProcessInstanceImplJsonAdapter
     implements JsonAdapter<ProcessInstanceImpl>, ViewBuilderAware {
 
-  private static final List<FieldMetaData<?>> fieldMetaData = new ArrayList<>();
+  private static final List<FieldMetaData<?>> FIELD_META_DATA = new ArrayList<>();
   private final Jsonb jsonb;
   private final PropertyNames names;
   private final Class<?> clazz = ProcessInstanceImpl.class;
@@ -54,7 +54,7 @@ public class ProcessInstanceImplJsonAdapter
     addField("tenantId", String.class, ProcessInstanceImpl::getTenantId);
 
     // init property names
-    final var fieldNames = fieldMetaData.stream().map(FieldMetaData::fieldName).toList();
+    final var fieldNames = FIELD_META_DATA.stream().map(FieldMetaData::fieldName).toList();
     names = jsonb.properties(fieldNames.toArray(new String[0]));
   }
 
@@ -62,14 +62,14 @@ public class ProcessInstanceImplJsonAdapter
       final String fieldName,
       final Class<T> fieldClass,
       final Function<ProcessInstanceImpl, T> valueSupplier) {
-    fieldMetaData.add(new FieldMetaData<>(fieldName, fieldClass, valueSupplier));
+    FIELD_META_DATA.add(new FieldMetaData<>(fieldName, fieldClass, valueSupplier));
   }
 
   @Override
   public void build(final ViewBuilder builder, final String name, final MethodHandle handle) {
     builder.beginObject(name, handle);
 
-    for (final FieldMetaData<?> fieldData : fieldMetaData) {
+    for (final FieldMetaData<?> fieldData : FIELD_META_DATA) {
       final var fieldName = fieldData.fieldName;
       final Class<?> fieldClass = fieldData.fieldClass;
       final var adapter = jsonb.adapter(fieldClass);
@@ -89,8 +89,8 @@ public class ProcessInstanceImplJsonAdapter
   public void toJson(final JsonWriter writer, final ProcessInstanceImpl processDefinition) {
     writer.beginObject(names);
 
-    for (int i = 0; i < fieldMetaData.size(); i++) {
-      final FieldMetaData<?> fieldData = fieldMetaData.get(i);
+    for (int i = 0; i < FIELD_META_DATA.size(); i++) {
+      final FieldMetaData<?> fieldData = FIELD_META_DATA.get(i);
       final var fieldClass = fieldData.fieldClass;
 
       writer.name(i);
