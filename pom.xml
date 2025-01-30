@@ -41,6 +41,7 @@
     <module>document</module>
     <module>security</module>
     <module>migration</module>
+    <module>clients/zbctl-util</module>
   </modules>
 
   <scm>

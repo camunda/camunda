@@ -5,15 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.zbctl.config;
+package io.camunda.zeebe.zbctl.util;
 
-import com.google.common.collect.Streams;
+import io.avaje.jsonb.Json;
 import io.avaje.jsonb.Jsonb;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -39,14 +40,19 @@ public class ReflectConfigGenerator {
     final var jsonString = JSONB.toJson(reflectionClasses);
     final Path filePath = Paths.get(CONFIG_FILE);
     Files.writeString(filePath, jsonString);
+    System.out.println("Generated reflect-config.json at: " + filePath);
   }
 
   private static ClassReflectionConfig generateClass(final Class<?> clazz) {
-    final var constructorStream =
-        Arrays.stream(clazz.getConstructors()).map(ReflectConfigGenerator::generateConstructors);
-    final var methodStream =
-        Arrays.stream(clazz.getMethods()).map(ReflectConfigGenerator::generateMethods);
-    final var methodReflections = Streams.concat(constructorStream, methodStream).toList();
+    final var constructors =
+        Arrays.stream(clazz.getConstructors())
+            .map(ReflectConfigGenerator::generateConstructors)
+            .toList();
+    final var methods =
+        Arrays.stream(clazz.getMethods()).map(ReflectConfigGenerator::generateMethods).toList();
+    final var methodReflections = new ArrayList<MethodReflectionConfig>();
+    methodReflections.addAll(constructors);
+    methodReflections.addAll(methods);
     return new ClassReflectionConfig(clazz.getName(), true, true, true, methodReflections);
   }
 
@@ -61,6 +67,7 @@ public class ReflectConfigGenerator {
         method.getName(), Arrays.stream(method.getParameterTypes()).map(Class::getName).toList());
   }
 
+  @Json
   public record ClassReflectionConfig(
       String name,
       boolean allDeclaredFields,
@@ -68,5 +75,6 @@ public class ReflectConfigGenerator {
       boolean queryAllDeclaredConstructors,
       List<MethodReflectionConfig> methods) {}
 
+  @Json
   public record MethodReflectionConfig(String name, List<String> parameterTypes) {}
 }

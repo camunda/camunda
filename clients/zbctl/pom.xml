@@ -28,6 +28,11 @@
       <artifactId>camunda-client-java</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zbctl-util</artifactId>
+    </dependency>
+
     <!-- Utilities -->
     <dependency>
       <groupId>org.agrona</groupId>
@@ -84,12 +89,6 @@
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
       <version>33.4.0-jre</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.reflections</groupId>
-      <artifactId>reflections</artifactId>
-      <version>0.10.2</version>
     </dependency>
 
     <!-- Test dependencies -->
@@ -204,29 +203,21 @@
             </executions>
           </plugin>
 
-          <!-- Compresses the final executable; this can easily cut down on executable size by
-               30% or more, at the cost of a very small startup overhead  -->
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>exec-maven-plugin</artifactId>
-            <configuration>
-              <skip>${skipUpx}</skip>
-              <executable>upx</executable>
-              <arguments>
-                <argument>-9</argument>
-                <argument>-o</argument>
-                <argument>${project.build.directory}/zbctl</argument>
-                <argument>${project.build.directory}/${build.finalName}</argument>
-              </arguments>
-            </configuration>
             <executions>
               <execution>
+                <id>generate-config</id>
+                <phase>generate-resources</phase>
                 <goals>
-                  <goal>exec</goal>
+                  <goal>java</goal>
                 </goals>
-                <phase>package</phase>
               </execution>
             </executions>
+            <configuration>
+              <mainClass>io.camunda.zeebe.zbctl.util.ReflectConfigGenerator</mainClass>
+            </configuration>
           </plugin>
         </plugins>
       </build>

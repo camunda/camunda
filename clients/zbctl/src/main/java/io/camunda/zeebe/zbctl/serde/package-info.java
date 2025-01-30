@@ -19,8 +19,6 @@
 @Json.Import(ActivatedJob.class)
 @Json.Import(Resource.class)
 @Json.Import(ProblemDetail.class)
-@Json.Import(ReflectConfigGenerator.ClassReflectionConfig.class)
-@Json.Import(ReflectConfigGenerator.MethodReflectionConfig.class)
 @Json.Import(ActivateJobsResponse.class)
 @Json.Import(CreateTenantResponse.class)
 @Json.Import(CreateGroupResponse.class)
@@ -46,4 +44,3 @@ import io.camunda.client.api.response.Resource;
 import io.camunda.client.api.response.Topology;
 import io.camunda.client.api.search.response.SearchResponsePage;
 import io.camunda.client.protocol.rest.ProblemDetail;
-import io.camunda.zeebe.zbctl.config.ReflectConfigGenerator;
