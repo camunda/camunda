@@ -6,11 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {reportConfig, createReportUpdate} from 'services';
 import {Select} from 'components';
 import {t} from 'translation';
 
 import './Visualization.scss';
+import {reportConfig} from "../../modules/services/index.js";
 
 export default function Visualization({type, report, onChange}) {
   const visualizations = reportConfig[type].visualization;

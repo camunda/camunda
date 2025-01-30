@@ -14,7 +14,7 @@ import {getVariableLabel} from 'variables';
 
 import {isCategoricalBar, isCategorical} from '../reportService';
 
-import * as reportOptions from './process';
+import * as processOptions from './process';
 import * as decisionOptions from './decision';
 
 const reportOptionsMap = {

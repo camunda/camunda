@@ -137,7 +137,7 @@ function startBackend() {
     });
 
     // wait for the optimize endpoint to be up before resolving the promise
-    serverCheck('http://localhost:8090/api/readyz', resolve);
+    serverCheck('http://localhost:8084/api/readyz', resolve);
   });
 }
 

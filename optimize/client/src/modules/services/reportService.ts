@@ -51,6 +51,7 @@ export async function evaluateReport<T extends ReportType>(
   query = {}
 ): Promise<Report<T>> {
   let response;
+  console.log(payload);
 
   if (typeof payload !== 'object') {
     // evaluate saved report
@@ -59,8 +60,10 @@ export async function evaluateReport<T extends ReportType>(
     // evaluate unsaved report
     // we dont want to send report result in payload to prevent exceedeing request size limit
     const {result: _result, ...evaluationPayload} = payload;
-    response = await post(getFullURL(`api/report/evaluate`), evaluationPayload, {query});
+    response = await post(getFullURL(`api/report/evaluate`), payload, {query});
   }
+
+  console.log(response);
 
   return await response.json();
 }

@@ -167,6 +167,7 @@ async function parseError(error: ErrorResponse): Promise<ErrorResponse | Record<
   }
 
   try {
+    console.log('error', error);
     const {errorCode, errorMessage, ...errorProps} = await error.json();
     if (errorMessage) {
       message = errorMessage;

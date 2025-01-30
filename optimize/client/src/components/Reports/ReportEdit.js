@@ -93,7 +93,7 @@ export function ReportEdit({report: initialReport, isNew, error, updateOverview}
     function save() {
       return new Promise((resolve, reject) => {
         const {id, name, description, data, reportType} = report;
-        const endpoint = `report/${reportType}/single`;
+        const endpoint = `report/${reportType}/single/`;
 
         if (isNew) {
           const collectionId = getCollection(location.pathname);
@@ -326,7 +326,7 @@ export function ReportEdit({report: initialReport, isNew, error, updateOverview}
                 kind="primary"
                 size="md"
                 className="RunPreviewButton"
-                disabled={loadingReportData || !this.isReportComplete(report)}
+                disabled={loadingReportData || !isReportComplete(report)}
                 onClick={runReportPreviewUpdate}
               >
                 {t('report.updateReportPreview.buttonLabel')}
@@ -352,6 +352,7 @@ export function ReportEdit({report: initialReport, isNew, error, updateOverview}
               <div className={classnames('Report__content', {hidden: !showReportRenderer})}>
                 <div className="visualization">
                   <Visualization
+                    type={reportType}
                     report={data}
                     onChange={(change) => updateReport(change, true)}
                   />
