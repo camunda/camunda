@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.util.micrometer;
 
+import io.camunda.zeebe.util.CloseableSilently;
+import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.Builder;
 import java.time.Duration;
 
@@ -53,5 +55,20 @@ public final class MicrometerUtil {
    */
   public static Duration[] defaultPrometheusBuckets() {
     return DEFAULT_PROMETHEUS_BUCKETS;
+  }
+
+  /**
+   * Returns a convenience object to measure the duration of try/catch block using a Micrometer
+   * timer.
+   */
+  public static CloseableSilently timer(final Timer timer, final Timer.Sample sample) {
+    return new CloseableTimer(timer, sample);
+  }
+
+  private record CloseableTimer(Timer timer, Timer.Sample sample) implements CloseableSilently {
+    @Override
+    public void close() {
+      sample.stop(timer);
+    }
   }
 }
