@@ -25,12 +25,12 @@ jobs:
           java-version: '21'
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Package zbctl
+      - name: Package c8ctl
         run: mvn package -DskipTests -DskipChecks -DskipUpx=${{ matrix.skipCompression }} -am -pl clients/zbctl -Pnative
-      - name: Upload zbctl
+      - name: Upload c8ctl
         uses: actions/upload-artifact@v4
         with:
-          name: zbctl-${{ matrix.os }}
+          name: c8ctl-${{ matrix.os }}
           path: clients/zbctl/target/zbctl*
           retention-days: 2
 
