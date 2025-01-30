@@ -9,6 +9,8 @@ package io.camunda.zeebe.zbctl.util;
 
 import io.avaje.jsonb.Json;
 import io.avaje.jsonb.Jsonb;
+import io.camunda.client.impl.CamundaClientCredentials;
+import io.camunda.client.impl.oauth.OAuthCredentialsCache;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -33,6 +35,8 @@ public class ReflectConfigGenerator {
 
     final var reflections = new Reflections(PACKAGE_NAME, new SubTypesScanner(false));
     final var classes = new HashSet<>(reflections.getSubTypesOf(Object.class));
+    classes.add(CamundaClientCredentials.class);
+    classes.addAll(Arrays.stream(OAuthCredentialsCache.class.getDeclaredClasses()).toList());
 
     final var reflectionClasses =
         classes.stream().map(ReflectConfigGenerator::generateClass).toList();
