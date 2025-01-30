@@ -148,10 +148,16 @@ public class ZeebeDecisionInstanceImportService
         }
       }
     }
-    instanceDto.setInputs(inputs);
-    instanceDto.setOutputs(outputs);
-    instanceDto.setMatchedRules(matchedRuleIds);
+    if (!inputs.isEmpty()) {
+      instanceDto.setInputs(inputs);
+    }
+    if (!outputs.isEmpty()) {
+      instanceDto.setOutputs(outputs);
+    }
+    if (!matchedRuleIds.isEmpty()) {
+      instanceDto.setMatchedRules(matchedRuleIds);
 
+    }
     return instanceDto;
   }
 
