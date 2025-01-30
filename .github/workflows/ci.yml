@@ -180,7 +180,8 @@ jobs:
     needs: [detect-changes]
     runs-on: gcp-perf-core-16-default
     timeout-minutes: 30
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
@@ -193,6 +194,12 @@ jobs:
           maven-extra-args: -T1C -PskipFrontendBuild
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Maven Test Build
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
