@@ -513,7 +513,6 @@ jobs:
       - name: Run tests
         uses: ./.github/actions/core-component-test-suite
         with:
-          working-directory: qa/e2e-test/core-component-test-suite
           version: ${{ matrix.version }}
 
   protobuf-checks:
