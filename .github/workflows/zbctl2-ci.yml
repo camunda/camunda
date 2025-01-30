@@ -26,11 +26,11 @@ jobs:
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Package c8ctl
-        run: mvn package -DskipTests -DskipChecks -DskipUpx=${{ matrix.skipCompression }} -am -pl clients/zbctl -Pnative
+        run: mvn package -DskipTests -DskipChecks -DskipUpx=${{ matrix.skipCompression }} -am -pl clients/c8ctl -Pnative
       - name: Upload c8ctl
         uses: actions/upload-artifact@v4
         with:
           name: c8ctl-${{ matrix.os }}
-          path: clients/zbctl/target/zbctl*
+          path: clients/c8ctl/target/c8ctl*
           retention-days: 2
 
