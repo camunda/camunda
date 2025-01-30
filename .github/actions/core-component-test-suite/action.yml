@@ -16,12 +16,12 @@ runs:
 
     - name: Install dependencies
       shell: bash
-      working-directory: qa/e2e
+      working-directory: qa/e2e-tests/core-component-test-suite
       run: npm ci
 
     - name: Install Playwright Browsers
       shell: bash
-      working-directory: qa/e2e
+      working-directory: qa/e2e-tests/core-component-test-suite
       run: npx playwright install --with-deps ${{ inputs.project }}
 
     - name: Set minor version
@@ -33,7 +33,7 @@ runs:
 
     - name: Run tests
       shell: bash
-      working-directory: qa/e2e
+      working-directory: qa/e2e-tests/core-component-test-suite
       env:
         CLUSTER_VERSION: ${{ inputs.version }}
         MINOR_VERSION: ${{ env.minor_version }}
