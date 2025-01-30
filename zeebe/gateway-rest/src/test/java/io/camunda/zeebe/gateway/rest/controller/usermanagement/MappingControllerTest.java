@@ -194,7 +194,7 @@ public class MappingControllerTest extends RestControllerTest {
   }
 
   private MappingDTO validCreateMappingRequest() {
-    return new MappingDTO("newClaimName", "newClaimValue", "mapName");
+    return new MappingDTO("newClaimName", "newClaimValue", "mapName", "mapId");
   }
 
   private void assertRequestRejectedExceptionally(

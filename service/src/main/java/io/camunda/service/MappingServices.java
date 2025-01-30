@@ -71,7 +71,8 @@ public class MappingServices
         new BrokerMappingCreateRequest()
             .setClaimName(request.claimName())
             .setClaimValue(request.claimValue())
-            .setName(request.name()));
+            .setName(request.name())
+            .setId(request.id()));
   }
 
   public MappingEntity getMapping(final Long mappingKey) {
@@ -126,5 +127,5 @@ public class MappingServices
     return Stream.of(String.valueOf(value));
   }
 
-  public record MappingDTO(String claimName, String claimValue, String name) {}
+  public record MappingDTO(String claimName, String claimValue, String name, String id) {}
 }

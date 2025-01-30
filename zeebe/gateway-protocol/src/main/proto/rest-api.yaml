@@ -6793,10 +6793,14 @@ components:
         name:
           type: string
           description: The name of the mapping.
+        id:
+          type: string
+          description: The unique external id of the mapping.
       required:
         - claimName
         - claimValue
         - name
+        - id
     MappingRuleCreateResponseBase:
       type: object
       properties:
@@ -6809,6 +6813,9 @@ components:
         name:
           type: string
           description: The name of the mapping.
+        id:
+          type: string
+          description: The unique external id of the mapping.
     MappingRuleCreateResponse:
       type: object
       allOf:

@@ -57,6 +57,7 @@ public class TenantMappingRuleMigrationHandler extends MigrationHandler<TenantMa
           new MappingDTO(
               tenantMappingRule.getClaimName(),
               tenantMappingRule.getClaimValue(),
+              tenantMappingRule.getName(),
               tenantMappingRule.getName());
       final var mappingKey =
           mappingServices

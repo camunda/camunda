@@ -13,7 +13,8 @@ export const MAPPINGS_ENDPOINT = "/mapping-rules";
 
 export type Mapping = EntityData & {
   mappingKey: string;
-  mappingName: string;
+  id: string;
+  name: string;
   claimName: string;
   claimValue: string;
 };

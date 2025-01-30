@@ -17,6 +17,7 @@ const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("mappings");
   const { enqueueNotification } = useNotifications();
   const [apiCall, { loading, namedErrors }] = useApiCall(createMapping);
+  const [mappingId, setMappingId] = useState("");
   const [mappingName, setMappingName] = useState("");
   const [claimName, setClaimName] = useState("");
   const [claimValue, setClaimValue] = useState("");
@@ -25,6 +26,7 @@ const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
 
   const handleSubmit = async () => {
     const { success } = await apiCall({
+      id: mappingId,
       name: mappingName,
       claimName,
       claimValue,
@@ -34,7 +36,7 @@ const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       enqueueNotification({
         kind: "success",
         title: t("Mapping created"),
-        subtitle: t("You have successfully created mapping {{ mappingName }}", {
+        subtitle: t("You have successfully created mapping {{ name }}", {
           name,
         }),
       });
@@ -55,9 +57,9 @@ const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       <TextField
         label={t("Mapping ID")}
         placeholder={t("Enter mapping ID")}
-        onChange={setMappingName}
-        value={mappingName}
-        errors={namedErrors?.mappingName}
+        onChange={setMappingId}
+        value={mappingId}
+        errors={namedErrors?.id}
         autoFocus
       />
       <TextField
@@ -65,7 +67,7 @@ const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         placeholder={t("Enter mapping name")}
         onChange={setMappingName}
         value={mappingName}
-        errors={namedErrors?.mappingName}
+        errors={namedErrors?.name}
         autoFocus
       />
       <TextField

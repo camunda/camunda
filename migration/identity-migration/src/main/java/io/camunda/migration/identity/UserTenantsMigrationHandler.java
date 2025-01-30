@@ -53,7 +53,10 @@ public class UserTenantsMigrationHandler extends MigrationHandler<UserTenants> {
     try {
       final var mapping =
           new MappingDTO(
-              USERNAME_CLAIM, userTenants.username(), userTenants.username() + "_mapping");
+              USERNAME_CLAIM,
+              userTenants.username(),
+              userTenants.username() + "_mapping",
+              userTenants.username() + "_mapping");
 
       final long mappingKey =
           mappingServices
