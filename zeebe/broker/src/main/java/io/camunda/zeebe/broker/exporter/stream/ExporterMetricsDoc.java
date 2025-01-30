@@ -136,7 +136,6 @@ public enum ExporterMetricsDoc implements ExtendedMeterDocumentation {
     }
   };
 
-  @SuppressWarnings("NullableProblems")
   enum ExporterActionKeyNames implements KeyName {
     SKIPPED {
       @Override
@@ -150,11 +149,6 @@ public enum ExporterMetricsDoc implements ExtendedMeterDocumentation {
       public String asString() {
         return "exported";
       }
-    };
-
-    @Override
-    public boolean isRequired() {
-      return true;
     }
   }
 }
