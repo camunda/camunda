@@ -62,6 +62,12 @@ public class CreateMappingCommandImpl implements CreateMappingCommandStep1 {
   }
 
   @Override
+  public CreateMappingCommandStep1 id(final String id) {
+    mappingRequest.id(id);
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<CreateMappingResponse> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
@@ -72,6 +78,7 @@ public class CreateMappingCommandImpl implements CreateMappingCommandStep1 {
     ArgumentUtil.ensureNotNull("claimName", mappingRequest.getClaimName());
     ArgumentUtil.ensureNotNull("claimValue", mappingRequest.getClaimValue());
     ArgumentUtil.ensureNotNull("name", mappingRequest.getName());
+    ArgumentUtil.ensureNotNull("id", mappingRequest.getId());
     final HttpCamundaFuture<CreateMappingResponse> result = new HttpCamundaFuture<>();
     final CreateMappingResponseImpl response = new CreateMappingResponseImpl();
     httpClient.post(
