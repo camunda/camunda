@@ -23,6 +23,8 @@
 @Json.Import(CreateTenantResponse.class)
 @Json.Import(CreateGroupResponse.class)
 @Json.Import(SearchResponsePage.class)
+@Json.Import(DocumentReferenceResponse.class)
+@Json.Import(DocumentMetadata.class)
 package io.camunda.zeebe.zbctl.serde;
 
 import io.avaje.jsonb.Json;
@@ -34,6 +36,8 @@ import io.camunda.client.api.response.CreateTenantResponse;
 import io.camunda.client.api.response.Decision;
 import io.camunda.client.api.response.DecisionRequirements;
 import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.DocumentMetadata;
+import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.api.response.Form;
 import io.camunda.client.api.response.PartitionInfo;
 import io.camunda.client.api.response.Process;

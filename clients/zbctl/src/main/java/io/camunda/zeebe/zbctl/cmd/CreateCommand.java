@@ -16,9 +16,11 @@ import io.camunda.client.api.command.CreateTenantCommandStep1;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.CreateGroupResponse;
 import io.camunda.client.api.response.CreateTenantResponse;
+import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.client.api.worker.JobHandler;
+import io.camunda.zeebe.zbctl.cmd.CreateCommand.DocumentCommand;
 import io.camunda.zeebe.zbctl.cmd.CreateCommand.GroupCommand;
 import io.camunda.zeebe.zbctl.cmd.CreateCommand.InstanceCommand;
 import io.camunda.zeebe.zbctl.cmd.CreateCommand.TenantCommand;
@@ -26,9 +28,12 @@ import io.camunda.zeebe.zbctl.cmd.CreateCommand.WorkerCommand;
 import io.camunda.zeebe.zbctl.converters.DurationConverter;
 import io.camunda.zeebe.zbctl.converters.JsonInputConverter;
 import io.camunda.zeebe.zbctl.converters.JsonInputConverter.JsonInput;
+import io.camunda.zeebe.zbctl.converters.PathConverter;
 import io.camunda.zeebe.zbctl.mixin.ClientMixin;
 import io.camunda.zeebe.zbctl.mixin.OutputMixin;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
@@ -48,7 +53,8 @@ import picocli.CommandLine.Parameters;
       InstanceCommand.class,
       WorkerCommand.class,
       TenantCommand.class,
-      GroupCommand.class
+      GroupCommand.class,
+      DocumentCommand.class,
     })
 public class CreateCommand {
 
@@ -292,6 +298,35 @@ public class CreateCommand {
 
     private CreateGroupCommandStep1 prepareTheCommand(final CamundaClient client) {
       return client.newCreateGroupCommand().name(name);
+    }
+  }
+
+  @Command(name = "document", description = "Creates a new document")
+  public static class DocumentCommand implements Callable<Integer> {
+    @Mixin private ClientMixin clientMixin;
+    @Mixin private OutputMixin outputMixin;
+
+    @Parameters(
+        paramLabel = "<resourceDocument>",
+        description = "The path of the document",
+        converter = PathConverter.class)
+    private Path documentPath;
+
+    @Override
+    public Integer call() throws Exception {
+      try (final var client = clientMixin.client()) {
+
+        final var commandStep1 =
+            client
+                .newCreateDocumentCommand()
+                .content(Files.readAllBytes(documentPath))
+                .fileName(documentPath.getFileName().toString());
+
+        final var response = commandStep1.send().join(30, TimeUnit.SECONDS);
+        outputMixin.formatter().write(response, DocumentReferenceResponse.class);
+      }
+
+      return 0;
     }
   }
 }
