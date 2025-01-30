@@ -15,11 +15,15 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.UserState;
+import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Optional;
 
 public class AuthorizationCreateProcessor
     implements DistributedTypedRecordProcessor<AuthorizationRecord> {
@@ -30,6 +34,7 @@ public class AuthorizationCreateProcessor
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final PermissionsBehavior permissionsBehavior;
+  private final UserState userState;
 
   public AuthorizationCreateProcessor(
       final Writers writers,
@@ -43,6 +48,7 @@ public class AuthorizationCreateProcessor
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     permissionsBehavior = new PermissionsBehavior(processingState, authCheckBehavior);
+    userState = processingState.getUserState();
   }
 
   @Override
@@ -58,7 +64,23 @@ public class AuthorizationCreateProcessor
                     "Expected to create authorization with permission types '%s' and resource type '%s', but these permissions are not supported. Supported permission types are: '%s'"))
         .flatMap(permissionsBehavior::permissionsAlreadyExist)
         .ifRightOrLeft(
-            authorizationRecord -> writeEventAndDistribute(command, authorizationRecord),
+            authorizationRecord -> {
+              final Optional<PersistedUser> user =
+                  userState.getUser(authorizationRecord.getOwnerId());
+              user.ifPresent(
+                  persistedUser -> authorizationRecord.setOwnerKey(persistedUser.getUserKey()));
+              authorizationRecord
+                  .getAuthorizationPermissions()
+                  .forEach(
+                      permissionType ->
+                          command
+                              .getValue()
+                              .addPermission(
+                                  new Permission()
+                                      .setPermissionType(permissionType)
+                                      .addResourceId(authorizationRecord.getResourceId())));
+              writeEventAndDistribute(command, command.getValue());
+            },
             (rejection) -> {
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
               responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
