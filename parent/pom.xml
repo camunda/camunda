@@ -889,7 +889,7 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>zbctl-util</artifactId>
+        <artifactId>c8ctl-util</artifactId>
         <version>${project.version}</version>
       </dependency>
 

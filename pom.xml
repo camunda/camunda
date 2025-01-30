@@ -34,14 +34,14 @@
     <module>clients/java</module>
     <module>clients/java-deprecated</module>
     <module>clients/spring-boot-starter-camunda-sdk</module>
-    <module>clients/zbctl</module>
+    <module>clients/c8ctl</module>
     <module>testing/camunda-process-test-java</module>
     <module>testing/camunda-process-test-spring</module>
     <module>testing/camunda-process-test-example</module>
     <module>document</module>
     <module>security</module>
     <module>migration</module>
-    <module>clients/zbctl-util</module>
+    <module>clients/c8ctl-util</module>
   </modules>
 
   <scm>
