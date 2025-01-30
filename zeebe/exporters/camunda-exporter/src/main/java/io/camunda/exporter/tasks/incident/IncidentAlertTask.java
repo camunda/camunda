@@ -8,8 +8,10 @@
 package io.camunda.exporter.tasks.incident;
 
 import io.camunda.exporter.tasks.BackgroundTask;
+import io.camunda.exporter.tasks.alerts.AlertDefinitionRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.webapps.schema.entities.AlertDefinitionEntity.Filter;
 import jakarta.mail.Authenticator;
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
@@ -27,12 +29,15 @@ import java.util.concurrent.CompletionStage;
 public class IncidentAlertTask implements BackgroundTask {
 
   private final IncidentUpdateRepository incidentUpdateRepository;
+  private final AlertDefinitionRepository alertDefinitionRepository;
   private final ConnectConfiguration connectConfiguration;
 
   public IncidentAlertTask(
       final IncidentUpdateRepository incidentUpdateRepository,
+      final AlertDefinitionRepository alertDefinitionRepository,
       final ConnectConfiguration connectConfiguration) {
     this.incidentUpdateRepository = incidentUpdateRepository;
+    this.alertDefinitionRepository = alertDefinitionRepository;
     this.connectConfiguration = connectConfiguration;
   }
 
@@ -46,19 +51,33 @@ public class IncidentAlertTask implements BackgroundTask {
               .toCompletableFuture()
               .join();
 
+      final var alertDefinitions = alertDefinitionRepository.getAll();
       incidents.forEach(
           (id, incident) -> {
             System.out.println("berkay Incident: " + id + " - " + incident);
             final String errorMessage = incident.incident().getErrorMessage();
-
-            sendEmail(
-                errorMessage
-                    + " \n \n"
-                    + "See incident in Operate for more details: "
-                    + "http://localhost:8080" // TODO - it needs to be added to the config as such
-                    // .connectConfiguration.getOperateFrontendUrl()
-                    + "/operate/processes/"
-                    + incident.incident().getProcessInstanceKey());
+            alertDefinitions.stream()
+                .filter(
+                    alert ->
+                        alert.getFilters().stream()
+                            .map(Filter::processDefinitionKey)
+                            .anyMatch(
+                                pdk ->
+                                    pdk.equals(
+                                        incident.incident().getProcessDefinitionKey().toString())))
+                .forEach(
+                    alert -> {
+                      final String message =
+                          errorMessage
+                              + " \n \n"
+                              + "See incident in Operate for more details: "
+                              + "http://localhost:8080" // TODO - it needs to be added to the config
+                              // as such
+                              // .connectConfiguration.getOperateFrontendUrl()
+                              + "/operate/processes/"
+                              + incident.incident().getProcessInstanceKey();
+                      sendEmail(alert.getChannel().value(), message);
+                    });
           });
       return CompletableFuture.completedFuture(1);
     } catch (final Exception e) {
@@ -66,8 +85,7 @@ public class IncidentAlertTask implements BackgroundTask {
     }
   }
 
-  private void sendEmail(final String incidentMessage) {
-    final String to = "berkay.can@camunda.com";
+  private void sendEmail(final String to, final String incidentMessage) {
     final String from = "camunda.alerts@gmail.com";
     final String host = "smtp.gmail.com";
 
@@ -93,7 +111,6 @@ public class IncidentAlertTask implements BackgroundTask {
       message.setFrom(new InternetAddress(from));
       message.addRecipient(Message.RecipientType.TO, new InternetAddress(to));
       message.setSubject("Camunda Alert");
-      final String messageText = incidentMessage;
       message.setText(incidentMessage);
 
       Transport.send(message);
