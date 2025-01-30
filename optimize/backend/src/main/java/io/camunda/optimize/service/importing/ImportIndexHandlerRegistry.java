@@ -10,6 +10,7 @@ package io.camunda.optimize.service.importing;
 import io.camunda.optimize.service.importing.ingested.handler.ExternalVariableUpdateImportIndexHandler;
 import io.camunda.optimize.service.importing.ingested.handler.IngestedImportIndexHandlerProvider;
 import io.camunda.optimize.service.importing.zeebe.handler.ZeebeDecisionDefinitionImportIndexHandler;
+import io.camunda.optimize.service.importing.zeebe.handler.ZeebeDecisionInstanceImportIndexHandler;
 import io.camunda.optimize.service.importing.zeebe.handler.ZeebeImportIndexHandlerProvider;
 import io.camunda.optimize.service.importing.zeebe.handler.ZeebeIncidentImportIndexHandler;
 import io.camunda.optimize.service.importing.zeebe.handler.ZeebeProcessDefinitionImportIndexHandler;
@@ -62,6 +63,11 @@ public class ImportIndexHandlerRegistry {
   public ZeebeDecisionDefinitionImportIndexHandler getZeebeDecisionDefinitionImportIndexHandler(
       final Integer partitionId) {
     return getZeebeImportIndexHandler(partitionId, ZeebeDecisionDefinitionImportIndexHandler.class);
+  }
+
+  public ZeebeDecisionInstanceImportIndexHandler getZeebeDecisionInstanceImportIndexHandler(
+      final Integer partitionId) {
+    return getZeebeImportIndexHandler(partitionId, ZeebeDecisionInstanceImportIndexHandler.class);
   }
 
   public ZeebeProcessInstanceImportIndexHandler getZeebeProcessInstanceImportIndexHandler(
