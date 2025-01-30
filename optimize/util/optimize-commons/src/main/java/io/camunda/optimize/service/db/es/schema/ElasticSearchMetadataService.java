@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -44,7 +45,7 @@ public class ElasticSearchMetadataService
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ElasticSearchMetadataService.class);
 
-  public ElasticSearchMetadataService(final ObjectMapper objectMapper) {
+  public ElasticSearchMetadataService(@Qualifier("optimizeOjectMapper") final ObjectMapper objectMapper) {
     super(objectMapper);
   }
 
