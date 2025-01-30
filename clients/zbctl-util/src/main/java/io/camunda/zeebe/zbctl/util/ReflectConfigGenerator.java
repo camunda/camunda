@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 
@@ -50,14 +49,13 @@ public class ReflectConfigGenerator {
 
   private static ClassReflectionConfig generateClass(final Class<?> clazz) {
     final var constructors =
-        Arrays.stream(clazz.getConstructors())
+        Arrays.stream(clazz.getDeclaredConstructors())
             .map(ReflectConfigGenerator::generateConstructors)
-            .collect(Collectors.toList());
-    if (constructors.isEmpty()) {
-      constructors.add(generateEmptyConstructor());
-    }
+            .toList();
     final var methods =
-        Arrays.stream(clazz.getMethods()).map(ReflectConfigGenerator::generateMethods).toList();
+        Arrays.stream(clazz.getDeclaredMethods())
+            .map(ReflectConfigGenerator::generateMethods)
+            .toList();
     final var methodReflections = new ArrayList<MethodReflectionConfig>();
     methodReflections.addAll(constructors);
     methodReflections.addAll(methods);
