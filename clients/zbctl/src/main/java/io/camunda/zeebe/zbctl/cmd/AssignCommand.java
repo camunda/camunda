@@ -8,7 +8,6 @@
 package io.camunda.zeebe.zbctl.cmd;
 
 import io.camunda.client.api.response.AssignUserTaskResponse;
-import io.camunda.zeebe.zbctl.converters.JsonInputConverter;
 import io.camunda.zeebe.zbctl.mixin.ClientMixin;
 import io.camunda.zeebe.zbctl.mixin.OutputMixin;
 import java.util.concurrent.Callable;
@@ -37,7 +36,7 @@ public class AssignCommand {
         names = {"--assignee"},
         paramLabel = "<assignee>",
         description = "The assignee for the user task",
-        converter = JsonInputConverter.class)
+        type = String.class)
     private String assignee;
 
     @Option(
@@ -45,14 +44,15 @@ public class AssignCommand {
         paramLabel = "<allow override>",
         description = "Allow overriding the assigned user",
         defaultValue = "false",
-        converter = JsonInputConverter.class)
+        type = boolean.class)
     private boolean allowOverride;
 
     @Option(
         names = {"--action"},
         paramLabel = "<action>",
         description = "A custom action value that will be accessible from user task events",
-        defaultValue = "assign")
+        defaultValue = "assign",
+        type = String.class)
     private String action;
 
     @Override
