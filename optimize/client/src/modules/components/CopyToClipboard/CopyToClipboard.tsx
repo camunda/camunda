@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ComponentProps, ReactNode} from 'react';
+import React, {ComponentProps, ReactNode} from 'react';
 import {Button} from '@carbon/react';
 
 import {t} from 'translation';
@@ -28,7 +28,7 @@ export default function CopyToClipboard({
     <Button
       className="CopyToClipboard"
       size="sm"
-      onClick={(evt) => {
+      onClick={(evt: React.MouseEvent<HTMLButtonElement>) => {
         evt.preventDefault();
         const input = document.createElement('input');
         input.value = value;
