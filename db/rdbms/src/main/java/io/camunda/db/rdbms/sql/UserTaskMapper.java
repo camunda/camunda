@@ -28,4 +28,6 @@ public interface UserTaskMapper {
   Long count(UserTaskDbQuery filter);
 
   List<UserTaskDbModel> search(UserTaskDbQuery filter);
+
+  String findLatestId();
 }

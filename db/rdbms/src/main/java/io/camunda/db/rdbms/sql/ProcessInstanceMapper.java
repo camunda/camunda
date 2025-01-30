@@ -29,6 +29,8 @@ public interface ProcessInstanceMapper {
 
   List<ProcessInstanceDbModel> search(ProcessInstanceDbQuery filter);
 
+  String findLatestId();
+
   record EndProcessInstanceDto(
       long processInstanceKey,
       ProcessInstanceEntity.ProcessInstanceState state,

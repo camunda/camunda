@@ -10,6 +10,10 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper">
 
+  <select id="findLatestId">
+    SELECT LEGACY_ID FROM ${prefix}FLOW_NODE_INSTANCE ORDER BY LEGACY_ID DESC LIMIT 1
+  </select>
+
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)
     FROM ${prefix}FLOW_NODE_INSTANCE pi

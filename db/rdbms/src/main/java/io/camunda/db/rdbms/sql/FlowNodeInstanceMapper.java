@@ -25,6 +25,8 @@ public interface FlowNodeInstanceMapper {
 
   List<FlowNodeInstanceDbModel> search(FlowNodeInstanceDbQuery filter);
 
+  String findLatestId();
+
   record EndFlowNodeDto(
       long flowNodeInstanceKey,
       FlowNodeInstanceEntity.FlowNodeState state,

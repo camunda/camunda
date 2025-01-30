@@ -18,4 +18,7 @@ public interface ProcessDefinitionMapper {
   Long count(ProcessDefinitionDbQuery filter);
 
   List<ProcessDefinitionDbModel> search(ProcessDefinitionDbQuery filter);
+
+  String findLatestId();
+
 }

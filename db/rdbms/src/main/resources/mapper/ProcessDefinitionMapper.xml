@@ -16,6 +16,10 @@
     <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchFilter"/>
   </select>
 
+  <select id="findLatestId">
+    SELECT LEGACY_ID FROM ${prefix}PROCESS_DEFINITION ORDER BY LEGACY_ID DESC LIMIT 1
+  </select>
+
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery"
     resultMap="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchResultMap">
     SELECT * FROM (

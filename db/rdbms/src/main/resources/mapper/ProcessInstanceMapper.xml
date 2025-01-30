@@ -9,6 +9,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="io.camunda.db.rdbms.sql.ProcessInstanceMapper">
+  <select id="findLatestId">
+    SELECT LEGACY_ID FROM ${prefix}PROCESS_INSTANCE ORDER BY LEGACY_ID DESC LIMIT 1
+  </select>
+
   <select id="findOne" parameterType="java.lang.Long"
     resultMap="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchResultMap">
     SELECT pi.PROCESS_INSTANCE_KEY,

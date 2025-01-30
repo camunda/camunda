@@ -24,6 +24,8 @@ public interface IncidentMapper {
 
   List<IncidentEntity> search(IncidentDbQuery filter);
 
+  String findLatestId();
+
   record IncidentStateDto(
       Long incidentKey, IncidentEntity.IncidentState state, String errorMessage) {}
 }

@@ -21,4 +21,6 @@ public interface VariableMapper {
   Long count(VariableDbQuery filter);
 
   List<VariableEntity> search(VariableDbQuery filter);
+
+  String findLatestId();
 }

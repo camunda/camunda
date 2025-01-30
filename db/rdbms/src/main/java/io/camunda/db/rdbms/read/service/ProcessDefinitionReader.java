@@ -56,4 +56,9 @@ public class ProcessDefinitionReader extends AbstractEntityReader<ProcessDefinit
             .toList();
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
+
+  public String findLatestId() {
+    return processDefinitionMapper.findLatestId();
+  }
+
 }
