@@ -24,6 +24,7 @@
 @Json.Import(CreateGroupResponse.class)
 @Json.Import(SearchResponsePage.class)
 @Json.Import(CompleteUserTaskResponse.class)
+@Json.Import(AssignUserTaskResponse.class)
 @Json.Import(DocumentReferenceResponse.class)
 @Json.Import(DocumentMetadata.class)
 package io.camunda.zeebe.zbctl.serde;
@@ -31,6 +32,7 @@ package io.camunda.zeebe.zbctl.serde;
 import io.avaje.jsonb.Json;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.AssignUserTaskResponse;
 import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.client.api.response.CompleteUserTaskResponse;
 import io.camunda.client.api.response.CreateGroupResponse;
