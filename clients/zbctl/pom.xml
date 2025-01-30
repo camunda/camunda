@@ -10,10 +10,10 @@
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>zeebe-cli</artifactId>
+  <artifactId>c8ctl</artifactId>
   <packaging>jar</packaging>
 
-  <name>Zeebe CLI</name>
+  <name>Zeebe CLI client</name>
 
   <properties>
     <version.picocli>4.7.6</version.picocli>
@@ -253,7 +253,7 @@
             <version>2.1.1</version>
             <configuration>
               <!-- name for a new binary executable -->
-              <programFile>c8ctl-nojvm</programFile>
+              <programFile>c8ctl-jvm</programFile>
             </configuration>
             <executions>
               <execution>
