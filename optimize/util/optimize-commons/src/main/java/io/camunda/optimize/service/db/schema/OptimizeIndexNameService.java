@@ -171,7 +171,7 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
   }
 
   @VisibleForTesting
-  void setIndexPrefix(final String indexPrefix) {
+  public void setIndexPrefix(final String indexPrefix) {
     if (indexPrefix.equals(COMPONENT_NAME)) {
       throw new IllegalArgumentException("Invalid prefix " + indexPrefix);
     }

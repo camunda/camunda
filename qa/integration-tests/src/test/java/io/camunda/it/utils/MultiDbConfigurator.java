@@ -10,6 +10,7 @@ package io.camunda.it.utils;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.operate.property.OperateOpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.property.TasklistOpenSearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -28,28 +29,39 @@ public class MultiDbConfigurator {
 
   private final OperateProperties operateProperties;
   private final TasklistProperties tasklistProperties;
+  private final OptimizeIndexNameService optimizeIndexNameService;
 
   public MultiDbConfigurator(final TestStandaloneApplication<?> testApplication) {
     this.testApplication = testApplication;
     // we are configuring this always, even if we might not use the applications
     operateProperties = new OperateProperties();
     tasklistProperties = new TasklistProperties();
+    optimizeIndexNameService = new OptimizeIndexNameService("");
 
     testApplication
         .withBean("operate-config", operateProperties, OperateProperties.class)
-        .withBean("tasklist-config", tasklistProperties, TasklistProperties.class);
+        .withBean("tasklist-config", tasklistProperties, TasklistProperties.class)
+        .withBean("optimize-config", optimizeIndexNameService, OptimizeIndexNameService.class);
   }
 
   public void configureElasticsearchSupport(
       final String elasticsearchUrl, final String indexPrefix) {
+    // operate
     operateProperties.getElasticsearch().setUrl(elasticsearchUrl);
     operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
     operateProperties.getZeebeElasticsearch().setUrl(elasticsearchUrl);
     operateProperties.getZeebeElasticsearch().setPrefix(indexPrefix);
+    // optimize
+    optimizeIndexNameService.setIndexPrefix(indexPrefix);
+    // tasklist
     tasklistProperties.getElasticsearch().setUrl(elasticsearchUrl);
     tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
     tasklistProperties.getZeebeElasticsearch().setUrl(elasticsearchUrl);
     tasklistProperties.getZeebeElasticsearch().setPrefix(indexPrefix);
+    tasklistProperties.getElasticsearch().setUrl(elasticsearchUrl);
+    tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
+    tasklistProperties.getZeebeElasticsearch().setUrl(elasticsearchUrl);
+    // application
     testApplication.withExporter(
         "CamundaExporter",
         cfg -> {
