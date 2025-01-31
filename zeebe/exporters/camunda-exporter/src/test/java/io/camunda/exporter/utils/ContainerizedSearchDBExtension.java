@@ -14,13 +14,19 @@ import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.testcontainers.OpensearchContainer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 public class ContainerizedSearchDBExtension extends SearchDBExtension {
+
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(ContainerizedSearchDBExtension.class);
 
   private static ElasticsearchContainer elasticsearchContainer;
   private static OpensearchContainer opensearchContainer;
@@ -48,18 +54,50 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
 
   @Override
   public void beforeEach(final ExtensionContext context) throws Exception {
-    new ElasticsearchEngineClient(elsClient).createIndex(PROCESS_INDEX, new IndexSettings());
-    new OpensearchEngineClient(osClient).createIndex(PROCESS_INDEX, new IndexSettings());
-    new ElasticsearchEngineClient(elsClient).createIndex(FORM_INDEX, new IndexSettings());
-    new OpensearchEngineClient(osClient).createIndex(FORM_INDEX, new IndexSettings());
+    maybeCreateIndexEs(PROCESS_INDEX);
+    maybeCreateIndexEs(FORM_INDEX);
+    maybeCreateIndexOs(PROCESS_INDEX);
+    maybeCreateIndexOs(FORM_INDEX);
+  }
+
+  private void maybeCreateIndexEs(final IndexDescriptor descriptor) {
+    try {
+      new ElasticsearchEngineClient(elsClient).createIndex(descriptor, new IndexSettings());
+    } catch (final Exception e) {
+      LOGGER.warn("Failed to create index {}", descriptor.getIndexName(), e);
+    }
+  }
+
+  private void maybeCreateIndexOs(final IndexDescriptor descriptor) {
+    try {
+      new OpensearchEngineClient(osClient).createIndex(descriptor, new IndexSettings());
+    } catch (final Exception e) {
+      LOGGER.warn("Failed to create index {}", descriptor.getIndexName(), e);
+    }
   }
 
   @Override
   public void afterEach(final ExtensionContext context) throws Exception {
-    elsClient.indices().delete(req -> req.index(PROCESS_INDEX.getFullQualifiedName()));
-    osClient.indices().delete(req -> req.index(PROCESS_INDEX.getFullQualifiedName()));
-    elsClient.indices().delete(req -> req.index(FORM_INDEX.getFullQualifiedName()));
-    osClient.indices().delete(req -> req.index(FORM_INDEX.getFullQualifiedName()));
+    maybeDeleteIndexEs(PROCESS_INDEX.getFullQualifiedName());
+    maybeDeleteIndexEs(FORM_INDEX.getFullQualifiedName());
+    maybeDeleteIndexOs(PROCESS_INDEX.getFullQualifiedName());
+    maybeDeleteIndexOs(FORM_INDEX.getFullQualifiedName());
+  }
+
+  private void maybeDeleteIndexEs(final String indexName) {
+    try {
+      elsClient.indices().delete(req -> req.index(indexName));
+    } catch (final Exception e) {
+      LOGGER.warn("Failed to delete index {}", indexName, e);
+    }
+  }
+
+  private void maybeDeleteIndexOs(final String indexName) {
+    try {
+      osClient.indices().delete(req -> req.index(indexName));
+    } catch (final Exception e) {
+      LOGGER.warn("Failed to delete index {}", indexName, e);
+    }
   }
 
   @Override
