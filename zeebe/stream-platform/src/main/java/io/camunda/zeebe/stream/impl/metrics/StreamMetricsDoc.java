@@ -150,6 +150,60 @@ public enum StreamMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getKeyNames() {
       return ErrorHandlingPhaseKeys.values();
     }
+  },
+
+  /** Number of events replayed by the stream processor */
+  REPLAY_EVENTS_COUNT {
+    @Override
+    public String getDescription() {
+      return "Number of events replayed by the stream processor";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.replay.events.total";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+  },
+
+  /** The last source position the stream processor has replayed */
+  LAST_SOURCE_POSITION {
+    @Override
+    public String getDescription() {
+      return "The last source position the stream processor has replayed";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.replay.last.source.position";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+  },
+
+  /** Time for replay a batch of events (in seconds) */
+  REPLAY_DURATION {
+    @Override
+    public String getDescription() {
+      return "Time for replay a batch of events (in seconds)";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.replay.event.batch.replay.duration";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
   };
 
   public enum ErrorHandlingPhaseKeys implements KeyName {
