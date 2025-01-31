@@ -4,8 +4,6 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"github.com/camunda/camunda/c8run/internal/unix"
-	"github.com/camunda/camunda/c8run/internal/windows"
 	"net/http"
 	"os"
 	"os/exec"
@@ -15,6 +13,10 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/camunda/camunda/c8run/internal/unix"
+	"github.com/camunda/camunda/c8run/internal/windows"
+	"github.com/joho/godotenv"
 )
 
 func printStatus(port int) error {
@@ -200,16 +202,19 @@ func main() {
 	c8 := getC8RunPlatform()
 	baseDir, _ := os.Getwd()
 	parentDir := baseDir
-	elasticsearchVersion := "8.13.4"
-	camundaReleaseTag := "8.7.0-alpha3"
-	camundaVersion := "8.7.0-alpha3"
-	connectorsVersion := "8.7.0-alpha3.2"
-	composeTag := "8.7-alpha3"
-	composeExtractedFolder := "camunda-platform-8.7-alpha3"
 
-	if os.Getenv("CAMUNDA_VERSION") != "" {
-		camundaVersion = os.Getenv("CAMUNDA_VERSION")
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println(err.Error())
 	}
+
+	elasticsearchVersion := os.Getenv("ELASTICSEARCH_VERSION")
+	camundaReleaseTag := os.Getenv("CAMUNDA_RELEASE_TAG")
+	camundaVersion := os.Getenv("CAMUNDA_VERSION")
+	connectorsVersion := os.Getenv("CONNECTORS_VERSION")
+	composeTag := os.Getenv("COMPOSE_TAG")
+	composeExtractedFolder := os.Getenv("COMPOSE_EXTRACTED_FOLDER")
+
 	expectedJavaVersion := 21
 
 	elasticsearchPidPath := filepath.Join(baseDir, "elasticsearch.pid")
@@ -236,9 +241,9 @@ func main() {
 	baseCommand := ""
 	// insideConfigFlag := false
 
-        if len(os.Args) == 1 {
-                usage(1)
-        } else if os.Args[1] == "start" {
+	if len(os.Args) == 1 {
+		usage(1)
+	} else if os.Args[1] == "start" {
 		baseCommand = "start"
 	} else if os.Args[1] == "stop" {
 		baseCommand = "stop"
@@ -281,7 +286,7 @@ func main() {
 		os.Setenv("ZEEBE_LOG_LEVEL", settings.logLevel)
 	}
 
-	err := validateKeystore(settings, parentDir)
+	err = validateKeystore(settings, parentDir)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
