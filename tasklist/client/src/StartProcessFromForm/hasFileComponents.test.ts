@@ -198,4 +198,61 @@ describe('hasFileComponents', () => {
     expect(hasFileComponents({components: {}})).toBe(false);
     expect(hasFileComponents({components: [{}]})).toBe(false);
   });
+
+  it('should handle empty components array', () => {
+    expect(
+      hasFileComponents({
+        components: [],
+      }),
+    ).toBe(false);
+  });
+
+  it('should handle mix file and non-file components', () => {
+    expect(
+      hasFileComponents({
+        components: [
+          {
+            type: 'textfield',
+          },
+          {
+            type: 'group',
+            components: [
+              {
+                type: 'number',
+              },
+              {
+                type: 'filepicker',
+              },
+            ],
+          },
+          {
+            type: 'checkbox',
+          },
+        ],
+      }),
+    ).toBe(true);
+  });
+
+  it('should handle non-file components', () => {
+    expect(
+      hasFileComponents({
+        components: [
+          {
+            type: 'textfield',
+          },
+          {
+            type: 'group',
+            components: [
+              {
+                type: 'number',
+              },
+            ],
+          },
+          {
+            type: 'checkbox',
+          },
+        ],
+      }),
+    ).toBe(false);
+  });
 });
