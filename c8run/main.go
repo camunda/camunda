@@ -38,62 +38,46 @@ func printStatus(port int) error {
 }
 
 func queryElasticsearchHealth(name string, url string) {
-	healthy := false
-	for retries := 12; retries >= 0; retries-- {
-		fmt.Println("Waiting for " + name + " to start. " + strconv.Itoa(retries) + " retries left")
-		time.Sleep(10 * time.Second)
-		resp, err := http.Get(url)
-		if err != nil {
-			continue
-		}
-		if resp.StatusCode >= 200 && resp.StatusCode <= 400 {
-			healthy = true
-			break
-		}
-	}
-	if !healthy {
+	if isRunning(name, url, 12, 10*time.Second) {
+		fmt.Println(name + " has successfully been started.")
+	} else {
 		fmt.Println("Error: " + name + " did not start!")
 		os.Exit(1)
 	}
-	fmt.Println(name + " has successfully been started.")
 }
 
 func queryCamundaHealth(c8 C8Run, name string, settings C8RunSettings) error {
-	healthy := false
-
 	protocol := "http"
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	if settings.keystore != "" && settings.keystorePassword != "" {
 		protocol = "https"
 	}
 	url := protocol + "://localhost:9600/actuator/health"
-	for retries := 24; retries >= 0; retries-- {
-		fmt.Println("Waiting for " + name + " to start. " + strconv.Itoa(retries) + " retries left")
-		time.Sleep(14 * time.Second)
-		resp, err := http.Get(url)
+	if isRunning(name, url, 24, 14*time.Second) {
+		fmt.Println(name + " has successfully been started.")
+		err := c8.OpenBrowser(protocol, settings.port)
 		if err != nil {
-			continue
+			fmt.Println("Failed to open browser")
+			return nil
 		}
-		if resp.StatusCode >= 200 && resp.StatusCode <= 400 {
-			healthy = true
-			break
-		}
-	}
-	if !healthy {
+		printStatus(settings.port)
+		return nil
+	} else {
 		return fmt.Errorf("Error: %s did not start!", name)
 	}
-	fmt.Println(name + " has successfully been started.")
-	err := c8.OpenBrowser(protocol, settings.port)
-	if err != nil {
-		// failing to open the browser is not a critical error. It could simply be a sign the script is running in a CI node without a browser installed, or a docker image.
-		fmt.Println("Failed to open browser")
-		return nil
+}
+
+func isRunning(name, url string, retries int, delay time.Duration) bool {
+	for retries >= 0 {
+		fmt.Printf("Waiting for %s to start. %d retries left\n", name, retries)
+		time.Sleep(delay)
+		resp, err := http.Get(url)
+		if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 400 {
+			return true
+		}
+		retries--
 	}
-	err = printStatus(settings.port)
-	if err != nil {
-		return fmt.Errorf("Error: could not format status %w", err)
-	}
-	return nil
+	return false
 }
 
 func stopProcess(c8 C8Run, pidfile string) error {
