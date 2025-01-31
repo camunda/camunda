@@ -8,92 +8,89 @@
 package io.camunda.zeebe.stream.impl.metrics;
 
 import io.camunda.zeebe.stream.impl.ProcessingStateMachine.ErrorHandlingPhase;
-import io.prometheus.client.Counter;
-import io.prometheus.client.Enumeration;
-import io.prometheus.client.Histogram;
-import io.prometheus.client.Histogram.Child;
-import io.prometheus.client.Histogram.Timer;
+import io.camunda.zeebe.stream.impl.metrics.StreamMetricsDoc.ErrorHandlingPhaseKeys;
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.micrometer.EnumMeter;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 
 public class ProcessingMetrics {
 
-  private static final String NAMESPACE = "zeebe";
-  private static final String LABEL_NAME_PARTITION = "partition";
+  private final Clock clock;
+  private final Timer batchProcessingDuration;
+  private final Timer batchProcessingPostCommitTasks;
+  private final DistributionSummary batchProcessingCommands;
+  private final Counter batchProcessingRetries;
+  private final EnumMeter<ErrorHandlingPhase> errorHandlingPhase;
 
-  private static final Histogram BATCH_PROCESSING_DURATION =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("stream_processor_batch_processing_duration")
-          .help("Time spent in batch processing (in seconds)")
-          .buckets(.0001, .001, .01, 0.1, .250, 0.5, 1, 2)
-          .labelNames(LABEL_NAME_PARTITION)
-          .register();
-  private static final Histogram BATCH_PROCESSING_COMMANDS =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("stream_processor_batch_processing_commands")
-          .help("Records the distribution of commands in a batch over time")
-          .buckets(1, 2, 4, 8, 16, 32, 64, 128)
-          .labelNames(LABEL_NAME_PARTITION)
-          .register();
+  public ProcessingMetrics(final MeterRegistry registry) {
+    clock = registry.config().clock();
 
-  private static final Histogram BATCH_PROCESSING_POST_COMMIT_TASKS =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("stream_processor_batch_processing_post_commit_tasks")
-          .help("Time spent in executing post commit tasks after batch processing (in seconds)")
-          .buckets(.0001, .001, .01, 0.1, .250, 0.5, 1, 2)
-          .labelNames(LABEL_NAME_PARTITION)
-          .register();
+    batchProcessingDuration = registerTimer(StreamMetricsDoc.BATCH_PROCESSING_DURATION, registry);
+    batchProcessingPostCommitTasks =
+        registerTimer(StreamMetricsDoc.BATCH_PROCESSING_POST_COMMIT_TASKS, registry);
+    batchProcessingCommands = registerBatchProcessingCommands(registry);
+    batchProcessingRetries = registerBatchProcessingRetries(registry);
+    errorHandlingPhase =
+        EnumMeter.register(
+            ErrorHandlingPhase.class,
+            StreamMetricsDoc.ERROR_HANDLING_PHASE,
+            ErrorHandlingPhaseKeys.ERROR_HANDLING_PHASE,
+            registry);
 
-  private static final Counter BATCH_PROCESSING_RETRIES =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("stream_processor_batch_processing_retry")
-          .help(
-              "Number of times batch processing failed due to reaching batch limit and was retried")
-          .labelNames(LABEL_NAME_PARTITION)
-          .register();
-
-  private static final Enumeration ERROR_HANDLING_PHASE =
-      Enumeration.build()
-          .namespace(NAMESPACE)
-          .name("stream_processor_error_handling_phase")
-          .help("The phase of error handling")
-          .labelNames(LABEL_NAME_PARTITION)
-          .states(ErrorHandlingPhase.class)
-          .register();
-
-  private final Child batchProcessingDuration;
-  private final Child batchProcessingCommands;
-  private final Counter.Child batchProcessingRetries;
-  private final Child batchProcessingPostCommitTasks;
-  private final Enumeration.Child errorHandlingPhase;
-
-  public ProcessingMetrics(final String partitionIdLabel) {
-    batchProcessingDuration = BATCH_PROCESSING_DURATION.labels(partitionIdLabel);
-    batchProcessingCommands = BATCH_PROCESSING_COMMANDS.labels(partitionIdLabel);
-    batchProcessingRetries = BATCH_PROCESSING_RETRIES.labels(partitionIdLabel);
-    batchProcessingPostCommitTasks = BATCH_PROCESSING_POST_COMMIT_TASKS.labels(partitionIdLabel);
-    errorHandlingPhase = ERROR_HANDLING_PHASE.labels(partitionIdLabel);
+    // initialize as no error to start with
+    errorHandlingPhase.state(ErrorHandlingPhase.NO_ERROR);
   }
 
-  public Timer startBatchProcessingDurationTimer() {
-    return batchProcessingDuration.startTimer();
+  public CloseableSilently startBatchProcessingDurationTimer() {
+    return MicrometerUtil.timer(batchProcessingDuration, Timer.start(clock));
   }
 
   public void observeCommandCount(final int commandCount) {
-    batchProcessingCommands.observe(commandCount);
+    batchProcessingCommands.record(commandCount);
   }
 
   public void countRetry() {
-    batchProcessingRetries.inc();
+    batchProcessingRetries.increment();
   }
 
-  public Timer startBatchProcessingPostCommitTasksTimer() {
-    return batchProcessingPostCommitTasks.startTimer();
+  public CloseableSilently startBatchProcessingPostCommitTasksTimer() {
+    return MicrometerUtil.timer(batchProcessingPostCommitTasks, Timer.start(clock));
   }
 
   public void errorHandlingPhase(final ErrorHandlingPhase phase) {
     errorHandlingPhase.state(phase);
+  }
+
+  private DistributionSummary registerBatchProcessingCommands(final MeterRegistry registry) {
+    final DistributionSummary batchProcessingCommands;
+    final var commandsDoc = StreamMetricsDoc.BATCH_PROCESSING_COMMANDS;
+    batchProcessingCommands =
+        DistributionSummary.builder(commandsDoc.getName())
+            .description(commandsDoc.getDescription())
+            .serviceLevelObjectives(commandsDoc.getDistributionSLOs())
+            .register(registry);
+    return batchProcessingCommands;
+  }
+
+  private Counter registerBatchProcessingRetries(final MeterRegistry registry) {
+    final Counter batchProcessingRetries;
+    final var retriesDoc = StreamMetricsDoc.BATCH_PROCESSING_RETRIES;
+    batchProcessingRetries =
+        Counter.builder(retriesDoc.getName())
+            .description(retriesDoc.getDescription())
+            .register(registry);
+    return batchProcessingRetries;
+  }
+
+  private Timer registerTimer(final StreamMetricsDoc meterDoc, final MeterRegistry registry) {
+    return Timer.builder(meterDoc.getName())
+        .description(meterDoc.getDescription())
+        .serviceLevelObjectives(meterDoc.getTimerSLOs())
+        .register(registry);
   }
 }
