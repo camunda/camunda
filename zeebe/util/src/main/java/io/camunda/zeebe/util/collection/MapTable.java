@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 
 /** A very simple implementation using a map-of-map approach. */
-final class MapTable<T, RowT, ColT> implements Table<T, RowT, ColT> {
+final class MapTable<RowT, ColT, T> implements Table<RowT, ColT, T> {
   private final Map<RowT, Map<ColT, T>> table = new HashMap<>();
 
   @Override

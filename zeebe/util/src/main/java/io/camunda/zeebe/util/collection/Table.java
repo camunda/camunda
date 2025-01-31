@@ -33,7 +33,7 @@ import java.util.function.IntFunction;
  * @param <RowT> the type of the row keys
  * @param <ColT> the type of the column keys
  */
-public interface Table<T, RowT, ColT> {
+public interface Table<RowT, ColT, T> {
 
   /**
    * Returns the value indexed by the two given key parts. If none found, returns null.
@@ -68,12 +68,12 @@ public interface Table<T, RowT, ColT> {
    * Returns a basic implementation of a table. If using enums for row and column keys, use {@link
    * #ofEnum(Class, Class, IntFunction)} instead.
    */
-  static <T, RowT, ColT> Table<T, RowT, ColT> simple() {
+  static <RowT, ColT, T> Table<RowT, ColT, T> simple() {
     return new MapTable<>();
   }
 
   /** Returns an optimized table for enum keys (both rows and columns). */
-  static <T, RowT extends Enum<RowT>, ColT extends Enum<ColT>> Table<T, RowT, ColT> ofEnum(
+  static <RowT extends Enum<RowT>, ColT extends Enum<ColT>, T> Table<RowT, ColT, T> ofEnum(
       final Class<RowT> rowClass,
       final Class<ColT> columnClass,
       final IntFunction<T[]> arraySupplier) {
