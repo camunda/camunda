@@ -34,7 +34,7 @@ import java.util.function.IntFunction;
  * @param <RowT> the type of the row keys
  * @param <ColT> the type of the column keys
  */
-public interface Table<T, RowT, ColT> {
+public interface Table<RowT, ColT, T> {
 
   /**
    * Returns the value indexed by the two given key parts. If none found, returns null.
@@ -69,12 +69,12 @@ public interface Table<T, RowT, ColT> {
    * Returns a basic implementation of a table. If using enums for row and column keys, use {@link
    * #ofEnum(Class, Class, IntFunction)} instead.
    */
-  static <T, RowT, ColT> Table<T, RowT, ColT> simple() {
+  static <RowT, ColT, T> Table<RowT, ColT, T> simple() {
     return new MapTable<>();
   }
 
   /** Returns an optimized table for enum keys (both rows and columns). */
-  static <T, RowT extends Enum<RowT>, ColT extends Enum<ColT>> Table<T, RowT, ColT> ofEnum(
+  static <RowT extends Enum<RowT>, ColT extends Enum<ColT>, T> Table<RowT, ColT, T> ofEnum(
       final Class<RowT> rowClass,
       final Class<ColT> columnClass,
       final IntFunction<T[]> arraySupplier) {
@@ -87,7 +87,7 @@ public interface Table<T, RowT, ColT> {
   }
 
   /** A very simple implementation using nested maps. */
-  final class MapTable<T, RowT, ColT> implements Table<T, RowT, ColT> {
+  final class MapTable<RowT, ColT, T> implements Table<RowT, ColT, T> {
     private final Map<RowT, Map<ColT, T>> table = new HashMap<>();
 
     private MapTable() {}
@@ -132,8 +132,8 @@ public interface Table<T, RowT, ColT> {
    * on a row is stored contiguously. So the first row starts at index 0, and the second row starts
    * at the index equal to the cardinality of the second enum.
    */
-  final class EnumTable<T, RowT extends Enum<RowT>, ColT extends Enum<ColT>>
-      implements Table<T, RowT, ColT> {
+  final class EnumTable<RowT extends Enum<RowT>, ColT extends Enum<ColT>, T>
+      implements Table<RowT, ColT, T> {
     private final MArray<T> marray;
 
     private EnumTable(final MArray<T> marray) {
