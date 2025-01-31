@@ -67,6 +67,7 @@ public class AuthorizationCreateProcessor
             authorizationRecord -> {
               final Optional<PersistedUser> user =
                   userState.getUser(authorizationRecord.getOwnerId());
+              // todo : need to investigate this part with adding userKey and resetting permissions
               user.ifPresent(
                   persistedUser -> authorizationRecord.setOwnerKey(persistedUser.getUserKey()));
               authorizationRecord
@@ -79,6 +80,7 @@ public class AuthorizationCreateProcessor
                                   new Permission()
                                       .setPermissionType(permissionType)
                                       .addResourceId(authorizationRecord.getResourceId())));
+
               writeEventAndDistribute(command, command.getValue());
             },
             (rejection) -> {
