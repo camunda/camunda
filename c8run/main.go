@@ -60,7 +60,10 @@ func queryCamundaHealth(c8 C8Run, name string, settings C8RunSettings) error {
 			fmt.Println("Failed to open browser")
 			return nil
 		}
-		printStatus(settings.port)
+		if err := printStatus(settings.port); err != nil {
+			fmt.Println("Failed to print status:", err)
+			return err
+		}
 		return nil
 	} else {
 		return fmt.Errorf("Error: %s did not start!", name)
