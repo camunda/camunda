@@ -265,7 +265,7 @@
     "taskDetailsTaskAssignmentError": "La tarea no pudo ser asignada",
     "taskDetailsTaskUnassignmentRejectionErrorSubtitle": "La desasignación de la tarea fue rechazada por el sistema",
     "taskDetailsTaskAssignmentRejectionErrorSubtitle": "La asignación de la tarea fue rechazada por el sistema",
-    "taskDetailsTaskCompletionRejectionErrorSubtitle": "L'achèvement de la tâche a été rejeté par le système",
+    "taskDetailsTaskCompletionRejectionErrorSubtitle": "La finalización de la tarea fue rechazada por el sistema",
     "taskDetailsAssignmentDelayInfoTitle": "Asignación de tarea retrasada",
     "taskDetailsUnassignmentDelayInfoTitle": "Desasignación de tarea retrasada",
     "taskDetailsAssignmentDelayInfoSubtitle": "La asignación de la tarea está tardando más de lo esperado en procesarse. Se completará en breve",
