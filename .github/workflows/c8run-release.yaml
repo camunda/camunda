@@ -1,0 +1,119 @@
+name: "C8Run: release"
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "release branch of c8run to release (stable/8.7, main, etc.)"
+        type: string
+        required: true
+        default: ""
+      camundaRelease:
+        description: "name of release in camunda"
+        type: string
+        required: true
+        default: ""
+
+permissions:
+  actions: read
+  attestations: none
+  checks: read
+  contents: write
+  deployments: none
+  id-token: none
+  issues: none
+  discussions: none
+  packages: none
+  pages: none
+  pull-requests: none
+  repository-projects: none
+  security-events: none
+  statuses: write
+
+jobs:
+  release:
+    name: C8Run Release ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        # macos-latest is ARM, mac os 13 will execute on x86 runner.
+        os: [ubuntu-latest, macos-latest, macos-13]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci NEXUS_USERNAME;
+            secret/data/products/distribution/ci NEXUS_PASSWORD;
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.23.1'
+          cache: false  # disabling since not working anyways without a cache-dependency-path specified
+
+      - name: Build c8run
+        run: go build
+        working-directory: .\c8run
+
+      - name: make a package
+        run: ./c8run package
+        shell: bash
+        working-directory: ./c8run
+        env:
+          JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
+
+      - name: upload asset
+        run: gh release upload "$CAMUNDA_RELEASE" ./c8run/camunda8-run-*
+        env:
+          CAMUNDA_RELEASE: ${{ inputs.camundaRelease }}
+
+  release_windows:
+    name: C8Run Release windows
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci NEXUS_USERNAME;
+            secret/data/products/distribution/ci NEXUS_PASSWORD;
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.23.1'
+          cache: false  # disabling since not working anyways without a cache-dependency-path specified
+
+      - name: Build c8run
+        run: go build
+        working-directory: .\c8run
+
+      - name: make a package
+        run: .\c8run.exe package
+        working-directory: .\c8run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
+
+      - name: upload asset
+        run: gh release upload "$CAMUNDA_RELEASE" .\c8run\camunda8-run-*
+        env:
+          CAMUNDA_RELEASE: ${{ inputs.camundaRelease }}
