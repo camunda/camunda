@@ -40,6 +40,7 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthIssue;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -85,6 +86,7 @@ public class ZeebePartitionTest {
     when(brokerCheckMock.componentName()).thenReturn("Broker-0");
     when(ctx.brokerHealthCheckService()).thenReturn(brokerCheckMock);
     when(ctx.getComponentTreeListener()).thenReturn(ComponentTreeListener.noop());
+    when(ctx.getBrokerMeterRegistry()).thenReturn(new SimpleMeterRegistry());
 
     partition = new ZeebePartition(ctx, transition, List.of(new NoopStartupStep()));
   }
