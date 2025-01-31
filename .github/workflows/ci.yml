@@ -209,6 +209,7 @@ jobs:
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           verify
+          -pl "clients/camunda-7-adapter"
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
         id: analyze-test-run
