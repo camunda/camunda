@@ -2,33 +2,24 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
+
+	"github.com/camunda/camunda/c8run/internal/unix"
+	"github.com/camunda/camunda/c8run/internal/windows"
+	"github.com/joho/godotenv"
 )
 
-type c8runSettings struct {
-	config   string
-	detached bool
-}
-
-func printHelp() {
-	optionsHelp := `Options:
-   --config     - Applies the specified configuration file.
-   --detached   - Starts Camunda Run as a detached process
-`
-	fmt.Print(optionsHelp)
-
-}
-
 func printStatus() {
-	endpoints, _ := os.ReadFile(".\\endpoints.txt")
+	endpoints, _ := os.ReadFile("endpoints.txt")
 	fmt.Println(string(endpoints))
 }
 
@@ -53,7 +44,7 @@ func queryElasticsearchHealth(name string, url string) {
 	fmt.Println(name + " has successfully been started.")
 }
 
-func queryCamundaHealth(name string, url string) {
+func queryCamundaHealth(c8 C8Run, name string, url string) error {
 	healthy := false
 	for retries := 24; retries >= 0; retries-- {
 		fmt.Println("Waiting for " + name + " to start. " + strconv.Itoa(retries) + " retries left")
@@ -68,27 +59,26 @@ func queryCamundaHealth(name string, url string) {
 		}
 	}
 	if !healthy {
-		fmt.Println("Error: " + name + " did not start!")
-		os.Exit(1)
-	}
-	operateUrl := "http://localhost:8080/operate/login"
-	openBrowserCmdString := "start " + operateUrl
-	openBrowserCmd := exec.Command("cmd", "/C", openBrowserCmdString)
-	openBrowserCmd.SysProcAttr = &syscall.SysProcAttr{
-		// CreationFlags: 0x08000000 | 0x00000200, // CREATE_NO_WINDOW, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
+		return fmt.Errorf("Error: %s did not start!", name)
 	}
 	fmt.Println(name + " has successfully been started.")
-	openBrowserCmd.Run()
+	err := c8.OpenBrowser()
+	if err != nil {
+		// failing to open the browser is not a critical error. It could simply be a sign the script is running in a CI node without a browser installed, or a docker image.
+		fmt.Println("Failed to open browser")
+		return nil
+	}
 	printStatus()
+	return nil
 }
 
-func stopProcess(pidfile string) {
+func stopProcess(c8 C8Run, pidfile string) {
 	if _, err := os.Stat(pidfile); err == nil {
 		commandPidText, _ := os.ReadFile(pidfile)
 		commandPidStripped := strings.TrimSpace(string(commandPidText))
 		commandPid, _ := strconv.Atoi(string(commandPidStripped))
 
-		for _, process := range process_tree(int(commandPid)) {
+		for _, process := range c8.ProcessTree(int(commandPid)) {
 			process.Kill()
 		}
 		os.Remove(pidfile)
@@ -105,41 +95,72 @@ func stopProcess(pidfile string) {
 
 }
 
-func parseCommandLineOptions(args []string, settings *c8runSettings) *c8runSettings {
-	if len(args) == 0 {
-		return settings
+func getC8RunPlatform() C8Run {
+	if runtime.GOOS == "windows" {
+		return &windows.WindowsC8Run{}
+	} else if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+		return &unix.UnixC8Run{}
 	}
-	argsToPop := 0
-	switch args[0] {
-	case "--config":
-		if len(args) > 1 {
-			argsToPop = 2
-			settings.config = args[1]
-		} else {
-			printHelp()
-			os.Exit(1)
-		}
-	case "--detached":
-		settings.detached = true
-	default:
-		argsToPop = 2
-		printHelp()
-		os.Exit(1)
+	panic("Unsupported operating system")
+}
 
+func startDocker(extractedComposePath string) error {
+	os.Chdir(extractedComposePath)
+
+	_, err := exec.LookPath("docker")
+	if err != nil {
+		return err
 	}
-	return parseCommandLineOptions(args[argsToPop:], settings)
 
+	composeCmd := exec.Command("docker", "compose", "up", "-d")
+	composeCmd.Stdout = os.Stdout
+	composeCmd.Stderr = os.Stderr
+	err = composeCmd.Run()
+	if err != nil {
+		return err
+	}
+	os.Chdir("..")
+	return nil
+}
+
+func stopDocker(extractedComposePath string) error {
+	os.Chdir(extractedComposePath)
+	_, err := exec.LookPath("docker")
+	if err != nil {
+		return err
+	}
+	composeCmd := exec.Command("docker", "compose", "down")
+	composeCmd.Stdout = os.Stdout
+	composeCmd.Stderr = os.Stderr
+	err = composeCmd.Run()
+	if err != nil {
+		return err
+	}
+	os.Chdir("..")
+	return nil
+}
+
+func usage(exitcode int) {
+	fmt.Printf("Usage: %s [command] [options]\nCommands:\n  start\n  stop\n  package\n", os.Args[0])
+	os.Exit(exitcode)
 }
 
 func main() {
+	c8 := getC8RunPlatform()
 	baseDir, _ := os.Getwd()
-	// parentDir, _ := filepath.Dir(baseDir)
 	parentDir := baseDir
-	// deploymentDir := filepath.Join(parentDir, "configuration", "resources")
-	elasticsearchVersion := "8.13.4"
-	camundaVersion := "8.6.7"
-	expectedJavaVersion := 21
 
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	elasticsearchVersion := os.Getenv("ELASTICSEARCH_VERSION")
+	camundaReleaseTag := os.Getenv("CAMUNDA_RELEASE_TAG")
+	camundaVersion := os.Getenv("CAMUNDA_VERSION")
+	connectorsVersion := os.Getenv("CONNECTORS_VERSION")
+
+	expectedJavaVersion := 21
 	elasticsearchPidPath := filepath.Join(baseDir, "elasticsearch.pid")
 	connectorsPidPath := filepath.Join(baseDir, "connectors.pid")
 	camundaPidPath := filepath.Join(baseDir, "camunda.pid")
@@ -151,69 +172,89 @@ func main() {
 	os.Setenv("CAMUNDA_REST_QUERY_ENABLED", "true")
 	os.Setenv("CAMUNDA_OPERATE_CSRFPREVENTIONENABLED", "false")
 	os.Setenv("CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED", "false")
+	os.Setenv("CAMUNDA_OPERATE_IMPORTER_READERBACKOFF", "1000")
+	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY", "1")
+	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
 
 	// classPath := filepath.Join(parentDir, "configuration", "userlib") + "," + filepath.Join(parentDir, "configuration", "keystore")
 
 	baseCommand := ""
 	// insideConfigFlag := false
 
-	if os.Args[1] == "start" {
+	if len(os.Args) == 1 {
+		usage(1)
+	} else if os.Args[1] == "start" {
 		baseCommand = "start"
-	} else {
+	} else if os.Args[1] == "stop" {
 		baseCommand = "stop"
+	} else if os.Args[1] == "package" {
+		baseCommand = "package"
+	} else if os.Args[1] == "clean" {
+		baseCommand = "clean"
+	} else if os.Args[1] == "-h" || os.Args[1] == "--help" {
+		usage(0)
+	} else {
+		panic(fmt.Sprintln("Unsupported operation", os.Args[1]))
 	}
 	fmt.Print("Command: " + baseCommand + "\n")
 
-	var settings c8runSettings
-	if len(os.Args) > 2 {
-		parseCommandLineOptions(os.Args[2:], &settings)
+	var settings C8RunSettings
+	startFlagSet := flag.NewFlagSet("start", flag.ExitOnError)
+	startFlagSet.StringVar(&settings.config, "config", "", "Applies the specified configuration file.")
+	startFlagSet.BoolVar(&settings.detached, "detached", false, "Starts Camunda Run as a detached process")
+	switch baseCommand {
+	case "start":
+		startFlagSet.Parse(os.Args[2:])
 	}
 
-        javaHome := os.Getenv("JAVA_HOME")
+	javaHome := os.Getenv("JAVA_HOME")
 	javaBinary := "java"
-        javaHomeAfterSymlink, err := filepath.EvalSymlinks(javaHome)
-        if err != nil {
-                fmt.Println("Failed to check if filepath is a symlink")
-                os.Exit(1)
-        }
-        javaHome = javaHomeAfterSymlink
-        if javaHome != "" {
-                filepath.Walk(javaHome, func(path string, info os.FileInfo, err error) error {
-                        _, filename := filepath.Split(path)
-                        if strings.Compare(filename, "java.exe") == 0 || strings.Compare(filename, "java") == 0 {
-                                javaBinary = path
-                                return filepath.SkipAll
-                        }
-                        return nil
+	javaHomeAfterSymlink, err := filepath.EvalSymlinks(javaHome)
+	if err != nil {
+		fmt.Println("Failed to check if filepath is a symlink")
+		os.Exit(1)
+	}
+	javaHome = javaHomeAfterSymlink
+	if javaHome != "" {
+		filepath.Walk(javaHome, func(path string, info os.FileInfo, err error) error {
+			_, filename := filepath.Split(path)
+			if strings.Compare(filename, "java.exe") == 0 || strings.Compare(filename, "java") == 0 {
+				javaBinary = path
+				return filepath.SkipAll
+			}
+			return nil
+		})
+		// fallback to bin/java.exe
+		if javaBinary == "" {
+			if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+				javaBinary = filepath.Join(javaHome, "bin", "java")
+			} else if runtime.GOOS == "windows" {
+				javaBinary = filepath.Join(javaHome, "bin", "java.exe")
+			}
+		}
+	} else {
+		path, err := exec.LookPath("java")
+		if err != nil {
+			fmt.Println("Failed to find JAVA_HOME or java program.")
+			os.Exit(1)
+		}
 
-                })
-                // fallback to bin/java.exe
-                if javaBinary == "" {
-	                javaBinary = filepath.Join(javaHome, "bin", "java.exe")
-                }
-        } else {
-                path, err := exec.LookPath("java")
-                if err != nil {
-                        fmt.Println("Failed to find JAVA_HOME or java program.")
-                        os.Exit(1)
-                }
-
-                // go up 2 directories since it's not guaranteed that java is in a bin folder
-                javaHome = filepath.Dir(filepath.Dir(path))
-                javaBinary = path
-        }
-        os.Setenv("ES_JAVA_HOME", javaHome)
+		// go up 2 directories since it's not guaranteed that java is in a bin folder
+		javaHome = filepath.Dir(filepath.Dir(path))
+		javaBinary = path
+	}
+	os.Setenv("ES_JAVA_HOME", javaHome)
 
 	if baseCommand == "start" {
 		javaVersion := os.Getenv("JAVA_VERSION")
 		if javaVersion == "" {
-			javaVersionCmd := exec.Command(javaBinary, "--version")
+			javaVersionCmd := c8.VersionCmd(javaBinary)
 			var out strings.Builder
-                        var stderr strings.Builder
+			var stderr strings.Builder
 			javaVersionCmd.Stdout = &out
 			javaVersionCmd.Stderr = &stderr
 			javaVersionCmd.Run()
-                        javaVersionOutput := out.String()
+			javaVersionOutput := out.String()
 			javaVersionOutputSplit := strings.Split(javaVersionOutput, " ")
 			if len(javaVersionOutputSplit) < 2 {
 				fmt.Println("Java needs to be installed. Please install JDK " + strconv.Itoa(expectedJavaVersion) + " or newer.")
@@ -238,8 +279,6 @@ func main() {
 			os.Exit(1)
 		}
 
-
-
 		javaOpts := os.Getenv("JAVA_OPTS")
 		if javaOpts != "" {
 			fmt.Print("JAVA_OPTS: " + javaOpts + "\n")
@@ -257,16 +296,14 @@ func main() {
 			os.Exit(1)
 		}
 
-		elasticsearchCmd := exec.Command(filepath.Join(parentDir, "elasticsearch-"+elasticsearchVersion, "bin", "elasticsearch.bat"), "-E", "xpack.ml.enabled=false", "-E", "xpack.security.enabled=false")
-
-		elasticsearchCmd.SysProcAttr = &syscall.SysProcAttr{
-			CreationFlags: 0x08000000 | 0x00000200, // CREATE_NO_WINDOW, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
-			// CreationFlags: 0x00000008 | 0x00000200, // DETACHED_PROCESS, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
-			// CreationFlags: 0x00000010, // CREATE_NEW_CONSOLE : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
-		}
+		elasticsearchCmd := c8.ElasticsearchCmd(elasticsearchVersion, parentDir)
 		elasticsearchCmd.Stdout = elasticsearchLogFile
 		elasticsearchCmd.Stderr = elasticsearchLogFile
-		elasticsearchCmd.Start()
+		err = elasticsearchCmd.Start()
+		if err != nil {
+			fmt.Printf("%+v", err)
+			os.Exit(1)
+		}
 		fmt.Print("Process id ", elasticsearchCmd.Process.Pid, "\n")
 
 		elasticsearchPidFile, err := os.OpenFile(elasticsearchPidPath, os.O_RDWR|os.O_CREATE, 0644)
@@ -277,21 +314,20 @@ func main() {
 		elasticsearchPidFile.Write([]byte(strconv.Itoa(elasticsearchCmd.Process.Pid)))
 		queryElasticsearchHealth("Elasticsearch", "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s")
 
-		connectorsCmd := exec.Command(javaBinary, "-classpath", parentDir + "\\*;" + parentDir + "\\custom_connectors\\*;" + parentDir + "\\camunda-zeebe-" + camundaVersion + "\\lib\\*", "io.camunda.connector.runtime.app.ConnectorRuntimeApplication", "--spring.config.location=" + parentDir + "\\connectors-application.properties")
+		connectorsCmd := c8.ConnectorsCmd(javaBinary, parentDir, camundaVersion)
 		connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
 		connectorsLogFile, err := os.OpenFile(connectorsLogPath, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
 			fmt.Print("Failed to open file: " + connectorsLogPath)
 			os.Exit(1)
 		}
-		connectorsCmd.SysProcAttr = &syscall.SysProcAttr{
-			CreationFlags: 0x08000000 | 0x00000200, // CREATE_NO_WINDOW, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
-			// CreationFlags: 0x00000008 | 0x00000200, // DETACHED_PROCESS, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
-			// CreationFlags: 0x00000010, // CREATE_NEW_CONSOLE : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
-		}
 		connectorsCmd.Stdout = connectorsLogFile
 		connectorsCmd.Stderr = connectorsLogFile
-		connectorsCmd.Start()
+		err = connectorsCmd.Start()
+		if err != nil {
+			fmt.Printf("%+v", err)
+			os.Exit(1)
+		}
 
 		connectorsPidFile, err := os.OpenFile(connectorsPidPath, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
@@ -305,37 +341,61 @@ func main() {
 		} else {
 			extraArgs = "--spring.config.location=" + filepath.Join(parentDir, "configuration")
 		}
-		camundaCmd := exec.Command(".\\camunda-zeebe-" + camundaVersion + "\\bin\\camunda.bat", extraArgs)
+		camundaCmd := c8.CamundaCmd(camundaVersion, parentDir, extraArgs)
 		camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
 		camundaLogFile, err := os.OpenFile(camundaLogPath, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
 			fmt.Print("Failed to open file: " + camundaLogPath)
 			os.Exit(1)
 		}
-		camundaCmd.SysProcAttr = &syscall.SysProcAttr{
-			CreationFlags: 0x08000000 | 0x00000200, // CREATE_NO_WINDOW, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
-			// CreationFlags: 0x00000008 | 0x00000200, // DETACHED_PROCESS, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
-			// CreationFlags: 0x00000010, // CREATE_NEW_CONSOLE : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
-		}
 		camundaCmd.Stdout = camundaLogFile
 		camundaCmd.Stderr = camundaLogFile
-		camundaCmd.Start()
+		err = camundaCmd.Start()
+		if err != nil {
+			fmt.Printf("%+v", err)
+			os.Exit(1)
+		}
 		camundaPidFile, err := os.OpenFile(camundaPidPath, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
 			fmt.Print("Failed to open file: " + camundaPidPath)
 			os.Exit(1)
 		}
 		camundaPidFile.Write([]byte(strconv.Itoa(camundaCmd.Process.Pid)))
-		queryCamundaHealth("Camunda", "http://localhost:8080/operate/login")
+		err = queryCamundaHealth(c8, "Camunda", "http://localhost:8080/operate/login")
+		if err != nil {
+			fmt.Printf("%+v", err)
+			os.Exit(1)
+		}
 	}
 
 	if baseCommand == "stop" {
-		stopProcess(elasticsearchPidPath)
+		stopProcess(c8, elasticsearchPidPath)
 		fmt.Println("Elasticsearch is stopped.")
-		stopProcess(connectorsPidPath)
+		stopProcess(c8, connectorsPidPath)
 		fmt.Println("Connectors is stopped.")
-		stopProcess(camundaPidPath)
+		stopProcess(c8, camundaPidPath)
 		fmt.Println("Camunda is stopped.")
 	}
 
+	if baseCommand == "package" {
+		if runtime.GOOS == "windows" {
+			err := PackageWindows(camundaVersion, elasticsearchVersion, connectorsVersion, camundaReleaseTag)
+			if err != nil {
+				fmt.Printf("%+v", err)
+				os.Exit(1)
+			}
+		} else if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+			err := PackageUnix(camundaVersion, elasticsearchVersion, connectorsVersion, camundaReleaseTag)
+			if err != nil {
+				fmt.Printf("%+v", err)
+				os.Exit(1)
+			}
+		} else {
+			panic("Unsupported system")
+		}
+	}
+
+	if baseCommand == "clean" {
+		Clean(camundaVersion, elasticsearchVersion)
+	}
 }
