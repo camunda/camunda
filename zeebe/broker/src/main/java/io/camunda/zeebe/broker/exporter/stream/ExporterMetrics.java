@@ -33,8 +33,8 @@ public final class ExporterMetrics {
   private final Map<String, AtomicLong> lastUpdatedExportedPositions = new HashMap<>();
   private final AtomicInteger exporterState = new AtomicInteger();
   private final Map<ValueType, Timer> exportingLatency = new HashMap<>();
-  private final Table<Timer, String, ValueType> exporterExportingDuration = Table.simple();
-  private final Table<Counter, ExporterActionKeyNames, ValueType> exporterEvents =
+  private final Table<String, ValueType, Timer> exporterExportingDuration = Table.simple();
+  private final Table<ExporterActionKeyNames, ValueType, Counter> exporterEvents =
       Table.ofEnum(ExporterActionKeyNames.class, ValueType.class, Counter[]::new);
 
   private final MeterRegistry meterRegistry;
