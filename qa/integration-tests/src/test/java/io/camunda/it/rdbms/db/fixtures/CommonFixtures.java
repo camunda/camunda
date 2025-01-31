@@ -8,9 +8,11 @@
 package io.camunda.it.rdbms.db.fixtures;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.IntStream;
 
 public class CommonFixtures {
 
@@ -32,6 +34,20 @@ public class CommonFixtures {
       sb.append(UUID.randomUUID().toString().replace("-", ""));
     }
     return sb.substring(0, length);
+  }
+
+  public static String generateRandomString(final int length, final String prefix) {
+    return "%s-%s".formatted(generateRandomString(length), prefix);
+  }
+
+  public static String generateRandomString(final String prefix) {
+    return "%s-%s".formatted(generateRandomString(10), prefix);
+  }
+
+  public static List<String> generateRandomStrings(final String prefix, final int n) {
+    return IntStream.range(0, n)
+        .mapToObj(i -> generateRandomString("%s%02d".formatted(prefix, i)))
+        .toList();
   }
 
   /** Random String which contains random text values, as well es Doubles or Longs */
