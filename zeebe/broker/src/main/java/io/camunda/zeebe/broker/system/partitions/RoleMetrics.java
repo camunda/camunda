@@ -7,25 +7,64 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
-import io.prometheus.client.Gauge;
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.micrometer.common.docs.KeyName;
+import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.Meter.Type;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.TimeGauge;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class RoleMetrics {
-  private static final Gauge LEADER_TRANSITION_LATENCY =
-      Gauge.build()
-          .namespace("zeebe")
-          .name("leader_transition_latency")
-          .help(
-              "The time (in ms) needed for the engine services to transition to leader and be ready to process new requests.")
-          .labelNames("partition")
-          .register();
+  private final AtomicLong leaderTransitionLatency = new AtomicLong();
+  private final Clock clock;
 
-  private final String partitionIdLabel;
+  public RoleMetrics(final MeterRegistry registry, final int partitionId) {
+    clock = registry.config().clock();
 
-  public RoleMetrics(final int partitionId) {
-    partitionIdLabel = String.valueOf(partitionId);
+    final var meterDoc = RoleMetricsDoc.LEADER_TRANSITION_LATENCY;
+    TimeGauge.builder(
+            meterDoc.getName(), leaderTransitionLatency, TimeUnit.MILLISECONDS, Number::longValue)
+        .description(meterDoc.getDescription())
+        .tag(PartitionKeyNames.PARTITION.asString(), String.valueOf(partitionId))
+        .register(registry);
   }
 
-  public Gauge.Timer startLeaderTransitionLatencyTimer() {
-    return LEADER_TRANSITION_LATENCY.labels(partitionIdLabel).startTimer();
+  public CloseableSilently startLeaderTransitionLatencyTimer() {
+    return MicrometerUtil.timer(leaderTransitionLatency::set, TimeUnit.MILLISECONDS, clock);
+  }
+
+  @SuppressWarnings("NullableProblems")
+  public enum RoleMetricsDoc implements ExtendedMeterDocumentation {
+    /**
+     * The time (in ms) needed for the engine services to transition to leader and be ready to
+     * process new requests.
+     */
+    LEADER_TRANSITION_LATENCY {
+      @Override
+      public String getDescription() {
+        return "The time (in ms) needed for the engine services to transition to leader and be ready to process new requests";
+      }
+
+      @Override
+      public String getName() {
+        return "zeebe.leader.transition.latency";
+      }
+
+      @Override
+      public Type getType() {
+        return Meter.Type.GAUGE;
+      }
+
+      @Override
+      public KeyName[] getKeyNames() {
+        return PartitionKeyNames.values();
+      }
+    }
   }
 }
