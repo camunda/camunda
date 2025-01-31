@@ -161,7 +161,6 @@ func main() {
 	connectorsVersion := os.Getenv("CONNECTORS_VERSION")
 
 	expectedJavaVersion := 21
-
 	elasticsearchPidPath := filepath.Join(baseDir, "elasticsearch.pid")
 	connectorsPidPath := filepath.Join(baseDir, "connectors.pid")
 	camundaPidPath := filepath.Join(baseDir, "camunda.pid")
