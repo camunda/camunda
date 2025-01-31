@@ -176,6 +176,14 @@
       "matchPackagePatterns": ["*"],
       "automerge": true,
       "addLabels": ["automerge"]
+    },
+    {
+      "description": "only allow patch version upgrades in c8run",
+      "matchFileNames": [
+        "./c8run/.env"
+      ],
+      "matchUpdateTypes": ["minor", "major"],
+      "enabled": false
     }
   ],
   "dockerfile": {
@@ -202,6 +210,15 @@
       ],
       "depNameTemplate": "mcr.microsoft.com/playwright",
       "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": ["./c8run/.env"],
+      "datasourceTemplate": "docker",
+      "matchStrings": [
+        "# renovate: datasource=docker depName=(?<depName>[^\\s]+?)(?: (lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: registryUrl=(?<registryUrl>[^\\s]+?))?\\s*?(\\S+)=(?<currentValue>\\S+)"
+      ],
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
     }
   ]
 }
