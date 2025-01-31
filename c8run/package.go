@@ -54,6 +54,7 @@ func PackageWindows(camundaVersion string, elasticsearchVersion string, connecto
 	if javaArtifactsUser == "" || javaArtifactsPassword == "" {
 		return fmt.Errorf("PackageWindows: JAVA_ARTIFACTS_USER or JAVA_ARTIFACTS_PASSWORD env vars are not set")
 	}
+        javaArtifactsToken := "Basic " + base64.StdEncoding.EncodeToString([]byte(javaArtifactsUser+":"+javaArtifactsPassword))
 
 	Clean(camundaVersion, elasticsearchVersion)
 
@@ -67,7 +68,7 @@ func PackageWindows(camundaVersion string, elasticsearchVersion string, connecto
 		return fmt.Errorf("PackageWindows: failed to fetch camunda: %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, authToken, func(_, _ string) error { return nil })
+	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, javaArtifactsToken, func(_, _ string) error { return nil })
 	if err != nil {
 		return fmt.Errorf("PackageWindows: failed to fetch connectors: %w\n%s", err, debug.Stack())
 	}
@@ -117,6 +118,7 @@ func PackageUnix(camundaVersion string, elasticsearchVersion string, connectorsV
 	if javaArtifactsUser == "" || javaArtifactsPassword == "" {
 		return fmt.Errorf("PackageUnix: JAVA_ARTIFACTS_USER or JAVA_ARTIFACTS_PASSWORD env vars are not set")
 	}
+        javaArtifactsToken := "Basic " + base64.StdEncoding.EncodeToString([]byte(javaArtifactsUser+":"+javaArtifactsPassword))
 
 	Clean(camundaVersion, elasticsearchVersion)
 
@@ -130,7 +132,7 @@ func PackageUnix(camundaVersion string, elasticsearchVersion string, connectorsV
 		return fmt.Errorf("PackageUnix: failed to fetch camunda %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, authToken, func(_, _ string) error { return nil })
+	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, javaArtifactsToken, func(_, _ string) error { return nil })
 	if err != nil {
 		return fmt.Errorf("PackageUnix: failed to fetch connectors %w\n%s", err, debug.Stack())
 	}
