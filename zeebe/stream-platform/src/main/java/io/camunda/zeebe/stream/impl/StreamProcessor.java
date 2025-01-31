@@ -128,7 +128,12 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     logStream = streamProcessorContext.getLogStream();
     partitionId = logStream.getPartitionId();
     actorName = buildActorName("StreamProcessor", partitionId);
+<<<<<<< HEAD
     metrics = new StreamProcessorMetrics(partitionId);
+=======
+    metrics = new StreamProcessorMetrics(streamProcessorContext.getMeterRegistry());
+    metrics.initializeProcessorPhase(streamProcessorContext.getStreamProcessorPhase());
+>>>>>>> 228ec46d (refactor: migrate StreamProcessorMetrics to Micrometer)
     recordProcessors.addAll(processorBuilder.getRecordProcessors());
   }
 
@@ -157,12 +162,17 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   @Override
   protected void onActorStarted() {
     try {
-      LOG.debug("Recovering state of partition {} from snapshot", partitionId);
       final var startRecoveryTimer = metrics.startRecoveryTimer();
+      LOG.debug("Recovering state of partition {} from snapshot", partitionId);
       final long snapshotPosition = recoverFromSnapshot();
 
+<<<<<<< HEAD
       // the schedule service actor is only opened if the replay is done,
       // until then it is an unusable and closed schedule service
+=======
+      final var scheduledTaskMetrics =
+          ScheduledTaskMetrics.of(streamProcessorContext.getMeterRegistry());
+>>>>>>> 228ec46d (refactor: migrate StreamProcessorMetrics to Micrometer)
       processorActorService =
           new ProcessingScheduleServiceImpl(
               streamProcessorContext::getStreamProcessorPhase,

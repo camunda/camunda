@@ -7,30 +7,35 @@
  */
 package io.camunda.zeebe.stream.impl.metrics;
 
+<<<<<<< HEAD
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
+=======
+import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.TimeGauge;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+>>>>>>> 228ec46d (refactor: migrate StreamProcessorMetrics to Micrometer)
 
 public final class StreamProcessorMetrics {
 
-  private static final String LABEL_NAME_PARTITION = "partition";
-  private static final String LABEL_NAME_ACTION = "action";
+  private final AtomicLong startupRecoveryTime = new AtomicLong();
+  private final AtomicInteger processorState = new AtomicInteger();
 
-  private static final String LABEL_WRITTEN = "written";
-  private static final String LABEL_SKIPPED = "skipped";
-  private static final String LABEL_PROCESSED = "processed";
-  private static final String NAMESPACE = "zeebe";
+  private final MeterRegistry registry;
 
-  private static final Counter STREAM_PROCESSOR_EVENTS =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("stream_processor_records_total")
-          .help("Number of records processed by stream processor")
-          .labelNames(LABEL_NAME_ACTION, LABEL_NAME_PARTITION)
-          .register();
+  public StreamProcessorMetrics(final MeterRegistry registry) {
+    this.registry = registry;
 
+<<<<<<< HEAD
   private static final Gauge LAST_PROCESSED_POSITION =
       Gauge.build()
           .namespace(NAMESPACE)
@@ -68,50 +73,71 @@ public final class StreamProcessorMetrics {
 
   public StreamProcessorMetrics(final int partitionId) {
     partitionIdLabel = String.valueOf(partitionId);
+=======
+    registerStartupRecoveryTime();
+    registerProcessorState();
   }
 
-  private void event(final String action) {
-    STREAM_PROCESSOR_EVENTS.labels(action, partitionIdLabel).inc();
+  public void setStreamProcessorInitial() {
+    processorState.set(0);
   }
 
-  public void processingLatency(final long written, final long processed) {
-    PROCESSING_LATENCY.labels(partitionIdLabel).observe((processed - written) / 1000f);
+  public void setStreamProcessorReplay() {
+    processorState.set(1);
   }
 
-  public Histogram.Timer startProcessingDurationTimer(
-      final ValueType valueType, final Intent intent) {
-    return PROCESSING_DURATION
-        .labels(partitionIdLabel, valueType.name(), intent.name())
-        .startTimer();
+  public void setStreamProcessorProcessing() {
+    processorState.set(2);
   }
 
-  /** We only process commands. */
-  public void commandsProcessed() {
-    event(LABEL_PROCESSED);
+  public void setStreamProcessorFailed() {
+    processorState.set(3);
   }
 
-  /**
-   * We write various type of records. The positions are always increasing and incremented by 1 for
-   * one record.
-   */
-  public void recordsWritten(final long amount) {
-    if (amount < 1) {
-      return;
+  public void setStreamProcessorPaused() {
+    processorState.set(4);
+>>>>>>> 228ec46d (refactor: migrate StreamProcessorMetrics to Micrometer)
+  }
+
+  public CloseableSilently startRecoveryTimer() {
+    return MicrometerUtil.timer(
+        startupRecoveryTime::set, TimeUnit.MILLISECONDS, registry.config().clock());
+  }
+<<<<<<< HEAD
+=======
+
+  public void initializeProcessorPhase(final Phase phase) {
+    switch (phase) {
+      case INITIAL:
+        setStreamProcessorInitial();
+        break;
+      case REPLAY:
+        setStreamProcessorReplay();
+        break;
+      case PROCESSING:
+        setStreamProcessorProcessing();
+        break;
+      case PAUSED:
+        setStreamProcessorPaused();
+        break;
+      default:
+        setStreamProcessorFailed();
     }
-
-    STREAM_PROCESSOR_EVENTS.labels(LABEL_WRITTEN, partitionIdLabel).inc(amount);
   }
 
-  /** We skip events on processing. */
-  public void eventSkipped() {
-    event(LABEL_SKIPPED);
+  private void registerStartupRecoveryTime() {
+    final var meterDoc = StreamMetricsDoc.PROCESSOR_STATE;
+    TimeGauge.builder(
+            meterDoc.getName(), startupRecoveryTime, TimeUnit.MILLISECONDS, AtomicLong::longValue)
+        .description(meterDoc.getDescription())
+        .register(registry);
   }
 
-  public Gauge.Timer startRecoveryTimer() {
-    return STARTUP_RECOVERY_TIME.labels(partitionIdLabel).startTimer();
+  private void registerProcessorState() {
+    final var meterDoc = StreamMetricsDoc.PROCESSOR_STATE;
+    Gauge.builder(meterDoc.getName(), processorState, AtomicInteger::intValue)
+        .description(meterDoc.getDescription())
+        .register(registry);
   }
-
-  public void setLastProcessedPosition(final long position) {
-    LAST_PROCESSED_POSITION.labels(partitionIdLabel).set(position);
-  }
+>>>>>>> 228ec46d (refactor: migrate StreamProcessorMetrics to Micrometer)
 }
