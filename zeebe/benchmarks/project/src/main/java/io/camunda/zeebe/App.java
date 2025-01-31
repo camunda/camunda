@@ -23,16 +23,20 @@ import io.camunda.zeebe.config.AppConfigLoader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.grpc.ClientInterceptor;
 import io.micrometer.core.instrument.binder.grpc.MetricCollectingClientInterceptor;
-import io.micrometer.prometheus.PrometheusConfig;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
-import io.micrometer.prometheus.PrometheusRenameFilter;
-import io.prometheus.client.exporter.HTTPServer;
+import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics;
+import io.micrometer.core.instrument.binder.system.ProcessorMetrics;
+import io.micrometer.prometheusmetrics.PrometheusConfig;
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
+import io.micrometer.prometheusmetrics.PrometheusRenameFilter;
+import io.prometheus.metrics.exporter.httpserver.HTTPServer;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -41,7 +45,7 @@ import org.slf4j.LoggerFactory;
 abstract class App implements Runnable {
 
   protected static ClientInterceptor monitoringInterceptor;
-  protected static PrometheusMeterRegistry prometheusRegistry;
+  protected static PrometheusMeterRegistry registry;
   private static final Logger THROTTLED_LOGGER =
       new ThrottledLogger(LoggerFactory.getLogger(App.class), Duration.ofSeconds(5));
   private static final Logger LOG = LoggerFactory.getLogger(App.class);
@@ -56,21 +60,31 @@ abstract class App implements Runnable {
   }
 
   private static void startMonitoringServer(final AppCfg appCfg) {
-    prometheusRegistry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
-    prometheusRegistry.config().meterFilter(new PrometheusRenameFilter());
+    registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+    registry.config().meterFilter(new PrometheusRenameFilter());
 
     try {
       // you can set the daemon flag to false if you want the server to block
       monitoringServer =
-          new HTTPServer(
-              new InetSocketAddress(appCfg.getMonitoringPort()),
-              prometheusRegistry.getPrometheusRegistry(),
-              true);
+          HTTPServer.builder()
+              .port(appCfg.getMonitoringPort())
+              .registry(registry.getPrometheusRegistry())
+              .buildAndStart();
     } catch (final IOException e) {
       LOG.error("Problem on starting monitoring server.", e);
     }
 
-    monitoringInterceptor = new MetricCollectingClientInterceptor(prometheusRegistry);
+    monitoringInterceptor = new MetricCollectingClientInterceptor(registry);
+    registerDefaultInstrumentation();
+  }
+
+  @SuppressWarnings("resource") // closeable metrics will be closed when the registry is closed
+  private static void registerDefaultInstrumentation() {
+    new ClassLoaderMetrics().bindTo(registry);
+    new JvmMemoryMetrics().bindTo(registry);
+    new JvmGcMetrics().bindTo(registry);
+    new ProcessorMetrics().bindTo(registry);
+    new JvmThreadMetrics().bindTo(registry);
   }
 
   private static void stopMonitoringServer() {
