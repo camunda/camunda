@@ -104,7 +104,6 @@ func getC8RunPlatform() C8Run {
 	panic("Unsupported operating system")
 }
 
-
 func startDocker(extractedComposePath string) error {
 	os.Chdir(extractedComposePath)
 
@@ -154,14 +153,12 @@ func main() {
 	err := godotenv.Load()
 	if err != nil {
 		fmt.Println(err.Error())
-        }
+	}
 
 	elasticsearchVersion := os.Getenv("ELASTICSEARCH_VERSION")
 	camundaReleaseTag := os.Getenv("CAMUNDA_RELEASE_TAG")
 	camundaVersion := os.Getenv("CAMUNDA_VERSION")
 	connectorsVersion := os.Getenv("CONNECTORS_VERSION")
-	composeTag := os.Getenv("COMPOSE_TAG")
-	composeExtractedFolder := os.Getenv("COMPOSE_EXTRACTED_FOLDER")
 
 	expectedJavaVersion := 21
 
@@ -383,13 +380,13 @@ func main() {
 
 	if baseCommand == "package" {
 		if runtime.GOOS == "windows" {
-			err := PackageWindows(camundaVersion, elasticsearchVersion)
+			err := PackageWindows(camundaVersion, elasticsearchVersion, connectorsVersion, camundaReleaseTag)
 			if err != nil {
 				fmt.Printf("%+v", err)
 				os.Exit(1)
 			}
 		} else if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-			err := PackageUnix(camundaVersion, elasticsearchVersion)
+			err := PackageUnix(camundaVersion, elasticsearchVersion, connectorsVersion, camundaReleaseTag)
 			if err != nil {
 				fmt.Printf("%+v", err)
 				os.Exit(1)

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/camunda/camunda/c8run/internal/archive"
@@ -24,8 +23,8 @@ func Clean(camundaVersion string, elasticsearchVersion string) {
 	}
 }
 
-func downloadAndExtract(filePath, url, extractDir string, extractFunc func(string, string) error) error {
-	err := archive.DownloadFile(filePath, url)
+func downloadAndExtract(filePath, url, extractDir string, authToken string, extractFunc func(string, string) error) error {
+	err := archive.DownloadFile(filePath, url, authToken)
 	if err != nil {
 		return fmt.Errorf("downloadAndExtract: failed to download file at url %s\n%w\n%s", url, err, debug.Stack())
 	}
@@ -40,11 +39,10 @@ func downloadAndExtract(filePath, url, extractDir string, extractFunc func(strin
 	return nil
 }
 
-func PackageWindows(camundaVersion string, elasticsearchVersion string) error {
+func PackageWindows(camundaVersion string, elasticsearchVersion string, connectorsVersion string, camundaReleaseTag string) error {
 	elasticsearchUrl := "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-" + elasticsearchVersion + "-windows-x86_64.zip"
 	elasticsearchFilePath := "elasticsearch-" + elasticsearchVersion + ".zip"
 	camundaFilePath := "camunda-zeebe-" + camundaVersion + ".zip"
-	camundaReleaseTag := ""
 	camundaUrl := "https://github.com/camunda/camunda/releases/download/" + camundaReleaseTag + "/" + camundaFilePath
 	connectorsFilePath := "connector-runtime-bundle-" + connectorsVersion + "-with-dependencies.jar"
 	connectorsUrl := "https://repository.nexus.camunda.cloud/content/groups/internal/io/camunda/connector/connector-runtime-bundle/" + connectorsVersion + "/" + connectorsFilePath
@@ -57,21 +55,19 @@ func PackageWindows(camundaVersion string, elasticsearchVersion string) error {
 		return fmt.Errorf("PackageWindows: JAVA_ARTIFACTS_USER or JAVA_ARTIFACTS_PASSWORD env vars are not set")
 	}
 
-	javaArtifactsToken := "Basic " + base64.StdEncoding.EncodeToString([]byte(javaArtifactsUser+":"+javaArtifactsPassword))
-
 	Clean(camundaVersion, elasticsearchVersion)
 
-	err := downloadAndExtract(elasticsearchFilePath, elasticsearchUrl, "elasticsearch-"+elasticsearchVersion, archive.UnzipSource)
+	err := downloadAndExtract(elasticsearchFilePath, elasticsearchUrl, "elasticsearch-"+elasticsearchVersion, "", archive.UnzipSource)
 	if err != nil {
 		return fmt.Errorf("PackageWindows: failed to fetch elasticsearch: %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, archive.UnzipSource)
+	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, authToken, archive.UnzipSource)
 	if err != nil {
 		return fmt.Errorf("PackageWindows: failed to fetch camunda: %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, javaArtifactsToken, func(_, _ string) error { return nil })
+	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, authToken, func(_, _ string) error { return nil })
 	if err != nil {
 		return fmt.Errorf("PackageWindows: failed to fetch connectors: %w\n%s", err, debug.Stack())
 	}
@@ -98,7 +94,7 @@ func PackageWindows(camundaVersion string, elasticsearchVersion string) error {
 	return nil
 }
 
-func PackageUnix(camundaVersion string, elasticsearchVersion string) error {
+func PackageUnix(camundaVersion string, elasticsearchVersion string, connectorsVersion string, camundaReleaseTag string) error {
 	var architecture string
 	if runtime.GOARCH == "amd64" {
 		architecture = "x86_64"
@@ -122,21 +118,19 @@ func PackageUnix(camundaVersion string, elasticsearchVersion string) error {
 		return fmt.Errorf("PackageUnix: JAVA_ARTIFACTS_USER or JAVA_ARTIFACTS_PASSWORD env vars are not set")
 	}
 
-	javaArtifactsToken := "Basic " + base64.StdEncoding.EncodeToString([]byte(javaArtifactsUser+":"+javaArtifactsPassword))
-
 	Clean(camundaVersion, elasticsearchVersion)
 
-	err := downloadAndExtract(elasticsearchFilePath, elasticsearchUrl, "elasticsearch-"+elasticsearchVersion, archive.ExtractTarGzArchive)
+	err := downloadAndExtract(elasticsearchFilePath, elasticsearchUrl, "elasticsearch-"+elasticsearchVersion, "", archive.ExtractTarGzArchive)
 	if err != nil {
 		return fmt.Errorf("PackageUnix: failed to fetch elasticsearch %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, archive.ExtractTarGzArchive)
+	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, authToken, archive.ExtractTarGzArchive)
 	if err != nil {
 		return fmt.Errorf("PackageUnix: failed to fetch camunda %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, javaArtifactsToken, func(_, _ string) error { return nil })
+	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, authToken, func(_, _ string) error { return nil })
 	if err != nil {
 		return fmt.Errorf("PackageUnix: failed to fetch connectors %w\n%s", err, debug.Stack())
 	}

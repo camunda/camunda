@@ -17,7 +17,7 @@ import (
 const OpenFlagsForWriting = os.O_RDWR | os.O_CREATE | os.O_TRUNC
 const ReadWriteMode = 0755
 
-func DownloadFile(filepath string, url string) error {
+func DownloadFile(filepath string, url string, authToken string) error {
 	// if the file already exists locally, don't download a new copy
 	_, err := os.Stat(filepath)
 	if !errors.Is(err, os.ErrNotExist) {
