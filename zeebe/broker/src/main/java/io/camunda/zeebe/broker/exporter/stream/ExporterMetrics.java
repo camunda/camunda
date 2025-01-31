@@ -147,7 +147,7 @@ public final class ExporterMetrics {
     final var meterDoc = ExporterMetricsDoc.EXPORTING_DURATION;
     return Timer.builder(meterDoc.getName())
         .description(meterDoc.getDescription())
-        .serviceLevelObjectives(meterDoc.getServiceLevelObjectives())
+        .serviceLevelObjectives(meterDoc.getTimerSLOs())
         .tag(LABEL_NAME_VALUE_TYPE, valueType.name())
         .tag(LABEL_NAME_EXPORTER, exporterId)
         .register(meterRegistry);
@@ -157,7 +157,7 @@ public final class ExporterMetrics {
     final var meterDoc = ExporterMetricsDoc.EXPORTING_LATENCY;
     return Timer.builder(meterDoc.getName())
         .description(meterDoc.getDescription())
-        .serviceLevelObjectives(meterDoc.getServiceLevelObjectives())
+        .serviceLevelObjectives(meterDoc.getTimerSLOs())
         .tag(LABEL_NAME_VALUE_TYPE, valueType.name())
         .register(meterRegistry);
   }
