@@ -178,7 +178,7 @@ jobs:
   java-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [detect-changes]
-    runs-on: gcp-perf-core-16-default
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       pull-requests: write
