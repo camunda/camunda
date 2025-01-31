@@ -230,6 +230,63 @@ public class TaskListenerTest {
   }
 
   @Test
+  public void shouldUpdateUserTaskAfterAllUpdatingTaskListenersAreExecuted() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.updating,
+                listenerType,
+                listenerType + "_2",
+                listenerType + "_3"));
+
+    // when
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .withAction("my_update_action")
+        .update(
+            new UserTaskRecord()
+                .setCandidateUsersList(List.of("samwise", "frodo"))
+                .setCandidateUsersChanged()
+                .setPriority(88)
+                .setPriorityChanged());
+    completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // then
+    assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.UPDATING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
+    // `UPDATING` and `UPDATED` events
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.UPDATE,
+        UserTaskIntent.UPDATING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.UPDATED);
+
+    assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.UPDATED,
+        userTask ->
+            Assertions.assertThat(userTask)
+                .hasAssignee("")
+                .hasCandidateGroupsList(List.of())
+                .hasCandidateUsersList(List.of("samwise", "frodo")) // updated
+                .hasDueDate("")
+                .hasFollowUpDate("")
+                .hasPriority(88) // updated
+                .hasAction("my_update_action")
+                .hasOnlyChangedAttributes(UserTaskRecord.CANDIDATE_USERS, UserTaskRecord.PRIORITY));
+  }
+
+  @Test
   public void shouldCancelTaskListenerJobWhenTerminatingElementInstance() {
     // given
     final long processInstanceKey =
@@ -2223,6 +2280,17 @@ public class TaskListenerTest {
         userTask -> Assertions.assertThat(userTask).hasAssignee("me").hasAction("claim"));
   }
 
+  @Test
+  public void shouldRetryUserTaskUpdateCommandAfterExtractValueErrorIncidentResolution() {
+    testUserTaskCommandRetryAfterExtractValueError(
+        ZeebeTaskListenerEventType.updating,
+        "updating_listener_var_name",
+        "expression_updating_listener_2",
+        userTask -> userTask.update(new UserTaskRecord()),
+        UserTaskIntent.UPDATED,
+        userTask -> Assertions.assertThat(userTask).hasAction("update"));
+  }
+
   private void testUserTaskCommandRetryAfterExtractValueError(
       final ZeebeTaskListenerEventType eventType,
       final String variableName,
@@ -2504,6 +2572,7 @@ public class TaskListenerTest {
       final ZeebeTaskListenerEventType eventType) {
     return switch (eventType) {
       case ZeebeTaskListenerEventType.assigning -> JobListenerEventType.ASSIGNING;
+      case ZeebeTaskListenerEventType.updating -> JobListenerEventType.UPDATING;
       case ZeebeTaskListenerEventType.completing -> JobListenerEventType.COMPLETING;
       default ->
           throw new IllegalArgumentException(
