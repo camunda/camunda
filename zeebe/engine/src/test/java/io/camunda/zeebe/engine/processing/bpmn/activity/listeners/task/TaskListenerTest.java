@@ -565,13 +565,67 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldRetryTaskListenerWhenListenerJobFailed() {
+  public void shouldRetryAssigningListenerWhenListenerJobFailedOnTaskAssignAfterCreation() {
+    verifyListenerIsRetriedWhenListenerJobFailed(
+        ZeebeTaskListenerEventType.assigning,
+        userTask -> userTask.zeebeAssignee("gandalf"),
+        userTaskClient -> {},
+        UserTaskIntent.ASSIGNED);
+  }
+
+  @Test
+  public void shouldRetryAssigningListenerWhenListenerJobFailedOnTaskAssign() {
+    verifyListenerIsRetriedWhenListenerJobFailed(
+        ZeebeTaskListenerEventType.assigning,
+        UnaryOperator.identity(),
+        userTaskClient -> userTaskClient.withAssignee("bilbo").assign(),
+        UserTaskIntent.ASSIGNED);
+  }
+
+  @Test
+  public void shouldRetryAssigningListenerWhenListenerJobFailedOnTaskClaim() {
+    verifyListenerIsRetriedWhenListenerJobFailed(
+        ZeebeTaskListenerEventType.assigning,
+        UnaryOperator.identity(),
+        userTaskClient -> userTaskClient.withAssignee("bilbo").claim(),
+        UserTaskIntent.ASSIGNED);
+  }
+
+  @Test
+  public void shouldRetryUpdatingListenerWhenListenerJobFailedOnTaskUpdate() {
+    verifyListenerIsRetriedWhenListenerJobFailed(
+        ZeebeTaskListenerEventType.updating,
+        UnaryOperator.identity(),
+        userTaskClient -> userTaskClient.update(new UserTaskRecord()),
+        UserTaskIntent.UPDATED);
+  }
+
+  @Test
+  public void shouldRetryCompletingListenerWhenListenerJobFailedOnTaskComplete() {
+    verifyListenerIsRetriedWhenListenerJobFailed(
+        ZeebeTaskListenerEventType.completing,
+        UnaryOperator.identity(),
+        UserTaskClient::complete,
+        UserTaskIntent.COMPLETED);
+  }
+
+  private void verifyListenerIsRetriedWhenListenerJobFailed(
+      final ZeebeTaskListenerEventType eventType,
+      final UnaryOperator<UserTaskBuilder> userTaskBuilder,
+      final Consumer<UserTaskClient> userTaskAction,
+      final UserTaskIntent terminalActionIntent) {
     // given
     final long processInstanceKey =
         createProcessInstance(
-            createProcessWithCompletingTaskListeners(listenerType, listenerType + "_2"));
+            createProcessWithZeebeUserTask(
+                t ->
+                    userTaskBuilder
+                        .apply(t)
+                        .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType))
+                        .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType + "_2"))));
 
-    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    // when: performing the user task action
+    userTaskAction.accept(ENGINE.userTask().ofInstance(processInstanceKey));
 
     // when: fail listener job with retries
     ENGINE.job().ofInstance(processInstanceKey).withType(listenerType).withRetries(1).fail();
@@ -579,10 +633,9 @@ public class TaskListenerTest {
     completeJobs(processInstanceKey, listenerType, listenerType + "_2");
 
     // then: assert the listener job was completed after the failure
-    assertThat(records().betweenProcessInstance(processInstanceKey))
+    assertThat(records().limit(r -> r.getIntent() == terminalActionIntent))
         .extracting(Record::getValueType, Record::getIntent)
         .containsSubsequence(
-            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETING),
             tuple(ValueType.JOB, JobIntent.CREATED),
             tuple(ValueType.JOB, JobIntent.FAILED),
             tuple(ValueType.JOB, JobIntent.COMPLETE),
@@ -592,9 +645,7 @@ public class TaskListenerTest {
             tuple(ValueType.JOB, JobIntent.COMPLETE),
             tuple(ValueType.JOB, JobIntent.COMPLETED),
             tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETE_TASK_LISTENER),
-            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETED));
-
-    assertThatProcessInstanceCompleted(processInstanceKey);
+            tuple(ValueType.USER_TASK, terminalActionIntent));
   }
 
   @Test
