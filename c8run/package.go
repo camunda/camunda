@@ -1,6 +1,7 @@
 package main
 
 import (
+        "encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/camunda/camunda/c8run/internal/archive"
