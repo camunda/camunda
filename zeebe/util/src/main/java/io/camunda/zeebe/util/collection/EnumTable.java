@@ -22,9 +22,9 @@ import java.util.function.IntFunction;
  * single array whose size is equal to the cardinality of T times the cardinality of U. So given two
  * enums, one with 3 elements, and the other with 4, the array size would be 12.
  *
- * <p>The values in the table are stored in rows, where every element on a row is stored
- * contiguously. So the first row starts at index 0, and the second row starts at the index equal to
- * the cardinality of the second enum.
+ * <p>The values in the table are stored in row-major order; that is, in rows where every element on
+ * a row is stored contiguously. So the first row starts at index 0, and the second row starts at
+ * the index equal to the cardinality of the second enum.
  *
  * <p>Let's use an example. Assume we have the following enums:
  *
@@ -52,8 +52,8 @@ import java.util.function.IntFunction;
  * [ FOO_A, FOO_B, FOO_C, BAR_A, BAR_B, BAR_C ]
  * </pre>
  */
-final class EnumTable<T, RowT extends Enum<RowT>, ColT extends Enum<ColT>>
-    implements Table<T, RowT, ColT> {
+final class EnumTable<RowT extends Enum<RowT>, ColT extends Enum<ColT>, T>
+    implements Table<RowT, ColT, T> {
   private final T[] items;
   private final int columnCount;
 
