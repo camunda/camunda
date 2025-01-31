@@ -17,7 +17,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 final class TableTest {
   @ParameterizedTest
   @MethodSource("provideImplementations")
-  void shouldReturnNullOnMissingColumn(final Table<Integer, Row, Column> table) {
+  void shouldReturnNullOnMissingColumn(final Table<Row, Column, Integer> table) {
     // given
     table.put(Row.A, Column.D, 1);
 
@@ -30,7 +30,7 @@ final class TableTest {
 
   @ParameterizedTest
   @MethodSource("provideImplementations")
-  void shouldReturnNullOnMissingRow(final Table<Integer, Row, Column> table) {
+  void shouldReturnNullOnMissingRow(final Table<Row, Column, Integer> table) {
     // given
     table.put(Row.A, Column.D, 1);
 
@@ -43,7 +43,7 @@ final class TableTest {
 
   @ParameterizedTest
   @MethodSource("provideImplementations")
-  void shouldReturnLatestValue(final Table<Integer, Row, Column> table) {
+  void shouldReturnLatestValue(final Table<Row, Column, Integer> table) {
     // given
     table.put(Row.A, Column.D, 1);
     table.put(Row.A, Column.D, 2);
@@ -57,7 +57,7 @@ final class TableTest {
 
   @ParameterizedTest
   @MethodSource("provideImplementations")
-  void shouldNotModifyOtherValues(final Table<Integer, Row, Column> table) {
+  void shouldNotModifyOtherValues(final Table<Row, Column, Integer> table) {
     // given
     table.put(Row.A, Column.D, 1);
     table.put(Row.A, Column.E, 2);
@@ -74,7 +74,7 @@ final class TableTest {
 
   @ParameterizedTest
   @MethodSource("provideImplementations")
-  void shouldComputeOnlyIfAbsent(final Table<Integer, Row, Column> table) {
+  void shouldComputeOnlyIfAbsent(final Table<Row, Column, Integer> table) {
     // given
     table.put(Row.A, Column.D, 1);
 
@@ -88,7 +88,7 @@ final class TableTest {
 
   @ParameterizedTest
   @MethodSource("provideImplementations")
-  void shouldComputeIfAbsent(final Table<Integer, Row, Column> table) {
+  void shouldComputeIfAbsent(final Table<Row, Column, Integer> table) {
     // given
     table.put(Row.A, Column.D, 1);
 
@@ -100,7 +100,7 @@ final class TableTest {
     assertThat(table.get(Row.A, Column.E)).isEqualTo(2);
   }
 
-  private static Stream<Named<Table<Integer, Row, Column>>> provideImplementations() {
+  private static Stream<Named<Table<Row, Column, Integer>>> provideImplementations() {
     return Stream.of(
         Named.named("EnumTable", Table.ofEnum(Row.class, Column.class, Integer[]::new)),
         Named.named("MapTable", Table.simple()));

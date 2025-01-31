@@ -26,7 +26,7 @@ public final class ExporterMetrics {
 
   private final Map<String, AtomicLong> lastExportedPositions = new HashMap<>();
   private final Map<String, AtomicLong> lastUpdatedExportedPositions = new HashMap<>();
-  private final Table<Counter, ExporterActionKeyNames, ValueType> exporterEvents =
+  private final Table<ExporterActionKeyNames, ValueType, Counter> exporterEvents =
       Table.ofEnum(ExporterActionKeyNames.class, ValueType.class, Counter[]::new);
 
   private final MeterRegistry meterRegistry;
