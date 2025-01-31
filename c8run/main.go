@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"errors"
 	"flag"
 	"fmt"
@@ -24,52 +25,45 @@ func printStatus() {
 }
 
 func queryElasticsearchHealth(name string, url string) {
-	healthy := false
-	for retries := 12; retries >= 0; retries-- {
-		fmt.Println("Waiting for " + name + " to start. " + strconv.Itoa(retries) + " retries left")
-		time.Sleep(10 * time.Second)
-		resp, err := http.Get(url)
-		if err != nil {
-			continue
-		}
-		if resp.StatusCode >= 200 && resp.StatusCode <= 400 {
-			healthy = true
-			break
-		}
-	}
-	if !healthy {
+	if isRunning(name, url, 12, 10*time.Second) {
+		fmt.Println(name + " has successfully been started.")
+	} else {
 		fmt.Println("Error: " + name + " did not start!")
 		os.Exit(1)
 	}
-	fmt.Println(name + " has successfully been started.")
 }
 
 func queryCamundaHealth(c8 C8Run, name string, url string) error {
-	healthy := false
-	for retries := 24; retries >= 0; retries-- {
-		fmt.Println("Waiting for " + name + " to start. " + strconv.Itoa(retries) + " retries left")
-		time.Sleep(14 * time.Second)
-		resp, err := http.Get(url)
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	if isRunning(name, url, 24, 14*time.Second) {
+		fmt.Println(name + " has successfully been started.")
+		err := c8.OpenBrowser()
 		if err != nil {
-			continue
+			fmt.Println("Failed to open browser")
+			return nil
 		}
-		if resp.StatusCode >= 200 && resp.StatusCode <= 400 {
-			healthy = true
-			break
+		if err := printStatus(); err != nil {
+			fmt.Println("Failed to print status:", err)
+			return err
 		}
-	}
-	if !healthy {
+		return nil
+	} else {
 		return fmt.Errorf("Error: %s did not start!", name)
 	}
-	fmt.Println(name + " has successfully been started.")
-	err := c8.OpenBrowser()
-	if err != nil {
-		// failing to open the browser is not a critical error. It could simply be a sign the script is running in a CI node without a browser installed, or a docker image.
-		fmt.Println("Failed to open browser")
-		return nil
-	}
-	printStatus()
 	return nil
+}
+
+func isRunning(name, url string, retries int, delay time.Duration) bool {
+	for retries >= 0 {
+		fmt.Printf("Waiting for %s to start. %d retries left\n", name, retries)
+		time.Sleep(delay)
+		resp, err := http.Get(url)
+		if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 400 {
+			return true
+		}
+		retries--
+	}
+	return false
 }
 
 func stopProcess(c8 C8Run, pidfile string) {
