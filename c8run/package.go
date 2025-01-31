@@ -42,7 +42,11 @@ func downloadAndExtract(filePath, url, extractDir string, authToken string, extr
 }
 
 func downloadGHArtifact(camundaVersion string, camundaFilePath string) error {
-	_, err := exec.LookPath("gh")
+	_, err := os.Stat(camundaFilePath)
+	if !errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	_, err = exec.LookPath("gh")
 	if err != nil {
 		// This is not an error because there is another way to download camunda releases
 		return nil
