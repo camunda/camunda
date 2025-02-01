@@ -167,10 +167,10 @@ func validateKeystore(settings C8RunSettings, parentDir string) error {
 	return nil
 }
 
-func startDocker(extractedComposePath string) error {
-	err := os.Chdir(extractedComposePath)
+func runDockerCommand(composeExtractedFolder string, args ...string) error {
+	err := os.Chdir(composeExtractedFolder)
 	if err != nil {
-		return fmt.Errorf("startDocker: failed to chdir %w", err)
+		return fmt.Errorf("failed to chdir to %s: %w", composeExtractedFolder, err)
 	}
 
 	_, err = exec.LookPath("docker")
@@ -178,40 +178,20 @@ func startDocker(extractedComposePath string) error {
 		return err
 	}
 
-	composeCmd := exec.Command("docker", "compose", "up", "-d")
+	composeCmd := exec.Command("docker", append([]string{"compose"}, args...)...)
 	composeCmd.Stdout = os.Stdout
 	composeCmd.Stderr = os.Stderr
-	err = composeCmd.Run()
-	if err != nil {
-		return err
-	}
-	err = os.Chdir("..")
-	if err != nil {
-		return fmt.Errorf("startDocker: failed to chdir %w", err)
-	}
-	return nil
-}
 
-func stopDocker(extractedComposePath string) error {
-	err := os.Chdir(extractedComposePath)
-	if err != nil {
-		return fmt.Errorf("stopDocker: failed to chdir %w", err)
-	}
-	_, err = exec.LookPath("docker")
-	if err != nil {
-		return err
-	}
-	composeCmd := exec.Command("docker", "compose", "down")
-	composeCmd.Stdout = os.Stdout
-	composeCmd.Stderr = os.Stderr
 	err = composeCmd.Run()
 	if err != nil {
 		return err
 	}
+
 	err = os.Chdir("..")
 	if err != nil {
-		return fmt.Errorf("stopDocker: failed to chdir %w", err)
+		return fmt.Errorf("failed to chdir back: %w", err)
 	}
+
 	return nil
 }
 
@@ -263,6 +243,25 @@ func getBaseCommand() (string, error) {
 	}
 
 	return "", nil
+}
+
+func handleDockerCommand(settings C8RunSettings, baseCommand, composeExtractedFolder string) error {
+	if !settings.docker {
+		return nil
+	}
+
+	var err error
+	switch baseCommand {
+	case "start":
+		err = runDockerCommand(composeExtractedFolder, "up", "-d")
+	case "stop":
+		err = runDockerCommand(composeExtractedFolder, "down")
+	default:
+		err = fmt.Errorf("No valid command. Only start and stop supported.")
+	}
+	os.Exit(0)
+
+	return err
 }
 
 func main() {
@@ -343,22 +342,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	if settings.docker && baseCommand == "start" {
-		err = startDocker(composeExtractedFolder)
-		if err != nil {
-			fmt.Println(err.Error())
-			os.Exit(1)
-		}
-		os.Exit(0)
-	}
-
-	if settings.docker && baseCommand == "stop" {
-		err = stopDocker(composeExtractedFolder)
-		if err != nil {
-			fmt.Println(err.Error())
-			os.Exit(1)
-		}
-		os.Exit(0)
+	err = handleDockerCommand(settings, baseCommand, composeExtractedFolder)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 
 	javaHome := os.Getenv("JAVA_HOME")
