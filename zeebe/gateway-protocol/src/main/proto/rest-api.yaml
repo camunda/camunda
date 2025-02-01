@@ -4291,6 +4291,8 @@ components:
           $ref: "#/components/schemas/DeploymentDecisionRequirements"
         form:
           $ref: "#/components/schemas/DeploymentForm"
+        resource:
+          $ref: "#/components/schemas/DeploymentResource"
     DeploymentMetadataResult:
       type: object
       properties:
@@ -4302,6 +4304,8 @@ components:
           $ref: "#/components/schemas/DeploymentDecisionRequirementsResult"
         form:
           $ref: "#/components/schemas/DeploymentFormResult"
+        resource:
+          $ref: "#/components/schemas/DeploymentResourceResult"
     DeploymentProcessBase:
       description: Base properties for DeploymentProcess.
       type: object
@@ -4477,6 +4481,44 @@ components:
         formKey:
           type: string
           description: The assigned key, which acts as a unique identifier for this form.
+    DeploymentResourceBase:
+      description: Base properties for DeploymentResource.
+      type: object
+      properties:
+        resourceId:
+          type: string
+          description: |
+            The resource ID, as parsed during deployment, together with the version forms a
+            unique identifier for a specific form.
+        version:
+          type: integer
+          format: int32
+          description: The assigned resource version.
+        resourceName:
+          type: string
+          description: The resource name from which this resource was parsed.
+        tenantId:
+          type: string
+          description: The tenant ID of the deployed form.
+    DeploymentResource:
+      description: A deployed Resource.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DeploymentResourceBase"
+      properties:
+        resourceKey:
+          type: integer
+          format: int64
+          description: The assigned key, which acts as a unique identifier for this Resource.
+    DeploymentResourceResult:
+      description: A deployed Resource.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DeploymentResourceBase"
+      properties:
+        resourceKey:
+          type: string
+          description: The assigned key, which acts as a unique identifier for this Resource.
 
     CreateProcessInstanceRequestBase:
       description: Base properties for CreateProcessInstanceRequest

@@ -103,7 +103,10 @@ func PackageWindows(camundaVersion string, elasticsearchVersion string, connecto
 		return fmt.Errorf("PackageWindows: failed to fetch compose release %w\n%s", err, debug.Stack())
 	}
 
-	os.Chdir("..")
+	err = os.Chdir("..")
+	if err != nil {
+		return fmt.Errorf("PackageWindows: failed to chdir %w", err)
+	}
 	filesToArchive := []string{
 		filepath.Join("c8run", "README.md"),
 		filepath.Join("c8run", "connectors-application.properties"),
@@ -122,7 +125,10 @@ func PackageWindows(camundaVersion string, elasticsearchVersion string, connecto
 	if err != nil {
 		return fmt.Errorf("PackageWindows: failed to create c8run package %w\n%s", err, debug.Stack())
 	}
-	os.Chdir("c8run")
+	err = os.Chdir("c8run")
+	if err != nil {
+		return fmt.Errorf("PackageWindows: failed to chdir %w", err)
+	}
 	return nil
 }
 
@@ -182,7 +188,10 @@ func PackageUnix(camundaVersion string, elasticsearchVersion string, connectorsV
 		return fmt.Errorf("PackageUnix: failed to fetch compose release %w\n%s", err, debug.Stack())
 	}
 
-	os.Chdir("..")
+	err = os.Chdir("..")
+	if err != nil {
+		return fmt.Errorf("PackageUnix: failed to chdir %w", err)
+	}
 	filesToArchive := []string{
 		filepath.Join("c8run", "README.md"),
 		filepath.Join("c8run", "connectors-application.properties"),
@@ -207,6 +216,9 @@ func PackageUnix(camundaVersion string, elasticsearchVersion string, connectorsV
 	if err != nil {
 		return fmt.Errorf("PackageUnix: failed to fill camunda archive %w\n%s", err, debug.Stack())
 	}
-	os.Chdir("c8run")
+	err = os.Chdir("c8run")
+	if err != nil {
+		return fmt.Errorf("PackageUnix: failed to chdir %w", err)
+	}
 	return nil
 }

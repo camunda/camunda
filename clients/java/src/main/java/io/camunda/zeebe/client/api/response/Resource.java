@@ -15,41 +15,31 @@
  */
 package io.camunda.zeebe.client.api.response;
 
-import java.util.List;
+public interface Resource {
 
-public interface DeploymentEvent {
   /**
-   * @return the unique key of the deployment
+   * @return the resource ID, as parsed during deployment; together with the versions forms a unique
+   *     identifier for a specific resource
    */
-  long getKey();
+  String getResourceId();
 
   /**
-   * @return the processes which are deployed
+   * @return the assigned resource key, which acts as a unique identifier for this resource
    */
-  List<Process> getProcesses();
+  long getResourceKey();
 
   /**
-   * @return the decisions which are deployed
+   * @return the assigned resource version
    */
-  List<Decision> getDecisions();
+  int getVersion();
 
   /**
-   * @return the decision requirements which are deployed
+   * @return the name of the resource, as parsed during deployment
    */
-  List<DecisionRequirements> getDecisionRequirements();
+  String getResourceName();
 
   /**
-   * @return the deployed form metadata
-   */
-  List<Form> getForm();
-
-  /**
-   * @return the deployed resource metadata
-   */
-  List<Resource> getResource();
-
-  /**
-   * @return the tenant identifier that owns this deployment
+   * @return the tenant identifier that owns this resource
    */
   String getTenantId();
 }

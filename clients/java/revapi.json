@@ -417,6 +417,13 @@
           "code": "java.method.removed",
           "old": "method <K, V> java.util.Map<K, V> java.util.Map<K, V>::ofEntries(java.util.Map.Entry<? extends K, ? extends V>[]) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
           "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.attributeValueChanged",
+          "old": "class io.camunda.zeebe.client.protocol.rest.DeploymentMetadata",
+          "new": "class io.camunda.zeebe.client.protocol.rest.DeploymentMetadata",
+          "justification": "Added resource to deployment metadata"
         }
       ]
     }
