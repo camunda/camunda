@@ -84,7 +84,7 @@ jobs:
       - name: Create backend logs file
         run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
 
-      - name: Start back-end
+      - name: Start backend
         working-directory: ./optimize/client
         run: |
           yarn run start-backend ci &> ./build/backendLogs.log &
