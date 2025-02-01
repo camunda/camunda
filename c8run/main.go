@@ -259,9 +259,13 @@ func handleDockerCommand(settings C8RunSettings, baseCommand, composeExtractedFo
 	default:
 		err = fmt.Errorf("No valid command. Only start and stop supported.")
 	}
-	os.Exit(0)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	os.Exit(0)
+	return nil // This line will never be reached, but it's required to satisfy the function signature
 }
 
 func main() {
