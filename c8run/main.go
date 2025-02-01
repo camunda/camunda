@@ -255,6 +255,48 @@ func handleDockerCommand(settings C8RunSettings, baseCommand string, composeExtr
 	return nil // This line will never be reached, but it's required to satisfy the function signature
 }
 
+func getBaseCommandSettings(baseCommand string) (C8RunSettings, error) {
+	var settings C8RunSettings
+
+	startFlagSet := createStartFlagSet(&settings)
+	stopFlagSet := createStopFlagSet(&settings)
+
+	switch baseCommand {
+	case "start":
+		err := startFlagSet.Parse(os.Args[2:])
+		if err != nil {
+			return settings, fmt.Errorf("error parsing start argument: %w", err)
+		}
+	case "stop":
+		err := stopFlagSet.Parse(os.Args[2:])
+		if err != nil {
+			return settings, fmt.Errorf("error parsing stop argument: %w", err)
+		}
+	}
+
+	return settings, nil
+}
+
+func createStartFlagSet(settings *C8RunSettings) *flag.FlagSet {
+	startFlagSet := flag.NewFlagSet("start", flag.ExitOnError)
+	startFlagSet.StringVar(&settings.config, "config", "", "Applies the specified configuration file.")
+	startFlagSet.BoolVar(&settings.detached, "detached", false, "Starts Camunda Run as a detached process")
+	startFlagSet.IntVar(&settings.port, "port", 8080, "Port to run Camunda on")
+	startFlagSet.StringVar(&settings.keystore, "keystore", "", "Provide a JKS filepath to enable TLS")
+	startFlagSet.StringVar(&settings.keystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
+	startFlagSet.StringVar(&settings.logLevel, "log-level", "", "Adjust the log level of Camunda")
+	startFlagSet.BoolVar(&settings.disableElasticsearch, "disable-elasticsearch", false, "Do not start or stop Elasticsearch (still requires Elasticsearch to be running outside of c8run)")
+	startFlagSet.BoolVar(&settings.docker, "docker", false, "Run Camunda from docker-compose.")
+	return startFlagSet
+}
+
+func createStopFlagSet(settings *C8RunSettings) *flag.FlagSet {
+	stopFlagSet := flag.NewFlagSet("stop", flag.ExitOnError)
+	stopFlagSet.BoolVar(&settings.disableElasticsearch, "disable-elasticsearch", false, "Do not stop Elasticsearch")
+	stopFlagSet.BoolVar(&settings.docker, "docker", false, "Stop docker-compose distribution of camunda.")
+	return stopFlagSet
+}
+
 func main() {
 	c8 := getC8RunPlatform()
 	baseDir, _ := os.Getwd()
@@ -289,37 +331,11 @@ func main() {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	// insideConfigFlag := false
 
-	var settings C8RunSettings
-	startFlagSet := flag.NewFlagSet("start", flag.ExitOnError)
-	startFlagSet.StringVar(&settings.config, "config", "", "Applies the specified configuration file.")
-	startFlagSet.BoolVar(&settings.detached, "detached", false, "Starts Camunda Run as a detached process")
-	startFlagSet.IntVar(&settings.port, "port", 8080, "Port to run Camunda on")
-	startFlagSet.StringVar(&settings.keystore, "keystore", "", "Provide a JKS filepath to enable TLS")
-	startFlagSet.StringVar(&settings.keystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
-	startFlagSet.StringVar(&settings.logLevel, "log-level", "", "Adjust the log level of Camunda")
-	startFlagSet.BoolVar(&settings.disableElasticsearch, "disable-elasticsearch", false, "Do not start or stop Elasticsearch (still requires Elasticsearch to be running outside of c8run)")
-	startFlagSet.BoolVar(&settings.docker, "docker", false, "Run Camunda from docker-compose.")
-
-	stopFlagSet := flag.NewFlagSet("stop", flag.ExitOnError)
-	stopFlagSet.BoolVar(&settings.disableElasticsearch, "disable-elasticsearch", false, "Do not stop Elasticsearch")
-	stopFlagSet.BoolVar(&settings.docker, "docker", false, "Stop docker-compose distribution of camunda.")
-
-	switch baseCommand {
-	case "start":
-		err := startFlagSet.Parse(os.Args[2:])
-		if err != nil {
-			fmt.Println(err.Error())
-			os.Exit(1)
-		}
-
-	case "stop":
-		err := stopFlagSet.Parse(os.Args[2:])
-		if err != nil {
-			fmt.Println(err.Error())
-			os.Exit(1)
-		}
+	settings, err := getBaseCommandSettings(baseCommand)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 
 	if settings.logLevel != "" {
