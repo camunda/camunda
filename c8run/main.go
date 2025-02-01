@@ -285,8 +285,6 @@ func getBaseCommandSettings(baseCommand string) (C8RunSettings, error) {
 		if err != nil {
 			return settings, fmt.Errorf("error parsing stop argument: %w", err)
 		}
-	default:
-		return settings, fmt.Errorf("unsupported base command: %s", baseCommand)
 	}
 
 	return settings, nil
