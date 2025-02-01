@@ -7,6 +7,6 @@
  */
 package io.camunda.document.api;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
-public record DocumentLink(String link, ZonedDateTime expiresAt) {}
+public record DocumentLink(String link, OffsetDateTime expiresAt) {}
