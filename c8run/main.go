@@ -141,16 +141,18 @@ func adjustJavaOpts(javaOpts string, settings C8RunSettings) string {
 }
 
 func validateKeystore(settings C8RunSettings, parentDir string) error {
-	if settings.keystore != "" {
-		if settings.keystorePassword == "" {
-			return fmt.Errorf("You must provide a password with --keystorePassword to unlock your keystore.")
-		}
-		if settings.keystore != "" {
-			if !strings.HasPrefix(settings.keystore, "/") {
-				settings.keystore = filepath.Join(parentDir, settings.keystore)
-			}
-		}
+	if settings.keystore == "" {
+		return nil
 	}
+
+	if settings.keystorePassword == "" {
+		return fmt.Errorf("you must provide a password with --keystorePassword to unlock your keystore")
+	}
+
+	if !strings.HasPrefix(settings.keystore, "/") {
+		settings.keystore = filepath.Join(parentDir, settings.keystore)
+	}
+
 	return nil
 }
 
