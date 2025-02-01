@@ -219,9 +219,9 @@ func main() {
 	baseCommand := ""
 	// insideConfigFlag := false
 
-        if len(os.Args) == 1 {
-                usage(1)
-        } else if os.Args[1] == "start" {
+	if len(os.Args) == 1 {
+		usage(1)
+	} else if os.Args[1] == "start" {
 		baseCommand = "start"
 	} else if os.Args[1] == "stop" {
 		baseCommand = "stop"

@@ -9,6 +9,8 @@ package io.camunda.document.api;
 
 public interface DocumentStoreRegistry {
 
+  DocumentStoreConfiguration getConfiguration();
+
   DocumentStoreRecord getDocumentStore(final String id);
 
   DocumentStoreRecord getDefaultDocumentStore();

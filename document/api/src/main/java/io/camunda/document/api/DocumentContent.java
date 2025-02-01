@@ -7,5 +7,6 @@
  */
 package io.camunda.document.api;
 
-public record DocumentReference(
-    String documentId, String contentHash, DocumentMetadataModel metadata) {}
+import java.io.InputStream;
+
+public record DocumentContent(InputStream inputStream, String contentType) {}
