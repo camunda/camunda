@@ -21,6 +21,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.TYPE, ElementType.METHOD, ElementType.FIELD, ElementType.CONSTRUCTOR})
 @Documented
+// @Retention(RetentionPolicy.SOURCE)
 public @interface VisibleForTesting {
 
   /** An optional justification as to why something was made visible for testing */
