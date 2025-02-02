@@ -9,8 +9,6 @@ package io.camunda.zeebe.util;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
@@ -22,7 +20,6 @@ import java.lang.annotation.Target;
  * way.
  */
 @Target({ElementType.TYPE, ElementType.METHOD, ElementType.FIELD, ElementType.CONSTRUCTOR})
-@Retention(RetentionPolicy.SOURCE)
 @Documented
 public @interface VisibleForTesting {
 

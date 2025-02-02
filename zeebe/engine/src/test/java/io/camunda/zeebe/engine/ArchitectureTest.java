@@ -7,12 +7,16 @@
  */
 package io.camunda.zeebe.engine;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
+import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
+import io.camunda.zeebe.util.VisibleForTesting;
 
 @AnalyzeClasses(packages = "io.camunda.zeebe", importOptions = ImportOption.DoNotIncludeTests.class)
 public class ArchitectureTest {
@@ -34,4 +38,23 @@ public class ArchitectureTest {
           .should()
           .dependOnClassesThat()
           .resideInAPackage("io.camunda.zeebe.scheduler..");
+
+  private static final DescribedPredicate<? super JavaMethod> ARE_NOT_VISIBLE_FOR_TESTING =
+      new DescribedPredicate<>("Annotation") {
+        @Override
+        public boolean test(final JavaMethod javaMethod) {
+          return !javaMethod.isAnnotatedWith(VisibleForTesting.class);
+        }
+      };
+
+  @ArchTest
+  public static final ArchRule
+      RULE_ENGINE_CLASSES_MUST_NOT_CALL_METHODS_ANNOTATED_WITH_VISIBLE_FOR_TESTING =
+          classes()
+              .that()
+              .resideInAPackage("io.camunda.zeebe.engine..")
+              .and()
+              .haveSimpleNameNotEndingWith("Test")
+              .should()
+              .onlyCallMethodsThat(ARE_NOT_VISIBLE_FOR_TESTING);
 }
