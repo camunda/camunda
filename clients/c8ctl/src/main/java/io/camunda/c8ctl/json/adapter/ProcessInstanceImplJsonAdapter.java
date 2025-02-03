@@ -7,30 +7,17 @@
  */
 package io.camunda.c8ctl.json.adapter;
 
-import io.avaje.jsonb.JsonAdapter;
-import io.avaje.jsonb.JsonReader;
-import io.avaje.jsonb.JsonWriter;
 import io.avaje.jsonb.Jsonb;
-import io.avaje.jsonb.spi.PropertyNames;
-import io.avaje.jsonb.spi.ViewBuilder;
-import io.avaje.jsonb.spi.ViewBuilderAware;
 import io.camunda.client.impl.search.response.ProcessInstanceImpl;
-import java.lang.invoke.MethodHandle;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Function;
 
-public class ProcessInstanceImplJsonAdapter
-    implements JsonAdapter<ProcessInstanceImpl>, ViewBuilderAware {
-
-  private static final List<FieldMetaData<?>> FIELD_META_DATA = new ArrayList<>();
-  private final Jsonb jsonb;
-  private final PropertyNames names;
-  private final Class<?> clazz = ProcessInstanceImpl.class;
+public class ProcessInstanceImplJsonAdapter extends AbstractJsonAdapter<ProcessInstanceImpl> {
 
   public ProcessInstanceImplJsonAdapter(final Jsonb jsonb) {
-    // FIXME extract methods to abstract class
-    this.jsonb = jsonb;
+    super(jsonb);
+  }
+
+  @Override
+  protected void addFields() {
     addField("processInstanceKey", Long.class, ProcessInstanceImpl::getProcessInstanceKey);
     addField("processDefinitionId", String.class, ProcessInstanceImpl::getProcessDefinitionId);
     addField("processDefinitionName", String.class, ProcessInstanceImpl::getProcessDefinitionName);
@@ -52,72 +39,10 @@ public class ProcessInstanceImplJsonAdapter
     addField("state", String.class, ProcessInstanceImpl::getState);
     addField("hasIncident", Boolean.class, ProcessInstanceImpl::getHasIncident);
     addField("tenantId", String.class, ProcessInstanceImpl::getTenantId);
-
-    // init property names
-    final var fieldNames = FIELD_META_DATA.stream().map(FieldMetaData::fieldName).toList();
-    names = jsonb.properties(fieldNames.toArray(new String[0]));
-  }
-
-  public <T> void addField(
-      final String fieldName,
-      final Class<T> fieldClass,
-      final Function<ProcessInstanceImpl, T> valueSupplier) {
-    FIELD_META_DATA.add(new FieldMetaData<>(fieldName, fieldClass, valueSupplier));
   }
 
   @Override
-  public void build(final ViewBuilder builder, final String name, final MethodHandle handle) {
-    builder.beginObject(name, handle);
-
-    for (final FieldMetaData<?> fieldData : FIELD_META_DATA) {
-      final var fieldName = fieldData.fieldName;
-      final Class<?> fieldClass = fieldData.fieldClass;
-      final var adapter = jsonb.adapter(fieldClass);
-
-      final String getterName = buildGetterName(fieldName);
-      builder.add(fieldName, adapter, builder.method(clazz, getterName, fieldClass));
-    }
-
-    builder.endObject();
+  protected Class<ProcessInstanceImpl> getResourceClass() {
+    return ProcessInstanceImpl.class;
   }
-
-  private static String buildGetterName(final String fieldName) {
-    return "get" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
-  }
-
-  @Override
-  public void toJson(final JsonWriter writer, final ProcessInstanceImpl processDefinition) {
-    writer.beginObject(names);
-
-    for (int i = 0; i < FIELD_META_DATA.size(); i++) {
-      final FieldMetaData<?> fieldData = FIELD_META_DATA.get(i);
-      final var fieldClass = fieldData.fieldClass;
-
-      writer.name(i);
-
-      final JsonAdapter<Object> adapter = (JsonAdapter<Object>) jsonb.adapter(fieldClass);
-      final var value = fieldData.valueSupplier.apply(processDefinition);
-      adapter.toJson(writer, value);
-    }
-
-    writer.endObject();
-  }
-
-  @Override
-  public ProcessInstanceImpl fromJson(final JsonReader reader) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public boolean isViewBuilderAware() {
-    return true;
-  }
-
-  @Override
-  public ViewBuilderAware viewBuild() {
-    return this;
-  }
-
-  record FieldMetaData<T>(
-      String fieldName, Class<T> fieldClass, Function<ProcessInstanceImpl, T> valueSupplier) {}
 }
