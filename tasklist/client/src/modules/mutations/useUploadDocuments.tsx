@@ -15,56 +15,86 @@ type Payload = {
 };
 
 type FileUploadMetadata = {
-  documentType: string;
+  contentType: string;
+  fileName: string;
+  expiresAt?: string;
+  size: number;
+  processDefinitionId?: string;
+  processInstanceKey?: number;
+  customProperties?: Record<string, unknown>;
+};
+
+type SuccessDocument = {
+  'camunda.document.type': 'camunda';
   storeId: string;
   documentId: string;
-  metadata: {
-    contentType: string;
-    fileName: string;
-    size: string;
-  };
+  contentHash: string;
+  metadata: FileUploadMetadata;
 };
+
+type FailedDocument = {
+  filename: string;
+  detail: string;
+};
+
+type BatchUploadResponse = {
+  createdDocuments: SuccessDocument[];
+  failedDocuments: FailedDocument[];
+};
+
+const MIXED_SUCCESS_AND_FAILED_DOCUMENTS_STATUS_CODE = 207;
 
 function useUploadDocuments() {
   return useMutation<
-    Map<string, FileUploadMetadata[]>,
+    Map<string, SuccessDocument[]>,
     RequestError | Error,
     Payload
   >({
     mutationFn: async ({files}) => {
-      const requests: ReturnType<typeof request>[] = [];
-      const fileRequestMapping = Array.from(files.entries()).map<
-        [string, Promise<Awaited<ReturnType<typeof request>>[]>]
-      >(([key, files]) => {
-        const itemRequests = files.map((file) =>
-          request(api.v2.uploadDocuments({file})),
-        );
+      const fileGroupRanges = new Map<string, [number, number]>();
+      const formattedFilePayload: File[] = [];
+      const fileGroups = Array.from(files.entries());
 
-        requests.push(...itemRequests);
-
-        return [key, Promise.all(itemRequests)];
+      fileGroups.forEach(([key, files]) => {
+        fileGroupRanges.set(key, [
+          formattedFilePayload.length,
+          formattedFilePayload.length + files.length - 1,
+        ]);
+        formattedFilePayload.push(...files);
       });
-      const responses = await Promise.all(requests);
 
-      if (responses.every(({response}) => response !== null && response.ok)) {
-        const metadataMapping: [string, FileUploadMetadata[]][] = [];
+      const {response, error} = await request(
+        api.v2.uploadDocuments({files: formattedFilePayload}),
+      );
 
-        for (const [key, responses] of fileRequestMapping) {
-          const metadata = await responses;
-
-          metadataMapping.push([
-            key,
-            await Promise.all(metadata.map(({response}) => response!.json())),
-          ]);
-        }
-
-        return new Map(metadataMapping);
+      if (error !== null) {
+        throw error;
       }
 
-      throw new Error('Failed to upload all files');
+      if (response.status === MIXED_SUCCESS_AND_FAILED_DOCUMENTS_STATUS_CODE) {
+        throw new Error('Failed to upload some documents');
+      }
+
+      const payload: BatchUploadResponse = await response.json();
+
+      const result = new Map<string, BatchUploadResponse['createdDocuments']>();
+
+      fileGroups.forEach(([key]) => {
+        const filesSlice = fileGroupRanges.get(key);
+
+        if (filesSlice === undefined) {
+          throw new Error('File key range mapping is missing');
+        }
+
+        const [start, end] = filesSlice;
+
+        result.set(key, payload.createdDocuments.slice(start, end + 1));
+      });
+
+      return result;
     },
   });
 }
 
 export {useUploadDocuments};
-export type {FileUploadMetadata};
+export type {SuccessDocument};
