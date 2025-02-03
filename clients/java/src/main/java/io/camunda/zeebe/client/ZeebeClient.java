@@ -894,12 +894,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   CreateDocumentCommandStep1 newCreateDocumentCommand();
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to create a batch of documents. Unlike {@link #newCreateDocumentCommand()}, this
+   * Command to create a batch of documents. Unlike {@link #newCreateDocumentCommand()}, this
    * command allows you to create multiple documents in a single request. This can be more efficient
    * than creating each document individually, however, there are multiple limitations to consider.
    * <br>
@@ -939,7 +934,6 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
   CreateDocumentBatchCommandStep1 newCreateDocumentBatchCommand();
 
   /**
