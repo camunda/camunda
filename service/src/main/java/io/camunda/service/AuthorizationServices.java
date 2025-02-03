@@ -75,7 +75,7 @@ public class AuthorizationServices
             fn ->
                 fn.filter(
                     f ->
-                        f.ownerKeys(ownerKeys.stream().toList())
+                        f.ownerIds(ownerKeys.stream().toList())
                             .permissionType(permissionType)
                             .resourceType(resourceType.name())));
     return findAll(authorizationQuery).stream()
@@ -104,7 +104,7 @@ public class AuthorizationServices
                                         resourceId != null && !resourceId.isEmpty()
                                             ? resourceId
                                             : null)
-                                    .ownerKeys(ownerKey))
+                                    .ownerIds(ownerKey))
                         .page(p -> p.size(1))));
     // TODO logic to fetch indirect authorizations via roles/groups should be added later
     return result.items().stream()
