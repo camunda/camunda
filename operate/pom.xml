@@ -81,7 +81,7 @@
     <version.awssdk>2.25.70</version.awssdk>
     <version.aws-java-sdk>1.12.780</version.aws-java-sdk>
     <version.jetbrains-annotations>24.1.0</version.jetbrains-annotations>
-    <version.grpc>1.62.2</version.grpc>
+    <version.grpc>1.65.1</version.grpc>
     <version.protobuf>3.25.6</version.protobuf>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <zeebe-test-container.version>3.6.3</zeebe-test-container.version>

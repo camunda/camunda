@@ -94,7 +94,7 @@ public class BigProcessDataGenerator {
                 termQuery(STATE, COMPLETED)));
     SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     int count = 0;
-    final int maxWait = 101;
+    final int maxWait = 151;
     while (searchResponse.getHits().getTotalHits().value < 1 && count < maxWait) {
       count++;
       ThreadUtil.sleepFor(2000L);

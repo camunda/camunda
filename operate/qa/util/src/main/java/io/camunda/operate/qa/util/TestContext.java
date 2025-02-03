@@ -17,8 +17,7 @@
 package io.camunda.operate.qa.util;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import junit.framework.AssertionFailedError;
 import org.testcontainers.containers.Network;
 
@@ -55,6 +54,7 @@ public class TestContext<T extends TestContext<T>> {
   private List<String> processesToAssert = new ArrayList<>();
   private Integer partitionCount;
   private Boolean multitenancyEnabled;
+  private final Map<String, String> operateContainerEnvs = new LinkedHashMap<>();
 
   public File getZeebeDataFolder() {
     return zeebeDataFolder;
@@ -320,5 +320,16 @@ public class TestContext<T extends TestContext<T>> {
   public TestContext<T> setMultitenancyEnabled(Boolean multitenancyEnabled) {
     this.multitenancyEnabled = multitenancyEnabled;
     return this;
+  }
+
+  public Map<String, String> getOperateContainerEnvs() {
+    return operateContainerEnvs;
+  }
+
+  public void addOperateContainerEnv(String key, String value) {
+    if (operateContainerEnvs.containsKey(key)) {
+      throw new AssertionFailedError("Operate container env was already created earlier: " + key);
+    }
+    operateContainerEnvs.put(key, value);
   }
 }
