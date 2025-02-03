@@ -36,6 +36,7 @@ import io.camunda.zeebe.stream.impl.state.DbLastProcessedPositionState;
 import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
@@ -282,6 +283,7 @@ public final class StreamPlatform {
 
     final var builder =
         StreamProcessor.builder()
+            .meterRegistry(new SimpleMeterRegistry())
             .logStream(stream.getAsyncLogStream())
             .zeebeDb(zeebeDb)
             .actorSchedulingService(actorScheduler)
