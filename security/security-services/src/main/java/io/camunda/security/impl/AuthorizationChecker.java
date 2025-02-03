@@ -132,8 +132,16 @@ public class AuthorizationChecker {
   private List<String> collectOwnerIds(final Authentication authentication) {
     final List<String> ownerIds = new ArrayList<>();
     ownerIds.add(authentication.authenticatedUsername());
-    ownerIds.addAll(authentication.authenticatedGroupKeys());
-    ownerIds.addAll(authentication.authenticatedRoleKeys());
+    ownerIds.addAll(
+        // TODO remove this mapping when refactoring Groups to IDs
+        authentication.authenticatedGroupKeys().stream()
+            .map(Object::toString)
+            .collect(Collectors.toSet()));
+    ownerIds.addAll(
+        // TODO remove this mapping when refactoring Roles to IDs
+        authentication.authenticatedRoleKeys().stream()
+            .map(Object::toString)
+            .collect(Collectors.toSet()));
     return ownerIds;
   }
 }
