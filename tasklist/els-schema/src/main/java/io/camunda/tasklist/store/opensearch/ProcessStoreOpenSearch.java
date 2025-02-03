@@ -133,7 +133,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
                 term ->
                     term.field(ProcessIndex.BPMN_PROCESS_ID).value(FieldValue.of(bpmnProcessId)))
             .build();
-    if (tasklistProperties.getMultiTenancy().isEnabled() && StringUtils.isNotBlank(tenantId)) {
+    if (securityConfiguration.getMultiTenancy().isEnabled() && StringUtils.isNotBlank(tenantId)) {
       qb =
           OpenSearchUtil.joinWithAnd(
               new Query.Builder()
@@ -332,7 +332,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
   }
 
   private Query addFilterOnTenantIdIfRequired(final Query query, final String tenantId) {
-    if (tasklistProperties.getMultiTenancy().isEnabled() && StringUtils.isNotBlank(tenantId)) {
+    if (securityConfiguration.getMultiTenancy().isEnabled() && StringUtils.isNotBlank(tenantId)) {
       final Query tenantQuery =
           new Query.Builder()
               .term(term -> term.field(ProcessIndex.TENANT_ID).value(FieldValue.of(tenantId)))

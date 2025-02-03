@@ -7,35 +7,31 @@
  */
 package io.camunda.tasklist.webapp.security.tenant;
 
-import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.property.TasklistProperties;
-import java.util.ArrayList;
+import io.camunda.authentication.tenant.TenantAttributeHolder;
+import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
 
 @Component
 public class TenantServiceImpl implements TenantService {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(TenantServiceImpl.class);
+  @Autowired private SecurityConfiguration securityConfiguration;
 
-  @Autowired private TasklistProperties tasklistProperties;
+  @Override
+  public List<String> tenantsIds() {
+    return TenantAttributeHolder.getTenantIds();
+  }
 
   @Override
   public AuthenticatedTenants getAuthenticatedTenants() {
-    if (!isMultiTenancyEnabled()) {
-      // disabled means no tenant check necessary.
-      // thus, the user/app has access to all tenants.
+    if (!isMultiTenancyEnabled() || RequestContextHolder.getRequestAttributes() == null) {
       return AuthenticatedTenants.allTenants();
     }
 
-    final var authentication = getCurrentTenantAwareAuthentication();
-    final var tenants = getTenantsFromAuthentication(authentication);
+    final List<String> tenants = tenantsIds();
 
     if (CollectionUtils.isNotEmpty(tenants)) {
       return AuthenticatedTenants.assignedTenants(tenants);
@@ -55,42 +51,6 @@ public class TenantServiceImpl implements TenantService {
 
   @Override
   public boolean isMultiTenancyEnabled() {
-    return tasklistProperties.getMultiTenancy().isEnabled()
-        && SecurityContextHolder.getContext().getAuthentication() != null;
-  }
-
-  private TenantAwareAuthentication getCurrentTenantAwareAuthentication() {
-    final var authentication = SecurityContextHolder.getContext().getAuthentication();
-    final TenantAwareAuthentication currentAuthentication;
-
-    if (authentication instanceof final TenantAwareAuthentication tenantAwareAuthentication) {
-      currentAuthentication = tenantAwareAuthentication;
-    } else {
-      currentAuthentication = null;
-      // log error message for visibility
-      final var message =
-          String.format(
-              "Multi Tenancy is not supported with current authentication type %s",
-              authentication.getClass());
-      LOGGER.error(message, new TasklistRuntimeException());
-    }
-
-    return currentAuthentication;
-  }
-
-  private List<String> getTenantsFromAuthentication(
-      final TenantAwareAuthentication authentication) {
-    final var authenticatedTenants = new ArrayList<String>();
-
-    if (authentication != null) {
-      final var tenants = authentication.getTenants();
-      if (tenants != null && !tenants.isEmpty()) {
-        tenants.stream()
-            .map(TasklistTenant::getId)
-            .collect(Collectors.toCollection(() -> authenticatedTenants));
-      }
-    }
-
-    return authenticatedTenants;
+    return securityConfiguration.getMultiTenancy().isEnabled();
   }
 }
