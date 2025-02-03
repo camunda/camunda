@@ -75,7 +75,6 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private BackupManager backupManager;
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private BackupStore backupStore;
-  private MeterRegistry meterRegistry;
 
   @Override
   public int getPartitionId() {
@@ -289,9 +288,17 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public MeterRegistry getMeterRegistry() {
-    return meterRegistry;
+  public MeterRegistry getBrokerMeterRegistry() {
+    return null;
   }
+
+  @Override
+  public MeterRegistry getPartitionMeterRegistry() {
+    return null;
+  }
+
+  @Override
+  public void setPartitionMeterRegistry(final MeterRegistry partitionMeterRegistry) {}
 
   public void setGatewayBrokerTransport(final AtomixServerTransport gatewayBrokerTransport) {
     this.gatewayBrokerTransport = gatewayBrokerTransport;

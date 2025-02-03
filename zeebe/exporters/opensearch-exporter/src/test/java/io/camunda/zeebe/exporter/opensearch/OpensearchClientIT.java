@@ -60,8 +60,7 @@ final class OpensearchClientIT {
             RestClientFactory.of(config, true),
             indexRouter,
             templateReader,
-            new OpensearchMetrics(PARTITION_ID, new SimpleMeterRegistry()),
-            new SimpleMeterRegistry());
+            new OpensearchMetrics(new SimpleMeterRegistry()));
   }
 
   @AfterEach
@@ -152,8 +151,7 @@ final class OpensearchClientIT {
             RestClientFactory.of(config, true),
             indexRouter,
             templateReader,
-            new OpensearchMetrics(PARTITION_ID, new SimpleMeterRegistry()),
-            new SimpleMeterRegistry());
+            new OpensearchMetrics(new SimpleMeterRegistry()));
     authenticatedClient.putComponentTemplate();
 
     // then

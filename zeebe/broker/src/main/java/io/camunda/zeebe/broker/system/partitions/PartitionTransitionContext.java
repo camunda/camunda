@@ -136,5 +136,9 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   void setBackupStore(BackupStore backupStore);
 
-  MeterRegistry getMeterRegistry();
+  MeterRegistry getBrokerMeterRegistry();
+
+  MeterRegistry getPartitionMeterRegistry();
+
+  void setPartitionMeterRegistry(MeterRegistry partitionMeterRegistry);
 }
