@@ -97,16 +97,17 @@ public class IndexSchemaValidatorUtil {
     }
 
     // Validate if the difference is dynamic
-    if (difference.getEntriesDiffering() != null && difference.getEntriesDiffering().size() > 0) {
-      if (difference.getEntriesDiffering().stream().noneMatch(this::nonDynamicPropertyDifference)) {
-        LOGGER.debug(
-            String.format(
-                "Difference is on dynamic field - continue initialization - left %s, right %s. Actual diff values: %s",
-                difference.getLeftIndexMapping().getIndexName(),
-                difference.getRightIndexMapping().getIndexName(),
-                difference.getEntriesDiffering()));
-        return;
-      }
+    if (difference.getEntriesDiffering() != null
+        && difference.getEntriesDiffering().size() > 0
+        && difference.getEntriesDiffering().stream()
+            .noneMatch(this::nonDynamicPropertyDifference)) {
+      LOGGER.debug(
+          String.format(
+              "Difference is on dynamic field - continue initialization - left %s, right %s. Actual diff values: %s",
+              difference.getLeftIndexMapping().getIndexName(),
+              difference.getRightIndexMapping().getIndexName(),
+              difference.getEntriesDiffering()));
+      return;
     }
 
     LOGGER.debug(
@@ -182,13 +183,6 @@ public class IndexSchemaValidatorUtil {
                     + difference
                     + ". Difference 2: "
                     + currentDifference);
-          } else {
-            LOGGER.debug(
-                String.format(
-                    "Difference is on dynamic field - continue initialization, left: %s, right: %s. Actual diff values: %s",
-                    difference.getLeftIndexMapping().getIndexName(),
-                    difference.getRightIndexMapping().getIndexName(),
-                    difference.getEntriesDiffering()));
           }
         }
       }
@@ -200,8 +194,9 @@ public class IndexSchemaValidatorUtil {
     final Object typeDefinition = propertyDifference.getLeftValue().getTypeDefinition();
     if (propertyDifference.getLeftValue().getTypeDefinition() instanceof Map) {
       final Map<String, Object> typeDefMap = (Map<String, Object>) typeDefinition;
-      final Object dynamicValue = typeDefMap.getOrDefault("dynamic", false);
-      if (dynamicValue.equals("true")) {
+      final boolean isDynamic =
+          Boolean.parseBoolean(typeDefMap.getOrDefault("dynamic", "false").toString());
+      if (isDynamic) {
         return false;
       }
     }
