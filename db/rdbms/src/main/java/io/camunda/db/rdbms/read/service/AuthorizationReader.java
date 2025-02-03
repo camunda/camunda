@@ -38,9 +38,7 @@ public class AuthorizationReader extends AbstractEntityReader<AuthorizationEntit
                 b ->
                     b.filter(
                         f ->
-                            f.ownerKeys(ownerKey)
-                                .ownerType(ownerType)
-                                .resourceType(resourceType))));
+                            f.ownerIds(ownerKey).ownerType(ownerType).resourceType(resourceType))));
     return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
   }
 

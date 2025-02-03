@@ -238,9 +238,10 @@ public final class IdentitySetupInitializeProcessor
 
     for (final AuthorizationResourceType resourceType : AuthorizationResourceType.values()) {
       if (resourceType == AuthorizationResourceType.UNSPECIFIED) {
-        // We shouldn't add unspecified resource type
+        // We shouldn't add empty permissions for an unspecified resource type
         continue;
       }
+
       // TODO: refactor when Roles use String IDs as unique identifiers
       final var record =
           new AuthorizationRecord()

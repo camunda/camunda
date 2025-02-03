@@ -182,7 +182,7 @@ public class AuthorizationIT {
         authorizationReader.search(
             new AuthorizationQuery(
                 new AuthorizationFilter.Builder()
-                    .ownerKeys(authorization.ownerKey())
+                    .ownerIds(authorization.ownerKey())
                     .ownerType(authorization.ownerType())
                     .resourceType(authorization.resourceType())
                     .permissionType(authorization.permissions().getFirst().permissionType())

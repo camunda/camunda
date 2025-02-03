@@ -202,7 +202,7 @@ public class AuthorizationsUtil implements CloseableSilently {
             b ->
                 b.filter(
                     f ->
-                        f.ownerKeys(userKey)
+                        f.ownerIds(userKey)
                             .resourceType(resourceType)
                             .permissionType(permissionType)
                             .resourceIds(resourceIds)));

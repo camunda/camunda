@@ -54,7 +54,7 @@ public class AuthorizationChecker {
                 q ->
                     q.filter(
                         f ->
-                            f.ownerKeys(ownerKeys)
+                            f.ownerIds(ownerKeys)
                                 .resourceType(resourceType.name())
                                 .permissionType(permissionType))));
     return authorizationEntities.stream()
@@ -85,7 +85,7 @@ public class AuthorizationChecker {
                     q ->
                         q.filter(
                                 f ->
-                                    f.ownerKeys(ownerKeys)
+                                    f.ownerIds(ownerKeys)
                                         .resourceType(resourceType.name())
                                         .permissionType(permissionType)
                                         .resourceIds(List.of(WILDCARD, resourceId)))
@@ -114,7 +114,7 @@ public class AuthorizationChecker {
                 q ->
                     q.filter(
                         f ->
-                            f.ownerKeys(ownerKeys)
+                            f.ownerIds(ownerKeys)
                                 .resourceType(resourceType.name())
                                 .resourceIds(List.of(WILDCARD, resourceId)))));
 
