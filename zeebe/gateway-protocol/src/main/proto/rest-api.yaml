@@ -6127,8 +6127,9 @@ components:
           description: The field to sort by.
           type: string
           enum:
+            - ownerId
             - ownerType
-            - ownerKey
+            - resourceId
             - resourceType
         order:
           $ref: "#/components/schemas/SortOrderEnum"
