@@ -46,7 +46,7 @@ public class ElasticSearchMetadataService
       org.slf4j.LoggerFactory.getLogger(ElasticSearchMetadataService.class);
 
   public ElasticSearchMetadataService(
-      @Qualifier("optimizeOjectMapper") final ObjectMapper objectMapper) {
+      @Qualifier("optimizeObjectMapper") final ObjectMapper objectMapper) {
     super(objectMapper);
   }
 
