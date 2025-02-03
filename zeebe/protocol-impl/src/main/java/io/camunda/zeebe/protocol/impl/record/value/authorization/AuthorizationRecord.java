@@ -23,7 +23,6 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public final class AuthorizationRecord extends UnifiedRecordValue
     implements AuthorizationRecordValue {
@@ -51,8 +50,6 @@ public final class AuthorizationRecord extends UnifiedRecordValue
   // TODO: rename in: https://github.com/camunda/camunda/issues/26883
   private final ArrayProperty<StringValue> authorizationPermissionsProp =
       new ArrayProperty<>("authorizationPermissions", StringValue::new);
-  private final ArrayProperty<StringValue> changedAttributesProp =
-      new ArrayProperty<>("changedAttributes", StringValue::new);
 
   public AuthorizationRecord() {
     super(9);
@@ -63,8 +60,7 @@ public final class AuthorizationRecord extends UnifiedRecordValue
         .declareProperty(resourceIdProp)
         .declareProperty(resourceTypeProp)
         .declareProperty(permissionsProp)
-        .declareProperty(authorizationPermissionsProp)
-        .declareProperty(changedAttributesProp);
+        .declareProperty(authorizationPermissionsProp);
   }
 
   @Override
@@ -142,21 +138,6 @@ public final class AuthorizationRecord extends UnifiedRecordValue
     permissions.forEach(
         permission ->
             authorizationPermissionsProp.add().wrap(BufferUtil.wrapString(permission.name())));
-    return this;
-  }
-
-  @Override
-  public Set<String> getChangedAttributes() {
-    return StreamSupport.stream(changedAttributesProp.spliterator(), false)
-        .map(StringValue::getValue)
-        .map(BufferUtil::bufferAsString)
-        .collect(Collectors.toSet());
-  }
-
-  public AuthorizationRecord setChangedAttributes(final Set<String> changedAttributes) {
-    changedAttributesProp.reset();
-    changedAttributes.forEach(
-        attribute -> changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute)));
     return this;
   }
 
