@@ -39,7 +39,7 @@ public class AuthorizationSortIT {
   public void shouldSortByOwnerKeyAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
-        b -> b.ownerKey().asc(),
+        b -> b.ownerId().asc(),
         Comparator.comparing(AuthorizationEntity::ownerKey));
   }
 
@@ -47,7 +47,7 @@ public class AuthorizationSortIT {
   public void shouldSortByOwnerKeyDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
-        b -> b.ownerKey().desc(),
+        b -> b.ownerId().desc(),
         Comparator.comparing(AuthorizationEntity::ownerKey).reversed());
   }
 

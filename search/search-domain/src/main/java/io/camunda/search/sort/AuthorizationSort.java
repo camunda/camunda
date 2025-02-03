@@ -25,8 +25,8 @@ public record AuthorizationSort(List<FieldSorting> orderings) implements SortOpt
   public static final class Builder extends AbstractBuilder<Builder>
       implements ObjectBuilder<AuthorizationSort> {
 
-    public Builder ownerKey() {
-      currentOrdering = new FieldSorting("ownerKey", null);
+    public Builder ownerId() {
+      currentOrdering = new FieldSorting("ownerId", null);
       return this;
     }
 

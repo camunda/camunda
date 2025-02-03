@@ -8,9 +8,6 @@
 package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.search.filter.Operation.eq;
-import static io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchQuerySortRequest.FieldEnum.OWNER_KEY;
-import static io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchQuerySortRequest.FieldEnum.OWNER_TYPE;
-import static io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchQuerySortRequest.FieldEnum.RESOURCE_TYPE;
 import static io.camunda.zeebe.gateway.rest.RequestMapper.getResult;
 import static io.camunda.zeebe.gateway.rest.util.AdvancedSearchFilterUtil.mapToOperations;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_SEARCH_BEFORE_AND_AFTER;
@@ -1143,7 +1140,7 @@ public final class SearchQueryRequestMapper {
     } else {
       switch (field) {
         case OWNER_TYPE -> builder.ownerType();
-        case OWNER_KEY -> builder.ownerKey();
+        case OWNER_ID -> builder.ownerId();
         case RESOURCE_TYPE -> builder.resourceType();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }

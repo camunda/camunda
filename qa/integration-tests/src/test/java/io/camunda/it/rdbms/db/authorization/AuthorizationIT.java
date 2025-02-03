@@ -206,7 +206,7 @@ public class AuthorizationIT {
 
     createAndSaveRandomAuthorizations(rdbmsWriter, b -> b.ownerType("ITEST"));
     final var sort =
-        AuthorizationSort.of(s -> s.ownerType().asc().resourceType().desc().ownerKey().asc());
+        AuthorizationSort.of(s -> s.ownerType().asc().resourceType().desc().ownerId().asc());
     final var searchResult =
         authorizationReader.search(
             AuthorizationQuery.of(
