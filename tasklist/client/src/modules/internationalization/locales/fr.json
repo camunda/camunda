@@ -52,6 +52,7 @@
     "taskDetailsFormJSMultipleFieldError": "Veuillez vérifier {{count}} champs",
     "formJSPoweredByLabel": "Propulsé par",
     "formJSPoweredByLogoLabel": "Logo Camunda",
+    "formJSLargeFilePayloadError": "La taille du fichier dépasse la limite de {{size}}. Veuillez télécharger des fichiers de taille plus petite.",
     "taskDetailsTenantLabel": "Client",
     "multiTenancyDropdownLabel": "Client",
     "taskDetailsNewVariableNameFieldLabel": "Nom",
