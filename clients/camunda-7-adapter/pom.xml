@@ -12,6 +12,11 @@
   <artifactId>camunda-7-adapter</artifactId>
   <packaging>jar</packaging>
   <name>Camunda 7 to 8 Adapter</name>
+
+  <properties>
+    <version.camunda>7.22.2-ee</version.camunda>
+  </properties>
+
   <dependencies>
 
     <dependency>
@@ -160,6 +165,20 @@
     </dependency>
 
   </dependencies>
+
+  <repositories>
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>camunda7-nexus</id>
+      <name>Camunda7 Nexus</name>
+      <url>https://artifacts.camunda.com/artifactory/private/</url>
+    </repository>
+  </repositories>
 
   <build>
     <plugins>
