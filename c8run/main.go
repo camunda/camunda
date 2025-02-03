@@ -167,6 +167,29 @@ func setEnvVars() error {
 	return nil
 }
 
+func getBaseCommand() (string, error) {
+	if len(os.Args) == 1 {
+		usage(1)
+	}
+
+	switch os.Args[1] {
+	case "start":
+		return "start", nil
+	case "stop":
+		return "stop", nil
+	case "package":
+		return "package", nil
+	case "clean":
+		return "clean", nil
+	case "-h", "--help":
+		usage(0)
+	default:
+		return "", fmt.Errorf("unsupported operation: %s", os.Args[1])
+	}
+
+	return "", nil
+}
+
 func main() {
 	c8 := getC8RunPlatform()
 	baseDir, _ := os.Getwd()
@@ -194,30 +217,24 @@ func main() {
 
 	// classPath := filepath.Join(parentDir, "configuration", "userlib") + "," + filepath.Join(parentDir, "configuration", "keystore")
 
-	baseCommand := ""
-	// insideConfigFlag := false
-
-	if len(os.Args) == 1 {
-		usage(1)
-	} else if os.Args[1] == "start" {
-		baseCommand = "start"
-	} else if os.Args[1] == "stop" {
-		baseCommand = "stop"
-	} else if os.Args[1] == "package" {
-		baseCommand = "package"
-	} else if os.Args[1] == "clean" {
-		baseCommand = "clean"
-	} else if os.Args[1] == "-h" || os.Args[1] == "--help" {
-		usage(0)
-	} else {
-		panic(fmt.Sprintln("Unsupported operation", os.Args[1]))
-	}
-	fmt.Print("Command: " + baseCommand + "\n")
-
 	var settings C8RunSettings
 	startFlagSet := flag.NewFlagSet("start", flag.ExitOnError)
 	startFlagSet.StringVar(&settings.config, "config", "", "Applies the specified configuration file.")
 	startFlagSet.BoolVar(&settings.detached, "detached", false, "Starts Camunda Run as a detached process")
+	baseCommand, err := getBaseCommand()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	switch baseCommand {
+	case "start":
+		err := startFlagSet.Parse(os.Args[2:])
+		if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+        }
+
 	switch baseCommand {
 	case "start":
 		startFlagSet.Parse(os.Args[2:])
