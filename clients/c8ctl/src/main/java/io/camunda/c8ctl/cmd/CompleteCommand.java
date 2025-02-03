@@ -32,7 +32,10 @@ import picocli.CommandLine.Parameters;
     subcommands = {UserTaskCommand.class, JobCommand.class})
 public class CompleteCommand {
 
-  @Command(name = "userTask", description = "Completes a user task defined by the user task key")
+  @Command(
+      name = "userTask",
+      aliases = {"user-task", "ut"},
+      description = "Completes a user task defined by the user task key")
   public static class UserTaskCommand implements Callable<Integer> {
 
     @Mixin private ClientMixin clientMixin;
