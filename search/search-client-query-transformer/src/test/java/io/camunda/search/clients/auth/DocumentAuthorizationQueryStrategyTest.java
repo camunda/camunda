@@ -184,7 +184,7 @@ class DocumentAuthorizationQueryStrategyTest {
                 q ->
                     q.filter(
                         f ->
-                            f.ownerKeys(List.of(123L))
+                            f.ownerIds(List.of(123L))
                                 .resourceType("PROCESS_DEFINITION")
                                 .permissionType(READ_PROCESS_DEFINITION))));
   }

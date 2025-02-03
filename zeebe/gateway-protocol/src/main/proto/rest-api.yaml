@@ -6179,17 +6179,16 @@ components:
       allOf:
         - $ref: "#/components/schemas/AuthorizationFilterRequestBase"
       properties:
-        ownerKey:
+        ownerId:
           description: The ID of the owner of permissions.
-          type: integer
-          format: int64
+          type: string
     AuthorizationFilter:
       description: Authorization search filter. Key attributes as string values.
       type: object
       allOf:
         - $ref: "#/components/schemas/AuthorizationFilterRequestBase"
       properties:
-        ownerKey:
+        ownerId:
           description: The ID of the owner of permissions.
           type: string
     AuthorizationResponseBase:
