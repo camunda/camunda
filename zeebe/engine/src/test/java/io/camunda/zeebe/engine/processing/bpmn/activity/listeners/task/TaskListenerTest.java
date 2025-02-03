@@ -287,6 +287,80 @@ public class TaskListenerTest {
   }
 
   @Test
+  public void shouldExecuteAllUpdatingListenersOnRepeatedUserTaskUpdates() {
+    // given: a user task with multiple `updating` task listeners
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.updating,
+                listenerType,
+                listenerType + "_2",
+                listenerType + "_3"));
+
+    // when: update the user task with new candidate users
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .update(
+            new UserTaskRecord()
+                .setCandidateUsersList(List.of("frodo", "samwise"))
+                .setCandidateUsersChanged());
+
+    // complete all `updating` listener jobs
+    completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // and: update the user task again with new candidate users and priority
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .withAction("escalate")
+        .update(
+            new UserTaskRecord()
+                .setCandidateUsersList(List.of("aragorn", "legolas"))
+                .setCandidateUsersChanged()
+                .setPriority(99)
+                .setPriorityChanged());
+
+    // complete all `updating` listener jobs for the second update
+    completeRecreatedJobs(
+        processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // then: all `updating` listeners should execute for both update operations
+    assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.UPDATING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3",
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    // and: user task should be correctly updated after both update operations
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.UPDATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .describedAs(
+            "Expected user task updates to be recorded correctly after all updating listeners execute")
+        .extracting(
+            r -> r.getValue().getCandidateUsersList(),
+            r -> r.getValue().getPriority(),
+            r -> r.getValue().getAction(),
+            r -> r.getValue().getChangedAttributes())
+        .containsExactly(
+            // First update
+            tuple(
+                List.of("frodo", "samwise"), 50, "update", List.of(UserTaskRecord.CANDIDATE_USERS)),
+            // Second update
+            tuple(
+                List.of("aragorn", "legolas"),
+                99,
+                "escalate",
+                List.of(UserTaskRecord.CANDIDATE_USERS, UserTaskRecord.PRIORITY)));
+  }
+
+  @Test
   public void shouldCancelTaskListenerJobWhenTerminatingElementInstance() {
     // given
     final long processInstanceKey =
