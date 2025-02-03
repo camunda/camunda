@@ -158,7 +158,6 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
   public void shouldBeAuthorizedToAssignJobBasedUserTask() {
     // given
     adminAuthClient.createPermissions(
-        testUserKey,
         TEST_USER_NAME,
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,

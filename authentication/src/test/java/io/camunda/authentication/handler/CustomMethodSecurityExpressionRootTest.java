@@ -43,24 +43,24 @@ public class CustomMethodSecurityExpressionRootTest {
   @BeforeEach
   void setup() {
     when(authorizationServices.fetchAssignedPermissions(
-            1234L, AuthorizationResourceType.PROCESS_DEFINITION, "*"))
+            "1234", AuthorizationResourceType.PROCESS_DEFINITION, "*"))
         .thenReturn(
             Arrays.stream(PermissionType.values()).map(Enum::name).collect(Collectors.toSet()));
     when(authorizationServices.fetchAssignedPermissions(
-            4321L, AuthorizationResourceType.PROCESS_DEFINITION, "*"))
+            "4321", AuthorizationResourceType.PROCESS_DEFINITION, "*"))
         .thenReturn(Set.of(PermissionType.READ.name()));
     when(authorizationServices.fetchAssignedPermissions(
-            4321L, AuthorizationResourceType.PROCESS_DEFINITION, "process1"))
+            "4321", AuthorizationResourceType.PROCESS_DEFINITION, "process1"))
         .thenReturn(
             Set.of(
                 PermissionType.CREATE.name(),
                 PermissionType.DELETE.name(),
                 PermissionType.UPDATE.name()));
     when(authorizationServices.fetchAssignedPermissions(
-            6789L, AuthorizationResourceType.DECISION_DEFINITION, "*"))
+            "6789", AuthorizationResourceType.DECISION_DEFINITION, "*"))
         .thenReturn(Set.of(PermissionType.READ.name()));
     when(authorizationServices.fetchAssignedPermissions(
-            6789L, AuthorizationResourceType.PROCESS_DEFINITION, "process1"))
+            "6789", AuthorizationResourceType.PROCESS_DEFINITION, "process1"))
         .thenReturn(Set.of(PermissionType.READ.name()));
   }
 
