@@ -72,7 +72,8 @@ public final class Broker implements AutoCloseable {
             new ClusterServicesImpl(systemContext.getCluster()),
             systemContext.getBrokerClient(),
             additionalPartitionListeners,
-            systemContext.getShutdownTimeout());
+            systemContext.getShutdownTimeout(),
+            systemContext.getMeterRegistry());
 
     brokerStartupActor = new BrokerStartupActor(startupContext);
     scheduler.submitActor(brokerStartupActor);

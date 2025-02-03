@@ -16,6 +16,8 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.shared.MainSupport;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.prometheus.PrometheusMeterRegistry;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +50,7 @@ public class StandaloneBroker
   private final ActorScheduler actorScheduler;
   private final AtomixCluster cluster;
   private final BrokerClient brokerClient;
+  private final MeterRegistry meterRegistry;
 
   @Autowired private BrokerShutdownHelper shutdownHelper;
   private Broker broker;
@@ -59,13 +62,15 @@ public class StandaloneBroker
       final SpringBrokerBridge springBrokerBridge,
       final ActorScheduler actorScheduler,
       final AtomixCluster cluster,
-      final BrokerClient brokerClient) {
+      final BrokerClient brokerClient,
+      final PrometheusMeterRegistry meterRegistry) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.springBrokerBridge = springBrokerBridge;
     this.actorScheduler = actorScheduler;
     this.cluster = cluster;
     this.brokerClient = brokerClient;
+    this.meterRegistry = meterRegistry;
   }
 
   public static void main(final String[] args) {
@@ -91,8 +96,8 @@ public class StandaloneBroker
             identityConfiguration,
             actorScheduler,
             cluster,
-            brokerClient);
-
+            brokerClient,
+            meterRegistry);
     springBrokerBridge.registerShutdownHelper(
         errorCode -> shutdownHelper.initiateShutdown(errorCode));
 
