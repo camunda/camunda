@@ -6,6 +6,10 @@
     },
     "prop1": {
       "type": "keyword"
+    },
+    "prop2": {
+      "dynamic": "true",
+      "type": "object"
     }
   }
 }
