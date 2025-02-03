@@ -107,7 +107,8 @@ public class MyBatisConfiguration {
       final DataSource dataSource,
       final DatabaseIdProvider databaseIdProvider,
       final VendorDatabaseProperties databaseProperties,
-      @Value("${camunda.database.index-prefix:}") final String indexPrefix)
+      @Value("${camunda.database.index-prefix:}") final String indexPrefix,
+      final MultiTenantSpringLiquibase rdbmsExporterLiquibase)
       throws Exception {
 
     final var configuration = new org.apache.ibatis.session.Configuration();

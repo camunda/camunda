@@ -16,14 +16,25 @@ import co.elastic.clients.elasticsearch.snapshot.Repository;
 import co.elastic.clients.elasticsearch.snapshot.RestoreRequest;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import io.camunda.application.Profile;
+import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.client.CamundaClient;
 import io.camunda.it.utils.MultiDbConfigurator;
 import io.camunda.management.backups.TakeBackupHistoryResponse;
+import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.qa.util.cluster.HistoryBackupClient;
+import io.camunda.qa.util.cluster.IndexTemplateDescriptorsConfigurator;
+import io.camunda.qa.util.cluster.TestOperateElasticsearchSchemaManager;
+import io.camunda.qa.util.cluster.TestOperateOpensearchSchemaManager;
+import io.camunda.qa.util.cluster.TestOperateSchemaStartup;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.cluster.TestTasklistElasticsearchSchemaManager;
+import io.camunda.qa.util.cluster.TestTasklistOpensearchSchemaManager;
+import io.camunda.qa.util.cluster.TestTasklistSchemaStartup;
 import io.camunda.search.connect.configuration.DatabaseType;
+import io.camunda.tasklist.TasklistModuleConfiguration;
+import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.webapps.backup.BackupStateDto;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
@@ -48,13 +59,15 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 @ZeebeIntegration
 public class BackupRestoreIT {
+
   private static final String REPOSITORY_NAME = "test-repository";
   private static final String INDEX_PREFIX = "backup-restore";
-  @TempDir public Path repositoryDir;
+  @TempDir
+  public Path repositoryDir;
   protected CamundaClient camundaClient;
 
   @TestZeebe(autoStart = false)
-  protected TestStandaloneApplication<?> testStandaloneCamunda;
+  protected TestSimpleCamundaApplication testStandaloneCamunda;
 
   private GenericContainer<?> searchContainer;
 
@@ -70,7 +83,23 @@ public class BackupRestoreIT {
 
   private void setup(final BackupRestoreTestConfig config) throws IOException {
     final String dbUrl;
-    testStandaloneCamunda = new TestSimpleCamundaApplication();
+    testStandaloneCamunda = new TestSimpleCamundaApplication()
+        .withAdditionalInitializer(new WebappsConfigurationInitializer())
+        .withConfiguration(
+            WebappsModuleConfiguration.class, IndexTemplateDescriptorsConfigurator.class)
+        .withConfiguration(
+            OperateModuleConfiguration.class,
+            TestOperateElasticsearchSchemaManager.class,
+            TestOperateOpensearchSchemaManager.class,
+            TestOperateSchemaStartup.class)
+        .withAdditionalProfile(Profile.OPERATE)
+        .withConfiguration(
+            TasklistModuleConfiguration.class,
+            TestTasklistElasticsearchSchemaManager.class,
+            TestTasklistOpensearchSchemaManager.class,
+            TestTasklistSchemaStartup.class)
+        .withAdditionalProfile(Profile.TASKLIST);
+
     final var configurator = new MultiDbConfigurator(testStandaloneCamunda);
     searchContainer =
         switch (config.databaseType) {
@@ -90,9 +119,8 @@ public class BackupRestoreIT {
             yield container;
           }
 
-          default ->
-              throw new IllegalArgumentException(
-                  "Unsupported database type: " + config.databaseType);
+          default -> throw new IllegalArgumentException(
+              "Unsupported database type: " + config.databaseType);
         };
     configurator.getOperateProperties().getBackup().setRepositoryName(REPOSITORY_NAME);
     configurator.getTasklistProperties().getBackup().setRepositoryName(REPOSITORY_NAME);
@@ -186,7 +214,8 @@ public class BackupRestoreIT {
                 .createRepository(b -> b.repository(repository).name(REPOSITORY_NAME));
         assertThat(response.acknowledged()).isTrue();
       }
-      default -> {}
+      default -> {
+      }
     }
   }
 
@@ -205,10 +234,13 @@ public class BackupRestoreIT {
           final var response = esClient.snapshot().restore(request);
           assertThat(response.snapshot().snapshot()).isEqualTo(snapshot);
         }
-        default -> {}
+        default -> {
+        }
       }
     }
   }
 
-  public record BackupRestoreTestConfig(DatabaseType databaseType, String bucket) {}
+  public record BackupRestoreTestConfig(DatabaseType databaseType, String bucket) {
+
+  }
 }

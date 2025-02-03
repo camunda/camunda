@@ -10,6 +10,8 @@ package io.camunda.it.utils;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.operate.property.OperateOpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.property.TasklistOpenSearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -17,18 +19,19 @@ import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import java.util.Map;
 import java.util.UUID;
+import org.mockito.Mockito;
 
 /**
  * Helper class to configure any {@link TestStandaloneApplication}, with specific secondary storage.
  */
 public class MultiDbConfigurator {
 
-  private final TestStandaloneApplication<?> testApplication;
+  private final TestSimpleCamundaApplication testApplication;
 
   private final OperateProperties operateProperties;
   private final TasklistProperties tasklistProperties;
 
-  public MultiDbConfigurator(final TestStandaloneApplication<?> testApplication) {
+  public MultiDbConfigurator(final TestSimpleCamundaApplication testApplication) {
     this.testApplication = testApplication;
     // we are configuring this always, even if we might not use the applications
     operateProperties = new OperateProperties();
@@ -149,6 +152,11 @@ public class MultiDbConfigurator {
           cfg.setClassName("-");
           cfg.setArgs(Map.of("flushInterval", "0"));
         });
+
+    testApplication.withBean(
+        "documentBasedSearchClient",
+        Mockito.mock(DocumentBasedSearchClient.class),
+        DocumentBasedSearchClient.class);
   }
 
   public OperateProperties getOperateProperties() {

@@ -7,12 +7,13 @@
  */
 package io.camunda.application.commons.search;
 
+import io.camunda.application.commons.conditions.ConditionalOnDatabaseType;
 import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.SearchClients;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.search.connect.configuration.DatabaseConfig;
+import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
@@ -20,8 +21,6 @@ import io.camunda.search.os.clients.OpensearchSearchClient;
 import io.camunda.search.rdbms.RdbmsSearchClient;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -33,11 +32,7 @@ import org.springframework.context.annotation.Configuration;
 public class SearchClientDatabaseConfiguration {
 
   @Bean
-  @ConditionalOnProperty(
-      prefix = "camunda.database",
-      name = "type",
-      havingValue = DatabaseConfig.ELASTICSEARCH,
-      matchIfMissing = true)
+  @ConditionalOnDatabaseType(value = DatabaseType.ELASTICSEARCH, matchIfMissing = true)
   public ElasticsearchSearchClient elasticsearchSearchClient(
       final SearchClientProperties configuration) {
     final var connector = new ElasticsearchConnector(configuration);
@@ -46,10 +41,7 @@ public class SearchClientDatabaseConfiguration {
   }
 
   @Bean
-  @ConditionalOnProperty(
-      prefix = "camunda.database",
-      name = "type",
-      havingValue = DatabaseConfig.OPENSEARCH)
+  @ConditionalOnDatabaseType(DatabaseType.OPENSEARCH)
   public OpensearchSearchClient opensearchSearchClient(final SearchClientProperties configuration) {
     final var connector = new OpensearchConnector(configuration);
     final var elasticsearch = connector.createClient();
@@ -57,16 +49,15 @@ public class SearchClientDatabaseConfiguration {
   }
 
   @Bean
-  @ConditionalOnProperty(
-      prefix = "camunda.database",
-      name = "type",
-      havingValue = DatabaseConfig.RDBMS)
+  @ConditionalOnDatabaseType(DatabaseType.RDBMS)
   public RdbmsSearchClient rdbmsSearchClient(final RdbmsService rdbmsService) {
     return new RdbmsSearchClient(rdbmsService);
   }
 
   @Bean
-  @ConditionalOnBean(DocumentBasedSearchClient.class)
+  @ConditionalOnDatabaseType(
+      value = {DatabaseType.ELASTICSEARCH, DatabaseType.OPENSEARCH},
+      matchIfMissing = true)
   public SearchClients searchClients(
       final DocumentBasedSearchClient searchClient,
       final ConnectConfiguration connectConfiguration) {

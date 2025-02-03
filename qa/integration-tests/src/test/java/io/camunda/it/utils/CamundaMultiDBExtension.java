@@ -12,8 +12,20 @@ import static org.assertj.core.api.Assertions.fail;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.application.Profile;
+import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.client.CamundaClient;
+import io.camunda.operate.OperateModuleConfiguration;
+import io.camunda.qa.util.cluster.IndexTemplateDescriptorsConfigurator;
+import io.camunda.qa.util.cluster.TestOperateElasticsearchSchemaManager;
+import io.camunda.qa.util.cluster.TestOperateOpensearchSchemaManager;
+import io.camunda.qa.util.cluster.TestOperateSchemaStartup;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.cluster.TestTasklistElasticsearchSchemaManager;
+import io.camunda.qa.util.cluster.TestTasklistOpensearchSchemaManager;
+import io.camunda.qa.util.cluster.TestTasklistSchemaStartup;
+import io.camunda.tasklist.TasklistModuleConfiguration;
+import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
@@ -58,9 +70,9 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
  * <p>Per default, for example if no property is set, local environment is expected. In a local
  * environment case the extension will bootstrap a database via test containers.
  *
- * <p>For simplicity tests can be annotated with {@link MultiDbTest}, and all the magic happens inside
- * the extension. It will fallback to {@link TestSimpleCamundaApplication}, to bootstrap a single
- * camunda application, configure it accordingly to the detected database.
+ * <p>For simplicity tests can be annotated with {@link MultiDbTest}, and all the magic happens
+ * inside the extension. It will fallback to {@link TestSimpleCamundaApplication}, to bootstrap a
+ * single camunda application, configure it accordingly to the detected database.
  *
  * <pre>{@code
  * @MultiDbTest
@@ -81,22 +93,23 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
  *   }
  * }</pre>
  *
- * <p>There are more complex scenarios that might need to start respective TestApplication externally.
- * For such cases the extension can be used via:
+ * <p>There are more complex scenarios that might need to start respective TestApplication
+ * externally. For such cases the extension can be used via:
  * <pre>{@code
  * @RegisterExtension
  * public final CamundaMultiDBExtension extension =
  *    new CamundaMultiDBExtension(new TestStandaloneBroker());
  * }</pre>
  *
- *<p>The extension will take care of the life cycle of the {@link TestStandaloneApplication}, which
- * means configuring the detected database (this includes Operate, Tasklist, Broker properties and
- * exporter), starting the application, and tearing down at the end.
+ * <p>The extension will take care of the life cycle of the {@link TestStandaloneApplication},
+ * which means configuring the detected database (this includes Operate, Tasklist, Broker properties
+ * and exporter), starting the application, and tearing down at the end.
  *
  * <p>See {@link TestStandaloneApplication} for more details.
  */
 public class CamundaMultiDBExtension
     implements AfterAllCallback, BeforeAllCallback, ParameterResolver {
+
   public static final String PROP_CAMUNDA_IT_DATABASE_TYPE =
       "test.integration.camunda.database.type";
   public static final String DEFAULT_ES_URL = "http://localhost:9200";
@@ -107,39 +120,61 @@ public class CamundaMultiDBExtension
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaMultiDBExtension.class);
 
-  private final DatabaseType databaseType;
+  private DatabaseType databaseType;
   private final List<AutoCloseable> closeables = new ArrayList<>();
-  private final TestStandaloneApplication<?> testApplication;
+  private TestSimpleCamundaApplication testApplication;
   private String testPrefix;
-  private final MultiDbConfigurator multiDbConfigurator;
   private ThrowingRunnable databaseSetupReadinessWaitStrategy = () -> {};
-  private final HttpClient httpClient;
-
-  public CamundaMultiDBExtension() {
-    this(new TestSimpleCamundaApplication());
-    closeables.add(testApplication);
-    testApplication
-        .withBrokerConfig(cfg -> cfg.getGateway().setEnable(true))
-        .withExporter(
-            "recordingExporter", cfg -> cfg.setClassName(RecordingExporter.class.getName()));
-  }
-
-  public CamundaMultiDBExtension(final TestStandaloneApplication testApplication) {
-    this.testApplication = testApplication;
-    multiDbConfigurator = new MultiDbConfigurator(testApplication);
-    // resolve active database and exporter type
-    final String property = System.getProperty(PROP_CAMUNDA_IT_DATABASE_TYPE);
-    databaseType =
-        property == null ? DatabaseType.LOCAL : DatabaseType.valueOf(property.toUpperCase());
-    httpClient = HttpClient.newHttpClient();
-    closeables.add(httpClient);
-  }
+  private HttpClient httpClient;
 
   @Override
   public void beforeAll(final ExtensionContext context) {
     LOGGER.info("Starting up Camunda instance, with {}", databaseType);
     final Class<?> testClass = context.getRequiredTestClass();
     testPrefix = testClass.getSimpleName().toLowerCase();
+
+    final MultiDbTest annotation = testClass.getAnnotation(MultiDbTest.class);
+    final boolean withOperate = annotation.withOperate();
+    final boolean withTasklist = annotation.withTasklist();
+
+    testApplication =
+        new TestSimpleCamundaApplication()
+            .withBrokerConfig(cfg -> cfg.getGateway().setEnable(true))
+            .withExporter(
+                "recordingExporter", cfg -> cfg.setClassName(RecordingExporter.class.getName()));
+
+    if (withOperate || withTasklist) {
+      testApplication
+          .withAdditionalInitializer(new WebappsConfigurationInitializer())
+          .withConfiguration(
+              WebappsModuleConfiguration.class, IndexTemplateDescriptorsConfigurator.class);
+      if (withOperate) {
+        testApplication.withConfiguration(
+            OperateModuleConfiguration.class,
+            TestOperateElasticsearchSchemaManager.class,
+            TestOperateOpensearchSchemaManager.class,
+            TestOperateSchemaStartup.class);
+        testApplication.withAdditionalProfile(Profile.OPERATE);
+      }
+      if (withTasklist) {
+        testApplication.withConfiguration(
+            TasklistModuleConfiguration.class,
+            TestTasklistElasticsearchSchemaManager.class,
+            TestTasklistOpensearchSchemaManager.class,
+            TestTasklistSchemaStartup.class);
+        testApplication.withAdditionalProfile(Profile.TASKLIST);
+      }
+    }
+
+    final MultiDbConfigurator multiDbConfigurator = new MultiDbConfigurator(testApplication);
+    // resolve active database and exporter type
+    final String property = System.getProperty(PROP_CAMUNDA_IT_DATABASE_TYPE);
+    databaseType =
+        property == null ? DatabaseType.LOCAL : DatabaseType.valueOf(property.toUpperCase());
+    httpClient = HttpClient.newHttpClient();
+
+    closeables.add(testApplication);
+    closeables.add(httpClient);
 
     switch (databaseType) {
       case LOCAL -> {
@@ -161,7 +196,9 @@ public class CamundaMultiDBExtension
       case OS ->
           multiDbConfigurator.configureOpenSearchSupport(
               DEFAULT_OS_URL, testPrefix, DEFAULT_OS_ADMIN_USER, DEFAULT_OS_ADMIN_PW);
-      case RDBMS -> multiDbConfigurator.configureRDBMSSupport();
+      case RDBMS -> {
+        multiDbConfigurator.configureRDBMSSupport();
+      }
       default -> throw new RuntimeException("Unknown exporter type");
     }
     testApplication.start();

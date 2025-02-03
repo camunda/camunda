@@ -19,8 +19,10 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.prometheus.client.CollectorRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,32 +37,21 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestSpringApplication.class);
 
-  private final Class<?>[] springApplications;
-  private final Map<String, Bean<?>> beans;
-  private final Map<String, Object> propertyOverrides;
-  private final Collection<String> additionalProfiles;
+  private final List<Class<?>> springApplications = new ArrayList<>();
+  private final Map<String, Bean<?>> beans = new HashMap<>();
+  private final Map<String, Object> propertyOverrides = new HashMap<>();
+  private final Collection<String> additionalProfiles = new ArrayList<>();
   private final Collection<ApplicationContextInitializer> additionalInitializers;
   private final ReactorResourceFactory reactorResourceFactory = new ReactorResourceFactory();
 
   private ConfigurableApplicationContext springContext;
 
   public TestSpringApplication(final Class<?>... springApplications) {
-    this(new HashMap<>(), new HashMap<>(), new ArrayList<>(), springApplications);
-  }
-
-  private TestSpringApplication(
-      final Map<String, Bean<?>> beans,
-      final Map<String, Object> propertyOverrides,
-      final Collection<String> additionalProfiles,
-      final Class<?>... springApplications) {
-    this.springApplications = springApplications;
-    this.beans = beans;
-    this.propertyOverrides = propertyOverrides;
+    this.springApplications.addAll(Arrays.asList(springApplications));
     additionalInitializers = new ArrayList<>();
     additionalInitializers.add(new ContextOverrideInitializer(beans, propertyOverrides));
     additionalInitializers.add(new HealthConfigurationInitializer());
-    this.additionalProfiles = new ArrayList<>(additionalProfiles);
-    this.additionalProfiles.add(Profile.TEST.getId());
+    additionalProfiles.add(Profile.TEST.getId());
 
     // randomize ports to allow multiple concurrent instances
     overridePropertyIfAbsent("server.port", SocketUtil.getNextAddress().getPort());
@@ -126,9 +117,8 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     return switch (port) {
       case REST -> restPort();
       case MONITORING -> monitoringPort();
-      default ->
-          throw new IllegalArgumentException(
-              "No known port %s; must one of MONITORING".formatted(port));
+      default -> throw new IllegalArgumentException(
+          "No known port %s; must one of MONITORING".formatted(port));
     };
   }
 
@@ -168,6 +158,11 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     return self();
   }
 
+  public T withConfiguration(final Class<?>... springConfiguration) {
+    springApplications.addAll(Arrays.asList(springConfiguration));
+    return self();
+  }
+
   public T withAdditionalInitializer(final ApplicationContextInitializer<?> initializer) {
     additionalInitializers.add(initializer);
     return self();
@@ -194,7 +189,9 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     return withUnauthenticatedAccess(false);
   }
 
-  /** Returns the command line arguments that will be passed when the application is started. */
+  /**
+   * Returns the command line arguments that will be passed when the application is started.
+   */
   protected String[] commandLineArgs() {
     return new String[0];
   }
@@ -209,7 +206,7 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
         .registerShutdownHook(false)
         .initializers(additionalInitializers.toArray(ApplicationContextInitializer[]::new))
         .profiles(additionalProfiles.toArray(String[]::new))
-        .sources(springApplications);
+        .sources(springApplications.toArray(Class[]::new));
   }
 
   @Override

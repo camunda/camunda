@@ -18,8 +18,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * {@code @MultiDbTest} is used to signal that the annotated test can be run against multiple
- *  databases. The annotation and respective extension is to make things easier, and reduce
- *  unnecessary boilerplate.
+ * databases. The annotation and respective extension is to make things easier, and reduce
+ * unnecessary boilerplate.
  *
  * <p>Respective test is extended with the {@link CamundaMultiDBExtension}, to detect and configure
  * the correct secondary storage.
@@ -52,4 +52,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Documented
 @ExtendWith(CamundaMultiDBExtension.class)
 @Inherited
-public @interface MultiDbTest {}
+public @interface MultiDbTest {
+
+  /** If the operate webapp should be started as well */
+  boolean withOperate() default true;
+
+  /** If the tasklist webapp should be started as well */
+  boolean withTasklist() default true;
+}

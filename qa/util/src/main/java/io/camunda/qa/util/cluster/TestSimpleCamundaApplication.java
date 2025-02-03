@@ -12,14 +12,10 @@ import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
-import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.client.CamundaClientBuilder;
-import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
-import io.camunda.tasklist.TasklistModuleConfiguration;
-import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -53,21 +49,7 @@ public final class TestSimpleCamundaApplication
   private final CamundaSecurityProperties securityConfig;
 
   public TestSimpleCamundaApplication() {
-    super(
-        CommonsModuleConfiguration.class,
-        OperateModuleConfiguration.class,
-        TasklistModuleConfiguration.class,
-        WebappsModuleConfiguration.class,
-        BrokerModuleConfiguration.class,
-        // test overrides - to control data clean up; (and some components are not installed on
-        // Tests)
-        TestOperateElasticsearchSchemaManager.class,
-        TestOperateOpensearchSchemaManager.class,
-        TestTasklistElasticsearchSchemaManager.class,
-        TestTasklistOpensearchSchemaManager.class,
-        TestOperateSchemaStartup.class,
-        TestTasklistSchemaStartup.class,
-        IndexTemplateDescriptorsConfigurator.class);
+    super(CommonsModuleConfiguration.class, BrokerModuleConfiguration.class);
 
     brokerProperties = new BrokerBasedProperties();
 
@@ -98,10 +80,7 @@ public final class TestSimpleCamundaApplication
     //noinspection resource
     withBean("config", brokerProperties, BrokerBasedProperties.class)
         .withBean("security-config", securityConfig, CamundaSecurityProperties.class)
-        .withAdditionalProfile(Profile.BROKER)
-        .withAdditionalProfile(Profile.OPERATE)
-        .withAdditionalProfile(Profile.TASKLIST)
-        .withAdditionalInitializer(new WebappsConfigurationInitializer());
+        .withAdditionalProfile(Profile.BROKER);
   }
 
   @Override
