@@ -190,6 +190,29 @@ func getBaseCommand() (string, error) {
 	return "", nil
 }
 
+func getBaseCommandSettings(baseCommand string) (C8RunSettings, error) {
+	var settings C8RunSettings
+
+	startFlagSet := createStartFlagSet(&settings)
+
+	switch baseCommand {
+	case "start":
+		err := startFlagSet.Parse(os.Args[2:])
+		if err != nil {
+			return settings, fmt.Errorf("error parsing start argument: %w", err)
+		}
+	}
+
+	return settings, nil
+}
+
+func createStartFlagSet(settings *C8RunSettings) *flag.FlagSet {
+	startFlagSet := flag.NewFlagSet("start", flag.ExitOnError)
+	startFlagSet.StringVar(&settings.config, "config", "", "Applies the specified configuration file.")
+	startFlagSet.BoolVar(&settings.detached, "detached", false, "Starts Camunda Run as a detached process")
+	return startFlagSet
+}
+
 func main() {
 	c8 := getC8RunPlatform()
 	baseDir, _ := os.Getwd()
@@ -217,27 +240,14 @@ func main() {
 
 	// classPath := filepath.Join(parentDir, "configuration", "userlib") + "," + filepath.Join(parentDir, "configuration", "keystore")
 
-	var settings C8RunSettings
-	startFlagSet := flag.NewFlagSet("start", flag.ExitOnError)
-	startFlagSet.StringVar(&settings.config, "config", "", "Applies the specified configuration file.")
-	startFlagSet.BoolVar(&settings.detached, "detached", false, "Starts Camunda Run as a detached process")
 	baseCommand, err := getBaseCommand()
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-
-	switch baseCommand {
-	case "start":
-		err := startFlagSet.Parse(os.Args[2:])
-		if err != nil {
-			fmt.Println(err.Error())
-			os.Exit(1)
-		}
-        }
-
-	switch baseCommand {
-	case "start":
-		startFlagSet.Parse(os.Args[2:])
+	settings, err := getBaseCommandSettings(baseCommand)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 
 	javaHome := os.Getenv("JAVA_HOME")

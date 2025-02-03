@@ -1,7 +1,7 @@
 package main
 
 import (
-        "encoding/base64"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/camunda/camunda/c8run/internal/archive"
@@ -55,7 +55,7 @@ func PackageWindows(camundaVersion string, elasticsearchVersion string, connecto
 	if javaArtifactsUser == "" || javaArtifactsPassword == "" {
 		return fmt.Errorf("PackageWindows: JAVA_ARTIFACTS_USER or JAVA_ARTIFACTS_PASSWORD env vars are not set")
 	}
-        javaArtifactsToken := "Basic " + base64.StdEncoding.EncodeToString([]byte(javaArtifactsUser+":"+javaArtifactsPassword))
+	javaArtifactsToken := "Basic " + base64.StdEncoding.EncodeToString([]byte(javaArtifactsUser+":"+javaArtifactsPassword))
 
 	Clean(camundaVersion, elasticsearchVersion)
 
@@ -119,7 +119,7 @@ func PackageUnix(camundaVersion string, elasticsearchVersion string, connectorsV
 	if javaArtifactsUser == "" || javaArtifactsPassword == "" {
 		return fmt.Errorf("PackageUnix: JAVA_ARTIFACTS_USER or JAVA_ARTIFACTS_PASSWORD env vars are not set")
 	}
-        javaArtifactsToken := "Basic " + base64.StdEncoding.EncodeToString([]byte(javaArtifactsUser+":"+javaArtifactsPassword))
+	javaArtifactsToken := "Basic " + base64.StdEncoding.EncodeToString([]byte(javaArtifactsUser+":"+javaArtifactsPassword))
 
 	Clean(camundaVersion, elasticsearchVersion)
 
