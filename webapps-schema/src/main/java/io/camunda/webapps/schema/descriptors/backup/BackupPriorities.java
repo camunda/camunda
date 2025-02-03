@@ -49,9 +49,10 @@ public record BackupPriorities(
     final var indices =
         backups.stream()
             .filter(IndexTemplateDescriptor.class::isInstance)
-            .map(BackupPriority::getFullQualifiedName)
+            .map(IndexTemplateDescriptor.class::cast)
+            .map(IndexTemplateDescriptor::getFullQualifiedName)
             .flatMap(name -> Stream.of(name + "*", "-" + name))
             .toList();
-    return new SnapshotIndexCollection(indices, Collections.emptyList());
+    return new SnapshotIndexCollection(Collections.emptyList(), indices);
   }
 }

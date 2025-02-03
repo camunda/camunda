@@ -249,8 +249,6 @@ class BackupPrioritiesTest {
             "optimize-alert_v4");
 
     for (final var indexList : indices) {
-      assertThat(indexList.skippableIndices())
-          .allSatisfy(i -> assertThat(i).startsWith("optimize"));
       assertThat(indexList.requiredIndices())
           .allSatisfy(i -> assertThat(i).doesNotStartWith("optimize"));
     }
