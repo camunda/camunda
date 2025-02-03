@@ -55,7 +55,7 @@ public class CCSMTokenServiceTest {
   }
 
   @Test
-  void getUserInfoFromToken_validToken_returnsUserDto() {
+  void getUserInfoFromTokenValidTokenReturnsUserDto() {
     when(accessToken.getUserDetails()).thenReturn(userDetails);
     when(userDetails.getName()).thenReturn(Optional.of(NAME));
     when(userDetails.getEmail()).thenReturn(Optional.of(EMAIL));
@@ -68,7 +68,7 @@ public class CCSMTokenServiceTest {
   }
 
   @Test
-  void getUserInfoFromToken_missingName_returnsUsername() {
+  void getUserInfoFromTokenMissingNameReturnsUsername() {
     when(accessToken.getUserDetails()).thenReturn(userDetails);
     when(userDetails.getName()).thenReturn(Optional.empty());
     when(userDetails.getUsername()).thenReturn(Optional.of(USERNAME));
@@ -82,7 +82,7 @@ public class CCSMTokenServiceTest {
   }
 
   @Test
-  void getUserInfoFromToken_missingNameAndUsername_returnsUserIdAsUsername() {
+  void getUserInfoFromTokenMissingNameAndUsernameReturnsUserIdAsUsername() {
     when(accessToken.getUserDetails()).thenReturn(userDetails);
     when(userDetails.getName()).thenReturn(Optional.empty());
     when(userDetails.getUsername()).thenReturn(Optional.empty());
@@ -96,7 +96,7 @@ public class CCSMTokenServiceTest {
   }
 
   @Test
-  void getUserInfoFromToken_missingEmail_returnsUserIdAsEmail() {
+  void getUserInfoFromTokenMissingEmailReturnsUserIdAsEmail() {
     when(accessToken.getUserDetails()).thenReturn(userDetails);
     when(userDetails.getName()).thenReturn(Optional.of(NAME));
     when(userDetails.getEmail()).thenReturn(Optional.empty());
@@ -109,7 +109,7 @@ public class CCSMTokenServiceTest {
   }
 
   @Test
-  void getUserInfoFromToken_invalidToken_throwsNotAuthorizedException() {
+  void getUserInfoFromTokenInvalidTokenThrowsNotAuthorizedException() {
     when(accessToken.getPermissions()).thenReturn(ImmutableList.of());
 
     assertThrows(
