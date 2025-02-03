@@ -57,7 +57,7 @@ class DocumentAuthorizationQueryStrategyTest {
   void shouldReturnRequestUnchangedWhenAuthorizationNotRequired() {
     // given
     final var originalRequest = mock(SearchQueryRequest.class);
-    final var securityContext = SecurityContext.of(s -> s.withAuthentication(a -> a.user(123L)));
+    final var securityContext = SecurityContext.of(s -> s.withAuthentication(a -> a.user("foo")));
 
     // when
     final SearchQueryRequest result =
@@ -96,7 +96,7 @@ class DocumentAuthorizationQueryStrategyTest {
     final var securityContext =
         SecurityContext.of(
             s ->
-                s.withAuthentication(a -> a.user(123L))
+                s.withAuthentication(a -> a.user("foo"))
                     .withAuthorization(
                         a ->
                             a.permissionType(READ_PROCESS_DEFINITION)
@@ -129,7 +129,7 @@ class DocumentAuthorizationQueryStrategyTest {
     final var securityContext =
         SecurityContext.of(
             s ->
-                s.withAuthentication(a -> a.user(123L))
+                s.withAuthentication(a -> a.user("foo"))
                     .withAuthorization(
                         a ->
                             a.permissionType(READ_PROCESS_DEFINITION)
@@ -153,7 +153,7 @@ class DocumentAuthorizationQueryStrategyTest {
     final var securityContext =
         SecurityContext.of(
             s ->
-                s.withAuthentication(a -> a.user(123L))
+                s.withAuthentication(a -> a.user("foo"))
                     .withAuthorization(
                         a ->
                             a.permissionType(READ_PROCESS_DEFINITION)
@@ -184,7 +184,7 @@ class DocumentAuthorizationQueryStrategyTest {
                 q ->
                     q.filter(
                         f ->
-                            f.ownerIds(List.of(123L))
+                            f.ownerIds(List.of("foo"))
                                 .resourceType("PROCESS_DEFINITION")
                                 .permissionType(READ_PROCESS_DEFINITION))));
   }

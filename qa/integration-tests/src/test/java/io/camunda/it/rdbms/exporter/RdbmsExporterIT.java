@@ -591,7 +591,7 @@ class RdbmsExporterIT {
         rdbmsService
             .getAuthorizationReader()
             .findOne(
-                recordValue.getOwnerKey(),
+                recordValue.getOwnerId(),
                 recordValue.getOwnerType().name(),
                 recordValue.getResourceType().name())
             .orElse(null);
@@ -617,7 +617,7 @@ class RdbmsExporterIT {
         rdbmsService
             .getAuthorizationReader()
             .findOne(
-                recordValue.getOwnerKey(),
+                recordValue.getOwnerId(),
                 recordValue.getOwnerType().name(),
                 recordValue.getResourceType().name())
             .orElse(null);
@@ -656,7 +656,7 @@ class RdbmsExporterIT {
         rdbmsService
             .getAuthorizationReader()
             .findOne(
-                recordValue.getOwnerKey(),
+                recordValue.getOwnerId(),
                 recordValue.getOwnerType().name(),
                 recordValue.getResourceType().name())
             .orElse(null);
@@ -681,7 +681,7 @@ class RdbmsExporterIT {
         rdbmsService
             .getAuthorizationReader()
             .findOne(
-                recordValue.getOwnerKey(),
+                recordValue.getOwnerId(),
                 recordValue.getOwnerType().name(),
                 recordValue.getResourceType().name())
             .orElse(null);

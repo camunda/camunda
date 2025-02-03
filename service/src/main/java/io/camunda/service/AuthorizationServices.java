@@ -67,7 +67,7 @@ public class AuthorizationServices
   }
 
   public List<String> getAuthorizedResources(
-      final Set<Long> ownerKeys,
+      final Set<String> ownerIds,
       final PermissionType permissionType,
       final AuthorizationResourceType resourceType) {
     final var authorizationQuery =
@@ -75,7 +75,7 @@ public class AuthorizationServices
             fn ->
                 fn.filter(
                     f ->
-                        f.ownerIds(ownerKeys.stream().toList())
+                        f.ownerIds(ownerIds.stream().toList())
                             .permissionType(permissionType)
                             .resourceType(resourceType.name())));
     return findAll(authorizationQuery).stream()
@@ -86,13 +86,13 @@ public class AuthorizationServices
         .collect(Collectors.toList());
   }
 
-  public List<String> getAuthorizedApplications(final Set<Long> ownerKeys) {
+  public List<String> getAuthorizedApplications(final Set<String> ownerIds) {
     return getAuthorizedResources(
-        ownerKeys, PermissionType.READ, AuthorizationResourceType.APPLICATION);
+        ownerIds, PermissionType.READ, AuthorizationResourceType.APPLICATION);
   }
 
   public Set<String> fetchAssignedPermissions(
-      final Long ownerKey, final AuthorizationResourceType resourceType, final String resourceId) {
+      final String ownerId, final AuthorizationResourceType resourceType, final String resourceId) {
     final SearchQueryResult<AuthorizationEntity> result =
         search(
             SearchQueryBuilders.authorizationSearchQuery(
@@ -104,7 +104,7 @@ public class AuthorizationServices
                                         resourceId != null && !resourceId.isEmpty()
                                             ? resourceId
                                             : null)
-                                    .ownerIds(ownerKey))
+                                    .ownerIds(ownerId))
                         .page(p -> p.size(1))));
     // TODO logic to fetch indirect authorizations via roles/groups should be added later
     return result.items().stream()

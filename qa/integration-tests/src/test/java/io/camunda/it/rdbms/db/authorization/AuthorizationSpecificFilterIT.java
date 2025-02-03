@@ -71,7 +71,7 @@ public class AuthorizationSpecificFilterIT {
 
   static List<AuthorizationFilter> shouldFindWithSpecificFilterParameters() {
     return List.of(
-        new AuthorizationFilter.Builder().ownerIds(1337L).build(),
+        new AuthorizationFilter.Builder().ownerIds("1337").build(),
         new AuthorizationFilter.Builder().ownerType("FILTER_TEST").build(),
         new AuthorizationFilter.Builder().resourceType("TEST").build());
   }

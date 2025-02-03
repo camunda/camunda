@@ -31,14 +31,13 @@ public class AuthorizationReader extends AbstractEntityReader<AuthorizationEntit
   }
 
   public Optional<AuthorizationEntity> findOne(
-      final long ownerKey, final String ownerType, final String resourceType) {
+      final String ownerId, final String ownerType, final String resourceType) {
     final var result =
         search(
             AuthorizationQuery.of(
                 b ->
                     b.filter(
-                        f ->
-                            f.ownerIds(ownerKey).ownerType(ownerType).resourceType(resourceType))));
+                        f -> f.ownerIds(ownerId).ownerType(ownerType).resourceType(resourceType))));
     return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
   }
 

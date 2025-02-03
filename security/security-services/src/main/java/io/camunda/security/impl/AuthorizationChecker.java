@@ -45,7 +45,7 @@ public class AuthorizationChecker {
    * @return a list of authorized resource keys for the user or group in the SecurityContext
    */
   public List<String> retrieveAuthorizedResourceKeys(final SecurityContext securityContext) {
-    final var ownerKeys = collectOwnerKeys(securityContext.authentication());
+    final var ownerIds = collectOwnerIds(securityContext.authentication());
     final var resourceType = securityContext.authorization().resourceType();
     final var permissionType = securityContext.authorization().permissionType();
     final var authorizationEntities =
@@ -54,7 +54,7 @@ public class AuthorizationChecker {
                 q ->
                     q.filter(
                         f ->
-                            f.ownerIds(ownerKeys)
+                            f.ownerIds(ownerIds)
                                 .resourceType(resourceType.name())
                                 .permissionType(permissionType))));
     return authorizationEntities.stream()
@@ -76,7 +76,7 @@ public class AuthorizationChecker {
    * @return true if the resource key is authorized, false otherwise
    */
   public boolean isAuthorized(final String resourceId, final SecurityContext securityContext) {
-    final var ownerKeys = collectOwnerKeys(securityContext.authentication());
+    final var ownerIds = collectOwnerIds(securityContext.authentication());
     final var resourceType = securityContext.authorization().resourceType();
     final var permissionType = securityContext.authorization().permissionType();
     return authorizationSearchClient
@@ -85,7 +85,7 @@ public class AuthorizationChecker {
                     q ->
                         q.filter(
                                 f ->
-                                    f.ownerIds(ownerKeys)
+                                    f.ownerIds(ownerIds)
                                         .resourceType(resourceType.name())
                                         .permissionType(permissionType)
                                         .resourceIds(List.of(WILDCARD, resourceId)))
@@ -107,14 +107,14 @@ public class AuthorizationChecker {
       final String resourceId,
       final AuthorizationResourceType resourceType,
       final Authentication authentication) {
-    final var ownerKeys = collectOwnerKeys(authentication);
+    final var ownerIds = collectOwnerIds(authentication);
     final var authorizationEntities =
         authorizationSearchClient.findAllAuthorizations(
             AuthorizationQuery.of(
                 q ->
                     q.filter(
                         f ->
-                            f.ownerIds(ownerKeys)
+                            f.ownerIds(ownerIds)
                                 .resourceType(resourceType.name())
                                 .resourceIds(List.of(WILDCARD, resourceId)))));
 
@@ -129,11 +129,11 @@ public class AuthorizationChecker {
         .collect(Collectors.toSet());
   }
 
-  private List<Long> collectOwnerKeys(final Authentication authentication) {
-    final List<Long> ownerKeys = new ArrayList<>();
-    ownerKeys.add(authentication.authenticatedUserKey());
-    ownerKeys.addAll(authentication.authenticatedGroupKeys());
-    ownerKeys.addAll(authentication.authenticatedRoleKeys());
-    return ownerKeys;
+  private List<String> collectOwnerIds(final Authentication authentication) {
+    final List<String> ownerIds = new ArrayList<>();
+    ownerIds.add(authentication.authenticatedUsername());
+    ownerIds.addAll(authentication.authenticatedGroupKeys());
+    ownerIds.addAll(authentication.authenticatedRoleKeys());
+    return ownerIds;
   }
 }

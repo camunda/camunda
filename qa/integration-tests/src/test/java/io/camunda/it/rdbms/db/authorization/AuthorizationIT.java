@@ -51,7 +51,9 @@ public class AuthorizationIT {
     final var instance =
         authorizationReader
             .findOne(
-                authorization.ownerKey(), authorization.ownerType(), authorization.resourceType())
+                authorization.ownerKey().toString(),
+                authorization.ownerType(),
+                authorization.resourceType())
             .orElse(null);
 
     compareAuthorizations(instance, authorization);
@@ -92,7 +94,9 @@ public class AuthorizationIT {
     final var instance =
         authorizationReader
             .findOne(
-                authorization.ownerKey(), authorization.ownerType(), authorization.resourceType())
+                authorization.ownerKey().toString(),
+                authorization.ownerType(),
+                authorization.resourceType())
             .orElse(null);
 
     assertThat(instance).isNotNull();
@@ -110,7 +114,9 @@ public class AuthorizationIT {
     createAndSaveAuthorization(rdbmsWriter, authorization);
     final var instance =
         authorizationReader.findOne(
-            authorization.ownerKey(), authorization.ownerType(), authorization.resourceType());
+            authorization.ownerKey().toString(),
+            authorization.ownerType(),
+            authorization.resourceType());
     assertThat(instance).isNotEmpty();
 
     rdbmsWriter.getAuthorizationWriter().removePermissions(authorization);
@@ -118,7 +124,9 @@ public class AuthorizationIT {
 
     final var deletedInstance =
         authorizationReader.findOne(
-            authorization.ownerKey(), authorization.ownerType(), authorization.resourceType());
+            authorization.ownerKey().toString(),
+            authorization.ownerType(),
+            authorization.resourceType());
     assertThat(deletedInstance).isEmpty();
   }
 
@@ -182,7 +190,7 @@ public class AuthorizationIT {
         authorizationReader.search(
             new AuthorizationQuery(
                 new AuthorizationFilter.Builder()
-                    .ownerIds(authorization.ownerKey())
+                    .ownerIds(authorization.ownerKey().toString())
                     .ownerType(authorization.ownerType())
                     .resourceType(authorization.resourceType())
                     .permissionType(authorization.permissions().getFirst().permissionType())
