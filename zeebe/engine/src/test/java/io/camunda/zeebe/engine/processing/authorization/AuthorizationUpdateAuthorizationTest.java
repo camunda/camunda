@@ -70,7 +70,7 @@ public class AuthorizationUpdateAuthorizationTest {
     // then
     assertThat(
             RecordingExporter.authorizationRecords(AuthorizationIntent.UPDATED)
-                .withOwnerId(user.getUsername())
+                .withAuthorizationKey(authorizationKey)
                 .exists())
         .isTrue();
   }
@@ -103,7 +103,7 @@ public class AuthorizationUpdateAuthorizationTest {
     // then
     assertThat(
             RecordingExporter.authorizationRecords(AuthorizationIntent.UPDATED)
-                .withOwnerId(user.getUsername())
+                .withAuthorizationKey(authorizationKey)
                 .exists())
         .isTrue();
   }
