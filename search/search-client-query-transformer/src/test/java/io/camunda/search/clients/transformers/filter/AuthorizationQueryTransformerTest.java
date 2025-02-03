@@ -50,7 +50,7 @@ public class AuthorizationQueryTransformerTest extends AbstractTransformerTest {
     return Stream.of(
         Arguments.of(
             (Function<Builder, ObjectBuilder<AuthorizationFilter>>) f -> f.ownerIds("foo"),
-            "ownerKey",
+            "ownerId",
             "foo"),
         Arguments.of(
             (Function<Builder, ObjectBuilder<AuthorizationFilter>>) f -> f.ownerType("user"),
