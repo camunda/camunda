@@ -15,6 +15,7 @@ import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.cluster.TestRestTasklistClient.ProcessDefinitionResponse;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
+import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
@@ -48,16 +49,22 @@ public class TasklistProcessDefinitionAuthorizationIT {
 
   private static long processDefinitionKey;
 
-  @TestZeebe
+  @TestZeebe(awaitCompleteTopology = false)
   private TestStandaloneCamunda broker =
       new TestStandaloneCamunda()
           .withCamundaExporter()
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
+          .withSecurityConfig(
+              c ->
+                  c.getInitialization()
+                      .getUsers()
+                      .add(
+                          new ConfiguredUser(
+                              ADMIN_USER_NAME, ADMIN_USER_PASSWORD, "Admin", "test@camunda.com")))
           .withAuthenticationMethod(AuthenticationMethod.BASIC);
 
   @BeforeEach
-  public void beforeAll() {
-    final var defaultUser = "demo";
+  public void beforeEach() {
     final var searchClients =
         SearchClientsUtil.createSearchClients(broker.getElasticSearchHostAddress());
 
@@ -65,18 +72,7 @@ public class TasklistProcessDefinitionAuthorizationIT {
     // access to the storage to retrieve data
     try (final var intermediateAuthClient =
         AuthorizationsUtil.create(broker, broker.getElasticSearchHostAddress())) {
-      intermediateAuthClient.awaitUserExistsInElasticsearch(defaultUser);
-      intermediateAuthClient.createUserWithPermissions(
-          ADMIN_USER_NAME,
-          ADMIN_USER_PASSWORD,
-          new Permissions(ResourceTypeEnum.RESOURCE, PermissionTypeEnum.CREATE, List.of("*")),
-          new Permissions(ResourceTypeEnum.AUTHORIZATION, PermissionTypeEnum.CREATE, List.of("*")),
-          new Permissions(
-              ResourceTypeEnum.PROCESS_DEFINITION,
-              PermissionTypeEnum.READ_PROCESS_DEFINITION,
-              List.of("*")),
-          new Permissions(ResourceTypeEnum.USER, PermissionTypeEnum.CREATE, List.of("*")),
-          new Permissions(ResourceTypeEnum.AUTHORIZATION, PermissionTypeEnum.UPDATE, List.of("*")));
+      intermediateAuthClient.awaitUserExistsInElasticsearch(ADMIN_USER_NAME);
     }
 
     adminCamundaClient =
