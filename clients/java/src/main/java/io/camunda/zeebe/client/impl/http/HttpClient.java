@@ -101,6 +101,17 @@ public final class HttpClient implements AutoCloseable {
 
   public <HttpT, RespT> void get(
       final String path,
+      final Map<String, String> queryParams,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer,
+      final HttpZeebeFuture<RespT> result) {
+    sendRequest(
+        Method.GET, path, queryParams, null, requestConfig, responseType, transformer, result);
+  }
+
+  public <HttpT, RespT> void get(
+      final String path,
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
@@ -140,6 +151,20 @@ public final class HttpClient implements AutoCloseable {
 
   public <HttpT, RespT> void postMultipart(
       final String path,
+      final Map<String, String> queryParams,
+      final MultipartEntityBuilder multipartBuilder,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer,
+      final HttpZeebeFuture<RespT> result) {
+
+    final HttpEntity entity = multipartBuilder.build();
+    sendRequest(
+        Method.POST, path, queryParams, entity, requestConfig, responseType, transformer, result);
+  }
+
+  public <HttpT, RespT> void postMultipart(
+      final String path,
       final MultipartEntityBuilder multipartBuilder,
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
@@ -164,6 +189,11 @@ public final class HttpClient implements AutoCloseable {
       final RequestConfig requestConfig,
       final HttpZeebeFuture<RespT> result) {
     sendRequest(Method.PATCH, path, body, requestConfig, Void.class, r -> null, result);
+  }
+
+  public <RespT> void delete(
+      final String path, final RequestConfig requestConfig, final HttpZeebeFuture<RespT> result) {
+    sendRequest(Method.DELETE, path, null, null, requestConfig, Void.class, r -> null, result);
   }
 
   public <RespT> void delete(
@@ -216,6 +246,10 @@ public final class HttpClient implements AutoCloseable {
 
     final SimpleRequestBuilder requestBuilder =
         SimpleRequestBuilder.create(httpMethod).setUri(target);
+
+    if (queryParams != null && !queryParams.isEmpty()) {
+      queryParams.forEach(requestBuilder::addParameter);
+    }
 
     if (body != null) {
       if (body instanceof String) {
