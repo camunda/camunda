@@ -6154,11 +6154,24 @@ components:
       description: Base properties for AuthorizationFilterRequest
       type: object
       properties:
+        ownerId:
+          description: The ID of the owner of permissions.
+          type: string
         ownerType:
           description: The type of the owner of permissions.
           type: object
           allOf:
             - $ref: "#/components/schemas/OwnerTypeEnum"
+        resourceIds:
+          description: The IDs of the resource to search permissions for.
+          type: array
+          items:
+            type: string
+        resourceType:
+          description: The type of resource to search permissions for.
+          type: object
+          allOf:
+            - $ref: "#/components/schemas/ResourceTypeEnum"
     AuthorizationFilterRequest:
       description: Authorization search filter.
       deprecated: true

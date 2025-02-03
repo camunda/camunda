@@ -1155,8 +1155,11 @@ public final class SearchQueryRequestMapper {
         .map(
             f ->
                 FilterBuilders.authorization()
+                    .ownerIds(f.getOwnerId())
                     .ownerType(f.getOwnerType() == null ? null : f.getOwnerType().getValue())
-                    .ownerKeys(f.getOwnerKey())
+                    .resourceIds(f.getResourceIds())
+                    .resourceType(
+                        f.getResourceType() == null ? null : f.getResourceType().getValue())
                     .build())
         .orElse(null);
   }
