@@ -244,9 +244,10 @@ func main() {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-        settings, err := getBaseCommandSettings(baseCommand)
+	settings, err := getBaseCommandSettings(baseCommand)
 	if err != nil {
 		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 
 	javaHome := os.Getenv("JAVA_HOME")
