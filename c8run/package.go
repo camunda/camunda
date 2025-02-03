@@ -74,7 +74,7 @@ func PackageWindows(camundaVersion string, elasticsearchVersion string, connecto
 		return fmt.Errorf("PackageWindows: JAVA_ARTIFACTS_USER or JAVA_ARTIFACTS_PASSWORD env vars are not set")
 	}
 
-	javaArtifactsToken := "Basic " + base64.StdEncoding.EncodeToString([]byte(javaArtifactsUser + ":" + javaArtifactsPassword))
+	javaArtifactsToken := "Basic " + base64.StdEncoding.EncodeToString([]byte(javaArtifactsUser+":"+javaArtifactsPassword))
 
 	Clean(camundaVersion, elasticsearchVersion)
 
@@ -159,7 +159,7 @@ func PackageUnix(camundaVersion string, elasticsearchVersion string, connectorsV
 		return fmt.Errorf("PackageUnix: JAVA_ARTIFACTS_USER or JAVA_ARTIFACTS_PASSWORD env vars are not set")
 	}
 
-	javaArtifactsToken := "Basic " + base64.StdEncoding.EncodeToString([]byte(javaArtifactsUser + ":" + javaArtifactsPassword))
+	javaArtifactsToken := "Basic " + base64.StdEncoding.EncodeToString([]byte(javaArtifactsUser+":"+javaArtifactsPassword))
 
 	Clean(camundaVersion, elasticsearchVersion)
 

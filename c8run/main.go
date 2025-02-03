@@ -282,7 +282,7 @@ func main() {
 
 	// classPath := filepath.Join(parentDir, "configuration", "userlib") + "," + filepath.Join(parentDir, "configuration", "keystore")
 
-        baseCommand, err := getBaseCommand()
+	baseCommand, err := getBaseCommand()
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -302,7 +302,6 @@ func main() {
 	stopFlagSet := flag.NewFlagSet("stop", flag.ExitOnError)
 	stopFlagSet.BoolVar(&settings.disableElasticsearch, "disable-elasticsearch", false, "Do not stop Elasticsearch")
 	stopFlagSet.BoolVar(&settings.docker, "docker", false, "Stop docker-compose distribution of camunda.")
-
 
 	switch baseCommand {
 	case "start":
