@@ -30,6 +30,7 @@ import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.opensearch.ProcessStoreOpenSearch;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
@@ -75,6 +76,7 @@ class ProcessStoreOpenSearchTest {
   @Mock private ObjectMapper objectMapper;
   @InjectMocks private SpringContextHolder springContextHolder;
   @Mock private SecurityConfiguration securityConfiguration;
+  @Mock private TasklistProperties tasklistProperties;
   @Mock private io.camunda.identity.autoconfigure.IdentityProperties identityProperties;
   @Mock private SecurityContextProvider securityContextProvider;
   @Mock private AuthorizationChecker authorizationChecker;
