@@ -117,7 +117,6 @@ public class TasklistProcessDefinitionAuthorizationIT {
   public void shouldBeAuthorizedToRetrieveProcessDefinition() {
     // given
     adminAuthClient.createPermissions(
-        testUserKey,
         TEST_USER_NAME,
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,
@@ -154,7 +153,6 @@ public class TasklistProcessDefinitionAuthorizationIT {
   public void shouldBeAuthorizedToRetrieveDefinitionOne() {
     // given
     adminAuthClient.createPermissions(
-        testUserKey,
         TEST_USER_NAME,
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,
@@ -177,7 +175,6 @@ public class TasklistProcessDefinitionAuthorizationIT {
   public void shouldBeAuthorizedToRetrieveDefinitions() {
     // given
     adminAuthClient.createPermissions(
-        testUserKey,
         TEST_USER_NAME,
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,

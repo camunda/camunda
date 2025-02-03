@@ -28,7 +28,7 @@ public record AuthorizationQuery(
 
   @Override
   public List<SearchSortOptions> retainValidSortings(final List<SearchSortOptions> sorting) {
-    final var fieldNames = List.of("ownerKey", "ownerType", "resourceKey", "resourceType");
+    final var fieldNames = List.of("ownerId", "ownerType", "resourceIds", "resourceType");
     return sorting.stream().filter(s -> fieldNames.contains(s.field().field())).toList();
   }
 
