@@ -318,12 +318,12 @@ const api = {
         },
       });
     },
-    uploadDocuments: ({file}: {file: File}) => {
+    uploadDocuments: ({files}: {files: File[]}) => {
       const body = new FormData();
 
-      body.append('file', file);
+      files.forEach((file) => body.append('files', file));
 
-      return new Request(getFullURL('/v2/documents'), {
+      return new Request(getFullURL('/v2/documents/batch'), {
         ...BASE_REQUEST_OPTIONS,
         method: 'POST',
         body,
