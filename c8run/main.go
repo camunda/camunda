@@ -220,6 +220,28 @@ func usage(exitcode int) {
 	os.Exit(exitcode)
 }
 
+func setEnvVars() error {
+	envVars := map[string]string{
+		"CAMUNDA_OPERATE_CSRFPREVENTIONENABLED":                  "false",
+		"CAMUNDA_OPERATE_IMPORTER_READERBACKOFF":                 "1000",
+		"CAMUNDA_REST_QUERY_ENABLED":                             "true",
+		"CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED":                 "false",
+		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY":   "1",
+		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE":    "1",
+		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX": "zeebe-record",
+		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL":          "http://localhost:9200",
+		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME":         "io.camunda.zeebe.exporter.ElasticsearchExporter",
+	}
+
+	for key, value := range envVars {
+		if err := os.Setenv(key, value); err != nil {
+			return fmt.Errorf("failed to set environment variable %s: %w", key, err)
+		}
+	}
+
+	return nil
+}
+
 func main() {
 	c8 := getC8RunPlatform()
 	baseDir, _ := os.Getwd()
@@ -243,20 +265,10 @@ func main() {
 	connectorsPidPath := filepath.Join(baseDir, "connectors.pid")
 	camundaPidPath := filepath.Join(baseDir, "camunda.pid")
 
-	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME", "io.camunda.zeebe.exporter.ElasticsearchExporter")
-	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", "http://localhost:9200")
-	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX", "zeebe-record")
-
-	os.Setenv("CAMUNDA_REST_QUERY_ENABLED", "true")
-	os.Setenv("CAMUNDA_OPERATE_CSRFPREVENTIONENABLED", "false")
-	os.Setenv("CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED", "false")
-	os.Setenv("CAMUNDA_OPERATE_IMPORTER_READERBACKOFF", "1000")
-	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY", "1")
-	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
-
-	os.Setenv("CAMUNDA_OPERATE_IMPORTER_READERBACKOFF", "1000")
-	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY", "1")
-	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
+	err = setEnvVars()
+	if err != nil {
+		fmt.Println("Failed to set envVars:", err)
+	}
 
 	// classPath := filepath.Join(parentDir, "configuration", "userlib") + "," + filepath.Join(parentDir, "configuration", "keystore")
 
