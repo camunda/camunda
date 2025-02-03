@@ -8,7 +8,7 @@
 package io.camunda.security.configuration;
 
 public class BasicAuthenticationConfiguration {
-  private boolean allowUnauthenticatedApiAccess = false;
+  private boolean allowUnauthenticatedApiAccess = true;
 
   public boolean getAllowUnauthenticatedApiAccess() {
     return allowUnauthenticatedApiAccess;
