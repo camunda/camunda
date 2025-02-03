@@ -11,6 +11,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
@@ -39,22 +40,42 @@ public class ArchitectureTest {
           .dependOnClassesThat()
           .resideInAPackage("io.camunda.zeebe.scheduler..");
 
-  private static final DescribedPredicate<? super JavaMethod> ARE_NOT_VISIBLE_FOR_TESTING =
+  private static final DescribedPredicate<? super JavaMethod> CALLED_WITHIN_CONTAINING_CLASS =
       new DescribedPredicate<>("Annotation") {
+
         @Override
         public boolean test(final JavaMethod javaMethod) {
-          return !javaMethod.isAnnotatedWith(VisibleForTesting.class);
+          if (!javaMethod.isAnnotatedWith(VisibleForTesting.class)) {
+            return true;
+          }
+
+          final JavaClass declaringClass = javaMethod.getOwner();
+
+          // Allow calls if they are from within the same class
+          return declaringClass.getMethodCallsFromSelf().stream()
+              .anyMatch(call -> call.getTarget().equals(declaringClass));
+        }
+      };
+  private static final DescribedPredicate<? super JavaMethod> CALLED_FROM_TEST_CLASS =
+      new DescribedPredicate<>("Called from a test class") {
+        @Override
+        public boolean test(final JavaMethod method) {
+          if (!method.isAnnotatedWith(VisibleForTesting.class)) {
+            return true;
+          }
+
+          return method.getOwner().getDirectDependenciesFromSelf().stream()
+              .anyMatch(dep -> dep.getTargetClass().getSimpleName().endsWith("Test"));
         }
       };
 
   @ArchTest
-  public static final ArchRule
-      RULE_ENGINE_CLASSES_MUST_NOT_CALL_METHODS_ANNOTATED_WITH_VISIBLE_FOR_TESTING =
-          classes()
-              .that()
-              .resideInAPackage("io.camunda.zeebe.engine..")
-              .and()
-              .haveSimpleNameNotEndingWith("Test")
-              .should()
-              .onlyCallMethodsThat(ARE_NOT_VISIBLE_FOR_TESTING);
+  public static final ArchRule RULE_ENGINE_CLASSES_VISIBLE_FOR_TESTING_METHODS_USAGE =
+      classes()
+          .that()
+          .resideInAPackage("io.camunda.zeebe.engine..")
+          .should()
+          .onlyCallMethodsThat(CALLED_WITHIN_CONTAINING_CLASS)
+          .orShould()
+          .onlyCallMethodsThat(CALLED_FROM_TEST_CLASS);
 }
