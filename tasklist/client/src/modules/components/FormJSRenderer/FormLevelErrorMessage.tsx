@@ -20,18 +20,16 @@ const FormLevelErrorMessage: React.FC<Props> = ({
   readableMessage,
 }) => {
   return (
-    <>
-      <Stack
-        orientation="horizontal"
-        gap={3}
-        className={styles.validationMessage}
-        role="alert"
-        aria-label={screenReaderMessage}
-      >
-        <Warning aria-hidden className={styles.warningFilled} />
-        <div aria-hidden>{readableMessage}</div>
-      </Stack>
-    </>
+    <Stack
+      orientation="horizontal"
+      gap={3}
+      className={styles.validationMessage}
+      role="alert"
+      aria-label={screenReaderMessage}
+    >
+      <Warning aria-hidden className={styles.warningFilled} />
+      <div aria-hidden>{readableMessage}</div>
+    </Stack>
   );
 };
 

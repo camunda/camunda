@@ -63,12 +63,10 @@ const ValidationMessage: React.FC<{
   const screenReaderMessage = useBuiltMessage({fieldIds, fieldLabels});
 
   return (
-    <>
-      <FormLevelErrorMessage
-        screenReaderMessage={screenReaderMessage}
-        readableMessage={readableMessage}
-      />
-    </>
+    <FormLevelErrorMessage
+      screenReaderMessage={screenReaderMessage}
+      readableMessage={readableMessage}
+    />
   );
 };
 
