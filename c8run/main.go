@@ -245,7 +245,7 @@ func getBaseCommand() (string, error) {
 	return "", nil
 }
 
-func handleDockerCommand(settings C8RunSettings, baseCommand, composeExtractedFolder string) error {
+func handleDockerCommand(settings C8RunSettings, baseCommand string, composeExtractedFolder string) error {
 	if !settings.docker {
 		return nil
 	}
