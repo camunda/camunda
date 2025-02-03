@@ -151,8 +151,7 @@ final class ExternalExporterContainerTest {
 
     final var registry = new SimpleMeterRegistry();
 
-    final var container =
-        new ExporterContainer(descriptor, 0, new ExporterInitializationInfo(0, null), registry);
+    final var container = new ExporterContainer(descriptor, 0, registry);
 
     // when
     container.configureExporter();
