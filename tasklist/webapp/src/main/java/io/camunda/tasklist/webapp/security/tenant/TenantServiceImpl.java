@@ -28,6 +28,8 @@ public class TenantServiceImpl implements TenantService {
   @Override
   public AuthenticatedTenants getAuthenticatedTenants() {
     if (!isMultiTenancyEnabled() || RequestContextHolder.getRequestAttributes() == null) {
+      // If the query comes from the source without request context OR
+      // Multitenancy is not enabled, return all tenants
       return AuthenticatedTenants.allTenants();
     }
 
