@@ -1139,8 +1139,8 @@ public final class SearchQueryRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case OWNER_TYPE -> builder.ownerType();
         case OWNER_ID -> builder.ownerId();
+        case OWNER_TYPE -> builder.ownerType();
         case RESOURCE_TYPE -> builder.resourceType();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
