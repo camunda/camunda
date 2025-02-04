@@ -193,7 +193,7 @@ public final class HttpClient implements AutoCloseable {
 
   public <RespT> void delete(
       final String path, final RequestConfig requestConfig, final HttpZeebeFuture<RespT> result) {
-    sendRequest(Method.DELETE, path, null, null, requestConfig, Void.class, r -> null, result);
+    sendRequest(Method.DELETE, path, null, requestConfig, Void.class, r -> null, result);
   }
 
   public <RespT> void delete(
