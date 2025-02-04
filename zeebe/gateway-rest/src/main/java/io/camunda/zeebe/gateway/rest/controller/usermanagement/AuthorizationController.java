@@ -41,14 +41,14 @@ public class AuthorizationController {
   }
 
   @CamundaPostMapping(path = "/authorizations")
-  public CompletableFuture<ResponseEntity<Object>> create(
+  public CompletableFuture<ResponseEntity<Object>> createAuthorization(
       @RequestBody final AuthorizationRequest authorizationCreateRequest) {
     return RequestMapper.toCreateAuthorizationRequest(authorizationCreateRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::create);
   }
 
   @CamundaDeleteMapping(path = "/authorizations/{authorizationKey}")
-  public CompletableFuture<ResponseEntity<Object>> delete(
+  public CompletableFuture<ResponseEntity<Object>> deleteAuthorization(
       @PathVariable final long authorizationKey) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
