@@ -139,12 +139,33 @@ public class AuthorizationServices
     return sendBrokerRequest(brokerRequest);
   }
 
+  public CompletableFuture<AuthorizationRecord> updateAuthorization(
+      final UpdateAuthorizationRequest request) {
+    final var brokerRequest =
+        new BrokerAuthorizationRequest(AuthorizationIntent.UPDATE)
+            .setAuthorizationKey(request.authorizationKey())
+            .setOwnerId(request.ownerId())
+            .setOwnerType(request.ownerType())
+            .setResourceId(request.resourceId())
+            .setResourceType(request.resourceType())
+            .setPermissions(request.permissions());
+    return sendBrokerRequest(brokerRequest);
+  }
+
   public record CreateAuthorizationRequest(
       String ownerId,
       AuthorizationOwnerType ownerType,
       String resourceId,
       AuthorizationResourceType resourceType,
       Set<PermissionType> permissionType) {}
+
+  public record UpdateAuthorizationRequest(
+      long authorizationKey,
+      String ownerId,
+      AuthorizationOwnerType ownerType,
+      String resourceId,
+      AuthorizationResourceType resourceType,
+      Set<PermissionType> permissions) {}
 
   public record UpdateAuthorizationRequest(
       long authorizationKey,
