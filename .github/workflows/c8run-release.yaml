@@ -62,7 +62,7 @@ jobs:
 
       - name: Build c8run
         run: go build
-        working-directory: .\c8run
+        working-directory: ./c8run
 
       - name: make a package
         run: ./c8run package
