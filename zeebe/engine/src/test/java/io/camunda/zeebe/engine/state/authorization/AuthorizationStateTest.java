@@ -76,7 +76,7 @@ public class AuthorizationStateTest {
     assertThat(authorization.getOwnerType()).isEqualTo(ownerType);
     assertThat(authorization.getResourceId()).isEqualTo(resourceId);
     assertThat(authorization.getResourceType()).isEqualTo(resourceType);
-    assertThat(authorization.getPermissions()).containsExactlyInAnyOrderElementsOf(permissions);
+    assertThat(authorization.getPermissionTypes()).containsExactlyInAnyOrderElementsOf(permissions);
     final var resourceIdentifiers =
         authorizationState.getResourceIdentifiers(
             ownerType, ownerId, resourceType, PermissionType.CREATE);
@@ -315,7 +315,7 @@ public class AuthorizationStateTest {
     assertThat(authorization.getOwnerType()).isEqualTo(ownerType);
     assertThat(authorization.getResourceId()).isEqualTo("anotherResourceId");
     assertThat(authorization.getResourceType()).isEqualTo(resourceType);
-    assertThat(authorization.getPermissions())
+    assertThat(authorization.getPermissionTypes())
         .containsExactlyInAnyOrderElementsOf(Set.of(PermissionType.READ, PermissionType.ACCESS));
 
     final var resourceIdentifiers =
@@ -379,7 +379,7 @@ public class AuthorizationStateTest {
     assertThat(authorization.getOwnerType()).isEqualTo(ownerType);
     assertThat(authorization.getResourceId()).isEqualTo("anotherResourceId");
     assertThat(authorization.getResourceType()).isEqualTo(resourceType);
-    assertThat(authorization.getPermissions()).containsExactlyInAnyOrderElementsOf(permissions);
+    assertThat(authorization.getPermissionTypes()).containsExactlyInAnyOrderElementsOf(permissions);
 
     final var resourceIdentifiers =
         authorizationState.getResourceIdentifiers(
@@ -443,7 +443,7 @@ public class AuthorizationStateTest {
     assertThat(authorization.getResourceId()).isEqualTo(resourceId);
     assertThat(authorization.getResourceType())
         .isEqualTo(AuthorizationResourceType.PROCESS_DEFINITION);
-    assertThat(authorization.getPermissions()).containsExactlyInAnyOrderElementsOf(permissions);
+    assertThat(authorization.getPermissionTypes()).containsExactlyInAnyOrderElementsOf(permissions);
 
     final var resourceIdentifiers =
         authorizationState.getResourceIdentifiers(
@@ -524,7 +524,7 @@ public class AuthorizationStateTest {
     assertThat(authorization.getResourceId()).isEqualTo(resourceId);
     assertThat(authorization.getResourceType())
         .isEqualTo(AuthorizationResourceType.PROCESS_DEFINITION);
-    assertThat(authorization.getPermissions())
+    assertThat(authorization.getPermissionTypes())
         .containsExactlyInAnyOrderElementsOf(Set.of(PermissionType.READ_PROCESS_DEFINITION));
 
     final var resourceIdentifiers =
