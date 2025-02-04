@@ -115,7 +115,7 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
-    raftPartitionFactory = new RaftPartitionFactory(brokerCfg);
+    raftPartitionFactory = new RaftPartitionFactory(brokerCfg, meterRegistry);
   }
 
   public void start() {
