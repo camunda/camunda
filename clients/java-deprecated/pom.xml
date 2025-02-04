@@ -8,7 +8,7 @@
     <version>8.8.0-SNAPSHOT</version>
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
-
+  <name>Zeebe Client Java</name>
   <artifactId>zeebe-client-java</artifactId>
   <version>8.8.0-SNAPSHOT</version>
   <distributionManagement>
