@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.testresult;
 
 import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.IncidentDto;
@@ -65,6 +66,7 @@ public class CamundaProcessTestResultCollector {
     result.setProcessId(processInstance.getProcessDefinitionId());
     result.setVariables(collectVariables(processInstanceKey));
     result.setOpenIncidents(collectOpenIncidents(processInstanceKey));
+    result.setActiveFlowNodeInstances(collectActiveFlowNodeInstances(processInstanceKey));
 
     return result;
   }
@@ -106,5 +108,20 @@ public class CamundaProcessTestResultCollector {
       openIncident.setMessage("?");
     }
     return openIncident;
+  }
+
+  private List<FlowNodeInstance> collectActiveFlowNodeInstances(final long processInstanceKey) {
+    try {
+      return dataSource.getFlowNodeInstancesByProcessInstanceKey(processInstanceKey).stream()
+          .filter(
+              flowNodeInstance -> flowNodeInstance.getState().equals(FlowNodeInstanceState.ACTIVE))
+          .collect(Collectors.toList());
+    } catch (final IOException e) {
+      LOG.warn(
+          "Failed to collect flow-node instances for process instance with key '{}'",
+          processInstanceKey,
+          e);
+    }
+    return Collections.emptyList();
   }
 }
