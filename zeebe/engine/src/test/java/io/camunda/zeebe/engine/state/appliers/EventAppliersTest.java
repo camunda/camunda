@@ -168,8 +168,6 @@ public class EventAppliersTest {
             .flatMap(c -> Arrays.stream(c.getEnumConstants()))
             .filter(Intent::isEvent)
             // CheckpointIntent is not handled by the engine
-            // TODO: remove when the appliers are implemented
-            .filter(intent -> !(intent instanceof AuthorizationIntent))
             .filter(intent -> !(intent instanceof CheckpointIntent));
 
     // when
