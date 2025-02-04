@@ -18,7 +18,6 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
-import io.camunda.zeebe.gateway.protocol.rest.UserChangeset;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -361,13 +360,12 @@ public class UserControllerTest extends RestControllerTest {
 
     // when / then
     webClient
-        .patch()
+        .put()
         .uri("%s/%s".formatted(USER_BASE_URL, user.username()))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(
-            new UserUpdateRequest()
-                .changeset(new UserChangeset().name(user.name()).email(user.email())))
+            new UserUpdateRequest().name(user.name()).email(user.email()).password(user.password()))
         .exchange()
         .expectStatus()
         .isNoContent();

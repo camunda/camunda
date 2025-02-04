@@ -12,7 +12,6 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
-import io.camunda.zeebe.gateway.protocol.rest.UserChangeset;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import java.util.ArrayList;
@@ -26,11 +25,10 @@ public final class UserValidator {
   private static final int MAX_USERNAME_LENGTH = 256;
 
   public static Optional<ProblemDetail> validateUserUpdateRequest(final UserUpdateRequest request) {
-    final UserChangeset changeset = request.getChangeset();
     return validate(
-        violoations ->
-            violoations.addAll(
-                validateUserNameAndEmail(changeset.getName(), changeset.getEmail())));
+        violations -> {
+          violations.addAll(validateUserNameAndEmail(request.getName(), request.getEmail()));
+        });
   }
 
   public static Optional<ProblemDetail> validateUserCreateRequest(final UserRequest request) {
