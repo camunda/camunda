@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
+import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
@@ -110,7 +111,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideInvalidCreationRequests")
+  @MethodSource("provideInvalidAuthorizationRequests")
   public void createAuthorizationShouldReturnBadRequest(
       final AuthorizationRequest request, final String errorMessage) {
     final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
@@ -131,7 +132,103 @@ public class AuthorizationControllerTest extends RestControllerTest {
         .isEqualTo(expectedBody);
   }
 
-  private static Stream<Arguments> provideInvalidCreationRequests() {
+  @Test
+  void deleteAuthorizationShouldReturnNoContent() {
+    // given
+    final long authorizationKey = 100L;
+
+    final var record = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
+
+    when(authorizationServices.deleteAuthorization(authorizationKey))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    // when
+    webClient
+        .delete()
+        .uri("/v2/authorizations/%s".formatted(authorizationKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    // then
+    verify(authorizationServices, times(1)).deleteAuthorization(authorizationKey);
+  }
+
+  @Test
+  void updateAuthorizationShouldReturnNoContent() {
+    // given
+    final long authorizationKey = 100L;
+    final var ownerId = "ownerId";
+    final var resourceId = "resourceId";
+
+    final var request =
+        new AuthorizationRequest()
+            .ownerId(ownerId)
+            .ownerType(OwnerTypeEnum.USER)
+            .resourceId(resourceId)
+            .resourceType(ResourceTypeEnum.PROCESS_DEFINITION)
+            .permissions(List.of(PermissionTypeEnum.CREATE));
+
+    final var authorizationRecord =
+        new AuthorizationRecord()
+            .setAuthorizationKey(authorizationKey)
+            .setOwnerId(ownerId)
+            .setOwnerType(AuthorizationOwnerType.USER)
+            .setResourceId(resourceId)
+            .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .setAuthorizationPermissions(Set.of(PermissionType.CREATE));
+
+    when(authorizationServices.updateAuthorization(any()))
+        .thenReturn(CompletableFuture.completedFuture(authorizationRecord));
+
+    // when
+    webClient
+        .put()
+        .uri("/v2/authorizations/%s".formatted(authorizationKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    // then
+    final var captor = ArgumentCaptor.forClass(UpdateAuthorizationRequest.class);
+    verify(authorizationServices, times(1)).updateAuthorization(captor.capture());
+    final var capturedRequest = captor.getValue();
+    assertEquals(authorizationKey, capturedRequest.authorizationKey());
+    assertEquals(ownerId, capturedRequest.ownerId());
+    assertEquals(authorizationRecord.getOwnerType(), capturedRequest.ownerType());
+    assertEquals(resourceId, capturedRequest.resourceId());
+    assertEquals(authorizationRecord.getResourceType(), capturedRequest.resourceType());
+    assertEquals(1, capturedRequest.permissions().size());
+    assertEquals(authorizationRecord.getAuthorizationPermissions(), capturedRequest.permissions());
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideInvalidAuthorizationRequests")
+  public void updateAuthorizationShouldReturnBadRequest(
+      final AuthorizationRequest request, final String errorMessage) {
+    final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+    expectedBody.setTitle(INVALID_ARGUMENT.name());
+    expectedBody.setInstance(URI.create("/v2/authorizations/1"));
+    expectedBody.setDetail(errorMessage);
+
+    webClient
+        .put()
+        .uri("/v2/authorizations/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  private static Stream<Arguments> provideInvalidAuthorizationRequests() {
     final var permissions = List.of(PermissionTypeEnum.CREATE);
 
     return Stream.of(
@@ -194,28 +291,5 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissions(List.of()),
             "No permissions provided."));
-  }
-
-  @Test
-  void deleteAuthorizationShouldReturnNoContent() {
-    // given
-    final long authorizationKey = 100L;
-
-    final var record = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
-
-    when(authorizationServices.deleteAuthorization(authorizationKey))
-        .thenReturn(CompletableFuture.completedFuture(record));
-
-    // when
-    webClient
-        .delete()
-        .uri("/v2/authorizations/%s".formatted(authorizationKey))
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isNoContent();
-
-    // then
-    verify(authorizationServices, times(1)).deleteAuthorization(authorizationKey);
   }
 }
