@@ -45,7 +45,7 @@ public class AuthorizationReader extends AbstractEntityReader<AuthorizationEntit
     final var dbSort =
         convertSort(
             query.sort(),
-            AuthorizationSearchColumn.OWNER_KEY,
+            AuthorizationSearchColumn.OWNER_ID,
             AuthorizationSearchColumn.OWNER_TYPE,
             AuthorizationSearchColumn.RESOURCE_TYPE);
     final var dbQuery =
@@ -60,7 +60,7 @@ public class AuthorizationReader extends AbstractEntityReader<AuthorizationEntit
 
   private AuthorizationEntity map(final AuthorizationDbModel model) {
     return new AuthorizationEntity(
-        model.ownerKey(),
+        model.ownerId(),
         model.ownerType(),
         model.resourceType(),
         model.permissions().stream()
