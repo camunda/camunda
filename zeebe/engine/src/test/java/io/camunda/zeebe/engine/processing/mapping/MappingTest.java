@@ -99,7 +99,7 @@ public class MappingTest {
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
             String.format(
-                "Expected to create mapping with id '%s' but a mapping with this id already exists.",
+                "Expected to create mapping with id '%s', but a mapping with this id already exists.",
                 id));
   }
 
