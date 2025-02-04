@@ -32,6 +32,7 @@ public class ClusterConfigurationManagerStep
             brokerStartupContext.getConcurrencyControl(),
             brokerStartupContext.getExporterRepository(),
             brokerStartupContext.getMeterRegistry());
+    clusterChangeExecutor.deleteHistory();
     final ClusterConfigurationService clusterConfigurationService =
         new DynamicClusterConfigurationService(clusterChangeExecutor);
     clusterConfigurationService
