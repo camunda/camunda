@@ -49,8 +49,8 @@ public final class ExporterContainerRuntime implements CloseableSilently {
     scheduler.submitActor(actor).join();
 
     state = new ExportersState(zeebeDb, zeebeDb.createContext());
-    metrics = new ExporterMetrics(1);
     meterRegistry = new SimpleMeterRegistry();
+    metrics = new ExporterMetrics(meterRegistry);
   }
 
   @Override
