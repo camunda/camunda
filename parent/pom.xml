@@ -933,12 +933,6 @@
       </dependency>
 
       <dependency>
-        <groupId>io.prometheus</groupId>
-        <artifactId>simpleclient_hotspot</artifactId>
-        <version>${version.prometheus}</version>
-      </dependency>
-
-      <dependency>
         <groupId>org.apache.httpcomponents.client5</groupId>
         <artifactId>httpclient5</artifactId>
         <version>${version.httpclient5}</version>
