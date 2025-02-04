@@ -39,6 +39,8 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
 
     final ActorFuture<Void> result = concurrencyControl.createFuture();
     concurrencyControl.run(() -> purgeExporters(result));
+
+    final var manager = SchemaManagerProvider.purgeUsingSchemaManager();
     return result;
   }
 
