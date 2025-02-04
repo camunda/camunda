@@ -41,7 +41,7 @@ public class BackupRestoreIT {
   protected CamundaClient camundaClient;
 
   @TestZeebe(autoStart = false)
-  protected TestStandaloneApplication<?> testStandaloneCamunda;
+  protected TestStandaloneApplication<?> testStandaloneApplication;
 
   protected BackupDBClient backupDbClient;
   private String dbUrl;
@@ -56,8 +56,8 @@ public class BackupRestoreIT {
   }
 
   private void setup(final BackupRestoreTestConfig config) throws Exception {
-    testStandaloneCamunda = new TestSimpleCamundaApplication();
-    final var configurator = new MultiDbConfigurator(testStandaloneCamunda);
+    testStandaloneApplication = new TestSimpleCamundaApplication();
+    final var configurator = new MultiDbConfigurator(testStandaloneApplication);
     searchContainer =
         switch (config.databaseType) {
           case ELASTICSEARCH -> {
@@ -96,15 +96,14 @@ public class BackupRestoreIT {
     configurator.getTasklistProperties().getBackup().setRepositoryName(REPOSITORY_NAME);
 
     this.config = config;
-    testStandaloneCamunda.start().awaitCompleteTopology();
+    testStandaloneApplication.start().awaitCompleteTopology();
 
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
-    generator = new DataGenerator(camundaClient, PROCESS_ID);
+    camundaClient = testStandaloneApplication.newClientBuilder().build();
 
-    generator.generate(PROCESS_INSTANCE_NUMBER);
-    historyBackupClient = HistoryBackupClient.of(testStandaloneCamunda);
+    historyBackupClient = HistoryBackupClient.of(testStandaloneApplication);
     backupDbClient = BackupDBClient.create(dbUrl, config.databaseType);
     backupDbClient.createRepository(REPOSITORY_NAME);
+    generator = new DataGenerator(camundaClient, PROCESS_ID);
   }
 
   public static Stream<BackupRestoreTestConfig> sources() {
@@ -121,6 +120,8 @@ public class BackupRestoreIT {
       throws Exception {
     // given
     setup(config);
+    camundaClient.newTopologyRequest().send().join();
+    generator.generate(PROCESS_INSTANCE_NUMBER);
 
     final var takeResponse = historyBackupClient.takeBackup(1L);
     assertThat(takeResponse)
@@ -140,7 +141,7 @@ public class BackupRestoreIT {
 
     // when
     // if we stop all apps and restart elasticsearch
-    testStandaloneCamunda.stop();
+    testStandaloneApplication.stop();
 
     backupDbClient.deleteAllIndices(INDEX_PREFIX);
     Awaitility.await().untilAsserted(() -> assertThat(backupDbClient.cat()).isEmpty());
@@ -148,7 +149,7 @@ public class BackupRestoreIT {
     // restore with a new client is successful
     backupDbClient.restore(REPOSITORY_NAME, snapshots);
 
-    testStandaloneCamunda.start();
+    testStandaloneApplication.start();
 
     // then
     generator.verifyAllExported();
