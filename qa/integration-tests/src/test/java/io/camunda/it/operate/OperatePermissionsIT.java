@@ -50,11 +50,7 @@ public class OperatePermissionsIT {
 
   @SuppressWarnings("unused")
   static void initTestStandaloneCamunda() {
-    testInstance =
-        new TestStandaloneCamunda()
-            .withCamundaExporter()
-            .withUnauthenticatedAccess()
-            .withAuthorizationsEnabled();
+    testInstance = new TestStandaloneCamunda().withCamundaExporter().withAuthorizationsEnabled();
   }
 
   @BeforeAll

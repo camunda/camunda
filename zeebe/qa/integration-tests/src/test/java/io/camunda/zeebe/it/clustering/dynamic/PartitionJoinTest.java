@@ -74,7 +74,6 @@ final class PartitionJoinTest {
         .withReplicationFactor(conf.replicationFactor())
         .withPartitionsCount(conf.partitionCount())
         .withGatewaysCount(1)
-        .withUnauthenticatedAccess()
         .build()
         .start()
         .awaitCompleteTopology();

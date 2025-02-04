@@ -35,7 +35,6 @@ public class BanningEndpointIT {
             .withBrokersCount(2)
             .withPartitionsCount(1)
             .withReplicationFactor(2)
-            .withUnauthenticatedAccess()
             .build();
   }
 

@@ -49,8 +49,7 @@ public class CompatibilityTasklistCreateProcessInstanceAuthorizationIT {
       new TestStandaloneCamunda()
           .withCamundaExporter()
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
-          .withProperty("camunda.tasklist.zeebe.compatibility.enabled", true)
-          .withUnauthenticatedAccess();
+          .withProperty("camunda.tasklist.zeebe.compatibility.enabled", true);
 
   @BeforeEach
   public void beforeAll() {

@@ -35,11 +35,7 @@ public class GatewayHealthProbeIntegrationTest {
   final class WithBrokerTest {
     @TestZeebe
     private final TestCluster cluster =
-        TestCluster.builder()
-            .withEmbeddedGateway(false)
-            .withGatewaysCount(1)
-            .withUnauthenticatedAccess()
-            .build();
+        TestCluster.builder().withEmbeddedGateway(false).withGatewaysCount(1).build();
 
     @Test
     void shouldReportLivenessUpIfConnectedToBroker() {

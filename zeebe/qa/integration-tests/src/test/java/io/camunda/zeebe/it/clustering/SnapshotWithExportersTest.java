@@ -141,7 +141,6 @@ final class SnapshotWithExportersTest {
       try (final var zeebe =
           new TestStandaloneBroker()
               .withRecordingExporter(true)
-              .withUnauthenticatedAccess()
               .start()
               .awaitCompleteTopology()
               .withUnauthenticatedAccess()) {

@@ -47,7 +47,6 @@ final class SecureClusteredMessagingIT {
           .withBrokersCount(2)
           .withGatewaysCount(1)
           .withEmbeddedGateway(false)
-          .withUnauthenticatedAccess()
           .build();
 
   @ParameterizedTest

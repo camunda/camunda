@@ -33,10 +33,7 @@ public final class BrokerMonitoringEndpointTest {
 
   @SuppressWarnings("unused")
   static void initTestStandaloneBroker() {
-    broker =
-        new TestStandaloneBroker()
-            .withProperty("management.server.base-path", "/foo")
-            .withUnauthenticatedAccess();
+    broker = new TestStandaloneBroker().withProperty("management.server.base-path", "/foo");
   }
 
   @BeforeAll
