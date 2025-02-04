@@ -230,7 +230,6 @@ class IncidentQueryTest {
                 + " If it fails, ensure the following are updated:\n"
                 + "- `client` module: `io.camunda.client.api.search.response.IncidentErrorType` - new type defined\n"
                 + "- `search-domain` module: `io.camunda.search.entities.IncidentEntity.ErrorType` - new type defined\n"
-                + "- `search-client-query-transformer` module: `io.camunda.search.clients.transformers.entity.IncidentEntityTransformer#toErrorType` - new type mapped\n"
                 + "- `gateway-protocol` module: `zeebe/gateway-protocol/src/main/proto/rest-api.yaml` - new `errorType` defined for `IncidentFilterRequestBase` document\n",
             errorType)
         .doesNotThrowAnyException();
