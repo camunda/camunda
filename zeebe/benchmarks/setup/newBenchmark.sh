@@ -26,5 +26,5 @@ cd $namespace
 sed_inplace "s/default/$namespace/g" Makefile
 
 # get latest updates from zeebe repo
-helm repo add zeebe-benchmark https://zeebe-io.github.io/benchmark-helm # skips if already exists
+helm repo add zeebe-benchmark https://camunda.github.io/zeebe-benchmark-helm # skips if already exists
 helm repo update
