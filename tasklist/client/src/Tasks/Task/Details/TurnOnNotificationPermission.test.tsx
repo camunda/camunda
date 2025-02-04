@@ -8,8 +8,7 @@
 
 import {render, screen, within} from 'modules/testing-library';
 import {TurnOnNotificationPermission} from './TurnOnNotificationPermission';
-
-vi.mock('modules/featureFlags');
+import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 
 describe('<TurnOnNotificationPermission/>', () => {
   it('when no decision is made, should show a dialog about enabling notifications', () => {
@@ -17,7 +16,7 @@ describe('<TurnOnNotificationPermission/>', () => {
 
     render(<TurnOnNotificationPermission />);
 
-    const dialog = screen.getByRole('alertdialog', {
+    const dialog = screen.getByRole('status', {
       name: /^Don't miss new assignments$/i,
     });
 
@@ -38,7 +37,7 @@ describe('<TurnOnNotificationPermission/>', () => {
     render(<TurnOnNotificationPermission />);
 
     expect(
-      screen.queryByRole('alertdialog', {
+      screen.queryByRole('status', {
         name: /^Don't miss new assignments$/i,
       }),
     ).not.toBeInTheDocument();
@@ -50,9 +49,77 @@ describe('<TurnOnNotificationPermission/>', () => {
     render(<TurnOnNotificationPermission />);
 
     expect(
-      screen.queryByRole('alertdialog', {
+      screen.queryByRole('status', {
         name: /^Don't miss new assignments$/i,
       }),
     ).not.toBeInTheDocument();
+  });
+
+  it('should save user selection on localStorage', async () => {
+    vi.stubGlobal('Notification', {permission: 'default'});
+
+    const {user} = render(<TurnOnNotificationPermission />);
+
+    expect(
+      screen.getByRole('status', {
+        name: /^Don't miss new assignments$/i,
+      }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: /close notification/i}));
+
+    expect(
+      screen.queryByRole('status', {
+        name: /^Don't miss new assignments$/i,
+      }),
+    ).not.toBeInTheDocument();
+    expect(getStateLocally('areNativeNotificationsEnabled')).toBe(false);
+  });
+
+  it('should respect localStorage selection', () => {
+    vi.stubGlobal('Notification', {permission: 'default'});
+    storeStateLocally('areNativeNotificationsEnabled', false);
+
+    render(<TurnOnNotificationPermission />);
+
+    expect(
+      screen.queryByRole('status', {
+        name: /^Don't miss new assignments$/i,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should disable the focus trap when the dialog is open', async () => {
+    vi.stubGlobal('Notification', {permission: 'default'});
+
+    const {unmount} = render(
+      <>
+        <TurnOnNotificationPermission />
+        <input type="text" aria-label="Mock input" />
+      </>,
+    );
+
+    expect(
+      screen.getByRole('button', {
+        name: /turn on notifications/i,
+      }),
+    ).toHaveFocus();
+    expect(screen.getByLabelText(/mock input/i)).not.toHaveFocus();
+
+    unmount();
+
+    render(
+      <>
+        <TurnOnNotificationPermission />
+        <input type="text" aria-label="Mock input" autoFocus />
+      </>,
+    );
+
+    expect(
+      screen.getByRole('button', {
+        name: /turn on notifications/i,
+      }),
+    ).not.toHaveFocus();
+    expect(screen.getByLabelText(/mock input/i)).toHaveFocus();
   });
 });

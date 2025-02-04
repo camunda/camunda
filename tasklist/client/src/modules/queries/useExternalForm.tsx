@@ -8,15 +8,15 @@
 
 import {useQuery} from '@tanstack/react-query';
 import {api} from 'modules/api';
-import {RequestError, request} from 'modules/request';
-import {Form} from 'modules/types';
+import {type RequestError, request} from 'modules/request';
+import type {Form} from 'modules/types';
 
 function useExternalForm(bpmnProcessId: string) {
   return useQuery<Form, RequestError | Error>({
     queryKey: ['externalForm', bpmnProcessId],
     queryFn: async () => {
       const {response, error} = await request(
-        api.getExternalForm(bpmnProcessId),
+        api.v1.getExternalForm(bpmnProcessId),
       );
 
       if (response !== null) {

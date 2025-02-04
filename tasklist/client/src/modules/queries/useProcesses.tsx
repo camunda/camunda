@@ -6,11 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useQuery, UseQueryOptions} from '@tanstack/react-query';
+import {useQuery, type UseQueryOptions} from '@tanstack/react-query';
 import {api} from 'modules/api';
-import {request, RequestError} from 'modules/request';
+import {request, type RequestError} from 'modules/request';
 import {tracking} from 'modules/tracking';
-import {Process} from 'modules/types';
+import type {Process} from 'modules/types';
 
 type Data = {
   processes: Process[];
@@ -35,7 +35,7 @@ function useProcesses(
     queryKey: ['processes', query, tenantId, isStartedByForm],
     queryFn: async () => {
       const {response, error} = await request(
-        api.getProcesses({query, tenantId, isStartedByForm}),
+        api.v1.getProcesses({query, tenantId, isStartedByForm}),
       );
 
       if (response !== null) {

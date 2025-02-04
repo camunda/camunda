@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Task} from 'modules/types';
+import type {Task} from 'modules/types';
 import {currentUser} from './current-user';
 import {DEFAULT_TENANT_ID} from 'modules/constants/multiTenancy';
 import {formatRFC3339} from 'date-fns';
