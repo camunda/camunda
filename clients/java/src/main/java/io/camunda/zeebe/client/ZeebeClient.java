@@ -971,12 +971,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   DocumentContentGetRequest newDocumentContentGetRequest(String documentId);
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to get a document.
+   * Command to get a document.
    *
    * <pre>
    *   camundaClient
@@ -991,7 +986,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
       DocumentReferenceResponse documentReferenceResponse);
 
   /**
-   * Command to update a document.
+   * Command to create a document link.
    *
    * <pre>
    *   camundaClient
@@ -1007,7 +1002,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(String documentId);
 
   /**
-   * Command to update a document.
+   * Command to create a document link.
    *
    * <pre>
    *   camundaClient
@@ -1023,7 +1018,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
       DocumentReferenceResponse documentReferenceResponse);
 
   /**
-   * Command to update a document.
+   * Command to delete a document.
    *
    * <pre>
    *   camundaClient
@@ -1038,7 +1033,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   DeleteDocumentCommandStep1 newDeleteDocumentCommand(String documentId);
 
   /**
-   * Command to update a document.
+   * Command to delete a document.
    *
    * <pre>
    *   camundaClient
