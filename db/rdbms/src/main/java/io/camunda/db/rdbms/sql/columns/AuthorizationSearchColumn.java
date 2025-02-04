@@ -11,7 +11,7 @@ import io.camunda.search.entities.AuthorizationEntity;
 import java.util.function.Function;
 
 public enum AuthorizationSearchColumn implements SearchColumn<AuthorizationEntity> {
-  OWNER_KEY("ownerKey", AuthorizationEntity::ownerKey),
+  OWNER_ID("ownerId", AuthorizationEntity::ownerId),
   OWNER_TYPE("ownerType", AuthorizationEntity::ownerType),
   RESOURCE_TYPE("resourceType", AuthorizationEntity::resourceType);
 

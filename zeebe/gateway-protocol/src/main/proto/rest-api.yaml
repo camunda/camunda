@@ -6194,6 +6194,9 @@ components:
     AuthorizationResponseBase:
       type: "object"
       properties:
+        ownerId:
+          description: The ID of the owner of permissions.
+          type: string
         ownerType:
           description: The type of the owner of permissions.
           type: object
@@ -6214,8 +6217,8 @@ components:
       allOf:
         - $ref: "#/components/schemas/AuthorizationResponseBase"
       properties:
-        ownerKey:
-          description: The ID of the owner of permissions.
+        authorizationKey:
+          description: The key of the authorization.
           type: integer
           format: int64
     AuthorizationResult:
@@ -6223,8 +6226,8 @@ components:
       allOf:
         - $ref: "#/components/schemas/AuthorizationResponseBase"
       properties:
-        ownerKey:
-          description: The ID of the owner of permissions.
+        authorizationKey:
+          description: The key of the owner the authorization.
           type: string
     AuthorizationSearchResponse:
       deprecated: true

@@ -56,7 +56,7 @@ public class AuthorizationHandler
       final Record<AuthorizationRecordValue> record, final AuthorizationEntity entity) {
     final AuthorizationRecordValue value = record.getValue();
     entity
-        .setOwnerKey(value.getOwnerKey())
+        .setOwnerId(value.getOwnerId())
         .setOwnerType(value.getOwnerType().name())
         .setResourceType(value.getResourceType().name())
         .setPermissions(getPermissions(value.getPermissions()));

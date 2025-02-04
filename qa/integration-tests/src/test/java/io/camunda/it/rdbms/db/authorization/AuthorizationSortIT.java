@@ -40,7 +40,7 @@ public class AuthorizationSortIT {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.ownerId().asc(),
-        Comparator.comparing(AuthorizationEntity::ownerKey));
+        Comparator.comparing(AuthorizationEntity::ownerId));
   }
 
   @TestTemplate
@@ -48,7 +48,7 @@ public class AuthorizationSortIT {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.ownerId().desc(),
-        Comparator.comparing(AuthorizationEntity::ownerKey).reversed());
+        Comparator.comparing(AuthorizationEntity::ownerId).reversed());
   }
 
   @TestTemplate
