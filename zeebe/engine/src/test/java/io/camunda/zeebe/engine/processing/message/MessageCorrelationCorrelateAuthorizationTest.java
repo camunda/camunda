@@ -269,16 +269,17 @@ public class MessageCorrelationCorrelateAuthorizationTest {
       final UserRecordValue user,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType,
-      final String... resourceIds) {
+      final String resourceId) {
     engine
         .authorization()
-        .permission()
+        .newAuthorization()
+        .withPermissions(permissionType)
         .withOwnerKey(user.getUserKey())
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
-        .withPermission(permissionType, resourceIds)
-        .add(DEFAULT_USER.getUsername());
+        .withResourceId(resourceId)
+        .create(DEFAULT_USER.getUsername());
   }
 
   private void createProcessInstance(final String correlationKey) {

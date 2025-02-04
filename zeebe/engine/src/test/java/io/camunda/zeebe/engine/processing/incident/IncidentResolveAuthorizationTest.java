@@ -135,13 +135,14 @@ public class IncidentResolveAuthorizationTest {
       final PermissionType permissionType) {
     engine
         .authorization()
-        .permission()
+        .newAuthorization()
+        .withPermissions(permissionType)
         .withOwnerKey(user.getUserKey())
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
-        .withPermission(permissionType, "*")
-        .add(DEFAULT_USER.getUsername());
+        .withResourceId("*")
+        .create(DEFAULT_USER.getUsername());
   }
 
   private long createIncident() {
