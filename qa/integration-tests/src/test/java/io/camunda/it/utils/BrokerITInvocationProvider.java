@@ -159,7 +159,6 @@ public class BrokerITInvocationProvider
                               "http://" + elasticsearchContainer.getHttpHostAddress())
                           .withAdditionalProperties(additionalProperties)
                           .withAdditionalProfiles(additionalProfiles)
-                          .withUnauthenticatedAccess()
                           .start();
                   closeables.add(testBroker);
                   testBrokers.put(exporterType, testBroker);
@@ -179,7 +178,6 @@ public class BrokerITInvocationProvider
                           .withRdbmsExporter()
                           .withAdditionalProperties(additionalProperties)
                           .withAdditionalProfiles(additionalProfiles)
-                          .withUnauthenticatedAccess()
                           .start();
                   closeables.add(testBroker);
                   testBrokers.put(exporterType, testBroker);

@@ -45,7 +45,7 @@ public class HealthTreeMetricsTest {
     metrics.registerRelationship("parent-2", "parent-1");
     // when
     metrics.registerNode(component);
-    final var meter = meterRegistry.get(HealthTreeMetrics.NODES_NAME).gauge();
+    final var meter = meterRegistry.get(HealthMetricsDoc.NODES.getName()).gauge();
 
     // then
     assertThat(meter.getId().getTags())
@@ -67,7 +67,7 @@ public class HealthTreeMetricsTest {
     // given
     final var component = new DummyComponent("test-1");
     metrics.registerNode(component);
-    final var meter = meterRegistry.get(HealthTreeMetrics.NODES_NAME).gauge();
+    final var meter = meterRegistry.get(HealthMetricsDoc.NODES.getName()).gauge();
 
     // when
     component.setReport(HealthReport.fromStatus(status, component));

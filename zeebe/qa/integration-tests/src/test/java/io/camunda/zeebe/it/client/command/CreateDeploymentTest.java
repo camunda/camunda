@@ -41,7 +41,6 @@ public final class CreateDeploymentTest {
   @TestZeebe
   final TestStandaloneBroker zeebe =
       new TestStandaloneBroker()
-          .withUnauthenticatedAccess()
           .withRecordingExporter(true)
           .withBrokerConfig(b -> b.getNetwork().setMaxMessageSize(DataSize.ofMegabytes(1)));
 

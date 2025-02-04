@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -25,7 +24,6 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.junit.Rule;
@@ -57,12 +55,7 @@ public class UpdateAuthorizationMultipartitionTest {
             .getValue()
             .getAuthorizationKey();
 
-    engine
-        .authorization()
-        .updateAuthorization(key)
-        .withOwnerType(AuthorizationOwnerType.GROUP)
-        .withChangeset(Set.of(AuthorizationRecord.OWNER_TYPE))
-        .update();
+    engine.authorization().updateAuthorization(key).update();
 
     RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
         .withDistributionIntent(AuthorizationIntent.CREATE)

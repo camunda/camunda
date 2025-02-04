@@ -29,8 +29,7 @@ public class MultipleInvalidResourceDeletionTest {
       new TestStandaloneBroker()
           // disable long polling to increase the load in streamprocessor
           .withGatewayConfig(cfg -> cfg.getLongPolling().setEnabled(false))
-          .withRecordingExporter(true)
-          .withUnauthenticatedAccess();
+          .withRecordingExporter(true);
 
   private final PartitionsActuator partitions = PartitionsActuator.of(zeebe);
   @AutoClose private CamundaClient client;

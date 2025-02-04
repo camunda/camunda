@@ -237,7 +237,6 @@ final class ClusterEndpointIT {
         .withReplicationFactor(replicationFactor)
         .withBrokerConfig(
             b -> b.brokerConfig().getExperimental().getFeatures().setEnablePartitionScaling(true))
-        .withUnauthenticatedAccess()
         .build()
         .start();
   }

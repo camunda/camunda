@@ -29,7 +29,6 @@ final class GracefulShutdownIT {
           .withBrokersCount(1)
           .withGatewaysCount(1)
           .withEmbeddedGateway(false)
-          .withUnauthenticatedAccess()
           .withGatewayConfig(
               cfg -> cfg.withProperty("spring.lifecycle.timeout-per-shutdown-phase", "20s"))
           .build();
