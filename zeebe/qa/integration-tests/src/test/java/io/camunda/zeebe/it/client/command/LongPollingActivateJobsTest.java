@@ -33,7 +33,6 @@ public class LongPollingActivateJobsTest {
   @TestZeebe
   final TestStandaloneBroker zeebe =
       new TestStandaloneBroker()
-          .withUnauthenticatedAccess()
           .withRecordingExporter(true)
           .withGatewayConfig(c -> c.getLongPolling().setEnabled(true));
 

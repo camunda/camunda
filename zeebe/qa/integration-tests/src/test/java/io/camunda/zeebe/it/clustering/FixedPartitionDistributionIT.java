@@ -34,7 +34,6 @@ final class FixedPartitionDistributionIT {
             .withPartitionsCount(3)
             .withReplicationFactor(2)
             .withBrokerConfig(this::configureBroker)
-            .withUnauthenticatedAccess()
             .build();
     cluster.start().awaitCompleteTopology();
 

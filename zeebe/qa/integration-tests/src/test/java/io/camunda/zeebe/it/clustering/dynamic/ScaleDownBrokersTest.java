@@ -44,7 +44,6 @@ final class ScaleDownBrokersTest {
           .withBrokersCount(CLUSTER_SIZE)
           .withPartitionsCount(PARTITIONS_COUNT)
           .withReplicationFactor(1)
-          .withUnauthenticatedAccess()
           .withBrokerConfig(
               b ->
                   b.brokerConfig()
