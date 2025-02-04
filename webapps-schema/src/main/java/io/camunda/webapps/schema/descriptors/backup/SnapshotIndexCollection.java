@@ -16,6 +16,10 @@ import java.util.stream.Stream;
 
 public record SnapshotIndexCollection(List<String> requiredIndices, List<String> skippableIndices) {
 
+  public boolean isEmpty() {
+    return requiredIndices.isEmpty() && skippableIndices.isEmpty();
+  }
+
   public static <A extends BackupPriority> SnapshotIndexCollection of(
       final Collection<A> backupPriorities) {
     final var required = new ArrayList<String>(backupPriorities.size());
