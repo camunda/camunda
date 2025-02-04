@@ -298,12 +298,12 @@ public class GroupTest {
     final var groupId = String.valueOf(groupKey);
     engine
         .authorization()
-        .permission()
+        .newAuthorization()
         .withOwnerKey(groupKey)
         .withOwnerId(groupId)
         .withOwnerType(AuthorizationOwnerType.GROUP)
         .withResourceType(AuthorizationResourceType.ROLE)
-        .add();
+        .create();
 
     // when
     final var deletedGroup = engine.group().deleteGroup(groupKey).delete().getValue();

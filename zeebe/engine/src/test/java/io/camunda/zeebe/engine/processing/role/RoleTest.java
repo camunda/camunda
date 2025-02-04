@@ -310,12 +310,12 @@ public class RoleTest {
     final var roleId = String.valueOf(roleKey);
     engine
         .authorization()
-        .permission()
+        .newAuthorization()
         .withOwnerKey(roleKey)
         .withOwnerId(roleId)
         .withOwnerType(AuthorizationOwnerType.ROLE)
         .withResourceType(AuthorizationResourceType.ROLE)
-        .add();
+        .create();
 
     // when
     final var deletedRole = engine.role().deleteRole(roleKey).delete().getValue();
