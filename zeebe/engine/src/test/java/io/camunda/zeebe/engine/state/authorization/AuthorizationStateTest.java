@@ -274,4 +274,104 @@ public class AuthorizationStateTest {
                 ownerType, ownerId, resourceType, permissionType))
         .isEmpty();
   }
+
+  @Test
+  void shouldDeleteAuthorization() {
+    // given
+    final var authorizationKey = 1L;
+    final String ownerId = "ownerId";
+    final AuthorizationOwnerType ownerType = AuthorizationOwnerType.USER;
+    final String resourceId = "resourceId";
+    final AuthorizationResourceType resourceType = AuthorizationResourceType.RESOURCE;
+    final Set<PermissionType> permissions = Set.of(PermissionType.CREATE, PermissionType.DELETE);
+    final var authorizationRecord =
+        new AuthorizationRecord()
+            .setAuthorizationKey(authorizationKey)
+            .setOwnerId(ownerId)
+            .setOwnerType(ownerType)
+            .setResourceId(resourceId)
+            .setResourceType(resourceType)
+            .setAuthorizationPermissions(permissions);
+
+    authorizationState.create(authorizationKey, authorizationRecord);
+
+    // when
+    authorizationState.delete(authorizationKey);
+
+    // then
+    assertThat(authorizationState.get(authorizationKey)).isEmpty();
+
+    final var resourceIdentifiers =
+        authorizationState.getResourceIdentifiers(
+            ownerType, ownerId, resourceType, PermissionType.CREATE);
+    assertThat(resourceIdentifiers).isEmpty();
+
+    final var resourceIdentifiers2 =
+        authorizationState.getResourceIdentifiers(
+            ownerType, ownerId, resourceType, PermissionType.DELETE);
+    assertThat(resourceIdentifiers2).isEmpty();
+  }
+
+  @Test
+  void shouldDeleteAuthorizationWithMultipleRecords() {
+    // given
+    final var authorizationKey1 = 1L;
+    final String ownerId1 = "ownerId1";
+    final AuthorizationOwnerType ownerType1 = AuthorizationOwnerType.USER;
+    final String resourceId1 = "resourceId1";
+    final AuthorizationResourceType resourceType1 = AuthorizationResourceType.RESOURCE;
+    final Set<PermissionType> permissions1 = Set.of(PermissionType.CREATE, PermissionType.DELETE);
+    final var authorizationRecord1 =
+        new AuthorizationRecord()
+            .setAuthorizationKey(authorizationKey1)
+            .setOwnerId(ownerId1)
+            .setOwnerType(ownerType1)
+            .setResourceId(resourceId1)
+            .setResourceType(resourceType1)
+            .setAuthorizationPermissions(permissions1);
+
+    final var authorizationKey2 = 2L;
+    final String ownerId2 = "ownerId2";
+    final AuthorizationOwnerType ownerType2 = AuthorizationOwnerType.USER;
+    final String resourceId2 = "resourceId2";
+    final AuthorizationResourceType resourceType2 = AuthorizationResourceType.RESOURCE;
+    final Set<PermissionType> permissions2 = Set.of(PermissionType.CREATE, PermissionType.DELETE);
+    final var authorizationRecord2 =
+        new AuthorizationRecord()
+            .setAuthorizationKey(authorizationKey2)
+            .setOwnerId(ownerId2)
+            .setOwnerType(ownerType2)
+            .setResourceId(resourceId2)
+            .setResourceType(resourceType2)
+            .setAuthorizationPermissions(permissions2);
+
+    authorizationState.create(authorizationKey1, authorizationRecord1);
+    authorizationState.create(authorizationKey2, authorizationRecord2);
+
+    // when
+    authorizationState.delete(authorizationKey1);
+
+    // then
+    assertThat(authorizationState.get(authorizationKey1)).isEmpty();
+
+    final var resourceIdentifiers1 =
+        authorizationState.getResourceIdentifiers(
+            ownerType1, ownerId1, resourceType1, PermissionType.CREATE);
+    assertThat(resourceIdentifiers1).isEmpty();
+
+    final var resourceIdentifiers2 =
+        authorizationState.getResourceIdentifiers(
+            ownerType1, ownerId1, resourceType1, PermissionType.DELETE);
+    assertThat(resourceIdentifiers2).isEmpty();
+
+    final var resourceIdentifiers3 =
+        authorizationState.getResourceIdentifiers(
+            ownerType2, ownerId2, resourceType2, PermissionType.CREATE);
+    assertThat(resourceIdentifiers3).containsExactly(resourceId2);
+
+    final var resourceIdentifiers4 =
+        authorizationState.getResourceIdentifiers(
+            ownerType2, ownerId2, resourceType2, PermissionType.DELETE);
+    assertThat(resourceIdentifiers4).containsExactly(resourceId2);
+  }
 }
