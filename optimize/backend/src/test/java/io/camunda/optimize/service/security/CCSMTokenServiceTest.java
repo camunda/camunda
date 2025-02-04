@@ -65,6 +65,8 @@ public class CCSMTokenServiceTest {
     assertEquals(ID, result.getId());
     assertEquals(NAME, result.getFirstName());
     assertEquals(EMAIL, result.getEmail());
+    assertNull(result.getLastName());
+    assertTrue(result.getRoles().isEmpty());
   }
 
   @Test
@@ -79,6 +81,8 @@ public class CCSMTokenServiceTest {
     assertEquals(ID, result.getId());
     assertEquals(USERNAME, result.getFirstName());
     assertEquals(EMAIL, result.getEmail());
+    assertNull(result.getLastName());
+    assertTrue(result.getRoles().isEmpty());
   }
 
   @Test
@@ -93,6 +97,8 @@ public class CCSMTokenServiceTest {
     assertEquals(ID, result.getId());
     assertEquals(ID, result.getFirstName());
     assertEquals(EMAIL, result.getEmail());
+    assertNull(result.getLastName());
+    assertTrue(result.getRoles().isEmpty());
   }
 
   @Test
@@ -106,6 +112,8 @@ public class CCSMTokenServiceTest {
     assertEquals(ID, result.getId());
     assertEquals(ID, result.getEmail());
     assertEquals(NAME, result.getFirstName());
+    assertNull(result.getLastName());
+    assertTrue(result.getRoles().isEmpty());
   }
 
   @Test
