@@ -95,7 +95,7 @@ final class JobStreamConsumerTest {
     final var result = consumer.push(BufferUtil.createCopy(job));
 
     // then
-    assertThat(result).succeedsWithin(Duration.ZERO);
+    assertThat(result).succeedsWithin(Duration.ofSeconds(5));
     assertThat(clientObserver.error).isNull();
     assertThat(clientObserver.pushed).extracting(ActivatedJob::getKey).containsExactly(1L);
   }

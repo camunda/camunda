@@ -9,7 +9,6 @@ package io.camunda.exporter.tasks.incident;
 
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.tasks.BackgroundTask;
-import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ActiveIncident;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.DocumentUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
@@ -22,6 +21,8 @@ import io.camunda.webapps.schema.entities.operate.IncidentState;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,8 +31,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import org.agrona.LangUtil;
 import org.slf4j.Logger;
 
 public final class IncidentUpdateTask implements BackgroundTask {
@@ -39,6 +42,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
   private final IncidentUpdateRepository repository;
   private final boolean ignoreMissingData;
   private final int batchSize;
+  private final Executor executor;
   private final Logger logger;
   private final Duration waitForRefreshInterval;
 
@@ -47,8 +51,16 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final IncidentUpdateRepository repository,
       final boolean ignoreMissingData,
       final int batchSize,
+      final Executor executor,
       final Logger logger) {
-    this(metadata, repository, ignoreMissingData, batchSize, logger, Duration.ofSeconds(5));
+    this(
+        metadata,
+        repository,
+        ignoreMissingData,
+        batchSize,
+        executor,
+        logger,
+        Duration.ofSeconds(5));
   }
 
   @VisibleForTesting("allow configuring the refresh interval to speed tests up")
@@ -57,12 +69,14 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final IncidentUpdateRepository repository,
       final boolean ignoreMissingData,
       final int batchSize,
+      final Executor executor,
       final Logger logger,
       final Duration waitForRefreshInterval) {
     this.metadata = metadata;
     this.repository = repository;
     this.ignoreMissingData = ignoreMissingData;
     this.batchSize = batchSize;
+    this.executor = executor;
     this.logger = logger;
     this.waitForRefreshInterval = waitForRefreshInterval;
   }
@@ -70,7 +84,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
   @Override
   public CompletionStage<Integer> execute() {
     try {
-      return CompletableFuture.completedFuture(processNextBatch());
+      return processNextBatch();
     } catch (final Exception e) {
       return CompletableFuture.failedFuture(e);
     }
@@ -81,44 +95,60 @@ public final class IncidentUpdateTask implements BackgroundTask {
     return "Incident update task";
   }
 
-  private int processNextBatch() {
+  private CompletableFuture<Integer> processNextBatch() {
     final var data = new AdditionalData();
-    final var batch = getPendingIncidentsBatch(data);
-    if (batch.newIncidentStates().isEmpty()) {
-      return 0;
-    }
+    return getPendingIncidentsBatch(data)
+        .thenComposeAsync(
+            batch -> {
+              if (batch.newIncidentStates().isEmpty()) {
+                return CompletableFuture.completedFuture(0);
+              } else {
+                logger.trace(
+                    "Applying the following pending incident updates: {}",
+                    batch.newIncidentStates());
+                return searchForInstances(data)
+                    .thenComposeAsync(unused -> processIncidents(data, batch), executor)
+                    .thenComposeAsync(
+                        documentsUpdated -> {
+                          logger.trace(
+                              """
+                        Finished applying {} pending incident updates ({} documents updated), updating last \
+                        incident update position to {}""",
+                              batch.newIncidentStates().size(),
+                              documentsUpdated,
+                              batch.highestPosition());
 
-    logger.trace("Applying the following pending incident updates: {}", batch.newIncidentStates());
-    searchForInstances(data);
-    final var documentsUpdated = processIncidents(data, batch);
+                          if (documentsUpdated > 0) {
+                            metadata.setLastIncidentUpdatePosition(batch.highestPosition());
+                          }
 
-    logger.trace(
-        """
-          Finished applying {} pending incident updates ({} documents updated), updating last \
-          incident update position to {}""",
-        batch.newIncidentStates().size(),
-        documentsUpdated,
-        batch.highestPosition());
-
-    if (documentsUpdated > 0) {
-      metadata.setLastIncidentUpdatePosition(batch.highestPosition());
-    }
-
-    return documentsUpdated;
+                          return CompletableFuture.completedFuture(documentsUpdated);
+                        },
+                        executor);
+              }
+            },
+            executor);
   }
 
-  private void searchForInstances(final AdditionalData data) {
+  private CompletableFuture<Void> searchForInstances(final AdditionalData data) {
     final var incidents = data.incidents().values();
 
+    CompletableFuture<?> future;
     try {
-      queryData(incidents, data);
-      checkDataAndCollectParentTreePaths(incidents, data, false);
+      future =
+          queryData(incidents, data)
+              .thenComposeAsync(
+                  unused -> checkDataAndCollectParentTreePaths(incidents, data, false), executor);
     } catch (final ExporterException ex) {
       // if it failed once we want to give it a chance and to import more data
       // next failure will fail in case ignoring of missing data is not configured
-      uncheckedThreadSleep();
-      queryData(incidents, data);
-      checkDataAndCollectParentTreePaths(incidents, data, ignoreMissingData);
+      future =
+          new CompletableFuture<Void>()
+              .completeOnTimeout(null, waitForRefreshInterval.toMillis(), TimeUnit.MILLISECONDS)
+              .thenComposeAsync(ignored -> queryData(incidents, data), executor)
+              .thenComposeAsync(
+                  unused -> checkDataAndCollectParentTreePaths(incidents, data, ignoreMissingData),
+                  executor);
     }
 
     final var flowNodeKeys =
@@ -127,184 +157,254 @@ public final class IncidentUpdateTask implements BackgroundTask {
             .map(IncidentEntity::getFlowNodeInstanceKey)
             .map(String::valueOf)
             .toList();
-    repository
-        .getFlowNodesInListView(flowNodeKeys)
-        .toCompletableFuture()
-        .join()
-        .forEach(doc -> data.addFlowNodeInstanceInListView(doc.id(), doc.index()));
+    return future
+        .thenComposeAsync(
+            ignored -> repository.getFlowNodesInListView(flowNodeKeys).toCompletableFuture(),
+            executor)
+        .thenApply(
+            documents -> {
+              documents.forEach(doc -> data.addFlowNodeInstanceInListView(doc.id(), doc.index()));
+              return null;
+            });
   }
 
-  private void checkDataAndCollectParentTreePaths(
+  private CompletableFuture<Void> checkDataAndCollectParentTreePaths(
       final Collection<IncidentDocument> incidents,
       final AdditionalData data,
       final boolean forceIgnoreMissingData) {
-    int countMissingInstance = 0;
+    final AtomicInteger countMissingInstance = new AtomicInteger(0);
+    final var futures = new ArrayList<CompletableFuture<?>>(incidents.size());
     for (final Iterator<IncidentDocument> iterator = incidents.iterator(); iterator.hasNext(); ) {
       final IncidentEntity incident = iterator.next().incident();
-      String piTreePath = data.processInstanceTreePaths().get(incident.getProcessInstanceKey());
+      final String piTreePath =
+          data.processInstanceTreePaths().get(incident.getProcessInstanceKey());
+      CompletableFuture<String> piTreePathToInsert = CompletableFuture.completedFuture(piTreePath);
       if (piTreePath == null || piTreePath.isEmpty()) {
-        final var wasDeleted =
+        piTreePathToInsert =
             repository
                 .wasProcessInstanceDeleted(incident.getProcessInstanceKey())
                 .toCompletableFuture()
-                .join();
-        if (wasDeleted) {
-          logger.debug(
-              """
-              Process instance with the key {} was deleted. Incident post processing will be \
-              skipped for id {}.""",
-              incident.getProcessInstanceKey(),
-              incident.getId());
-          iterator.remove();
-          continue;
-        } else {
-          if (!forceIgnoreMissingData) {
-            throw new ExporterException(
-                """
-                Process instance %d is not yet imported for incident %s; the update cannot be \
-                correctly applied."""
-                    .formatted(incident.getProcessInstanceKey(), incident.getId()));
-          } else {
-            countMissingInstance++;
-            piTreePath =
-                new TreePath()
-                    .startTreePath(String.valueOf(incident.getProcessInstanceKey()))
-                    .toString();
-            logger.warn(
-                """
-                Process instance {} is not yet imported for incident {}; the update cannot be \
-                correctly applied. Since ignoreMissingData is on, we will apply with sparse tree
-                path.""",
-                incident.getId(),
-                incident.getProcessInstanceKey());
-          }
-        }
+                .thenComposeAsync(
+                    wasDeleted -> {
+                      if (wasDeleted) {
+                        logger.debug(
+                            """
+                Process instance with the key {} was deleted. Incident post processing will be \
+                skipped for id {}.""",
+                            incident.getProcessInstanceKey(),
+                            incident.getId());
+
+                        // Concurrent modify operation: the underlying map is concurrent
+                        iterator.remove();
+                        return CompletableFuture.completedFuture(null);
+                      } else {
+                        if (!forceIgnoreMissingData) {
+                          return CompletableFuture.failedFuture(
+                              new ExporterException(
+                                  """
+                                    Process instance %d is not yet imported for incident %s; the update cannot be \
+                                    correctly applied."""
+                                      .formatted(
+                                          incident.getProcessInstanceKey(), incident.getId())));
+                        } else {
+                          // AtomicInteger increment
+                          countMissingInstance.incrementAndGet();
+                          logger.warn(
+                              """
+                            Process instance {} is not yet imported for incident {}; the update cannot be \
+                            correctly applied. Since ignoreMissingData is on, we will apply with sparse tree
+                            path.""",
+                              incident.getId(),
+                              incident.getProcessInstanceKey());
+                          return CompletableFuture.completedFuture(
+                              new TreePath()
+                                  .startTreePath(String.valueOf(incident.getProcessInstanceKey()))
+                                  .toString());
+                        }
+                      }
+                    },
+                    executor);
       }
+      futures.add(piTreePathToInsert);
 
-      data.incidentTreePaths()
-          .put(
-              incident.getId(),
-              new TreePath(piTreePath)
-                  .appendFlowNode(incident.getFlowNodeId())
-                  .appendFlowNodeInstance(String.valueOf(incident.getFlowNodeInstanceKey()))
-                  .toString());
+      piTreePathToInsert.thenApplyAsync(
+          piPath -> {
+            // ConcurrentHashMap put
+            data.incidentTreePaths()
+                .put(
+                    incident.getId(),
+                    new TreePath(piPath)
+                        .appendFlowNode(incident.getFlowNodeId())
+                        .appendFlowNodeInstance(String.valueOf(incident.getFlowNodeInstanceKey()))
+                        .toString());
+            return null;
+          },
+          executor);
     }
 
-    if (countMissingInstance > 0 && !ignoreMissingData) {
-      throw new ExporterException(
-          """
-          "%d process instances are not yet imported for incident post processing; operation will \
-          be retried..."""
-              .formatted(countMissingInstance));
-    }
+    return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
+        .thenComposeAsync(
+            unused -> {
+              if (countMissingInstance.get() > 0 && !ignoreMissingData) {
+                final var exception =
+                    new ExporterException(
+                        """
+            "%d process instances are not yet imported for incident post processing; operation will \
+            be retried..."""
+                            .formatted(countMissingInstance.get()));
+                return CompletableFuture.failedFuture(exception);
+              } else {
+                return CompletableFuture.completedFuture(null);
+              }
+            },
+            executor);
   }
 
-  private void queryData(final Collection<IncidentDocument> incidents, final AdditionalData data) {
+  private CompletableFuture<Void> queryData(
+      final Collection<IncidentDocument> incidents, final AdditionalData data) {
     final var processInstanceIds =
         incidents.stream()
             .map(IncidentDocument::incident)
             .map(IncidentEntity::getProcessInstanceKey)
             .map(String::valueOf)
             .toList();
-    final var processInstances =
-        repository.getProcessInstances(processInstanceIds).toCompletableFuture().join();
-
-    for (final var processInstance : processInstances) {
-      data.processInstanceIndices().put(processInstance.id(), processInstance.index());
-      data.processInstanceTreePaths().put(processInstance.key(), processInstance.treePath());
-    }
+    return repository
+        .getProcessInstances(processInstanceIds)
+        .toCompletableFuture()
+        .thenApply(
+            instances -> {
+              for (final var processInstance : instances) {
+                data.processInstanceIndices().put(processInstance.id(), processInstance.index());
+                data.processInstanceTreePaths()
+                    .put(processInstance.key(), processInstance.treePath());
+              }
+              return null;
+            });
   }
 
-  private int processIncidents(
+  private CompletableFuture<Integer> processIncidents(
       final AdditionalData data, final IncidentUpdateRepository.PendingIncidentUpdateBatch batch) {
     final var bulkUpdate = new IncidentBulkUpdate();
-    mapActiveIncidentsToAffectedInstances(data);
+    return mapActiveIncidentsToAffectedInstances(data)
+        .thenComposeAsync(
+            ignored -> {
+              for (final var incident : data.incidents().values()) {
+                final var processInstanceKey = incident.incident().getProcessInstanceKey();
+                final var treePath = data.incidentTreePaths().get(incident.id());
+                final var newState = batch.newIncidentStates().get(incident.incident().getKey());
 
-    for (final var incident : data.incidents().values()) {
-      final var processInstanceKey = incident.incident().getProcessInstanceKey();
-      final var treePath = data.incidentTreePaths().get(incident.id());
-      final var newState = batch.newIncidentStates().get(incident.incident().getKey());
-
-      if (!data.processInstanceTreePaths().containsKey(processInstanceKey)) {
-        if (!ignoreMissingData) {
-          throw new ExporterException(
-              """
+                if (!data.processInstanceTreePaths().containsKey(processInstanceKey)) {
+                  if (!ignoreMissingData) {
+                    return CompletableFuture.failedFuture(
+                        new ExporterException(
+                            """
               Failed to apply incident update for incident '%s'; related process instance '%d' is \
               not visible yet, but may be later."""
-                  .formatted(incident.id(), processInstanceKey));
-        }
+                                .formatted(incident.id(), processInstanceKey)));
+                  }
 
-        logger.warn(
-            """
+                  logger.warn(
+                      """
             Failed to apply incident update for incident '{}'; related process instance '{}' is \
             not visible. As ignoreMissingData is on, we will skip updating the process instance or \
             flow node instances, and only update the incident.""",
-            incident.id(),
-            processInstanceKey);
-      } else {
-        final var parsedTreePath = new TreePath(treePath);
-        final var piIds = parsedTreePath.extractProcessInstanceIds();
-        final var fniIds = parsedTreePath.extractFlowNodeInstanceIds();
+                      incident.id(),
+                      processInstanceKey);
+                } else {
+                  final var parsedTreePath = new TreePath(treePath);
+                  final var piIds = parsedTreePath.extractProcessInstanceIds();
+                  final var fniIds = parsedTreePath.extractFlowNodeInstanceIds();
 
-        createProcessInstanceUpdates(data, incident, newState, piIds, bulkUpdate);
-        createFlowNodeInstanceUpdates(data, incident, newState, fniIds, bulkUpdate);
-      }
+                  createProcessInstanceUpdates(data, incident, newState, piIds, bulkUpdate)
+                      .thenComposeAsync(
+                          unused ->
+                              createFlowNodeInstanceUpdates(
+                                  data, incident, newState, fniIds, bulkUpdate),
+                          executor)
+                      .join();
+                }
 
-      bulkUpdate
-          .incidentRequests()
-          .put(incident.id(), newIncidentUpdate(incident, newState, treePath));
-    }
+                bulkUpdate
+                    .incidentRequests()
+                    .put(incident.id(), newIncidentUpdate(incident, newState, treePath));
+              }
 
-    return repository.bulkUpdate(bulkUpdate).toCompletableFuture().join();
+              return repository.bulkUpdate(bulkUpdate).toCompletableFuture();
+            },
+            executor);
   }
 
-  private void createFlowNodeInstanceUpdates(
+  private CompletableFuture<Void> createFlowNodeInstanceUpdates(
       final AdditionalData data,
       final IncidentDocument incident,
       final IncidentState newState,
       final List<String> fniIds,
       final IncidentBulkUpdate updates) {
+    final CompletableFuture<?>[] futures = {
+      CompletableFuture.completedFuture(null), CompletableFuture.completedFuture(null)
+    };
     if (!data.flowNodeInstanceIndices().keySet().containsAll(fniIds)) {
-      final var documents = repository.getFlowNodeInstances(fniIds).toCompletableFuture().join();
-      for (final var document : documents) {
-        data.addFlowNodeInstance(document.id(), document.index());
-      }
+      futures[0] =
+          repository
+              .getFlowNodeInstances(fniIds)
+              .toCompletableFuture()
+              .thenApply(
+                  documents -> {
+                    for (final var document : documents) {
+                      data.addFlowNodeInstance(document.id(), document.index());
+                    }
+                    return null;
+                  });
     }
 
     if (!data.flowNodeInstanceInListViewIndices().keySet().containsAll(fniIds)) {
-      final var documents = repository.getFlowNodesInListView(fniIds).toCompletableFuture().join();
-      for (final var document : documents) {
-        data.addFlowNodeInstanceInListView(document.id(), document.index());
-      }
+      futures[1] =
+          repository
+              .getFlowNodesInListView(fniIds)
+              .toCompletableFuture()
+              .thenApply(
+                  documents -> {
+                    for (final var document : documents) {
+                      data.addFlowNodeInstanceInListView(document.id(), document.index());
+                    }
+                    return null;
+                  });
     }
 
-    for (final var fniId : fniIds) {
-      final var listViewIndices = data.flowNodeInstanceInListViewIndices().get(fniId);
-      final var flowNodeIndices = data.flowNodeInstanceIndices().get(fniId);
-      if (listViewIndices != null
-          && !listViewIndices.isEmpty()
-          && flowNodeIndices != null
-          && !flowNodeIndices.isEmpty()) {
-        createFlowNodeInstanceUpdate(
-            data, incident, newState, fniId, flowNodeIndices, updates, listViewIndices);
-      } else {
-        if (!ignoreMissingData) {
-          throw new ExporterException(
-              """
+    return CompletableFuture.allOf(futures)
+        .thenComposeAsync(
+            ignored -> {
+              for (final var fniId : fniIds) {
+                final var listViewIndices = data.flowNodeInstanceInListViewIndices().get(fniId);
+                final var flowNodeIndices = data.flowNodeInstanceIndices().get(fniId);
+                if (listViewIndices != null
+                    && !listViewIndices.isEmpty()
+                    && flowNodeIndices != null
+                    && !flowNodeIndices.isEmpty()) {
+                  createFlowNodeInstanceUpdate(
+                      data, incident, newState, fniId, flowNodeIndices, updates, listViewIndices);
+                } else {
+                  if (!ignoreMissingData) {
+                    return CompletableFuture.failedFuture(
+                        new ExporterException(
+                            """
               Flow node instance %s affected by incident %s cannot be updated because there is no \
               document for it in the list view index yet; this will be retried later."""
-                  .formatted(fniId, incident.id()));
-        }
+                                .formatted(fniId, incident.id())));
+                  }
 
-        logger.warn(
-            """
+                  logger.warn(
+                      """
             Flow node instance {} affected by incident {} cannot be updated because there is no \
             document for it in the list view index yet; since ignoreMissingData is on, we will \
             skip updating for now, which may result in inconsistencies.""",
-            fniId,
-            incident.id());
-      }
-    }
+                      fniId,
+                      incident.id());
+                }
+              }
+              return CompletableFuture.completedFuture(null);
+            },
+            executor);
   }
 
   private void createFlowNodeInstanceUpdate(
@@ -342,42 +442,56 @@ public final class IncidentUpdateTask implements BackgroundTask {
     }
   }
 
-  private void createProcessInstanceUpdates(
+  private CompletableFuture<Void> createProcessInstanceUpdates(
       final AdditionalData data,
       final IncidentDocument incident,
       final IncidentState newState,
       final List<String> piIds,
       final IncidentBulkUpdate updates) {
+    var fetchMissingProcessInstances = CompletableFuture.completedFuture(null);
     if (!data.processInstanceIndices().keySet().containsAll(piIds)) {
-      final var processInstances =
-          repository.getProcessInstances(piIds).toCompletableFuture().join();
-      for (final var processInstance : processInstances) {
-        data.processInstanceIndices().put(processInstance.id(), processInstance.index());
-      }
+      fetchMissingProcessInstances =
+          repository
+              .getProcessInstances(piIds)
+              .toCompletableFuture()
+              .thenApply(
+                  processInstances -> {
+                    for (final var processInstance : processInstances) {
+                      data.processInstanceIndices()
+                          .put(processInstance.id(), processInstance.index());
+                    }
+                    return null;
+                  });
     }
 
-    for (final var piId : piIds) {
-      final var index = data.processInstanceIndices().get(piId);
-      if (index != null) {
-        createProcessInstanceUpdate(data, incident.id(), newState, piId, updates, index);
-      } else {
-        if (!ignoreMissingData) {
-          throw new ExporterException(
-              """
-              Process instance %s affected by incident %s cannot be updated because there is no \
-              document for it in the list view index yet; this will be retried later."""
-                  .formatted(piId, incident.id()));
-        }
+    return fetchMissingProcessInstances.thenComposeAsync(
+        ignored -> {
+          for (final var piId : piIds) {
+            final var index = data.processInstanceIndices().get(piId);
+            if (index != null) {
+              createProcessInstanceUpdate(data, incident.id(), newState, piId, updates, index);
+            } else {
+              if (!ignoreMissingData) {
+                return CompletableFuture.failedFuture(
+                    new ExporterException(
+                        """
+                Process instance %s affected by incident %s cannot be updated because there is no \
+                document for it in the list view index yet; this will be retried later."""
+                            .formatted(piId, incident.id())));
+              }
 
-        logger.warn(
-            """
-          Process instance {} affected by incident {} cannot be updated because there is no \
-          document for it in the list view index yet; since ignoreMissingData is on, we will \
-          skip updating for now, which may result in inconsistencies.""",
-            piId,
-            incident.id());
-      }
-    }
+              logger.warn(
+                  """
+            Process instance {} affected by incident {} cannot be updated because there is no \
+            document for it in the list view index yet; since ignoreMissingData is on, we will \
+            skip updating for now, which may result in inconsistencies.""",
+                  piId,
+                  incident.id());
+            }
+          }
+          return CompletableFuture.completedFuture(null);
+        },
+        executor);
   }
 
   private void createProcessInstanceUpdate(
@@ -424,77 +538,92 @@ public final class IncidentUpdateTask implements BackgroundTask {
         id, index, Map.of(FlowNodeInstanceTemplate.INCIDENT, hasIncident), null);
   }
 
-  private void mapActiveIncidentsToAffectedInstances(final AdditionalData data) {
-    final List<String> treePathTerms =
+  private CompletableFuture<Void> mapActiveIncidentsToAffectedInstances(final AdditionalData data) {
+    final CompletableFuture<String>[] treePathTermsFutures =
         data.incidentTreePaths().values().stream()
             .map(repository::analyzeTreePath)
             .map(CompletionStage::toCompletableFuture)
-            .map(CompletableFuture::join)
-            .flatMap(List::stream)
-            .collect(Collectors.toList());
-    final Collection<ActiveIncident> activeIncidentTreePaths =
-        repository.getActiveIncidentsByTreePaths(treePathTerms).toCompletableFuture().join();
-    for (final var activeIncidentTreePath : activeIncidentTreePaths) {
-      final var treePath = new TreePath(activeIncidentTreePath.treePath());
-      final var piIds = treePath.extractProcessInstanceIds();
-      final var fniIds = treePath.extractFlowNodeInstanceIds();
+            .toArray(CompletableFuture[]::new);
+    final CompletableFuture<List<String>> treePathTermsFuture =
+        CompletableFuture.allOf(treePathTermsFutures)
+            .thenApplyAsync(
+                ignored ->
+                    // they are already completed, it's ok to join on them
+                    Arrays.stream(treePathTermsFutures).map(CompletableFuture::join).toList());
 
-      piIds.forEach(id -> data.addPiIdsWithIncidentIds(id, activeIncidentTreePath.id()));
-      fniIds.forEach(id -> data.addFniIdsWithIncidentIds(id, activeIncidentTreePath.id()));
-    }
+    return treePathTermsFuture
+        .thenComposeAsync(
+            treePathTerms ->
+                repository.getActiveIncidentsByTreePaths(treePathTerms).toCompletableFuture(),
+            executor)
+        .thenApplyAsync(
+            activeIncidentTreePaths -> {
+              for (final var activeIncidentTreePath : activeIncidentTreePaths) {
+                final var treePath = new TreePath(activeIncidentTreePath.treePath());
+                final var piIds = treePath.extractProcessInstanceIds();
+                final var fniIds = treePath.extractFlowNodeInstanceIds();
+
+                piIds.forEach(id -> data.addPiIdsWithIncidentIds(id, activeIncidentTreePath.id()));
+                fniIds.forEach(
+                    id -> data.addFniIdsWithIncidentIds(id, activeIncidentTreePath.id()));
+              }
+              return null;
+            },
+            executor);
   }
 
-  private IncidentUpdateRepository.PendingIncidentUpdateBatch getPendingIncidentsBatch(
-      final AdditionalData data) {
-    final IncidentUpdateRepository.PendingIncidentUpdateBatch pendingIncidentsBatch =
-        repository
-            .getPendingIncidentsBatch(metadata.getLastIncidentUpdatePosition(), batchSize)
-            .toCompletableFuture()
-            .join();
+  private CompletableFuture<IncidentUpdateRepository.PendingIncidentUpdateBatch>
+      getPendingIncidentsBatch(final AdditionalData data) {
+    return repository
+        .getPendingIncidentsBatch(metadata.getLastIncidentUpdatePosition(), batchSize)
+        .toCompletableFuture()
+        .thenComposeAsync(
+            pendingIncidentsBatch -> {
+              if (!pendingIncidentsBatch.newIncidentStates().isEmpty()) {
+                logger.trace(
+                    "Processing incident ids <-> intents: {}",
+                    pendingIncidentsBatch.newIncidentStates());
 
-    if (pendingIncidentsBatch.newIncidentStates().isEmpty()) {
-      return pendingIncidentsBatch;
-    }
+                final var incidentIds =
+                    pendingIncidentsBatch.newIncidentStates().keySet().stream()
+                        .map(String::valueOf)
+                        .toList();
+                return repository
+                    .getIncidentDocuments(incidentIds)
+                    .toCompletableFuture()
+                    .thenComposeAsync(
+                        incidents -> {
+                          data.incidents().putAll(incidents);
 
-    logger.trace(
-        "Processing incident ids <-> intents: {}", pendingIncidentsBatch.newIncidentStates());
+                          if (pendingIncidentsBatch.newIncidentStates().size() > incidents.size()) {
+                            final var absentIncidents =
+                                new HashSet<>(pendingIncidentsBatch.newIncidentStates().keySet());
+                            absentIncidents.removeAll(
+                                incidents.values().stream()
+                                    .map(i -> i.incident().getKey())
+                                    .collect(Collectors.toSet()));
+                            if (!ignoreMissingData) {
+                              return CompletableFuture.failedFuture(
+                                  new ExporterException(
+                                      """
+                                Failed to fetch incidents associated with post-export updates; it's possible they \
+                                are simply not visible yet. Missing incident IDs: [%s]"""
+                                          .formatted(absentIncidents)));
+                            }
 
-    final var incidentIds =
-        pendingIncidentsBatch.newIncidentStates().keySet().stream().map(String::valueOf).toList();
-    final Map<String, IncidentDocument> incidents =
-        repository.getIncidentDocuments(incidentIds).toCompletableFuture().join();
-    data.incidents().putAll(incidents);
-
-    if (pendingIncidentsBatch.newIncidentStates().size() > incidents.size()) {
-      final var absentIncidents = new HashSet<>(pendingIncidentsBatch.newIncidentStates().keySet());
-      absentIncidents.removeAll(
-          incidents.values().stream().map(i -> i.incident().getKey()).collect(Collectors.toSet()));
-      if (!ignoreMissingData) {
-        throw new ExporterException(
-            """
-                Failed to fetch incidents associated with post-export updates; it's possible they \
-                are simply not visible yet. Missing incident IDs: [%s]"""
-                .formatted(absentIncidents));
-      }
-
-      logger.warn(
-          """
-            Not all incidents to update are visible yet; as ignoreMissingData flag is on, we will \
-            ignore this for now, which means updates to the following incidents will be missing: \
-            [{}]""",
-          absentIncidents);
-    }
-
-    return pendingIncidentsBatch;
-  }
-
-  // TODO: replace this when moving the pipeline to an asynchronous model
-  private void uncheckedThreadSleep() {
-    try {
-      Thread.sleep(waitForRefreshInterval.toMillis(), waitForRefreshInterval.toNanosPart());
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
-      LangUtil.rethrowUnchecked(e);
-    }
+                            logger.warn(
+                                """
+                          Not all incidents to update are visible yet; as ignoreMissingData flag is on, we will \
+                          ignore this for now, which means updates to the following incidents will be missing: \
+                          [{}]""",
+                                absentIncidents);
+                          }
+                          return CompletableFuture.completedFuture(pendingIncidentsBatch);
+                        },
+                        executor);
+              }
+              return CompletableFuture.completedFuture(pendingIncidentsBatch);
+            },
+            executor);
   }
 }

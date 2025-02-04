@@ -120,6 +120,7 @@ public final class BackgroundTaskManagerFactory {
             incidentRepository,
             postExport.isIgnoreMissingData(),
             postExport.getBatchSize(),
+            executor,
             logger),
         1,
         postExport.getDelayBetweenRuns(),
