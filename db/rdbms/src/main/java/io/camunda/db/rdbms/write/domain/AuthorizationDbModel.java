@@ -13,10 +13,19 @@ import java.util.function.Function;
 
 public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
 
+  private Long authorizationKey;
   private String ownerId;
   private String ownerType;
   private String resourceType;
   private List<AuthorizationPermissionDbModel> permissions;
+
+  public Long authorizationKey() {
+    return authorizationKey;
+  }
+
+  public void authorizationKey(final Long authorizationKey) {
+    this.authorizationKey = authorizationKey;
+  }
 
   public String ownerId() {
     return ownerId;
@@ -57,6 +66,7 @@ public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
     return copyFunction
         .apply(
             new Builder()
+                .authorizationKey(authorizationKey)
                 .ownerId(ownerId)
                 .ownerType(ownerType)
                 .resourceType(resourceType)
@@ -66,12 +76,18 @@ public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
 
   public static class Builder implements ObjectBuilder<AuthorizationDbModel> {
 
+    private Long authorizationKey;
     private String ownerId;
     private String ownerType;
     private String resourceType;
     private List<AuthorizationPermissionDbModel> permissions;
 
     public Builder() {}
+
+    public Builder authorizationKey(final Long authorizationKey) {
+      this.authorizationKey = authorizationKey;
+      return this;
+    }
 
     public Builder ownerId(final String ownerId) {
       this.ownerId = ownerId;
@@ -96,6 +112,7 @@ public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
     @Override
     public AuthorizationDbModel build() {
       final AuthorizationDbModel model = new AuthorizationDbModel();
+      model.authorizationKey(authorizationKey);
       model.ownerId(ownerId);
       model.ownerType(ownerType);
       model.resourceType(resourceType);
