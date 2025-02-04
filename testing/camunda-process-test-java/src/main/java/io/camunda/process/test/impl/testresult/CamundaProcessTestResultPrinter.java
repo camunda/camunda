@@ -15,8 +15,10 @@
  */
 package io.camunda.process.test.impl.testresult;
 
+import io.camunda.client.api.search.response.FlowNodeInstance;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
@@ -60,6 +62,9 @@ public class CamundaProcessTestResultPrinter {
 
     return formattedProcessInstance
         + "\n\n"
+        + "Active elements:\n"
+        + formatFlowNodeInstances(result.getActiveFlowNodeInstances())
+        + "\n\n"
         + "Variables:\n"
         + formatVariables(result.getVariables())
         + "\n\n"
@@ -99,5 +104,20 @@ public class CamundaProcessTestResultPrinter {
     return String.format(
         "- '%s' [type: %s] \"%s\"",
         incident.getFlowNodeId(), incident.getType(), abbreviate(incident.getMessage()));
+  }
+
+  private static String formatFlowNodeInstances(final List<FlowNodeInstance> flowNodeInstances) {
+    if (flowNodeInstances.isEmpty()) {
+      return NO_ENTRIES;
+    } else {
+      return flowNodeInstances.stream()
+          .map(CamundaProcessTestResultPrinter::formatFlowNodeInstance)
+          .collect(Collectors.joining("\n"));
+    }
+  }
+
+  private static String formatFlowNodeInstance(final FlowNodeInstance flowNodeInstance) {
+    final String name = Optional.ofNullable(flowNodeInstance.getFlowNodeName()).orElse("");
+    return String.format("- '%s' [name: '%s']", flowNodeInstance.getFlowNodeId(), name);
   }
 }

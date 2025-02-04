@@ -17,6 +17,9 @@ package io.camunda.process.test.impl.testresult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.FlowNodeInstanceState;
+import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -72,6 +75,9 @@ public class CamundaProcessResultPrinterTest {
                 + "\n"
                 + "Process instance: 1 [process-id: 'process-a']\n"
                 + "\n"
+                + "Active elements:\n"
+                + "<None>\n"
+                + "\n"
                 + "Variables:\n"
                 + "<None>\n"
                 + "\n"
@@ -80,6 +86,9 @@ public class CamundaProcessResultPrinterTest {
                 + "---------------------\n"
                 + "\n"
                 + "Process instance: 2 [process-id: 'process-b']\n"
+                + "\n"
+                + "Active elements:\n"
+                + "<None>\n"
                 + "\n"
                 + "Variables:\n"
                 + "<None>\n"
@@ -164,6 +173,44 @@ public class CamundaProcessResultPrinterTest {
   }
 
   @Test
+  void shouldPrintActiveFlowNodeInstances() {
+    // given
+    final ProcessTestResult processTestResult = new ProcessTestResult();
+
+    final ProcessInstanceResult processInstance1 = newProcessInstance(1L, "process-a");
+    processInstance1.setActiveFlowNodeInstances(
+        Arrays.asList(
+            newActiveFlowNodeInstance("task_A", "A"), newActiveFlowNodeInstance("task_B", "B")));
+
+    final ProcessInstanceResult processInstance2 = newProcessInstance(2L, "process-b");
+    processInstance2.setActiveFlowNodeInstances(
+        Arrays.asList(
+            newActiveFlowNodeInstance("task_C", "C"), newActiveFlowNodeInstance("task_D", null)));
+
+    processTestResult.setProcessInstanceTestResults(
+        Arrays.asList(processInstance1, processInstance2));
+
+    // when
+    final StringBuilder outputBuilder = new StringBuilder();
+    final CamundaProcessTestResultPrinter resultPrinter =
+        new CamundaProcessTestResultPrinter(outputBuilder::append);
+
+    resultPrinter.print(processTestResult);
+
+    // then
+    assertThat(outputBuilder.toString())
+        .containsSubsequence(
+            "Process instance: 1 [process-id: 'process-a']\n",
+            "Active elements:\n",
+            "- 'task_A' [name: 'A']\n",
+            "- 'task_B' [name: 'B']\n",
+            "Process instance: 2 [process-id: 'process-b']\n",
+            "Active elements:\n",
+            "- 'task_C' [name: 'C']\n",
+            "- 'task_D' [name: '']\n");
+  }
+
+  @Test
   void shouldAbbreviateBigVariableValue() {
     // given
     final ProcessTestResult processTestResult = new ProcessTestResult();
@@ -230,5 +277,13 @@ public class CamundaProcessResultPrinterTest {
     incident.setMessage(message);
     incident.setFlowNodeId(flowNodeId);
     return incident;
+  }
+
+  private static FlowNodeInstance newActiveFlowNodeInstance(final String id, final String name) {
+    final FlowNodeInstanceDto flowNodeInstance = new FlowNodeInstanceDto();
+    flowNodeInstance.setFlowNodeId(id);
+    flowNodeInstance.setFlowNodeName(name);
+    flowNodeInstance.setState(FlowNodeInstanceState.ACTIVE);
+    return flowNodeInstance;
   }
 }
