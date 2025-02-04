@@ -86,7 +86,6 @@ public class IncidentEntityTransformer
       case CALLED_DECISION_ERROR -> CALLED_DECISION_ERROR;
       case DECISION_EVALUATION_ERROR -> DECISION_EVALUATION_ERROR;
       case FORM_NOT_FOUND -> FORM_NOT_FOUND;
-      default -> throw new IllegalArgumentException("Unexpected value: " + value);
     };
   }
 }
