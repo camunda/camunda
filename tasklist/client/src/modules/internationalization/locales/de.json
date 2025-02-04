@@ -118,6 +118,8 @@
     "startProcessFromFormReloadButton": "Neu laden",
     "startProcessFromFormInvalidFormHeading": "Ungültiges Formular",
     "startProcessFromFormInvalidFormDescription": "Etwas ist schief gelaufen und das Formular konnte nicht angezeigt werden. Bitte kontaktieren Sie Ihren Anbieter.",
+    "startProcessFromFormWithFileComponentsHeading": "Formular enthält Dateikomponenten",
+    "startProcessFromFormWithFileComponentsDescription": "Dieses Formular enthält Dateikomponenten, die im öffentlichen Startformular nicht unterstützt werden. Bitte kontaktieren Sie Ihren Prozessadministrator.",
     "assigneeTagUnassignedTitle": "Aufgabe nicht zugewiesen",
     "assigneeTagUnassigned": "Nicht zugewiesen",
     "assigneeTagAssignedToMeAria": "Aufgabe mir zugewiesen",

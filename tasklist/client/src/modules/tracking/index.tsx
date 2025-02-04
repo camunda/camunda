@@ -41,7 +41,8 @@ type Events =
         | 'custom-filter-saved'
         | 'custom-filter-applied'
         | 'custom-filter-updated'
-        | 'custom-filter-deleted';
+        | 'custom-filter-deleted'
+        | 'public-start-form-schema-with-file-components';
     }
   | {
       eventName: 'task-opened';
