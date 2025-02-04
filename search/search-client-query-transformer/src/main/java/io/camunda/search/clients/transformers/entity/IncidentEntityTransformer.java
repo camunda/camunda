@@ -17,6 +17,7 @@ import static io.camunda.search.entities.IncidentEntity.ErrorType.FORM_NOT_FOUND
 import static io.camunda.search.entities.IncidentEntity.ErrorType.IO_MAPPING_ERROR;
 import static io.camunda.search.entities.IncidentEntity.ErrorType.JOB_NO_RETRIES;
 import static io.camunda.search.entities.IncidentEntity.ErrorType.MESSAGE_SIZE_EXCEEDED;
+import static io.camunda.search.entities.IncidentEntity.ErrorType.TASK_LISTENER_NO_RETRIES;
 import static io.camunda.search.entities.IncidentEntity.ErrorType.UNHANDLED_ERROR_EVENT;
 import static io.camunda.search.entities.IncidentEntity.ErrorType.UNKNOWN;
 import static io.camunda.search.entities.IncidentEntity.ErrorType.UNSPECIFIED;
@@ -76,6 +77,7 @@ public class IncidentEntityTransformer
       case IO_MAPPING_ERROR -> IO_MAPPING_ERROR;
       case JOB_NO_RETRIES -> JOB_NO_RETRIES;
       case EXECUTION_LISTENER_NO_RETRIES -> EXECUTION_LISTENER_NO_RETRIES;
+      case TASK_LISTENER_NO_RETRIES -> TASK_LISTENER_NO_RETRIES;
       case CONDITION_ERROR -> CONDITION_ERROR;
       case EXTRACT_VALUE_ERROR -> EXTRACT_VALUE_ERROR;
       case CALLED_ELEMENT_ERROR -> CALLED_ELEMENT_ERROR;
