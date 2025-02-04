@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
@@ -70,7 +70,8 @@ public enum ExporterMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return """
+      return
+      """
         Describes the phase of the exporter, namely if it is exporting (0), paused (1), soft \
         paused (2), or closed (3)""";
     }
