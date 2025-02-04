@@ -44,7 +44,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
-                 "ownerKey": "1",
+                 "ownerId": "foo",
                  "ownerType": "USER",
                  "resourceType": "PROCESS_DEFINITION",
                  "permissions": [
@@ -73,7 +73,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
           .items(
               List.of(
                   new AuthorizationEntity(
-                      1L,
+                      "foo",
                       OwnerTypeEnum.USER.getValue(),
                       ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
                       List.of(new Permission(PermissionType.CREATE, Set.of("2"))))))

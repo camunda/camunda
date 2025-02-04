@@ -51,7 +51,7 @@ public class AuthorizationIT {
     final var instance =
         authorizationReader
             .findOne(
-                authorization.ownerKey().toString(),
+                authorization.ownerId().toString(),
                 authorization.ownerType(),
                 authorization.resourceType())
             .orElse(null);
@@ -79,7 +79,7 @@ public class AuthorizationIT {
     final var authorizationUpdate =
         AuthorizationFixtures.createRandomized(
             b ->
-                b.ownerKey(authorization.ownerKey())
+                b.ownerId(authorization.ownerId())
                     .ownerType(authorization.ownerType())
                     .resourceType(authorization.resourceType())
                     .permissions(
@@ -94,7 +94,7 @@ public class AuthorizationIT {
     final var instance =
         authorizationReader
             .findOne(
-                authorization.ownerKey().toString(),
+                authorization.ownerId().toString(),
                 authorization.ownerType(),
                 authorization.resourceType())
             .orElse(null);
@@ -114,7 +114,7 @@ public class AuthorizationIT {
     createAndSaveAuthorization(rdbmsWriter, authorization);
     final var instance =
         authorizationReader.findOne(
-            authorization.ownerKey().toString(),
+            authorization.ownerId().toString(),
             authorization.ownerType(),
             authorization.resourceType());
     assertThat(instance).isNotEmpty();
@@ -124,7 +124,7 @@ public class AuthorizationIT {
 
     final var deletedInstance =
         authorizationReader.findOne(
-            authorization.ownerKey().toString(),
+            authorization.ownerId().toString(),
             authorization.ownerType(),
             authorization.resourceType());
     assertThat(deletedInstance).isEmpty();
@@ -190,7 +190,7 @@ public class AuthorizationIT {
         authorizationReader.search(
             new AuthorizationQuery(
                 new AuthorizationFilter.Builder()
-                    .ownerIds(authorization.ownerKey().toString())
+                    .ownerIds(authorization.ownerId().toString())
                     .ownerType(authorization.ownerType())
                     .resourceType(authorization.resourceType())
                     .permissionType(authorization.permissions().getFirst().permissionType())
@@ -234,7 +234,7 @@ public class AuthorizationIT {
                                         new Object[] {
                                           instanceAfter.ownerType(),
                                           instanceAfter.resourceType(),
-                                          instanceAfter.ownerKey()
+                                          instanceAfter.ownerId()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);

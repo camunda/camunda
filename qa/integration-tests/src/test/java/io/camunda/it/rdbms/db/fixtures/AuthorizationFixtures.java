@@ -24,10 +24,10 @@ public final class AuthorizationFixtures extends CommonFixtures {
 
   public static AuthorizationDbModel createRandomized(
       final Function<Builder, Builder> builderFunction) {
-    final var ownerKey = nextKey();
+    final var ownerId = nextStringId();
     final var builder =
         new Builder()
-            .ownerKey(ownerKey)
+            .ownerId(ownerId)
             .ownerType(randomEnum(OwnerTypeEnum.class).name())
             .resourceType(randomEnum(ResourceTypeEnum.class).name())
             .permissions(

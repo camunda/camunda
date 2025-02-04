@@ -696,7 +696,7 @@ class RdbmsExporterIT {
 
   private void compareAuthorizations(
       final AuthorizationRecordValue recordValue, final AuthorizationEntity entity) {
-    assertThat(recordValue.getOwnerKey()).isEqualTo(entity.ownerKey());
+    assertThat(recordValue.getOwnerKey()).isEqualTo(entity.ownerId());
     assertThat(recordValue.getOwnerType().name()).isEqualTo(entity.ownerType());
     assertThat(recordValue.getResourceType().name()).isEqualTo(entity.resourceType());
 

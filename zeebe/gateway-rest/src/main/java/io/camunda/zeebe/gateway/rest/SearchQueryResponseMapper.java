@@ -632,7 +632,7 @@ public final class SearchQueryResponseMapper {
   public static AuthorizationResponse toAuthorization(final AuthorizationEntity authorization) {
     return new AuthorizationResponse()
         .ownerType(OwnerTypeEnum.fromValue(authorization.ownerType()))
-        .ownerKey(authorization.ownerKey())
+        .ownerId(authorization.ownerId())
         .resourceType(ResourceTypeEnum.valueOf(authorization.resourceType()))
         .permissions(
             authorization.permissions().stream()

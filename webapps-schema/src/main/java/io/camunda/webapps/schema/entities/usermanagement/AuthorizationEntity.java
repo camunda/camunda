@@ -15,7 +15,7 @@ public class AuthorizationEntity extends AbstractExporterEntity<AuthorizationEnt
 
   public static final String DEFAULT_TENANT_IDENTIFIER = "<default>";
   private String id;
-  private Long ownerKey;
+  private String ownerId;
   private String ownerType;
   private String resourceType;
   private List<Permission> permissions;
@@ -33,12 +33,12 @@ public class AuthorizationEntity extends AbstractExporterEntity<AuthorizationEnt
     return this;
   }
 
-  public Long getOwnerKey() {
-    return ownerKey;
+  public String getOwnerId() {
+    return ownerId;
   }
 
-  public AuthorizationEntity setOwnerKey(final Long ownerKey) {
-    this.ownerKey = ownerKey;
+  public AuthorizationEntity setOwnerId(final String ownerId) {
+    this.ownerId = ownerId;
     return this;
   }
 

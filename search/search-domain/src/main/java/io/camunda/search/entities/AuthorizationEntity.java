@@ -13,4 +13,4 @@ import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record AuthorizationEntity(
-    Long ownerKey, String ownerType, String resourceType, List<Permission> permissions) {}
+    String ownerId, String ownerType, String resourceType, List<Permission> permissions) {}

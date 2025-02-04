@@ -57,7 +57,7 @@ public class AuthorizationSpecificFilterIT {
     createAndSaveAuthorization(
         rdbmsWriter,
         AuthorizationFixtures.createRandomized(
-            b -> b.ownerKey(1337L).ownerType("FILTER_TEST").resourceType("TEST")));
+            b -> b.ownerId("foo").ownerType("FILTER_TEST").resourceType("TEST")));
 
     final var searchResult =
         authorizationReader.search(
@@ -66,7 +66,7 @@ public class AuthorizationSpecificFilterIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
-    assertThat(searchResult.items().getFirst().ownerKey()).isEqualTo(1337L);
+    assertThat(searchResult.items().getFirst().ownerId()).isEqualTo("foo");
   }
 
   static List<AuthorizationFilter> shouldFindWithSpecificFilterParameters() {

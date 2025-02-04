@@ -45,7 +45,7 @@ public class AuthorizationWriter {
   }
 
   private String generateKey(final AuthorizationDbModel authorization) {
-    return authorization.ownerKey()
+    return authorization.ownerId()
         + "_"
         + authorization.ownerType()
         + "_"
