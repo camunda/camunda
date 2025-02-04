@@ -32,7 +32,7 @@ public final class BrokerStartupProcess {
     concurrencyControl = brokerStartupContext.getConcurrencyControl();
     context = brokerStartupContext;
 
-    final var brokerStepMetrics = new BrokerStepMetrics();
+    final var brokerStepMetrics = new BrokerStepMetrics(context.getMeterRegistry());
 
     final var undecoratedSteps = buildStartupSteps(brokerStartupContext.getBrokerConfiguration());
 
