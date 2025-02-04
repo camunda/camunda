@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.impl.testresult;
 
+import io.camunda.client.api.search.response.FlowNodeInstance;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,6 +29,8 @@ public class ProcessInstanceResult {
   private Map<String, String> variables = new HashMap<>();
 
   private List<OpenIncident> openIncidents = new ArrayList<>();
+
+  private List<FlowNodeInstance> activeFlowNodeInstances = new ArrayList<>();
 
   public long getProcessInstanceKey() {
     return processInstanceKey;
@@ -59,5 +62,13 @@ public class ProcessInstanceResult {
 
   public void setOpenIncidents(final List<OpenIncident> openIncidents) {
     this.openIncidents = openIncidents;
+  }
+
+  public List<FlowNodeInstance> getActiveFlowNodeInstances() {
+    return activeFlowNodeInstances;
+  }
+
+  public void setActiveFlowNodeInstances(final List<FlowNodeInstance> activeFlowNodeInstances) {
+    this.activeFlowNodeInstances = activeFlowNodeInstances;
   }
 }
