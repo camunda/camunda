@@ -34,6 +34,7 @@ import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.impl.RecordProcessorContextImpl;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.InstantSource;
 import java.util.concurrent.atomic.AtomicLong;
@@ -81,7 +82,8 @@ final class CheckpointRecordsProcessorTest {
         context,
         null,
         new DbKeyGenerator(1, zeebeDb, context),
-        StreamClock.controllable(InstantSource.system()));
+        StreamClock.controllable(InstantSource.system()),
+        new SimpleMeterRegistry());
   }
 
   @AfterEach

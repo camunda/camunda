@@ -109,7 +109,9 @@ public final class EngineProcessors {
             scheduledTaskStateFactory.get().getTimerState(), featureFlags, clock);
 
     final var jobMetrics = new JobMetrics(partitionId);
-    final var processEngineMetrics = new ProcessEngineMetrics(processingState.getPartitionId());
+    final var processEngineMetrics =
+        new ProcessEngineMetrics(
+            typedRecordProcessorContext.getMeterRegistry(), processingState.getPartitionId());
 
     subscriptionCommandSender.setWriters(writers);
 
