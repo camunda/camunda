@@ -6,42 +6,61 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ActionableNotification} from '@carbon/react';
+import {
+  ActionableNotification,
+  unstable_FeatureFlags as FeatureFlags,
+} from '@carbon/react';
 import {requestPermission} from 'modules/os-notifications/requestPermission';
+import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
+import styles from './TurnOnNotificationPermission.module.scss';
 
 const TurnOnNotificationPermission: React.FC = () => {
   const {t} = useTranslation();
-  const [enabled, setEnabled] = useState(true);
-  if (
-    !(
-      enabled &&
-      'Notification' in window &&
-      Notification.permission === 'default'
-    )
-  ) {
+  const areNativeNotificationsEnabled = getStateLocally(
+    'areNativeNotificationsEnabled',
+  );
+  const [isEnabled, setIsEnabled] = useState(
+    'Notification' in window &&
+      Notification.permission === 'default' &&
+      !(areNativeNotificationsEnabled === false),
+  );
+
+  if (!isEnabled) {
     return null;
   }
+
   return (
     <div>
-      <ActionableNotification
-        inline
-        kind="info"
-        title={t('turnOnNotificationTitle')}
-        subtitle={t('turnOnNotificationSubtitle')}
-        actionButtonLabel={t('turnOnNotificationsActionButton')}
-        onActionButtonClick={async () => {
-          const result = await requestPermission();
-          if (result !== 'default') {
-            setEnabled(false);
-          }
+      {/* This is a temporary fix, it should be removed once this feature is implemented on Carbon: https://github.com/camunda/camunda/issues/26648 */}
+      <FeatureFlags
+        flags={{
+          'enable-experimental-focus-wrap-without-sentinels': true,
         }}
-        onClose={() => setEnabled(false)}
-        style={{maxInlineSize: 'initial'}}
-        lowContrast
-        hasFocus={false}
-      />
+      >
+        <ActionableNotification
+          inline
+          kind="info"
+          role="status"
+          aria-live="polite"
+          title={t('turnOnNotificationTitle')}
+          subtitle={t('turnOnNotificationSubtitle')}
+          actionButtonLabel={t('turnOnNotificationsActionButton')}
+          onActionButtonClick={async () => {
+            const result = await requestPermission();
+            if (result !== 'default') {
+              setIsEnabled(false);
+            }
+          }}
+          onClose={() => {
+            setIsEnabled(false);
+            storeStateLocally('areNativeNotificationsEnabled', false);
+          }}
+          className={styles.actionableNotification}
+          lowContrast
+        />
+      </FeatureFlags>
     </div>
   );
 };

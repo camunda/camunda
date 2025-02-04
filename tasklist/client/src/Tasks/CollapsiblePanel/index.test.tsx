@@ -239,7 +239,7 @@ describe('<CollapsiblePanel />', () => {
     );
   });
 
-  it('should allow to delete custom filters', async () => {
+  it('should allow to delete custom filters from the panel item', async () => {
     const {user} = render(<CollapsiblePanel />, {
       wrapper: createWrapper(),
     });
@@ -413,9 +413,7 @@ describe('<CollapsiblePanel />', () => {
     );
 
     expect(
-      screen.queryByRole('heading', {
-        name: /the custom filter will be deleted\./i,
-      }),
+      screen.queryByRole('dialog', {name: /delete filter/i}),
     ).not.toBeInTheDocument();
 
     expect(

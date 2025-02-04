@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMutation, UseMutationOptions} from '@tanstack/react-query';
+import {useMutation, type UseMutationOptions} from '@tanstack/react-query';
 import {api} from 'modules/api';
-import {request, RequestError} from 'modules/request';
-import {Process, ProcessInstance, Task, Variable} from 'modules/types';
+import {request, type RequestError} from 'modules/request';
+import type {Process, ProcessInstance, Task, Variable} from 'modules/types';
 
 function useStartProcess(
   options: Pick<
@@ -18,7 +18,7 @@ function useStartProcess(
       RequestError | Error,
       {
         bpmnProcessId: Process['bpmnProcessId'];
-        variables?: Variable[];
+        variables?: Pick<Variable, 'name' | 'value'>[];
         tenantId?: Task['tenantId'];
       }
     >,
@@ -28,14 +28,16 @@ function useStartProcess(
   return useMutation<
     ProcessInstance,
     RequestError | Error,
-    Pick<Process, 'bpmnProcessId'> & {variables?: Variable[]} & {
+    Pick<Process, 'bpmnProcessId'> & {
+      variables?: Pick<Variable, 'name' | 'value'>[];
+    } & {
       tenantId?: Task['tenantId'];
     }
   >({
     ...options,
     mutationFn: async ({bpmnProcessId, variables = [], tenantId}) => {
       const {response, error} = await request(
-        api.startProcess({
+        api.v1.startProcess({
           bpmnProcessId,
           variables,
           tenantId,

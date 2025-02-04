@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useLocation, useNavigate, Location} from 'react-router-dom';
+import {useLocation, useNavigate, type Location} from 'react-router-dom';
 import {useTranslation} from 'react-i18next';
 import {Form, Field} from 'react-final-form';
 import {FORM_ERROR} from 'final-form';
@@ -158,10 +158,13 @@ const Login: React.FC = () => {
                   >
                     {({input, meta}) => (
                       <PasswordInput
-                        {...input}
                         name={input.name}
                         id={input.name}
                         onChange={input.onChange}
+                        onBlur={input.onBlur}
+                        onFocus={input.onFocus}
+                        value={input.value}
+                        type="password"
                         hidePasswordLabel={t('loginHidePasswordButtonLabel')}
                         showPasswordLabel={t('loginShowPasswordButtonLabel')}
                         labelText={t('loginPasswordFieldLabel')}

@@ -12,10 +12,10 @@ import {
   Form,
   FormFieldRegistry,
 } from '@bpmn-io/form-js-viewer';
-import {Errors} from '@bpmn-io/form-js-viewer/dist/types/Form';
 import {isEqual} from 'lodash';
 
-type FormJSData = Record<string, unknown>;
+type OnSubmitReturn = ReturnType<Form['submit']>;
+type FormJSData = OnSubmitReturn['data'];
 
 type GetOptions = {
   form: Form;
@@ -31,13 +31,13 @@ class FormManager {
     },
   });
   #schema: string | null = null;
-  #onSubmit: (result: {errors: Errors; data: FormJSData}) => void = () => {};
+  #onSubmit: (result: OnSubmitReturn) => void = () => {};
   #data: FormJSData | null = null;
 
   render = async (options: {
     schema: string;
     data: FormJSData;
-    onSubmit: (result: {errors: Errors; data: FormJSData}) => void;
+    onSubmit: (result: OnSubmitReturn) => void;
     onImportError?: () => void;
     container: HTMLElement;
   }) => {

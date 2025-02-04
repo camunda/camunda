@@ -12,10 +12,10 @@ import intersection from 'lodash/intersection';
 import get from 'lodash/get';
 import arrayMutators from 'final-form-arrays';
 import {match, Pattern} from 'ts-pattern';
-import {Button, InlineLoadingStatus, Heading, Layer} from '@carbon/react';
+import {Button, Heading, type InlineLoadingProps, Layer} from '@carbon/react';
 import {Information, Add} from '@carbon/react/icons';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
-import {Variable, CurrentUser, Task} from 'modules/types';
+import type {Variable, CurrentUser, Task} from 'modules/types';
 import {usePermissions} from 'modules/hooks/usePermissions';
 import {
   ScrollableContent,
@@ -32,7 +32,7 @@ import {getVariableFieldName} from './getVariableFieldName';
 import {VariableEditor} from './VariableEditor';
 import {IconButton} from './IconButton';
 import {ResetForm} from './ResetForm';
-import {FormValues} from './types';
+import type {FormValues} from './types';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 
@@ -83,7 +83,7 @@ const Variables: React.FC<Props> = ({
   );
   const [editingVariable, setEditingVariable] = useState<string | undefined>();
   const [submissionState, setSubmissionState] =
-    useState<InlineLoadingStatus>('inactive');
+    useState<NonNullable<InlineLoadingProps['status']>>('inactive');
   const canCompleteTask =
     user.userId === assignee &&
     taskState === 'CREATED' &&

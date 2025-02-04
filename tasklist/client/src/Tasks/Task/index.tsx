@@ -17,7 +17,7 @@ import {observer} from 'mobx-react-lite';
 import {useCompleteTask} from 'modules/mutations/useCompleteTask';
 import {useTranslation} from 'react-i18next';
 import {pages, useTaskDetailsParams} from 'modules/routing';
-import {Task as TaskType, Variable} from 'modules/types';
+import type {Task as TaskType, Variable} from 'modules/types';
 import {tracking} from 'modules/tracking';
 import {notificationsStore} from 'modules/stores/notifications';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
@@ -27,11 +27,12 @@ import {decodeTaskOpenedRef} from 'modules/utils/reftags';
 import {useTasks} from 'modules/queries/useTasks';
 import {useAutoSelectNextTask} from 'modules/auto-select-task/useAutoSelectNextTask';
 import {autoSelectNextTaskStore} from 'modules/stores/autoSelectFirstTask';
-import {OutletContext} from './Details';
+import type {OutletContext} from './Details';
 import {getCompleteTaskErrorMessage} from './getCompleteTaskErrorMessage';
 import {shouldFetchMore} from './shouldFetchMore';
 import {Variables} from './Variables';
 import {FormJS} from './FormJS';
+import {useUploadDocuments} from 'modules/mutations/useUploadDocuments';
 
 const CAMUNDA_FORMS_PREFIX = 'camunda-forms:bpmn:';
 
@@ -62,6 +63,7 @@ const Task: React.FC = observer(() => {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const {mutateAsync: completeTask} = useCompleteTask();
+  const {mutateAsync: uploadDocuments} = useUploadDocuments();
   const {formKey, processDefinitionKey, formId, id: taskId} = task;
 
   const {enabled: autoSelectNextTaskEnabled} = autoSelectNextTaskStore;
@@ -107,6 +109,16 @@ const Task: React.FC = observer(() => {
       kind: 'success',
       title: t('taskCompletedNotification'),
       isDismissable: true,
+    });
+  }
+
+  async function handleFileUpload(files: Map<string, File[]>) {
+    if (files.size === 0) {
+      return new Map();
+    }
+
+    return uploadDocuments({
+      files,
     });
   }
 
@@ -165,6 +177,7 @@ const Task: React.FC = observer(() => {
         id={isEmbeddedForm ? getFormId(formKey) : formId!}
         user={currentUser}
         onSubmit={handleSubmission}
+        onFileUpload={handleFileUpload}
         onSubmitSuccess={handleSubmissionSuccess}
         onSubmitFailure={handleSubmissionFailure}
         processDefinitionKey={processDefinitionKey!}

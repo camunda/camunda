@@ -9,7 +9,7 @@
 import {ContainedList, ContainedListItem, Tag} from '@carbon/react';
 import {formatDate} from 'modules/utils/formatDate';
 import styles from './Aside.module.scss';
-import {CurrentUser, Task} from 'modules/types';
+import type {CurrentUser, Task} from 'modules/types';
 import {useTranslation} from 'react-i18next';
 import {getPriorityLabel} from 'modules/utils/getPriorityLabel';
 

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {RefObject} from 'react';
+import type {RefObject} from 'react';
 import {
   IconButton,
   StructuredListBody,
@@ -17,14 +17,14 @@ import {
   TextInput,
 } from '@carbon/react';
 import {Popup, Close} from '@carbon/react/icons';
-import {Variable} from 'modules/types';
+import type {Variable} from 'modules/types';
 import {Field, useFormState} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
 import {DelayedErrorField} from './DelayedErrorField';
 import {LoadingTextarea} from './LoadingTextarea';
 import {OnNewVariableAdded} from './OnNewVariableAdded';
 import {mergeValidators} from './mergeValidators';
-import {FormValues} from '../types';
+import type {FormValues} from '../types';
 import {
   createVariableFieldName,
   createNewVariableFieldName,
@@ -158,7 +158,7 @@ const VariableEditor: React.FC<Props> = ({
                       }}
                       size="sm"
                       kind="ghost"
-                      align="top-right"
+                      align="top-end"
                       leaveDelayMs={100}
                     >
                       <Popup />
@@ -262,7 +262,7 @@ const VariableEditor: React.FC<Props> = ({
                             }}
                             size="sm"
                             kind="ghost"
-                            align="top-right"
+                            align="top-end"
                             leaveDelayMs={100}
                           >
                             <Popup />
@@ -277,7 +277,7 @@ const VariableEditor: React.FC<Props> = ({
                             }}
                             size="sm"
                             kind="ghost"
-                            align="top-right"
+                            align="top-end"
                             leaveDelayMs={100}
                           >
                             <Close />

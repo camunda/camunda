@@ -24,8 +24,8 @@ import {
   formatISODateTime,
 } from 'modules/utils/formatDateRelative';
 import {unraw} from 'modules/utils/unraw';
-import {CurrentUser, Task as TaskType} from 'modules/types';
-import {TaskFilters, useTaskFilters} from 'modules/hooks/useTaskFilters';
+import type {CurrentUser, Task as TaskType} from 'modules/types';
+import {type TaskFilters, useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {encodeTaskOpenedRef} from 'modules/utils/reftags';
 import {AssigneeTag} from 'Tasks/AssigneeTag';
 import {DateLabel} from './DateLabel';
@@ -179,7 +179,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
             className={styles.fullWidthAndHeight}
             data-testid={`task-${taskId}`}
             gap={3}
-            ref={ref}
+            ref={ref as React.LegacyRef<React.ReactNode>}
           >
             <div className={cn(styles.flex, styles.flexColumn)}>
               <span className={styles.name}>{name}</span>
@@ -222,7 +222,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
                   icon={
                     <Notification className={styles.inlineIcon} color="blue" />
                   }
-                  align="top-right"
+                  align="top-end"
                 />
               ) : null}
               {secondaryDate.overDueDate !== undefined ? (
@@ -231,7 +231,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
                   relativeLabel={t('availableTasksOverdueRelativeLabel')}
                   absoluteLabel={t('availableTasksOverdueAbsoluteLabel')}
                   icon={<Warning className={styles.inlineIcon} color="red" />}
-                  align="top-right"
+                  align="top-end"
                 />
               ) : null}
               {secondaryDate.dueDate !== undefined ? (
@@ -239,7 +239,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
                   date={secondaryDate.dueDate}
                   relativeLabel={t('availableTasksDueRelativeLabel')}
                   absoluteLabel={t('availableTasksDueAbsoluteLabel')}
-                  align="top-right"
+                  align="top-end"
                 />
               ) : null}
               {secondaryDate.completionDate !== undefined ? (
@@ -253,7 +253,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
                       color="green"
                     />
                   }
-                  align="top-right"
+                  align="top-end"
                 />
               ) : null}
             </div>

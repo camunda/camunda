@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ZBClient, IProcessVariables, JSONDoc} from 'zeebe-node';
+import {ZBClient, type IProcessVariables, type JSONDoc} from 'zeebe-node';
 const zbc = new ZBClient(); // localhost:26500 || ZEEBE_GATEWAY_ADDRESS
 
 const deploy: typeof zbc.deployProcess = (processNames) => {

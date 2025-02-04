@@ -6,6 +6,4 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_PROCESS_INSTANCES_ENABLED = false;
-
-export {IS_PROCESS_INSTANCES_ENABLED};
+export {};

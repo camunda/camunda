@@ -8,8 +8,8 @@
 
 import {useMutation} from '@tanstack/react-query';
 import {api} from 'modules/api';
-import {RequestError, request} from 'modules/request';
-import {Task, Variable} from 'modules/types';
+import {type RequestError, request} from 'modules/request';
+import type {Task, Variable} from 'modules/types';
 
 type Payload = {
   taskId: Task['id'];
@@ -19,7 +19,7 @@ type Payload = {
 function useCompleteTask() {
   return useMutation<Task, RequestError | Error, Payload>({
     mutationFn: async (payload) => {
-      const {response, error} = await request(api.completeTask(payload));
+      const {response, error} = await request(api.v1.completeTask(payload));
 
       if (response !== null) {
         return response.json();

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {expect, Route, Request} from '@playwright/test';
+import {expect, type Route, type Request} from '@playwright/test';
 import {test} from '@/visual-fixtures';
 
 const MOCK_TENANTS = [
