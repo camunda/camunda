@@ -341,6 +341,9 @@ public class IdentitySetupInitializeTest {
             tuple(mapping1.getClaimName(), mapping1.getClaimValue()),
             tuple(mapping2.getClaimName(), mapping2.getClaimValue()));
     Assertions.assertThat(createdMappings)
+        .extracting(MappingRecordValue::getId)
+        .containsExactly(mapping1.getId(), mapping2.getId());
+    Assertions.assertThat(createdMappings)
         .satisfiesExactly(
             m1 ->
                 assertThatEntityIsAssignedToRole(

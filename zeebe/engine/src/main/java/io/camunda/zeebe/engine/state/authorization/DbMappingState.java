@@ -57,7 +57,7 @@ public class DbMappingState implements MutableMappingState {
     mappingId = new DbString();
     claimByIdColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.CLAIM_BY_KEY, transactionContext, mappingId, fkClaim);
+            ZbColumnFamilies.CLAIM_BY_ID, transactionContext, mappingId, fkClaim);
   }
 
   @Override

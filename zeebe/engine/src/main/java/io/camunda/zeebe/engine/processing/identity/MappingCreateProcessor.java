@@ -104,12 +104,11 @@ public class MappingCreateProcessor implements DistributedTypedRecordProcessor<M
   public void processDistributedCommand(final TypedRecord<MappingRecord> command) {
     final var record = command.getValue();
     mappingState
-        .get(record.getMappingKey())
+        .get(record.getId())
         .ifPresentOrElse(
             existingMapping -> {
               final var errorMessage =
-                  MAPPING_SAME_CLAIM_ALREADY_EXISTS_ERROR_MESSAGE.formatted(
-                      existingMapping.getClaimName(), existingMapping.getClaimValue());
+                  MAPPING_SAME_ID_ALREADY_EXISTS_ERROR_MESSAGE.formatted(existingMapping.getId());
               rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
             },
             () -> stateWriter.appendFollowUpEvent(command.getKey(), MappingIntent.CREATED, record));
