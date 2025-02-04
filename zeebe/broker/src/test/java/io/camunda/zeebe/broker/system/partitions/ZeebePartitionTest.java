@@ -37,6 +37,7 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthIssue;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -77,6 +78,7 @@ public class ZeebePartitionTest {
     when(ctx.getPartitionContext()).thenReturn(ctx);
     when(ctx.getComponentHealthMonitor()).thenReturn(healthMonitor);
     when(ctx.createTransitionContext()).thenReturn(ctx);
+    when(ctx.getBrokerMeterRegistry()).thenReturn(new SimpleMeterRegistry());
 
     partition = new ZeebePartition(ctx, transition, List.of(new NoopStartupStep()));
   }
