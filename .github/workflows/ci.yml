@@ -180,6 +180,7 @@ jobs:
     needs: [detect-changes]
     runs-on: gcp-perf-core-16-default
     timeout-minutes: 30
+    permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
