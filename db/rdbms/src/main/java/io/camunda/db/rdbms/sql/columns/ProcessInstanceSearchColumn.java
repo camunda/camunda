@@ -26,9 +26,9 @@ public enum ProcessInstanceSearchColumn implements SearchColumn<ProcessInstanceE
   TENANT_ID("tenantId", ProcessInstanceEntity::tenantId),
   PARENT_PROCESS_INSTANCE_KEY(
       "parentProcessInstanceKey", ProcessInstanceEntity::parentProcessInstanceKey),
-  PARENT_FLOW_NODE_INSTANCE_KEY(
+  PARENT_ELEMENT_INSTANCE_KEY(
       "parentFlowNodeInstanceKey", ProcessInstanceEntity::parentFlowNodeInstanceKey),
-  INCIDENT("hasIncident", ProcessInstanceEntity::hasIncident);
+  HAS_INCIDENT("hasIncident", ProcessInstanceEntity::hasIncident);
 
   private final String property;
   private final Function<ProcessInstanceEntity, Object> propertyReader;

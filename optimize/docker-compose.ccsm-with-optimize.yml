@@ -8,7 +8,7 @@ services:
       - identity
     ports:
       - "8080:8080"
-      - "8092:8092"
+      - "9600:9600"
     environment:
       - SPRING_PROFILES_ACTIVE=ccsm
       - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
@@ -40,7 +40,7 @@ services:
       - identity
     ports:
       - "8080:8080"
-      - "8092:8092"
+      - "9600:9600"
     environment:
       - SPRING_PROFILES_ACTIVE=ccsm
       - CAMUNDA_OPTIMIZE_DATABASE=opensearch

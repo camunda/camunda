@@ -326,6 +326,12 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     return this;
   }
 
+  public TestStandaloneCamunda withBackupRepository(final String repositoryName) {
+    operateProperties.getBackup().setRepositoryName(repositoryName);
+    tasklistProperties.getBackup().setRepositoryName(repositoryName);
+    return this;
+  }
+
   /**
    * Registers or replaces a new exporter with the given ID. If it was already registered, the
    * existing configuration is passed to the modifier.
