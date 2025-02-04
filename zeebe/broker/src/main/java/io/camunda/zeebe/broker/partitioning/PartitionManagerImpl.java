@@ -127,7 +127,7 @@ public final class PartitionManagerImpl
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
-    raftPartitionFactory = new RaftPartitionFactory(brokerCfg);
+    raftPartitionFactory = new RaftPartitionFactory(brokerCfg, meterRegistry);
   }
 
   public void start() {
