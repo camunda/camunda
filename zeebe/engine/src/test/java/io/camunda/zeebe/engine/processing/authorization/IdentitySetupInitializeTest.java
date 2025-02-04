@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -353,20 +354,25 @@ public class IdentitySetupInitializeTest {
   }
 
   private static void assertThatAllPermissionsAreAddedToRole(final long roleKey) {
+    final var allAuthorizationResourceTypes = AuthorizationResourceType.values();
     final var addedPermissions =
         RecordingExporter.authorizationRecords(AuthorizationIntent.PERMISSION_ADDED)
             .withOwnerKey(roleKey)
-            .limit(AuthorizationResourceType.values().length)
+            .limit(allAuthorizationResourceTypes.length - 1) // -1 since we don't create UNSPECIFIED
             .map(Record::getValue)
             .toList();
 
+    final var expectedAuthorizationResourceTypes =
+        Arrays.stream(allAuthorizationResourceTypes)
+            .filter(resourceType -> resourceType != AuthorizationResourceType.UNSPECIFIED)
+            .toList();
     Assertions.assertThat(addedPermissions)
-        .describedAs("Added permissions for all resource types")
+        .describedAs("Added permissions for all resource types except UNSPECIFIED")
         .extracting(AuthorizationRecordValue::getResourceType)
-        .containsExactly(AuthorizationResourceType.values());
+        .containsExactlyElementsOf(expectedAuthorizationResourceTypes);
 
     final Map<AuthorizationResourceType, List<Tuple>> expectedPermissions = new HashMap<>();
-    for (final AuthorizationResourceType resourceType : AuthorizationResourceType.values()) {
+    for (final AuthorizationResourceType resourceType : allAuthorizationResourceTypes) {
       final var permissions = new ArrayList<Tuple>();
       resourceType.getSupportedPermissionTypes().stream()
           .map(permissionType -> tuple(permissionType, Set.of(WILDCARD_PERMISSION)))
