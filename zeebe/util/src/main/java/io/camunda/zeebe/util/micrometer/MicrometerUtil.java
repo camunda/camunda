@@ -12,7 +12,6 @@ import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.Builder;
-import io.micrometer.core.instrument.Timer.Sample;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
@@ -70,16 +69,6 @@ public final class MicrometerUtil {
     return new CloseableTimer(timer, sample);
   }
 
-  /**
-   * Returns a convenience object to measure the duration of a try/catch block targeting a timer
-   * represented by a gauge. If using a normal timer (i.e. histogram), use {@link #timer(Timer,
-   * Sample)}.
-   *
-   * @param setter the gauge state modifier
-   * @param unit the time unit for the time gauge, as declared when it was registered
-   * @param clock the associated registry's clock
-   * @return a closeable which will record the duration of a try/catch block on close
-   */
   public static CloseableSilently timer(
       final LongConsumer setter, final TimeUnit unit, final Clock clock) {
     return new CloseableGaugeTimer(setter, unit, clock, clock.monotonicTime());
