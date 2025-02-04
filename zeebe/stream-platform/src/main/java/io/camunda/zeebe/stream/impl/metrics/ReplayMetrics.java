@@ -7,55 +7,61 @@
  */
 package io.camunda.zeebe.stream.impl.metrics;
 
-import io.prometheus.client.Counter;
-import io.prometheus.client.Gauge;
-import io.prometheus.client.Histogram;
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class ReplayMetrics {
 
-  private static final String LABEL_NAME_PARTITION = "partition";
+  private final AtomicLong lastSourcePosition = new AtomicLong();
 
-  private static final String NAMESPACE = "zeebe";
+  private final Clock clock;
+  private final Counter replayEventsCount;
+  private final Timer replayDurationTimer;
 
-  private static final Counter REPLAY_EVENTS_COUNT =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("replay_events_total")
-          .help("Number of events replayed by the stream processor.")
-          .labelNames(LABEL_NAME_PARTITION)
-          .register();
+  public ReplayMetrics(final MeterRegistry registry) {
+    clock = registry.config().clock();
 
-  private static final Gauge LAST_SOURCE_POSITION =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .name("replay_last_source_position")
-          .help("The last source position the stream processor has replayed.")
-          .labelNames(LABEL_NAME_PARTITION)
-          .register();
+    replayEventsCount = registerReplayEventsCount(registry);
+    replayDurationTimer = registerReplayDuration(registry);
+    registerLastSourcePosition(registry);
+  }
 
-  private static final Histogram REPLAY_DURATION =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("replay_event_batch_replay_duration")
-          .help("Time for replay a batch of events (in seconds)")
-          .labelNames(LABEL_NAME_PARTITION)
-          .register();
+  private Timer registerReplayDuration(final MeterRegistry registry) {
+    final var meterDoc = StreamMetricsDoc.REPLAY_DURATION;
+    return Timer.builder(meterDoc.getName())
+        .description(meterDoc.getDescription())
+        .register(registry);
+  }
 
-  private final String partitionIdLabel;
+  private Counter registerReplayEventsCount(final MeterRegistry registry) {
+    final var meterDoc = StreamMetricsDoc.REPLAY_EVENTS_COUNT;
+    return Counter.builder(meterDoc.getName())
+        .description(meterDoc.getDescription())
+        .register(registry);
+  }
 
-  public ReplayMetrics(final int partitionId) {
-    partitionIdLabel = String.valueOf(partitionId);
+  private void registerLastSourcePosition(final MeterRegistry registry) {
+    final var meterDoc = StreamMetricsDoc.LAST_SOURCE_POSITION;
+    Gauge.builder(meterDoc.getName(), lastSourcePosition, AtomicLong::longValue)
+        .description(meterDoc.getDescription())
+        .register(registry);
   }
 
   public void event() {
-    REPLAY_EVENTS_COUNT.labels(partitionIdLabel).inc();
+    replayEventsCount.increment();
   }
 
-  public Histogram.Timer startReplayDurationTimer() {
-    return REPLAY_DURATION.labels(partitionIdLabel).startTimer();
+  public CloseableSilently startReplayDurationTimer() {
+    return MicrometerUtil.timer(replayDurationTimer, Timer.start(clock));
   }
 
   public void setLastSourcePosition(final long position) {
-    LAST_SOURCE_POSITION.labels(partitionIdLabel).set(position);
+    lastSourcePosition.set(position);
   }
 }
