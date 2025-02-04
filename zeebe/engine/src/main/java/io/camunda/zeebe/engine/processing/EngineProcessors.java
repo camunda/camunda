@@ -185,7 +185,8 @@ public final class EngineProcessors {
             clock,
             config,
             authCheckBehavior,
-            transientProcessMessageSubscriptionState);
+            transientProcessMessageSubscriptionState,
+            processEngineMetrics);
 
     addDecisionProcessors(
         typedRecordProcessors, decisionBehavior, writers, processingState, authCheckBehavior);
@@ -361,7 +362,8 @@ public final class EngineProcessors {
       final InstantSource clock,
       final EngineConfiguration config,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final ProcessEngineMetrics processEngineMetrics) {
     return BpmnProcessors.addBpmnStreamProcessor(
         processingState,
         scheduledTaskState,
@@ -376,7 +378,8 @@ public final class EngineProcessors {
         clock,
         config,
         authCheckBehavior,
-        transientProcessMessageSubscriptionState);
+        transientProcessMessageSubscriptionState,
+        processEngineMetrics);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(
