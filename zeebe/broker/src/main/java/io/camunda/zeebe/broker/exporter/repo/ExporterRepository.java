@@ -90,12 +90,14 @@ public final class ExporterRepository {
   private void validate(final ExporterDescriptor descriptor) throws ExporterLoadException {
     try {
       final Exporter instance = descriptor.newInstance();
-      final ExporterContext context =
+      try (final var context =
           new ExporterContext(
-              LOG, descriptor.getConfiguration(), NULL_PARTITION_ID, new SimpleMeterRegistry());
-
-      ThreadContextUtil.runCheckedWithClassLoader(
-          () -> instance.configure(context), instance.getClass().getClassLoader());
+              LOG, descriptor.getConfiguration(), NULL_PARTITION_ID, new SimpleMeterRegistry())) {
+        ThreadContextUtil.runCheckedWithClassLoader(
+            () -> instance.configure(context), instance.getClass().getClassLoader());
+      } finally {
+        instance.close();
+      }
     } catch (final Exception ex) {
       throw new ExporterLoadException(descriptor.getId(), "failed validation", ex);
     }
