@@ -30,7 +30,6 @@ final class FlowControlEndpointIT {
             .withPartitionsCount(2)
             .withReplicationFactor(1)
             .withEmbeddedGateway(true)
-            .withUnauthenticatedAccess()
             .build();
   }
 

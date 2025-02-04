@@ -101,8 +101,7 @@ public final class TestSimpleCamundaApplication
         .withAdditionalProfile(Profile.BROKER)
         .withAdditionalProfile(Profile.OPERATE)
         .withAdditionalProfile(Profile.TASKLIST)
-        .withAdditionalInitializer(new WebappsConfigurationInitializer())
-        .withUnauthenticatedAccess();
+        .withAdditionalInitializer(new WebappsConfigurationInitializer());
   }
 
   @Override

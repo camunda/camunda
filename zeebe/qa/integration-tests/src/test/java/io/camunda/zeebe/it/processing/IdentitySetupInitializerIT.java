@@ -226,7 +226,6 @@ final class IdentitySetupInitializerIT {
             .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(authorizationsEnabled))
             .withSecurityConfig(securityCfg)
             .withBrokerConfig(cfg -> cfg.getCluster().setPartitionsCount(partitionCount))
-            .withUnauthenticatedAccess()
             .withRecordingExporter(true);
 
     if (tempDir != null) {
