@@ -17,8 +17,8 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationDeleteRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
@@ -126,10 +126,31 @@ public class AuthorizationServices
     return sendBrokerRequest(brokerRequest);
   }
 
+  public CompletableFuture<AuthorizationRecord> updateAuthorization(
+      final UpdateAuthorizationRequest request) {
+    final var brokerRequest =
+        new BrokerAuthorizationRequest(AuthorizationIntent.UPDATE)
+            .setAuthorizationKey(request.authorizationKey())
+            .setOwnerId(request.ownerId())
+            .setOwnerType(request.ownerType())
+            .setResourceId(request.resourceId())
+            .setResourceType(request.resourceType())
+            .setPermissions(request.permissions());
+    return sendBrokerRequest(brokerRequest);
+  }
+
   public record CreateAuthorizationRequest(
       String ownerId,
       AuthorizationOwnerType ownerType,
       String resourceId,
       AuthorizationResourceType resourceType,
       Set<PermissionType> permissionType) {}
+
+  public record UpdateAuthorizationRequest(
+      long authorizationKey,
+      String ownerId,
+      AuthorizationOwnerType ownerType,
+      String resourceId,
+      AuthorizationResourceType resourceType,
+      Set<PermissionType> permissions) {}
 }
