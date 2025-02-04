@@ -84,7 +84,9 @@ public final class EngineProcessors {
         new DueDateTimerChecker(scheduledTaskStateFactory.get().getTimerState(), featureFlags);
 
     final var jobMetrics = new JobMetrics(partitionId);
-    final var processEngineMetrics = new ProcessEngineMetrics(processingState.getPartitionId());
+    final var processEngineMetrics =
+        new ProcessEngineMetrics(
+            typedRecordProcessorContext.getMeterRegistry(), processingState.getPartitionId());
 
     subscriptionCommandSender.setWriters(writers);
 

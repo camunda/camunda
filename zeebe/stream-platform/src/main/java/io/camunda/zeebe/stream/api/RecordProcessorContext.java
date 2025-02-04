@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 
 public interface RecordProcessorContext {
@@ -30,4 +31,6 @@ public interface RecordProcessorContext {
   InterPartitionCommandSender getPartitionCommandSender();
 
   KeyGenerator getKeyGenerator();
+
+  MeterRegistry getMeterRegistry();
 }

@@ -33,6 +33,7 @@ import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.impl.RecordProcessorContextImpl;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.AfterEach;
@@ -73,7 +74,13 @@ final class CheckpointRecordsProcessorTest {
       final ProcessingScheduleService executor, final ZeebeDb zeebeDb) {
     final var context = zeebeDb.createContext();
     return new RecordProcessorContextImpl(
-        1, executor, zeebeDb, context, null, new DbKeyGenerator(1, zeebeDb, context));
+        1,
+        executor,
+        zeebeDb,
+        context,
+        null,
+        new DbKeyGenerator(1, zeebeDb, context),
+        new SimpleMeterRegistry());
   }
 
   @AfterEach
