@@ -41,6 +41,7 @@ import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.collection.Tuple;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -97,9 +98,11 @@ public final class ControllableRaftContexts {
   private final NavigableMap<Long, MemberId> leadersAtTerms = new TreeMap<>();
   private final AppendListener appendListener = mock(AppendListener.class);
   private final DataLossChecker dataLossChecker = new DataLossChecker(appendListener);
+  private final SimpleMeterRegistry meterRegistry;
 
   public ControllableRaftContexts(final int nodeCount) {
     this.nodeCount = nodeCount;
+    meterRegistry = new SimpleMeterRegistry();
   }
 
   public Map<MemberId, RaftContext> getRaftServers() {
@@ -137,6 +140,7 @@ public final class ControllableRaftContexts {
     messageQueue.clear();
     leadersAtTerms.clear();
     directory = null;
+    meterRegistry.close();
   }
 
   private void joinRaftServers() throws InterruptedException, ExecutionException, TimeoutException {
@@ -193,7 +197,8 @@ public final class ControllableRaftContexts {
             getRaftThreadContextFactory(memberId),
             () -> random,
             RaftElectionConfig.ofPriorityElection(nodeCount, Integer.parseInt(memberId.id()) + 1),
-            new RaftPartitionConfig());
+            new RaftPartitionConfig(),
+            meterRegistry);
     raft.setEntryValidator(new NoopEntryValidator());
     return raft;
   }
