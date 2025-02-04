@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.prometheus.client.Counter;
+import java.util.Objects;
 
 public final class ProcessEngineMetrics {
 
@@ -74,7 +75,7 @@ public final class ProcessEngineMetrics {
   private final String partitionIdLabel;
 
   public ProcessEngineMetrics(final MeterRegistry registry, final int partitionId) {
-    this.registry = registry;
+    this.registry = Objects.requireNonNull(registry, "must specify a registry");
     partitionIdLabel = String.valueOf(partitionId);
   }
 
