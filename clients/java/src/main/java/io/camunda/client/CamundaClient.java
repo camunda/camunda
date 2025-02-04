@@ -55,6 +55,7 @@ import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
+import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.command.UpdateJobCommandStep1;
 import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
@@ -1631,4 +1632,25 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder to configure and send the delete authorization command
    */
   DeleteAuthorizationCommandStep1 newDeleteAuthorizationCommand(long authorizationKey);
+
+  /**
+   * Command to update an authorization
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * camundaClient
+   *   .newUpdateAuthorizationCommand(authorizationKey)
+   *   .ownerId(ownerId)
+   *   .ownerType(ownerType)
+   *   .resourceId(resourceId)
+   *   .resourceType(resourceType)
+   *   .permissionTypes(Set.of(PermissionType.READ))
+   *   .send();
+   * </pre>
+   *
+   * @param authorizationKey the key of the authorization to update
+   * @return a builder to configure and send the update authorization command
+   */
+  UpdateAuthorizationCommandStep1 newUpdateAuthorizationCommand(long authorizationKey);
 }
