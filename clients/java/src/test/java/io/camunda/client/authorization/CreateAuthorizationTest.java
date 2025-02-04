@@ -18,7 +18,7 @@ package io.camunda.client.authorization;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.client.protocol.rest.AuthorizationCreateRequest;
+import io.camunda.client.protocol.rest.AuthorizationRequest;
 import io.camunda.client.protocol.rest.OwnerTypeEnum;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
@@ -43,8 +43,8 @@ public class CreateAuthorizationTest extends ClientRestTest {
         .join();
 
     // then
-    final AuthorizationCreateRequest request =
-        gatewayService.getLastRequest(AuthorizationCreateRequest.class);
+    final AuthorizationRequest request =
+        gatewayService.getLastRequest(AuthorizationRequest.class);
     assertThat(request.getOwnerId()).isEqualTo("ownerId");
     assertThat(request.getOwnerType()).isEqualTo(OwnerTypeEnum.USER);
     assertThat(request.getResourceId()).isEqualTo("resourceId");

@@ -58,7 +58,7 @@ import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.auth.ClaimTransformer;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
@@ -314,7 +314,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
-      final AuthorizationCreateRequest request) {
+      final AuthorizationRequest request) {
     return getResult(
         validateAuthorizationCreateRequest(request),
         () ->

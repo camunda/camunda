@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
@@ -61,7 +61,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     final var resourceId = "resourceId";
 
     final var request =
-        new AuthorizationCreateRequest()
+        new AuthorizationRequest()
             .ownerId(ownerId)
             .ownerType(OwnerTypeEnum.USER)
             .resourceId(resourceId)
@@ -112,7 +112,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
   @ParameterizedTest
   @MethodSource("provideInvalidCreationRequests")
   public void createAuthorizationShouldReturnBadRequest(
-      final AuthorizationCreateRequest request, final String errorMessage) {
+      final AuthorizationRequest request, final String errorMessage) {
     final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle(INVALID_ARGUMENT.name());
     expectedBody.setInstance(URI.create("/v2/authorizations"));
@@ -136,14 +136,14 @@ public class AuthorizationControllerTest extends RestControllerTest {
 
     return Stream.of(
         Arguments.of(
-            new AuthorizationCreateRequest()
+            new AuthorizationRequest()
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("resourceId")
                 .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissions(permissions),
             "No ownerId provided."),
         Arguments.of(
-            new AuthorizationCreateRequest()
+            new AuthorizationRequest()
                 .ownerId("")
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("resourceId")
@@ -151,21 +151,21 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .permissions(permissions),
             "No ownerId provided."),
         Arguments.of(
-            new AuthorizationCreateRequest()
+            new AuthorizationRequest()
                 .ownerId("ownerId")
                 .resourceId("resourceId")
                 .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissions(permissions),
             "No ownerType provided."),
         Arguments.of(
-            new AuthorizationCreateRequest()
+            new AuthorizationRequest()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissions(permissions),
             "No resourceId provided."),
         Arguments.of(
-            new AuthorizationCreateRequest()
+            new AuthorizationRequest()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("")
@@ -173,21 +173,21 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .permissions(permissions),
             "No resourceId provided."),
         Arguments.of(
-            new AuthorizationCreateRequest()
+            new AuthorizationRequest()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("resourceId")
                 .permissions(permissions),
             "No resourceType provided."),
         Arguments.of(
-            new AuthorizationCreateRequest()
+            new AuthorizationRequest()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("resourceId")
                 .resourceType(ResourceTypeEnum.RESOURCE),
             "No permissions provided."),
         Arguments.of(
-            new AuthorizationCreateRequest()
+            new AuthorizationRequest()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("resourceId")

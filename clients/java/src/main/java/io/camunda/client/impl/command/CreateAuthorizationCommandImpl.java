@@ -27,7 +27,7 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CreateAuthorizationResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.protocol.rest.AuthorizationCreateRequest;
+import io.camunda.client.protocol.rest.AuthorizationRequest;
 import io.camunda.client.protocol.rest.OwnerTypeEnum;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
@@ -47,13 +47,13 @@ public class CreateAuthorizationCommandImpl
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
   private final RequestConfig.Builder httpRequestConfig;
-  private final AuthorizationCreateRequest request;
+  private final AuthorizationRequest request;
 
   public CreateAuthorizationCommandImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     httpRequestConfig = httpClient.newRequestConfig();
-    request = new AuthorizationCreateRequest();
+    request = new AuthorizationRequest();
   }
 
   @Override

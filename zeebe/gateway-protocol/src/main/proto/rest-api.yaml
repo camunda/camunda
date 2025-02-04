@@ -2419,7 +2419,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AuthorizationCreateRequest"
+              $ref: "#/components/schemas/AuthorizationRequest"
         required: true
       responses:
         "201":
@@ -6044,7 +6044,7 @@ components:
         - MAPPING
         - UNSPECIFIED
 
-    AuthorizationCreateRequest:
+    AuthorizationRequest:
       type: object
       properties:
         ownerId:
