@@ -163,6 +163,29 @@ public class DbAuthorizationState implements MutableAuthorizationState {
   }
 
   @Override
+  public void delete(final long authorizationKey) {
+    this.authorizationKey.wrapLong(authorizationKey);
+    final var persistedAuthorization =
+        authorizationByAuthorizationKeyColumnFamily.get(this.authorizationKey);
+
+    // remove the old permissions
+    persistedAuthorization
+        .getPermissions()
+        .forEach(
+            permissionType -> {
+              removePermission(
+                  persistedAuthorization.getOwnerType(),
+                  persistedAuthorization.getOwnerId(),
+                  persistedAuthorization.getResourceType(),
+                  permissionType,
+                  Set.of(persistedAuthorization.getResourceId()));
+            });
+
+    // delete the old authorization record
+    authorizationByAuthorizationKeyColumnFamily.deleteExisting(this.authorizationKey);
+  }
+
+  @Override
   public Optional<PersistedAuthorization> get(final long authorizationKey) {
     this.authorizationKey.wrapLong(authorizationKey);
     final var persistedAuthorization =
