@@ -27,6 +27,11 @@ public class BrokerAuthorizationRequest extends BrokerExecuteCommand<Authorizati
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
+  public BrokerAuthorizationRequest setAuthorizationKey(final long authorizationKey) {
+    requestDto.setAuthorizationKey(authorizationKey);
+    return this;
+  }
+
   public BrokerAuthorizationRequest setOwnerId(final String ownerId) {
     requestDto.setOwnerId(ownerId);
     return this;
@@ -42,8 +47,7 @@ public class BrokerAuthorizationRequest extends BrokerExecuteCommand<Authorizati
     return this;
   }
 
-  public BrokerAuthorizationRequest setResourceType(
-      final AuthorizationResourceType resourceType) {
+  public BrokerAuthorizationRequest setResourceType(final AuthorizationResourceType resourceType) {
     requestDto.setResourceType(resourceType);
     return this;
   }

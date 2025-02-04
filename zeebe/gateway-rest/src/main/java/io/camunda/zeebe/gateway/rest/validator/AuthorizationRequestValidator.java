@@ -16,7 +16,7 @@ import org.springframework.http.ProblemDetail;
 
 public final class AuthorizationRequestValidator {
 
-  public static Optional<ProblemDetail> validateAuthorizationCreateRequest(
+  public static Optional<ProblemDetail> validateAuthorizationRequest(
       final AuthorizationRequest request) {
     return validate(
         violations -> {

@@ -43,8 +43,7 @@ public class CreateAuthorizationTest extends ClientRestTest {
         .join();
 
     // then
-    final AuthorizationRequest request =
-        gatewayService.getLastRequest(AuthorizationRequest.class);
+    final AuthorizationRequest request = gatewayService.getLastRequest(AuthorizationRequest.class);
     assertThat(request.getOwnerId()).isEqualTo("ownerId");
     assertThat(request.getOwnerType()).isEqualTo(OwnerTypeEnum.USER);
     assertThat(request.getResourceId()).isEqualTo("resourceId");
