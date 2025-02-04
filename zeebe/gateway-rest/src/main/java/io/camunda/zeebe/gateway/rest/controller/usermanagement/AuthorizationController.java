@@ -48,7 +48,7 @@ public class AuthorizationController {
   }
 
   @CamundaDeleteMapping(path = "/authorizations/{authorizationKey}")
-  public CompletableFuture<ResponseEntity<Object>> deleteAuthorization(
+  public CompletableFuture<ResponseEntity<Object>> delete(
       @PathVariable final long authorizationKey) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
