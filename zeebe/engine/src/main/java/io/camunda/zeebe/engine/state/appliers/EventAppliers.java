@@ -481,9 +481,6 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerAuthorizationAppliers(final MutableProcessingState state) {
-    register(AuthorizationIntent.PERMISSION_ADDED, new AuthorizationPermissionAddedApplier(state));
-    register(
-        AuthorizationIntent.PERMISSION_REMOVED, new AuthorizationPermissionRemovedApplier(state));
     register(
         AuthorizationIntent.CREATED,
         new AuthorizationCreatedApplier(state.getAuthorizationState()));
