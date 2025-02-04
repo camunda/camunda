@@ -115,6 +115,11 @@
       <artifactId>feel-engine</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+    </dependency>
+
     <!-- TEST DEPENDENCIES -->
     <dependency>
       <groupId>io.camunda</groupId>
@@ -245,11 +250,6 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-core</artifactId>
-      <scope>test</scope>
-    </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
