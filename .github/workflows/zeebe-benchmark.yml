@@ -304,7 +304,7 @@ jobs:
           location: ${{ inputs.cluster-region }}
       - name: Add camunda helm repo
         run: |
-          helm repo add zeebe-benchmark https://zeebe-io.github.io/benchmark-helm
+          helm repo add zeebe-benchmark https://camunda.github.io/zeebe-benchmark-helm
           helm repo update
 
       - name: Find previous Helm chart release version
