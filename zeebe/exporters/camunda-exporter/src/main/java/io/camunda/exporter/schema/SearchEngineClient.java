@@ -50,4 +50,6 @@ public interface SearchEngineClient {
   default void deleteIndexTemplate(final String indexTemplateName) {}
 
   default void deleteIndexLifeCyclePolicy(final String policyName) {}
+
+  default void deleteComponentTemplate(final String templateName) {}
 }

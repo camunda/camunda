@@ -36,6 +36,7 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
 
   @Override
   public ActorFuture<Void> deleteHistory() {
+
     final ActorFuture<Void> result = concurrencyControl.createFuture();
     concurrencyControl.run(() -> purgeExporters(result));
     return result;

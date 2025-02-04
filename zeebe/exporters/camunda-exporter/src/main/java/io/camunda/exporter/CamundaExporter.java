@@ -234,6 +234,9 @@ public class CamundaExporter implements Exporter {
     if (retention.isEnabled()) {
       client.deleteIndexLifeCyclePolicy(retention.getPolicyName());
     }
+
+    client.deleteComponentTemplate("operate_template");
+
     LOG.info("Exporter purged");
   }
 

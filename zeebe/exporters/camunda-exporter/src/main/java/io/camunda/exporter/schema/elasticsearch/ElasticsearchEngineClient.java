@@ -16,6 +16,8 @@ import co.elastic.clients.elasticsearch._types.AcknowledgedResponse;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.mapping.Property;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import co.elastic.clients.elasticsearch.cluster.DeleteComponentTemplateRequest;
+import co.elastic.clients.elasticsearch.cluster.DeleteComponentTemplateResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.ilm.DeleteLifecycleRequest;
 import co.elastic.clients.elasticsearch.ilm.DeleteLifecycleResponse;
@@ -270,6 +272,21 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     } catch (final IOException e) {
       final var errMsg = String.format("Failed to delete index policy %s", policyName);
       throw new ElasticsearchExporterException(errMsg, e);
+    }
+  }
+
+  @Override
+  public void deleteComponentTemplate(final String templateName) {
+    final DeleteComponentTemplateRequest request =
+        new DeleteComponentTemplateRequest.Builder().name(templateName).build();
+
+    try {
+      final DeleteComponentTemplateResponse response =
+          client.cluster().deleteComponentTemplate(request);
+      LOG.debug("Delete component request acknowledged: {}", response.acknowledged());
+    } catch (final IOException e) {
+      final var errMsg = String.format("Failed to delete component template %s", templateName);
+      LOG.error(errMsg, e);
     }
   }
 
