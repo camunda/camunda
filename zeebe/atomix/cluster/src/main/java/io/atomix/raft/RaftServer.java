@@ -33,7 +33,9 @@ import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
+import io.atomix.utils.Builder;
 import io.camunda.zeebe.util.health.FailureListener;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -464,6 +466,7 @@ public interface RaftServer {
     protected RaftElectionConfig electionConfig = RaftElectionConfig.ofDefaultElection();
     protected RaftPartitionConfig partitionConfig = new RaftPartitionConfig();
     protected int partitionId;
+    protected MeterRegistry meterRegistry;
 
     protected Builder(final MemberId localMemberId) {
       this.localMemberId = checkNotNull(localMemberId, "localMemberId cannot be null");
@@ -546,6 +549,11 @@ public interface RaftServer {
 
     public Builder withPartitionId(final int partitionId) {
       this.partitionId = partitionId;
+      return this;
+    }
+
+    public Builder withMeterRegistry(final MeterRegistry meterRegistry) {
+      this.meterRegistry = meterRegistry;
       return this;
     }
   }
