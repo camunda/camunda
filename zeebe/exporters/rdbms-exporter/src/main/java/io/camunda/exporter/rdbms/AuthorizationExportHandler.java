@@ -47,6 +47,7 @@ public class AuthorizationExportHandler implements RdbmsExportHandler<Authorizat
 
   private AuthorizationDbModel map(final AuthorizationRecordValue authorization) {
     return new AuthorizationDbModel.Builder()
+        .authorizationKey(authorization.getAuthorizationKey())
         .ownerId(authorization.getOwnerId())
         .ownerType(authorization.getOwnerType().name())
         .resourceType(authorization.getResourceType().name())
