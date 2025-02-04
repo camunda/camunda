@@ -328,11 +328,6 @@ public final class AuthorizationClient {
       return this;
     }
 
-    public AuthorizationUpdateClient withChangeset(final Set<String> changeset) {
-      authorizationUpdateRecord.setChangedAttributes(changeset);
-      return this;
-    }
-
     public AuthorizationUpdateClient expectRejection() {
       expectRejection = true;
       return this;
