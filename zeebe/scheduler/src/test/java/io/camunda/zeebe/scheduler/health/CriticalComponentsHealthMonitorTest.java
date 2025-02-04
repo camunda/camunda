@@ -165,10 +165,14 @@ public class CriticalComponentsHealthMonitorTest {
     final ControllableComponent component = new ControllableComponent("test");
     monitor.registerComponent(component);
     Awaitility.await().until(() -> monitor.getHealthReport().getStatus() == HealthStatus.HEALTHY);
+    verify(graphListener).registerNode(monitor, Optional.of(parentComponent));
+    verify(graphListener).registerNode(component, Optional.of(monitor.componentName()));
 
     // when
     monitor.removeComponent(component);
     waitUntilAllDone();
+    verify(graphListener)
+        .unregisterRelationship(component.componentName(), monitor.componentName());
     component.setUnhealthy();
     waitUntilAllDone();
 
