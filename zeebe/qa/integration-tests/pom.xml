@@ -7,6 +7,7 @@
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-qa</artifactId>
     <version>8.5.14-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <artifactId>zeebe-qa-integration-tests</artifactId>
@@ -455,6 +456,11 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

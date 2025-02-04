@@ -36,6 +36,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPart
 import io.camunda.zeebe.broker.system.partitions.impl.steps.InterPartitionCommandServiceStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionTransitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.MetricsStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.MigrationTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.QueryServicePartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.RockDbMetricExporterPartitionStartupStep;
@@ -59,6 +60,7 @@ import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -72,6 +74,7 @@ public final class ZeebePartitionFactory {
 
   private static final List<PartitionTransitionStep> TRANSITION_STEPS =
       List.of(
+          new MetricsStep(),
           new LogStoragePartitionTransitionStep(),
           new LogStreamPartitionTransitionStep(),
           new ZeebeDbPartitionTransitionStep(),
@@ -100,6 +103,7 @@ public final class ZeebePartitionFactory {
   private final TopologyManagerImpl topologyManager;
   private final FeatureFlags featureFlags;
   private final List<PartitionRaftListener> partitionRaftListeners;
+  private final MeterRegistry meterRegistry;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -114,7 +118,8 @@ public final class ZeebePartitionFactory {
       final List<PartitionListener> partitionListeners,
       final List<PartitionRaftListener> partitionRaftListeners,
       final TopologyManagerImpl topologyManager,
-      final FeatureFlags featureFlags) {
+      final FeatureFlags featureFlags,
+      final MeterRegistry meterRegistry) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -128,6 +133,7 @@ public final class ZeebePartitionFactory {
     this.partitionRaftListeners = partitionRaftListeners;
     this.topologyManager = topologyManager;
     this.featureFlags = featureFlags;
+    this.meterRegistry = meterRegistry;
   }
 
   public ZeebePartition constructPartition(
@@ -162,7 +168,8 @@ public final class ZeebePartitionFactory {
             new PartitionProcessingState(raftPartition),
             diskSpaceUsageMonitor,
             gatewayBrokerTransport,
-            topologyManager);
+            topologyManager,
+            meterRegistry);
 
     final PartitionTransition newTransitionBehavior = new PartitionTransitionImpl(TRANSITION_STEPS);
 

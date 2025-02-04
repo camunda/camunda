@@ -28,7 +28,7 @@ import io.camunda.zeebe.exporter.opensearch.dto.PutIndexTemplateResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.prometheus.client.Histogram;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,22 +50,17 @@ public class OpensearchClient implements AutoCloseable {
   private final RecordIndexRouter indexRouter;
   private final BulkIndexRequest bulkIndexRequest;
 
-  private OpensearchMetrics metrics;
-
-  OpensearchClient(final OpensearchExporterConfiguration configuration) {
-    this(configuration, new BulkIndexRequest());
-  }
+  private final OpensearchMetrics metrics;
 
   OpensearchClient(
-      final OpensearchExporterConfiguration configuration,
-      final BulkIndexRequest bulkIndexRequest) {
+      final OpensearchExporterConfiguration configuration, final MeterRegistry meterRegistry) {
     this(
         configuration,
-        bulkIndexRequest,
+        new BulkIndexRequest(),
         RestClientFactory.of(configuration),
         new RecordIndexRouter(configuration.index),
         new TemplateReader(configuration.index),
-        null);
+        new OpensearchMetrics(meterRegistry));
   }
 
   OpensearchClient(
@@ -97,9 +92,6 @@ public class OpensearchClient implements AutoCloseable {
    *     the batch because only one copy of the record is allowed in the batch
    */
   public boolean index(final Record<?> record, final RecordSequence recordSequence) {
-    if (metrics == null) {
-      metrics = new OpensearchMetrics(record.getPartitionId());
-    }
     final BulkIndexAction action =
         new BulkIndexAction(
             indexRouter.indexFor(record),
@@ -121,7 +113,7 @@ public class OpensearchClient implements AutoCloseable {
     metrics.recordBulkSize(bulkIndexRequest.size());
     metrics.recordBulkMemorySize(bulkIndexRequest.memoryUsageBytes());
 
-    try (final Histogram.Timer ignored = metrics.measureFlushDuration()) {
+    try (final var ignored = metrics.measureFlushDuration()) {
       exportBulk();
 
       // all records where flushed, create new bulk request, otherwise retry next time

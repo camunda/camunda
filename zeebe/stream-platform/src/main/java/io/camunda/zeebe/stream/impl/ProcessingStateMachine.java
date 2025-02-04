@@ -192,7 +192,7 @@ public final class ProcessingStateMachine {
     metrics = new StreamProcessorMetrics(partitionId);
     streamProcessorListener = context.getStreamProcessorListener();
 
-    processingMetrics = new ProcessingMetrics(Integer.toString(partitionId));
+    processingMetrics = new ProcessingMetrics(context.getMeterRegistry());
 
     processingFilter =
         new MetadataEventFilter(

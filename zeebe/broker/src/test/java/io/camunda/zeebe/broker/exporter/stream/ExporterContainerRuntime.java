@@ -19,6 +19,8 @@ import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.jar.ExternalJarLoadException;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.nio.file.Path;
 import org.agrona.CloseHelper;
@@ -34,6 +36,7 @@ public final class ExporterContainerRuntime implements CloseableSilently {
   private final RuntimeActor actor;
   private final ExportersState state;
   private final ExporterMetrics metrics;
+  private final MeterRegistry meterRegistry;
 
   public ExporterContainerRuntime(final Path storagePath) {
     scheduler = ActorScheduler.newActorScheduler().build();
@@ -46,7 +49,8 @@ public final class ExporterContainerRuntime implements CloseableSilently {
     scheduler.submitActor(actor).join();
 
     state = new ExportersState(zeebeDb, zeebeDb.createContext());
-    metrics = new ExporterMetrics(1);
+    meterRegistry = new SimpleMeterRegistry();
+    metrics = new ExporterMetrics(meterRegistry);
   }
 
   @Override
@@ -65,7 +69,18 @@ public final class ExporterContainerRuntime implements CloseableSilently {
 
   public ExporterContainer newContainer(
       final ExporterDescriptor descriptor, final int partitionId) {
-    final var container = new ExporterContainer(descriptor, partitionId);
+    final var container = new ExporterContainer(descriptor, partitionId, meterRegistry);
+    container.initContainer(actor.getActorControl(), metrics, state);
+
+    return container;
+  }
+
+  public ExporterContainer newContainer(
+      final ExporterDescriptor descriptor,
+      final int partitionId,
+      final MeterRegistry meterRegistry) {
+
+    final var container = new ExporterContainer(descriptor, partitionId, meterRegistry);
     container.initContainer(actor.getActorControl(), metrics, state);
 
     return container;

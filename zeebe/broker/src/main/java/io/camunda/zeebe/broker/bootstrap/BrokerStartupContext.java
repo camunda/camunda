@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.List;
 
@@ -112,4 +113,6 @@ public interface BrokerStartupContext {
   BrokerClient getBrokerClient();
 
   Duration getShutdownTimeout();
+
+  MeterRegistry getMeterRegistry();
 }

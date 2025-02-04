@@ -35,6 +35,7 @@ import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
@@ -134,4 +135,10 @@ public interface PartitionTransitionContext extends PartitionContext {
   BackupStore getBackupStore();
 
   void setBackupStore(BackupStore backupStore);
+
+  MeterRegistry getBrokerMeterRegistry();
+
+  MeterRegistry getPartitionMeterRegistry();
+
+  void setPartitionMeterRegistry(MeterRegistry partitionMeterRegistry);
 }

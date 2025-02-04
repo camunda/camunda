@@ -25,6 +25,7 @@ import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
@@ -64,7 +65,7 @@ final class ElasticsearchClientTest {
           restClient,
           indexRouter,
           templateReader,
-          new ElasticsearchMetrics(PARTITION_ID));
+          new ElasticsearchMetrics(new SimpleMeterRegistry()));
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")

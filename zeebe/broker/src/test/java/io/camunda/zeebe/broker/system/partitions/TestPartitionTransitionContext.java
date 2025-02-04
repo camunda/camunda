@@ -43,12 +43,17 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthMonitor;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
 public class TestPartitionTransitionContext implements PartitionTransitionContext {
+
+  private final CompositeMeterRegistry brokerMeterRegistry = new CompositeMeterRegistry();
 
   private RaftPartition raftPartition;
   private Role currentRole;
@@ -74,6 +79,14 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private BackupManager backupManager;
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private BackupStore backupStore;
+  private MeterRegistry partitionMeterRegistry;
+
+  public TestPartitionTransitionContext() {
+    partitionMeterRegistry = new SimpleMeterRegistry();
+    partitionMeterRegistry.config().commonTags("partitionId", "1");
+
+    brokerMeterRegistry.add(partitionMeterRegistry);
+  }
 
   @Override
   public int getPartitionId() {
@@ -284,6 +297,21 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public void setBackupStore(final BackupStore backupStore) {
     this.backupStore = backupStore;
+  }
+
+  @Override
+  public MeterRegistry getBrokerMeterRegistry() {
+    return brokerMeterRegistry;
+  }
+
+  @Override
+  public MeterRegistry getPartitionMeterRegistry() {
+    return partitionMeterRegistry;
+  }
+
+  @Override
+  public void setPartitionMeterRegistry(final MeterRegistry partitionMeterRegistry) {
+    this.partitionMeterRegistry = partitionMeterRegistry;
   }
 
   public void setGatewayBrokerTransport(final AtomixServerTransport gatewayBrokerTransport) {

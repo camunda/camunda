@@ -26,7 +26,7 @@ import io.camunda.zeebe.exporter.dto.PutIndexTemplateResponse;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.prometheus.client.Histogram;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Optional;
@@ -44,22 +44,17 @@ class ElasticsearchClient implements AutoCloseable {
   private final RecordIndexRouter indexRouter;
   private final BulkIndexRequest bulkIndexRequest;
 
-  private ElasticsearchMetrics metrics;
-
-  ElasticsearchClient(final ElasticsearchExporterConfiguration configuration) {
-    this(configuration, new BulkIndexRequest());
-  }
+  private final ElasticsearchMetrics metrics;
 
   ElasticsearchClient(
-      final ElasticsearchExporterConfiguration configuration,
-      final BulkIndexRequest bulkIndexRequest) {
+      final ElasticsearchExporterConfiguration configuration, final MeterRegistry meterRegistry) {
     this(
         configuration,
-        bulkIndexRequest,
+        new BulkIndexRequest(),
         RestClientFactory.of(configuration),
         new RecordIndexRouter(configuration.index),
         new TemplateReader(configuration),
-        null);
+        new ElasticsearchMetrics(meterRegistry));
   }
 
   ElasticsearchClient(
@@ -91,10 +86,6 @@ class ElasticsearchClient implements AutoCloseable {
    *     the batch because only one copy of the record is allowed in the batch
    */
   public boolean index(final Record<?> record, final RecordSequence recordSequence) {
-    if (metrics == null) {
-      metrics = new ElasticsearchMetrics(record.getPartitionId());
-    }
-
     final BulkIndexAction action =
         new BulkIndexAction(
             indexRouter.indexFor(record),
@@ -116,15 +107,17 @@ class ElasticsearchClient implements AutoCloseable {
     metrics.recordBulkSize(bulkIndexRequest.size());
     metrics.recordBulkMemorySize(bulkIndexRequest.memoryUsageBytes());
 
-    try (final Histogram.Timer ignored = metrics.measureFlushDuration()) {
-      exportBulk();
+    metrics.measureFlushDuration(
+        () -> {
+          try {
+            exportBulk();
 
-      // all records where flushed, create new bulk request, otherwise retry next time
-      bulkIndexRequest.clear();
-    } catch (final ElasticsearchExporterException e) {
-      metrics.recordFailedFlush();
-      throw e;
-    }
+            bulkIndexRequest.clear();
+          } catch (final ElasticsearchExporterException e) {
+            metrics.recordFailedFlush();
+            throw e;
+          }
+        });
   }
 
   /**
