@@ -53,7 +53,11 @@ public class TenantController {
   public ResponseEntity<TenantItem> getTenant(@PathVariable final String tenantId) {
     try {
       return ResponseEntity.ok()
-          .body(SearchQueryResponseMapper.toTenant(tenantServices.getById(tenantId)));
+          .body(
+              SearchQueryResponseMapper.toTenant(
+                  tenantServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .getById(tenantId)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
@@ -155,7 +159,8 @@ public class TenantController {
 
   private ResponseEntity<TenantSearchQueryResponse> search(final TenantQuery query) {
     try {
-      final var result = tenantServices.search(query);
+      final var result =
+          tenantServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toTenantSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
