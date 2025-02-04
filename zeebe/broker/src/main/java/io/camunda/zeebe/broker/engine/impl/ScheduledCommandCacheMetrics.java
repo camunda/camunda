@@ -8,7 +8,12 @@
 package io.camunda.zeebe.broker.engine.impl;
 
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.prometheus.client.Gauge;
+import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntConsumer;
 
 /** Defines metrics for scheduled command cache implementations. */
@@ -25,25 +30,48 @@ public interface ScheduledCommandCacheMetrics {
    * io.camunda.zeebe.broker.engine.impl.BoundedScheduledCommandCache}.
    */
   class BoundedCommandCacheMetrics implements ScheduledCommandCacheMetrics {
-    private static final Gauge SIZE =
-        Gauge.build()
-            .namespace("zeebe")
-            .subsystem("stream_processor")
-            .name("scheduled_command_cache_size")
-            .labelNames("partitionId", "intent")
-            .help("Reports the size of each bounded cache per partition and intent")
-            .register();
+    private final MeterRegistry registry;
 
-    private final String partitionId;
-
-    public BoundedCommandCacheMetrics(final int partitionId) {
-      this.partitionId = String.valueOf(partitionId);
+    public BoundedCommandCacheMetrics(final MeterRegistry registry) {
+      this.registry = Objects.requireNonNull(registry, "must specify a meter registry");
     }
 
     @Override
     public IntConsumer forIntent(final Intent intent) {
       final var intentLabelValue = intent.getClass().getSimpleName() + "." + intent.name();
-      return SIZE.labels(partitionId, intentLabelValue)::set;
+      final var meterDoc = BoundedCacheMetricsDoc.SIZE;
+      final var sizeTracker = new AtomicLong();
+      Gauge.builder(meterDoc.getName(), sizeTracker, Number::longValue)
+          .description(meterDoc.getDescription())
+          .tag("intent", intentLabelValue)
+          .register(registry);
+
+      return sizeTracker::addAndGet;
     }
+  }
+
+  /**
+   * Documentation for the metrics used by {@link BoundedCommandCache}. See {@link
+   * BoundedCommandCacheMetrics} for more.
+   */
+  @SuppressWarnings("NullableProblems")
+  enum BoundedCacheMetricsDoc implements ExtendedMeterDocumentation {
+    /** Reports the size of each bounded cache per partition and intent */
+    SIZE {
+      @Override
+      public String getName() {
+        return "zeebe.stream.processor.scheduled.command.cache.size";
+      }
+
+      @Override
+      public Meter.Type getType() {
+        return Meter.Type.GAUGE;
+      }
+
+      @Override
+      public String getDescription() {
+        return "Reports the size of each bounded cache per partition and intent";
+      }
+    },
   }
 }
