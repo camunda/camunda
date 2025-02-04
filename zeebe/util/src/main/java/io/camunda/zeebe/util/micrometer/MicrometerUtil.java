@@ -8,9 +8,12 @@
 package io.camunda.zeebe.util.micrometer;
 
 import io.camunda.zeebe.util.CloseableSilently;
+import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.Builder;
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+import java.util.function.LongConsumer;
 
 /** Collection of disparate convenience methods for Micrometer. */
 public final class MicrometerUtil {
@@ -65,10 +68,25 @@ public final class MicrometerUtil {
     return new CloseableTimer(timer, sample);
   }
 
+  public static CloseableSilently timer(
+      final LongConsumer setter, final TimeUnit unit, final Clock clock) {
+    return new CloseableGaugeTimer(setter, unit, clock, clock.monotonicTime());
+  }
+
   private record CloseableTimer(Timer timer, Timer.Sample sample) implements CloseableSilently {
     @Override
     public void close() {
       sample.stop(timer);
+    }
+  }
+
+  private record CloseableGaugeTimer(
+      LongConsumer setter, TimeUnit unit, Clock clock, long startNanos)
+      implements CloseableSilently {
+
+    @Override
+    public void close() {
+      setter.accept(unit.convert(clock.monotonicTime() - startNanos, TimeUnit.NANOSECONDS));
     }
   }
 }
