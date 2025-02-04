@@ -17,9 +17,10 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationCreateRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationDeleteRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -111,7 +112,7 @@ public class AuthorizationServices
   public CompletableFuture<AuthorizationRecord> createAuthorization(
       final CreateAuthorizationRequest request) {
     final var brokerRequest =
-        new BrokerAuthorizationCreateRequest()
+        new BrokerAuthorizationRequest(AuthorizationIntent.CREATE)
             .setOwnerId(request.ownerId())
             .setOwnerType(request.ownerType())
             .setResourceType(request.resourceType())
