@@ -76,7 +76,9 @@ public class AuthorizationUpdateProcessor
         .ifRightOrLeft(
             ignored ->
                 stateWriter.appendFollowUpEvent(
-                    command.getKey(), AuthorizationIntent.UPDATED, command.getValue()),
+                    command.getValue().getAuthorizationKey(),
+                    AuthorizationIntent.UPDATED,
+                    command.getValue()),
             rejection ->
                 rejectionWriter.appendRejection(command, rejection.type(), rejection.reason()));
 
@@ -87,12 +89,18 @@ public class AuthorizationUpdateProcessor
       final TypedRecord<AuthorizationRecord> command,
       final AuthorizationRecord authorizationRecord) {
     final long key = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(key, AuthorizationIntent.UPDATED, authorizationRecord);
+    stateWriter.appendFollowUpEvent(
+        authorizationRecord.getAuthorizationKey(),
+        AuthorizationIntent.UPDATED,
+        authorizationRecord);
     distributionBehavior
         .withKey(key)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
         .distribute(command);
     responseWriter.writeEventOnCommand(
-        key, AuthorizationIntent.UPDATED, authorizationRecord, command);
+        authorizationRecord.getAuthorizationKey(),
+        AuthorizationIntent.UPDATED,
+        authorizationRecord,
+        command);
   }
 }

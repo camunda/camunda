@@ -148,11 +148,6 @@ public class DbAuthorizationState implements MutableAuthorizationState {
     final var persistedAuthorization =
         authorizationByAuthorizationKeyColumnFamily.get(this.authorizationKey);
 
-    if (persistedAuthorization == null) {
-      // if there are no persisted authorization, we should not update the authorization
-      return;
-    }
-
     // remove the old permissions
     persistedAuthorization
         .getPermissionTypes()
