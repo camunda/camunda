@@ -32,6 +32,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
@@ -283,8 +284,7 @@ public final class RaftPartition implements Partition, HealthMonitorable {
         .stop()
         .whenComplete(
             (unused, error) -> {
-              meterRegistry.clear();
-              meterRegistry.close();
+              MicrometerUtil.closeRegistry(meterRegistry);
             });
   }
 
@@ -299,7 +299,7 @@ public final class RaftPartition implements Partition, HealthMonitorable {
         .config()
         .commonTags(
             Tags.of(
-                PartitionKeyNames.PARTITION.name(), Integer.toString(partitionMetadata.id().id())));
+                PartitionKeyNames.PARTITION.asString(), Integer.toString(partitionMetadata.id().id())));
     return registry;
   }
 }
