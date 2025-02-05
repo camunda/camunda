@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.function.Supplier;
 
 public interface TypedRecordProcessorContext {
@@ -37,4 +38,6 @@ public interface TypedRecordProcessorContext {
   ControllableStreamClock getClock();
 
   TransientPendingSubscriptionState getTransientProcessMessageSubscriptionState();
+
+  MeterRegistry getMeterRegistry();
 }
