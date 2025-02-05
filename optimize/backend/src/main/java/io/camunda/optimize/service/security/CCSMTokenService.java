@@ -211,7 +211,7 @@ public class CCSMTokenService {
         verifyToken(extractTokenFromAuthorizationValue(accessToken)).getUserDetails();
     return new UserDto(
         userId,
-        userDetails.getName().orElse(userId),
+        userDetails.getName().orElseGet(() -> userDetails.getUsername().orElse(userId)),
         userDetails.getEmail().orElse(userId),
         Collections.emptyList());
   }
