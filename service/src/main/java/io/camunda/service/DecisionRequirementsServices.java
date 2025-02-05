@@ -72,12 +72,18 @@ public final class DecisionRequirementsServices
   }
 
   public DecisionRequirementsEntity getByKey(final Long key) {
+    return getByKey(key, false);
+  }
+
+  public DecisionRequirementsEntity getByKey(final Long key, final boolean includeXml) {
     final var result =
         decisionRequirementSearchClient
             .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
             .searchDecisionRequirements(
                 decisionRequirementsSearchQuery(
-                    q -> q.filter(f -> f.decisionRequirementsKeys(key))));
+                    q ->
+                        q.filter(f -> f.decisionRequirementsKeys(key))
+                            .resultConfig(r -> r.includeXml(includeXml))));
     final var decisionRequirementsEntity =
         getSingleResultOrThrow(result, key, "Decision requirements");
     final var authorization = Authorization.of(a -> a.decisionRequirementsDefinition().read());
@@ -95,6 +101,6 @@ public final class DecisionRequirementsServices
   }
 
   public String getDecisionRequirementsXml(final Long decisionRequirementsKey) {
-    return getByKey(decisionRequirementsKey).xml();
+    return getByKey(decisionRequirementsKey, true).xml();
   }
 }
