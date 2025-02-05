@@ -9,10 +9,14 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {useTasks} from 'modules/queries/useTasks';
 import {encodeTaskEmptyPageRef} from 'modules/utils/reftags';
-import {NavigateFunction, useBeforeUnload, useNavigate} from 'react-router-dom';
+import {
+  type NavigateFunction,
+  useBeforeUnload,
+  useNavigate,
+} from 'react-router-dom';
 import {tracking} from 'modules/tracking';
 import {pages} from 'modules/routing';
-import {TaskFilters} from 'modules/hooks/useTaskFilters';
+import type {TaskFilters} from 'modules/hooks/useTaskFilters';
 import {useIsPageBlurred} from 'modules/hooks/useIsPageBlurred';
 import {useIsOnline} from 'modules/hooks/useIsOnline';
 import {useInterval} from 'modules/hooks/useInterval';
@@ -131,7 +135,7 @@ const OSNotifications: React.FC =
           },
         );
         const navigate = useNavigate();
-        const notification = useRef<Notification | undefined>();
+        const notification = useRef<Notification | undefined>(undefined);
         useBeforeUnload(
           useCallback(() => {
             if (notification.current) {

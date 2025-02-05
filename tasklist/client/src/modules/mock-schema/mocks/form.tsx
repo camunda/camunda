@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Form} from 'modules/types';
+import type {Form} from 'modules/types';
 
 const form: Form = {
   id: 'camunda-forms:bpmn:form-0',
@@ -163,4 +163,33 @@ const noInputForm: Form = {
   isDeleted: false,
 };
 
-export {form, invalidForm, dynamicForm, nestedForm, noInputForm};
+const formWithDocumentPreview: Form = {
+  id: 'camunda-forms:bpmn:form-0',
+  processDefinitionKey: 'process',
+  title: 'A form',
+  version: null,
+  schema: JSON.stringify({
+    components: [
+      {
+        label: 'My documents',
+        endpointKey: '=defaultDocumentsEndpointKey',
+        type: 'documentPreview',
+        id: 'myDocuments',
+        dataSource: '=myDocuments',
+      },
+    ],
+    type: 'default',
+    id: 'integration_form',
+  }),
+  tenantId: '<default>',
+  isDeleted: false,
+};
+
+export {
+  form,
+  invalidForm,
+  dynamicForm,
+  nestedForm,
+  noInputForm,
+  formWithDocumentPreview,
+};

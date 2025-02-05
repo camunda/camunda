@@ -7,11 +7,11 @@
  */
 
 import {useMemo, useRef, useState} from 'react';
-import {Form, Variable, CurrentUser, Task} from 'modules/types';
+import type {Form, Variable, CurrentUser, Task} from 'modules/types';
 import {useRemoveFormReference} from 'modules/queries/useTask';
 import {getSchemaVariables} from '@bpmn-io/form-js-viewer';
 import {DetailsFooter} from 'modules/components/DetailsFooter';
-import {InlineLoadingStatus, Layer} from '@carbon/react';
+import {type InlineLoadingProps, Layer} from '@carbon/react';
 import {usePermissions} from 'modules/hooks/usePermissions';
 import {notificationsStore} from 'modules/stores/notifications';
 import {FormManager} from 'modules/formManager';
@@ -56,7 +56,8 @@ type Props = {
   id: Form['id'];
   processDefinitionKey: Form['processDefinitionKey'];
   task: Task;
-  onSubmit: (variables: Variable[]) => Promise<void>;
+  onSubmit: React.ComponentProps<typeof FormJSRenderer>['handleSubmit'];
+  onFileUpload: React.ComponentProps<typeof FormJSRenderer>['handleFileUpload'];
   onSubmitSuccess: () => void;
   onSubmitFailure: (error: Error) => void;
   user: CurrentUser;
@@ -68,13 +69,14 @@ const FormJS: React.FC<Props> = ({
   task,
   onSubmit,
   onSubmitSuccess,
+  onFileUpload,
   onSubmitFailure,
   user,
 }) => {
   const {t} = useTranslation();
   const formManagerRef = useRef<FormManager | null>(null);
   const [submissionState, setSubmissionState] =
-    useState<InlineLoadingStatus>('inactive');
+    useState<NonNullable<InlineLoadingProps['status']>>('inactive');
   const {assignee, taskState, formVersion} = task;
   const {data, isLoading} = useForm(
     {
@@ -145,6 +147,7 @@ const FormJS: React.FC<Props> = ({
                     formManagerRef.current = formManager;
                   }}
                   handleSubmit={onSubmit}
+                  handleFileUpload={onFileUpload}
                   onImportError={() => {
                     removeFormReference();
                     notificationsStore.displayNotification({

@@ -8,14 +8,14 @@
 
 import {useQuery} from '@tanstack/react-query';
 import {api} from 'modules/api';
-import {request, RequestError} from 'modules/request';
-import {License} from 'modules/types';
+import {request, type RequestError} from 'modules/request';
+import type {License} from 'modules/types';
 
 function useLicense() {
   return useQuery<License, RequestError | Error>({
     queryKey: ['license'],
     queryFn: async () => {
-      const {response, error} = await request(api.getLicense());
+      const {response, error} = await request(api.v2.getLicense());
 
       if (response !== null) {
         return await response.json();

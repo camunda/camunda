@@ -6,17 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMutation, UseMutationOptions} from '@tanstack/react-query';
+import {useMutation, type UseMutationOptions} from '@tanstack/react-query';
 import {api} from 'modules/api';
-import {RequestError, request} from 'modules/request';
-import {ProcessInstance} from 'modules/types';
+import {type RequestError, request} from 'modules/request';
+import type {ProcessInstance} from 'modules/types';
 
 function useStartExternalProcess(
   options: Pick<
     UseMutationOptions<
       ProcessInstance,
       RequestError | Error,
-      Parameters<typeof api.startExternalProcess>[0]
+      Parameters<typeof api.v1.startExternalProcess>[0]
     >,
     'onError' | 'onSuccess' | 'onMutate'
   > = {},
@@ -24,12 +24,12 @@ function useStartExternalProcess(
   return useMutation<
     ProcessInstance,
     RequestError | Error,
-    Parameters<typeof api.startExternalProcess>[0]
+    Parameters<typeof api.v1.startExternalProcess>[0]
   >({
     ...options,
     mutationFn: async (payload) => {
       const {response, error} = await request(
-        api.startExternalProcess(payload),
+        api.v1.startExternalProcess(payload),
       );
 
       if (response !== null) {

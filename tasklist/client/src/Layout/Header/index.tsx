@@ -11,7 +11,12 @@ import {useTranslation} from 'react-i18next';
 import {t} from 'i18next';
 import {observer} from 'mobx-react-lite';
 import {Link as RouterLink, matchPath, useLocation} from 'react-router-dom';
-import {Dropdown, Layer, OnChangeData, SwitcherDivider} from '@carbon/react';
+import {
+  Dropdown,
+  Layer,
+  type OnChangeData,
+  SwitcherDivider,
+} from '@carbon/react';
 import {ArrowRight} from '@carbon/react/icons';
 import {C3Navigation} from '@camunda/camunda-composite-components';
 import {pages} from 'modules/routing';
@@ -20,9 +25,12 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {themeStore} from 'modules/stores/theme';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {getStateLocally} from 'modules/utils/localStorage';
+import {useLicense} from 'modules/queries/useLicense';
+import {
+  languageItems,
+  type SelectionOption,
+} from 'modules/internationalization';
 import styles from './styles.module.scss';
-import {languageItems, SelectionOption} from 'modules/internationalization';
-import {useLicense} from '../../modules/queries/useLicense';
 
 function getInfoSidebarItems(isPaidPlan: boolean) {
   const BASE_INFO_SIDEBAR_ITEMS = [
@@ -170,6 +178,8 @@ const Header: React.FC = observer(() => {
         licenseTag: {
           show: license !== undefined && license.licenseType !== 'saas',
           isProductionLicense: license?.validLicense ?? false,
+          isCommercial: license?.isCommercial,
+          expiresAt: license?.expiresAt ?? undefined,
         },
       }}
       infoSideBar={{

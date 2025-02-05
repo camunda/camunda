@@ -52,21 +52,9 @@ describe('license note', () => {
     });
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {
-        name: 'Learn more',
-        expanded: false,
-      }),
-    ).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: 'Learn more'}));
+    await user.click(screen.getByText('Non-production license'));
 
-    expect(
-      screen.getByRole('button', {
-        name: 'Learn more',
-        expanded: true,
-      }),
-    ).toBeInTheDocument();
     expect(
       screen.getByText(
         /Non-production license. For production usage details, visit/,
@@ -151,5 +139,52 @@ describe('license note', () => {
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
     expect(screen.getByText('Production license')).toBeInTheDocument();
+  });
+
+  it('should hide commercial license note in self-managed if license is commercial', async () => {
+    nodeMockServer.use(
+      http.get(
+        '/v2/license',
+        () => {
+          return HttpResponse.json(licenseMocks.commercialExpired);
+        },
+        {
+          once: true,
+        },
+      ),
+    );
+
+    render(<Header />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(await screen.findByText('Demo User')).toBeInTheDocument();
+
+    expect(
+      screen.queryByText(/^Non-commercial license - expired$/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should show non-commercial license expiry date', async () => {
+    nodeMockServer.use(
+      http.get(
+        '/v2/license',
+        () => {
+          return HttpResponse.json(licenseMocks.validNonCommercial);
+        },
+        {
+          once: true,
+        },
+      ),
+    );
+
+    render(<Header />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(await screen.findByText('Demo User')).toBeInTheDocument();
+    expect(
+      await screen.findByText(/^Non-commercial license - 0 day left$/i),
+    ).toBeInTheDocument();
   });
 });

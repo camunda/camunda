@@ -21,6 +21,15 @@ import ErrorRobotImage from 'modules/images/error-robot.svg';
 import {Message} from './Message';
 import {match, Pattern} from 'ts-pattern';
 import styles from './styles.module.scss';
+import {hasFileComponents} from './hasFileComponents';
+
+function parseValidJSON(schema: string): null | object {
+  try {
+    return JSON.parse(schema);
+  } catch {
+    return null;
+  }
+}
 
 const StartProcessFromForm: React.FC = () => {
   const [pageView, setPageView] = useState<
@@ -29,6 +38,7 @@ const StartProcessFromForm: React.FC = () => {
     | 'form-not-found'
     | 'failed-submission'
     | 'invalid-form-schema'
+    | 'schema-with-file-components'
   >('form');
   const {bpmnProcessId} = useStartProcessParams();
   const {data, error} = useExternalForm(bpmnProcessId);
@@ -69,6 +79,16 @@ const StartProcessFromForm: React.FC = () => {
       setPageView('form');
     }
   }, [data]);
+
+  useLayoutEffect(() => {
+    const parsedSchema = parseValidJSON(data?.schema ?? '');
+    if (parsedSchema !== null && hasFileComponents(parsedSchema)) {
+      tracking.track({
+        eventName: 'public-start-form-schema-with-file-components',
+      });
+      setPageView('schema-with-file-components');
+    }
+  }, [data?.schema]);
 
   const {t} = useTranslation();
 
@@ -155,6 +175,18 @@ const StartProcessFromForm: React.FC = () => {
                 }}
                 heading={t('startProcessFromFormInvalidFormHeading')}
                 description={t('startProcessFromFormInvalidFormDescription')}
+              />
+            ))
+            .with({pageView: 'schema-with-file-components'}, () => (
+              <Message
+                icon={{
+                  altText: t('startProcessFromFormErrorRobot'),
+                  path: ErrorRobotImage,
+                }}
+                heading={t('startProcessFromFormWithFileComponentsHeading')}
+                description={t(
+                  'startProcessFromFormWithFileComponentsDescription',
+                )}
               />
             ))
             .exhaustive()}

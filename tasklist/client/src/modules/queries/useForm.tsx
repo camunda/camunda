@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useQuery, UseQueryOptions} from '@tanstack/react-query';
+import {useQuery, type UseQueryOptions} from '@tanstack/react-query';
 import {api} from 'modules/api';
-import {request, RequestError} from 'modules/request';
-import {Form} from 'modules/types';
+import {request, type RequestError} from 'modules/request';
+import type {Form} from 'modules/types';
 
 type QueryData = Form | {schema: null};
 
@@ -33,13 +33,13 @@ function useForm(
       const {response, error} =
         version === null
           ? await request(
-              api.getEmbeddedForm({
+              api.v1.getEmbeddedForm({
                 id,
                 processDefinitionKey,
               }),
             )
           : await request(
-              api.getDeployedForm({
+              api.v1.getDeployedForm({
                 id,
                 processDefinitionKey,
                 version,

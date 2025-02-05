@@ -16,6 +16,11 @@ env-up: $(DATABASE) setup-maven-context
 	$(eval SERVICES := zeebe)
 	$(call run-env)
 
+.PHONY: v2-up
+v2-up: $(DATABASE) setup-maven-context
+	$(eval SERVICES := zeebe)
+	$(call run-env) -Dcamunda.rest.query.enabled=true -Dzeebe.broker.gateway.enable=true -Dcamunda.database.url=http://localhost:9200
+
 # Set the env var ZEEBE_TASKLIST_AUTH0_CLIENTSECRET in your shell please, eg: export ZEEBE_TASKLIST_AUTH0_CLIENTSECRET=<client-secret>
 .PHONY: env-sso-up
 env-sso-up: $(DATABASE) setup-maven-context

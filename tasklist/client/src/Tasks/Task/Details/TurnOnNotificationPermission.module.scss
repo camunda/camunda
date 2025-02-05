@@ -6,14 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-.error {
-  fill: var(--cds-support-error);
-}
-
-.secondary {
-  fill: var(--cds-icon-secondary);
-}
-
-.success {
-  fill: var(--cds-support-success);
+.actionableNotification {
+  max-inline-size: initial;
 }

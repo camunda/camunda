@@ -10,7 +10,7 @@ import {useOutletContext} from 'react-router-dom';
 import {Layer, Tag} from '@carbon/react';
 import {BPMNDiagram} from 'modules/components/BPMNDiagram';
 import {SomethingWentWrong} from 'modules/components/Errors/SomethingWentWrong';
-import {OutletContext} from '../Details';
+import type {OutletContext} from '../Details';
 import styles from './index.module.scss';
 import {useTranslation} from 'react-i18next';
 

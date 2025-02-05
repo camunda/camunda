@@ -9,14 +9,14 @@
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {api} from 'modules/api';
 import {getUseTaskQueryKey} from 'modules/queries/useTask';
-import {RequestError, request} from 'modules/request';
-import {Task} from 'modules/types';
+import {type RequestError, request} from 'modules/request';
+import type {Task} from 'modules/types';
 
 function useUnassignTask() {
   const client = useQueryClient();
   return useMutation<Task, RequestError | Error, Task['id']>({
     mutationFn: async (taskId) => {
-      const {response, error} = await request(api.unassignTask(taskId));
+      const {response, error} = await request(api.v1.unassignTask(taskId));
 
       if (response !== null) {
         return response.json();

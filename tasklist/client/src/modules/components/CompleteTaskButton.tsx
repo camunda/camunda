@@ -6,13 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {InlineLoadingStatus} from '@carbon/react';
+import {type InlineLoadingProps} from '@carbon/react';
 import {AsyncActionButton} from './AsyncActionButton';
 import {t} from 'i18next';
 import {getCompletionButtonDescription} from 'modules/utils/getCompletionButtonDescription';
 
 type Props = {
-  submissionState: InlineLoadingStatus;
+  submissionState: NonNullable<InlineLoadingProps['status']>;
   onClick?: () => void;
   onSuccess?: () => void;
   onError?: () => void;

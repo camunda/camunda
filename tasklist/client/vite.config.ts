@@ -30,6 +30,7 @@ export default defineConfig(({mode}) => ({
     proxy: {
       '/api': 'http://localhost:8080',
       '/v1': 'http://localhost:8080',
+      '/v2': 'http://localhost:8080',
       '/client-config.js': 'http://localhost:8080/tasklist',
     },
   },
@@ -55,6 +56,13 @@ export default defineConfig(({mode}) => ({
   esbuild: {
     banner: '/*! licenses: /assets/vendor.LICENSE.txt */',
     legalComments: 'none',
+  },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        api: 'modern-compiler',
+      },
+    },
   },
   test: {
     globals: true,
