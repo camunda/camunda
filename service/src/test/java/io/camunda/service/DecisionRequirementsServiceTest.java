@@ -83,7 +83,7 @@ public final class DecisionRequirementsServiceTest {
   }
 
   @Test
-  public void shouldReturnDecisionRequirementsXLMyKey() {
+  public void shouldReturnDecisionRequirementsXmlByKey() {
     // given
     final var decisionRequirementEntity = mock(DecisionRequirementsEntity.class);
     when(decisionRequirementEntity.decisionRequirementsKey()).thenReturn(124L);
