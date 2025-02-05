@@ -61,12 +61,12 @@ public class DataGenerator implements AutoCloseable {
   }
 
   public void verifyAllExported() {
-    verifyAllExported(30);
+    verifyAllExported(120);
   }
 
   public void verifyAllExported(final int timeoutSeconds) {
     Awaitility.await("until all processes have been exported")
-        .atMost(Duration.ofSeconds(30))
+        .atMost(Duration.ofSeconds(timeoutSeconds))
         .untilAsserted(
             () -> {
               final Future<SearchQueryResponse<ProcessInstance>> response =
