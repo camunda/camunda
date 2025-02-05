@@ -33,7 +33,6 @@ import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
-import io.camunda.security.entity.Permission;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -623,15 +622,10 @@ class RdbmsExporterIT {
             .orElse(null);
 
     assertThat(updatedAuthorization).isNotNull();
-    assertThat(updatedAuthorization.permissions()).hasSize(2);
-    assertThat(updatedAuthorization.permissions())
-        .contains(
-            new Permission(
-                PermissionType.READ, Set.of("resource1", "resource2", "resource5", "resource6")));
-    assertThat(updatedAuthorization.permissions())
-        .contains(
-            new Permission(
-                PermissionType.CREATE, Set.of("resource3", "resource4", "resource7", "resource8")));
+    assertThat(updatedAuthorization.permissionTypes()).hasSize(2);
+    assertThat(updatedAuthorization.permissionTypes())
+        .containsExactlyInAnyOrder(PermissionType.READ, PermissionType.CREATE);
+    assertThat(updatedAuthorization.permissionTypes()).containsOnly(PermissionType.CREATE);
   }
 
   @Test
@@ -687,11 +681,11 @@ class RdbmsExporterIT {
             .orElse(null);
 
     assertThat(updatedAuthorization).isNotNull();
-    assertThat(updatedAuthorization.permissions()).hasSize(2);
-    assertThat(updatedAuthorization.permissions())
-        .contains(new Permission(PermissionType.READ, Set.of("resource2")));
-    assertThat(updatedAuthorization.permissions())
-        .contains(new Permission(PermissionType.CREATE, Set.of("resource4")));
+    assertThat(updatedAuthorization.permissionTypes()).hasSize(2);
+    assertThat(updatedAuthorization.resourceId()).isEqualTo("resource2");
+    assertThat(updatedAuthorization.permissionTypes()).contains(PermissionType.READ);
+    assertThat(updatedAuthorization.resourceId()).isEqualTo("resource4");
+    assertThat(updatedAuthorization.permissionTypes()).contains(PermissionType.CREATE);
   }
 
   private void compareAuthorizations(
@@ -702,10 +696,7 @@ class RdbmsExporterIT {
 
     for (final PermissionValue permissionValue : recordValue.getPermissions()) {
       if (!permissionValue.getResourceIds().isEmpty()) {
-        assertThat(entity.permissions())
-            .contains(
-                new Permission(
-                    permissionValue.getPermissionType(), permissionValue.getResourceIds()));
+        assertThat(entity.permissionTypes()).contains(permissionValue.getPermissionType());
       }
     }
   }

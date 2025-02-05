@@ -15,7 +15,6 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.AuthorizationReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
-import io.camunda.db.rdbms.write.domain.AuthorizationPermissionDbModel;
 import io.camunda.it.rdbms.db.fixtures.AuthorizationFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -26,7 +25,6 @@ import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.sort.AuthorizationSort;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -67,13 +65,7 @@ public class AuthorizationIT {
 
     final var authorization =
         AuthorizationFixtures.createRandomized(
-            b ->
-                b.permissions(
-                    List.of(
-                        new AuthorizationPermissionDbModel.Builder()
-                            .type(PermissionType.CREATE)
-                            .resourceIds(Set.of("resource1", "resource2"))
-                            .build())));
+            b -> b.permissionTypes(Set.of(PermissionType.CREATE)));
     createAndSaveAuthorization(rdbmsWriter, authorization);
 
     final var authorizationUpdate =
@@ -82,13 +74,8 @@ public class AuthorizationIT {
                 b.ownerId(authorization.ownerId())
                     .ownerType(authorization.ownerType())
                     .resourceType(authorization.resourceType())
-                    .permissions(
-                        List.of(
-                            new AuthorizationPermissionDbModel.Builder()
-                                .type(PermissionType.CREATE)
-                                .resourceIds(Set.of("resource3", "resource4"))
-                                .build())));
-    rdbmsWriter.getAuthorizationWriter().addPermissions(authorizationUpdate);
+                    .permissionTypes(Set.of(PermissionType.CREATE)));
+    rdbmsWriter.getAuthorizationWriter().createAuthorization(authorizationUpdate);
     rdbmsWriter.flush();
 
     final var instance =
@@ -100,8 +87,7 @@ public class AuthorizationIT {
             .orElse(null);
 
     assertThat(instance).isNotNull();
-    assertThat(instance.permissions().getFirst().resourceIds())
-        .containsExactlyInAnyOrder("resource1", "resource2", "resource3", "resource4");
+    assertThat(instance.resourceId()).isEqualTo("resource1");
   }
 
   @TestTemplate
@@ -139,7 +125,7 @@ public class AuthorizationIT {
     final var authorization = AuthorizationFixtures.createRandomized(b -> b);
     createAndSaveAuthorization(rdbmsWriter, authorization);
 
-    final var resourceId = authorization.permissions().getFirst().resourceIds().iterator().next();
+    final var resourceId = authorization.resourceId();
     final var searchResult =
         authorizationReader.search(
             new AuthorizationQuery(
@@ -193,9 +179,8 @@ public class AuthorizationIT {
                     .ownerIds(authorization.ownerId().toString())
                     .ownerType(authorization.ownerType())
                     .resourceType(authorization.resourceType())
-                    .permissionType(authorization.permissions().getFirst().permissionType())
-                    .resourceIds(
-                        authorization.permissions().getFirst().resourceIds().iterator().next())
+                    .permissionType(authorization.permissionTypes().stream().findFirst().get())
+                    .resourceIds(authorization.resourceId())
                     .build(),
                 AuthorizationSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
@@ -253,16 +238,10 @@ public class AuthorizationIT {
         .ignoringFields("permissions")
         .isEqualTo(authorization);
     authorization
-        .permissions()
+        .permissionTypes()
         .forEach(
             p -> {
-              assertThat(instance.permissions())
-                  .anySatisfy(
-                      p2 -> {
-                        assertThat(p2.type()).isEqualTo(p.permissionType());
-                        assertThat(p2.resourceIds())
-                            .containsExactlyInAnyOrder(p.resourceIds().toArray(new String[0]));
-                      });
+              assertThat(instance.resourceId()).isEqualTo("");
             });
   }
 }

@@ -104,8 +104,9 @@ public class AuthorizationControllerTest extends RestControllerTest {
     assertEquals(authorizationRecord.getOwnerType(), capturedRequest.ownerType());
     assertEquals(resourceId, capturedRequest.resourceId());
     assertEquals(authorizationRecord.getResourceType(), capturedRequest.resourceType());
-    assertEquals(1, capturedRequest.permissions().size());
-    assertEquals(authorizationRecord.getAuthorizationPermissions(), capturedRequest.permissions());
+    assertEquals(1, capturedRequest.permissionType().size());
+    assertEquals(
+        authorizationRecord.getAuthorizationPermissions(), capturedRequest.permissionType());
   }
 
   @ParameterizedTest

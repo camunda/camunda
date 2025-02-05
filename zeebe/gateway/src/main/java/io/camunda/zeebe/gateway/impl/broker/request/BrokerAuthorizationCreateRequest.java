@@ -48,9 +48,9 @@ public class BrokerAuthorizationCreateRequest extends BrokerExecuteCommand<Autho
     return this;
   }
 
-  public BrokerAuthorizationCreateRequest setPermissions(final Set<PermissionType> permissions) {
-    // TODO: rename in: https://github.com/camunda/camunda/issues/26883
-    requestDto.setAuthorizationPermissions(permissions);
+  public BrokerAuthorizationCreateRequest setPermissionTypes(
+      final Set<PermissionType> permissionTypes) {
+    requestDto.setAuthorizationPermissions(permissionTypes);
     return this;
   }
 
