@@ -117,8 +117,9 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     return switch (port) {
       case REST -> restPort();
       case MONITORING -> monitoringPort();
-      default -> throw new IllegalArgumentException(
-          "No known port %s; must one of MONITORING".formatted(port));
+      default ->
+          throw new IllegalArgumentException(
+              "No known port %s; must one of MONITORING".formatted(port));
     };
   }
 
@@ -189,9 +190,7 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     return withUnauthenticatedAccess(false);
   }
 
-  /**
-   * Returns the command line arguments that will be passed when the application is started.
-   */
+  /** Returns the command line arguments that will be passed when the application is started. */
   protected String[] commandLineArgs() {
     return new String[0];
   }

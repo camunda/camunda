@@ -18,9 +18,6 @@ import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.impl.search.response.DecisionDefinitionImpl;
 import io.camunda.it.utils.MultiDbTest;
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -91,7 +88,7 @@ class DecisionQueryTest {
   @Test
   void shouldSearchDecisionDefinitionsByDecisionDefinitionKey() {
     // when
-    final long decisionKey = DEPLOYED_DECISIONS.get(0).getDecisionKey();
+    final long decisionKey = DEPLOYED_DECISIONS.getFirst().getDecisionKey();
     final var result =
         camundaClient
             .newDecisionDefinitionQuery()
@@ -101,7 +98,8 @@ class DecisionQueryTest {
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().get(0)).isEqualTo(toDecisionDefinition(DEPLOYED_DECISIONS.get(0)));
+    assertThat(result.items().getFirst())
+        .isEqualTo(toDecisionDefinition(DEPLOYED_DECISIONS.getFirst()));
   }
 
   @Test
@@ -132,7 +130,7 @@ class DecisionQueryTest {
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().get(0)).isEqualTo(toDecisionDefinition(decisionDef));
+    assertThat(result.items().getFirst()).isEqualTo(toDecisionDefinition(decisionDef));
   }
 
   @Test
@@ -151,14 +149,14 @@ class DecisionQueryTest {
 
     // then
     assertThat(result.items().size()).isEqualTo(2);
-    assertThat(result.items().get(0)).isEqualTo(toDecisionDefinition(decisionDefV2));
+    assertThat(result.items().getFirst()).isEqualTo(toDecisionDefinition(decisionDefV2));
     assertThat(result.items().get(1)).isEqualTo(toDecisionDefinition(decisionDefV1));
   }
 
   @Test
   void shouldGetDecisionDefinitionXml() throws IOException {
     // when
-    final long decisionKey = DEPLOYED_DECISIONS.get(0).getDecisionKey();
+    final long decisionKey = DEPLOYED_DECISIONS.getFirst().getDecisionKey();
     final var result = camundaClient.newDecisionDefinitionGetXmlRequest(decisionKey).send().join();
 
     // then
@@ -189,11 +187,11 @@ class DecisionQueryTest {
   @Test
   void shouldGetDecisionDefinition() {
     // when
-    final long decisionKey = DEPLOYED_DECISIONS.get(0).getDecisionKey();
+    final long decisionKey = DEPLOYED_DECISIONS.getFirst().getDecisionKey();
     final var result = camundaClient.newDecisionDefinitionGetRequest(decisionKey).send().join();
 
     // then
-    assertThat(result).isEqualTo(toDecisionDefinition(DEPLOYED_DECISIONS.get(0)));
+    assertThat(result).isEqualTo(toDecisionDefinition(DEPLOYED_DECISIONS.getFirst()));
   }
 
   @Test
@@ -223,7 +221,7 @@ class DecisionQueryTest {
   void shouldRetrieveByDecisionRequirementsKey() {
     // given
     final long decisionRequirementKey =
-        DEPLOYED_DECISION_REQUIREMENTS.get(0).getDecisionRequirementsKey();
+        DEPLOYED_DECISION_REQUIREMENTS.getFirst().getDecisionRequirementsKey();
 
     // when
     final var result =
@@ -235,7 +233,7 @@ class DecisionQueryTest {
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().get(0).getDecisionRequirementsKey())
+    assertThat(result.items().getFirst().getDecisionRequirementsKey())
         .isEqualTo(decisionRequirementKey);
   }
 
@@ -243,7 +241,7 @@ class DecisionQueryTest {
   void shouldGetDecisionRequirementsXml() throws IOException {
     // when
     final long decisionRequirementKey =
-        DEPLOYED_DECISION_REQUIREMENTS.get(0).getDecisionRequirementsKey();
+        DEPLOYED_DECISION_REQUIREMENTS.getFirst().getDecisionRequirementsKey();
 
     final var result =
         camundaClient.newDecisionRequirementsGetXmlRequest(decisionRequirementKey).send().join();
@@ -263,7 +261,7 @@ class DecisionQueryTest {
   void shouldRetrieveByDecisionRequirementsId() {
     // given
     final String decisionRequirementId =
-        DEPLOYED_DECISION_REQUIREMENTS.get(0).getDmnDecisionRequirementsId();
+        DEPLOYED_DECISION_REQUIREMENTS.getFirst().getDmnDecisionRequirementsId();
 
     // when
     final var result =
@@ -275,7 +273,7 @@ class DecisionQueryTest {
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().get(0).getDmnDecisionRequirementsId())
+    assertThat(result.items().getFirst().getDmnDecisionRequirementsId())
         .isEqualTo(decisionRequirementId);
   }
 
@@ -283,7 +281,7 @@ class DecisionQueryTest {
   void shouldRetrieveByDecisionRequirementsName() {
     // given
     final String decisionRequirementName =
-        DEPLOYED_DECISION_REQUIREMENTS.get(0).getDmnDecisionRequirementsName();
+        DEPLOYED_DECISION_REQUIREMENTS.getFirst().getDmnDecisionRequirementsName();
 
     // when
     final var result =
@@ -295,7 +293,7 @@ class DecisionQueryTest {
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().get(0).getDmnDecisionRequirementsName())
+    assertThat(result.items().getFirst().getDmnDecisionRequirementsName())
         .isEqualTo(decisionRequirementName);
   }
 
@@ -335,11 +333,11 @@ class DecisionQueryTest {
             .join();
 
     // Assert that the creation date of item 0 is before item 1
-    assertThat(resultAsc.items().get(0).getDecisionRequirementsKey())
+    assertThat(resultAsc.items().getFirst().getDecisionRequirementsKey())
         .isLessThan(resultAsc.items().get(1).getDecisionRequirementsKey());
 
     // Assert that the creation date of item 0 is before item 1
-    assertThat(resultDesc.items().get(0).getDecisionRequirementsKey())
+    assertThat(resultDesc.items().getFirst().getDecisionRequirementsKey())
         .isGreaterThan(resultDesc.items().get(1).getDecisionRequirementsKey());
   }
 
@@ -378,10 +376,10 @@ class DecisionQueryTest {
     assertThat(uniqueDescIds.size()).isGreaterThan(1);
 
     // Assert that the first unique ID in ascending order is less than the second unique ID
-    assertThat(uniqueAscIds.get(0)).isLessThan(uniqueAscIds.get(1));
+    assertThat(uniqueAscIds.getFirst()).isLessThan(uniqueAscIds.get(1));
 
     // Assert that the first unique ID in descending order is greater than the second unique ID
-    assertThat(uniqueDescIds.get(0)).isGreaterThan(uniqueDescIds.get(1));
+    assertThat(uniqueDescIds.getFirst()).isGreaterThan(uniqueDescIds.get(1));
   }
 
   @Test
@@ -418,10 +416,10 @@ class DecisionQueryTest {
     assertThat(uniqueDescNames.size()).isGreaterThan(1);
 
     // Assert that the first unique name in ascending order is less than the second unique name
-    assertThat(uniqueAscNames.get(0)).isLessThan(uniqueAscNames.get(1));
+    assertThat(uniqueAscNames.getFirst()).isLessThan(uniqueAscNames.get(1));
 
     // Assert that the first unique name in descending order is greater than the second unique name
-    assertThat(uniqueDescNames.get(0)).isGreaterThan(uniqueDescNames.get(1));
+    assertThat(uniqueDescNames.getFirst()).isGreaterThan(uniqueDescNames.get(1));
   }
 
   @Test
@@ -450,10 +448,10 @@ class DecisionQueryTest {
     assertThat(uniqueDescVersions.size()).isGreaterThan(1);
 
     // Assert that the first unique name in ascending order is less than the second unique name
-    assertThat(uniqueAscVersions.get(0)).isLessThan(uniqueAscVersions.get(1));
+    assertThat(uniqueAscVersions.getFirst()).isLessThan(uniqueAscVersions.get(1));
 
     // Assert that the first unique name in descending order is greater than the second unique name
-    assertThat(uniqueDescVersions.get(0)).isGreaterThan(uniqueDescVersions.get(1));
+    assertThat(uniqueDescVersions.getFirst()).isGreaterThan(uniqueDescVersions.get(1));
   }
 
   @Test
@@ -518,13 +516,13 @@ class DecisionQueryTest {
   @Test
   void shouldGetDecisionRequirements() {
     // when
-    final long decisionRequirementsKey = DEPLOYED_DECISIONS.get(0).getDecisionRequirementsKey();
+    final long decisionRequirementsKey = DEPLOYED_DECISIONS.getFirst().getDecisionRequirementsKey();
     final var result =
         camundaClient.newDecisionRequirementsGetRequest(decisionRequirementsKey).send().join();
 
     // then
     assertThat(result.getDecisionRequirementsKey())
-        .isEqualTo(DEPLOYED_DECISIONS.get(0).getDecisionRequirementsKey());
+        .isEqualTo(DEPLOYED_DECISIONS.getFirst().getDecisionRequirementsKey());
   }
 
   @Test

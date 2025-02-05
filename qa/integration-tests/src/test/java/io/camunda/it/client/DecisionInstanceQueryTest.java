@@ -40,25 +40,25 @@ class DecisionInstanceQueryTest {
 
   @BeforeAll
   public static void beforeAll() {
-      List.of("decision_model.dmn", "invoiceBusinessDecisions_v_1.dmn")
-          .forEach(
-              dmn ->
-                  deployResource(camundaClient, String.format("decisions/%s", dmn)).getDecisions());
-      EVALUATED_DECISIONS.put(
-          DECISION_DEFINITION_ID_1,
-          evaluateDecision(
-              camundaClient, DECISION_DEFINITION_ID_1, "{\"age\": 20, \"income\": 20000}"));
-      EVALUATED_DECISIONS.put(
-          DECISION_DEFINITION_ID_2,
-          evaluateDecision(
-              camundaClient,
-              DECISION_DEFINITION_ID_2,
-              "{\"amount\": 100, \"invoiceCategory\": \"Misc\"}"));
-      waitForDecisionsToBeEvaluated(
-          camundaClient,
-          EVALUATED_DECISIONS.values().stream()
-              .mapToInt(v -> v.getEvaluatedDecisions().size())
-              .sum());
+    List.of("decision_model.dmn", "invoiceBusinessDecisions_v_1.dmn")
+        .forEach(
+            dmn ->
+                deployResource(camundaClient, String.format("decisions/%s", dmn)).getDecisions());
+    EVALUATED_DECISIONS.put(
+        DECISION_DEFINITION_ID_1,
+        evaluateDecision(
+            camundaClient, DECISION_DEFINITION_ID_1, "{\"age\": 20, \"income\": 20000}"));
+    EVALUATED_DECISIONS.put(
+        DECISION_DEFINITION_ID_2,
+        evaluateDecision(
+            camundaClient,
+            DECISION_DEFINITION_ID_2,
+            "{\"amount\": 100, \"invoiceCategory\": \"Misc\"}"));
+    waitForDecisionsToBeEvaluated(
+        camundaClient,
+        EVALUATED_DECISIONS.values().stream()
+            .mapToInt(v -> v.getEvaluatedDecisions().size())
+            .sum());
   }
 
   @AfterAll

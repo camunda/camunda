@@ -62,8 +62,7 @@ public class BackupRestoreIT {
 
   private static final String REPOSITORY_NAME = "test-repository";
   private static final String INDEX_PREFIX = "backup-restore";
-  @TempDir
-  public Path repositoryDir;
+  @TempDir public Path repositoryDir;
   protected CamundaClient camundaClient;
 
   @TestZeebe(autoStart = false)
@@ -83,22 +82,23 @@ public class BackupRestoreIT {
 
   private void setup(final BackupRestoreTestConfig config) throws IOException {
     final String dbUrl;
-    testStandaloneCamunda = new TestSimpleCamundaApplication()
-        .withAdditionalInitializer(new WebappsConfigurationInitializer())
-        .withConfiguration(
-            WebappsModuleConfiguration.class, IndexTemplateDescriptorsConfigurator.class)
-        .withConfiguration(
-            OperateModuleConfiguration.class,
-            TestOperateElasticsearchSchemaManager.class,
-            TestOperateOpensearchSchemaManager.class,
-            TestOperateSchemaStartup.class)
-        .withAdditionalProfile(Profile.OPERATE)
-        .withConfiguration(
-            TasklistModuleConfiguration.class,
-            TestTasklistElasticsearchSchemaManager.class,
-            TestTasklistOpensearchSchemaManager.class,
-            TestTasklistSchemaStartup.class)
-        .withAdditionalProfile(Profile.TASKLIST);
+    testStandaloneCamunda =
+        new TestSimpleCamundaApplication()
+            .withAdditionalInitializer(new WebappsConfigurationInitializer())
+            .withConfiguration(
+                WebappsModuleConfiguration.class, IndexTemplateDescriptorsConfigurator.class)
+            .withConfiguration(
+                OperateModuleConfiguration.class,
+                TestOperateElasticsearchSchemaManager.class,
+                TestOperateOpensearchSchemaManager.class,
+                TestOperateSchemaStartup.class)
+            .withAdditionalProfile(Profile.OPERATE)
+            .withConfiguration(
+                TasklistModuleConfiguration.class,
+                TestTasklistElasticsearchSchemaManager.class,
+                TestTasklistOpensearchSchemaManager.class,
+                TestTasklistSchemaStartup.class)
+            .withAdditionalProfile(Profile.TASKLIST);
 
     final var configurator = new MultiDbConfigurator(testStandaloneCamunda);
     searchContainer =
@@ -119,8 +119,9 @@ public class BackupRestoreIT {
             yield container;
           }
 
-          default -> throw new IllegalArgumentException(
-              "Unsupported database type: " + config.databaseType);
+          default ->
+              throw new IllegalArgumentException(
+                  "Unsupported database type: " + config.databaseType);
         };
     configurator.getOperateProperties().getBackup().setRepositoryName(REPOSITORY_NAME);
     configurator.getTasklistProperties().getBackup().setRepositoryName(REPOSITORY_NAME);
@@ -214,8 +215,7 @@ public class BackupRestoreIT {
                 .createRepository(b -> b.repository(repository).name(REPOSITORY_NAME));
         assertThat(response.acknowledged()).isTrue();
       }
-      default -> {
-      }
+      default -> {}
     }
   }
 
@@ -234,13 +234,10 @@ public class BackupRestoreIT {
           final var response = esClient.snapshot().restore(request);
           assertThat(response.snapshot().snapshot()).isEqualTo(snapshot);
         }
-        default -> {
-        }
+        default -> {}
       }
     }
   }
 
-  public record BackupRestoreTestConfig(DatabaseType databaseType, String bucket) {
-
-  }
+  public record BackupRestoreTestConfig(DatabaseType databaseType, String bucket) {}
 }
