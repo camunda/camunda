@@ -50,6 +50,8 @@ import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthReport;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.net.ConnectException;
 import java.nio.ByteBuffer;
@@ -78,6 +80,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,6 +98,7 @@ public class RaftTest extends ConcurrentTestCase {
   private volatile long position = 0;
   private Path directory;
   private final Map<MemberId, TestRaftServerProtocol> serverProtocols = Maps.newConcurrentMap();
+  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @Before
   @After
@@ -183,7 +187,8 @@ public class RaftTest extends ConcurrentTestCase {
             .withPartitionConfig(
                 new RaftPartitionConfig()
                     .setElectionTimeout(Duration.ofSeconds(1))
-                    .setHeartbeatInterval(Duration.ofMillis(100)));
+                    .setHeartbeatInterval(Duration.ofMillis(100)))
+            .withMeterRegistry(meterRegistry);
 
     final RaftServer server = configurator.apply(defaults).build();
 
