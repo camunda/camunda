@@ -14,7 +14,6 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.entity.Permission;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -78,12 +77,7 @@ public class AuthorizationServices
                         f.ownerIds(ownerIds.stream().toList())
                             .permissionType(permissionType)
                             .resourceType(resourceType.name())));
-    return findAll(authorizationQuery).stream()
-        .map(AuthorizationEntity::permissions)
-        .flatMap(List::stream)
-        .map(Permission::resourceIds)
-        .flatMap(Set::stream)
-        .collect(Collectors.toList());
+    return findAll(authorizationQuery).stream().map(AuthorizationEntity::resourceId).toList();
   }
 
   public List<String> getAuthorizedApplications(final Set<String> ownerIds) {
@@ -108,9 +102,9 @@ public class AuthorizationServices
                         .page(p -> p.size(1))));
     // TODO logic to fetch indirect authorizations via roles/groups should be added later
     return result.items().stream()
-        .flatMap(authorization -> authorization.permissions().stream())
-        .filter(permission -> permission.resourceIds().contains(resourceId))
-        .map(Permission -> Permission.type().name())
+        .filter(authorization -> authorization.resourceId().contains(resourceId))
+        .flatMap(authorization -> authorization.permissionTypes().stream())
+        .map(PermissionType::name)
         .collect(Collectors.toSet());
   }
 
@@ -120,9 +114,9 @@ public class AuthorizationServices
         new BrokerAuthorizationCreateRequest()
             .setOwnerId(request.ownerId())
             .setOwnerType(request.ownerType())
-            .setResourceId(request.resourceId())
             .setResourceType(request.resourceType())
-            .setPermissions(request.permissions());
+            .setResourceId(request.resourceId())
+            .setPermissionTypes(request.permissionType());
     return sendBrokerRequest(brokerRequest);
   }
 
@@ -136,5 +130,5 @@ public class AuthorizationServices
       AuthorizationOwnerType ownerType,
       String resourceId,
       AuthorizationResourceType resourceType,
-      Set<PermissionType> permissions) {}
+      Set<PermissionType> permissionType) {}
 }
