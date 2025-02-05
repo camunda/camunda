@@ -29,6 +29,13 @@ public class AuthorizationWriter {
             authorization));
   }
 
+  public void updateAuthorization(final AuthorizationDbModel authorization) {
+    // It's easiest to just recreate the authorization instead of creating a complex query to
+    // determine a changeset and act accordingly.
+    deleteAuthorization(authorization);
+    createAuthorization(authorization);
+  }
+
   public void deleteAuthorization(final AuthorizationDbModel authorization) {
     executionQueue.executeInQueue(
         new QueueItem(
