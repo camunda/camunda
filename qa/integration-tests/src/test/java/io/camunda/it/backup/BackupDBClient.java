@@ -12,7 +12,11 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 
-/** interface to abstract Elasticsearch/Opensearch clients for testing purposes */
+/**
+ * interface to abstract Elasticsearch/Opensearch clients for testing purposes. Methods defined here
+ * are not implemented elsewhere as they are typically performed by users, not by the camunda
+ * application.
+ */
 public interface BackupDBClient extends AutoCloseable {
   void restore(String repositoryName, Collection<String> snapshots) throws IOException;
 
@@ -27,6 +31,7 @@ public interface BackupDBClient extends AutoCloseable {
     };
   }
 
+  // TODO remove this when purge functionality is available
   void deleteAllIndices(final String indexPrefix) throws IOException;
 
   List<String> cat() throws IOException;
