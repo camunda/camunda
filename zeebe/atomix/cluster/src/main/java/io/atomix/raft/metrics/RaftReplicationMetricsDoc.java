@@ -11,6 +11,7 @@ import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import io.micrometer.core.instrument.Meter.Type;
 
 public enum RaftReplicationMetricsDoc implements ExtendedMeterDocumentation {
+  /** The commit index */
   COMMIT_INDEX {
     @Override
     public String getName() {
@@ -27,6 +28,7 @@ public enum RaftReplicationMetricsDoc implements ExtendedMeterDocumentation {
       return "The commit index";
     }
   },
+  /** The index of last entry appended to the log */
   APPEND_INDEX {
     @Override
     public String getName() {
