@@ -47,7 +47,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       TasklistProperties.PREFIX + ".elasticsearch.createSchema = false",
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({"tasklist", "test"})
+@ActiveProfiles({"tasklist", "test", "standalone"})
 public class ProbesTestElasticSearchIT extends TasklistIntegrationTest {
 
   @Autowired private TasklistProperties tasklistProperties;

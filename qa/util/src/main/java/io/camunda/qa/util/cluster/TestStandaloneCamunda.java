@@ -7,6 +7,8 @@
  */
 package io.camunda.qa.util.cluster;
 
+import static org.apache.hc.core5.http.HttpHeaders.COOKIE;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
@@ -20,6 +22,7 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
@@ -127,8 +130,10 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
 
     operateProperties.getElasticsearch().setUrl(esURL);
     operateProperties.getZeebeElasticsearch().setUrl(esURL);
+    operateProperties.setCsrfPreventionEnabled(false);
     tasklistProperties.getElasticsearch().setUrl(esURL);
     tasklistProperties.getZeebeElasticsearch().setUrl(esURL);
+    tasklistProperties.setCsrfPreventionEnabled(false);
     return super.start().withRecordingExporter(true);
   }
 
@@ -164,7 +169,11 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   }
 
   public TestRestOperateClient newOperateClient() {
-    return new TestRestOperateClient(restAddress());
+    return new TestRestOperateClient(restAddress(), operateProperties);
+  }
+
+  public TestRestTasklistClient newTasklistClient() {
+    return new TestRestTasklistClient(restAddress(), tasklistProperties);
   }
 
   @Override
@@ -228,6 +237,22 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     return TestGateway.super.newClientBuilder();
   }
 
+  public ZeebeClientBuilder newClientUsingCookieBuilder(final String cookie) {
+    return newClientBuilder()
+        .credentialsProvider(
+            new CredentialsProvider() {
+              @Override
+              public void applyCredentials(final CredentialsApplier applier) {
+                applier.put(COOKIE, cookie);
+              }
+
+              @Override
+              public boolean shouldRetryRequest(final StatusCode statusCode) {
+                return false;
+              }
+            });
+  }
+
   /** Returns the broker configuration */
   public BrokerBasedProperties brokerConfig() {
     return brokerProperties;
@@ -286,5 +311,9 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   public TestStandaloneCamunda withWorkingDirectory(final Path directory) {
     return withBean(
         "workingDirectory", new WorkingDirectory(directory, false), WorkingDirectory.class);
+  }
+
+  public String getElasticSearchHostAddress() {
+    return "http://" + esContainer.getHttpHostAddress();
   }
 }

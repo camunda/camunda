@@ -20,12 +20,26 @@ public class PartitionSupplierConfigurer {
 
   private final Gateway gateway;
   private final ZeebeClient zeebeClient;
+  private final BrokerClient brokerClient;
 
   public PartitionSupplierConfigurer(
       final Broker broker, final Gateway gateway, final ZeebeClient zeebeClient) {
+    this(broker, gateway, zeebeClient, null);
+  }
+
+  public PartitionSupplierConfigurer(final BrokerClient brokerClient) {
+    this(null, null, null, brokerClient);
+  }
+
+  PartitionSupplierConfigurer(
+      final Broker broker,
+      final Gateway gateway,
+      final ZeebeClient zeebeClient,
+      final BrokerClient brokerClient) {
     this.broker = broker;
     this.gateway = gateway;
     this.zeebeClient = zeebeClient;
+    this.brokerClient = brokerClient;
   }
 
   public PartitionSupplier createPartitionSupplier() {
@@ -34,6 +48,8 @@ public class PartitionSupplierConfigurer {
       return new BrokerConfigurationPartitionSupplier(brokerConfiguration);
     } else if (gateway != null) {
       final var brokerClient = gateway.getBrokerClient();
+      return new BrokerClientPartitionSupplier(brokerClient);
+    } else if (brokerClient != null) {
       return new BrokerClientPartitionSupplier(brokerClient);
     } else {
       // default use Standalone Partition Holder by using the Zeebe Client

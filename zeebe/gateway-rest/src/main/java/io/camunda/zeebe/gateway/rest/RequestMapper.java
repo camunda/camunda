@@ -430,6 +430,17 @@ public class RequestMapper {
     return new Builder().token(token).tenants(authorizedTenants).build();
   }
 
+  public static Authentication getAnonymousAuthentication() {
+    return new Builder()
+        .token(
+            Authorization.jwtEncoder()
+                .withClaim(
+                    Authorization.AUTHORIZED_ANONYMOUS_USER,
+                    true) // anonymous users is implemented in 8.8
+                .encode())
+        .build();
+  }
+
   public static <T> Either<ProblemDetail, T> getResult(
       final Optional<ProblemDetail> error, final Supplier<T> resultSupplier) {
     return error

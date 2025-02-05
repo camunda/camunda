@@ -89,7 +89,7 @@ import org.springframework.web.client.RestTemplate;
       "camunda.tasklist.archiver.rolloverEnabled = false",
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({SSO_AUTH_PROFILE, "tasklist", "test"})
+@ActiveProfiles({SSO_AUTH_PROFILE, "tasklist", "test", "standalone"})
 public class AuthenticationWithPersistentSessionsIT implements AuthenticationTestable {
 
   private static final String COOKIE_KEY = "Cookie";

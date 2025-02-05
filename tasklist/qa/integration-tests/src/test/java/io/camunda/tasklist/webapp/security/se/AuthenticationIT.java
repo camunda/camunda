@@ -37,7 +37,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 /** This tests: authentication and security over GraphQL API /currentUser to get current user */
-@ActiveProfiles({AUTH_PROFILE, "tasklist", "test"})
+@ActiveProfiles({AUTH_PROFILE, "tasklist", "test", "standalone"})
 public class AuthenticationIT extends TasklistIntegrationTest implements AuthenticationTestable {
 
   private static final String GRAPHQL_URL = "/graphql";

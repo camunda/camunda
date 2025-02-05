@@ -46,7 +46,7 @@ class UserTaskQueryTest {
     deployProcess("process", "simple.bpmn", "test", "", "");
     deployProcess("process-2", "simple-2.bpmn", "test-2", "group", "user");
     deployProcess("process-3", "simple-3.bpmn", "test-3", "", "", "30");
-    deployResource("/processes/bpm_variable_test.bpmn", "bpm_variable_test.bpmn");
+    deployResource("/process/bpm_variable_test.bpmn", "bpm_variable_test.bpmn");
 
     startProcessInstance("process");
     startProcessInstance("process-2");

@@ -30,7 +30,10 @@ public final class OperateURIs {
     LOGIN_RESOURCE,
     SSO_CALLBACK_URI,
     NO_PERMISSION,
-    LOGOUT_RESOURCE
+    LOGOUT_RESOURCE,
+    // deprecated Tasklist v1 Public Endpoints (used in single app mode)
+    "/v1/external/process/**",
+    "/new/**",
   };
 
   // Used as constants class
