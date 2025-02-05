@@ -111,7 +111,7 @@ public class HttpClientFactory {
       builder.setScheme(config.isPlaintextConnectionEnabled() ? "http" : "https");
 
       return builder.build();
-    } catch (final URISyntaxException | UnsupportedOperationException e) {
+    } catch (final URISyntaxException e) {
       throw new InternalClientException("Issues with REST API URI.", e);
     }
   }

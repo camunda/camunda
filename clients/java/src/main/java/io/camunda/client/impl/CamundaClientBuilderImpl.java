@@ -407,12 +407,18 @@ public final class CamundaClientBuilderImpl
 
   @Override
   public CamundaClientBuilder restAddress(final URI restAddress) {
+    if (restAddress != null && restAddress.getHost() == null) {
+      throw new IllegalArgumentException("The REST API address must be an absolute URI");
+    }
     this.restAddress = restAddress;
     return this;
   }
 
   @Override
   public CamundaClientBuilder grpcAddress(final URI grpcAddress) {
+    if (grpcAddress != null && grpcAddress.getHost() == null) {
+      throw new IllegalArgumentException("The gRPC address must be an absolute URI");
+    }
     this.grpcAddress = grpcAddress;
     grpcAddressUsed = true;
     return this;
