@@ -69,4 +69,19 @@ public interface MutableAuthorizationState extends AuthorizationState {
    */
   void deleteAuthorizationsByOwnerTypeAndIdPrefix(
       final AuthorizationOwnerType ownerType, final String ownerId);
+
+  /**
+   * Updates the provided authorization in the state.
+   *
+   * @param authorizationKey the key of the authorization
+   * @param authorization the authorization record to update
+   */
+  void update(final long authorizationKey, final AuthorizationRecord authorization);
+
+  /**
+   * Removes the authorization with the provided key.
+   *
+   * @param authorizationKey the key of the authorization to remove
+   */
+  void delete(final long authorizationKey);
 }

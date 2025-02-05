@@ -23,7 +23,6 @@ public class AuthorizationUpdatedApplier
 
   @Override
   public void applyState(final long key, final AuthorizationRecord value) {
-    // TODO: add update method call once https://github.com/camunda/camunda/issues/27203 is
-    // implemented
+    authorizationState.update(key, value);
   }
 }
