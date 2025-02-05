@@ -151,7 +151,7 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
     when(identity.tenants()).thenReturn(tenants);
 
     final var multiTenancyConfiguration = new MultiTenancyConfiguration();
-    multiTenancyConfiguration.setEnabled(true);
+    multiTenancyConfiguration.setEnabled(false);
     when(securityConfiguration.getMultiTenancy()).thenReturn(multiTenancyConfiguration);
 
     final Jwt token = createJwtTokenWith();
