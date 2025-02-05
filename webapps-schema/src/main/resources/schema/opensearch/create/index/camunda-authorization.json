@@ -5,8 +5,11 @@
       "id": {
         "type": "keyword"
       },
-      "ownerKey": {
+      "authorizationKey": {
         "type": "long"
+      },
+      "ownerId": {
+        "type": "keyword"
       },
       "ownerType": {
         "type": "keyword"
@@ -14,16 +17,11 @@
       "resourceType": {
         "type": "keyword"
       },
-      "permissions": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "keyword"
-          },
-          "resourceIds": {
-            "type": "keyword"
-          }
-        }
+      "resourceId": {
+        "type": "keyword"
+      },
+      "permissionTypes": {
+        "type": "keyword"
       }
     }
   }
