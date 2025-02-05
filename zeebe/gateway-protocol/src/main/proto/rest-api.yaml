@@ -3213,14 +3213,11 @@ paths:
       tags:
         - Document
       operationId: createDocument
-      summary: Upload document (alpha)
+      summary: Upload document
       description: |
         Upload a document to the Camunda 8 cluster.
 
-        Note that this currently only supports an in-memory document store, which is not meant for production use.
-
-        This endpoint is an alpha feature and may be subject to change
-        in future releases.
+        Note that this is currently supported for document stores of type: AWS, GCP, in-memory, local
       parameters:
         - name: storeId
           in: query
@@ -3272,7 +3269,7 @@ paths:
       tags:
         - Document
       operationId: createDocuments
-      summary: Upload multiple documents (alpha)
+      summary: Upload multiple documents
       description: |
         Upload multiple documents to the Camunda 8 cluster.
 
@@ -3285,10 +3282,7 @@ paths:
         each of which contains the file name of the document that failed to upload and the reason for the failure.
         The client can choose to retry the whole batch or individual documents based on the response.
 
-        Note that this currently only supports an in-memory document store, which is not meant for production use.
-
-        This endpoint is an alpha feature and may be subject to change
-        in future releases.
+        Note that this is currently supported for document stores of type: AWS, GCP, in-memory, local
       parameters:
         - name: storeId
           in: query
@@ -3348,14 +3342,11 @@ paths:
       tags:
         - Document
       operationId: getDocument
-      summary: Download document (alpha)
+      summary: Download document
       description: |
         Download a document from the Camunda 8 cluster.
 
-        Note that this currently only supports an in-memory document store, which is not meant for production use.
-
-        This endpoint is an alpha feature and may be subject to change
-        in future releases.
+        Note that this is currently supported for document stores of type: AWS, GCP, in-memory, local
       parameters:
         - name: documentId
           in: path
@@ -3401,14 +3392,11 @@ paths:
       tags:
         - Document
       operationId: deleteDocument
-      summary: Delete document (alpha)
+      summary: Delete document
       description: |
         Delete a document from the Camunda 8 cluster.
 
-        Note that this currently only supports an in-memory document store, which is not meant for production use.
-
-        This endpoint is an alpha feature and may be subject to change
-        in future releases.
+        Note that this is currently supported for document stores of type: AWS, GCP, in-memory, local
       parameters:
         - name: documentId
           in: path
@@ -3440,14 +3428,11 @@ paths:
       tags:
         - Document
       operationId: createDocumentLink
-      summary: Create document link (alpha)
+      summary: Create document link
       description: |
         Create a link to a document in the Camunda 8 cluster.
 
-        Note that this currently only supports an in-memory document store, which is not meant for production use.
-
-        This endpoint is an alpha feature and may be subject to change
-        in future releases.
+        Note that this is currently supported for document stores of type: AWS, GCP
       parameters:
         - name: documentId
           in: path
