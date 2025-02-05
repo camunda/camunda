@@ -551,6 +551,41 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /tenants/{tenantId}/users/search:
+    post:
+      tags:
+        - Tenant
+        - User
+      operationId: searchUsersForTenant
+      summary: Query users for tenant
+      description: Retrieves a filtered and sorted list of users for a specified tenant.
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserSearchQueryRequest"
+      responses:
+        "200":
+          description: The search result of users for the tenant.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSearchResponse"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/UserSearchResponse"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/UserSearchResponse"
+
   /tenants/{tenantKey}/users/{userKey}:
     delete:
       tags:
