@@ -60,12 +60,11 @@ public final class BpmnProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final DueDateTimerChecker timerChecker,
       final Writers writers,
-      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final ProcessEngineMetrics processEngineMetrics) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         processingState.getProcessMessageSubscriptionState();
     final var keyGenerator = processingState.getKeyGenerator();
-
-    final var processEngineMetrics = new ProcessEngineMetrics(processingState.getPartitionId());
 
     addProcessInstanceCommandProcessor(writers, typedRecordProcessors, processingState);
 

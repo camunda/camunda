@@ -11,7 +11,9 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.prometheus.client.Counter;
+import java.util.Objects;
 
 public final class ProcessEngineMetrics {
 
@@ -69,9 +71,11 @@ public final class ProcessEngineMetrics {
           .help("Number of created (root) process instances")
           .labelNames(PARTITION_LABEL, CREATION_MODE_LABEL)
           .register();
+  private final MeterRegistry registry;
   private final String partitionIdLabel;
 
-  public ProcessEngineMetrics(final int partitionId) {
+  public ProcessEngineMetrics(final MeterRegistry registry, final int partitionId) {
+    this.registry = Objects.requireNonNull(registry, "must specify a registry");
     partitionIdLabel = String.valueOf(partitionId);
   }
 

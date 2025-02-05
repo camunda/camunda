@@ -84,7 +84,9 @@ public final class EngineProcessors {
         new DueDateTimerChecker(scheduledTaskStateFactory.get().getTimerState(), featureFlags);
 
     final var jobMetrics = new JobMetrics(partitionId);
-    final var processEngineMetrics = new ProcessEngineMetrics(processingState.getPartitionId());
+    final var processEngineMetrics =
+        new ProcessEngineMetrics(
+            typedRecordProcessorContext.getMeterRegistry(), processingState.getPartitionId());
 
     subscriptionCommandSender.setWriters(writers);
 
@@ -145,7 +147,8 @@ public final class EngineProcessors {
             subscriptionCommandSender,
             writers,
             timerChecker,
-            transientProcessMessageSubscriptionState);
+            transientProcessMessageSubscriptionState,
+            processEngineMetrics);
 
     addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
 
@@ -219,7 +222,8 @@ public final class EngineProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers,
       final DueDateTimerChecker timerChecker,
-      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final ProcessEngineMetrics processEngineMetrics) {
     return BpmnProcessors.addBpmnStreamProcessor(
         processingState,
         scheduledTaskState,
@@ -228,7 +232,8 @@ public final class EngineProcessors {
         subscriptionCommandSender,
         timerChecker,
         writers,
-        transientProcessMessageSubscriptionState);
+        transientProcessMessageSubscriptionState,
+        processEngineMetrics);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(
