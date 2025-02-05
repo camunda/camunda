@@ -15,7 +15,7 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.errorhandling.ErrorHandler;
 import io.camunda.exporter.errorhandling.ErrorHandlers;
-import io.camunda.exporter.handlers.AuthorizationHandler;
+import io.camunda.exporter.handlers.AuthorizationCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.DecisionEvaluationHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.DecisionRequirementsHandler;
@@ -167,7 +167,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new UserCreatedUpdatedHandler(
                 indexDescriptors.get(UserIndex.class).getFullQualifiedName()),
             new UserDeletedHandler(indexDescriptors.get(UserIndex.class).getFullQualifiedName()),
-            new AuthorizationHandler(
+            new AuthorizationCreatedUpdatedHandler(
                 indexDescriptors.get(AuthorizationIndex.class).getFullQualifiedName()),
             new TenantCreateUpdateHandler(
                 indexDescriptors.get(TenantIndex.class).getFullQualifiedName()),
