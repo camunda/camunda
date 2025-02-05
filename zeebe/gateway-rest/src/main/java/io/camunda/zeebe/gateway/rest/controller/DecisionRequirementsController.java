@@ -38,7 +38,7 @@ public class DecisionRequirementsController {
   }
 
   @CamundaPostMapping(path = "/search")
-  public ResponseEntity<Object> searchUserTasks(
+  public ResponseEntity<Object> searchDecisionRequirements(
       @RequestBody(required = false) final DecisionRequirementsSearchQueryRequest query) {
     return SearchQueryRequestMapper.toDecisionRequirementsQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
