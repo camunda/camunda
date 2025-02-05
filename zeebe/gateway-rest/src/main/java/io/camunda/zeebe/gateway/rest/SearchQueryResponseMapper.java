@@ -57,7 +57,6 @@ import io.camunda.zeebe.gateway.protocol.rest.MappingItem;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.PermissionDTO;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResponse;
@@ -78,6 +77,7 @@ import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.VariableItem;
 import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResponse;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItem;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -631,16 +631,15 @@ public final class SearchQueryResponseMapper {
 
   public static AuthorizationResponse toAuthorization(final AuthorizationEntity authorization) {
     return new AuthorizationResponse()
-        .ownerType(OwnerTypeEnum.fromValue(authorization.ownerType()))
+        .authorizationKey(authorization.authorizationKey())
         .ownerId(authorization.ownerId())
+        .ownerType(OwnerTypeEnum.fromValue(authorization.ownerType()))
         .resourceType(ResourceTypeEnum.valueOf(authorization.resourceType()))
-        .permissions(
-            authorization.permissions().stream()
-                .map(
-                    p ->
-                        new PermissionDTO()
-                            .permissionType(PermissionTypeEnum.fromValue(p.type().name()))
-                            .resourceIds(p.resourceIds()))
+        .resourceId(authorization.resourceId())
+        .permissionTypes(
+            authorization.permissionTypes().stream()
+                .map(PermissionType::name)
+                .map(PermissionTypeEnum::fromValue)
                 .toList());
   }
 
