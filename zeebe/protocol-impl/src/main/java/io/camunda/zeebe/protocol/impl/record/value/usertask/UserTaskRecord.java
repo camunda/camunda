@@ -105,23 +105,23 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   /**
-   * Tracks the names of user task attributes that have been modified.
+   * Tracks the names of user task attributes that are intended to be modified (e.g. on `UPDATE`),
+   * or have been modified (e.g. on `UPDATED` or `CORRECTED`).
    *
-   * <p>This property was introduced to enable tracking of attributes that were truly modified.
-   * Since our `msgpack` implementation doesn't support `null` values, all record attributes have
-   * default non-null values. As a result, without `changedAttributesProp`, it would be impossible
-   * to determine whether an attribute was explicitly modified or simply retained its default value.
+   * <p>Since our `msgpack` implementation doesn't support `null` values, all record attributes have
+   * default non-null values. As a result, without `changedAttributes`, it would be impossible to
+   * determine whether an attribute was explicitly modified or simply retained its default value.
    * This property solves that issue by explicitly listing attributes that were changed.
    *
-   * <p>The content of `changedAttributesProp` field depend on the type of event being processed:
+   * <p>The content of `changedAttributes` field depend on the type of record:
    *
    * <ul>
    *   <li><b>UPDATE command:</b> Specifies which attributes are intended to be updated, allowing
    *       explicit changes (including clearing values to default). The presence of an attribute in
    *       this list indicates that it was explicitly modified by the update request.
    *   <li><b>UPDATING and UPDATED events:</b> Contains only attributes whose values differ from the
-   *       persisted state or, in the case of `UPDATED`, from the intermediate user task record
-   *       state if task listeners were executed, including any corrections made by listeners.
+   *       persisted state. In the case of `UPDATED` this can include any corrections made by
+   *       listeners, unless they corrected them back to the prior state.
    *   <li><b>CORRECTED event:</b> Contains only attributes that were modified by a listener,
    *       comparing them to the previous event that triggered the listener or a prior listener
    *       correction. It doesn't include the original attributes that caused the listener to
