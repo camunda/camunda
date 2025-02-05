@@ -33,8 +33,7 @@ public interface CommandWriter {
       final Intent intent,
       final UnifiedRecordValue value);
 
-  long writeCommandOnPartition(
-      int partitionId, UnaryOperator<FluentLogWriter> builder);
+  long writeCommandOnPartition(int partitionId, UnaryOperator<FluentLogWriter> builder);
 
   long writeCommandOnPartition(
       final int partitionId, final Intent intent, final UnifiedRecordValue recordValue);
