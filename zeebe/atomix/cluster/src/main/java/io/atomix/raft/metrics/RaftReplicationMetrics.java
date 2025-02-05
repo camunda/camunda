@@ -33,10 +33,12 @@ public class RaftReplicationMetrics extends RaftMetrics {
     appendIndex = new AtomicLong(0L);
 
     Gauge.builder(COMMIT_INDEX.getName(), commitIndex::get)
-        .tags(PARTITION_GROUP_NAME_LABEL, partitionName)
+        .description(COMMIT_INDEX.getDescription())
+        .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionName)
         .register(registry);
     Gauge.builder(APPEND_INDEX.getName(), appendIndex::get)
-        .tags(PARTITION_GROUP_NAME_LABEL, partitionName)
+        .description(APPEND_INDEX.getDescription())
+        .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionName)
         .register(registry);
   }
 
