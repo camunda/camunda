@@ -716,6 +716,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     }
   }
 
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
+  }
+
   private void startTransition() {
     ongoingTransition = true;
   }
