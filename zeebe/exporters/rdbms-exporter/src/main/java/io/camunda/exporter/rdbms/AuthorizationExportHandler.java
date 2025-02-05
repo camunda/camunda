@@ -8,13 +8,10 @@
 package io.camunda.exporter.rdbms;
 
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
-import io.camunda.db.rdbms.write.domain.AuthorizationPermissionDbModel;
 import io.camunda.db.rdbms.write.service.AuthorizationWriter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
-import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,17 +27,20 @@ public class AuthorizationExportHandler implements RdbmsExportHandler<Authorizat
 
   @Override
   public boolean canExport(final Record<AuthorizationRecordValue> record) {
-    return record.getIntent() == AuthorizationIntent.PERMISSION_ADDED
-        || record.getIntent() == AuthorizationIntent.PERMISSION_REMOVED;
+    return record.getIntent() == AuthorizationIntent.CREATED
+        || record.getIntent() == AuthorizationIntent.UPDATED
+        || record.getIntent() == AuthorizationIntent.DELETED;
   }
 
   @Override
   public void export(final Record<AuthorizationRecordValue> record) {
     final AuthorizationRecordValue value = record.getValue();
     switch (record.getIntent()) {
-      case AuthorizationIntent.PERMISSION_ADDED -> authorizationWriter.addPermissions(map(value));
-      case AuthorizationIntent.PERMISSION_REMOVED ->
-          authorizationWriter.removePermissions(map(value));
+      case AuthorizationIntent.CREATED -> authorizationWriter.createAuthorization(map(value));
+      case AuthorizationIntent.UPDATED ->
+          authorizationWriter.createAuthorization(map(value)); // TODO change to update
+      case AuthorizationIntent.DELETED ->
+          authorizationWriter.removePermissions(map(value)); // TODO fix mapper
       default -> LOG.warn("Unexpected intent {} for authorization record", record.getIntent());
     }
   }
@@ -51,20 +51,8 @@ public class AuthorizationExportHandler implements RdbmsExportHandler<Authorizat
         .ownerId(authorization.getOwnerId())
         .ownerType(authorization.getOwnerType().name())
         .resourceType(authorization.getResourceType().name())
-        .permissions(mapPermissions(authorization.getPermissions()))
+        .resourceId(authorization.getResourceId())
+        .permissionTypes(authorization.getAuthorizationPermissions())
         .build();
-  }
-
-  private List<AuthorizationPermissionDbModel> mapPermissions(
-      final List<PermissionValue> permissions) {
-    return permissions.stream()
-        .filter(permission -> !permission.getResourceIds().isEmpty())
-        .map(
-            permission ->
-                new AuthorizationPermissionDbModel.Builder()
-                    .type(permission.getPermissionType())
-                    .resourceIds(permission.getResourceIds())
-                    .build())
-        .toList();
   }
 }
