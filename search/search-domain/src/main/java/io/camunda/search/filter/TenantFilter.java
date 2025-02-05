@@ -7,11 +7,18 @@
  */
 package io.camunda.search.filter;
 
+import io.camunda.search.entities.TenantMemberEntity.MemberType;
 import io.camunda.util.ObjectBuilder;
 import java.util.Set;
 import java.util.function.Function;
 
-public record TenantFilter(Long key, String tenantId, String name, Set<Long> memberKeys)
+public record TenantFilter(
+    Long key,
+    String tenantId,
+    String name,
+    String joinParentId,
+    MemberType memberType,
+    Set<Long> memberKeys)
     implements FilterBase {
 
   public static TenantFilter of(final Function<Builder, Builder> builderFunction) {
@@ -23,6 +30,8 @@ public record TenantFilter(Long key, String tenantId, String name, Set<Long> mem
     private Long key;
     private String tenantId;
     private String name;
+    private String joinParentId;
+    private MemberType memberType;
     private Set<Long> memberKeys;
 
     public Builder key(final Long value) {
@@ -37,6 +46,16 @@ public record TenantFilter(Long key, String tenantId, String name, Set<Long> mem
 
     public Builder name(final String value) {
       name = value;
+      return this;
+    }
+
+    public Builder joinParentId(final String value) {
+      joinParentId = value;
+      return this;
+    }
+
+    public Builder memberType(final MemberType value) {
+      memberType = value;
       return this;
     }
 

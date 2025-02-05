@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients.transformers.filter;
 
+import static io.camunda.search.entities.TenantMemberEntity.MemberType.USER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -83,8 +84,21 @@ public class TenantQueryTransformerTest extends AbstractTransformerTest {
                                     SearchQuery.of(
                                         q1 -> q.term(t -> t.field("join").value("tenant"))),
                                     SearchQuery.of(
-                                        q1 ->
-                                            q.term(t -> t.field("name").value("TestTenant"))))))));
+                                        q1 -> q.term(t -> t.field("join").value("tenant"))))))));
+  }
+
+  @Test
+  public void shouldQueryMembersByTenantId() {
+    // given
+    final var filter =
+        FilterBuilders.tenant((f) -> f.joinParentId("test-parent-id").memberType(USER));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    assertThat(searchRequest)
+        .isEqualTo(generateSearchQueryForParent("test-parent-id", USER.name()));
   }
 
   @Test

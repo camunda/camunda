@@ -7,6 +7,8 @@
  */
 package io.camunda.search.clients;
 
+import static io.camunda.search.entities.TenantMemberEntity.MemberType.USER;
+
 import io.camunda.search.clients.auth.DocumentAuthorizationQueryStrategy;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.AuthorizationEntity;
@@ -224,7 +226,28 @@ public class SearchClients
   }
 
   @Override
-  public SearchQueryResult<UserEntity> searchUsers(final UserQuery filter) {
+  public SearchQueryResult<UserEntity> searchUsers(final UserQuery userQuery) {
+    if (userQuery.filter().tenantId() != null) {
+      return searchUsersInTenant(userQuery);
+    }
+
+    return getSearchExecutor()
+        .search(userQuery, io.camunda.webapps.schema.entities.usermanagement.UserEntity.class);
+  }
+
+  private SearchQueryResult<UserEntity> searchUsersInTenant(final UserQuery userQuery) {
+    final List<TenantMemberEntity> tenantMembers =
+        getSearchExecutor()
+            .findAll(
+                new TenantQuery.Builder()
+                    .filter(f -> f.joinParentId(userQuery.filter().tenantId()).memberType(USER))
+                    .build(),
+                io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity.class);
+    final var usernames =
+        tenantMembers.stream().map(TenantMemberEntity::id).collect(Collectors.toSet());
+
+    final var overlayQuery = injectUsernamesIntoQuery(usernames, userQuery);
+
     return getSearchExecutor()
         .search(filter, io.camunda.webapps.schema.entities.usermanagement.UserEntity.class);
   }
