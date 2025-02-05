@@ -22,6 +22,7 @@ import io.camunda.search.clients.transformers.entity.ProcessDefinitionEntityTran
 import io.camunda.search.clients.transformers.entity.ProcessInstanceEntityTransformer;
 import io.camunda.search.clients.transformers.entity.RoleEntityTransformer;
 import io.camunda.search.clients.transformers.entity.TenantEntityTransformer;
+import io.camunda.search.clients.transformers.entity.TenantMemberEntityTransformer;
 import io.camunda.search.clients.transformers.entity.UsageMetricsEntityTransformer;
 import io.camunda.search.clients.transformers.entity.UserEntityTransformer;
 import io.camunda.search.clients.transformers.entity.UserTaskEntityTransformer;
@@ -162,6 +163,7 @@ import io.camunda.webapps.schema.entities.usermanagement.GroupEntity;
 import io.camunda.webapps.schema.entities.usermanagement.MappingEntity;
 import io.camunda.webapps.schema.entities.usermanagement.RoleEntity;
 import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
+import io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity;
 import io.camunda.webapps.schema.entities.usermanagement.UserEntity;
 import java.util.HashMap;
 import java.util.Map;
@@ -247,6 +249,7 @@ public final class ServiceTransformers {
     mappers.put(AuthorizationEntity.class, new AuthorizationEntityTransformer());
     mappers.put(RoleEntity.class, new RoleEntityTransformer());
     mappers.put(TenantEntity.class, new TenantEntityTransformer());
+    mappers.put(TenantMemberEntity.class, new TenantMemberEntityTransformer());
     mappers.put(GroupEntity.class, new GroupEntityTransformer());
     mappers.put(UserEntity.class, new UserEntityTransformer());
     mappers.put(MappingEntity.class, new MappingEntityTransformer());
