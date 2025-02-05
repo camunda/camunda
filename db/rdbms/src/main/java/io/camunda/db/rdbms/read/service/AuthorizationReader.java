@@ -14,7 +14,7 @@ import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.entity.Permission;
+import java.util.HashSet;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,11 +60,11 @@ public class AuthorizationReader extends AbstractEntityReader<AuthorizationEntit
 
   private AuthorizationEntity map(final AuthorizationDbModel model) {
     return new AuthorizationEntity(
+        model.authorizationKey(),
         model.ownerId(),
         model.ownerType(),
         model.resourceType(),
-        model.permissions().stream()
-            .map(p -> new Permission(p.permissionType(), p.resourceIds()))
-            .toList());
+        model.resourceId(),
+        new HashSet<>(model.permissionTypes()));
   }
 }

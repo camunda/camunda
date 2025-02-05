@@ -67,27 +67,23 @@
 
   <resultMap id="authorizationResultMap"
     type="io.camunda.db.rdbms.write.domain.AuthorizationDbModel">
-    <id column="OWNER_KEY" property="ownerKey"/>
+    <id column="AUTHORIZATION_KEY" property="authorizationKey"/>
+    <id column="OWNER_ID" property="ownerId"/>
     <id column="OWNER_TYPE" property="ownerType"/>
     <id column="RESOURCE_TYPE" property="resourceType"/>
-    <collection property="permissions"
-      ofType="io.camunda.db.rdbms.write.domain.AuthorizationPermissionDbModel"
-      javaType="java.util.List">
-      <id column="PERMISSION_TYPE" property="type"/>
-      <collection property="resourceIds" ofType="java.lang.String" javaType="java.util.Set">
-        <id column="RESOURCE_ID"/>
-      </collection>
+    <collection property="permissionTypes"
+      ofType="io.camunda.zeebe.protocol.record.value.PermissionType"
+      javaType="java.util.Set">
+      <id column="PERMISSION_TYPE"/>
     </collection>
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.AuthorizationDbModel"
     flushCache="true">
-    INSERT INTO ${prefix}AUTHORIZATIONS (OWNER_KEY, OWNER_TYPE, RESOURCE_TYPE, PERMISSION_TYPE, RESOURCE_ID)
+    INSERT INTO ${prefix}AUTHORIZATIONS (AUTHORIZATION_KEY, OWNER_ID, OWNER_TYPE, RESOURCE_TYPE, RESOURCE_ID, PERMISSION_TYPE)
     VALUES
-    <foreach collection="permissions" item="permission" separator=",">
-      <foreach collection="permission.resourceIds" item="resourceId" separator=",">
-        (#{ownerKey}, #{ownerType}, #{resourceType}, #{permission.type}, #{resourceId})
-      </foreach>
+    <foreach collection="permissionTypes" item="permissionType" separator=",">
+      (#{authorizationKey}, #{ownerId}, #{ownerType}, #{resourceType}, #{resourceId}, #{permissionType})
     </foreach>
   </insert>
 

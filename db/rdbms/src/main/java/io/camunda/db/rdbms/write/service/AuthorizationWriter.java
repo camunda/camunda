@@ -20,28 +20,23 @@ public class AuthorizationWriter {
     this.executionQueue = executionQueue;
   }
 
-  public void addPermissions(final AuthorizationDbModel authorization) {
-    final String key = generateKey(authorization);
-    if (hasPermissions(authorization)) {
-      executionQueue.executeInQueue(
-          new QueueItem(
-              ContextType.AUTHORIZATION,
-              key,
-              "io.camunda.db.rdbms.sql.AuthorizationMapper.insert",
-              authorization));
-    }
+  public void createAuthorization(final AuthorizationDbModel authorization) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.AUTHORIZATION,
+            authorization.authorizationKey().toString(),
+            "io.camunda.db.rdbms.sql.AuthorizationMapper.insert",
+            authorization));
   }
 
   public void removePermissions(final AuthorizationDbModel authorization) {
     final String key = generateKey(authorization);
-    if (hasPermissions(authorization)) {
-      executionQueue.executeInQueue(
-          new QueueItem(
-              ContextType.AUTHORIZATION,
-              key,
-              "io.camunda.db.rdbms.sql.AuthorizationMapper.delete",
-              authorization));
-    }
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.AUTHORIZATION,
+            key,
+            "io.camunda.db.rdbms.sql.AuthorizationMapper.delete",
+            authorization));
   }
 
   private String generateKey(final AuthorizationDbModel authorization) {
@@ -50,12 +45,5 @@ public class AuthorizationWriter {
         + authorization.ownerType()
         + "_"
         + authorization.resourceType();
-  }
-
-  private static boolean hasPermissions(final AuthorizationDbModel authorization) {
-    return authorization.permissions().stream()
-            .map(it -> it.resourceIds().size())
-            .reduce(0, Integer::sum)
-        > 0;
   }
 }
