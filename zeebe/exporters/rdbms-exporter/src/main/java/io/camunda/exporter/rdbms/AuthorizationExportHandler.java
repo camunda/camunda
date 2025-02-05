@@ -39,8 +39,7 @@ public class AuthorizationExportHandler implements RdbmsExportHandler<Authorizat
       case AuthorizationIntent.CREATED -> authorizationWriter.createAuthorization(map(value));
       case AuthorizationIntent.UPDATED ->
           authorizationWriter.createAuthorization(map(value)); // TODO change to update
-      case AuthorizationIntent.DELETED ->
-          authorizationWriter.removePermissions(map(value)); // TODO fix mapper
+      case AuthorizationIntent.DELETED -> authorizationWriter.deleteAuthorization(map(value));
       default -> LOG.warn("Unexpected intent {} for authorization record", record.getIntent());
     }
   }

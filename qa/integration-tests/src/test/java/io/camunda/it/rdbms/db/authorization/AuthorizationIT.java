@@ -105,7 +105,7 @@ public class AuthorizationIT {
             authorization.resourceType());
     assertThat(instance).isNotEmpty();
 
-    rdbmsWriter.getAuthorizationWriter().removePermissions(authorization);
+    rdbmsWriter.getAuthorizationWriter().deleteAuthorization(authorization);
     rdbmsWriter.flush();
 
     final var deletedInstance =

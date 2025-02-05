@@ -91,19 +91,6 @@
     flushCache="true">
     DELETE
     FROM ${prefix}AUTHORIZATIONS
-    WHERE OWNER_KEY = #{ownerKey}
-    AND OWNER_TYPE = #{ownerType}
-    AND RESOURCE_TYPE = #{resourceType}
-    <if test="permissions != null and !permissions.isEmpty()">
-      <foreach collection="permissions" item="permission" open=" AND (" separator=" OR " close=" ) ">
-        ( PERMISSION_TYPE = #{permission.type}
-        <if test="permission.resourceIds != null and !permission.resourceIds.isEmpty()">
-          <foreach collection="permission.resourceIds" item="resourceId" open=" AND RESOURCE_ID IN (" separator=", " close=" ) ">
-            #{resourceId}
-          </foreach>
-        </if>
-        )
-      </foreach>
-    </if>
+    WHERE AUTHORIZATION_KEY = #{authorizationKey}
   </delete>
 </mapper>
