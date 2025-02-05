@@ -18,7 +18,6 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.AuthorizationSort;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.entity.Permission;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
@@ -73,10 +72,12 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
           .items(
               List.of(
                   new AuthorizationEntity(
+                      1L,
                       "foo",
                       OwnerTypeEnum.USER.getValue(),
                       ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
-                      List.of(new Permission(PermissionType.CREATE, Set.of("2"))))))
+                      "2",
+                      Set.of(PermissionType.CREATE))))
           .firstSortValues(new Object[] {"f"})
           .lastSortValues(new Object[] {"v"})
           .build();

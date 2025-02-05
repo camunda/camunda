@@ -8,7 +8,8 @@
 package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.util.ObjectBuilder;
-import java.util.List;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.Set;
 import java.util.function.Function;
 
 public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
@@ -17,7 +18,8 @@ public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
   private String ownerId;
   private String ownerType;
   private String resourceType;
-  private List<AuthorizationPermissionDbModel> permissions;
+  private String resourceId;
+  private Set<PermissionType> permissionTypes;
 
   public Long authorizationKey() {
     return authorizationKey;
@@ -51,12 +53,20 @@ public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
     this.resourceType = resourceType;
   }
 
-  public List<AuthorizationPermissionDbModel> permissions() {
-    return permissions;
+  public String resourceId() {
+    return resourceId;
   }
 
-  public void permissions(final List<AuthorizationPermissionDbModel> permissions) {
-    this.permissions = permissions;
+  public void resourceId(final String resourceId) {
+    this.resourceId = resourceId;
+  }
+
+  public Set<PermissionType> permissionTypes() {
+    return permissionTypes;
+  }
+
+  public void permissionTypes(final Set<PermissionType> permissionTypes) {
+    this.permissionTypes = permissionTypes;
   }
 
   @Override
@@ -69,8 +79,9 @@ public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
                 .authorizationKey(authorizationKey)
                 .ownerId(ownerId)
                 .ownerType(ownerType)
+                .resourceId(resourceId)
                 .resourceType(resourceType)
-                .permissions(permissions))
+                .permissionTypes(permissionTypes))
         .build();
   }
 
@@ -79,8 +90,9 @@ public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
     private Long authorizationKey;
     private String ownerId;
     private String ownerType;
+    private String resourceId;
     private String resourceType;
-    private List<AuthorizationPermissionDbModel> permissions;
+    private Set<PermissionType> permissionTypes;
 
     public Builder() {}
 
@@ -104,8 +116,13 @@ public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
       return this;
     }
 
-    public Builder permissions(final List<AuthorizationPermissionDbModel> permissions) {
-      this.permissions = permissions;
+    public Builder resourceId(final String resourceId) {
+      this.resourceId = resourceId;
+      return this;
+    }
+
+    public Builder permissionTypes(final Set<PermissionType> permissionTypes) {
+      this.permissionTypes = permissionTypes;
       return this;
     }
 
@@ -115,8 +132,9 @@ public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
       model.authorizationKey(authorizationKey);
       model.ownerId(ownerId);
       model.ownerType(ownerType);
+      model.resourceId(resourceId);
       model.resourceType(resourceType);
-      model.permissions(permissions);
+      model.permissionTypes(permissionTypes);
       return model;
     }
   }

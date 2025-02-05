@@ -9,14 +9,12 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.security.entity.Permission;
 import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
-import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue;
+import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class AuthorizationHandler
     implements ExportHandler<AuthorizationEntity, AuthorizationRecordValue> {
@@ -56,10 +54,12 @@ public class AuthorizationHandler
       final Record<AuthorizationRecordValue> record, final AuthorizationEntity entity) {
     final AuthorizationRecordValue value = record.getValue();
     entity
+        .setAuthorizationKey(entity.getAuthorizationKey())
         .setOwnerId(value.getOwnerId())
         .setOwnerType(value.getOwnerType().name())
         .setResourceType(value.getResourceType().name())
-        .setPermissions(getPermissions(value.getPermissions()));
+        .setResourceId(value.getResourceId())
+        .setPermissionTypes(new HashSet<>(value.getAuthorizationPermissions()));
   }
 
   @Override
@@ -71,14 +71,5 @@ public class AuthorizationHandler
   @Override
   public String getIndexName() {
     return indexName;
-  }
-
-  private List<Permission> getPermissions(final List<PermissionValue> permissionValues) {
-    return permissionValues.stream()
-        .map(
-            permissionValue ->
-                new Permission(
-                    permissionValue.getPermissionType(), permissionValue.getResourceIds()))
-        .collect(Collectors.toList());
   }
 }

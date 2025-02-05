@@ -6043,20 +6043,6 @@ components:
         - GROUP
         - MAPPING
         - UNSPECIFIED
-    PermissionDTO:
-      type: object
-      properties:
-        permissionType:
-          description: Specifies the type of permissions.
-          type: object
-          allOf:
-            - $ref: "#/components/schemas/PermissionTypeEnum"
-        resourceIds:
-          type: array
-          description: A list of resource IDs the permission relates to.
-          uniqueItems: true
-          items:
-            type: string
 
     AuthorizationCreateRequest:
       type: object
@@ -6207,11 +6193,14 @@ components:
           type: object
           allOf:
             - $ref: "#/components/schemas/ResourceTypeEnum"
-        permissions:
+        resourceId:
+          description: ID of the resource the permission relates to.
+          type: string
+        permissionTypes:
+          description: Specifies the types of the permissions.
           type: array
-          description: The permissions.
           items:
-            $ref: "#/components/schemas/PermissionDTO"
+            $ref: "#/components/schemas/PermissionTypeEnum"
     AuthorizationResponse:
       type: "object"
       allOf:

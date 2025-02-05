@@ -29,7 +29,6 @@ import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryBase;
 import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.entity.Permission;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -105,12 +104,7 @@ class DocumentAuthorizationQueryStrategyTest {
         .thenReturn(
             List.of(
                 new AuthorizationEntity(
-                    null,
-                    null,
-                    null,
-                    List.of(
-                        new Permission(READ_PROCESS_DEFINITION, Set.of("foo", "*")),
-                        new Permission(CREATE, Set.of("bar"))))));
+                    null, null, null, null, null, Set.of(READ_PROCESS_DEFINITION, CREATE))));
 
     // when
     final SearchQueryRequest result =
@@ -163,12 +157,7 @@ class DocumentAuthorizationQueryStrategyTest {
         .thenReturn(
             List.of(
                 new AuthorizationEntity(
-                    null,
-                    null,
-                    null,
-                    List.of(
-                        new Permission(READ_PROCESS_DEFINITION, Set.of("foo")),
-                        new Permission(CREATE, Set.of("bar"))))));
+                    null, null, null, null, null, Set.of(READ_PROCESS_DEFINITION, CREATE))));
 
     // when
     final SearchQueryRequest result =
