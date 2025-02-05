@@ -78,6 +78,7 @@
     <version.netty>4.1.117.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.14.0</version.opensearch>
+    <version.opensearch-java>2.19.0</version.opensearch-java>
     <version.opensearch.testcontainers>2.1.2</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>4.29.3</version.protobuf>
@@ -1351,7 +1352,7 @@
       <dependency>
         <groupId>org.opensearch.client</groupId>
         <artifactId>opensearch-java</artifactId>
-        <version>${version.opensearch}</version>
+        <version>${version.opensearch-java}</version>
       </dependency>
 
       <dependency>
