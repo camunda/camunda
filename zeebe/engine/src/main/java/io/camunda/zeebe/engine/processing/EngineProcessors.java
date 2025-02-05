@@ -96,7 +96,9 @@ public final class EngineProcessors {
             scheduledTaskStateFactory.get().getTimerState(), featureFlags, clock);
 
     final var jobMetrics = new JobMetrics(partitionId);
-    final var processEngineMetrics = new ProcessEngineMetrics(processingState.getPartitionId());
+    final var processEngineMetrics =
+        new ProcessEngineMetrics(
+            typedRecordProcessorContext.getMeterRegistry(), processingState.getPartitionId());
 
     subscriptionCommandSender.setWriters(writers);
 
@@ -166,7 +168,8 @@ public final class EngineProcessors {
             partitionId,
             routingInfo,
             clock,
-            transientProcessMessageSubscriptionState);
+            transientProcessMessageSubscriptionState,
+            processEngineMetrics);
 
     addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
 
@@ -262,7 +265,8 @@ public final class EngineProcessors {
       final int partitionId,
       final RoutingInfo routingInfo,
       final InstantSource clock,
-      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final ProcessEngineMetrics processEngineMetrics) {
     return BpmnProcessors.addBpmnStreamProcessor(
         processingState,
         scheduledTaskState,
@@ -275,7 +279,8 @@ public final class EngineProcessors {
         partitionId,
         routingInfo,
         clock,
-        transientProcessMessageSubscriptionState);
+        transientProcessMessageSubscriptionState,
+        processEngineMetrics);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(
