@@ -59,16 +59,6 @@ public record TenantFilter(
       return this;
     }
 
-    public Builder joinParentId(final String value) {
-      joinParentId = value;
-      return this;
-    }
-
-    public Builder memberType(final String value) {
-      memberType = value;
-      return this;
-    }
-
     public Builder memberKey(final Long value) {
       return memberKeys(Set.of(value));
     }
