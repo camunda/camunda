@@ -475,6 +475,68 @@ public class ProcessInstanceAssertTest {
   }
 
   @Nested
+  class IsCreated {
+
+    @Test
+    void shouldBeCreatedIfActive() throws IOException {
+      // given
+      final ProcessInstanceDto processInstance = newActiveProcessInstance(PROCESS_INSTANCE_KEY);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).isCreated();
+    }
+
+    @Test
+    void shouldBeCreatedIfCompleted() throws IOException {
+      // given
+      final ProcessInstanceDto processInstance = newCompletedProcessInstance(PROCESS_INSTANCE_KEY);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).isCreated();
+    }
+
+    @Test
+    void shouldBeCreatedIfTerminated() throws IOException {
+      // given
+      final ProcessInstanceDto processInstance = newTerminatedProcessInstance(PROCESS_INSTANCE_KEY);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).isCreated();
+    }
+
+    @Test
+    void shouldFailIfNotCreated() throws IOException {
+      // given
+      when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).isCreated())
+          .hasMessage(
+              "Process instance [key: %d] should be created but was not activated.",
+              PROCESS_INSTANCE_KEY);
+    }
+  }
+
+  @Nested
   class FluentAssertions {
 
     private final FlowNodeInstanceDto activeFlowNodeInstance = new FlowNodeInstanceDto();
