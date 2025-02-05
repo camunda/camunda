@@ -319,7 +319,8 @@ public final class MessageCorrelationMultiplePartitionsTest {
             .processInstance()
             .ofBpmnProcessId(processId)
             .withVariable("correlationKey", correlationKey)
-            .createOnPartition(2);
+            .onPartition(2)
+            .create();
 
     RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
