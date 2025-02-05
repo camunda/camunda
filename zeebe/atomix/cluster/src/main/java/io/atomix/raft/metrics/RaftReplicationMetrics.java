@@ -15,34 +15,29 @@
  */
 package io.atomix.raft.metrics;
 
-import io.prometheus.client.Gauge;
+import static io.atomix.raft.metrics.RaftReplicationMetricsDoc.*;
+
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class RaftReplicationMetrics extends RaftMetrics {
 
-  private static final Gauge COMMIT_INDEX =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
-          .help("The commit index")
-          .name("partition_raft_commit_index")
-          .register();
+  private final AtomicLong commitIndex;
+  private final AtomicLong appendIndex;
 
-  private static final Gauge APPEND_INDEX =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
-          .help("The index of last entry appended to the log")
-          .name("partition_raft_append_index")
-          .register();
-
-  private final Gauge.Child commitIndex;
-  private final Gauge.Child appendIndex;
-
-  public RaftReplicationMetrics(final String partitionName) {
+  public RaftReplicationMetrics(final String partitionName, final MeterRegistry registry) {
     super(partitionName);
 
-    commitIndex = COMMIT_INDEX.labels(partitionGroupName, partition);
-    appendIndex = APPEND_INDEX.labels(partitionGroupName, partition);
+    commitIndex = new AtomicLong(0L);
+    appendIndex = new AtomicLong(0L);
+
+    Gauge.builder(COMMIT_INDEX.getName(), commitIndex::get)
+        .tags(PARTITION_GROUP_NAME_LABEL, partitionName)
+        .register(registry);
+    Gauge.builder(APPEND_INDEX.getName(), appendIndex::get)
+        .tags(PARTITION_GROUP_NAME_LABEL, partitionName)
+        .register(registry);
   }
 
   public void setCommitIndex(final long value) {
