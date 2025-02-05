@@ -29,21 +29,12 @@ public class AuthorizationWriter {
             authorization));
   }
 
-  public void removePermissions(final AuthorizationDbModel authorization) {
-    final String key = generateKey(authorization);
+  public void deleteAuthorization(final AuthorizationDbModel authorization) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.AUTHORIZATION,
-            key,
+            authorization.authorizationKey().toString(),
             "io.camunda.db.rdbms.sql.AuthorizationMapper.delete",
             authorization));
-  }
-
-  private String generateKey(final AuthorizationDbModel authorization) {
-    return authorization.ownerId()
-        + "_"
-        + authorization.ownerType()
-        + "_"
-        + authorization.resourceType();
   }
 }
