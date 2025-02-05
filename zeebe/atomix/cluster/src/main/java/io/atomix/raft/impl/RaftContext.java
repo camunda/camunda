@@ -179,7 +179,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     this.storage = checkNotNull(storage, "storage cannot be null");
     random = randomFactory.get();
     this.partitionId = partitionId;
-    this.meterRegistry = meterRegistry;
+    this.meterRegistry = checkNotNull(meterRegistry, "meterRegistry cannot be null");
 
     raftRoleMetrics = new RaftRoleMetrics(name);
 
