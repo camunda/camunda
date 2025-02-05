@@ -99,8 +99,8 @@ public class MultiDbConfigurator {
     zeebeOS.setPassword(userPassword);
     zeebeOS.setUsername(userName);
     zeebeOS.setPrefix(indexPrefix);
-    tasklistProperties.setDatabase("opensearch");
 
+    tasklistProperties.setDatabase("opensearch");
     final TasklistOpenSearchProperties tasklistOpensearch = tasklistProperties.getOpenSearch();
     tasklistOpensearch.setUrl(opensearchUrl);
     tasklistOpensearch.setIndexPrefix(indexPrefix);

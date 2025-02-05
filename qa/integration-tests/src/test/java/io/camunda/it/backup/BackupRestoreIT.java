@@ -37,7 +37,7 @@ public class BackupRestoreIT {
   private static final String REPOSITORY_NAME = "test-repository";
   private static final String INDEX_PREFIX = "backup-restore";
   private static final String PROCESS_ID = "backup-process";
-  private static final int PROCESS_INSTANCE_NUMBER = 100;
+  private static final int PROCESS_INSTANCE_NUMBER = 10;
   protected CamundaClient camundaClient;
 
   @TestZeebe(autoStart = false)
