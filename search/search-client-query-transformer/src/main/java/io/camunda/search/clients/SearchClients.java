@@ -243,7 +243,7 @@ public class SearchClients
         getSearchExecutor()
             .findAll(
                 new TenantQuery.Builder()
-                    .filter(f -> f.joinParentId(userQuery.filter().tenantId()).memberType("USER"))
+                    .filter(f -> f.joinParentId(userQuery.filter().tenantId()).memberType(USER))
                     .build(),
                 io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity.class);
     final var usernames =

@@ -34,10 +34,9 @@ public class TenantQueryTransformerTest extends AbstractTransformerTest {
                         b ->
                             b.must(
                                 List.of(
+                                    SearchQuery.of(q1 -> q.term(t -> t.field("key").value(12345L))),
                                     SearchQuery.of(
-                                        q1 -> q.term(t -> t.field("join").value("tenant"))),
-                                    SearchQuery.of(
-                                        q1 -> q.term(t -> t.field("key").value(12345L))))))));
+                                        q1 -> q.term(t -> t.field("join").value("tenant"))))))));
   }
 
   @Test
@@ -58,10 +57,9 @@ public class TenantQueryTransformerTest extends AbstractTransformerTest {
                             b.must(
                                 List.of(
                                     SearchQuery.of(
-                                        q1 -> q.term(t -> t.field("join").value("tenant"))),
+                                        q1 -> q.term(t -> t.field("tenantId").value("tenant1"))),
                                     SearchQuery.of(
-                                        q1 ->
-                                            q.term(t -> t.field("tenantId").value("tenant1"))))))));
+                                        q1 -> q.term(t -> t.field("join").value("tenant"))))))));
   }
 
   @Test
@@ -82,7 +80,7 @@ public class TenantQueryTransformerTest extends AbstractTransformerTest {
                             b.must(
                                 List.of(
                                     SearchQuery.of(
-                                        q1 -> q.term(t -> t.field("join").value("tenant"))),
+                                        q1 -> q.term(t -> t.field("name").value("TestTenant"))),
                                     SearchQuery.of(
                                         q1 -> q.term(t -> t.field("join").value("tenant"))))))));
   }
@@ -119,12 +117,35 @@ public class TenantQueryTransformerTest extends AbstractTransformerTest {
                         b ->
                             b.must(
                                 List.of(
-                                    SearchQuery.of(
-                                        q -> q.term(t -> t.field("join").value("tenant"))),
                                     SearchQuery.of(q -> q.term(t -> t.field("key").value(12345L))),
                                     SearchQuery.of(
                                         q -> q.term(t -> t.field("tenantId").value("tenant1"))),
                                     SearchQuery.of(
-                                        q -> q.term(t -> t.field("name").value("TestTenant"))))))));
+                                        q -> q.term(t -> t.field("name").value("TestTenant"))),
+                                    SearchQuery.of(
+                                        q -> q.term(t -> t.field("join").value("tenant"))))))));
+  }
+
+  private SearchQuery generateSearchQueryForParent(final String parentId, final String memberType) {
+    return SearchQuery.of(
+        q ->
+            q.bool(
+                b ->
+                    b.must(
+                        List.of(
+                            SearchQuery.of(
+                                q1 -> q1.term(t -> t.field("memberType").value(memberType))),
+                            SearchQuery.of(
+                                q1 ->
+                                    q1.hasParent(
+                                        p ->
+                                            p.parentType("tenant")
+                                                .query(
+                                                    SearchQuery.of(
+                                                        q2 ->
+                                                            q2.term(
+                                                                t ->
+                                                                    t.field("tenantId")
+                                                                        .value(parentId))))))))));
   }
 }
