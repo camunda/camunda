@@ -84,7 +84,7 @@ final class LeaderAppender {
     log =
         ContextualLoggerFactory.getLogger(
             getClass(), LoggerContext.builder(RaftServer.class).addValue(raft.getName()).build());
-    metrics = new LeaderMetrics(raft.getName());
+    metrics = new LeaderMetrics(raft.getName(), raft.getMeterRegistry());
     maxBatchSizePerAppend = raft.getMaxAppendBatchSize();
     leaderTime = System.currentTimeMillis();
     leaderIndex =
