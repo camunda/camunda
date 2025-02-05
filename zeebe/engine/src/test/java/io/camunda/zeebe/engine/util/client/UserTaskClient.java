@@ -29,7 +29,10 @@ public final class UserTaskClient {
 
   private static final Function<Long, Record<UserTaskRecordValue>> SUCCESS_SUPPLIER =
       (position) ->
-          RecordingExporter.userTaskRecords().withSourceRecordPosition(position).getFirst();
+          RecordingExporter.userTaskRecords()
+              .onlyEvents()
+              .withSourceRecordPosition(position)
+              .getFirst();
 
   private static final Function<Long, Record<UserTaskRecordValue>> REJECTION_SUPPLIER =
       (position) ->
