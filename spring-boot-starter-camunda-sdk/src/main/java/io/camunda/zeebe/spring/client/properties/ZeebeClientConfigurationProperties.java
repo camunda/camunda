@@ -489,6 +489,9 @@ public class ZeebeClientConfigurationProperties {
     }
 
     public void setGrpcAddress(final URI grpcAddress) {
+      if (grpcAddress != null && grpcAddress.getHost() == null) {
+        throw new IllegalArgumentException("grpcAddress must be an absolute URI");
+      }
       this.grpcAddress = grpcAddress;
     }
 
@@ -501,6 +504,9 @@ public class ZeebeClientConfigurationProperties {
     }
 
     public void setRestAddress(final URI restAddress) {
+      if (restAddress != null && restAddress.getHost() == null) {
+        throw new IllegalArgumentException("restAddress must be an absolute URI");
+      }
       this.restAddress = restAddress;
     }
 

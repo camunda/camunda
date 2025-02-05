@@ -57,13 +57,15 @@ public interface ZeebeClientBuilder {
 
   /**
    * @param restAddress the REST API address of a gateway that the client can connect to. The
-   *     default value is {@code 0.0.0.0:8080}.
+   *     address must be an absolute URL, including the scheme.
+   *     <p>The default value is {@code https://0.0.0.0:8080}.
    */
   ZeebeClientBuilder restAddress(URI restAddress);
 
   /**
-   * @param grpcAddress the gRPC address of a gateway that the client can connect to. The default
-   *     value is {@code 0.0.0.0:26500}.
+   * @param grpcAddress the gRPC address of a gateway that the client can connect to. The address
+   *     must be an absolute URL, including the scheme.
+   *     <p>The default value is {@code https://0.0.0.0:26500}.
    */
   ZeebeClientBuilder grpcAddress(URI grpcAddress);
 
