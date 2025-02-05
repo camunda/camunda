@@ -24,6 +24,7 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.entities.UsageMetricsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
@@ -51,6 +52,8 @@ import io.camunda.security.auth.SecurityContext;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class SearchClients
     implements AuthorizationSearchClient,
@@ -249,7 +252,7 @@ public class SearchClients
     final var overlayQuery = injectUsernamesIntoQuery(usernames, userQuery);
 
     return getSearchExecutor()
-        .search(filter, io.camunda.webapps.schema.entities.usermanagement.UserEntity.class);
+        .search(overlayQuery, io.camunda.webapps.schema.entities.usermanagement.UserEntity.class);
   }
 
   @Override
@@ -310,5 +313,21 @@ public class SearchClients
                 securityContext)
             .findAll(filter, io.camunda.webapps.schema.entities.operate.UsageMetricsEntity.class);
     return metrics.stream().map(UsageMetricsEntity::value).distinct().count();
+  }
+
+  private UserQuery injectUsernamesIntoQuery(
+      final Set<String> usernames, final UserQuery userQuery) {
+    return UserQuery.of(
+        builder ->
+            builder
+                .filter(
+                    f ->
+                        f.name(userQuery.filter().name())
+                            .email(userQuery.filter().email())
+                            .key(userQuery.filter().key())
+                            .username(userQuery.filter().username())
+                            .usernames(usernames))
+                .sort(userQuery.sort())
+                .page(userQuery.page()));
   }
 }
