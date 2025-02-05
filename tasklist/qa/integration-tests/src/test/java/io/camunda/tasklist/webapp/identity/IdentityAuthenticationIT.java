@@ -113,7 +113,7 @@ public class IdentityAuthenticationIT {
   public void shouldReturnEmptyListOfTenantsWhenMultiTenancyIsDisabled() {
     // given
     final var multiTenancyConfiguration = new MultiTenancyConfiguration();
-    multiTenancyConfiguration.setEnabled(true);
+    multiTenancyConfiguration.setEnabled(false);
     when(securityConfiguration.getMultiTenancy()).thenReturn(multiTenancyConfiguration);
 
     // when
