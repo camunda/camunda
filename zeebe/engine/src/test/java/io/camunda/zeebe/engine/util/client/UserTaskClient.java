@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -198,14 +199,17 @@ public final class UserTaskClient {
 
   public Record<UserTaskRecordValue> complete() {
     final long userTaskKey = findUserTaskKey();
+    final int partitionId = Protocol.decodePartitionId(userTaskKey);
     final long position =
-        writer.writeCommand(
-            userTaskKey,
-            DEFAULT_REQUEST_STREAM_ID,
-            DEFAULT_REQUEST_ID,
-            UserTaskIntent.COMPLETE,
-            userTaskRecord.setUserTaskKey(userTaskKey),
-            authorizedTenantIds.toArray(new String[0]));
+        writer.writeCommandOnPartition(
+            partitionId,
+            r ->
+                r.key(userTaskKey)
+                    .requestStreamId(DEFAULT_REQUEST_STREAM_ID)
+                    .requestId(DEFAULT_REQUEST_ID)
+                    .intent(UserTaskIntent.COMPLETE)
+                    .event(userTaskRecord.setUserTaskKey(userTaskKey))
+                    .authorizations(authorizedTenantIds.toArray(new String[0])));
     return expectation.apply(position);
   }
 
