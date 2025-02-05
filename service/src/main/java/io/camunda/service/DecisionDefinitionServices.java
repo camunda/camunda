@@ -78,7 +78,9 @@ public final class DecisionDefinitionServices
     final Long decisionRequirementsKey = decisionDefinition.decisionRequirementsKey();
     final var decisionRequirementsQuery =
         decisionRequirementsSearchQuery(
-            q -> q.filter(f -> f.decisionRequirementsKeys(decisionRequirementsKey)));
+            q ->
+                q.filter(f -> f.decisionRequirementsKeys(decisionRequirementsKey))
+                    .resultConfig(r -> r.includeXml(true)));
     final var decisionRequirements =
         getSingleResultOrThrow(
             decisionRequirementSearchClient
