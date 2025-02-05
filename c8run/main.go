@@ -19,9 +19,10 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func printStatus() {
-	endpoints, _ := os.ReadFile("endpoints.txt")
+func getStatus() error {
+	endpoints, err := os.ReadFile("endpoints.txt")
 	fmt.Println(string(endpoints))
+	return err
 }
 
 func queryElasticsearchHealth(name string, url string) {
@@ -42,7 +43,7 @@ func queryCamundaHealth(c8 C8Run, name string, url string) error {
 			fmt.Println("Failed to open browser")
 			return nil
 		}
-		if err := printStatus(); err != nil {
+		if err := getStatus(); err != nil {
 			fmt.Println("Failed to print status:", err)
 			return err
 		}
