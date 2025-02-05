@@ -12,10 +12,12 @@ import static io.camunda.optimize.dto.optimize.query.report.single.configuration
 import static io.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.INPUT_PREFIX;
 import static io.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.OUTPUT_PREFIX;
 import static io.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
+import static io.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto.Fields.businessKey;
 import static io.camunda.optimize.service.db.es.report.command.process.mapping.RawProcessDataResultDtoMapper.OBJECT_VARIABLE_VALUE_PLACEHOLDER;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
+import com.google.common.collect.ImmutableList;
 import com.opencsv.CSVWriter;
 import io.camunda.optimize.dto.optimize.FlowNodeTotalDurationDataDto;
 import io.camunda.optimize.dto.optimize.query.IdResponseDto;
@@ -26,6 +28,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.
 import io.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataCountDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto.Fields;
 import io.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
@@ -46,6 +49,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CSVUtils {
+
+  private static final List<Fields> PROCESS_INSTANCE_FIELDS_TO_EXCLUDE =
+      ImmutableList.of(businessKey);
 
   public static byte[] mapCsvLinesToCsvBytes(
       final List<String[]> csvStrings, final char csvDelimiter) {
@@ -218,6 +224,7 @@ public class CSVUtils {
 
   public static List<String> extractAllProcessInstanceDtoFieldKeys() {
     return Arrays.stream(RawDataProcessInstanceDto.Fields.values())
+        .filter(field -> !PROCESS_INSTANCE_FIELDS_TO_EXCLUDE.contains(field))
         .map(RawDataProcessInstanceDto.Fields::name)
         .collect(toList());
   }
