@@ -7,10 +7,12 @@
  */
 package io.camunda.qa.util.cluster;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.indices.UserIndex;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
@@ -21,18 +23,38 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.List;
+import org.apache.commons.lang3.reflect.FieldUtils;
 
-public class TestRestOperateClient implements AutoCloseable {
+public class TestRestOperateClient extends AbstractTestWebappClient<TestRestOperateClient> {
 
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private final UserIndex userIndex;
 
-  private final URI endpoint;
-  private final HttpClient httpClient;
+  public TestRestOperateClient(final URI endpoint, final OperateProperties operateProperties) {
+    this(
+        endpoint,
+        HttpClient.newHttpClient(),
+        createElasticsearchClient(operateProperties.getElasticsearch().getUrl()),
+        getUserIndex(operateProperties));
+  }
 
-  public TestRestOperateClient(final URI endpoint) {
-    this.endpoint = endpoint;
+  private TestRestOperateClient(
+      final URI endpoint,
+      final HttpClient httpClient,
+      final ElasticsearchClient elasticsearchClient,
+      final UserIndex userIndex) {
+    super(endpoint, httpClient, elasticsearchClient);
+    this.userIndex = userIndex;
+  }
 
-    httpClient = HttpClient.newHttpClient();
+  private static UserIndex getUserIndex(final OperateProperties operateProperties) {
+    final UserIndex userIndex;
+    userIndex = new UserIndex();
+    try {
+      FieldUtils.writeField(userIndex, "operateProperties", operateProperties, true);
+    } catch (final IllegalAccessException e) {
+      throw new RuntimeException(e);
+    }
+    return userIndex;
   }
 
   private Either<Exception, HttpRequest> createProcessInstanceRequest(final long key) {
@@ -47,6 +69,26 @@ public class TestRestOperateClient implements AutoCloseable {
                       String.format(
                           "{\"filter\":{\"key\":%d},\"sort\":[{\"field\":\"endDate\",\"order\":\"ASC\"}],\"size\":20}",
                           key)))
+              .build();
+    } catch (final URISyntaxException e) {
+      return Either.left(e);
+    }
+    return Either.right(request);
+  }
+
+  private Either<Exception, HttpRequest> createProcessInstanceRequest(
+      final String processDefinitionId) {
+    final HttpRequest request;
+    try {
+      request =
+          HttpRequest.newBuilder()
+              .uri(new URI(String.format("%sv1/process-instances/search", endpoint)))
+              .header("content-type", "application/json")
+              .POST(
+                  HttpRequest.BodyPublishers.ofString(
+                      String.format(
+                          "{\"filter\":{\"bpmnProcessId\":\"%s\"},\"sort\":[{\"field\":\"endDate\",\"order\":\"ASC\"}],\"size\":20}",
+                          processDefinitionId)))
               .build();
     } catch (final URISyntaxException e) {
       return Either.left(e);
@@ -86,9 +128,20 @@ public class TestRestOperateClient implements AutoCloseable {
         .flatMap(this::mapProcessInstanceResult);
   }
 
+  public Either<Exception, ProcessInstanceResult> getProcessInstanceWith(
+      final String processDefinitionId) {
+    return createProcessInstanceRequest(processDefinitionId)
+        .flatMap(this::sendProcessInstanceQuery)
+        .flatMap(this::mapProcessInstanceResult);
+  }
+
   @Override
-  public void close() throws Exception {
-    httpClient.close();
+  protected TestRestOperateClient create(final HttpClient httpClient) {
+    return new TestRestOperateClient(endpoint, httpClient, elasticsearchClient, userIndex);
+  }
+
+  public void createUser(final String username, final String password) {
+    super.createUser(userIndex.getFullQualifiedName(), username, password);
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)

@@ -12,10 +12,11 @@ import static io.camunda.search.clients.core.RequestBuilders.searchRequest;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.util.ObjectBuilder;
+import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.Either;
 import java.util.function.Function;
 
-public interface CamundaSearchClient extends AutoCloseable {
+public interface CamundaSearchClient extends CloseableSilently {
 
   <T> Either<Exception, SearchQueryResponse<T>> search(
       final SearchQueryRequest searchRequest, final Class<T> documentClass);

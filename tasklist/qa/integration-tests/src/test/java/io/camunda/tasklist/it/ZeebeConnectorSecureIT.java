@@ -27,6 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.utility.DockerImageName;
@@ -39,6 +40,7 @@ import org.testcontainers.utility.MountableFile;
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
     })
 @ExtendWith(SpringExtension.class)
+@ActiveProfiles("standalone")
 public class ZeebeConnectorSecureIT {
 
   private static final String CERTIFICATE_FILE = "zeebe-test-chain.cert.pem";

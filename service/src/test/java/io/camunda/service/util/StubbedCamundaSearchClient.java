@@ -49,12 +49,13 @@ public class StubbedCamundaSearchClient implements CamundaSearchClient {
   }
 
   public <DocumentT> void registerHandler(
-      final SearchRequestHandler<DocumentT> searchRequestHandler, Class<DocumentT> documentClass) {
-    this.searchRequestHandlerMap.put(documentClass, searchRequestHandler);
+      final SearchRequestHandler<DocumentT> searchRequestHandler,
+      final Class<DocumentT> documentClass) {
+    searchRequestHandlerMap.put(documentClass, searchRequestHandler);
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() {
     // noop
   }
 

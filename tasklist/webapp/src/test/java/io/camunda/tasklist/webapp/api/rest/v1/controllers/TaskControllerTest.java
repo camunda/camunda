@@ -40,6 +40,7 @@ import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService
 import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.tasklist.webapp.service.VariableService;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -799,11 +800,16 @@ class TaskControllerTest {
     @Test
     void saveDraftTaskVariables() throws Exception {
       // Given
-      final var taskId = "taskId778800";
+      final var taskId = "778800";
       final var variables = List.of(new VariableInputDTO().setName("var_a").setValue("val_a"));
 
       when(taskService.getTask(taskId))
-          .thenReturn(new TaskDTO().setId(taskId).setImplementation(TaskImplementation.JOB_WORKER));
+          .thenReturn(
+              new TaskDTO()
+                  .setId(taskId)
+                  .setImplementation(TaskImplementation.JOB_WORKER)
+                  .setCreationTime(Instant.now().toString()));
+
       // When
       mockMvc
           .perform(
@@ -827,7 +833,7 @@ class TaskControllerTest {
     void saveDraftTaskVariablesWhenWhenInvalidJsonValueProvidedThen400ErrorExpected()
         throws Exception {
       // Given
-      final var taskId = "taskId778800";
+      final var taskId = "778800";
       final var saveVariablesRequest =
           new SaveVariablesRequest()
               .setVariables(
@@ -836,7 +842,11 @@ class TaskControllerTest {
                           .setName("invalid_variable")
                           .setValue("strWithoutQuotes")));
       when(taskService.getTask(taskId))
-          .thenReturn(new TaskDTO().setId(taskId).setImplementation(TaskImplementation.JOB_WORKER));
+          .thenReturn(
+              new TaskDTO()
+                  .setId(taskId)
+                  .setImplementation(TaskImplementation.JOB_WORKER)
+                  .setCreationTime(Instant.now().toString()));
 
       // When
       doThrow(
