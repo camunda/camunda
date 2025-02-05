@@ -24,7 +24,7 @@ public enum ErrorType {
   MESSAGE_SIZE_EXCEEDED("Message size exceeded"),
   CALLED_DECISION_ERROR("Called decision error"),
   DECISION_EVALUATION_ERROR("Decision evaluation error"),
-
+  TEST_NEW_ERROR_TYPE("New error type"),
   FORM_NOT_FOUND("Form not found");
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ErrorType.class);
