@@ -4,11 +4,12 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/camunda/camunda/c8run/internal/archive"
 	"os"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
+
+	"github.com/camunda/camunda/c8run/internal/archive"
 )
 
 func Clean(camundaVersion string, elasticsearchVersion string) {
@@ -87,11 +88,7 @@ func PackageWindows(camundaVersion string, elasticsearchVersion string, connecto
 		filepath.Join("c8run", "log"),
 		filepath.Join("c8run", "camunda-zeebe-"+camundaVersion),
 		filepath.Join("c8run", "package.bat"),
-<<<<<<< HEAD
-=======
 		filepath.Join("c8run", ".env"),
-		filepath.Join("c8run", composeExtractionPath),
->>>>>>> ce7da746 (fix: filepath .env included in c8run package)
 	}
 	err = archive.ZipSource(filesToArchive, filepath.Join("c8run", "camunda8-run-"+camundaVersion+"-windows-x86_64.zip"))
 	if err != nil {
@@ -158,11 +155,7 @@ func PackageUnix(camundaVersion string, elasticsearchVersion string, connectorsV
 		filepath.Join("c8run", "start.sh"),
 		filepath.Join("c8run", "shutdown.sh"),
 		filepath.Join("c8run", "package.sh"),
-<<<<<<< HEAD
-=======
 		filepath.Join("c8run", ".env"),
-		filepath.Join("c8run", composeExtractionPath),
->>>>>>> ce7da746 (fix: filepath .env included in c8run package)
 	}
 	outputArchive, err := os.Create(filepath.Join("c8run", "camunda8-run-"+camundaVersion+"-"+runtime.GOOS+"-"+architecture+".tar.gz"))
 	if err != nil {
