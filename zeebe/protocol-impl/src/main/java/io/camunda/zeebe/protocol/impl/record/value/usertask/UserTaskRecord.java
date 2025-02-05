@@ -103,8 +103,42 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+  /**
+   * Tracks the names of user task attributes that have been modified.
+   *
+   * <p>This property was introduced to enable tracking of attributes that were truly modified.
+   * Since our `msgpack` implementation doesn't support `null` values, all record attributes have
+   * default non-null values. As a result, without `changedAttributesProp`, it would be impossible
+   * to determine whether an attribute was explicitly modified or simply retained its default value.
+   * This property solves that issue by explicitly listing attributes that were changed.
+   *
+   * <p>The content of `changedAttributesProp` field depend on the type of event being processed:
+   *
+   * <ul>
+   *   <li><b>UPDATE command:</b> Specifies which attributes are intended to be updated, allowing
+   *       explicit changes (including clearing values to default). The presence of an attribute in
+   *       this list indicates that it was explicitly modified by the update request.
+   *   <li><b>UPDATING and UPDATED events:</b> Contains only attributes whose values differ from the
+   *       persisted state or, in the case of `UPDATED`, from the intermediate user task record
+   *       state if task listeners were executed, including any corrections made by listeners.
+   *   <li><b>CORRECTED event:</b> Contains only attributes that were modified by a listener,
+   *       comparing them to the previous event that triggered the listener or a prior listener
+   *       correction. It doesn't include the original attributes that caused the listener to
+   *       trigger.
+   * </ul>
+   *
+   * <p>For `CORRECTED` events, this list reflects only attributes that were actually changed by the
+   * correction. If a listener applies the same correction multiple times, subsequent `CORRECTED`
+   * events will not contain duplicate changes.
+   *
+   * @see #wrapChangedAttributes(UserTaskRecord, boolean)
+   * @see #wrapChangedAttributesIfValueChanged(UserTaskRecord)
+   * @see #correctAttributes(List, JobResultCorrections)
+   */
   private final ArrayProperty<StringValue> changedAttributesProp =
       new ArrayProperty<>("changedAttributes", StringValue::new);
+
   private final StringProperty actionProp = new StringProperty("action", EMPTY_STRING);
   private final LongProperty creationTimestampProp = new LongProperty("creationTimestamp", -1L);
   private final IntegerProperty priorityProp = new IntegerProperty(PRIORITY, 50);
