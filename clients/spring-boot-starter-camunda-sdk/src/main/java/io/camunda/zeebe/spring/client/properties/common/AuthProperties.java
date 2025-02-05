@@ -17,10 +17,6 @@ package io.camunda.zeebe.spring.client.properties.common;
 
 public class AuthProperties {
 
-  // simple
-  private String username;
-  private String password;
-
   // self-managed and saas
   private String clientId;
   private String clientSecret;
@@ -33,22 +29,6 @@ public class AuthProperties {
 
   public void setIssuer(final String issuer) {
     this.issuer = issuer;
-  }
-
-  public String getUsername() {
-    return username;
-  }
-
-  public void setUsername(final String username) {
-    this.username = username;
-  }
-
-  public String getPassword() {
-    return password;
-  }
-
-  public void setPassword(final String password) {
-    this.password = password;
   }
 
   public String getClientId() {
