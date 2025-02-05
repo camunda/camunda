@@ -104,7 +104,7 @@ class DocumentAuthorizationQueryStrategyTest {
         .thenReturn(
             List.of(
                 new AuthorizationEntity(
-                    null, null, null, null, null, Set.of(READ_PROCESS_DEFINITION, CREATE))));
+                    null, null, null, null, "*", Set.of(READ_PROCESS_DEFINITION, CREATE))));
 
     // when
     final SearchQueryRequest result =
@@ -157,7 +157,8 @@ class DocumentAuthorizationQueryStrategyTest {
         .thenReturn(
             List.of(
                 new AuthorizationEntity(
-                    null, null, null, null, null, Set.of(READ_PROCESS_DEFINITION, CREATE))));
+                    null, null, null, null, "foo", Set.of(READ_PROCESS_DEFINITION)),
+                new AuthorizationEntity(null, null, null, null, "bar", Set.of(CREATE))));
 
     // when
     final SearchQueryRequest result =
