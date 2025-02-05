@@ -71,6 +71,7 @@
     <id column="OWNER_ID" property="ownerId"/>
     <id column="OWNER_TYPE" property="ownerType"/>
     <id column="RESOURCE_TYPE" property="resourceType"/>
+    <id column="RESOURCE_ID" property="resourceId" />
     <collection property="permissionTypes"
       ofType="io.camunda.zeebe.protocol.record.value.PermissionType"
       javaType="java.util.Set">
