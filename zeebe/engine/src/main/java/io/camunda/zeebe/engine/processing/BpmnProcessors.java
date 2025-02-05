@@ -71,12 +71,11 @@ public final class BpmnProcessors {
       final InstantSource clock,
       final EngineConfiguration config,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final ProcessEngineMetrics processEngineMetrics) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         processingState.getProcessMessageSubscriptionState();
     final var keyGenerator = processingState.getKeyGenerator();
-
-    final var processEngineMetrics = new ProcessEngineMetrics(processingState.getPartitionId());
 
     addProcessInstanceCommandProcessor(
         writers, typedRecordProcessors, processingState, authCheckBehavior);

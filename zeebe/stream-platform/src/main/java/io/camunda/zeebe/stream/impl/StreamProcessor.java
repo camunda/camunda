@@ -352,7 +352,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             streamProcessorContext.getTransactionContext(),
             streamProcessorContext.getPartitionCommandSender(),
             streamProcessorContext.getKeyGeneratorControls(),
-            streamProcessorContext.getClock());
+            streamProcessorContext.getClock(),
+            streamProcessorContext.getMeterRegistry());
 
     recordProcessors.forEach(processor -> processor.init(processorContext));
 

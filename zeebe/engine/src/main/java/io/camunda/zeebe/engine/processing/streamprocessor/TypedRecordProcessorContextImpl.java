@@ -20,6 +20,7 @@ import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -36,6 +37,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
   private final ControllableStreamClock clock;
   private final SecurityConfiguration securityConfig;
+  private final MeterRegistry meterRegistry;
 
   public TypedRecordProcessorContextImpl(
       final RecordProcessorContext context,
@@ -62,6 +64,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
     partitionCommandSender = context.getPartitionCommandSender();
     this.config = config;
     this.securityConfig = securityConfig;
+    meterRegistry = context.getMeterRegistry();
   }
 
   @Override
@@ -119,5 +122,10 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   @Override
   public TransientPendingSubscriptionState getTransientProcessMessageSubscriptionState() {
     return transientProcessMessageSubscriptionState;
+  }
+
+  @Override
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
   }
 }
