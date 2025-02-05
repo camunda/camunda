@@ -12,13 +12,13 @@ import static io.camunda.it.rdbms.db.fixtures.UserTaskFixtures.nextStringId;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.domain.UserTaskDbQuery;
 import io.camunda.db.rdbms.read.service.UserTaskReader;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.sort.UserTaskSort;
 import io.camunda.search.sort.UserTaskSort.Builder;
 import io.camunda.util.ObjectBuilder;
@@ -126,11 +126,11 @@ public class UserTaskSortIT {
     final var searchResult =
         reader
             .search(
-                new UserTaskDbQuery(
+                new UserTaskQuery(
                     new UserTaskFilter.Builder().bpmnProcessIds(processDefinitionId).build(),
                     UserTaskSort.of(sortBuilder),
                     SearchQueryPage.of(b -> b)))
-            .hits();
+            .items();
 
     assertThat(searchResult).hasSize(20);
     assertThat(searchResult).isSortedAccordingTo(comparator);

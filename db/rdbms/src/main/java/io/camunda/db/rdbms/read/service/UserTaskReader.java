@@ -10,42 +10,42 @@ package io.camunda.db.rdbms.read.service;
 import io.camunda.db.rdbms.read.domain.UserTaskDbQuery;
 import io.camunda.db.rdbms.read.mapper.UserTaskEntityMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
+import io.camunda.db.rdbms.sql.columns.UserTaskSearchColumn;
 import io.camunda.search.entities.UserTaskEntity;
-import io.camunda.search.filter.UserTaskFilter;
-import io.camunda.search.page.SearchQueryPage;
-import io.camunda.search.sort.UserTaskSort;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.UserTaskQuery;
 import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UserTaskReader {
+public class UserTaskReader extends AbstractEntityReader<UserTaskEntity> {
 
   private static final Logger LOG = LoggerFactory.getLogger(UserTaskReader.class);
 
   private final UserTaskMapper userTaskMapper;
 
   public UserTaskReader(final UserTaskMapper userTaskMapper) {
+    super(UserTaskSearchColumn::findByProperty);
     this.userTaskMapper = userTaskMapper;
   }
 
-  public UserTaskEntity findOne(final Long key) {
-    LOG.trace("[RDBMS DB] Search for user task with key {}", key);
-    return search(
-            new UserTaskDbQuery(
-                new UserTaskFilter.Builder().userTaskKeys(key).build(),
-                UserTaskSort.of(b -> b),
-                SearchQueryPage.of(b -> b)))
-        .hits()
-        .getFirst();
+  public Optional<UserTaskEntity> findOne(final long userTaskKey) {
+    final var result =
+        search(UserTaskQuery.of(b -> b.filter(f -> f.userTaskKeys(List.of(userTaskKey)))));
+    return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
   }
 
-  public SearchResult search(final UserTaskDbQuery filter) {
-    LOG.trace("[RDBMS DB] Search for user task with filter {}", filter);
-    final var totalHits = userTaskMapper.count(filter);
+  public SearchQueryResult<UserTaskEntity> search(final UserTaskQuery query) {
+    final var dbSort = convertSort(query.sort(), UserTaskSearchColumn.USER_TASK_KEY);
+    final var dbQuery =
+        UserTaskDbQuery.of(
+            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+
+    LOG.trace("[RDBMS DB] Search for users with filter {}", dbQuery);
+    final var totalHits = userTaskMapper.count(dbQuery);
     final var hits =
-        userTaskMapper.search(filter).stream().map(UserTaskEntityMapper::toEntity).toList();
-    return new SearchResult(hits, totalHits.intValue());
+        userTaskMapper.search(dbQuery).stream().map(UserTaskEntityMapper::toEntity).toList();
+    return buildSearchQueryResult(totalHits, hits, dbSort);
   }
-
-  public record SearchResult(List<UserTaskEntity> hits, Integer total) {}
 }
