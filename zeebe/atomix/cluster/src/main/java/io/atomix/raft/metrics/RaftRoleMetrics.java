@@ -16,86 +16,77 @@
  */
 package io.atomix.raft.metrics;
 
-import io.prometheus.client.Counter;
-import io.prometheus.client.Gauge;
-import io.prometheus.client.Histogram;
+import static io.atomix.raft.metrics.RaftRoleMetricsDoc.*;
+
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class RaftRoleMetrics extends RaftMetrics {
 
-  private static final Gauge ROLE =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .name("role")
-          .help("Shows current role")
-          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
-          .register();
+  private final Counter heartbeatMiss;
+  private final Timer heartbeatTime;
+  private final AtomicLong roleValue = new AtomicLong(0L);
+  private final AtomicLong electionLatencyValue = new AtomicLong(0L);
 
-  private static final Counter HEARTBEAT_MISS =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("heartbeat_miss_count")
-          .help("Count of missing heartbeats")
-          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
-          .register();
-
-  private static final Histogram HEARTBEAT_TIME =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("heartbeat_time_in_s")
-          .help("Time between heartbeats")
-          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
-          .register();
-  private static final Gauge ELECTION_LATENCY =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .name("election_latency_in_ms")
-          .help("Duration for election")
-          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
-          .register();
-
-  private final Gauge.Child role;
-  private final Counter.Child heartbeatMiss;
-  private final Histogram.Child heartbeatTime;
-  private final Gauge.Child electionLatency;
-
-  public RaftRoleMetrics(final String partitionName) {
+  public RaftRoleMetrics(final String partitionName, final MeterRegistry registry) {
     super(partitionName);
 
-    role = ROLE.labels(partitionGroupName, partition);
-    heartbeatMiss = HEARTBEAT_MISS.labels(partitionGroupName, partition);
-    heartbeatTime = HEARTBEAT_TIME.labels(partitionGroupName, partition);
-    electionLatency = ELECTION_LATENCY.labels(partitionGroupName, partition);
+    heartbeatMiss =
+        Counter.builder(HEARTBEAT_MISS.getName())
+            .description(HEARTBEAT_MISS.getDescription())
+            .tags(PARTITION_GROUP_NAME_LABEL, partitionName)
+            .register(registry);
+    heartbeatTime =
+        Timer.builder(HEARTBEAT_TIME.getName())
+            .description(HEARTBEAT_TIME.getDescription())
+            .serviceLevelObjectives(HEARTBEAT_TIME.getTimerSLOs())
+            .tags(PARTITION_GROUP_NAME_LABEL, partitionName)
+            .register(registry);
+
+    Gauge.builder(ROLE.getName(), roleValue::get)
+        .description(ROLE.getDescription())
+        .tags(PARTITION_GROUP_NAME_LABEL, partitionName)
+        .register(registry);
+
+    Gauge.builder(ELECTION_LATENCY.getName(), electionLatencyValue::get)
+        .description(ELECTION_LATENCY.getDescription())
+        .tags(PARTITION_GROUP_NAME_LABEL, partitionName)
+        .register(registry);
   }
 
   public void becomingInactive() {
-    role.set(0);
+    roleValue.set(0);
   }
 
   public void becomingFollower() {
-    role.set(1);
+    roleValue.set(1);
   }
 
   public void becomingCandidate() {
-    role.set(2);
+    roleValue.set(2);
   }
 
   public void becomingLeader() {
-    role.set(3);
+    roleValue.set(3);
   }
 
   public void countHeartbeatMiss() {
-    heartbeatMiss.inc();
+    heartbeatMiss.increment();
   }
 
   public void observeHeartbeatInterval(final long milliseconds) {
-    heartbeatTime.observe(milliseconds / 1000f);
+    heartbeatTime.record(milliseconds, TimeUnit.MILLISECONDS);
   }
 
-  public static double getHeartbeatMissCount(final String partition) {
-    return HEARTBEAT_MISS.labels(partition, partition).get();
+  public double getHeartbeatMissCount() {
+    return heartbeatMiss.count();
   }
 
   public void setElectionLatency(final long latencyMs) {
-    electionLatency.set(latencyMs);
+    electionLatencyValue.set(latencyMs);
   }
 }
