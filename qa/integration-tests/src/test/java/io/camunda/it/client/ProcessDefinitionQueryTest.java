@@ -15,6 +15,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.response.ProcessDefinition;
+import io.camunda.it.utils.MultiDbTest;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -30,27 +31,15 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ZeebeIntegration
+@MultiDbTest(withOperate = false, withTasklist = false)
 public class ProcessDefinitionQueryTest {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ProcessDefinitionQueryTest.class);
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
 
   private static CamundaClient camundaClient;
 
-  @TestZeebe(initMethod = "initTestStandaloneCamunda")
-  private static TestStandaloneCamunda testStandaloneCamunda;
-
-  static void initTestStandaloneCamunda() {
-    testStandaloneCamunda =
-        new TestStandaloneCamunda().withCamundaExporter().withUnauthenticatedAccess();
-  }
-
   @BeforeAll
   public static void beforeAll() throws InterruptedException {
-
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
-
     // Deploy form
     deployResource(String.format("form/%s", "form.form"));
     deployResource(String.format("form/%s", "form_v2.form"));
