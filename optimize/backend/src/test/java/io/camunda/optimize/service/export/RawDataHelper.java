@@ -24,7 +24,7 @@ public class RawDataHelper {
   // Process Columns: processDefinitionKey, processDefinitionId, processInstanceId, startDate,
   // endDate, flowNodeDurations, durationInMs,
   // engineName, tenantId. Count, variable and flow node duration fields are excluded by default
-  public static final int NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS = 9;
+  public static final int NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS = 8;
   // Decision Columns: decisionDefinitionKey, decisionDefinitionId, decisionInstanceId,
   // evaluationDateTime,
   // engineName, tenantId. Input/output fields are excluded by default
