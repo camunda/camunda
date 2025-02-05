@@ -43,17 +43,12 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
+                 "authorizationKey": "1",
                  "ownerId": "foo",
                  "ownerType": "USER",
                  "resourceType": "PROCESS_DEFINITION",
-                 "permissions": [
-                   {
-                     "permissionType": "CREATE",
-                     "resourceIds": [
-                       "2"
-                     ]
-                   }
-                 ]
+                 "resourceId": "2",
+                 "permissionTypes": ["CREATE"]
                }
              ],
              "page": {
@@ -207,7 +202,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                 {
                     "sort": [
                         {
-                            "field": "ownerKey",
+                            "field": "ownerId",
                             "order": "dsc"
                         }
                     ]
@@ -239,7 +234,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                       "type": "about:blank",
                       "title": "Bad Request",
                       "status": 400,
-                      "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [ownerType, ownerKey, resourceType]",
+                      "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [ownerId, ownerType, resourceId, resourceType]",
                       "instance": "%s"
                     }""",
                 endpoint)),
