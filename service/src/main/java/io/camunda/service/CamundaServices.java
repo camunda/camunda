@@ -7,6 +7,8 @@
  */
 package io.camunda.service;
 
+import io.camunda.document.store.EnvironmentConfigurationLoader;
+import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
@@ -74,7 +76,12 @@ public final class CamundaServices extends ApiServices<CamundaServices> {
   }
 
   public DocumentServices documentServices() {
-    return new DocumentServices(brokerClient, searchClient, transformers, authentication);
+    return new DocumentServices(
+        brokerClient,
+        searchClient,
+        transformers,
+        authentication,
+        new SimpleDocumentStoreRegistry(new EnvironmentConfigurationLoader()));
   }
 
   public <T> AuthorizationServices<T> authorizationServices() {
