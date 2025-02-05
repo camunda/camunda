@@ -24,6 +24,13 @@ public final class AuthorizationFixtures extends CommonFixtures {
   public static AuthorizationDbModel createRandomized(
       final Function<Builder, Builder> builderFunction) {
     final var ownerId = nextStringId();
+
+    final var randomPermissionType1 = randomEnum(PermissionType.class);
+    var randomPermissionType2 = randomEnum(PermissionType.class);
+    while (randomPermissionType2 == randomPermissionType1) {
+      randomPermissionType2 = randomEnum(PermissionType.class);
+    }
+
     final var builder =
         new Builder()
             .authorizationKey(nextKey())
@@ -31,8 +38,7 @@ public final class AuthorizationFixtures extends CommonFixtures {
             .ownerType(randomEnum(OwnerTypeEnum.class).name())
             .resourceType(randomEnum(ResourceTypeEnum.class).name())
             .resourceId(nextStringId())
-            .permissionTypes(
-                Set.of(randomEnum(PermissionType.class), randomEnum(PermissionType.class)));
+            .permissionTypes(Set.of(randomPermissionType1, randomPermissionType2));
 
     return builderFunction.apply(builder).build();
   }
