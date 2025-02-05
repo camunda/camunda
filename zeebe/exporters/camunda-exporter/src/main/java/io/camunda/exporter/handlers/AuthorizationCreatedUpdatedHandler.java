@@ -12,15 +12,20 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-public class AuthorizationHandler
+public class AuthorizationCreatedUpdatedHandler
     implements ExportHandler<AuthorizationEntity, AuthorizationRecordValue> {
+  private static final Set<Intent> SUPPORTED_INTENTS =
+      Set.of(AuthorizationIntent.CREATED, AuthorizationIntent.UPDATED);
   private final String indexName;
 
-  public AuthorizationHandler(final String indexName) {
+  public AuthorizationCreatedUpdatedHandler(final String indexName) {
     this.indexName = indexName;
   }
 
@@ -36,12 +41,13 @@ public class AuthorizationHandler
 
   @Override
   public boolean handlesRecord(final Record<AuthorizationRecordValue> record) {
-    return getHandledValueType().equals(record.getValueType());
+    return getHandledValueType().equals(record.getValueType())
+        && SUPPORTED_INTENTS.contains(record.getIntent());
   }
 
   @Override
   public List<String> generateIds(final Record<AuthorizationRecordValue> record) {
-    return List.of(String.valueOf(record.getKey()));
+    return List.of(String.valueOf(record.getValue().getAuthorizationKey()));
   }
 
   @Override
