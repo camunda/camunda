@@ -27,6 +27,8 @@ import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -46,6 +48,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -55,6 +58,7 @@ final class ReconfigurationTest {
   private final SingleThreadContext context = new SingleThreadContext("raft-%d");
   private final TestRaftProtocolFactory protocolFactory = new TestRaftProtocolFactory();
   private final List<RaftServer> servers = new LinkedList<>();
+  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @AfterEach
   void cleanup() {
@@ -145,6 +149,7 @@ final class ReconfigurationTest {
                 new RaftPartitionConfig()
                     .setElectionTimeout(Duration.ofMillis(500))
                     .setHeartbeatInterval(Duration.ofMillis(100)))
+            .withMeterRegistry(meterRegistry)
             .build();
     servers.add(server);
     return server;
