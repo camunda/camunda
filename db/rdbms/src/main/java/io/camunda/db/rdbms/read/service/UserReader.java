@@ -21,11 +21,11 @@ public class UserReader extends AbstractEntityReader<UserEntity> {
 
   private static final Logger LOG = LoggerFactory.getLogger(UserReader.class);
 
-  private final UserMapper processDefinitionMapper;
+  private final UserMapper userMapper;
 
-  public UserReader(final UserMapper processDefinitionMapper) {
+  public UserReader(final UserMapper userMapper) {
     super(UserSearchColumn::findByProperty);
-    this.processDefinitionMapper = processDefinitionMapper;
+    this.userMapper = userMapper;
   }
 
   public Optional<UserEntity> findOne(final long userKey) {
@@ -40,8 +40,8 @@ public class UserReader extends AbstractEntityReader<UserEntity> {
             b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for users with filter {}", dbQuery);
-    final var totalHits = processDefinitionMapper.count(dbQuery);
-    final var hits = processDefinitionMapper.search(dbQuery);
+    final var totalHits = userMapper.count(dbQuery);
+    final var hits = userMapper.search(dbQuery);
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 }
