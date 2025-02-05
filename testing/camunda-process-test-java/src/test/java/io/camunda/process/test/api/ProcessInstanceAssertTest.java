@@ -281,7 +281,7 @@ public class ProcessInstanceAssertTest {
       // then
       Assertions.assertThatThrownBy(() -> CamundaAssert.assertThat(processInstanceEvent).isActive())
           .hasMessage(
-              "Process instance [key: %d] should be active but was not activated.",
+              "Process instance [key: %d] should be active but was not created.",
               PROCESS_INSTANCE_KEY);
     }
   }
@@ -375,7 +375,7 @@ public class ProcessInstanceAssertTest {
       Assertions.assertThatThrownBy(
               () -> CamundaAssert.assertThat(processInstanceEvent).isCompleted())
           .hasMessage(
-              "Process instance [key: %d] should be completed but was not activated.",
+              "Process instance [key: %d] should be completed but was not created.",
               PROCESS_INSTANCE_KEY);
     }
   }
@@ -469,7 +469,7 @@ public class ProcessInstanceAssertTest {
       Assertions.assertThatThrownBy(
               () -> CamundaAssert.assertThat(processInstanceEvent).isTerminated())
           .hasMessage(
-              "Process instance [key: %d] should be terminated but was not activated.",
+              "Process instance [key: %d] should be terminated but was not created.",
               PROCESS_INSTANCE_KEY);
     }
   }
@@ -531,7 +531,7 @@ public class ProcessInstanceAssertTest {
       Assertions.assertThatThrownBy(
               () -> CamundaAssert.assertThat(processInstanceEvent).isCreated())
           .hasMessage(
-              "Process instance [key: %d] should be created but was not activated.",
+              "Process instance [key: %d] should be created but was not created.",
               PROCESS_INSTANCE_KEY);
     }
   }

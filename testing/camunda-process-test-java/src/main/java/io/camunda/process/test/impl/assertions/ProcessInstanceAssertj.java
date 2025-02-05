@@ -179,7 +179,7 @@ public class ProcessInstanceAssertj
           Optional.ofNullable(actualProcessInstance.get())
               .map(ProcessInstanceDto::getProcessInstanceState)
               .map(ProcessInstanceAssertj::formatState)
-              .orElse("not activated");
+              .orElse("not created");
 
       final String failureMessage =
           String.format(
@@ -226,7 +226,7 @@ public class ProcessInstanceAssertj
 
   private static String formatState(final ProcessInstanceState state) {
     if (state == null || state == ProcessInstanceState.UNKNOWN_ENUM_VALUE) {
-      return "not activated";
+      return "not created";
     } else if (state == ProcessInstanceState.CANCELED) {
       return "terminated";
     } else {
