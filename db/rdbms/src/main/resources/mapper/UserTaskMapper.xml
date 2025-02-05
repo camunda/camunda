@@ -92,12 +92,14 @@
     parameterType="io.camunda.db.rdbms.read.domain.UserTaskDbQuery"
     resultMap="io.camunda.db.rdbms.sql.UserTaskMapper.searchResultMap"
     statementType="PREPARED">
+    SELECT * FROM (
     SELECT
     ut.*,
     cg.CANDIDATE_GROUP,
     cu.CANDIDATE_USER
     FROM
-    (SELECT
+    ( SELECT * FROM (
+    SELECT
     ut.USER_TASK_KEY,
     ut.ELEMENT_ID,
     ut.PROCESS_DEFINITION_ID,
@@ -118,16 +120,15 @@
     ut.PRIORITY
     FROM ${prefix}USER_TASK ut
     <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchFilter"/>
-    ${paging.after}
+    ) filtered
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
     ) ut
     LEFT JOIN ${prefix}CANDIDATE_USER cu ON (cu.USER_TASK_KEY = ut.USER_TASK_KEY)
     LEFT JOIN ${prefix}CANDIDATE_GROUP cg ON (cg.USER_TASK_KEY = ut.USER_TASK_KEY)
-    <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
-      <foreach collection="sort.orderings" item="item" open="ORDER BY " separator=", ">
-        <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.userTaskSortMapper"/>
-        ${item.order}
-      </foreach>
-    </if>
+    ) sorted
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
   </select>
 
   <select id="count"
@@ -137,26 +138,6 @@
     FROM ${prefix}USER_TASK ut
     <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchFilter"/>
   </select>
-
-  <sql id="userTaskSortMapper">
-    <choose>
-      <when test='item.field == "creationDate"'>
-        ut.CREATION_DATE
-      </when>
-      <when test='item.field == "completionDate"'>
-        ut.COMPLETION_DATE
-      </when>
-      <when test='item.field == "priority"'>
-        ut.PRIORITY
-      </when>
-      <when test='item.field == "dueDate"'>
-        ut.DUE_DATE
-      </when>
-      <when test='item.field == "followUpDate"'>
-        ut.FOLLOW_UP_DATE
-      </when>
-    </choose>
-  </sql>
 
   <sql id="searchFilter">
     WHERE 1 = 1
@@ -170,6 +151,12 @@
     <if test="filter.elementIds != null and !filter.elementIds.isEmpty()">
       AND ut.ELEMENT_ID IN
       <foreach close=")" collection="filter.elementIds" item="value" open="("
+        separator=", ">#{value}
+      </foreach>
+    </if>
+    <if test="filter.elementInstanceKeys != null and !filter.elementInstanceKeys.isEmpty()">
+      AND ut.ELEMENT_INSTANCE_KEY IN
+      <foreach close=")" collection="filter.elementInstanceKeys" item="value" open="("
         separator=", ">#{value}
       </foreach>
     </if>
@@ -288,10 +275,10 @@
 
     <!-- Local Variables Filter -->
     <if test="filter.localVariableFilters != null and !filter.localVariableFilters.isEmpty()">
-      AND EXISTS (Select * from ${prefix}VARIABLE v where v.SCOPE_KEY = ut.USER_TASK_KEY
-      AND ( 1 = 1
-      <foreach collection="filter.localVariableFilters" item="variableValueFilter">
-        AND ( v.VAR_NAME = #{variableValueFilter.name}
+      AND EXISTS (Select * from ${prefix}VARIABLE v where v.SCOPE_KEY = ut.ELEMENT_INSTANCE_KEY
+      AND (
+      <foreach collection="filter.localVariableFilters" item="variableValueFilter" separator=" OR ">
+        ( v.VAR_NAME = #{variableValueFilter.name}
         <if
           test="variableValueFilter.valueOperations != null and !variableValueFilter.valueOperations.isEmpty()">
           <foreach collection="variableValueFilter.valueOperations" item="operation">
