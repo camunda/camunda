@@ -299,7 +299,8 @@ public final class RaftPartition implements Partition, HealthMonitorable {
         .config()
         .commonTags(
             Tags.of(
-                PartitionKeyNames.PARTITION.asString(), Integer.toString(partitionMetadata.id().id())));
+                PartitionKeyNames.PARTITION.asString(),
+                Integer.toString(partitionMetadata.id().id())));
     return registry;
   }
 }

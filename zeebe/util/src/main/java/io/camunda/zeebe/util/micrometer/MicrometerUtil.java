@@ -88,9 +88,10 @@ public final class MicrometerUtil {
 
   /**
    * Closes the registry after clearing it. In this way all metrics registered are removed.
+   *
    * @param registry the registry to clear and close.
    */
-  public static void closeRegistry(final MeterRegistry registry){
+  public static void closeRegistry(final MeterRegistry registry) {
     registry.clear();
     registry.close();
   }
