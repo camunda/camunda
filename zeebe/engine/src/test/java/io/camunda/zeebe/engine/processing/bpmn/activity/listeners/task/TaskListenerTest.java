@@ -185,6 +185,51 @@ public class TaskListenerTest {
   }
 
   @Test
+  public void shouldExecuteAllAssigningListenersOnUnassignmentAfterSuccessfulAssignment() {
+    // given: a user task with multiple `assigning` task listeners
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.assigning,
+                listenerType,
+                listenerType + "_2",
+                listenerType + "_3"));
+
+    // when: assign the user task to "me" and complete all `assigning` listener jobs
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("me").assign();
+    completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // and: unassign the user task and complete all `assigning` listener jobs again
+    ENGINE.userTask().ofInstance(processInstanceKey).unassign();
+    completeRecreatedJobs(
+        processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // then: all `assigning` listeners should be executed for both assign and unassign operations
+    assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.ASSIGNING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3",
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    // and: user task should be correctly assigned and unassigned
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .describedAs(
+            "Expected user task assignment and unassignment actions to be recorded correctly")
+        .extracting(r -> r.getValue().getAssignee(), r -> r.getValue().getAction())
+        .containsExactly(
+            tuple("me", "assign"), // First assignment
+            tuple("", "unassign") // Unassignment
+            );
+  }
+
+  @Test
   public void shouldCancelTaskListenerJobWhenTerminatingElementInstance() {
     // given
     final long processInstanceKey =
@@ -2399,6 +2444,12 @@ public class TaskListenerTest {
   private void completeJobs(final long processInstanceKey, final String... jobTypes) {
     for (final String jobType : jobTypes) {
       ENGINE.job().ofInstance(processInstanceKey).withType(jobType).complete();
+    }
+  }
+
+  private void completeRecreatedJobs(final long processInstanceKey, final String... jobTypes) {
+    for (final String jobType : jobTypes) {
+      completeRecreatedJobWithType(ENGINE, processInstanceKey, jobType);
     }
   }
 
