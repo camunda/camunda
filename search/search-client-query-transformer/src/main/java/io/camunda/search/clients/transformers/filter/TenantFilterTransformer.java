@@ -29,7 +29,6 @@ public class TenantFilterTransformer extends IndexFilterTransformer<TenantFilter
   @Override
   public SearchQuery toSearchQuery(final TenantFilter filter) {
     return and(
-        term(TenantIndex.JOIN, IdentityJoinRelationshipType.TENANT.getType()),
         filter.key() == null ? null : term(KEY, filter.key()),
         filter.tenantId() == null ? null : term(TENANT_ID, filter.tenantId()),
         filter.name() == null ? null : term(NAME, filter.name()),
