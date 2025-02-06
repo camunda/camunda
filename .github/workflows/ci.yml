@@ -831,14 +831,15 @@ jobs:
     timeout-minutes: 3
     permissions:
       checks: read
-    needs:
+    needs:  # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
       - build-operate-backend
       - build-platform-frontend
       - build-tasklist-backend
+      - detect-changes
       - docker-checks
-      - identity-frontend-tests
       - elasticsearch-integration-tests
+      - identity-frontend-tests
       - integration-tests
       - java-checks
       - java-unit-tests
