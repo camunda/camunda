@@ -420,6 +420,10 @@
     </createTable>
 
     <createIndex tableName="${prefix}AUTHORIZATIONS" indexName="${prefix}IDX_AUTHORIZATIONS">
+      <column name="AUTHORIZATION_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}AUTHORIZATIONS" indexName="${prefix}IDX_AUTHORIZATIONS">
       <column name="OWNER_ID"/>
       <column name="OWNER_TYPE"/>
       <column name="RESOURCE_TYPE"/>
