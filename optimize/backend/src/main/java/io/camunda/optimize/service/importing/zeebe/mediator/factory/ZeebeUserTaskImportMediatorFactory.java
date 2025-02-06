@@ -22,6 +22,7 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.Collections;
 import java.util.List;
 import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -36,7 +37,7 @@ public class ZeebeUserTaskImportMediatorFactory extends AbstractZeebeImportMedia
       final ConfigurationService configurationService,
       final ProcessInstanceWriter zeebeProcessInstanceWriter,
       final ProcessDefinitionReader processDefinitionReader,
-      final ObjectMapper objectMapper,
+      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper,
       final DatabaseClient databaseClient) {
     super(
         beanFactory,

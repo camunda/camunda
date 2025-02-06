@@ -21,6 +21,7 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -37,7 +38,7 @@ public class DecisionDefinitionXmlWriterES implements DecisionDefinitionXmlWrite
   public DecisionDefinitionXmlWriterES(
       final OptimizeElasticsearchClient esClient,
       final ConfigurationService configurationService,
-      final ObjectMapper objectMapper) {
+      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;

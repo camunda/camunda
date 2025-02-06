@@ -85,6 +85,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -100,7 +101,7 @@ public class DefinitionReaderES implements DefinitionReader {
   public DefinitionReaderES(
       final OptimizeElasticsearchClient esClient,
       final ConfigurationService configurationService,
-      final ObjectMapper objectMapper) {
+      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;

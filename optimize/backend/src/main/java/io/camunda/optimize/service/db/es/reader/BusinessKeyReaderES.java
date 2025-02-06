@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -40,7 +41,7 @@ public class BusinessKeyReaderES implements BusinessKeyReader {
 
   public BusinessKeyReaderES(
       final OptimizeElasticsearchClient esClient,
-      final ObjectMapper objectMapper,
+      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper,
       final ConfigurationService configurationService) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;

@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -42,7 +43,8 @@ public class InstantDashboardMetadataWriterES implements InstantDashboardMetadat
   private final ObjectMapper objectMapper;
 
   public InstantDashboardMetadataWriterES(
-      final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
+      final OptimizeElasticsearchClient esClient,
+      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
   }

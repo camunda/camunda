@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -42,7 +43,7 @@ public class CollectionReaderES implements CollectionReader {
   public CollectionReaderES(
       final OptimizeElasticsearchClient esClient,
       final ConfigurationService configurationService,
-      final ObjectMapper objectMapper) {
+      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;

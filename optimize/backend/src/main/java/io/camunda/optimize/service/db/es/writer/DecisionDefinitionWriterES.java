@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -54,7 +55,7 @@ public class DecisionDefinitionWriterES implements DecisionDefinitionWriter {
   private final TaskRepositoryES taskRepositoryES;
 
   public DecisionDefinitionWriterES(
-      final ObjectMapper objectMapper,
+      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper,
       final OptimizeElasticsearchClient esClient,
       final ConfigurationService configurationService,
       final TaskRepositoryES taskRepositoryES) {

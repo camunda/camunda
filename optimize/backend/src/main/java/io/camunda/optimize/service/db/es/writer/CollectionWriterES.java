@@ -53,6 +53,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -68,7 +69,7 @@ public class CollectionWriterES implements CollectionWriter {
 
   public CollectionWriterES(
       final OptimizeElasticsearchClient esClient,
-      final ObjectMapper objectMapper,
+      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper,
       final DateTimeFormatter formatter,
       final TaskRepositoryES taskRepositoryES) {
     this.esClient = esClient;

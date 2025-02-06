@@ -59,6 +59,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -72,7 +73,7 @@ public class ReportWriterES implements ReportWriter {
   private final TaskRepositoryES taskRepositoryES;
 
   public ReportWriterES(
-      final ObjectMapper objectMapper,
+      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper,
       final OptimizeElasticsearchClient esClient,
       final TaskRepositoryES taskRepositoryES) {
     this.objectMapper = objectMapper;

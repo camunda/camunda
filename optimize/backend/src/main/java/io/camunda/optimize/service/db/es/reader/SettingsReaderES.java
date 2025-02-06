@@ -22,6 +22,7 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import java.io.IOException;
 import java.util.Optional;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -36,7 +37,7 @@ public class SettingsReaderES implements SettingsReader {
 
   public SettingsReaderES(
       final OptimizeElasticsearchClient esClient,
-      final ObjectMapper objectMapper,
+      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper,
       final ConfigurationService configurationService) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;

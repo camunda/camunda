@@ -27,6 +27,7 @@ import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -39,7 +40,8 @@ public class SharingWriterES implements SharingWriter {
   private final ObjectMapper objectMapper;
 
   public SharingWriterES(
-      final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
+      final OptimizeElasticsearchClient esClient,
+      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
   }
