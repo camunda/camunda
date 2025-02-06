@@ -258,11 +258,6 @@ jobs:
           # Disabling to make sure we can delete indices via wildcards
           # https://www.elastic.co/guide/en/elasticsearch/reference/current/index-management-settings.html
           action.destructive_requires_name: "false"
-      # Set up a registry service container to host our custom docker image
-      registry:
-        image: registry:2
-        ports:
-          - 5000:5000
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
