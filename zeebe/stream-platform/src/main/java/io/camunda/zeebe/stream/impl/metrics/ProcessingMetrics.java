@@ -33,7 +33,7 @@ public class ProcessingMetrics {
   private static final String ACTION_PROCESSED = "processed";
 
   private final AtomicLong lastProcessedPosition = new AtomicLong();
-  private final Table<ValueType, Intent, Timer> processingDuration = Table.simple();
+  private final Table<Timer, ValueType, Intent> processingDuration = Table.simple();
   private final Map<String, Counter> streamProcessorEvents = new HashMap<>();
 
   private final MeterRegistry registry;
