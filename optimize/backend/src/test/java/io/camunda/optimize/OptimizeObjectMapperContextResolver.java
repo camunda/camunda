@@ -10,6 +10,7 @@ package io.camunda.optimize;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.ext.ContextResolver;
 import jakarta.ws.rs.ext.Provider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Provider
@@ -18,7 +19,8 @@ public class OptimizeObjectMapperContextResolver implements ContextResolver<Obje
 
   private final ObjectMapper optimizeObjectMapper;
 
-  public OptimizeObjectMapperContextResolver(final ObjectMapper optimizeObjectMapper) {
+  public OptimizeObjectMapperContextResolver(
+      @Qualifier("optimizeObjectMapper") final ObjectMapper optimizeObjectMapper) {
     this.optimizeObjectMapper = optimizeObjectMapper;
   }
 
