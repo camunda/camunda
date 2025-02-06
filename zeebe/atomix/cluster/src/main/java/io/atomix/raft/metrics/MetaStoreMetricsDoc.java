@@ -15,7 +15,7 @@ public enum MetaStoreMetricsDoc implements ExtendedMeterDocumentation {
   LAST_FLUSHED_INDEX {
     @Override
     public String getName() {
-      return "last_flushed_index_update";
+      return "atomix.last_flushed_index_update";
     }
 
     @Override
