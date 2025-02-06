@@ -6216,7 +6216,7 @@ components:
         - $ref: "#/components/schemas/AuthorizationResponseBase"
       properties:
         authorizationKey:
-          description: The key of the owner the authorization.
+          description: The key of the authorization.
           type: string
     AuthorizationSearchResponse:
       deprecated: true
