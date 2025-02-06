@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
-import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -17,31 +17,24 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.micrometer.core.instrument.search.MeterNotFoundException;
 import java.util.Map;
-import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
 public class ProcessEngineMetricsTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String DMN_RESOURCE = "/dmn/drg-force-user-with-assertions.dmn";
   private static final String PROCESS_ID = "process";
   private static final String TASK_ID = "task";
-  @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
-  @Before
-  public void resetMetrics() {
-    ProcessEngineMetrics.EVALUATED_DMN_ELEMENTS.clear();
-    ProcessEngineMetrics.EXECUTED_INSTANCES.clear();
-    ProcessEngineMetrics.CREATED_PROCESS_INSTANCES.clear();
-  }
+  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @Test
   public void shouldIncreaseSuccessfullyEvaluatedDmnElements() {
-    ENGINE
+    engine
         .deployment()
         .withXmlClasspathResource(DMN_RESOURCE)
         .withXmlResource(
@@ -55,7 +48,7 @@ public class ProcessEngineMetricsTest {
         .deploy();
 
     final long processInstanceKey =
-        ENGINE
+        engine
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariables(Map.of("lightsaberColor", "blue", "height", 175))
@@ -66,9 +59,8 @@ public class ProcessEngineMetricsTest {
         .withElementType(BpmnElementType.PROCESS)
         .await();
 
-    assertThat(activatedProcessInstanceMetric()).isNotNull().isEqualTo(1);
-
-    assertThat(completedProcessInstanceMetric()).isNotNull().isEqualTo(1);
+    assertThat(activatedProcessInstanceMetric()).isNotNull().isOne();
+    assertThat(completedProcessInstanceMetric()).isNotNull().isOne();
 
     assertThat(succeededEvaluatedDmnElementsMetric())
         .isNotNull()
@@ -79,7 +71,7 @@ public class ProcessEngineMetricsTest {
 
   @Test
   public void shouldIncreaseFailedEvaluatedDmnElements() {
-    ENGINE
+    engine
         .deployment()
         .withXmlClasspathResource(DMN_RESOURCE)
         .withXmlResource(
@@ -93,7 +85,7 @@ public class ProcessEngineMetricsTest {
         .deploy();
 
     final long processInstanceKey =
-        ENGINE
+        engine
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable("lightsaberColor", "blue")
@@ -103,16 +95,15 @@ public class ProcessEngineMetricsTest {
         .withProcessInstanceKey(processInstanceKey)
         .await();
 
-    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+    engine.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
         .withProcessInstanceKey(processInstanceKey)
         .withElementType(BpmnElementType.PROCESS)
         .await();
 
-    assertThat(activatedProcessInstanceMetric()).isNotNull().isEqualTo(1);
-
-    assertThat(terminatedProcessInstanceMetric()).isNotNull().isEqualTo(1);
+    assertThat(activatedProcessInstanceMetric()).isNotNull().isOne();
+    assertThat(terminatedProcessInstanceMetric()).isNotNull().isOne();
 
     assertThat(failedEvaluatedDmnElementsMetric())
         .isNotNull()
@@ -123,7 +114,7 @@ public class ProcessEngineMetricsTest {
 
   @Test
   public void shouldIncreaseFailedEvaluatedDmnElementsIfRequiredDecisionFailed() {
-    ENGINE
+    engine
         .deployment()
         .withXmlClasspathResource(DMN_RESOURCE)
         .withXmlResource(
@@ -136,7 +127,7 @@ public class ProcessEngineMetricsTest {
                 .done())
         .deploy();
 
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     RecordingExporter.incidentRecords(IncidentIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
@@ -145,41 +136,43 @@ public class ProcessEngineMetricsTest {
     assertThat(failedEvaluatedDmnElementsMetric())
         .isNotNull()
         .describedAs("Expected only one decision was executed as the required decision failed")
-        .isEqualTo(1);
+        .isOne();
   }
 
   @Test
   public void shouldIncreaseProcessInstanceCreatedAtDefaultStartEvent() {
     // given
-    ENGINE
+    engine
         .deployment()
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID).startEvent("start").endEvent("end").done())
         .deploy();
 
     // when
-    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
-    assertThat(processInstanceCreationsMetric("creation_at_given_element")).isNull();
-    assertThat(processInstanceCreationsMetric("creation_at_default_start_event")).isEqualTo(1);
+    assertThatCode(() -> processInstanceCreationsMetric("creation_at_given_element"))
+        .isInstanceOf(MeterNotFoundException.class);
+    assertThat(processInstanceCreationsMetric("creation_at_default_start_event")).isOne();
   }
 
   @Test
   public void shouldIncreaseProcessInstanceCreatedAtGivenElement() {
     // given
-    ENGINE
+    engine
         .deployment()
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID).startEvent("start").endEvent("end").done())
         .deploy();
 
     // when
-    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withStartInstruction("end").create();
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).withStartInstruction("end").create();
 
     // then
-    assertThat(processInstanceCreationsMetric("creation_at_default_start_event")).isNull();
-    assertThat(processInstanceCreationsMetric("creation_at_given_element")).isEqualTo(1);
+    assertThatCode(() -> processInstanceCreationsMetric("creation_at_default_start_event"))
+        .isInstanceOf(MeterNotFoundException.class);
+    assertThat(processInstanceCreationsMetric("creation_at_given_element")).isOne();
   }
 
   private Double activatedProcessInstanceMetric() {
@@ -195,19 +188,25 @@ public class ProcessEngineMetricsTest {
   }
 
   private Double executedProcessInstanceMetric(final String action) {
-    return MetricsTestHelper.readMetricValue(
-        "zeebe_executed_instances_total",
-        entry("organizationId", "null"),
-        entry("type", "ROOT_PROCESS_INSTANCE"),
-        entry("action", action),
-        entry("partition", "1"));
+    return engine
+        .getMeterRegistry()
+        .get("zeebe.executed.instances.total")
+        .tag("organizationId", "null")
+        .tag("type", "ROOT_PROCESS_INSTANCE")
+        .tag("action", action)
+        .tag("partition", "1")
+        .counter()
+        .count();
   }
 
   private Double processInstanceCreationsMetric(final String creationMode) {
-    return MetricsTestHelper.readMetricValue(
-        "zeebe_process_instance_creations_total",
-        entry("partition", "1"),
-        entry("creation_mode", creationMode));
+    return engine
+        .getMeterRegistry()
+        .get("zeebe.process.instance.creations.total")
+        .tag("partition", "1")
+        .tag("creation_mode", creationMode)
+        .counter()
+        .count();
   }
 
   private Double succeededEvaluatedDmnElementsMetric() {
@@ -219,10 +218,13 @@ public class ProcessEngineMetricsTest {
   }
 
   private Double evaluatedDmnElementsMetric(final String action) {
-    return MetricsTestHelper.readMetricValue(
-        "zeebe_evaluated_dmn_elements_total",
-        entry("organizationId", "null"),
-        entry("action", action),
-        entry("partition", "1"));
+    return engine
+        .getMeterRegistry()
+        .get("zeebe.evaluated.dmn.elements.total")
+        .tag("organizationId", "null")
+        .tag("action", action)
+        .tag("partition", "1")
+        .counter()
+        .count();
   }
 }
