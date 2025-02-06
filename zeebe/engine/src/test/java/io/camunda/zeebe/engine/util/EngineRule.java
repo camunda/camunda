@@ -52,6 +52,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -263,6 +264,14 @@ public final class EngineRule extends ExternalResource {
 
   public StreamProcessor getStreamProcessor(final int partitionId) {
     return environmentRule.getStreamProcessor(partitionId);
+  }
+
+  public MeterRegistry getMeterRegistry() {
+    return getMeterRegistry(PARTITION_ID);
+  }
+
+  public MeterRegistry getMeterRegistry(final int partitionId) {
+    return environmentRule.getMeterRegistry(partitionId);
   }
 
   public long getLastProcessedPosition() {
