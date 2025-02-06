@@ -353,6 +353,43 @@ public class JobControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldCompleteJobWithResultDeniedTrueAndDeniedReason() {
+    // given
+    when(jobServices.completeJob(anyLong(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+          {
+            "result": {
+              "denied": true,
+              "deniedReason": "Reason to deny lifecycle transition",
+              "corrections": {}
+            }
+          }
+        """;
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    final ArgumentCaptor<JobResult> jobResultArgumentCaptor =
+        ArgumentCaptor.forClass(JobResult.class);
+    Mockito.verify(jobServices)
+        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
+    Assertions.assertTrue(jobResultArgumentCaptor.getValue().isDenied());
+    assertThat(jobResultArgumentCaptor.getValue().getDeniedReason())
+        .isEqualTo("Reason to deny lifecycle transition");
+  }
+
+  @Test
   void shouldCompleteJobWithResultWithCorrections() {
     // given
     when(jobServices.completeJob(anyLong(), any(), any()))
@@ -548,6 +585,7 @@ public class JobControllerTest extends RestControllerTest {
     Mockito.verify(jobServices)
         .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
     Assertions.assertFalse(jobResultArgumentCaptor.getValue().isDenied());
+    assertThat(jobResultArgumentCaptor.getValue().getDeniedReason()).isEqualTo("");
   }
 
   @Test
@@ -582,6 +620,7 @@ public class JobControllerTest extends RestControllerTest {
     Mockito.verify(jobServices)
         .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
     Assertions.assertFalse(jobResultArgumentCaptor.getValue().isDenied());
+    assertThat(jobResultArgumentCaptor.getValue().getDeniedReason()).isEqualTo("");
   }
 
   @Test
