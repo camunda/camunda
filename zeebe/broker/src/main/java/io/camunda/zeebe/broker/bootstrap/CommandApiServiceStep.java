@@ -65,15 +65,20 @@ final class CommandApiServiceStep extends AbstractBrokerStartupStep {
     final var brokerCfg = brokerStartupContext.getBrokerConfiguration();
     final var schedulingService = brokerStartupContext.getActorSchedulingService();
 
+    final var meterRegistry = brokerStartupContext.getMeterRegistry();
     final var backpressureCfg = brokerCfg.getBackpressure();
     var limiter = PartitionAwareRequestLimiter.newNoopLimiter();
     if (backpressureCfg.isEnabled()) {
-      limiter = PartitionAwareRequestLimiter.newLimiter(backpressureCfg);
+      limiter = PartitionAwareRequestLimiter.newLimiter(backpressureCfg, meterRegistry);
     }
 
     final var commandApiService =
         new CommandApiServiceImpl(
-            serverTransport, limiter, schedulingService, brokerCfg.getExperimental().getQueryApi());
+            serverTransport,
+            limiter,
+            schedulingService,
+            brokerCfg.getExperimental().getQueryApi(),
+            meterRegistry);
 
     concurrencyControl.runOnCompletion(
         schedulingService.submitActor(commandApiService),

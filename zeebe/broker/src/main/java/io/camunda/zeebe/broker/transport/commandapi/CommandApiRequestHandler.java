@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
 
@@ -33,11 +34,12 @@ final class CommandApiRequestHandler
   private final Int2ObjectHashMap<LogStreamWriter> leadingStreams = new Int2ObjectHashMap<>();
   private final Int2ObjectHashMap<RequestLimiter<Intent>> partitionLimiters =
       new Int2ObjectHashMap<>();
-  private final BackpressureMetrics metrics = new BackpressureMetrics();
+  private final BackpressureMetrics metrics;
   private boolean isDiskSpaceAvailable = true;
 
-  CommandApiRequestHandler() {
+  CommandApiRequestHandler(final MeterRegistry meterRegistry) {
     super(CommandApiRequestReader::new, CommandApiResponseWriter::new);
+    metrics = new BackpressureMetrics(meterRegistry);
   }
 
   @Override

@@ -25,6 +25,7 @@ import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerTransport;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.function.Consumer;
 import org.agrona.collections.IntHashSet;
 
@@ -42,11 +43,12 @@ public final class CommandApiServiceImpl extends Actor
       final ServerTransport serverTransport,
       final PartitionAwareRequestLimiter limiter,
       final ActorSchedulingService scheduler,
-      final QueryApiCfg queryApiCfg) {
+      final QueryApiCfg queryApiCfg,
+      final MeterRegistry meterRegistry) {
     this.serverTransport = serverTransport;
     this.limiter = limiter;
     this.scheduler = scheduler;
-    commandHandler = new CommandApiRequestHandler();
+    commandHandler = new CommandApiRequestHandler(meterRegistry);
     queryHandler = new QueryApiRequestHandler(queryApiCfg);
   }
 

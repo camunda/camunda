@@ -29,6 +29,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerTransport;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -61,7 +62,11 @@ public class CommandApiServiceImplTest {
 
     commandApiService =
         new CommandApiServiceImpl(
-            serverTransport, limiter, scheduler.getActorScheduler(), queryApi);
+            serverTransport,
+            limiter,
+            scheduler.getActorScheduler(),
+            queryApi,
+            new SimpleMeterRegistry());
     when(transitionContext.getCommandApiService()).thenReturn(commandApiService);
     when(transitionContext.getConcurrencyControl()).thenReturn(cc);
     scheduler.submitActor(commandApiService);

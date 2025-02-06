@@ -7,64 +7,44 @@
  */
 package io.camunda.zeebe.broker.transport.backpressure;
 
-import io.prometheus.client.Counter;
-import io.prometheus.client.Gauge;
+import static io.camunda.zeebe.broker.transport.backpressure.BackpressureMetricsDoc.DROPPED_REQUEST_COUNT;
+import static io.camunda.zeebe.broker.transport.backpressure.BackpressureMetricsDoc.TOTAL_REQUEST_COUNT;
+
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import org.agrona.collections.Int2ObjectHashMap;
 
 public final class BackpressureMetrics {
 
-  private static final Counter DROPPED_REQUEST_COUNT =
-      Counter.build()
-          .namespace("zeebe")
-          .name("dropped_request_count_total")
-          .help("Number of requests dropped due to backpressure")
-          .labelNames("partition")
-          .register();
+  private final Int2ObjectHashMap<Counter> droppedRequestCount = new Int2ObjectHashMap<>();
+  private final Int2ObjectHashMap<Counter> totalRequestCount = new Int2ObjectHashMap<>();
 
-  private static final Counter TOTAL_REQUEST_COUNT =
-      Counter.build()
-          .namespace("zeebe")
-          .name("received_request_count_total")
-          .help("Number of requests received")
-          .labelNames("partition")
-          .register();
+  private final MeterRegistry registry;
 
-  private static final Gauge CURRENT_INFLIGHT =
-      Gauge.build()
-          .namespace("zeebe")
-          .name("backpressure_inflight_requests_count")
-          .help("Current number of request inflight")
-          .labelNames("partition")
-          .register();
-
-  private static final Gauge CURRENT_LIMIT =
-      Gauge.build()
-          .namespace("zeebe")
-          .name("backpressure_requests_limit")
-          .help("Current limit for number of inflight requests")
-          .labelNames("partition")
-          .register();
+  public BackpressureMetrics(final MeterRegistry registry) {
+    this.registry = registry;
+  }
 
   public void dropped(final int partitionId) {
-    DROPPED_REQUEST_COUNT.labels(String.valueOf(partitionId)).inc();
+    droppedRequestCount
+        .computeIfAbsent(
+            partitionId, p -> registerCounter(DROPPED_REQUEST_COUNT, String.valueOf(partitionId)))
+        .increment();
   }
 
   public void receivedRequest(final int partitionId) {
-    TOTAL_REQUEST_COUNT.labels(String.valueOf(partitionId)).inc();
+    totalRequestCount
+        .computeIfAbsent(
+            partitionId, p -> registerCounter(TOTAL_REQUEST_COUNT, String.valueOf(partitionId)))
+        .increment();
   }
 
-  public void incInflight(final int partitionId) {
-    CURRENT_INFLIGHT.labels(String.valueOf(partitionId)).inc();
-  }
-
-  public void decInflight(final int partitionId) {
-    CURRENT_INFLIGHT.labels(String.valueOf(partitionId)).dec();
-  }
-
-  public void setNewLimit(final int partitionId, final int newLimit) {
-    CURRENT_LIMIT.labels(String.valueOf(partitionId)).set(newLimit);
-  }
-
-  public void setInflight(final int partitionId, final int count) {
-    CURRENT_INFLIGHT.labels(String.valueOf(partitionId)).set(0);
+  private Counter registerCounter(
+      final BackpressureMetricsDoc meterDoc, final String partitionTag) {
+    return Counter.builder(meterDoc.getName())
+        .description(meterDoc.getDescription())
+        .tag(PartitionKeyNames.PARTITION.asString(), partitionTag)
+        .register(registry);
   }
 }

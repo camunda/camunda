@@ -23,6 +23,7 @@ import io.camunda.zeebe.broker.system.configuration.backpressure.Gradient2Cfg;
 import io.camunda.zeebe.broker.system.configuration.backpressure.GradientCfg;
 import io.camunda.zeebe.broker.system.configuration.backpressure.VegasCfg;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -40,15 +41,21 @@ public final class PartitionAwareRequestLimiter {
     limiterSupplier = i -> new NoopRequestLimiter<>();
   }
 
-  private PartitionAwareRequestLimiter(final Supplier<Limit> limitSupplier) {
-    limiterSupplier = i -> CommandRateLimiter.builder().limit(limitSupplier.get()).build(i);
+  private PartitionAwareRequestLimiter(
+      final Supplier<Limit> limitSupplier, final MeterRegistry meterRegistry) {
+    limiterSupplier =
+        partitionId ->
+            CommandRateLimiter.builder()
+                .limit(limitSupplier.get())
+                .build(meterRegistry, partitionId);
   }
 
   public static PartitionAwareRequestLimiter newNoopLimiter() {
     return new PartitionAwareRequestLimiter();
   }
 
-  public static PartitionAwareRequestLimiter newLimiter(final BackpressureCfg backpressureCfg) {
+  public static PartitionAwareRequestLimiter newLimiter(
+      final BackpressureCfg backpressureCfg, final MeterRegistry meterRegistry) {
     final LimitAlgorithm algorithm = backpressureCfg.getAlgorithm();
     final Supplier<Limit> limit;
     switch (algorithm) {
@@ -81,9 +88,10 @@ public final class PartitionAwareRequestLimiter {
     }
 
     if (backpressureCfg.useWindowed()) {
-      return new PartitionAwareRequestLimiter(() -> WindowedLimit.newBuilder().build(limit.get()));
+      return new PartitionAwareRequestLimiter(
+          () -> WindowedLimit.newBuilder().build(limit.get()), meterRegistry);
     } else {
-      return new PartitionAwareRequestLimiter(limit);
+      return new PartitionAwareRequestLimiter(limit, meterRegistry);
     }
   }
 

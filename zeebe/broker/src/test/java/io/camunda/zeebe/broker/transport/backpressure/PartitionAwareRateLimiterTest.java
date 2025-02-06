@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,7 @@ final class PartitionAwareRateLimiterTest {
     backpressureCfg.getFixed().setLimit(1);
     partitionedLimiter =
         io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter.newLimiter(
-            backpressureCfg);
+            backpressureCfg, new SimpleMeterRegistry());
     IntStream.range(0, PARTITIONS).forEach(partitionedLimiter::addPartition);
   }
 
