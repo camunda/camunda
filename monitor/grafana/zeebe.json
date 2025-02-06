@@ -9421,7 +9421,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(increase(zeebe_stream_processor_batch_processing_post_commit_tasks_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(zeebe_stream_processor_batch_processing_post_commit_tasks_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or increase(zeebe_stream_processor_batch_processing_post_commit_tasks_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "legendFormat": "{{le}}",
@@ -9503,7 +9503,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(increase(zeebe_stream_processor_batch_processing_duration_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(zeebe_stream_processor_batch_processing_duration_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or increase(zeebe_stream_processor_batch_processing_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "legendFormat": "{{le}}",
