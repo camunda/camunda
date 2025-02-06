@@ -90,16 +90,16 @@ public class CreateAuthorizationCommandImpl
   public CreateAuthorizationCommandStep6 permissions(final List<PermissionTypeEnum> permissions) {
     ArgumentUtil.ensureNotNull("permissions", permissions);
     ArgumentUtil.ensureNotEmpty("permissions", permissions);
-    request.setPermissions(permissions);
+    request.setPermissionTypes(permissions);
     return this;
   }
 
   @Override
   public CreateAuthorizationCommandStep6 permission(final PermissionTypeEnum permission) {
     ArgumentUtil.ensureNotNull("permission", permission);
-    final List<PermissionTypeEnum> permissions = request.getPermissions();
+    final List<PermissionTypeEnum> permissions = request.getPermissionTypes();
     permissions.add(permission);
-    request.setPermissions(permissions);
+    request.setPermissionTypes(permissions);
     return this;
   }
 

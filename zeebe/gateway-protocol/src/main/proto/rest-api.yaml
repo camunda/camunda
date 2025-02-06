@@ -6098,9 +6098,9 @@ components:
           type: object
           allOf:
             - $ref: "#/components/schemas/ResourceTypeEnum"
-        permissions:
+        permissionTypes:
           type: array
-          description: The permissions to add.
+          description: The permission types to add.
           items:
             type: string
             allOf:
@@ -6110,7 +6110,7 @@ components:
         - ownerType
         - resourceId
         - resourceType
-        - permissions
+        - permissionTypes
     AuthorizationCreateResponse:
       deprecated: true
       type: object
