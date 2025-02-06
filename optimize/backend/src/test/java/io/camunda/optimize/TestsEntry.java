@@ -13,12 +13,7 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.freemarker.FreeMarkerAutoConfiguration;
-import org.springframework.context.annotation.ComponentScan;
 
-@SpringBootApplication(exclude = {FreeMarkerAutoConfiguration.class})
-@ComponentScan(excludeFilters = @ComponentScan.Filter(IgnoreDuringScan.class))
 public class TestsEntry {
   // This is the application entry point used to launch tests.
   //

@@ -30,6 +30,7 @@ import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.UpdateResponse;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -40,7 +41,8 @@ public class OpenSearchMetadataService extends DatabaseMetadataService<OptimizeO
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OpenSearchMetadataService.class);
 
-  public OpenSearchMetadataService(final ObjectMapper objectMapper) {
+  public OpenSearchMetadataService(
+      @Qualifier("optimizeObjectMapper") final ObjectMapper objectMapper) {
     super(objectMapper);
   }
 
