@@ -12,7 +12,7 @@
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.AuthorizationDbQuery">
     SELECT COUNT(*) FROM (
-    SELECT DISTINCT OWNER_ID, OWNER_TYPE, RESOURCE_TYPE
+    SELECT DISTINCT AUTHORIZATION_KEY, OWNER_ID, OWNER_TYPE, RESOURCE_TYPE, RESOURCE_ID
     FROM ${prefix}AUTHORIZATIONS a
     <include refid="io.camunda.db.rdbms.sql.AuthorizationMapper.searchFilter"/>
     ) t
@@ -33,7 +33,8 @@
     AUTHORIZATION_KEY,
     OWNER_ID,
     OWNER_TYPE,
-    RESOURCE_TYPE
+    RESOURCE_TYPE,
+    RESOURCE_ID
     FROM ${prefix}AUTHORIZATIONS
     <include refid="io.camunda.db.rdbms.sql.AuthorizationMapper.searchFilter"/>
     ) t
@@ -43,7 +44,7 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
     ) t
     JOIN ${prefix}AUTHORIZATIONS a ON t.AUTHORIZATION_KEY = a.AUTHORIZATION_KEY AND t.OWNER_ID = a.OWNER_ID AND t.OWNER_TYPE = a.OWNER_TYPE AND
-    t.RESOURCE_TYPE = a.RESOURCE_TYPE
+    t.RESOURCE_TYPE = a.RESOURCE_TYPE AND t.RESOURCE_ID = a.RESOURCE_ID
     <!-- outer orderBy for actual sorting -->
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
   </select>
