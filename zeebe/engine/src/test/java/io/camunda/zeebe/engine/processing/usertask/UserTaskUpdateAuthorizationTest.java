@@ -118,6 +118,7 @@ public class UserTaskUpdateAuthorizationTest {
         engine
             .userTask()
             .ofInstance(processInstanceKey)
+            .expectRejection()
             .update(new UserTaskRecord(), user.getUsername());
 
     // then
