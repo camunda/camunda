@@ -30,6 +30,7 @@ import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.Collection;
 import java.util.List;
@@ -48,8 +49,10 @@ public class ZeebeTestNode {
   private final File directory;
   private AtomixCluster cluster;
   private List<RaftPartition> partitions;
+  private final MeterRegistry meterRegistry;
 
-  public ZeebeTestNode(final int id, final File directory) {
+  public ZeebeTestNode(final int id, final File directory, final MeterRegistry meterRegistry) {
+    this.meterRegistry = meterRegistry;
     final String textualId = String.valueOf(id);
 
     this.directory = directory;
@@ -111,7 +114,8 @@ public class ZeebeTestNode {
               return new RaftPartition(
                   partitionMetadata,
                   raftPartitionConfig,
-                  new File(new File(directory, "log"), "" + member.id()));
+                  new File(new File(directory, "log"), "" + member.id()),
+                  meterRegistry);
             })
         .toList();
   }
