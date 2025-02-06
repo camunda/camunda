@@ -135,7 +135,7 @@ public class AuthorizationServices
             .setOwnerType(request.ownerType())
             .setResourceId(request.resourceId())
             .setResourceType(request.resourceType())
-            .setPermissions(request.permissions());
+            .setPermissionTypes(request.permissions());
     return sendBrokerRequest(brokerRequest);
   }
 

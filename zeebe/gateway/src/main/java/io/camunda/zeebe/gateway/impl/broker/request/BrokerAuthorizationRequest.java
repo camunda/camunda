@@ -52,8 +52,7 @@ public class BrokerAuthorizationRequest extends BrokerExecuteCommand<Authorizati
     return this;
   }
 
-  public BrokerAuthorizationCreateRequest setPermissionTypes(
-      final Set<PermissionType> permissionTypes) {
+  public BrokerAuthorizationRequest setPermissionTypes(final Set<PermissionType> permissionTypes) {
     requestDto.setAuthorizationPermissions(permissionTypes);
     return this;
   }
