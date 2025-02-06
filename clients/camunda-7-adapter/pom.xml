@@ -166,6 +166,20 @@
 
   </dependencies>
 
+  <repositories>
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>camunda7-nexus</id>
+      <name>Camunda7 Nexus</name>
+      <url>https://artifacts.camunda.com/artifactory/camunda-bpm-ee/</url>
+    </repository>
+  </repositories>
+
   <build>
     <plugins>
       <plugin>
