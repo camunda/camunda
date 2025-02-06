@@ -100,6 +100,57 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
         ElementAssertj::isEnded);
   }
 
+  public void hasActiveElement(
+      final long processInstanceKey, final String elementId, final int expectedTimes) {
+    hasElementInState(
+        processInstanceKey,
+        elementSelector.apply(elementId),
+        FlowNodeInstanceState.ACTIVE,
+        expectedTimes);
+  }
+
+  public void hasActiveElement(
+      final long processInstanceKey,
+      final ElementSelector elementSelector,
+      final int expectedTimes) {
+    hasElementInState(
+        processInstanceKey, elementSelector, FlowNodeInstanceState.ACTIVE, expectedTimes);
+  }
+
+  public void hasCompletedElement(
+      final long processInstanceKey, final String elementId, final int expectedTimes) {
+    hasElementInState(
+        processInstanceKey,
+        elementSelector.apply(elementId),
+        FlowNodeInstanceState.COMPLETED,
+        expectedTimes);
+  }
+
+  public void hasCompletedElement(
+      final long processInstanceKey,
+      final ElementSelector elementSelector,
+      final int expectedTimes) {
+    hasElementInState(
+        processInstanceKey, elementSelector, FlowNodeInstanceState.COMPLETED, expectedTimes);
+  }
+
+  public void hasTerminatedElement(
+      final long processInstanceKey, final String elementId, final int expectedTimes) {
+    hasElementInState(
+        processInstanceKey,
+        elementSelector.apply(elementId),
+        FlowNodeInstanceState.TERMINATED,
+        expectedTimes);
+  }
+
+  public void hasTerminatedElement(
+      final long processInstanceKey,
+      final ElementSelector elementSelector,
+      final int expectedTimes) {
+    hasElementInState(
+        processInstanceKey, elementSelector, FlowNodeInstanceState.TERMINATED, expectedTimes);
+  }
+
   private void hasElementsInState(
       final long processInstanceKey,
       final List<ElementSelector> elementSelectors,
@@ -176,6 +227,66 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
               formatElementSelectors(elementSelectors),
               formatState(expectedState),
               elementsNotInState);
+      fail(failureMessage);
+    }
+  }
+
+  private void hasElementInState(
+      final long processInstanceKey,
+      final ElementSelector elementSelector,
+      final FlowNodeInstanceState expectedState,
+      final int expectedTimes) {
+
+    if (expectedTimes < 1) {
+      throw new IllegalArgumentException("The amount must be greater than zero.");
+    }
+
+    final AtomicReference<List<FlowNodeInstance>> reference =
+        new AtomicReference<>(Collections.emptyList());
+
+    try {
+      Awaitility.await()
+          .ignoreException(CamundaClientNotFoundException.class)
+          .untilAsserted(
+              () -> {
+                final List<FlowNodeInstance> flowNodeInstances =
+                    dataSource.getFlowNodeInstancesByProcessInstanceKey(processInstanceKey).stream()
+                        .filter(elementSelector::test)
+                        .collect(Collectors.toList());
+                reference.set(flowNodeInstances);
+
+                assertThat(flowNodeInstances)
+                    .extracting(FlowNodeInstance::getState)
+                    .filteredOn(expectedState::equals)
+                    .hasSize(expectedTimes);
+              });
+
+    } catch (final ConditionTimeoutException | TerminalFailureException e) {
+
+      final long actualTimes =
+          reference.get().stream()
+              .map(FlowNodeInstance::getState)
+              .filter(expectedState::equals)
+              .count();
+
+      final String elementInstances =
+          reference.get().stream()
+              .map(FlowNodeInstance::getState)
+              .map(
+                  elementState ->
+                      String.format(
+                          "\t- '%s': %s", elementSelector.describe(), formatState(elementState)))
+              .collect(Collectors.joining("\n"));
+
+      final String failureMessage =
+          String.format(
+              "%s should have %s element '%s' %d times but was %d. Element instances:\n%s",
+              actual,
+              formatState(expectedState),
+              elementSelector.describe(),
+              expectedTimes,
+              actualTimes,
+              elementInstances.isEmpty() ? "<None>" : elementInstances);
       fail(failureMessage);
     }
   }
