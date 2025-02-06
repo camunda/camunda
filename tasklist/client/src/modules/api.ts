@@ -8,7 +8,7 @@
 
 import type {Form, Task, TasksSearchBody, Variable} from './types';
 import {mergePathname} from './utils/mergePathname';
-
+import {buildDocumentMultipart} from './utils/buildDocumentMultipart';
 const BASENAME = window.clientConfig?.contextPath ?? '/';
 const BASE_REQUEST_OPTIONS: RequestInit = {
   credentials: 'include',
@@ -318,15 +318,14 @@ const api = {
         },
       });
     },
-    uploadDocuments: ({files}: {files: File[]}) => {
-      const body = new FormData();
-
-      files.forEach((file) => body.append('files', file));
+    uploadDocuments: ({files}: {files: Map<string, File[]>}) => {
+      const {body, headers} = buildDocumentMultipart(files);
 
       return new Request(getFullURL('/v2/documents/batch'), {
         ...BASE_REQUEST_OPTIONS,
         method: 'POST',
         body,
+        headers,
       });
     },
     getDocument: (id: string) => {

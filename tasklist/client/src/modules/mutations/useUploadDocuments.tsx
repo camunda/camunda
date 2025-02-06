@@ -9,7 +9,7 @@
 import {useMutation} from '@tanstack/react-query';
 import {api} from 'modules/api';
 import {type RequestError, request} from 'modules/request';
-
+import {PICKER_KEY} from 'modules/utils/buildDocumentMultipart';
 type Payload = {
   files: Map<string, File[]>;
 };
@@ -51,21 +51,7 @@ function useUploadDocuments() {
     Payload
   >({
     mutationFn: async ({files}) => {
-      const fileGroupRanges = new Map<string, [number, number]>();
-      const formattedFilePayload: File[] = [];
-      const fileGroups = Array.from(files.entries());
-
-      fileGroups.forEach(([key, files]) => {
-        fileGroupRanges.set(key, [
-          formattedFilePayload.length,
-          formattedFilePayload.length + files.length - 1,
-        ]);
-        formattedFilePayload.push(...files);
-      });
-
-      const {response, error} = await request(
-        api.v2.uploadDocuments({files: formattedFilePayload}),
-      );
+      const {response, error} = await request(api.v2.uploadDocuments({files}));
 
       if (error !== null) {
         throw error;
@@ -79,16 +65,20 @@ function useUploadDocuments() {
 
       const result = new Map<string, BatchUploadResponse['createdDocuments']>();
 
-      fileGroups.forEach(([key]) => {
-        const filesSlice = fileGroupRanges.get(key);
+      payload.createdDocuments.forEach((document) => {
+        const pickerKey = document.metadata.customProperties?.[PICKER_KEY];
 
-        if (filesSlice === undefined) {
-          throw new Error('File key range mapping is missing');
+        if (typeof pickerKey !== 'string' || pickerKey.length === 0) {
+          return;
         }
 
-        const [start, end] = filesSlice;
+        const documentResult = result.get(pickerKey);
 
-        result.set(key, payload.createdDocuments.slice(start, end + 1));
+        if (Array.isArray(documentResult)) {
+          result.set(pickerKey, [...documentResult, document]);
+        } else {
+          result.set(pickerKey, [document]);
+        }
       });
 
       return result;
