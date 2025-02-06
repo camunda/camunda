@@ -23,6 +23,7 @@ import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -44,7 +45,7 @@ public final class RaftRolesTest {
 
   @Rule public AtomixClusterRule atomixClusterRule = new AtomixClusterRule();
 
-  @AutoClose MeterRegistry meterRegistry;
+  @AutoClose MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @Test
   public void testRoleChangedListener() throws Exception {
