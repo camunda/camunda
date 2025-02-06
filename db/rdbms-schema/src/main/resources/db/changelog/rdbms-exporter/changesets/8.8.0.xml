@@ -419,7 +419,7 @@
       <column name="PERMISSION_TYPE" type="VARCHAR(255)" />
     </createTable>
 
-    <createIndex tableName="${prefix}AUTHORIZATIONS" indexName="${prefix}IDX_AUTHORIZATIONS">
+    <createIndex tableName="${prefix}AUTHORIZATIONS" indexName="${prefix}IDX_AUTHORIZATIONS_AUTHORIZATION_KEY">
       <column name="AUTHORIZATION_KEY"/>
     </createIndex>
 
