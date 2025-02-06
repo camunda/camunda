@@ -80,8 +80,7 @@ public final class ReschedulingTask implements Runnable {
         "Error occurred while performing a background task; operation will be retried";
     errorDelayMs = errorStrategy.applyAsLong(errorDelayMs);
 
-    if (BACKGROUND_SUPPRESSED_EXCEPTIONS.contains(error.getCause().getClass())
-        && !logger.isDebugEnabled()) {
+    if (BACKGROUND_SUPPRESSED_EXCEPTIONS.contains(error.getCause().getClass())) {
       logger.warn("{}. `{}`", logMessage, error.getCause().getMessage());
     } else {
       logger.error(logMessage, error);
