@@ -78,7 +78,8 @@ public class PassiveRole extends InactiveRole {
     super(context);
 
     snapshotChunkSize = context.getSnapshotChunkSize();
-    snapshotReplicationMetrics = new SnapshotReplicationMetrics(context.getName());
+    snapshotReplicationMetrics =
+        new SnapshotReplicationMetrics(context.getName(), context.getMeterRegistry());
     snapshotReplicationMetrics.setCount(0);
   }
 
