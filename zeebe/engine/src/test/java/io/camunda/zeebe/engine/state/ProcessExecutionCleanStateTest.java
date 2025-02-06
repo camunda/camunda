@@ -56,7 +56,8 @@ public final class ProcessExecutionCleanStateTest {
           ZbColumnFamilies.ENTITY_BY_ROLE,
           ZbColumnFamilies.ROLE_BY_NAME,
           ZbColumnFamilies.TENANTS,
-          ZbColumnFamilies.TENANT_BY_ID);
+          ZbColumnFamilies.TENANT_BY_ID,
+          ZbColumnFamilies.AUTHORIZATIONS);
 
   @Rule public EngineRule engineRule = EngineRule.singlePartition();
 
