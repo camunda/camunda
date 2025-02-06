@@ -39,6 +39,9 @@ import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -54,6 +57,7 @@ public class PassiveRoleTest {
   private RaftLog log;
   private PassiveRole role;
   private RaftContext ctx;
+  @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @Before
   public void setup() throws IOException {
@@ -76,6 +80,8 @@ public class PassiveRoleTest {
     when(ctx.getPersistedSnapshotStore()).thenReturn(store);
     when(ctx.getTerm()).thenReturn(1L);
     when(ctx.getReplicationMetrics()).thenReturn(mock(RaftReplicationMetrics.class));
+    when(ctx.getMeterRegistry()).thenReturn(meterRegistry);
+    when(ctx.getName()).thenReturn("partition-1");
 
     role = new PassiveRole(ctx);
   }

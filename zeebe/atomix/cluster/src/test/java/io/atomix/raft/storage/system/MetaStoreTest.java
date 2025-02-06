@@ -23,6 +23,7 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.storage.RaftStorage;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -33,7 +34,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -44,13 +44,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class MetaStoreTest {
   @TempDir Path temporaryFolder;
-  @AutoClose MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  @AutoCloseResource MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private MetaStore metaStore;
   private RaftStorage storage;
 
   @BeforeEach
   public void setup() throws IOException {
-    storage = RaftStorage.builder().withDirectory(temporaryFolder.toFile()).build();
+    storage = RaftStorage.builder(meterRegistry).withDirectory(temporaryFolder.toFile()).build();
     metaStore = new MetaStore(storage, meterRegistry);
   }
 

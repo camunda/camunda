@@ -19,7 +19,10 @@ package io.atomix.raft.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.raft.storage.log.RaftLogFlusher;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -31,10 +34,11 @@ import org.junit.Test;
 public class RaftStorageTest {
 
   private static final Path PATH = Paths.get("target/test-logs/");
+  @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @Test
   public void testDefaultConfiguration() {
-    final RaftStorage storage = RaftStorage.builder().build();
+    final RaftStorage storage = RaftStorage.builder(meterRegistry).build();
     assertThat(storage.prefix()).isEqualTo("atomix");
     assertThat(storage.directory()).isEqualTo(new File(System.getProperty("user.dir")));
   }
@@ -42,7 +46,7 @@ public class RaftStorageTest {
   @Test
   public void testCustomConfiguration() {
     final RaftStorage storage =
-        RaftStorage.builder()
+        RaftStorage.builder(meterRegistry)
             .withPrefix("foo")
             .withDirectory(new File(PATH.toFile(), "foo"))
             .withMaxSegmentSize(1024 * 1024)
@@ -59,7 +63,7 @@ public class RaftStorageTest {
 
     // when
     final RaftStorage storage1 =
-        RaftStorage.builder().withDirectory(PATH.toFile()).withPrefix("test").build();
+        RaftStorage.builder(meterRegistry).withDirectory(PATH.toFile()).withPrefix("test").build();
 
     // then
     assertThat(storage1.lock("a")).isTrue();
@@ -69,12 +73,12 @@ public class RaftStorageTest {
   public void cannotLockAlreadyLockedDirectory() {
     // given
     final RaftStorage storage1 =
-        RaftStorage.builder().withDirectory(PATH.toFile()).withPrefix("test").build();
+        RaftStorage.builder(meterRegistry).withDirectory(PATH.toFile()).withPrefix("test").build();
     storage1.lock("a");
 
     // when
     final RaftStorage storage2 =
-        RaftStorage.builder().withDirectory(PATH.toFile()).withPrefix("test").build();
+        RaftStorage.builder(meterRegistry).withDirectory(PATH.toFile()).withPrefix("test").build();
 
     // then
     assertThat(storage2.lock("b")).isFalse();
@@ -84,12 +88,12 @@ public class RaftStorageTest {
   public void canAcquireLockOnDirectoryLockedBySameNode() {
     // given
     final RaftStorage storage1 =
-        RaftStorage.builder().withDirectory(PATH.toFile()).withPrefix("test").build();
+        RaftStorage.builder(meterRegistry).withDirectory(PATH.toFile()).withPrefix("test").build();
     storage1.lock("a");
 
     // when
     final RaftStorage storage3 =
-        RaftStorage.builder().withDirectory(PATH.toFile()).withPrefix("test").build();
+        RaftStorage.builder(meterRegistry).withDirectory(PATH.toFile()).withPrefix("test").build();
 
     // then
     assertThat(storage3.lock("a")).isTrue();
