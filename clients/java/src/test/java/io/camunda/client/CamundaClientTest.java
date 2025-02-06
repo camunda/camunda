@@ -46,6 +46,7 @@ import static io.camunda.client.impl.util.DataSizeUtil.ONE_MB;
 import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.spy;
@@ -594,7 +595,7 @@ public final class CamundaClientTest {
   @Test
   public void shouldSetRestAddressFromSetterWithClientBuilder() throws URISyntaxException {
     // given
-    final URI restAddress = new URI("localhost:9090");
+    final URI restAddress = new URI("http://localhost:9090");
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
     builder.restAddress(restAddress);
 
@@ -610,7 +611,7 @@ public final class CamundaClientTest {
   public void shouldSetRestAddressPortFromPropertyWithClientBuilder(final String propertyName)
       throws URISyntaxException {
     // given
-    final URI restAddress = new URI("localhost:9090");
+    final URI restAddress = new URI("http://localhost:9090");
     final Properties properties = new Properties();
     properties.setProperty(propertyName, restAddress.toString());
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
@@ -624,11 +625,43 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "localhost",
+        "localhost:9090",
+        "localhost:9090/context",
+        "/some-path/some-other-path",
+      })
+  public void shouldThrowExceptionWhenRestAddressIsNotAbsoluteFromSetterWithClientBuilder(
+      final String uri) throws URISyntaxException {
+    // given
+    final URI restAddress = new URI(uri);
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when/then
+    assertThrows(IllegalArgumentException.class, () -> builder.restAddress(restAddress));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {REST_ADDRESS, io.camunda.zeebe.client.ClientProperties.REST_ADDRESS})
+  public void shouldThrowExceptionWhenRestAddressIsNotAbsoluteFromPropertyWithClientBuilder(
+      final String propertyName) throws URISyntaxException {
+    // given
+    final URI restAddress = new URI("localhost:9090");
+    final Properties properties = new Properties();
+    properties.setProperty(propertyName, restAddress.toString());
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when/then
+    assertThrows(IllegalArgumentException.class, () -> builder.withProperties(properties));
+  }
+
+  @ParameterizedTest
   @ValueSource(strings = {REST_ADDRESS_VAR, ZeebeClientEnvironmentVariables.REST_ADDRESS_VAR})
   public void shouldSetRestAddressPortFromEnvVarWithClientBuilder(final String envName)
       throws URISyntaxException {
     // given
-    final URI restAddress = new URI("localhost:9090");
+    final URI restAddress = new URI("http://localhost:9090");
     Environment.system().put(envName, restAddress.toString());
 
     // when
