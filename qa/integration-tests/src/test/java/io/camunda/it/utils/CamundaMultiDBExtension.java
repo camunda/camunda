@@ -158,9 +158,14 @@ public class CamundaMultiDBExtension
         databaseSetupReadinessWaitStrategy =
             () -> validateSchemaCreation(DEFAULT_ES_URL, testPrefix, expectedDescriptors);
       }
-      case OS ->
-          multiDbConfigurator.configureOpenSearchSupport(
-              DEFAULT_OS_URL, testPrefix, DEFAULT_OS_ADMIN_USER, DEFAULT_OS_ADMIN_PW);
+      case OS -> {
+        validateESConnection(DEFAULT_OS_URL);
+        multiDbConfigurator.configureOpenSearchSupport(
+            DEFAULT_OS_URL, testPrefix, DEFAULT_OS_ADMIN_USER, DEFAULT_OS_ADMIN_PW);
+        final var expectedDescriptors = new IndexDescriptors(testPrefix, true).all();
+        databaseSetupReadinessWaitStrategy =
+            () -> validateSchemaCreation(DEFAULT_ES_URL, testPrefix, expectedDescriptors);
+      }
       case RDBMS -> multiDbConfigurator.configureRDBMSSupport();
       default -> throw new RuntimeException("Unknown exporter type");
     }
