@@ -9,6 +9,7 @@ package io.atomix.raft.metrics;
 
 import io.micrometer.common.docs.KeyName;
 
+@SuppressWarnings("NullableProblems")
 public enum RaftKeyNames implements KeyName {
   /** partitionGroupName */
   PARTITION_GROUP {
@@ -22,6 +23,18 @@ public enum RaftKeyNames implements KeyName {
     @Override
     public String asString() {
       return "follower";
+  /** to */
+  TO {
+    @Override
+    public String asString() {
+      return "to";
+    }
+  },
+  /** type */
+  TYPE {
+    @Override
+    public String asString() {
+      return "type";
     }
   }
 }

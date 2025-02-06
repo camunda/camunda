@@ -8,8 +8,11 @@
 package io.atomix.raft.metrics;
 
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 
+@SuppressWarnings("NullableProblems")
 public enum MetaStoreMetricsDoc implements ExtendedMeterDocumentation {
   /** Time it takes to update the last flushed index */
   LAST_FLUSHED_INDEX {
@@ -31,6 +34,11 @@ public enum MetaStoreMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public String getBaseUnit() {
       return "ms";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return PartitionKeyNames.values();
     }
   }
 }
