@@ -50,7 +50,7 @@ class MetaStoreTest {
 
   @BeforeEach
   public void setup() throws IOException {
-    storage = RaftStorage.builder().withDirectory(temporaryFolder.toFile()).build();
+    storage = RaftStorage.builder(meterRegistry).withDirectory(temporaryFolder.toFile()).build();
     metaStore = new MetaStore(storage, meterRegistry);
   }
 

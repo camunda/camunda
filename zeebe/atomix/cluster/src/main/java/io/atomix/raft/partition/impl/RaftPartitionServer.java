@@ -305,7 +305,7 @@ public class RaftPartitionServer implements HealthMonitorable {
 
   private RaftStorage createRaftStorage() {
     final RaftStorageConfig storageConfig = config.getStorageConfig();
-    return RaftStorage.builder()
+    return RaftStorage.builder(meterRegistry)
         .withPrefix(partition.name())
         .withPartitionId(partition.id().id())
         .withDirectory(partition.dataDirectory())
@@ -315,7 +315,6 @@ public class RaftPartitionServer implements HealthMonitorable {
         .withSnapshotStore(persistedSnapshotStore)
         .withJournalIndexDensity(storageConfig.getJournalIndexDensity())
         .withPreallocateSegmentFiles(storageConfig.isPreallocateSegmentFiles())
-        .withMeterRegistry(meterRegistry)
         .build();
   }
 

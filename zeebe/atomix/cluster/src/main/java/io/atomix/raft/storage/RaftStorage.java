@@ -36,6 +36,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.Objects;
 
 /**
  * Immutable log configuration and {@link RaftLog} factory.
@@ -102,8 +103,8 @@ public final class RaftStorage {
    *
    * @return A new storage builder.
    */
-  public static Builder builder() {
-    return new Builder();
+  public static Builder builder(final MeterRegistry meterRegistry) {
+    return new Builder(meterRegistry);
   }
 
   /**
@@ -265,9 +266,11 @@ public final class RaftStorage {
     private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
     private boolean preallocateSegmentFiles = DEFAULT_PREALLOCATE_SEGMENT_FILES;
     private int partitionId = DEFAULT_PARTITION_ID;
-    private MeterRegistry meterRegistry;
+    private final MeterRegistry meterRegistry;
 
-    private Builder() {}
+    private Builder(final MeterRegistry meterRegistry) {
+      this.meterRegistry = Objects.requireNonNull(meterRegistry, "meterRegistry cannot be null");
+    }
 
     /**
      * Sets the storage prefix.
@@ -377,12 +380,6 @@ public final class RaftStorage {
      */
     public Builder withPartitionId(final int partitionId) {
       this.partitionId = partitionId;
-      return this;
-    }
-
-    /** MeterRegistry to use for metrics */
-    public Builder withMeterRegistry(final MeterRegistry meterRegistry) {
-      this.meterRegistry = checkNotNull(meterRegistry, "meterRegistry cannot be null");
       return this;
     }
 
