@@ -7,32 +7,34 @@
  */
 package io.camunda.zeebe.it.client.command;
 
-import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.it.util.ZeebeAssertHelper;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import java.util.UUID;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
-@AutoCloseResources
 class AssignUserToTenantTest {
 
   private static final String TENANT_ID = "tenant-id";
+  private static final String USERNAME = "username";
 
   @TestZeebe
-  private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+  private final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
-  @AutoCloseResource private ZeebeClient client;
+  @AutoClose private CamundaClient client;
 
   private long tenantKey;
   private long userKey;
@@ -55,7 +57,7 @@ class AssignUserToTenantTest {
     userKey =
         client
             .newUserCreateCommand()
-            .username("username")
+            .username(USERNAME)
             .name("name")
             .email("email@example.com")
             .password("password")
@@ -67,50 +69,56 @@ class AssignUserToTenantTest {
   @Test
   void shouldAssignUserToTenant() {
     // When
-    client.newAssignUserToTenantCommand(tenantKey).userKey(userKey).send().join();
+    client.newAssignUserToTenantCommand(TENANT_ID).username(USERNAME).send().join();
 
     // Then
-    ZeebeAssertHelper.assertEntityAssignedToTenant(
-        tenantKey, userKey, tenant -> assertThat(tenant.getEntityType()).isEqualTo(USER));
+    assertThat(
+            RecordingExporter.tenantRecords()
+                .withIntent(TenantIntent.ENTITY_ADDED)
+                .withTenantId(TENANT_ID)
+                .withEntityType(EntityType.USER)
+                .withEntityId(USERNAME)
+                .exists())
+        .isTrue();
   }
 
   @Test
   void shouldRejectAssignIfTenantDoesNotExist() {
     // Given
-    final long invalidTenantKey = 99999L;
+    final var invalidTenantId = UUID.randomUUID().toString();
 
     // When / Then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignUserToTenantCommand(invalidTenantKey)
-                    .userKey(userKey)
+                    .newAssignUserToTenantCommand(invalidTenantId)
+                    .username(USERNAME)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Command 'ADD_ENTITY' rejected with code 'NOT_FOUND': Expected to add entity to tenant with key '%d', but no tenant with this key exists."
-                .formatted(invalidTenantKey));
+            "Command 'ADD_ENTITY' rejected with code 'NOT_FOUND': Expected to add entity to tenant with id '%s', but no tenant with this id exists."
+                .formatted(invalidTenantId));
   }
 
   @Test
   void shouldRejectAssignIfUserDoesNotExist() {
     // Given
-    final long invalidUserKey = 99999L;
+    final var invalidUserName = UUID.randomUUID().toString();
 
     // When / Then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignUserToTenantCommand(tenantKey)
-                    .userKey(invalidUserKey)
+                    .newAssignUserToTenantCommand(TENANT_ID)
+                    .username(invalidUserName)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to add entity with key '%d' to tenant with key '%d', but the entity doesn't exist."
-                .formatted(invalidUserKey, tenantKey));
+            "Expected to add user '%s' to tenant '%s', but the user doesn't exist."
+                .formatted(invalidUserName, TENANT_ID));
   }
 }

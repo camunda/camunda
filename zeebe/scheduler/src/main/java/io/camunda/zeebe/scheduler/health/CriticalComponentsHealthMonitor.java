@@ -73,6 +73,11 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
   }
 
   @Override
+  public void monitorComponent(final String componentName) {
+    actor.run(() -> componentHealth.put(componentName, HealthReport.unknown(componentName)));
+  }
+
+  @Override
   public void registerComponent(final HealthMonitorable component) {
     actor.run(
         () -> {
@@ -86,7 +91,7 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
           // register graphs
           // it's safe to do it more than once
           graphListener.registerNode(component, Optional.of(name));
-          log.info("Registered component {}:{}", componentName, component.componentName());
+          log.trace("Registered component {}:{}", componentName, component.componentName());
         });
   }
 
@@ -99,16 +104,11 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
           if (monitoredComponent != null) {
             componentHealth.remove(componentName);
             monitoredComponent.component.removeFailureListener(monitoredComponent);
-            graphListener.unregisterRelationship(name, componentName);
+            graphListener.unregisterRelationship(componentName, name);
             graphListener.unregisterNode(monitoredComponent.component);
-            log.info("Unregistered edge {}:{}", name, componentName);
+            log.trace("Unregistered edge {}:{}", name, componentName);
           }
         });
-  }
-
-  @Override
-  public void monitorComponent(final String componentName) {
-    actor.run(() -> componentHealth.put(componentName, HealthReport.unknown(componentName)));
   }
 
   @Override

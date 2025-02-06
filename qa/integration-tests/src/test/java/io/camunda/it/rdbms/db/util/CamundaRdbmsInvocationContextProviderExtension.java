@@ -22,9 +22,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.MariaDBContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.oracle.OracleContainer;
 
 public class CamundaRdbmsInvocationContextProviderExtension
-    implements TestTemplateInvocationContextProvider, BeforeAllCallback {
+    implements TestTemplateInvocationContextProvider,
+        BeforeAllCallback,
+        ExtensionContext.Store.CloseableResource {
 
   private static boolean started = false;
 
@@ -34,21 +37,28 @@ public class CamundaRdbmsInvocationContextProviderExtension
   private static final Map<String, CamundaRdbmsTestApplication> SUPPORTED_TEST_APPLICATIONS =
       Map.of(
           "camundaWithH2",
-              new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class).withRdbms().withH2(),
+          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class).withRdbms().withH2(),
           "camundaWithPostgresSQL",
-              new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
-                  .withRdbms()
-                  .withDatabaseContainer(
-                      new PostgreSQLContainer<>("postgres:16-alpine")
-                          .withUsername("user")
-                          .withPassword("password")),
+          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+              .withRdbms()
+              .withDatabaseContainer(
+                  new PostgreSQLContainer<>("postgres:16-alpine")
+                      .withUsername("camunda")
+                      .withPassword("camunda")),
           "camundaWithMariaDB",
-              new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
-                  .withRdbms()
-                  .withDatabaseContainer(
-                      new MariaDBContainer<>("mariadb:11.4")
-                          .withUsername("user")
-                          .withPassword("password")));
+          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+              .withRdbms()
+              .withDatabaseContainer(
+                  new MariaDBContainer<>("mariadb:11.4")
+                      .withUsername("camunda")
+                      .withPassword("camunda")),
+          "camundaWithOracleDB",
+          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+              .withRdbms()
+              .withDatabaseContainer(
+                  new OracleContainer("gvenzl/oracle-free:latest")
+                      .withUsername("camunda")
+                      .withPassword("camunda")));
 
   private final Set<String> useTestApplications;
 
@@ -88,15 +98,14 @@ public class CamundaRdbmsInvocationContextProviderExtension
   @Override
   public void beforeAll(final ExtensionContext context) {
     if (!started) {
-      useTestApplications.parallelStream()
-          .forEach(
-              key -> {
-                final CamundaRdbmsTestApplication testApplication =
-                    SUPPORTED_TEST_APPLICATIONS.get(key);
-                LOGGER.info("Start up CamundaDatabaseTestApplication '{}'...", key);
-                testApplication.start();
-                LOGGER.info("Start up of CamundaDatabaseTestApplication '{}' finished.", key);
-              });
+      useTestApplications.forEach(
+          key -> {
+            final CamundaRdbmsTestApplication testApplication =
+                SUPPORTED_TEST_APPLICATIONS.get(key);
+            LOGGER.info("Start up CamundaDatabaseTestApplication '{}'...", key);
+            testApplication.start();
+            LOGGER.info("Start up of CamundaDatabaseTestApplication '{}' finished.", key);
+          });
 
       started = true;
       // Your "before all tests" startup logic goes here
@@ -122,5 +131,15 @@ public class CamundaRdbmsInvocationContextProviderExtension
                 standaloneCamundaKey, SUPPORTED_TEST_APPLICATIONS.get(standaloneCamundaKey)));
       }
     };
+  }
+
+  /**
+   * We need to set started to false for the case that the tests should be rerun because of
+   * surefire.rerunFailingTestsCount
+   */
+  @Override
+  public void close() throws Throwable {
+    LOGGER.info("Resource closed - Close CamundaRdbmsInvocationContextProviderExtension");
+    started = false;
   }
 }

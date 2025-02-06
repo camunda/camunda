@@ -44,7 +44,7 @@ public class UserDeletedHandler implements ExportHandler<UserEntity, UserRecordV
 
   @Override
   public List<String> generateIds(final Record<UserRecordValue> record) {
-    return List.of(String.valueOf(record.getKey()));
+    return List.of(record.getValue().getUsername());
   }
 
   @Override

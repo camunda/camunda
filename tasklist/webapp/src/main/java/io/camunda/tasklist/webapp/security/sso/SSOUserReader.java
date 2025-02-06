@@ -12,8 +12,8 @@ import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUT
 
 import com.auth0.jwt.interfaces.Claim;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.webapp.graphql.entity.C8AppLink;
-import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.dto.C8AppLink;
+import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
@@ -59,7 +59,6 @@ public class SSOUserReader implements UserReader {
               // For testing assignee migration locally use 'authentication.getName()'
               .setUserId(/*authentication.getName()*/ email)
               .setDisplayName(name)
-              .setApiUser(false)
               .setGroups(identityAuthorizationService.getUserGroups())
               .setPermissions(tokenAuthentication.getPermissions())
               .setRoles(
@@ -74,7 +73,6 @@ public class SSOUserReader implements UserReader {
           new UserDTO()
               .setUserId(name)
               .setDisplayName(name)
-              .setApiUser(true)
               // M2M token in the cloud always has WRITE permissions
               .setPermissions(List.of(Permission.WRITE)));
     }
@@ -87,9 +85,8 @@ public class SSOUserReader implements UserReader {
   }
 
   @Override
-  public List<UserDTO> getUsersByUsernames(List<String> usernames) {
-    return map(
-        usernames, name -> new UserDTO().setDisplayName(name).setUserId(name).setApiUser(false));
+  public List<UserDTO> getUsersByUsernames(final List<String> usernames) {
+    return map(usernames, name -> new UserDTO().setDisplayName(name).setUserId(name));
   }
 
   @Override

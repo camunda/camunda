@@ -53,10 +53,15 @@ public class TenantControllerTest extends RestControllerTest {
     // given
     final var tenantName = "Test Tenant";
     final var tenantId = "tenant-test-id";
-    when(tenantServices.createTenant(new TenantDTO(null, tenantId, tenantName)))
+    final var tenantDescription = "Test description";
+    when(tenantServices.createTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription)))
         .thenReturn(
             CompletableFuture.completedFuture(
-                new TenantRecord().setTenantKey(100L).setName(tenantName).setTenantId(tenantId)));
+                new TenantRecord()
+                    .setTenantKey(100L)
+                    .setName(tenantName)
+                    .setDescription(tenantDescription)
+                    .setTenantId(tenantId)));
 
     // when
     webClient
@@ -64,13 +69,65 @@ public class TenantControllerTest extends RestControllerTest {
         .uri(TENANT_BASE_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new TenantCreateRequest().name(tenantName).tenantId(tenantId))
+        .bodyValue(
+            new TenantCreateRequest()
+                .name(tenantName)
+                .description(tenantDescription)
+                .tenantId(tenantId))
         .exchange()
         .expectStatus()
         .isCreated();
 
     // then
-    verify(tenantServices, times(1)).createTenant(new TenantDTO(null, tenantId, tenantName));
+    verify(tenantServices, times(1))
+        .createTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription));
+  }
+
+  @Test
+  void createTenantShouldReturnAllDetails() {
+    // given
+    final var tenantName = "Test Tenant";
+    final var tenantId = "tenant-test-id";
+    final var tenantDescription = "Test description";
+    final var tenantKey = 100L;
+    when(tenantServices.createTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription)))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new TenantRecord()
+                    .setTenantKey(tenantKey)
+                    .setName(tenantName)
+                    .setDescription(tenantDescription)
+                    .setTenantId(tenantId)));
+
+    // when
+    webClient
+        .post()
+        .uri(TENANT_BASE_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            new TenantCreateRequest()
+                .name(tenantName)
+                .tenantId(tenantId)
+                .description(tenantDescription))
+        .exchange()
+        .expectStatus()
+        .isCreated()
+        .expectBody()
+        .json(
+            """
+            {
+              "tenantKey": "%d",
+              "tenantId": "%s",
+              "name": "%s",
+              "description": "%s"
+            }
+            """
+                .formatted(tenantKey, tenantId, tenantName, tenantDescription));
+
+    // then
+    verify(tenantServices, times(1))
+        .createTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription));
   }
 
   @Test
@@ -110,21 +167,23 @@ public class TenantControllerTest extends RestControllerTest {
     final var tenantKey = 100L;
     final var tenantName = "Updated Tenant Name";
     final var tenantId = "tenant-test-id";
-    when(tenantServices.updateTenant(new TenantDTO(tenantKey, null, tenantName)))
+    final var tenantDescription = "Updated description";
+    when(tenantServices.updateTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription)))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new TenantRecord()
                     .setName(tenantName)
+                    .setDescription(tenantDescription)
                     .setTenantKey(tenantKey)
                     .setTenantId(tenantId)));
 
     // when
     webClient
         .patch()
-        .uri("%s/%s".formatted(TENANT_BASE_URL, tenantKey))
+        .uri("%s/%s".formatted(TENANT_BASE_URL, tenantId))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new TenantUpdateRequest().name(tenantName))
+        .bodyValue(new TenantUpdateRequest().name(tenantName).description(tenantDescription))
         .exchange()
         .expectStatus()
         .isOk()
@@ -132,22 +191,24 @@ public class TenantControllerTest extends RestControllerTest {
         .json(
             """
             {
-              "tenantKey": %d,
+              "tenantKey": "%d",
               "tenantId": "%s",
-              "name": "%s"
+              "name": "%s",
+              "description": "%s"
             }
             """
-                .formatted(tenantKey, tenantId, tenantName));
+                .formatted(tenantKey, tenantId, tenantName, tenantDescription));
 
     // then
-    verify(tenantServices, times(1)).updateTenant(new TenantDTO(tenantKey, null, tenantName));
+    verify(tenantServices, times(1))
+        .updateTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription));
   }
 
   @Test
-  void updateTenantWithEmptyNameShouldFail() {
+  void updateTenantWithoutDescriptionShouldFail() {
     // given
     final var tenantId = 100L;
-    final var tenantName = "";
+    final var tenantName = "tenant name";
     final var uri = "%s/%s".formatted(TENANT_BASE_URL, tenantId);
 
     // when / then
@@ -157,6 +218,38 @@ public class TenantControllerTest extends RestControllerTest {
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(new TenantUpdateRequest().name(tenantName))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No description provided.",
+              "instance": "%s"
+            }"""
+                .formatted(uri));
+
+    verifyNoInteractions(tenantServices);
+  }
+
+  @Test
+  void updateTenantWithoutNameShouldFail() {
+    // given
+    final var tenantId = 100L;
+    final var tenantDescription = "Tenant description";
+    final var uri = "%s/%s".formatted(TENANT_BASE_URL, tenantId);
+
+    // when / then
+    webClient
+        .patch()
+        .uri(uri)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new TenantUpdateRequest().description(tenantDescription))
         .exchange()
         .expectStatus()
         .isBadRequest()
@@ -178,10 +271,12 @@ public class TenantControllerTest extends RestControllerTest {
   @Test
   void updateNonExistingTenantShouldReturnError() {
     // given
+    final var tenantId = "tenant-id";
+    final var tenantName = "My tenant";
+    final var tenantDescription = "My tenant description";
     final var tenantKey = 100L;
-    final var tenantName = "Updated Tenant Name";
-    final var path = "%s/%s".formatted(TENANT_BASE_URL, tenantKey);
-    when(tenantServices.updateTenant(new TenantDTO(tenantKey, null, tenantName)))
+    final var path = "%s/%s".formatted(TENANT_BASE_URL, tenantId);
+    when(tenantServices.updateTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription)))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
@@ -197,40 +292,41 @@ public class TenantControllerTest extends RestControllerTest {
         .uri(path)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new TenantUpdateRequest().name(tenantName))
+        .bodyValue(new TenantUpdateRequest().name(tenantName).description(tenantDescription))
         .exchange()
         .expectStatus()
         .isNotFound();
 
-    verify(tenantServices, times(1)).updateTenant(new TenantDTO(tenantKey, null, tenantName));
+    verify(tenantServices, times(1))
+        .updateTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription));
   }
 
   @Test
   void deleteTenantShouldReturnNoContent() {
     // given
-    final long key = 1234L;
+    final String tenantId = "tenant-to-delete-id";
 
-    final var tenantRecord = new TenantRecord().setTenantKey(key);
+    final var tenantRecord = new TenantRecord().setTenantId(tenantId);
 
-    when(tenantServices.deleteTenant(key))
+    when(tenantServices.deleteTenant(tenantId))
         .thenReturn(CompletableFuture.completedFuture(tenantRecord));
 
     // when
     webClient
         .delete()
-        .uri(TENANT_BASE_URL + "/{key}", key)
+        .uri(TENANT_BASE_URL + "/{tenantId}", tenantId)
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
         .isNoContent();
 
     // then
-    verify(tenantServices, times(1)).deleteTenant(key);
+    verify(tenantServices, times(1)).deleteTenant(tenantId);
   }
 
   @ParameterizedTest
-  @MethodSource("provideAddMemberTestCases")
-  void testAddMemberToTenant(final EntityType entityType, final String entityPath) {
+  @MethodSource("provideAddMemberByKeyTestCases")
+  void testAddMemberToTenantByKey(final EntityType entityType, final String entityPath) {
     // given
     final var tenantKey = 100L;
     final var entityKey = 42L;
@@ -249,6 +345,29 @@ public class TenantControllerTest extends RestControllerTest {
 
     // then
     verify(tenantServices, times(1)).addMember(tenantKey, entityType, entityKey);
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideAddMemberByIdTestCases")
+  void testAddMemberToTenantById(final EntityType entityType, final String entityPath) {
+    // given
+    final var tenantId = "some-tenant-id";
+    final var entityId = "some-entity-id";
+
+    when(tenantServices.addMember(tenantId, entityType, entityId))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .put()
+        .uri("%s/%s/%s/%s".formatted(TENANT_BASE_URL, tenantId, entityPath, entityId))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    // then
+    verify(tenantServices, times(1)).addMember(tenantId, entityType, entityId);
   }
 
   @ParameterizedTest
@@ -274,11 +393,14 @@ public class TenantControllerTest extends RestControllerTest {
     verify(tenantServices, times(1)).removeMember(tenantKey, entityType, entityKey);
   }
 
-  private static Stream<Arguments> provideAddMemberTestCases() {
+  private static Stream<Arguments> provideAddMemberByKeyTestCases() {
     return Stream.of(
-        Arguments.of(EntityType.USER, "users"),
         Arguments.of(EntityType.MAPPING, "mapping-rules"),
         Arguments.of(EntityType.GROUP, "groups"));
+  }
+
+  private static Stream<Arguments> provideAddMemberByIdTestCases() {
+    return Stream.of(Arguments.of(EntityType.USER, "users"));
   }
 
   private static Stream<Arguments> provideRemoveMemberTestCases() {

@@ -8,21 +8,19 @@
 package io.camunda.zeebe.it.clustering;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestClusterBuilder;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
-@AutoCloseResources
 final class GossipClusteringIT {
   @TestZeebe
   private final TestCluster cluster =
@@ -42,7 +40,7 @@ final class GossipClusteringIT {
           .withReplicationFactor(3)
           .build();
 
-  @AutoCloseResource private ZeebeClient client;
+  @AutoClose private CamundaClient client;
 
   @BeforeEach
   void beforeEach() {

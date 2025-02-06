@@ -43,7 +43,7 @@ public class DeleteResourceCommandImpl implements DeleteResourceCommandStep1 {
   private Duration requestTimeout;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private final io.camunda.zeebe.client.protocol.rest.DeleteResourceRequest httpRequestObject;
+  private final io.camunda.client.protocol.rest.DeleteResourceRequest httpRequestObject;
   private boolean useRest;
   private final long resourceKey;
   private final JsonMapper jsonMapper;
@@ -61,7 +61,7 @@ public class DeleteResourceCommandImpl implements DeleteResourceCommandStep1 {
     requestTimeout = config.getDefaultRequestTimeout();
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
-    httpRequestObject = new io.camunda.zeebe.client.protocol.rest.DeleteResourceRequest();
+    httpRequestObject = new io.camunda.client.protocol.rest.DeleteResourceRequest();
     useRest = config.preferRestOverGrpc();
     this.resourceKey = resourceKey;
     this.jsonMapper = jsonMapper;

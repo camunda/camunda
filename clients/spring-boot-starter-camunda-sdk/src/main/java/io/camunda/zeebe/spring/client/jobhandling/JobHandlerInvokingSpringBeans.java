@@ -15,13 +15,14 @@
  */
 package io.camunda.zeebe.spring.client.jobhandling;
 
-import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
-import io.camunda.zeebe.client.api.command.FinalCommandStep;
-import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2;
-import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.api.worker.JobClient;
-import io.camunda.zeebe.client.api.worker.JobHandler;
-import io.camunda.zeebe.client.impl.Loggers;
+import io.camunda.client.api.command.CompleteJobCommandStep1;
+import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2;
+import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.CompleteJobResponse;
+import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.api.worker.JobHandler;
+import io.camunda.client.impl.Loggers;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
 import io.camunda.zeebe.spring.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.zeebe.spring.client.jobhandling.parameter.ParameterResolverStrategy;
@@ -116,7 +117,7 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
     return parameterResolvers.stream().map(resolver -> resolver.resolve(jobClient, job)).toList();
   }
 
-  private FinalCommandStep createCompleteCommand(
+  private FinalCommandStep<CompleteJobResponse> createCompleteCommand(
       final JobClient jobClient, final ActivatedJob job, final Object result) {
     CompleteJobCommandStep1 completeCommand = jobClient.newCompleteCommand(job.getKey());
     if (result != null) {

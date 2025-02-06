@@ -15,18 +15,18 @@
  */
 package io.camunda.zeebe.client.impl.http;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.impl.http.ApiResponseConsumer.ApiResponse;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.message.BasicHttpResponse;
-import org.apache.hc.core5.http.nio.AsyncEntityConsumer;
 import org.apache.hc.core5.http.nio.support.AbstractAsyncResponseConsumer;
 import org.apache.hc.core5.http.protocol.HttpContext;
 
 /**
  * Consumes either a successful JSON response body of type {@link T} or a {@link
- * io.camunda.zeebe.client.protocol.rest.ProblemDetail} returned by the server on error (if the
- * error was generated explicitly by the server, e.g. not a connection error)
+ * io.camunda.client.protocol.rest.ProblemDetail} returned by the server on error (if the error was
+ * generated explicitly by the server, e.g. not a connection error)
  *
  * <p>If there is no body at all, the result will be null (regardless of whether the call was
  * successful or not).
@@ -36,8 +36,8 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 final class ApiResponseConsumer<T>
     extends AbstractAsyncResponseConsumer<ApiResponse<T>, ApiEntity<T>> {
 
-  ApiResponseConsumer(final AsyncEntityConsumer<ApiEntity<T>> entityConsumer) {
-    super(entityConsumer);
+  ApiResponseConsumer(final ObjectMapper jsonMapper, final Class<T> type, final int maxCapacity) {
+    super(new ApiEntityConsumer<>(jsonMapper, type, maxCapacity));
   }
 
   @Override

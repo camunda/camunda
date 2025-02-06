@@ -10,47 +10,35 @@ package io.camunda.it.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.client.api.response.DocumentReferenceResponse;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.it.utils.MultiDbTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-@ZeebeIntegration
+@MultiDbTest
 public class DeleteDocumentTest {
 
   private static final String DOCUMENT_CONTENT = "test";
 
-  private static ZeebeClient zeebeClient;
-
-  @TestZeebe(initMethod = "initTestStandaloneCamunda")
-  private static TestStandaloneCamunda testStandaloneCamunda;
+  private static CamundaClient camundaClient;
 
   private DocumentReferenceResponse documentReference;
 
-  @SuppressWarnings("unused")
-  static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda();
-  }
-
   @BeforeEach
   public void beforeEach() {
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
     documentReference =
-        zeebeClient.newCreateDocumentCommand().content(DOCUMENT_CONTENT).send().join();
+        camundaClient.newCreateDocumentCommand().content(DOCUMENT_CONTENT).send().join();
   }
 
   @Test
   public void shouldWorkWithDocumentId() {
     // given
     final var documentId = documentReference.getDocumentId();
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
-    zeebeClient.newDeleteDocumentCommand(documentId).send().join();
+    camundaClient.newDeleteDocumentCommand(documentId).send().join();
 
     // then
     assertDocumentIsDeleted(documentId);
@@ -61,10 +49,9 @@ public class DeleteDocumentTest {
     // given
     final var documentId = documentReference.getDocumentId();
     final var storeId = documentReference.getStoreId();
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
-    zeebeClient.newDeleteDocumentCommand(documentId).storeId(storeId).send().join();
+    camundaClient.newDeleteDocumentCommand(documentId).storeId(storeId).send().join();
 
     // then
     assertDocumentIsDeleted(documentId);
@@ -73,10 +60,9 @@ public class DeleteDocumentTest {
   @Test
   public void shouldWorkWithDocumentReference() {
     // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
-    zeebeClient.newDeleteDocumentCommand(documentReference).send().join();
+    camundaClient.newDeleteDocumentCommand(documentReference).send().join();
 
     // then
     assertDocumentIsDeleted(documentReference.getDocumentId());
@@ -86,14 +72,13 @@ public class DeleteDocumentTest {
   public void shouldReturnNotFoundIfDocumentDoesNotExist() {
     // given
     final var documentId = "non-existing-document";
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
     final var exception =
         assertThrowsExactly(
             ProblemException.class,
             () -> {
-              zeebeClient.newDeleteDocumentCommand(documentId).send().join();
+              camundaClient.newDeleteDocumentCommand(documentId).send().join();
             });
 
     // then
@@ -105,13 +90,12 @@ public class DeleteDocumentTest {
   @Test
   public void shouldReturnBadRequestForNonExistingStoreId() {
     // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = "test";
     final var storeId = "non-existing";
 
     // when
     final var command =
-        zeebeClient.newCreateDocumentCommand().content(documentContent).storeId(storeId).send();
+        camundaClient.newCreateDocumentCommand().content(documentContent).storeId(storeId).send();
 
     // then
     final var exception = assertThrowsExactly(ProblemException.class, command::join);
@@ -126,7 +110,7 @@ public class DeleteDocumentTest {
     final var exception =
         assertThrowsExactly(
             ProblemException.class,
-            () -> zeebeClient.newDocumentContentGetRequest(documentId).send().join());
+            () -> camundaClient.newDocumentContentGetRequest(documentId).send().join());
     assertThat(exception.details().getStatus()).isEqualTo(404);
   }
 }

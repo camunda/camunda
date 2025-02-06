@@ -8,8 +8,8 @@
 package io.camunda.zeebe.it.management;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.PartitionInfo;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.PartitionInfo;
 import io.camunda.zeebe.qa.util.actuator.RebalanceActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
@@ -17,17 +17,15 @@ import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ZeebeIntegration
-@AutoCloseResources
 final class RebalancingEndpointIT {
   private static final Logger LOG = LoggerFactory.getLogger(RebalancingEndpointIT.class);
 
@@ -40,7 +38,7 @@ final class RebalancingEndpointIT {
           .withReplicationFactor(3)
           .build();
 
-  @AutoCloseResource private ZeebeClient client;
+  @AutoClose private CamundaClient client;
 
   @BeforeEach
   void setup() {

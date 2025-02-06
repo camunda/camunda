@@ -7,9 +7,9 @@
  */
 package io.camunda.it.exporter;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
-import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.DeployResourceCommandStep1;
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
@@ -23,7 +23,7 @@ public class ExporterTestUtil {
 
   @SafeVarargs
   public static String createAndDeployUserTaskProcess(
-      final ZeebeClient zeebeClient,
+      final CamundaClient camundaClient,
       final String processId,
       final String flowNodeBpmnId,
       final Consumer<UserTaskBuilder>... taskModifiers) {
@@ -35,12 +35,12 @@ public class ExporterTestUtil {
                 task -> Arrays.stream(taskModifiers).forEach(modifier -> modifier.accept(task)))
             .endEvent()
             .done();
-    return deployProcess(zeebeClient, process, processId);
+    return deployProcess(camundaClient, process, processId);
   }
 
   @SafeVarargs
   public static String createAndDeployUserTaskProcess(
-      final ZeebeClient zeebeClient,
+      final CamundaClient camundaClient,
       final String processId,
       final String flowNodeBpmnId,
       final String tenantId,
@@ -53,11 +53,11 @@ public class ExporterTestUtil {
                 task -> Arrays.stream(taskModifiers).forEach(modifier -> modifier.accept(task)))
             .endEvent()
             .done();
-    return deployProcess(zeebeClient, process, processId, tenantId);
+    return deployProcess(camundaClient, process, processId, tenantId);
   }
 
   public static String deployProcess(
-      final ZeebeClient client,
+      final CamundaClient client,
       final BpmnModelInstance processModel,
       final String resourceName,
       final String tenantId) {
@@ -71,14 +71,14 @@ public class ExporterTestUtil {
   }
 
   public static String deployProcess(
-      final ZeebeClient client, final BpmnModelInstance processModel, final String resourceName) {
+      final CamundaClient client, final BpmnModelInstance processModel, final String resourceName) {
     final DeployResourceCommandStep1.DeployResourceCommandStep2 deployProcessCommandStep1 =
         client.newDeployResourceCommand().addProcessModel(processModel, resourceName + ".bpmn");
     final DeploymentEvent deploymentEvent = deployProcessCommandStep1.send().join();
     return String.valueOf(deploymentEvent.getProcesses().getFirst().getProcessDefinitionKey());
   }
 
-  public static String startProcessInstance(final ZeebeClient client, final String processId) {
+  public static String startProcessInstance(final CamundaClient client, final String processId) {
     return String.valueOf(
         client
             .newCreateInstanceCommand()
@@ -90,7 +90,7 @@ public class ExporterTestUtil {
   }
 
   public static String startProcessInstance(
-      final ZeebeClient client, final String processId, final String tenantId) {
+      final CamundaClient client, final String processId, final String tenantId) {
     return String.valueOf(
         client
             .newCreateInstanceCommand()
@@ -103,7 +103,7 @@ public class ExporterTestUtil {
   }
 
   public static String startProcessInstance(
-      final ZeebeClient client,
+      final CamundaClient client,
       final String processId,
       final String tenantId,
       final Map<String, Object> variables) {
@@ -120,7 +120,7 @@ public class ExporterTestUtil {
   }
 
   public static String startProcessInstance(
-      final ZeebeClient client, final String processId, final Map<String, Object> variables) {
+      final CamundaClient client, final String processId, final Map<String, Object> variables) {
     return String.valueOf(
         client
             .newCreateInstanceCommand()
@@ -133,7 +133,7 @@ public class ExporterTestUtil {
   }
 
   public static void waitForProcessTasks(
-      final ZeebeClient client, final String processInstanceKey) {
+      final CamundaClient client, final String processInstanceKey) {
 
     Awaitility.await()
         .ignoreExceptions()

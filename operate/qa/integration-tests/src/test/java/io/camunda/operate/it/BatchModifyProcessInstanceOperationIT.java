@@ -25,7 +25,7 @@ import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Disabled;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
@@ -45,13 +45,13 @@ public class BatchModifyProcessInstanceOperationIT extends OperateZeebeSearchAbs
   protected void runAdditionalBeforeAllSetup() {
     // Zeebe client utilized by the handler needs to be set to the one manually created during test
     // startup to correctly communicate with zeebe
-    modifyProcessInstanceHandler.setZeebeClient(zeebeContainerManager.getClient());
+    modifyProcessInstanceHandler.setCamundaClient(zeebeContainerManager.getClient());
 
     final Long processDefinitionKey = operateTester.deployProcess("demoProcess_v_2.bpmn");
     operateTester.waitForProcessDeployed(processDefinitionKey);
   }
 
-  @Test
+  @Disabled("To be re-enabled with the fix in https://github.com/camunda/camunda/issues/24084")
   public void shouldMoveTokenInBatchCall() throws Exception {
     final String bpmnProcessId = "demoProcess";
     final String sourceFlowNodeId = "taskA";

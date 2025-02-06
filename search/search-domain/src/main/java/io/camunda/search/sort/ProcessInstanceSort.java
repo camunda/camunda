@@ -66,11 +66,6 @@ public record ProcessInstanceSort(List<FieldSorting> orderings) implements SortO
       return this;
     }
 
-    public Builder treePath() {
-      currentOrdering = new FieldSorting("treePath", null);
-      return this;
-    }
-
     public Builder startDate() {
       currentOrdering = new FieldSorting("startDate", null);
       return this;

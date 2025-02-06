@@ -9,6 +9,7 @@ package io.camunda.tasklist.es;
 
 import static io.camunda.tasklist.Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.tasklist.Metrics;
@@ -44,6 +45,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -94,16 +96,16 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
   }
 
   @Test
-  public void shouldMarkRecordReadersAsCompletedIf870RecordReceived() throws IOException {
+  public void shouldMarkRecordReadersAsCompletedIf880RecordReceived() throws IOException {
     // given
-    final var record = generateRecord(ValueType.JOB, "8.6.0", 1);
+    final var record = generateRecord(ValueType.JOB, "8.7.0", 1);
     EXPORTER.export(record);
     tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
     zeebeImporter.performOneRoundOfImport();
 
     // when
-    final var record2 = generateRecord(ValueType.JOB, "8.7.0", 1);
+    final var record2 = generateRecord(ValueType.JOB, "8.8.0", 1);
     EXPORTER.export(record2);
     tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
@@ -125,10 +127,10 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
   }
 
   @Test
-  public void shouldMarkMultiplePositionIndexAsCompletedIf870RecordReceived() throws IOException {
-    final var processInstanceRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
-    final var jobRecord = generateRecord(ValueType.JOB, "8.6.0", 1);
-    final var variableRecord = generateRecord(ValueType.VARIABLE, "8.6.0", 2);
+  public void shouldMarkMultiplePositionIndexAsCompletedIf880RecordReceived() throws IOException {
+    final var processInstanceRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var jobRecord = generateRecord(ValueType.JOB, "8.7.0", 1);
+    final var variableRecord = generateRecord(ValueType.VARIABLE, "8.7.0", 2);
     EXPORTER.export(processInstanceRecord);
     EXPORTER.export(jobRecord);
     EXPORTER.export(variableRecord);
@@ -138,14 +140,14 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
 
     // when
     final var newVersionProcessInstanceRecord =
-        generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+        generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
     EXPORTER.export(newVersionProcessInstanceRecord);
-    final var newVersionJobRecord = generateRecord(ValueType.JOB, "8.7.0", 1);
+    final var newVersionJobRecord = generateRecord(ValueType.JOB, "8.8.0", 1);
     EXPORTER.export(newVersionJobRecord);
 
     for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
       // simulate existing variable records left to process so it is not marked as completed
-      final var decisionRecord2 = generateRecord(ValueType.VARIABLE, "8.6.0", 2);
+      final var decisionRecord2 = generateRecord(ValueType.VARIABLE, "8.7.0", 2);
       EXPORTER.export(decisionRecord2);
       tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
@@ -162,10 +164,10 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
   }
 
   @Test
-  public void shouldMarkMultiplePartitionsAsCompletedIfTheyReceiveAn870Record() throws IOException {
+  public void shouldMarkMultiplePartitionsAsCompletedIfTheyReceiveAn880Record() throws IOException {
     // given
-    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
-    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 2);
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
     EXPORTER.export(record);
     EXPORTER.export(partitionTwoRecord);
     tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
@@ -173,8 +175,8 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
     zeebeImporter.performOneRoundOfImport();
 
     // when
-    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
-    final var partitionTwoRecord2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
+    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
+    final var partitionTwoRecord2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 2);
     EXPORTER.export(record2);
     EXPORTER.export(partitionTwoRecord2);
     tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
@@ -195,14 +197,14 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
   @Test
   public void shouldNotSetCompletedToFalseForSubsequentRecordsAfterImportingDone()
       throws IOException {
-    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     EXPORTER.export(record);
     tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
     zeebeImporter.performOneRoundOfImport();
 
     // when
-    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
     EXPORTER.export(record2);
     tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
@@ -221,7 +223,7 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
         .atMost(Duration.ofSeconds(30))
         .until(() -> isRecordReaderIsCompleted("1-process-instance"));
 
-    final var record3 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var record3 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
     EXPORTER.export(record3);
     tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
@@ -236,8 +238,8 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
   @Test
   public void shouldNotMarkedAsCompletedViaMetricsWhenImportingIsNotDone() throws IOException {
     // given
-    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
-    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 2);
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
     EXPORTER.export(record);
     EXPORTER.export(partitionTwoRecord);
     tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
@@ -263,8 +265,8 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
   @Test
   public void shouldMarkImporterCompletedViaMetricsAsWell() throws IOException {
     // given
-    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
-    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 2);
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
     EXPORTER.export(record);
     EXPORTER.export(partitionTwoRecord);
     tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
@@ -272,8 +274,8 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
     zeebeImporter.performOneRoundOfImport();
 
     // when
-    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
-    final var partitionTwoRecord2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
+    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
+    final var partitionTwoRecord2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 2);
     EXPORTER.export(record2);
     EXPORTER.export(partitionTwoRecord2);
     tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
@@ -305,7 +307,7 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
 
   @Test
   public void shouldNotOverwriteImportPositionDocumentWithDefaultValue() throws IOException {
-    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     EXPORTER.export(record);
     tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
@@ -372,6 +374,26 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
             });
   }
 
+  @Test
+  public void shouldMarkRecordReadersCompletedEvenIfZeebeIndicesDontExist() throws IOException {
+    // given
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
+    EXPORTER.export(record);
+    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+
+    // when
+    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+      zeebeImporter.performOneRoundOfImport();
+    }
+
+    // then
+    for (final var type : ImportValueType.values()) {
+      await()
+          .atMost(Duration.ofSeconds(30))
+          .until(() -> isRecordReaderIsCompleted("1-" + type.getAliasTemplate()));
+    }
+  }
+
   @NotNull
   private static Gauge getGauge(final Metrics metrics, final String partition) {
     return metrics.getGauge(
@@ -387,7 +409,8 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
         Arrays.stream(
                 tasklistEsClient
                     .search(
-                        new SearchRequest(importPositionIndex.getFullQualifiedName()),
+                        new SearchRequest(importPositionIndex.getFullQualifiedName())
+                            .source(new SearchSourceBuilder().size(100)),
                         RequestOptions.DEFAULT)
                     .getHits()
                     .getHits())

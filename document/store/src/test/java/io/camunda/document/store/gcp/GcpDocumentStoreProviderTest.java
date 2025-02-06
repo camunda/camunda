@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
 import java.util.HashMap;
+import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Test;
 
 public class GcpDocumentStoreProviderTest {
@@ -28,7 +29,8 @@ public class GcpDocumentStoreProviderTest {
     final GcpDocumentStoreProvider provider = new GcpDocumentStoreProvider();
 
     // when
-    final DocumentStore documentStore = provider.createDocumentStore(configuration);
+    final DocumentStore documentStore =
+        provider.createDocumentStore(configuration, Executors.newSingleThreadExecutor());
 
     // then
     assertNotNull(documentStore);
@@ -45,9 +47,45 @@ public class GcpDocumentStoreProviderTest {
     // when / then
     final var ex =
         assertThrows(
-            IllegalArgumentException.class, () -> provider.createDocumentStore(configuration));
+            IllegalArgumentException.class,
+            () -> provider.createDocumentStore(configuration, Executors.newSingleThreadExecutor()));
     assertThat(ex.getMessage())
         .isEqualTo(
             "Failed to configure document store with id 'my-gcp': missing required property 'BUCKET'");
+  }
+
+  @Test
+  public void shouldUseTempPrefixIfNotProvided() {
+    // given
+    final DocumentStoreConfigurationRecord configuration =
+        new DocumentStoreConfigurationRecord(
+            "gcp", GcpDocumentStoreProvider.class, new HashMap<>());
+    configuration.properties().put("BUCKET", "bucketName");
+    final GcpDocumentStoreProvider provider = new GcpDocumentStoreProvider();
+
+    // when
+    final DocumentStore documentStore =
+        provider.createDocumentStore(configuration, Executors.newSingleThreadExecutor());
+
+    // then
+    assertNotNull(documentStore);
+  }
+
+  @Test
+  public void shouldUsePrefixIfProvided() {
+    // given
+    final DocumentStoreConfigurationRecord configuration =
+        new DocumentStoreConfigurationRecord(
+            "gcp", GcpDocumentStoreProvider.class, new HashMap<>());
+    configuration.properties().put("BUCKET", "bucketName");
+    configuration.properties().put("PREFIX", "prefix");
+    final GcpDocumentStoreProvider provider = new GcpDocumentStoreProvider();
+
+    // when
+    final DocumentStore documentStore =
+        provider.createDocumentStore(configuration, Executors.newSingleThreadExecutor());
+
+    // then
+    assertNotNull(documentStore);
   }
 }

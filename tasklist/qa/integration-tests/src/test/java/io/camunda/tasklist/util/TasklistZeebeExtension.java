@@ -7,11 +7,11 @@
  */
 package io.camunda.tasklist.util;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
-import io.camunda.tasklist.qa.util.TestUtil;
+import io.camunda.tasklist.qa.util.TasklistIndexPrefixHolder;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.zeebe.containers.ZeebeContainer;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.testcontainers.Testcontainers;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.DockerImageName;
 
 public abstract class TasklistZeebeExtension
@@ -41,12 +42,11 @@ public abstract class TasklistZeebeExtension
   private static ContainerPoolManager<ZeebeContainer> zeebeContainerContainerPoolManager;
 
   @Autowired protected TasklistProperties tasklistProperties;
-
+  @Autowired protected TasklistIndexPrefixHolder indexPrefixHolder;
   protected ZeebeContainer zeebeContainer;
-
   protected boolean failed = false;
 
-  private ZeebeClient client;
+  private CamundaClient client;
 
   @Autowired(required = false)
   private Environment environment;
@@ -97,12 +97,8 @@ public abstract class TasklistZeebeExtension
                   String.valueOf(tasklistProperties.getMultiTenancy().isEnabled()));
       zeebeContainer.start();
     } else {
-      // for "standard" zeebe configuration, use a container from the pool
-      if (zeebeContainerContainerPoolManager == null) {
-        zeebeContainerContainerPoolManager =
-            new ContainerPoolManager<>(3, this::createZeebeContainer, ZeebeContainer.class).init();
-      }
-      zeebeContainer = zeebeContainerContainerPoolManager.getContainer();
+      zeebeContainer = createZeebeContainer();
+      zeebeContainer.start();
     }
     prefix = zeebeContainer.getEnvMap().get(getZeebeExporterIndexPrefixConfigParameterName());
     LOGGER.info("Using Zeebe container with indexPrefix={}", prefix);
@@ -110,7 +106,7 @@ public abstract class TasklistZeebeExtension
     final Integer zeebeRestPort = zeebeContainer.getMappedPort(8080);
 
     client =
-        ZeebeClient.newClientBuilder()
+        CamundaClient.newClientBuilder()
             .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
             .restAddress(
                 getURIFromString(
@@ -126,7 +122,7 @@ public abstract class TasklistZeebeExtension
     final String zeebeVersion =
         ContainerVersionsUtil.readProperty(
             ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME);
-    final String indexPrefix = TestUtil.createRandomString(10);
+    final String indexPrefix = indexPrefixHolder.getIndexPrefix();
     LOGGER.info(
         "************ Starting Zeebe:{}, indexPrefix={} ************", zeebeVersion, indexPrefix);
     final ZeebeContainer zContainer =
@@ -137,8 +133,13 @@ public abstract class TasklistZeebeExtension
             .withEnv("ATOMIX_LOG_LEVEL", "ERROR")
             .withEnv("ZEEBE_CLOCK_CONTROLLED", "true")
             .withEnv("ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", "2")
-            .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
+            .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
+            .withEnv(
+                "JAVA_OPTS",
+                "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005");
+    zContainer.withLogConsumer(new Slf4jLogConsumer(LOGGER));
     zContainer.addExposedPort(8080);
+    zContainer.addExposedPort(5005);
     return zContainer;
   }
 
@@ -174,7 +175,7 @@ public abstract class TasklistZeebeExtension
     return zeebeContainer;
   }
 
-  public ZeebeClient getClient() {
+  public CamundaClient getClient() {
     return client;
   }
 

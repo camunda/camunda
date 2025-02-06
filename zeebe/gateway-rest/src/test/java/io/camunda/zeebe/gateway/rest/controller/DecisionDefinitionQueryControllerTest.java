@@ -21,6 +21,7 @@ import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.DecisionDefinitionSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -37,9 +38,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(
-    value = DecisionDefinitionQueryController.class,
-    properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = DecisionDefinitionController.class)
 public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -48,17 +47,17 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
               "items": [
                   {
                       "tenantId": "t",
-                      "decisionDefinitionKey": 0,
+                      "decisionDefinitionKey": "0",
                       "decisionDefinitionId": "dId",
                       "name": "name",
                       "version": 1,
                       "decisionRequirementsId": "drId",
-                      "decisionRequirementsKey": 2
+                      "decisionRequirementsKey": "2"
                   }
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": ["v"],
+                  "firstSortValues": ["f"],
                   "lastSortValues": [
                       "v"
                   ]
@@ -69,7 +68,8 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
       new Builder<DecisionDefinitionEntity>()
           .total(1L)
           .items(List.of(new DecisionDefinitionEntity(0L, "dId", "name", 1, "drId", 2L, "t")))
-          .sortValues(new Object[] {"v"})
+          .firstSortValues(new Object[] {"f"})
+          .lastSortValues(new Object[] {"v"})
           .build();
 
   static final String DECISION_DEFINITIONS_SEARCH_URL = "/v2/decision-definitions/search";
@@ -77,6 +77,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
   static final String DECISION_DEFINITIONS_GET_XML_URL = "/v2/decision-definitions/%d/xml";
 
   @MockBean DecisionDefinitionServices decisionDefinitionServices;
+  @MockBean MultiTenancyConfiguration multiTenancyCfg;
 
   @BeforeEach
   void setupServices() {
@@ -138,11 +139,11 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
             {
               "filter":{
                 "tenantId": "t",
-                "decisionDefinitionKey": 0,
+                "decisionDefinitionKey": "0",
                 "name": "name",
                 "version": 1,
                 "decisionRequirementsId": "drId",
-                "decisionRequirementsKey": 2,
+                "decisionRequirementsKey": "2",
                 "decisionDefinitionId": "dId",
                 "decisionRequirementsName": "drName",
                 "decisionRequirementsVersion": 3
@@ -191,15 +192,15 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "decisionDefinitionKey",
-                        "order": "asc"
+                        "order": "ASC"
                     },
                     {
                         "field": "name",
-                        "order": "desc"
+                        "order": "DESC"
                     },
                     {
                         "field": "version",
-                        "order": "asc"
+                        "order": "ASC"
                     },
                     {
                          "field": "decisionDefinitionId"
@@ -262,7 +263,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "unknownField",
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";
@@ -270,9 +271,9 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
-              "detail": "Unknown sortBy: unknownField.",
+              "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [decisionDefinitionKey, decisionDefinitionId, name, version, decisionRequirementsId, decisionRequirementsKey, tenantId]",
               "instance": "%s"
             }"""
             .formatted(DECISION_DEFINITIONS_SEARCH_URL);
@@ -415,12 +416,12 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         """
             {
               "tenantId": "t",
-              "decisionDefinitionKey": 0,
+              "decisionDefinitionKey": "0",
               "decisionDefinitionId": "dId",
               "name": "name",
               "version": 1,
               "decisionRequirementsId": "drId",
-              "decisionRequirementsKey": 2
+              "decisionRequirementsKey": "2"
             }""";
     // when/then
     webClient

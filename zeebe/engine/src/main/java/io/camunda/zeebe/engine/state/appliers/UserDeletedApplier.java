@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 
 public class UserDeletedApplier implements TypedEventApplier<UserIntent, UserRecord> {
   private final MutableUserState userState;
@@ -25,8 +26,9 @@ public class UserDeletedApplier implements TypedEventApplier<UserIntent, UserRec
 
   @Override
   public void applyState(final long key, final UserRecord value) {
-    authorizationState.deleteAuthorizationsByOwnerKeyPrefix(value.getUserKey());
-    authorizationState.deleteOwnerTypeByKey(value.getUserKey());
-    userState.delete(value.getUserKey());
+    final var username = value.getUsername();
+    authorizationState.deleteAuthorizationsByOwnerTypeAndIdPrefix(
+        AuthorizationOwnerType.USER, username);
+    userState.delete(username);
   }
 }

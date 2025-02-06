@@ -7,6 +7,7 @@
  */
 package io.camunda.it.rdbms.exporter;
 
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getAuthorizationRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionDefinitionCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionRequirementsCreatedRecord;
@@ -26,10 +27,11 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getUserTaskCreatedReco
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.exporter.rdbms.RdbmsExporter;
+import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.security.entity.Permission;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
@@ -64,7 +66,6 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -77,21 +78,27 @@ import org.springframework.test.context.TestPropertySource;
 
 @Tag("rdbms")
 @SpringBootTest(classes = {RdbmsTestConfiguration.class})
-@TestPropertySource(properties = {"spring.liquibase.enabled=false", "camunda.database.type=rdbms"})
+@TestPropertySource(
+    properties = {
+      "spring.liquibase.enabled=false",
+      "camunda.database.type=rdbms",
+      "zeebe.broker.exporters.rdbms.args.maxQueueSize=0",
+      "camunda.database.index-prefix=C8_"
+    })
 class RdbmsExporterIT {
 
   private final ExporterTestController controller = new ExporterTestController();
 
   @Autowired private RdbmsService rdbmsService;
 
-  private RdbmsExporter exporter;
+  private RdbmsExporterWrapper exporter;
 
   @BeforeEach
   void setUp() {
-    exporter = new RdbmsExporter(rdbmsService);
+    exporter = new RdbmsExporterWrapper(rdbmsService);
     exporter.configure(
         new ExporterContext(
-            null, new ExporterConfiguration("foo", Collections.emptyMap()), 1, null, null));
+            null, new ExporterConfiguration("foo", Map.of("maxQueueSize", 0)), 1, null, null));
     exporter.open(controller);
   }
 
@@ -102,8 +109,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(processInstanceRecord);
-    // and we do a manual flush
-    exporter.flushExecutionQueue();
 
     // then
     final var key =
@@ -116,7 +121,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(processInstanceCompletedRecord);
-    exporter.flushExecutionQueue();
 
     // then
     final var completedProcessInstance = rdbmsService.getProcessInstanceReader().findOne(key);
@@ -131,13 +135,13 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(processDefinitionRecord);
-    // and we do a manual flush
-    exporter.flushExecutionQueue();
 
     // then
     final var key = ((Process) processDefinitionRecord.getValue()).getProcessDefinitionKey();
     final var processDefinition = rdbmsService.getProcessDefinitionReader().findOne(key);
     assertThat(processDefinition).isNotEmpty();
+    assertThat(processDefinition).map(ProcessDefinitionEntity::bpmnXml).isPresent();
+    assertThat(processDefinition).map(ProcessDefinitionEntity::formId).contains("test");
   }
 
   @Test
@@ -153,8 +157,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(variableCreatedRecord);
-    // and we do a manual flush
-    exporter.flushExecutionQueue();
 
     // then
     final var variable = rdbmsService.getVariableReader().findOne(variableCreatedRecord.getKey());
@@ -180,8 +182,6 @@ class RdbmsExporterIT {
 
     // when
     recordList.forEach(record -> exporter.export(record));
-    // and we do a manual flush
-    exporter.flushExecutionQueue();
 
     // then
     final var key =
@@ -203,7 +203,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(flowNodeRecord);
-    exporter.flushExecutionQueue();
 
     // then
     final var key = flowNodeRecord.getKey();
@@ -215,7 +214,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(flowNodeCompleteRecord);
-    exporter.flushExecutionQueue();
 
     // then
     final var completedFlowNode = rdbmsService.getFlowNodeInstanceReader().findOne(key);
@@ -230,7 +228,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(userTaskRecord);
-    exporter.flushExecutionQueue();
 
     // then
     final var key = ((UserTaskRecordValue) userTaskRecord.getValue()).getUserTaskKey();
@@ -245,8 +242,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(record);
-    // and we do a manual flush
-    exporter.flushExecutionQueue();
 
     // then
     final var key =
@@ -262,8 +257,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(decisionDefinitionRecord);
-    // and we do a manual flush
-    exporter.flushExecutionQueue();
 
     // then
     final var key = ((DecisionRecordValue) decisionDefinitionRecord.getValue()).getDecisionKey();
@@ -274,12 +267,11 @@ class RdbmsExporterIT {
   @Test
   public void shouldExportUpdateAndDeleteUser() {
     // given
-    final var userRecord = getUserRecord(42L, UserIntent.CREATED);
+    final var userRecord = getUserRecord(42L, "test", UserIntent.CREATED);
     final var userRecordValue = ((UserRecordValue) userRecord.getValue());
 
     // when
     exporter.export(userRecord);
-    exporter.flushExecutionQueue();
 
     // then
     final var user = rdbmsService.getUserReader().findOne(userRecord.getKey());
@@ -291,12 +283,11 @@ class RdbmsExporterIT {
     assertThat(user.get().password()).isEqualTo(userRecordValue.getPassword());
 
     // given
-    final var updateUserRecord = getUserRecord(42L, UserIntent.UPDATED);
+    final var updateUserRecord = getUserRecord(42L, "test", UserIntent.UPDATED);
     final var updateUserRecordValue = ((UserRecordValue) updateUserRecord.getValue());
 
     // when
     exporter.export(updateUserRecord);
-    exporter.flushExecutionQueue();
 
     // then
     final var updatedUser = rdbmsService.getUserReader().findOne(userRecord.getKey());
@@ -308,8 +299,7 @@ class RdbmsExporterIT {
     assertThat(updatedUser.get().password()).isEqualTo(updateUserRecordValue.getPassword());
 
     // when
-    exporter.export(getUserRecord(42L, UserIntent.DELETED));
-    exporter.flushExecutionQueue();
+    exporter.export(getUserRecord(42L, "test", UserIntent.DELETED));
 
     // then
     final var deletedUser = rdbmsService.getUserReader().findOne(userRecord.getKey());
@@ -318,16 +308,19 @@ class RdbmsExporterIT {
 
   @Test
   public void shouldExportAndUpdateTenant() {
+    final var tenantId = "tenant=" + nextKey();
     // given
-    final var tenantRecord = getTenantRecord(42L, TenantIntent.CREATED);
+    final var tenantRecord = getTenantRecord(42L, tenantId, TenantIntent.CREATED);
     final var tenantRecordValue = ((TenantRecordValue) tenantRecord.getValue());
 
     // when
     exporter.export(tenantRecord);
-    exporter.flushExecutionQueue();
 
     // then
-    final var tenant = rdbmsService.getTenantReader().findOne(tenantRecord.getKey());
+    final var tenant =
+        rdbmsService
+            .getTenantReader()
+            .findOne(((TenantRecordValue) tenantRecord.getValue()).getTenantId());
     assertThat(tenant).isNotEmpty();
     assertThat(tenant.get().key()).isEqualTo(tenantRecord.getKey());
     assertThat(tenant.get().key()).isEqualTo(tenantRecordValue.getTenantKey());
@@ -335,54 +328,21 @@ class RdbmsExporterIT {
     assertThat(tenant.get().name()).isEqualTo(tenantRecordValue.getName());
 
     // given
-    final var updateTenantRecord = getTenantRecord(42L, TenantIntent.UPDATED);
+    final var updateTenantRecord = getTenantRecord(42L, tenantId, TenantIntent.UPDATED);
     final var updateTenantRecordValue = ((TenantRecordValue) updateTenantRecord.getValue());
 
     // when
     exporter.export(updateTenantRecord);
-    exporter.flushExecutionQueue();
 
     // then
-    final var updatedTenant = rdbmsService.getTenantReader().findOne(tenantRecord.getKey());
+    final var updatedTenant =
+        rdbmsService
+            .getTenantReader()
+            .findOne(((TenantRecordValue) tenantRecord.getValue()).getTenantId());
     assertThat(updatedTenant).isNotEmpty();
     assertThat(updatedTenant.get().key()).isEqualTo(updateTenantRecordValue.getTenantKey());
     assertThat(updatedTenant.get().tenantId()).isEqualTo(updateTenantRecordValue.getTenantId());
     assertThat(updatedTenant.get().name()).isEqualTo(updateTenantRecordValue.getName());
-  }
-
-  @Test
-  public void shouldExportTenantAndAddAndDeleteMember() {
-    // given
-    final var tenantRecord = getTenantRecord(43L, TenantIntent.CREATED);
-    final var tenantRecordValue = ((TenantRecordValue) tenantRecord.getValue());
-
-    // when
-    exporter.export(tenantRecord);
-    exporter.flushExecutionQueue();
-
-    // then
-    final var tenant = rdbmsService.getTenantReader().findOne(tenantRecord.getKey());
-    assertThat(tenant).isNotEmpty();
-    assertThat(tenant.get().key()).isEqualTo(tenantRecordValue.getTenantKey());
-    assertThat(tenant.get().name()).isEqualTo(tenantRecordValue.getName());
-
-    // when
-    exporter.export(getTenantRecord(43L, TenantIntent.ENTITY_ADDED, 1337L));
-    exporter.flushExecutionQueue();
-
-    // then
-    final var updatedTenant =
-        rdbmsService.getTenantReader().findOne(tenantRecord.getKey()).orElseThrow();
-    assertThat(updatedTenant.assignedMemberKeys()).containsExactly(1337L);
-
-    // when
-    exporter.export(getTenantRecord(43L, TenantIntent.ENTITY_REMOVED, 1337L));
-    exporter.flushExecutionQueue();
-
-    // then
-    final var deletedTenant =
-        rdbmsService.getTenantReader().findOne(tenantRecord.getKey()).orElseThrow();
-    assertThat(deletedTenant.assignedMemberKeys()).isEmpty();
   }
 
   @Test
@@ -393,7 +353,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(roleRecord);
-    exporter.flushExecutionQueue();
 
     // then
     final var role = rdbmsService.getRoleReader().findOne(roleRecord.getKey());
@@ -407,7 +366,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(updateRoleRecord);
-    exporter.flushExecutionQueue();
 
     // then
     final var updatedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey());
@@ -417,7 +375,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(getRoleRecord(42L, RoleIntent.DELETED));
-    exporter.flushExecutionQueue();
 
     // then
     final var deletedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey());
@@ -432,7 +389,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(roleRecord);
-    exporter.flushExecutionQueue();
 
     // then
     final var role = rdbmsService.getRoleReader().findOne(roleRecord.getKey());
@@ -442,7 +398,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(getRoleRecord(42L, RoleIntent.ENTITY_ADDED, 1337L));
-    exporter.flushExecutionQueue();
 
     // then
     final var updatedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey()).orElseThrow();
@@ -450,7 +405,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(getRoleRecord(42L, RoleIntent.ENTITY_REMOVED, 1337L));
-    exporter.flushExecutionQueue();
 
     // then
     final var deletedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey()).orElseThrow();
@@ -465,12 +419,11 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(groupRecord);
-    exporter.flushExecutionQueue();
 
     // then
     final var group = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
     assertThat(group).isNotEmpty();
-    assertThat(group.get().key()).isEqualTo(groupRecordValue.getGroupKey());
+    assertThat(group.get().groupKey()).isEqualTo(groupRecordValue.getGroupKey());
     assertThat(group.get().name()).isEqualTo(groupRecordValue.getName());
 
     // given
@@ -479,17 +432,15 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(updateGroupRecord);
-    exporter.flushExecutionQueue();
 
     // then
     final var updatedGroup = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
     assertThat(updatedGroup).isNotEmpty();
-    assertThat(updatedGroup.get().key()).isEqualTo(updateGroupRecordValue.getGroupKey());
+    assertThat(updatedGroup.get().groupKey()).isEqualTo(updateGroupRecordValue.getGroupKey());
     assertThat(updatedGroup.get().name()).isEqualTo(updateGroupRecordValue.getName());
 
     // when
     exporter.export(getGroupRecord(42L, GroupIntent.DELETED));
-    exporter.flushExecutionQueue();
 
     // then
     final var deletedGroup = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
@@ -504,17 +455,15 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(groupRecord);
-    exporter.flushExecutionQueue();
 
     // then
     final var group = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
     assertThat(group).isNotEmpty();
-    assertThat(group.get().key()).isEqualTo(groupRecordValue.getGroupKey());
+    assertThat(group.get().groupKey()).isEqualTo(groupRecordValue.getGroupKey());
     assertThat(group.get().name()).isEqualTo(groupRecordValue.getName());
 
     // when
     exporter.export(getGroupRecord(43L, GroupIntent.ENTITY_ADDED, 1337L));
-    exporter.flushExecutionQueue();
 
     // then
     final var updatedGroup =
@@ -523,7 +472,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(getGroupRecord(43L, GroupIntent.ENTITY_REMOVED, 1337L));
-    exporter.flushExecutionQueue();
 
     // then
     final var deletedGroup =
@@ -548,7 +496,6 @@ class RdbmsExporterIT {
         getIncidentRecord(
             IncidentIntent.CREATED, incidentKey, processInstanceKey, flowNodeInstanceKey);
     exporter.export(incidentRecord);
-    exporter.flushExecutionQueue();
 
     // then
     final var flowNode = rdbmsService.getFlowNodeInstanceReader().findOne(flowNodeInstanceKey);
@@ -570,7 +517,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(incidentResolvedRecord);
-    exporter.flushExecutionQueue();
 
     // then
     final var flowNode2 = rdbmsService.getFlowNodeInstanceReader().findOne(flowNodeInstanceKey);
@@ -592,7 +538,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(formCreatedRecord);
-    exporter.flushExecutionQueue();
 
     // then
     final var formKey = ((Form) formCreatedRecord.getValue()).getFormKey();
@@ -607,7 +552,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(mappingCreatedRecord);
-    exporter.flushExecutionQueue();
 
     // then
     final var key = ((MappingRecordValue) mappingCreatedRecord.getValue()).getMappingKey();
@@ -619,7 +563,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(mappingDeletedRecord);
-    exporter.flushExecutionQueue();
 
     // then
     final var deletedMapping = rdbmsService.getMappingReader().findOne(key);
@@ -641,7 +584,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(authorizationRecord);
-    exporter.flushExecutionQueue();
 
     // then
     final var recordValue = (AuthorizationRecordValue) authorizationRecord.getValue();
@@ -668,7 +610,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(authorizationUpdatedRecord);
-    exporter.flushExecutionQueue();
 
     // then
     final var updatedRecordValue = (AuthorizationRecordValue) authorizationUpdatedRecord.getValue();
@@ -708,7 +649,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(authorizationRecord);
-    exporter.flushExecutionQueue();
 
     // then
     final var recordValue = (AuthorizationRecordValue) authorizationRecord.getValue();
@@ -735,7 +675,6 @@ class RdbmsExporterIT {
 
     // when
     exporter.export(authorizationUpdatedRecord);
-    exporter.flushExecutionQueue();
 
     // then
     final var updatedAuthorization =

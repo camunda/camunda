@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.serializer;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.util.Either;
@@ -29,6 +30,8 @@ public interface ClusterConfigurationRequestsSerializer {
       ClusterConfigurationManagementRequest.ReassignPartitionsRequest reassignPartitionsRequest);
 
   byte[] encodeScaleRequest(BrokerScaleRequest scaleRequest);
+
+  byte[] encodePurgeRequest(PurgeRequest purgeRequest);
 
   byte[] encodeCancelChangeRequest(
       ClusterConfigurationManagementRequest.CancelChangeRequest cancelChangeRequest);
@@ -82,6 +85,8 @@ public interface ClusterConfigurationRequestsSerializer {
 
   ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest decodeForceRemoveBrokersRequest(
       byte[] encodedRequest);
+
+  ClusterConfigurationManagementRequest.PurgeRequest decodePurgeRequest(byte[] encodedRequest);
 
   byte[] encodeResponse(ClusterConfigurationChangeResponse response);
 

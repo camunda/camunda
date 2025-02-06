@@ -12,7 +12,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.query.SearchQueryBuilders.authorizationSearchQuery;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.CREATE;
-import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_DEFINITION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -74,7 +74,11 @@ class DocumentAuthorizationQueryStrategyTest {
     final var originalRequest = mock(SearchQueryRequest.class);
     final var securityContext =
         SecurityContext.of(
-            s -> s.withAuthorization(a -> a.resourceType(PROCESS_DEFINITION).permissionType(READ)));
+            s ->
+                s.withAuthorization(
+                    a ->
+                        a.resourceType(PROCESS_DEFINITION)
+                            .permissionType(READ_PROCESS_DEFINITION)));
 
     // when
     final SearchQueryRequest result =
@@ -94,7 +98,9 @@ class DocumentAuthorizationQueryStrategyTest {
             s ->
                 s.withAuthentication(a -> a.user(123L))
                     .withAuthorization(
-                        a -> a.permissionType(READ).resourceType(PROCESS_DEFINITION)));
+                        a ->
+                            a.permissionType(READ_PROCESS_DEFINITION)
+                                .resourceType(PROCESS_DEFINITION)));
     when(authorizationSearchClient.findAllAuthorizations(any()))
         .thenReturn(
             List.of(
@@ -103,7 +109,7 @@ class DocumentAuthorizationQueryStrategyTest {
                     null,
                     null,
                     List.of(
-                        new Permission(READ, Set.of("foo", "*")),
+                        new Permission(READ_PROCESS_DEFINITION, Set.of("foo", "*")),
                         new Permission(CREATE, Set.of("bar"))))));
 
     // when
@@ -118,13 +124,16 @@ class DocumentAuthorizationQueryStrategyTest {
   @Test
   void shouldReturnMatchNoneQueryWhenNoAuthorizedResourcesFound() {
     // given
-    final SearchQueryRequest originalRequest = mock(SearchQueryRequest.class);
+    final SearchQueryRequest originalRequest =
+        new SearchQueryRequest.Builder().index("index").build();
     final var securityContext =
         SecurityContext.of(
             s ->
                 s.withAuthentication(a -> a.user(123L))
                     .withAuthorization(
-                        a -> a.permissionType(READ).resourceType(PROCESS_DEFINITION)));
+                        a ->
+                            a.permissionType(READ_PROCESS_DEFINITION)
+                                .resourceType(PROCESS_DEFINITION)));
     when(authorizationSearchClient.findAllAuthorizations(any())).thenReturn(List.of());
 
     // when
@@ -139,14 +148,16 @@ class DocumentAuthorizationQueryStrategyTest {
   @Test
   void shouldApplyAuthorizationFilterToQuery() {
     // given
-    final SearchQueryRequest originalRequest = mock(SearchQueryRequest.class);
-    when(originalRequest.query()).thenReturn(mock(SearchQuery.class));
+    final SearchQueryRequest originalRequest =
+        new SearchQueryRequest.Builder().index("index").query(mock(SearchQuery.class)).build();
     final var securityContext =
         SecurityContext.of(
             s ->
                 s.withAuthentication(a -> a.user(123L))
                     .withAuthorization(
-                        a -> a.permissionType(READ).resourceType(PROCESS_DEFINITION)));
+                        a ->
+                            a.permissionType(READ_PROCESS_DEFINITION)
+                                .resourceType(PROCESS_DEFINITION)));
     final var authorizationQueryCaptor = ArgumentCaptor.forClass(AuthorizationQuery.class);
     when(authorizationSearchClient.findAllAuthorizations(authorizationQueryCaptor.capture()))
         .thenReturn(
@@ -156,7 +167,7 @@ class DocumentAuthorizationQueryStrategyTest {
                     null,
                     null,
                     List.of(
-                        new Permission(READ, Set.of("foo")),
+                        new Permission(READ_PROCESS_DEFINITION, Set.of("foo")),
                         new Permission(CREATE, Set.of("bar"))))));
 
     // when
@@ -175,7 +186,7 @@ class DocumentAuthorizationQueryStrategyTest {
                         f ->
                             f.ownerKeys(List.of(123L))
                                 .resourceType("PROCESS_DEFINITION")
-                                .permissionType(READ))));
+                                .permissionType(READ_PROCESS_DEFINITION))));
   }
 
   private SearchQueryResponse<AuthorizationEntity> buildSearchQueryResponse(

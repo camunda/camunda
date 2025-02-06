@@ -128,5 +128,20 @@ public final class MessageCorrelationClient {
         new Message(messageCorrelationRecord.getCorrelationKey(), position, partitionId));
   }
 
+  public Record<MessageCorrelationRecordValue> correlate(final String username) {
+
+    if (partitionId == NOT_SET) {
+      partitionId =
+          SubscriptionUtil.getSubscriptionPartitionId(
+              messageCorrelationRecord.getCorrelationKeyBuffer(), partitionCount);
+    }
+
+    final var position =
+        writer.writeCommandOnPartition(
+            partitionId, MessageCorrelationIntent.CORRELATE, messageCorrelationRecord, username);
+    return expectation.apply(
+        new Message(messageCorrelationRecord.getCorrelationKey(), position, partitionId));
+  }
+
   private record Message(String correlationKey, long position, int partitionId) {}
 }

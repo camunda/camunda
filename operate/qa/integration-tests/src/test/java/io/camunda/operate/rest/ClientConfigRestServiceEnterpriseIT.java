@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
@@ -21,7 +22,6 @@ import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.ClientConfig;
 import io.camunda.operate.webapp.rest.ClientConfigRestService;
-import io.camunda.security.configuration.SecurityConfiguration;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MvcResult;
@@ -37,14 +37,14 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
       OperateDateTimeFormatter.class,
       DatabaseInfo.class,
       OperateProperties.class,
-      SecurityConfiguration.class
+      CamundaSecurityProperties.class
     },
     properties = {
       OperateProperties.PREFIX + ".enterprise=true",
       OperateProperties.PREFIX + ".cloud.organizationid=organizationId",
       OperateProperties.PREFIX + ".cloud.mixpanelToken=i-am-a-token",
       OperateProperties.PREFIX + ".cloud.mixpanelAPIHost=https://fake.mixpanel.com",
-      OperateProperties.PREFIX + ".multiTenancy.enabled=true",
+      "camunda.security.multiTenancy.enabled=true",
       // CAMUNDA_OPERATE_CLOUD_CLUSTERID=clusterId  -- leave out to test for null values
     })
 public class ClientConfigRestServiceEnterpriseIT extends OperateAbstractIT {

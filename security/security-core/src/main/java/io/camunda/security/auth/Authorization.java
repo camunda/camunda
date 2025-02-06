@@ -16,21 +16,78 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.P
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.ROLE;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.TENANT;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.CREATE_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_INSTANCE;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_USER_TASK;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.UPDATE_PROCESS_INSTANCE;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.UPDATE_USER_TASK;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.Objects;
 import java.util.function.Function;
 
-public record Authorization(AuthorizationResourceType resourceType, PermissionType permissionType) {
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+public final class Authorization {
 
   public static final String WILDCARD = "*";
+  private final AuthorizationResourceType resourceType;
+  private final PermissionType permissionType;
+
+  @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+  public Authorization(
+      final @JsonProperty("resource_type") AuthorizationResourceType resourceType,
+      final @JsonProperty("permission_type") PermissionType permissionType) {
+    this.resourceType = resourceType;
+    this.permissionType = permissionType;
+  }
 
   public static Authorization of(final Function<Builder, Builder> builderFunction) {
     return builderFunction.apply(new Builder()).build();
+  }
+
+  public AuthorizationResourceType resourceType() {
+    return resourceType;
+  }
+
+  public PermissionType permissionType() {
+    return permissionType;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(resourceType, permissionType);
+  }
+
+  @Override
+  public boolean equals(final Object obj) {
+    if (obj == this) {
+      return true;
+    }
+    if (obj == null || obj.getClass() != getClass()) {
+      return false;
+    }
+    final Authorization that = (Authorization) obj;
+    return Objects.equals(resourceType, that.resourceType)
+        && Objects.equals(permissionType, that.permissionType);
+  }
+
+  @Override
+  public String toString() {
+    return "Authorization["
+        + "resourceType="
+        + resourceType
+        + ", "
+        + "permissionType="
+        + permissionType
+        + ']';
   }
 
   public static class Builder {
@@ -87,12 +144,32 @@ public record Authorization(AuthorizationResourceType resourceType, PermissionTy
       return permissionType(READ);
     }
 
+    public Builder readProcessDefinition() {
+      return permissionType(READ_PROCESS_DEFINITION);
+    }
+
+    public Builder readDecisionDefinition() {
+      return permissionType(READ_DECISION_DEFINITION);
+    }
+
     public Builder readProcessInstance() {
       return permissionType(READ_PROCESS_INSTANCE);
     }
 
+    public Builder createProcessInstance() {
+      return permissionType(CREATE_PROCESS_INSTANCE);
+    }
+
+    public Builder updateProcessInstance() {
+      return permissionType(UPDATE_PROCESS_INSTANCE);
+    }
+
     public Builder readUserTask() {
       return permissionType(READ_USER_TASK);
+    }
+
+    public Builder updateUserTask() {
+      return permissionType(UPDATE_USER_TASK);
     }
 
     public Builder readDecisionInstance() {

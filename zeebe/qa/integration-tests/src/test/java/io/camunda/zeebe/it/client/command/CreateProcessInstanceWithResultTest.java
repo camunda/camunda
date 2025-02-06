@@ -12,13 +12,13 @@ import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.ZeebeFuture;
-import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
-import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.client.api.response.ActivateJobsResponse;
+import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -28,26 +28,25 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.collection.Maps;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @ZeebeIntegration
-@AutoCloseResources
 public final class CreateProcessInstanceWithResultTest {
 
-  @AutoCloseResource ZeebeClient client;
+  @AutoClose CamundaClient client;
 
   @TestZeebe
-  final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+  final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   ZeebeResourcesHelper resourcesHelper;
   private String processId;
@@ -100,7 +99,7 @@ public final class CreateProcessInstanceWithResultTest {
     deployProcesses(testInfo);
     deployProcessWithJob();
     final Map<String, Object> variables = Maps.of(entry("foo", "bar"));
-    final ZeebeFuture<ProcessInstanceResult> resultFuture =
+    final CamundaFuture<ProcessInstanceResult> resultFuture =
         createProcessInstanceWithVariables(variables, useRest);
 
     completeJobWithVariables(Map.of("x", "y"));
@@ -133,7 +132,7 @@ public final class CreateProcessInstanceWithResultTest {
             .done();
     processDefinitionKey = resourcesHelper.deployProcess(processWithVariableScopes);
 
-    final ZeebeFuture<ProcessInstanceResult> resultFuture =
+    final CamundaFuture<ProcessInstanceResult> resultFuture =
         createProcessInstanceWithVariables(Map.of("x", "1"), useRest);
 
     // when
@@ -196,7 +195,7 @@ public final class CreateProcessInstanceWithResultTest {
         .send()
         .join();
 
-    final ZeebeFuture<ProcessInstanceResult> processInstanceResult =
+    final CamundaFuture<ProcessInstanceResult> processInstanceResult =
         getCommand(client, useRest)
             .bpmnProcessId(processId)
             .latestVersion()
@@ -236,7 +235,7 @@ public final class CreateProcessInstanceWithResultTest {
         .send()
         .join();
 
-    final ZeebeFuture<ProcessInstanceResult> processInstanceResult =
+    final CamundaFuture<ProcessInstanceResult> processInstanceResult =
         getCommand(client, useRest).bpmnProcessId(processId).latestVersion().withResult().send();
 
     final List<ActivatedJob> jobs =
@@ -279,7 +278,7 @@ public final class CreateProcessInstanceWithResultTest {
         .send()
         .join();
 
-    final ZeebeFuture<ProcessInstanceResult> processInstanceResult =
+    final CamundaFuture<ProcessInstanceResult> processInstanceResult =
         getCommand(client, useRest).bpmnProcessId(processId).latestVersion().withResult().send();
 
     final List<ActivatedJob> jobs =
@@ -331,7 +330,7 @@ public final class CreateProcessInstanceWithResultTest {
         .send()
         .join();
 
-    final ZeebeFuture<ProcessInstanceResult> processInstanceResult =
+    final CamundaFuture<ProcessInstanceResult> processInstanceResult =
         getCommand(client, useRest).bpmnProcessId(processId).latestVersion().withResult().send();
 
     final var incident =
@@ -369,7 +368,7 @@ public final class CreateProcessInstanceWithResultTest {
         .send()
         .join();
 
-    final ZeebeFuture<ProcessInstanceResult> processInstanceResult =
+    final CamundaFuture<ProcessInstanceResult> processInstanceResult =
         getCommand(client, useRest).bpmnProcessId(processId).latestVersion().withResult().send();
 
     final List<ActivatedJob> jobs =
@@ -439,7 +438,7 @@ public final class CreateProcessInstanceWithResultTest {
         .isInstanceOf(ClientException.class);
   }
 
-  private ZeebeFuture<ProcessInstanceResult> createProcessInstanceWithVariables(
+  private CamundaFuture<ProcessInstanceResult> createProcessInstanceWithVariables(
       final Map<String, Object> variables, final boolean useRest) {
     return getCommand(client, useRest)
         .processDefinitionKey(processDefinitionKey)
@@ -477,7 +476,7 @@ public final class CreateProcessInstanceWithResultTest {
   }
 
   private CreateProcessInstanceCommandStep1 getCommand(
-      final ZeebeClient client, final boolean useRest) {
+      final CamundaClient client, final boolean useRest) {
     final CreateProcessInstanceCommandStep1 createInstanceCommand =
         client.newCreateInstanceCommand();
     return useRest ? createInstanceCommand.useRest() : createInstanceCommand.useGrpc();

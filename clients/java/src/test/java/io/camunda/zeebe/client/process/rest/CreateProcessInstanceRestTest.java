@@ -20,12 +20,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.camunda.client.protocol.rest.CreateProcessInstanceRequest;
+import io.camunda.client.protocol.rest.ProblemDetail;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
-import io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceRequest;
-import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.RestGatewayPaths;
 import java.io.ByteArrayInputStream;

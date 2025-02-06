@@ -14,12 +14,17 @@
       "name": {
         "type": "keyword"
       },
-      "memberKey": {
-        "type": "long"
+      "description": {
+        "type": "text"
+      },
+      "memberId": {
+        "type": "keyword"
+      },
+      "memberType": {
+        "type": "keyword"
       },
       "join": {
         "type": "join",
-        "eager_global_ordinals": true,
         "relations": {
           "tenant": ["member"]
         }

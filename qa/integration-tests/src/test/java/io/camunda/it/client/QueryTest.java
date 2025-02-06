@@ -9,11 +9,11 @@ package io.camunda.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.response.DeploymentEvent;
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
-import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.response.SearchQueryResponse;
 import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
@@ -30,16 +30,16 @@ import org.awaitility.Awaitility;
  * <p>Example usage:
  *
  * <pre>{@code
- * ZeebeClient zeebeClient = ...; // initialize your Zeebe client
+ * CamundaClient camundaClient = ...; // initialize your Camunda client
  *
  * // Deploy a resource
- * DeploymentEvent deploymentEvent = deployResource(zeebeClient, "path/to/resource.bpmn");
+ * DeploymentEvent deploymentEvent = deployResource(camundaClient, "path/to/resource.bpmn");
  *
  * // Start a process instance
- * ProcessInstanceEvent processInstanceEvent = startProcessInstance(zeebeClient, "processId");
+ * ProcessInstanceEvent processInstanceEvent = startProcessInstance(camundaClient, "processId");
  *
  * // Wait for process instances to start
- * waitForProcessInstancesToStart(zeebeClient, 1);
+ * waitForProcessInstancesToStart(camundaClient, 1);
  *
  * // Assert sorting of query results
  * SearchQueryResponse<Incident> resultAsc = ...; // get ascending sorted result
@@ -50,24 +50,34 @@ import org.awaitility.Awaitility;
 public class QueryTest {
 
   public static DeploymentEvent deployResource(
-      final ZeebeClient zeebeClient, final String resourceName) {
-    return zeebeClient
+      final CamundaClient camundaClient, final String resourceName) {
+    return camundaClient
         .newDeployResourceCommand()
         .addResourceFromClasspath(resourceName)
         .send()
         .join();
   }
 
-  public static ProcessInstanceEvent startProcessInstance(
-      final ZeebeClient zeebeClient, final String bpmnProcessId) {
-    return startProcessInstance(zeebeClient, bpmnProcessId, null);
+  public static DeploymentEvent deployResourceForTenant(
+      final CamundaClient camundaClient, final String resourceName, final String tenantId) {
+    return camundaClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath(resourceName)
+        .tenantId(tenantId)
+        .send()
+        .join();
   }
 
   public static ProcessInstanceEvent startProcessInstance(
-      final ZeebeClient zeebeClient, final String bpmnProcessId, final String payload) {
+      final CamundaClient camundaClient, final String bpmnProcessId) {
+    return startProcessInstance(camundaClient, bpmnProcessId, null);
+  }
+
+  public static ProcessInstanceEvent startProcessInstance(
+      final CamundaClient camundaClient, final String bpmnProcessId, final String payload) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
         createProcessInstanceCommandStep3 =
-            zeebeClient.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
+            camundaClient.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
     if (payload != null) {
       createProcessInstanceCommandStep3.variables(payload);
     }
@@ -75,50 +85,50 @@ public class QueryTest {
   }
 
   public static void waitForProcessInstancesToStart(
-      final ZeebeClient zeebeClient, final int expectedProcessInstances) {
+      final CamundaClient camundaClient, final int expectedProcessInstances) {
     Awaitility.await("should start process instances and import in Operate")
         .atMost(Duration.ofSeconds(60))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = zeebeClient.newProcessInstanceQuery().send().join();
+              final var result = camundaClient.newProcessInstanceQuery().send().join();
               assertThat(result.page().totalItems()).isEqualTo(expectedProcessInstances);
             });
   }
 
   public static void waitForFlowNodeInstances(
-      final ZeebeClient zeebeClient, final int expectedFlowNodeInstances) {
+      final CamundaClient camundaClient, final int expectedFlowNodeInstances) {
     Awaitility.await("should wait until flow node instances are available")
         .atMost(Duration.ofSeconds(60))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = zeebeClient.newFlownodeInstanceQuery().send().join();
+              final var result = camundaClient.newFlownodeInstanceQuery().send().join();
               assertThat(result.page().totalItems()).isEqualTo(expectedFlowNodeInstances);
             });
   }
 
   public static void waitForProcessesToBeDeployed(
-      final ZeebeClient zeebeClient, final int expectedProcessDefinitions) {
+      final CamundaClient camundaClient, final int expectedProcessDefinitions) {
     Awaitility.await("should deploy processes and import in Operate")
         .atMost(Duration.ofSeconds(15))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = zeebeClient.newProcessDefinitionQuery().send().join();
+              final var result = camundaClient.newProcessDefinitionQuery().send().join();
               assertThat(result.page().totalItems()).isEqualTo(expectedProcessDefinitions);
             });
   }
 
   public static void waitUntilProcessInstanceHasIncidents(
-      final ZeebeClient zeebeClient, final int expectedIncidents) {
+      final CamundaClient camundaClient, final int expectedIncidents) {
     Awaitility.await("should wait until incidents are exists")
         .atMost(Duration.ofSeconds(15))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
               final var result =
-                  zeebeClient
+                  camundaClient
                       .newProcessInstanceQuery()
                       .filter(f -> f.hasIncident(true))
                       .send()
@@ -128,14 +138,14 @@ public class QueryTest {
   }
 
   public static void waitUntilFlowNodeInstanceHasIncidents(
-      final ZeebeClient zeebeClient, final int expectedIncidents) {
+      final CamundaClient camundaClient, final int expectedIncidents) {
     Awaitility.await("should wait until flow node instance has incidents")
         .atMost(Duration.ofSeconds(15))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
               final var result =
-                  zeebeClient
+                  camundaClient
                       .newFlownodeInstanceQuery()
                       .filter(f -> f.hasIncident(true))
                       .send()

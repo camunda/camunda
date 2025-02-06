@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 public class DbTenantState implements MutableTenantState {
 
@@ -73,6 +74,7 @@ public class DbTenantState implements MutableTenantState {
     tenantKey.wrapLong(updatedTenantRecord.getTenantKey());
     final var persistedTenant = tenantsColumnFamily.get(tenantKey);
     persistedTenant.setName(updatedTenantRecord.getName());
+    persistedTenant.setDescription(updatedTenantRecord.getDescription());
     tenantsColumnFamily.update(tenantKey, persistedTenant);
   }
 
@@ -157,5 +159,16 @@ public class DbTenantState implements MutableTenantState {
         });
 
     return entitiesMap;
+  }
+
+  @Override
+  public void forEachTenant(final Function<String, Boolean> callback) {
+    tenantsColumnFamily.whileTrue((k, p) -> callback.apply(p.getTenantId()));
+  }
+
+  @Override
+  public Optional<PersistedTenant> getTenantById(final String tenantId) {
+    // TODO: Change cfs to look up by id directly
+    return getTenantKeyById(tenantId).flatMap(this::getTenantByKey);
   }
 }

@@ -103,6 +103,8 @@ jobs:
       # We need to build the Docker image (and thus the distribution) to scan it
       - name: Build Zeebe Distribution
         uses: ./.github/actions/build-zeebe
+        with:
+          maven-extra-args: -PskipFrontendBuild
         id: build-zeebe
         if: inputs.build
       - name: Build Docker Image

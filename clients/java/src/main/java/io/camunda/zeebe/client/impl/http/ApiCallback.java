@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.http;
 
+import static java.util.Optional.ofNullable;
+
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.ClientHttpException;
@@ -22,8 +24,10 @@ import io.camunda.zeebe.client.api.command.MalformedResponseException;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.impl.HttpStatusCode;
 import io.camunda.zeebe.client.impl.http.ApiResponseConsumer.ApiResponse;
+import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import org.apache.hc.core5.concurrent.FutureCallback;
 
@@ -33,6 +37,7 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
   private final JsonResponseTransformer<HttpT, RespT> transformer;
   private final Predicate<StatusCode> retryPredicate;
   private final Runnable retryAction;
+  private final AtomicInteger retries = new AtomicInteger(2);
 
   public ApiCallback(
       final CompletableFuture<RespT> response,
@@ -76,7 +81,7 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
 
   private void handleErrorResponse(
       final ApiEntity<HttpT> body, final int code, final String reason) {
-    if (retryPredicate.test(new HttpStatusCode(code))) {
+    if (retries.getAndDecrement() > 0 && retryPredicate.test(new HttpStatusCode(code))) {
       retryAction.run();
       return;
     }
@@ -108,7 +113,9 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
       return;
     }
 
-    response.completeExceptionally(new ProblemException(code, reason, body.problem()));
+    response.completeExceptionally(
+        new ProblemException(
+            code, reason, ofNullable(body.problem()).map(ProblemDetail::new).orElse(null)));
   }
 
   private void handleSuccessResponse(

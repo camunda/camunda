@@ -9,25 +9,72 @@
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {api} from 'modules/api';
 import {getUseTaskQueryKey} from 'modules/queries/useTask';
-import {type RequestError, request} from 'modules/request';
+import {request} from 'modules/request';
 import type {Task} from 'modules/types';
+import {buildServerErrorSchema} from 'modules/utils/buildServerErrorSchema';
+import {z} from 'zod';
+
+const messageResponseSchema = z.object({
+  title: z.enum([
+    'TASK_NOT_ASSIGNED_TO_CURRENT_USER',
+    'TASK_NOT_ASSIGNED',
+    'TASK_IS_NOT_ACTIVE',
+    'TASK_PROCESSING_TIMEOUT',
+    'INVALID_STATE',
+  ]),
+  detail: z.string(),
+});
+const unassignmentErrorSchema = buildServerErrorSchema(messageResponseSchema);
+const unassignmentErrorMap = {
+  taskNotAssignedToCurrentUser: 'TASK_NOT_ASSIGNED_TO_CURRENT_USER',
+  taskNotAssigned: 'TASK_NOT_ASSIGNED',
+  taskIsNotActive: 'TASK_IS_NOT_ACTIVE',
+  taskProcessingTimeout: 'TASK_PROCESSING_TIMEOUT',
+  invalidState: 'INVALID_STATE',
+} as const;
+
+interface UnassignmentError extends Error {
+  name:
+    | 'TASK_NOT_ASSIGNED_TO_CURRENT_USER'
+    | 'TASK_NOT_ASSIGNED'
+    | 'TASK_IS_NOT_ACTIVE'
+    | 'TASK_PROCESSING_TIMEOUT'
+    | 'INVALID_STATE'
+    | 'Error';
+  message: string;
+  stack?: string;
+}
 
 function useUnassignTask() {
   const client = useQueryClient();
-  return useMutation<Task, RequestError | Error, Task['id']>({
+  return useMutation<Task, UnassignmentError, Task['id']>({
     mutationFn: async (taskId) => {
-      const {response, error} = await request(api.v1.unassignTask(taskId));
+      const {response, error: errorResponse} = await request(
+        api.v1.unassignTask(taskId),
+      );
 
       if (response !== null) {
         return response.json();
       }
 
-      const errorMessage =
-        error.response instanceof Response
-          ? (await error.response.json())?.message
-          : undefined;
+      if (errorResponse.variant === 'network-error') {
+        throw new Error('Unexpected network error', {
+          cause: errorResponse.networkError,
+        });
+      }
 
-      throw errorMessage === undefined ? error : new Error(errorMessage);
+      const error = new Error('Failed to complete task');
+      const errorResult = unassignmentErrorSchema.safeParse(
+        await errorResponse.response.json(),
+      );
+
+      if (!errorResult.success) {
+        throw error;
+      }
+
+      error.name = errorResult.data.message.title;
+
+      throw error;
     },
     onSettled: async (newTask, error) => {
       if (error !== null || newTask === undefined) {
@@ -52,4 +99,4 @@ function useUnassignTask() {
   });
 }
 
-export {useUnassignTask};
+export {useUnassignTask, unassignmentErrorMap};

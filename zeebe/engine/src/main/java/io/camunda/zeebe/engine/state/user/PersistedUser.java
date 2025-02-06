@@ -14,7 +14,6 @@ import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
-import io.camunda.zeebe.protocol.record.value.UserType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -71,10 +70,6 @@ public class PersistedUser extends UnpackedObject implements DbValue {
 
   public String getPassword() {
     return getUser().getPassword();
-  }
-
-  public UserType getUserType() {
-    return getUser().getUserType();
   }
 
   public List<Long> getRoleKeysList() {

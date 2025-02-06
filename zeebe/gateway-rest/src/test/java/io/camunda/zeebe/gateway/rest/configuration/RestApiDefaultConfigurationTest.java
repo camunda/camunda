@@ -7,19 +7,20 @@
  */
 package io.camunda.zeebe.gateway.rest.configuration;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
-import io.camunda.zeebe.gateway.rest.controller.ProcessInstanceQueryController;
+import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.zeebe.gateway.rest.controller.ProcessInstanceController;
 import io.camunda.zeebe.gateway.rest.controller.TopologyController;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 
-@WebMvcTest(value = {ProcessInstanceQueryController.class, TopologyController.class})
+@WebMvcTest(value = {ProcessInstanceController.class, TopologyController.class})
 public class RestApiDefaultConfigurationTest extends RestApiConfigurationTest {
 
   @Test
-  void shouldYieldNotFoundForQueryApiRequest() {
+  void shouldYieldOkForQueryApiRequest() {
     // when
     webClient
         .post()
@@ -27,9 +28,9 @@ public class RestApiDefaultConfigurationTest extends RestApiConfigurationTest {
         .exchange()
         // then
         .expectStatus()
-        .isNotFound();
+        .isOk();
 
-    verifyNoInteractions(processInstanceServices);
+    verify(processInstanceServices).search(any(ProcessInstanceQuery.class));
   }
 
   @Test

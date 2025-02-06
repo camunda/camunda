@@ -15,34 +15,25 @@
  */
 package io.camunda.zeebe.client.impl.oauth;
 
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.OAUTH_ENV_AUTHORIZATION_SERVER;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.OAUTH_ENV_CACHE_PATH;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.OAUTH_ENV_CONNECT_TIMEOUT;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.OAUTH_ENV_READ_TIMEOUT;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.OAUTH_ENV_TOKEN_AUDIENCE;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.OAUTH_ENV_TOKEN_SCOPE;
+
 import io.camunda.zeebe.client.impl.util.Environment;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Objects;
 
 public final class OAuthCredentialsProviderBuilder {
   public static final String INVALID_ARGUMENT_MSG = "Expected valid %s but none was provided.";
-  public static final String OAUTH_ENV_CLIENT_ID = "ZEEBE_CLIENT_ID";
-  public static final String OAUTH_ENV_CLIENT_SECRET = "ZEEBE_CLIENT_SECRET";
-  public static final String OAUTH_ENV_TOKEN_AUDIENCE = "ZEEBE_TOKEN_AUDIENCE";
-  public static final String OAUTH_ENV_TOKEN_SCOPE = "ZEEBE_TOKEN_SCOPE";
-  public static final String OAUTH_ENV_AUTHORIZATION_SERVER = "ZEEBE_AUTHORIZATION_SERVER_URL";
-  public static final String OAUTH_ENV_SSL_CLIENT_KEYSTORE_PATH = "ZEEBE_SSL_CLIENT_KEYSTORE_PATH";
-  public static final String OAUTH_ENV_SSL_CLIENT_KEYSTORE_SECRET =
-      "ZEEBE_SSL_CLIENT_KEYSTORE_SECRET";
-  public static final String OAUTH_ENV_SSL_CLIENT_KEYSTORE_KEY_SECRET =
-      "ZEEBE_SSL_CLIENT_KEYSTORE_KEY_SECRET";
-  public static final String OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_PATH =
-      "ZEEBE_SSL_CLIENT_TRUSTSTORE_PATH";
-  public static final String OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_SECRET =
-      "ZEEBE_SSL_CLIENT_TRUSTSTORE_SECRET";
-  public static final String OAUTH_ENV_CACHE_PATH = "ZEEBE_CLIENT_CONFIG_PATH";
-  public static final String OAUTH_ENV_CONNECT_TIMEOUT = "ZEEBE_AUTH_CONNECT_TIMEOUT";
-  public static final String OAUTH_ENV_READ_TIMEOUT = "ZEEBE_AUTH_READ_TIMEOUT";
   private static final String DEFAULT_AUTHZ_SERVER = "https://login.cloud.camunda.io/oauth/token/";
   private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
   private static final Duration DEFAULT_READ_TIMEOUT = DEFAULT_CONNECT_TIMEOUT;
@@ -53,11 +44,6 @@ public final class OAuthCredentialsProviderBuilder {
   private String scope;
   private String authorizationServerUrl;
   private URL authorizationServer;
-  private Path keystorePath;
-  private String keystorePassword;
-  private String keystoreKeyPassword;
-  private Path truststorePath;
-  private String truststorePassword;
   private String credentialsCachePath;
   private File credentialsCache;
   private Duration connectTimeout;
@@ -129,71 +115,6 @@ public final class OAuthCredentialsProviderBuilder {
     return authorizationServer;
   }
 
-  /** Path to keystore used for OAuth identity provider */
-  public OAuthCredentialsProviderBuilder keystorePath(final Path keystorePath) {
-    this.keystorePath = keystorePath;
-    return this;
-  }
-
-  /**
-   * @see OAuthCredentialsProviderBuilder#keystorePath(Path)
-   */
-  Path getKeystorePath() {
-    return keystorePath;
-  }
-
-  /** Password to keystore used for OAuth identity provider */
-  public OAuthCredentialsProviderBuilder keystorePassword(final String keystorePassword) {
-    this.keystorePassword = keystorePassword;
-    return this;
-  }
-
-  /**
-   * @see OAuthCredentialsProviderBuilder#keystorePassword(String)
-   */
-  String getKeystorePassword() {
-    return keystorePassword;
-  }
-
-  /** Keystore key password used for OAuth identity provider */
-  public OAuthCredentialsProviderBuilder keystoreKeyPassword(final String keystoreKeyPassword) {
-    this.keystoreKeyPassword = keystoreKeyPassword;
-    return this;
-  }
-
-  /**
-   * @see OAuthCredentialsProviderBuilder#keystoreKeyPassword(String)
-   */
-  String getKeystoreKeyPassword() {
-    return keystoreKeyPassword;
-  }
-
-  /** Path to truststore used for OAuth identity provider */
-  public OAuthCredentialsProviderBuilder truststorePath(final Path truststorePath) {
-    this.truststorePath = truststorePath;
-    return this;
-  }
-
-  /**
-   * @see OAuthCredentialsProviderBuilder#truststorePath(Path)
-   */
-  Path getTruststorePath() {
-    return truststorePath;
-  }
-
-  /** Password to truststore used for OAuth identity provider */
-  public OAuthCredentialsProviderBuilder truststorePassword(final String truststorePassword) {
-    this.truststorePassword = truststorePassword;
-    return this;
-  }
-
-  /**
-   * @see OAuthCredentialsProviderBuilder#truststorePassword(String)
-   */
-  String getTruststorePassword() {
-    return truststorePassword;
-  }
-
   /**
    * The location for the credentials cache file. If none (or null) is specified the default will be
    * $HOME/.camunda/credentials
@@ -259,14 +180,6 @@ public final class OAuthCredentialsProviderBuilder {
     final String envAudience = Environment.system().get(OAUTH_ENV_TOKEN_AUDIENCE);
     final String envScope = Environment.system().get(OAUTH_ENV_TOKEN_SCOPE);
     final String envAuthorizationUrl = Environment.system().get(OAUTH_ENV_AUTHORIZATION_SERVER);
-    final String envKeystorePath = Environment.system().get(OAUTH_ENV_SSL_CLIENT_KEYSTORE_PATH);
-    final String envKeystorePassword =
-        Environment.system().get(OAUTH_ENV_SSL_CLIENT_KEYSTORE_SECRET);
-    final String envKeystoreKeyPassword =
-        Environment.system().get(OAUTH_ENV_SSL_CLIENT_KEYSTORE_KEY_SECRET);
-    final String envTruststorePath = Environment.system().get(OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_PATH);
-    final String envTruststorePassword =
-        Environment.system().get(OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_SECRET);
     final String envCachePath = Environment.system().get(OAUTH_ENV_CACHE_PATH);
     final String envReadTimeout = Environment.system().get(OAUTH_ENV_READ_TIMEOUT);
     final String envConnectTimeout = Environment.system().get(OAUTH_ENV_CONNECT_TIMEOUT);
@@ -289,26 +202,6 @@ public final class OAuthCredentialsProviderBuilder {
 
     if (envAuthorizationUrl != null) {
       authorizationServerUrl = envAuthorizationUrl;
-    }
-
-    if (envKeystorePath != null) {
-      keystorePath = Paths.get(envKeystorePath);
-    }
-
-    if (envKeystorePassword != null) {
-      keystorePassword = envKeystorePassword;
-    }
-
-    if (envKeystoreKeyPassword != null) {
-      keystoreKeyPassword = envKeystoreKeyPassword;
-    }
-
-    if (envTruststorePath != null) {
-      truststorePath = Paths.get(envTruststorePath);
-    }
-
-    if (envTruststorePassword != null) {
-      truststorePassword = envTruststorePassword;
     }
 
     if (envCachePath != null) {
@@ -354,15 +247,6 @@ public final class OAuthCredentialsProviderBuilder {
           authorizationServerUrl, String.format(INVALID_ARGUMENT_MSG, "authorization server URL"));
 
       authorizationServer = new URL(authorizationServerUrl);
-
-      if (keystorePath != null && !keystorePath.toFile().exists()) {
-        throw new IllegalArgumentException("Keystore path does not exist: " + keystorePath);
-      }
-
-      if (truststorePath != null && !truststorePath.toFile().exists()) {
-        throw new IllegalArgumentException("Truststore path does not exist: " + keystorePath);
-      }
-
       credentialsCache = new File(credentialsCachePath);
 
       if (credentialsCache.isDirectory()) {

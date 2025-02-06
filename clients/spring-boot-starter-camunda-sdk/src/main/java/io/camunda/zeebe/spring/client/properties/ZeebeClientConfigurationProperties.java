@@ -15,10 +15,9 @@
  */
 package io.camunda.zeebe.spring.client.properties;
 
-import io.camunda.zeebe.client.ClientProperties;
-import io.camunda.zeebe.client.ZeebeClientConfiguration;
-import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
-import io.camunda.zeebe.client.impl.util.Environment;
+import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.client.impl.CamundaClientBuilderImpl;
+import io.camunda.client.impl.util.Environment;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
 import jakarta.annotation.PostConstruct;
 import java.net.URI;
@@ -40,8 +39,8 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 @Deprecated
 public class ZeebeClientConfigurationProperties {
   // Used to read default config values
-  public static final ZeebeClientBuilderImpl DEFAULT =
-      (ZeebeClientBuilderImpl) new ZeebeClientBuilderImpl().withProperties(new Properties());
+  public static final CamundaClientBuilderImpl DEFAULT =
+      (CamundaClientBuilderImpl) new CamundaClientBuilderImpl().withProperties(new Properties());
   public static final String CONNECTION_MODE_CLOUD = "CLOUD";
   public static final String CONNECTION_MODE_ADDRESS = "ADDRESS";
   private static final Logger LOGGER =
@@ -118,21 +117,30 @@ public class ZeebeClientConfigurationProperties {
       // Java Client has some name differences in properties - support those as well in case people
       // use those (https://github.com/camunda-community-hub/spring-zeebe/issues/350)
       if (broker.gatewayAddress == null
-          && environment.containsProperty(ClientProperties.GATEWAY_ADDRESS)) {
-        broker.gatewayAddress = environment.getProperty(ClientProperties.GATEWAY_ADDRESS);
+          && environment.containsProperty(
+              io.camunda.zeebe.client.ClientProperties.GATEWAY_ADDRESS)) {
+        broker.gatewayAddress =
+            environment.getProperty(io.camunda.zeebe.client.ClientProperties.GATEWAY_ADDRESS);
       }
       if (cloud.clientSecret == null
-          && environment.containsProperty(ClientProperties.CLOUD_CLIENT_SECRET)) {
-        cloud.clientSecret = environment.getProperty(ClientProperties.CLOUD_CLIENT_SECRET);
+          && environment.containsProperty(
+              io.camunda.zeebe.client.ClientProperties.CLOUD_CLIENT_SECRET)) {
+        cloud.clientSecret =
+            environment.getProperty(io.camunda.zeebe.client.ClientProperties.CLOUD_CLIENT_SECRET);
       }
       if (worker.defaultName == null
-          && environment.containsProperty(ClientProperties.DEFAULT_JOB_WORKER_NAME)) {
-        worker.defaultName = environment.getProperty(ClientProperties.DEFAULT_JOB_WORKER_NAME);
+          && environment.containsProperty(
+              io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_NAME)) {
+        worker.defaultName =
+            environment.getProperty(
+                io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_NAME);
       }
       // Support environment based default tenant id override if value is client default fallback
       if ((defaultTenantId == null || defaultTenantId.equals(DEFAULT.getDefaultTenantId()))
-          && environment.containsProperty(ClientProperties.DEFAULT_TENANT_ID)) {
-        defaultTenantId = environment.getProperty(ClientProperties.DEFAULT_TENANT_ID);
+          && environment.containsProperty(
+              io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID)) {
+        defaultTenantId =
+            environment.getProperty(io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID);
       }
     }
 
@@ -247,7 +255,7 @@ public class ZeebeClientConfigurationProperties {
   /**
    * @deprecated since 8.5 for removal with 8.8, replaced by {@link
    *     ZeebeClientConfigurationProperties#getGrpcAddress()}
-   * @see ZeebeClientConfiguration#getGatewayAddress()
+   * @see CamundaClientConfiguration#getGatewayAddress()
    */
   @Deprecated
   @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.grpc-address")
@@ -509,7 +517,7 @@ public class ZeebeClientConfigurationProperties {
   public static class Broker {
     /**
      * @deprecated since 8.5 for removal with 8.8, replaced by {@link Broker#getGrpcAddress()}
-     * @see ZeebeClientConfiguration#getGatewayAddress()
+     * @see CamundaClientConfiguration#getGatewayAddress()
      */
     @Deprecated private String gatewayAddress;
 
@@ -519,7 +527,7 @@ public class ZeebeClientConfigurationProperties {
 
     /**
      * @deprecated since 8.5 for removal with 8.8, replaced by {@link Broker#getGrpcAddress()}
-     * @see ZeebeClientConfiguration#getGatewayAddress()
+     * @see CamundaClientConfiguration#getGatewayAddress()
      */
     @Deprecated
     @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.grpc-address")
@@ -529,7 +537,7 @@ public class ZeebeClientConfigurationProperties {
 
     /**
      * @deprecated since 8.5 for removal with 8.8, replaced by {@link Broker#getGrpcAddress()}
-     * @see ZeebeClientConfiguration#getGatewayAddress()
+     * @see CamundaClientConfiguration#getGatewayAddress()
      */
     @Deprecated
     public void setGatewayAddress(final String gatewayAddress) {
@@ -544,6 +552,18 @@ public class ZeebeClientConfigurationProperties {
 
     @Deprecated
     public void setGrpcAddress(final URI grpcAddress) {
+      /*
+       * Validates that the provided gRPC address is an absolute URI.
+       *
+       * <p>We use {@code URI.getHost() == null} to check for absolute URIs because:
+       * <ul>
+       *   <li>For absolute URIs (with a scheme) (e.g., "https://example.com"), {@code URI.getHost()} returns the hostname (e.g., "example.com").</li>
+       *   <li>For relative URIs (without a scheme) (e.g., "example.com"), {@code URI.getHost()} returns {@code null}.</li>
+       * </ul>
+       */
+      if (grpcAddress != null && grpcAddress.getHost() == null) {
+        throw new IllegalArgumentException("grpcAddress must be an absolute URI");
+      }
       this.grpcAddress = grpcAddress;
     }
 
@@ -555,6 +575,18 @@ public class ZeebeClientConfigurationProperties {
 
     @Deprecated
     public void setRestAddress(final URI restAddress) {
+      /*
+       * Validates that the provided gRPC address is an absolute URI.
+       *
+       * <p>We use {@code URI.getHost() == null} to check for absolute URIs because:
+       * <ul>
+       *   <li>For absolute URIs (with a scheme) (e.g., "https://example.com"), {@code URI.getHost()} returns the hostname (e.g., "example.com").</li>
+       *   <li>For relative URIs (without a scheme) (e.g., "example.com"), {@code URI.getHost()} returns {@code null}.</li>
+       * </ul>
+       */
+      if (restAddress != null && restAddress.getHost() == null) {
+        throw new IllegalArgumentException("restAddress must be an absolute URI");
+      }
       this.restAddress = restAddress;
     }
 
@@ -728,7 +760,7 @@ public class ZeebeClientConfigurationProperties {
 
     /**
      * @deprecated since 8.5 for removal with 8.8, replaced by {@link Cloud#getGrpcAddress()}
-     * @see ZeebeClientConfiguration#getGatewayAddress()
+     * @see CamundaClientConfiguration#getGatewayAddress()
      */
     @Deprecated
     @DeprecatedConfigurationProperty(

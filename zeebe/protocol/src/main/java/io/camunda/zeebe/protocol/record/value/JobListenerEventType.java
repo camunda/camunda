@@ -36,15 +36,25 @@ public enum JobListenerEventType {
   END,
 
   /**
-   * Represents the `complete` event for a task listener. This event type is used to indicate that
-   * the listener should be triggered after a user task complete operation was invoked.
+   * Represents the `completing` event for a task listener. This event type is used to indicate that
+   * the listener should be triggered when a user task is completing. It allows to execute custom
+   * logic before the task is completed, to correct user task data, and to deny the completion.
    */
-  COMPLETE,
+  COMPLETING,
 
   /**
-   * Represents the `assignment` event for a task listener. This event type is used to indicate that
-   * the listener should be triggered when a user task is assigned, claimed (assigned to the current
-   * user), or unassigned.
+   * Represents the `assigning` event for a task listener. This event type is used to indicate that
+   * the listener should be triggered when a user task is assigning. It allows to execute custom
+   * logic before the task is assigned, to correct user task data, and to deny the assignment.
    */
-  ASSIGNMENT
+  ASSIGNING,
+
+  /**
+   * Represents the `updating` event for a task listener. This event type is used to indicate that
+   * the listener should be triggered when a user task is updating. Updates may include changes to
+   * attributes such as `candidateGroupsList`, `candidateUsersList`, `dueDate`, `followUpDate`, and
+   * `priority`. It allows executing custom logic before the task is updated, to correct user task
+   * data, and to deny the update.
+   */
+  UPDATING
 }

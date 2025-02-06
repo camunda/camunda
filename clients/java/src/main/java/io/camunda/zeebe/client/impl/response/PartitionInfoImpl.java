@@ -15,13 +15,13 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.client.protocol.rest.Partition.HealthEnum;
+import io.camunda.client.protocol.rest.Partition.RoleEnum;
 import io.camunda.zeebe.client.api.response.PartitionBrokerHealth;
 import io.camunda.zeebe.client.api.response.PartitionBrokerRole;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
-import io.camunda.zeebe.client.protocol.rest.Partition.HealthEnum;
-import io.camunda.zeebe.client.protocol.rest.Partition.RoleEnum;
+import io.camunda.zeebe.client.impl.util.EnumUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition;
-import java.util.Arrays;
 import java.util.Objects;
 
 public class PartitionInfoImpl implements PartitionInfo {
@@ -40,10 +40,9 @@ public class PartitionInfoImpl implements PartitionInfo {
     } else if (partition.getRole() == Partition.PartitionBrokerRole.INACTIVE) {
       role = PartitionBrokerRole.INACTIVE;
     } else {
-      throw new RuntimeException(
-          String.format(
-              "Unexpected partition broker role %s, should be one of %s",
-              partition.getRole(), Arrays.toString(PartitionBrokerRole.values())));
+      EnumUtil.logUnknownEnumValue(
+          partition.getRole(), "partition broker role", PartitionBrokerRole.values());
+      role = PartitionBrokerRole.UNKNOWN_ENUM_VALUE;
     }
 
     if (partition.getHealth() == Partition.PartitionBrokerHealth.HEALTHY) {
@@ -53,14 +52,13 @@ public class PartitionInfoImpl implements PartitionInfo {
     } else if (partition.getHealth() == Partition.PartitionBrokerHealth.DEAD) {
       partitionBrokerHealth = PartitionBrokerHealth.DEAD;
     } else {
-      throw new RuntimeException(
-          String.format(
-              "Unexpected partition broker health %s, should be one of %s",
-              partition.getHealth(), Arrays.toString(PartitionBrokerHealth.values())));
+      EnumUtil.logUnknownEnumValue(
+          partition.getHealth(), "partition broker health", PartitionBrokerHealth.values());
+      partitionBrokerHealth = PartitionBrokerHealth.UNKNOWN_ENUM_VALUE;
     }
   }
 
-  public PartitionInfoImpl(final io.camunda.zeebe.client.protocol.rest.Partition httpPartition) {
+  public PartitionInfoImpl(final io.camunda.client.protocol.rest.Partition httpPartition) {
 
     if (httpPartition.getPartitionId() == null) {
       throw new RuntimeException("Unexpected missing partition ID. A partition ID is required.");
@@ -74,10 +72,9 @@ public class PartitionInfoImpl implements PartitionInfo {
     } else if (httpPartition.getRole() == RoleEnum.INACTIVE) {
       role = PartitionBrokerRole.INACTIVE;
     } else {
-      throw new RuntimeException(
-          String.format(
-              "Unexpected partition broker role %s, should be one of %s",
-              httpPartition.getRole(), Arrays.toString(PartitionBrokerRole.values())));
+      EnumUtil.logUnknownEnumValue(
+          httpPartition.getRole(), "partition broker role", PartitionBrokerRole.values());
+      role = PartitionBrokerRole.UNKNOWN_ENUM_VALUE;
     }
 
     if (httpPartition.getHealth() == HealthEnum.HEALTHY) {
@@ -87,10 +84,9 @@ public class PartitionInfoImpl implements PartitionInfo {
     } else if (httpPartition.getHealth() == HealthEnum.DEAD) {
       partitionBrokerHealth = PartitionBrokerHealth.DEAD;
     } else {
-      throw new RuntimeException(
-          String.format(
-              "Unexpected partition broker health %s, should be one of %s",
-              httpPartition.getHealth(), Arrays.toString(PartitionBrokerHealth.values())));
+      EnumUtil.logUnknownEnumValue(
+          httpPartition.getHealth(), "partition broker health", PartitionBrokerHealth.values());
+      partitionBrokerHealth = PartitionBrokerHealth.UNKNOWN_ENUM_VALUE;
     }
   }
 

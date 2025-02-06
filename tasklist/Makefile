@@ -107,12 +107,10 @@ start-e2e: elasticsearch setup-maven-context
 	$(eval SERVICES := zeebe-e2e)
 	$(eval SPRING_PROFILES_ACTIVE = e2e-test)
 	@set -o allexport && source $(MAVEN_CONTEXT) set +o allexport && \
-		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_ELASTICSEARCH_INDEXPREFIX "e2etasklist" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_ELASTICSEARCH_INDEXPREFIX "e2e" $(MAVEN_CONTEXT) && \
 		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX "e2e" $(MAVEN_CONTEXT) && \
 		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS "localhost:26503" $(MAVEN_CONTEXT) && \
 		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS "http://localhost:8088" $(MAVEN_CONTEXT) && \
-		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_IMPORTER_READERBACKOFF "0" $(MAVEN_CONTEXT) && \
-		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_IMPORTER_SCHEDULERBACKOFF "0" $(MAVEN_CONTEXT) && \
 		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_CLOUD_CLUSTERID "449ac2ad-d3c6-4c73-9c68-7752e39ae616" $(MAVEN_CONTEXT) && \
 		$(WRITE_OR_REPLACE_SCRIPT) SERVER_PORT 8081 $(MAVEN_CONTEXT)
 	$(call run-env)
@@ -163,6 +161,6 @@ define run-env
 	@DATABASE=$(DATABASE) docker compose -f $(COMPOSE_FILE) up -d $(SERVICES)
 	@mvn clean install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild
 	@set -o allexport && source $(MAVEN_CONTEXT) && set +o allexport && rm -rf $(MAVEN_CONTEXT) && \
-     	mvn -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneTasklist" -Dspring.profiles.active=$(SPRING_PROFILES_ACTIVE)
+        mvn -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneTasklist" -Dspring.profiles.active=$(SPRING_PROFILES_ACTIVE)
 endef
 

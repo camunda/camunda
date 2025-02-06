@@ -11,16 +11,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,13 +27,13 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @ZeebeIntegration
-@AutoCloseResources
 public final class CompleteJobTest {
 
-  @AutoCloseResource ZeebeClient client;
+  @AutoClose CamundaClient client;
 
   @TestZeebe
-  final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+  final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   ZeebeResourcesHelper resourcesHelper;
 
@@ -164,7 +163,7 @@ public final class CompleteJobTest {
     final String jobType = "job-" + testInfo.getDisplayName();
     final var jobKey = resourcesHelper.createSingleJob(jobType);
     // when
-    getCommand(client, useRest, jobKey).result().denied(denied).send().join();
+    getCommand(client, useRest, jobKey).withResult().deny(denied).send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
@@ -179,7 +178,7 @@ public final class CompleteJobTest {
     final String jobType = "job-" + testInfo.getDisplayName();
     final var jobKey = resourcesHelper.createSingleJob(jobType);
     // when
-    getCommand(client, useRest, jobKey).result().send().join();
+    getCommand(client, useRest, jobKey).withResult().send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
@@ -200,7 +199,7 @@ public final class CompleteJobTest {
   }
 
   private CompleteJobCommandStep1 getCommand(
-      final ZeebeClient client, final boolean useRest, final long jobKey) {
+      final CamundaClient client, final boolean useRest, final long jobKey) {
     final CompleteJobCommandStep1 completeJobCommandStep1 = client.newCompleteCommand(jobKey);
     return useRest ? completeJobCommandStep1.useRest() : completeJobCommandStep1.useGrpc();
   }

@@ -16,6 +16,7 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.operate.listview.VariableForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.HashMap;
 import java.util.List;
@@ -30,12 +31,9 @@ public class ListViewVariableFromVariableHandler
       LoggerFactory.getLogger(ListViewVariableFromVariableHandler.class);
 
   private final String indexName;
-  private final boolean concurrencyMode;
 
-  public ListViewVariableFromVariableHandler(
-      final String indexName, final boolean concurrencyMode) {
+  public ListViewVariableFromVariableHandler(final String indexName) {
     this.indexName = indexName;
-    this.concurrencyMode = concurrencyMode;
   }
 
   @Override
@@ -50,7 +48,10 @@ public class ListViewVariableFromVariableHandler
 
   @Override
   public boolean handlesRecord(final Record<VariableRecordValue> record) {
-    return true;
+    if (!record.getIntent().equals(VariableIntent.MIGRATED)) {
+      return true;
+    }
+    return false;
   }
 
   @Override
@@ -95,32 +96,13 @@ public class ListViewVariableFromVariableHandler
     updateFields.put(POSITION, entity.getPosition());
 
     final Long processInstanceKey = entity.getProcessInstanceKey();
-    if (concurrencyMode) {
-      batchRequest.upsertWithScriptAndRouting(
-          indexName,
-          entity.getId(),
-          entity,
-          getVariableScript(),
-          updateFields,
-          String.valueOf(processInstanceKey));
-    } else {
-      batchRequest.upsertWithRouting(
-          indexName, entity.getId(), entity, updateFields, String.valueOf(processInstanceKey));
-    }
+
+    batchRequest.upsertWithRouting(
+        indexName, entity.getId(), entity, updateFields, String.valueOf(processInstanceKey));
   }
 
   @Override
   public String getIndexName() {
     return indexName;
-  }
-
-  protected String getVariableScript() {
-    return String.format(
-        "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
-            + "ctx._source.%s = params.%s; " // position
-            + "ctx._source.%s = params.%s; " // var name
-            + "ctx._source.%s = params.%s; " // var value
-            + "}",
-        POSITION, POSITION, POSITION, POSITION, POSITION, VAR_NAME, VAR_NAME, VAR_VALUE, VAR_VALUE);
   }
 }

@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.user;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
-
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
@@ -55,13 +53,15 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
 
   @Override
   public void processNewCommand(final TypedRecord<UserRecord> command) {
-    final long userKey = command.getValue().getUserKey();
-    final var persistedUserOptional = userState.getUser(userKey);
+    final var user = command.getValue();
+    final long userKey = user.getUserKey();
+    final String username = user.getUsername();
+    final var persistedUserOptional = userState.getUser(username);
 
     if (persistedUserOptional.isEmpty()) {
       final var rejectionMessage =
           "Expected to update user with username %s, but a user with this username does not exist"
-              .formatted(command.getValue().getUsername());
+              .formatted(username);
 
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, rejectionMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, rejectionMessage);
@@ -73,14 +73,11 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
     final var authRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.USER, PermissionType.UPDATE)
             .addResourceId(persistedUser.getUsername());
-    if (authCheckBehavior.isAuthorized(authRequest).isLeft()) {
-      final var message =
-          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-              authRequest.getPermissionType(),
-              authRequest.getResourceType(),
-              "username '%s'".formatted(persistedUser.getUsername()));
-      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, message);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, message);
+    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 

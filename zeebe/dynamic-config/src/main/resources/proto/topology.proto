@@ -106,6 +106,7 @@ message TopologyChangeOperation {
     PartitionEnableExporterOperation partitionEnableExporter = 10;
     PartitionBootstrapOperation partitionBootstrap = 11;
     StartPartitionScaleUpOperation initiateScaleUpPartitions = 12;
+    DeleteHistoryOperation deleteHistory = 13;
   }
 }
 
@@ -121,6 +122,7 @@ message PartitionJoinOperation {
 
 message PartitionLeaveOperation {
   int32 partitionId = 1;
+  int32 minimumAllowedReplicas = 2;
 }
 
 message PartitionReconfigurePriorityOperation {
@@ -147,10 +149,15 @@ message PartitionEnableExporterOperation {
 message PartitionBootstrapOperation {
   int32 partitionId = 1;
   int32 priority = 2;
+  optional PartitionConfig config = 3;
 }
 
 message StartPartitionScaleUpOperation {
   int32 desiredPartitionCount = 2;
+}
+
+message DeleteHistoryOperation {
+  int32 memberId = 1;
 }
 
 message MemberJoinOperation {}

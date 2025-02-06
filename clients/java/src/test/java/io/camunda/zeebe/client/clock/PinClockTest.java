@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.params.provider.Arguments.of;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
-import io.camunda.zeebe.client.protocol.rest.ClockPinRequest;
+import io.camunda.client.protocol.rest.ClockPinRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.RestGatewayPaths;
 import io.camunda.zeebe.client.util.RestGatewayService;

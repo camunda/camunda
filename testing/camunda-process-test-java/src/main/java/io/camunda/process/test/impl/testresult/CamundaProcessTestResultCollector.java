@@ -15,10 +15,10 @@
  */
 package io.camunda.process.test.impl.testresult;
 
+import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
-import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
 import io.camunda.process.test.impl.client.IncidentDto;
-import io.camunda.process.test.impl.client.ProcessInstanceDto;
 import io.camunda.process.test.impl.client.VariableDto;
 import java.io.IOException;
 import java.util.Collections;
@@ -56,13 +56,13 @@ public class CamundaProcessTestResultCollector {
   }
 
   private ProcessInstanceResult collectProcessInstanceResult(
-      final ProcessInstanceDto processInstance) {
+      final ProcessInstance processInstance) {
     final ProcessInstanceResult result = new ProcessInstanceResult();
 
-    final long processInstanceKey = processInstance.getKey();
+    final long processInstanceKey = processInstance.getProcessInstanceKey();
 
     result.setProcessInstanceKey(processInstanceKey);
-    result.setProcessId(processInstance.getBpmnProcessId());
+    result.setProcessId(processInstance.getProcessDefinitionId());
     result.setVariables(collectVariables(processInstanceKey));
     result.setOpenIncidents(collectOpenIncidents(processInstanceKey));
 
@@ -82,7 +82,7 @@ public class CamundaProcessTestResultCollector {
   private List<OpenIncident> collectOpenIncidents(final long processInstanceKey) {
     try {
       return dataSource.getFlowNodeInstancesByProcessInstanceKey(processInstanceKey).stream()
-          .filter(FlowNodeInstanceDto::isIncident)
+          .filter(FlowNodeInstance::getIncident)
           .map(this::getIncident)
           .collect(Collectors.toList());
     } catch (final IOException e) {
@@ -92,7 +92,7 @@ public class CamundaProcessTestResultCollector {
     return Collections.emptyList();
   }
 
-  private OpenIncident getIncident(final FlowNodeInstanceDto flowNodeInstance) {
+  private OpenIncident getIncident(final FlowNodeInstance flowNodeInstance) {
     final OpenIncident openIncident = new OpenIncident();
     openIncident.setFlowNodeId(flowNodeInstance.getFlowNodeId());
 

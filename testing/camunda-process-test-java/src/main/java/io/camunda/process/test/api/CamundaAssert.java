@@ -15,12 +15,16 @@
  */
 package io.camunda.process.test.api;
 
+import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.response.ProcessInstanceResult;
+import io.camunda.process.test.api.assertions.ElementSelector;
+import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
+import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.ProcessInstanceAssertj;
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
-import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
 import java.time.Duration;
+import java.util.function.Function;
 import org.awaitility.Awaitility;
 
 /**
@@ -58,7 +62,13 @@ public class CamundaAssert {
   /** The default time between two assertion attempts until the expected state is reached. */
   public static final Duration DEFAULT_ASSERTION_INTERVAL = Duration.ofMillis(100);
 
+  /** The default element selector used for BPMN element assertions with a string identifier. */
+  public static final Function<String, ElementSelector> DEFAULT_ELEMENT_SELECTOR =
+      ElementSelectors::byId;
+
   private static final ThreadLocal<CamundaDataSource> DATA_SOURCE = new ThreadLocal<>();
+
+  private static Function<String, ElementSelector> elementSelector = DEFAULT_ELEMENT_SELECTOR;
 
   static {
     Awaitility.setDefaultTimeout(DEFAULT_ASSERTION_TIMEOUT);
@@ -87,6 +97,16 @@ public class CamundaAssert {
     Awaitility.setDefaultPollInterval(assertionInterval);
   }
 
+  /**
+   * Configures the element selector used for BPMN element assertions with a string identifier.
+   *
+   * @param elementSelector the element selector to use
+   * @see #DEFAULT_ELEMENT_SELECTOR
+   */
+  public static void setElementSelector(final Function<String, ElementSelector> elementSelector) {
+    CamundaAssert.elementSelector = elementSelector;
+  }
+
   // ======== Assertions ========
 
   /**
@@ -97,7 +117,7 @@ public class CamundaAssert {
    */
   public static ProcessInstanceAssert assertThat(final ProcessInstanceEvent processInstanceEvent) {
     return new ProcessInstanceAssertj(
-        getDataSource(), processInstanceEvent.getProcessInstanceKey());
+        getDataSource(), processInstanceEvent.getProcessInstanceKey(), elementSelector);
   }
 
   /**
@@ -109,7 +129,19 @@ public class CamundaAssert {
   public static ProcessInstanceAssert assertThat(
       final ProcessInstanceResult processInstanceResult) {
     return new ProcessInstanceAssertj(
-        getDataSource(), processInstanceResult.getProcessInstanceKey());
+        getDataSource(), processInstanceResult.getProcessInstanceKey(), elementSelector);
+  }
+
+  /**
+   * To verify a process instance.
+   *
+   * @param processInstanceSelector the selector of the process instance to verify
+   * @return the assertion object
+   * @see io.camunda.process.test.api.assertions.ProcessInstanceSelectors
+   */
+  public static ProcessInstanceAssert assertThat(
+      final ProcessInstanceSelector processInstanceSelector) {
+    return new ProcessInstanceAssertj(getDataSource(), processInstanceSelector, elementSelector);
   }
 
   // ======== Internal ========

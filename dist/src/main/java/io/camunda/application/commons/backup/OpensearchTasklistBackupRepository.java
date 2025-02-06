@@ -7,12 +7,14 @@
  */
 package io.camunda.application.commons.backup;
 
+import io.camunda.application.commons.conditions.WebappEnabledCondition;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -26,9 +28,10 @@ import org.springframework.context.annotation.Profile;
  *
  * <p>Note that the condition used refers to tasklist OpensearchCondition
  */
-@Conditional(OpenSearchCondition.class)
+@Conditional({OpenSearchCondition.class, WebappEnabledCondition.class})
 @Configuration
-@Profile("tasklist & !operate")
+@Profile("tasklist")
+@ConditionalOnMissingBean(OpensearchBackupRepository.class)
 // only active if standalone, otherwise the operate one is used
 public class OpensearchTasklistBackupRepository {
 

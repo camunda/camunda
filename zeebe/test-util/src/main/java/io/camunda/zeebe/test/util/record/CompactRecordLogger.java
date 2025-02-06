@@ -803,6 +803,7 @@ public class CompactRecordLogger {
           summarizeElementInformation(value.getElementId(), value.getElementInstanceKey()));
     }
 
+    addIfNotEmpty(result, value.getChangedAttributes(), " changedAttributes");
     addIfNotEmpty(result, value.getAssignee(), " assignee");
     addIfNotEmpty(result, value.getCandidateUsersList(), " candidateUsersList");
     addIfNotEmpty(result, value.getCandidateGroupsList(), " candidateGroupsList");
@@ -910,6 +911,8 @@ public class CompactRecordLogger {
         .append(formatId(value.getName()))
         .append(", EntityKey=")
         .append(shortenKey(value.getEntityKey()))
+        .append(", EntityId=")
+        .append(formatId(value.getEntityId()))
         .append("]");
 
     return builder.toString();

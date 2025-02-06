@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -84,6 +86,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
+import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
 import java.time.Duration;
 import java.util.Collection;
@@ -141,6 +144,16 @@ public final class RecordingExporter implements Exporter {
       if (controller != null && autoAcknowledge) { // the engine tests do not open the exporter
         controller.updateLastExportedRecordPosition(record.getPosition());
       }
+    } finally {
+      LOCK.unlock();
+    }
+  }
+
+  @Override
+  public void purge() throws Exception {
+    LOCK.lock();
+    try {
+      RECORDS.clear();
     } finally {
       LOCK.unlock();
     }
@@ -230,6 +243,10 @@ public final class RecordingExporter implements Exporter {
 
   public static ProcessRecordStream processRecords() {
     return new ProcessRecordStream(records(ValueType.PROCESS, Process.class));
+  }
+
+  public static ProcessRecordStream processRecords(final ProcessIntent intent) {
+    return processRecords().withIntent(intent);
   }
 
   public static DeploymentDistributionRecordStream deploymentDistributionRecords() {
@@ -424,6 +441,10 @@ public final class RecordingExporter implements Exporter {
     return new FormRecordStream(records(ValueType.FORM, Form.class));
   }
 
+  public static ResourceRecordStream resourceRecords() {
+    return new ResourceRecordStream(records(ValueType.RESOURCE, Resource.class));
+  }
+
   public static ErrorRecordStream errorRecords() {
     return new ErrorRecordStream(records(ValueType.ERROR, ErrorRecordValue.class));
   }
@@ -492,6 +513,10 @@ public final class RecordingExporter implements Exporter {
 
   public static MappingRecordStream mappingRecords() {
     return new MappingRecordStream(records(ValueType.MAPPING, MappingRecordValue.class));
+  }
+
+  public static MappingRecordStream mappingRecords(final MappingIntent intent) {
+    return mappingRecords().withIntent(intent);
   }
 
   public static GroupRecordStream groupRecords() {

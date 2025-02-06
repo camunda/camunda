@@ -36,9 +36,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(
-    value = AuthorizationQueryController.class,
-    properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = AuthorizationController.class)
 public class AuthorizationQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -46,7 +44,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
-                 "ownerKey": 1,
+                 "ownerKey": "1",
                  "ownerType": "USER",
                  "resourceType": "PROCESS_DEFINITION",
                  "permissions": [
@@ -61,15 +59,13 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
              ],
              "page": {
                "totalItems": 1,
-               "firstSortValues": ["v"],
+               "firstSortValues": ["f"],
                "lastSortValues": [
                  "v"
                ]
              }
            }""";
   private static final String AUTHORIZATION_SEARCH_URL = "/v2/authorizations/search";
-  private static final String USERS_AUTHORIZATION_SEARCH_URL =
-      "/v2/users/{ownerKey}/authorizations/search";
 
   private static final SearchQueryResult<AuthorizationEntity> SEARCH_QUERY_RESULT =
       new Builder<AuthorizationEntity>()
@@ -81,7 +77,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                       OwnerTypeEnum.USER.getValue(),
                       ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
                       List.of(new Permission(PermissionType.CREATE, Set.of("2"))))))
-          .sortValues(new Object[] {"v"})
+          .firstSortValues(new Object[] {"f"})
+          .lastSortValues(new Object[] {"v"})
           .build();
 
   @MockBean private AuthorizationServices authorizationServices;
@@ -148,7 +145,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "ownerType",
-                        "order": "desc"
+                        "order": "DESC"
                     }
                 ]
             }""";
@@ -196,156 +193,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
     verify(authorizationServices, never()).search(any(AuthorizationQuery.class));
   }
 
-  @Test
-  void shouldSearchUserAuthorizationsWithEmptyBody() {
-    // given
-    when(authorizationServices.search(any(AuthorizationQuery.class)))
-        .thenReturn(SEARCH_QUERY_RESULT);
-    // when / then
-
-    webClient
-        .post()
-        .uri(USERS_AUTHORIZATION_SEARCH_URL, 1)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
-
-    verify(authorizationServices)
-        .search(
-            new AuthorizationQuery.Builder()
-                .filter(f -> f.ownerType(OwnerTypeEnum.USER.getValue()).ownerKeys(1L))
-                .build());
-  }
-
-  @Test
-  void shouldSearchUserAuthorizationsWithEmptyQuery() {
-    // given
-    when(authorizationServices.search(any(AuthorizationQuery.class)))
-        .thenReturn(SEARCH_QUERY_RESULT);
-    final String request = "{}";
-    // when / then
-    webClient
-        .post()
-        .uri(USERS_AUTHORIZATION_SEARCH_URL, 1)
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
-
-    verify(authorizationServices)
-        .search(
-            new AuthorizationQuery.Builder()
-                .filter(f -> f.ownerType(OwnerTypeEnum.USER.getValue()).ownerKeys(1L))
-                .build());
-  }
-
-  @Test
-  void shouldSearchUserAuthorizationsWithRequestedFilter() {
-    // given
-    when(authorizationServices.search(any(AuthorizationQuery.class)))
-        .thenReturn(SEARCH_QUERY_RESULT);
-    final String request =
-        """
-    {"filter": {"ownerType": null, "ownerKey": 2}}
-    """;
-    // when / then
-    webClient
-        .post()
-        .uri(USERS_AUTHORIZATION_SEARCH_URL, 1)
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
-
-    verify(authorizationServices)
-        .search(
-            new AuthorizationQuery.Builder()
-                .filter(f -> f.ownerType(OwnerTypeEnum.USER.getValue()).ownerKeys(1L))
-                .build());
-  }
-
-  @Test
-  void shouldSearchUserAuthorizationsWithSorting() {
-    // given
-    when(authorizationServices.search(any(AuthorizationQuery.class)))
-        .thenReturn(SEARCH_QUERY_RESULT);
-    final var request =
-        """
-            {
-                "sort": [
-                    {
-                        "field": "ownerType",
-                        "order": "desc"
-                    }
-                ]
-            }""";
-    // when / then
-    webClient
-        .post()
-        .uri(USERS_AUTHORIZATION_SEARCH_URL, 1)
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
-
-    verify(authorizationServices)
-        .search(
-            new AuthorizationQuery.Builder()
-                .filter(f -> f.ownerType(OwnerTypeEnum.USER.getValue()).ownerKeys(1L))
-                .sort(new AuthorizationSort.Builder().ownerType().desc().build())
-                .build());
-  }
-
-  @ParameterizedTest
-  @MethodSource("invalidUserAuthorizationSearchQueries")
-  void shouldInvalidateUserAuthorizationsSearchQueryWithBadQueries(
-      final String request, final String expectedResponse) {
-    // when / then
-    webClient
-        .post()
-        .uri(USERS_AUTHORIZATION_SEARCH_URL, 1)
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedResponse);
-
-    verify(authorizationServices, never()).search(any(AuthorizationQuery.class));
-  }
-
   public static Stream<Arguments> invalidAuthorizationSearchQueries() {
     return invalidAuthorizationSearchQueriesForEndpoint(AUTHORIZATION_SEARCH_URL);
-  }
-
-  public static Stream<Arguments> invalidUserAuthorizationSearchQueries() {
-    return invalidAuthorizationSearchQueriesForEndpoint("/v2/users/1/authorizations/search");
   }
 
   private static Stream<Arguments> invalidAuthorizationSearchQueriesForEndpoint(
@@ -366,9 +215,9 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "INVALID_ARGUMENT",
+                      "title": "Bad Request",
                       "status": 400,
-                      "detail": "Unknown sortOrder: dsc.",
+                      "detail": "Unexpected value 'dsc' for enum field 'order'. Use any of the following values: [ASC, DESC]",
                       "instance": "%s"
                     }""",
                 endpoint)),
@@ -379,7 +228,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                     "sort": [
                         {
                             "field": "unknownField",
-                            "order": "asc"
+                            "order": "ASC"
                         }
                     ]
                 }""",
@@ -387,9 +236,9 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "INVALID_ARGUMENT",
+                      "title": "Bad Request",
                       "status": 400,
-                      "detail": "Unknown sortBy: unknownField.",
+                      "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [ownerType, ownerKey, resourceType]",
                       "instance": "%s"
                     }""",
                 endpoint)),
@@ -399,7 +248,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                 {
                     "sort": [
                         {
-                            "order": "asc"
+                            "order": "ASC"
                         }
                     ]
                 }""",

@@ -11,16 +11,21 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
 
 final class StepDownIfNotPrimaryTest {
+  @AutoClose MeterRegistry meterRegistry = new SimpleMeterRegistry();
+
   @Test
   void shouldStepDownIfNotPrimary(@TempDir final Path tempDir) throws IllegalAccessException {
     // given
@@ -29,7 +34,8 @@ final class StepDownIfNotPrimaryTest {
     final var metadata = new PartitionMetadata(partitionId, Set.of(), Map.of(), 1, primaryMemberId);
 
     final var raftPartitionConfig = new RaftPartitionConfig();
-    final var partition = new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile());
+    final var partition =
+        new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile(), meterRegistry);
     final var mockRaftPartitionServer = Mockito.mock(RaftPartitionServer.class);
     Mockito.when(mockRaftPartitionServer.getMemberId()).thenReturn(new MemberId("1"));
 
@@ -50,7 +56,8 @@ final class StepDownIfNotPrimaryTest {
     final var primaryMemberId = new MemberId("1");
     final var raftPartitionConfig = new RaftPartitionConfig();
     final var metadata = new PartitionMetadata(partitionId, Set.of(), Map.of(), 1, primaryMemberId);
-    final var partition = new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile());
+    final var partition =
+        new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile(), meterRegistry);
 
     final var mockRaftPartitionServer = Mockito.mock(RaftPartitionServer.class);
     Mockito.when(mockRaftPartitionServer.getMemberId()).thenReturn(new MemberId("1"));
@@ -73,7 +80,8 @@ final class StepDownIfNotPrimaryTest {
     final var raftPartitionConfig = new RaftPartitionConfig();
     final var primaryMemberId = new MemberId("2");
     final var metadata = new PartitionMetadata(partitionId, Set.of(), Map.of(), 1, primaryMemberId);
-    final var partition = new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile());
+    final var partition =
+        new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile(), meterRegistry);
     final var mockRaftPartitionServer = Mockito.mock(RaftPartitionServer.class);
     Mockito.when(mockRaftPartitionServer.getMemberId()).thenReturn(new MemberId("1"));
 
@@ -95,7 +103,8 @@ final class StepDownIfNotPrimaryTest {
     final MemberId primaryMemberId = null;
     final var raftPartitionConfig = new RaftPartitionConfig();
     final var metadata = new PartitionMetadata(partitionId, Set.of(), Map.of(), 1, primaryMemberId);
-    final var partition = new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile());
+    final var partition =
+        new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile(), meterRegistry);
     final var mockRaftPartitionServer = Mockito.mock(RaftPartitionServer.class);
     Mockito.when(mockRaftPartitionServer.getMemberId()).thenReturn(new MemberId("1"));
 

@@ -14,9 +14,12 @@ import io.camunda.application.commons.configuration.BrokerBasedConfiguration.Bro
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.authentication.config.AuthenticationProperties;
+import io.camunda.client.CamundaClientBuilder;
+import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
@@ -26,6 +29,7 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.util.unit.DataSize;
@@ -33,7 +37,7 @@ import org.springframework.util.unit.DataSize;
 /** Represents an instance of the {@link BrokerModuleConfiguration} Spring application. */
 @SuppressWarnings("UnusedReturnValue")
 public final class TestStandaloneBroker extends TestSpringApplication<TestStandaloneBroker>
-    implements TestGateway<TestStandaloneBroker> {
+    implements TestGateway<TestStandaloneBroker>, TestStandaloneApplication<TestStandaloneBroker> {
 
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
   private final BrokerBasedProperties config;
@@ -61,6 +65,15 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     withBean("config", config, BrokerBasedProperties.class).withAdditionalProfile(Profile.BROKER);
 
     securityConfig = new CamundaSecurityProperties();
+    securityConfig
+        .getInitialization()
+        .getUsers()
+        .add(
+            new ConfiguredUser(
+                InitializationConfiguration.DEFAULT_USER_USERNAME,
+                InitializationConfiguration.DEFAULT_USER_PASSWORD,
+                InitializationConfiguration.DEFAULT_USER_NAME,
+                InitializationConfiguration.DEFAULT_USER_EMAIL));
     withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
   }
 
@@ -72,6 +85,14 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
       case CLUSTER -> config.getNetwork().getInternalApi().getPort();
       default -> super.mappedPort(port);
     };
+  }
+
+  @Override
+  public TestStandaloneBroker withProperty(final String key, final Object value) {
+    // Since the security config is not constructed from the properties, we need to manually update
+    // it when we override a property.
+    AuthenticationProperties.applyToSecurityConfig(securityConfig, key, value);
+    return super.withProperty(key, value);
   }
 
   @Override
@@ -115,7 +136,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
           "Expected to get the gateway address for this broker, but the embedded gateway is not enabled");
     }
 
-    return TestGateway.super.grpcAddress();
+    return TestStandaloneApplication.super.grpcAddress();
   }
 
   @Override
@@ -135,27 +156,18 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   }
 
   @Override
-  public ZeebeClientBuilder newClientBuilder() {
+  public CamundaClientBuilder newClientBuilder() {
     if (!isGateway()) {
       throw new IllegalStateException(
           "Cannot create a new client for this broker, as it does not have an embedded gateway");
     }
 
-    return TestGateway.super.newClientBuilder();
+    return TestStandaloneApplication.super.newClientBuilder();
   }
 
   /** Returns the broker configuration */
   public BrokerBasedProperties brokerConfig() {
     return config;
-  }
-
-  /**
-   * Modifies the broker configuration. Will still mutate the configuration if the broker is
-   * started, but likely has no effect until it's restarted.
-   */
-  public TestStandaloneBroker withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
-    modifier.accept(config);
-    return this;
   }
 
   /**
@@ -202,11 +214,22 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    * @param modifier a configuration function
    * @return itself for chaining
    */
+  @Override
   public TestStandaloneBroker withExporter(final String id, final Consumer<ExporterCfg> modifier) {
     final var exporterConfig =
         config.getExporters().computeIfAbsent(id, ignored -> new ExporterCfg());
     modifier.accept(exporterConfig);
 
+    return this;
+  }
+
+  /**
+   * Modifies the broker configuration. Will still mutate the configuration if the broker is
+   * started, but likely has no effect until it's restarted.
+   */
+  @Override
+  public TestStandaloneBroker withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
+    modifier.accept(config);
     return this;
   }
 
@@ -238,13 +261,19 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   public TestStandaloneBroker withRdbmsExporter() {
     withProperty("camunda.database.type", "rdbms");
-    withProperty("spring.datasource.url", "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
-    withProperty("spring.datasource.driver-class-name", "org.h2.Driver");
-    withProperty("spring.datasource.username", "sa");
-    withProperty("spring.datasource.password", "");
+    withProperty(
+        "camunda.database.url",
+        "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
+    withProperty("camunda.database.username", "sa");
+    withProperty("camunda.database.password", "");
     withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");
     withProperty("logging.level.org.mybatis", "DEBUG");
-    withExporter("rdbms", cfg -> cfg.setClassName("-"));
+    withExporter(
+        "rdbms",
+        cfg -> {
+          cfg.setClassName("-");
+          cfg.setArgs(Map.of("flushInterval", "0"));
+        });
     return this;
   }
 }

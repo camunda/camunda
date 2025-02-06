@@ -12,6 +12,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.CamundaClient;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestApplication;
@@ -23,7 +24,6 @@ import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import io.camunda.webapps.zeebe.StandalonePartitionSupplier;
-import io.camunda.zeebe.client.ZeebeClient;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -45,7 +45,6 @@ import org.springframework.test.context.web.WebAppConfiguration;
     classes = {TestApplication.class},
     properties = {
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
       OperateProperties.PREFIX + ".multiTenancy.enabled = false"
     })
@@ -62,7 +61,7 @@ public class OperateZeebeSearchAbstractIT {
 
   // Prevents the zeebe client from being constructed. Components that need to connect to zeebe
   // should use the one in the zeebe container manager
-  @MockBean protected ZeebeClient mockZeebeClient;
+  @MockBean protected CamundaClient mockCamundaClient;
 
   @Autowired protected ZeebeContainerManager zeebeContainerManager;
   @Autowired protected SearchContainerManager searchContainerManager;
@@ -94,8 +93,8 @@ public class OperateZeebeSearchAbstractIT {
     zeebeContainerManager.startContainer();
     searchContainerManager.startContainer();
 
-    final ZeebeClient zeebeClient = zeebeContainerManager.getClient();
-    operateTester = beanFactory.getBean(OperateJ5Tester.class, zeebeClient);
+    final CamundaClient camundaClient = zeebeContainerManager.getClient();
+    operateTester = beanFactory.getBean(OperateJ5Tester.class, camundaClient);
 
     // Required to keep search and zeebe from hanging between test suites
     processCache.clearCache();
@@ -103,7 +102,7 @@ public class OperateZeebeSearchAbstractIT {
     importPositionHolder.clearCache();
     importPositionHolder.scheduleImportPositionUpdateTask();
 
-    final var partitionSupplier = new StandalonePartitionSupplier(zeebeClient);
+    final var partitionSupplier = new StandalonePartitionSupplier(camundaClient);
     partitionHolder.setPartitionSupplier(partitionSupplier);
 
     // Allows time for everything to settle and indices to show up

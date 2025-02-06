@@ -34,8 +34,13 @@ public class MappingStateTest {
     final long key = 1L;
     final String claimName = "foo";
     final String claimValue = "bar";
+    final String name = "name";
     final var mapping =
-        new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
+        new MappingRecord()
+            .setMappingKey(key)
+            .setClaimName(claimName)
+            .setName(name)
+            .setClaimValue(claimValue);
 
     // when
     mappingState.create(mapping);
@@ -44,6 +49,7 @@ public class MappingStateTest {
     final var persistedMapping = mappingState.get(key).get();
     assertThat(persistedMapping.getMappingKey()).isEqualTo(key);
     assertThat(persistedMapping.getClaimName()).isEqualTo(claimName);
+    assertThat(persistedMapping.getName()).isEqualTo(name);
     assertThat(persistedMapping.getClaimValue()).isEqualTo(claimValue);
   }
 
@@ -131,14 +137,14 @@ public class MappingStateTest {
     final var mapping =
         new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
     mappingState.create(mapping);
-    final long tenantKey = 1L;
+    final var tenantId = "tenant";
 
     // when
-    mappingState.addTenant(key, tenantKey);
+    mappingState.addTenant(key, tenantId);
 
     // then
     final var persistedMapping = mappingState.get(key).get();
-    assertThat(persistedMapping.getTenantKeysList()).containsExactly(tenantKey);
+    assertThat(persistedMapping.getTenantIdsList()).containsExactly(tenantId);
   }
 
   @Test
@@ -150,15 +156,15 @@ public class MappingStateTest {
     final var mapping =
         new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
     mappingState.create(mapping);
-    final long tenantKey = 1L;
-    mappingState.addTenant(key, tenantKey);
+    final var tenantId = "tenant";
+    mappingState.addTenant(key, tenantId);
 
     // when
-    mappingState.removeTenant(key, tenantKey);
+    mappingState.removeTenant(key, tenantId);
 
     // then
     final var persistedMapping = mappingState.get(key).get();
-    assertThat(persistedMapping.getTenantKeysList()).isEmpty();
+    assertThat(persistedMapping.getTenantIdsList()).isEmpty();
   }
 
   @Test

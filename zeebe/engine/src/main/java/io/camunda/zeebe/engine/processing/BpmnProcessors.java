@@ -71,12 +71,11 @@ public final class BpmnProcessors {
       final InstantSource clock,
       final EngineConfiguration config,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final ProcessEngineMetrics processEngineMetrics) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         processingState.getProcessMessageSubscriptionState();
     final var keyGenerator = processingState.getKeyGenerator();
-
-    final var processEngineMetrics = new ProcessEngineMetrics(processingState.getPartitionId());
 
     addProcessInstanceCommandProcessor(
         writers, typedRecordProcessors, processingState, authCheckBehavior);
@@ -122,7 +121,8 @@ public final class BpmnProcessors {
         commandDistributionBehavior,
         partitionId,
         routingInfo,
-        authCheckBehavior);
+        authCheckBehavior,
+        keyGenerator);
     addProcessInstanceBatchStreamProcessors(typedRecordProcessors, processingState, writers);
 
     return bpmnStreamProcessor;
@@ -285,7 +285,8 @@ public final class BpmnProcessors {
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
       final RoutingInfo routingInfo,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final KeyGenerator keyGenerator) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_MIGRATION,
         ProcessInstanceMigrationIntent.MIGRATE,
@@ -296,7 +297,8 @@ public final class BpmnProcessors {
             commandDistributionBehavior,
             partitionId,
             routingInfo,
-            authCheckBehavior));
+            authCheckBehavior,
+            keyGenerator));
   }
 
   private static void addProcessInstanceBatchStreamProcessors(

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
@@ -20,19 +21,25 @@ public class TenantEntityRemovedApplier implements TypedEventApplier<TenantInten
   private final MutableTenantState tenantState;
   private final MutableUserState userState;
   private final MutableMappingState mappingState;
+  private final MutableGroupState groupState;
 
   public TenantEntityRemovedApplier(final MutableProcessingState state) {
     tenantState = state.getTenantState();
     userState = state.getUserState();
     mappingState = state.getMappingState();
+    groupState = state.getGroupState();
   }
 
   @Override
   public void applyState(final long key, final TenantRecord tenant) {
     tenantState.removeEntity(tenant.getTenantKey(), tenant.getEntityKey());
     switch (tenant.getEntityType()) {
-      case USER -> userState.removeTenant(tenant.getEntityKey(), tenant.getTenantId());
-      case MAPPING -> mappingState.removeTenant(tenant.getEntityKey(), tenant.getTenantKey());
+      case USER ->
+          userState
+              .getUser(tenant.getEntityKey())
+              .ifPresent(user -> userState.removeTenant(user.getUsername(), tenant.getTenantId()));
+      case MAPPING -> mappingState.removeTenant(tenant.getEntityKey(), tenant.getTenantId());
+      case GROUP -> groupState.removeTenant(tenant.getEntityKey(), tenant.getTenantId());
       default ->
           throw new UnsupportedOperationException(
               String.format(

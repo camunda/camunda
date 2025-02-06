@@ -9,9 +9,9 @@ package io.camunda.zeebe.it.client.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.api.worker.JobWorker;
-import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
+import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.worker.JobWorker;
+import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -25,8 +25,6 @@ import io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.grpc.internal.AbstractStream.TransportState;
 import java.time.Duration;
@@ -40,6 +38,7 @@ import java.util.stream.Stream;
 import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Named;
@@ -59,7 +58,7 @@ final class JobWorkerTest {
 
   @SuppressWarnings("unused")
   static void initTestStandaloneBroker() {
-    zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+    zeebe = new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
   }
 
   @BeforeAll
@@ -315,7 +314,6 @@ final class JobWorkerTest {
   }
 
   @Nested
-  @AutoCloseResources
   final class SlowWorkerTest {
     private final String uniqueId = Strings.newRandomValidBpmnId();
     private final CountDownLatch latch = new CountDownLatch(1);
@@ -333,7 +331,7 @@ final class JobWorkerTest {
     private final RecordingJobHandler jobHandler = new RecordingJobHandler();
 
     @SuppressWarnings({"FieldCanBeLocal", "unused"})
-    @AutoCloseResource
+    @AutoClose
     private JobWorker worker;
 
     @BeforeEach

@@ -15,6 +15,11 @@
  */
 package io.camunda.zeebe.client.api.search.response;
 
+/**
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.api.search.response.ProcessInstanceReference}
+ */
+@Deprecated
 public interface ProcessInstanceReference {
 
   String getInstanceId();

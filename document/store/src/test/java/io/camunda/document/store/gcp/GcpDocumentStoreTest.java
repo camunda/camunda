@@ -9,6 +9,7 @@ package io.camunda.document.store.gcp;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,19 +17,22 @@ import com.google.cloud.ReadChannel;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
+import io.camunda.document.api.DocumentContent;
 import io.camunda.document.api.DocumentCreationRequest;
 import io.camunda.document.api.DocumentError;
 import io.camunda.document.api.DocumentError.UnknownDocumentError;
 import io.camunda.document.api.DocumentLink;
+import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.document.api.DocumentReference;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.Either.Left;
 import io.camunda.zeebe.util.Either.Right;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +52,8 @@ public class GcpDocumentStoreTest {
   @BeforeEach
   void init() {
     gcpDocumentStore =
-        new GcpDocumentStore(BUCKET_NAME, storage, mapper, Executors.newSingleThreadExecutor());
+        new GcpDocumentStore(
+            BUCKET_NAME, null, storage, mapper, Executors.newSingleThreadExecutor());
   }
 
   @Test
@@ -56,7 +61,17 @@ public class GcpDocumentStoreTest {
     // given
     final var inputStream = new ByteArrayInputStream("content".getBytes());
     final var documentCreationRequest =
-        new DocumentCreationRequest("documentId", inputStream, null);
+        new DocumentCreationRequest(
+            "documentId",
+            inputStream,
+            new DocumentMetadataModel(
+                "application/json",
+                "hello.json",
+                OffsetDateTime.now(),
+                10L,
+                null,
+                null,
+                Map.of("key", "value")));
 
     when(storage.get(BUCKET_NAME, "documentId")).thenReturn(mock(Blob.class));
 
@@ -76,7 +91,17 @@ public class GcpDocumentStoreTest {
     // given
     final var inputStream = new ByteArrayInputStream("content".getBytes());
     final var documentCreationRequest =
-        new DocumentCreationRequest("documentId", inputStream, null);
+        new DocumentCreationRequest(
+            "documentId",
+            inputStream,
+            new DocumentMetadataModel(
+                "application/json",
+                "hello.json",
+                OffsetDateTime.now(),
+                10L,
+                null,
+                null,
+                Map.of("key", "value")));
 
     when(storage.get(BUCKET_NAME, "documentId")).thenReturn(null);
     when(storage.createFrom(BlobInfo.newBuilder(BUCKET_NAME, "documentId").build(), inputStream))
@@ -98,9 +123,21 @@ public class GcpDocumentStoreTest {
     // given
     final var inputStream = new ByteArrayInputStream("content".getBytes());
     final var documentCreationRequest =
-        new DocumentCreationRequest("documentId", inputStream, null);
+        new DocumentCreationRequest(
+            "documentId",
+            inputStream,
+            new DocumentMetadataModel(
+                "application/json",
+                "hello.json",
+                OffsetDateTime.now(),
+                10L,
+                null,
+                null,
+                Map.of("key", "value")));
 
-    when(storage.get(BUCKET_NAME, "documentId")).thenReturn(null);
+    final Blob mockBlob = mock(Blob.class);
+
+    when(storage.get(BUCKET_NAME, "documentId")).thenReturn(null).thenReturn(mockBlob);
 
     // when
     final var documentReferenceResponse =
@@ -126,7 +163,7 @@ public class GcpDocumentStoreTest {
     // then
     assertThat(documentOperationResponse).isNotNull();
     assertThat(documentOperationResponse).isInstanceOf(Left.class);
-    assertThat(((Left<DocumentError, InputStream>) documentOperationResponse).value())
+    assertThat(((Left<DocumentError, DocumentContent>) documentOperationResponse).value())
         .isInstanceOf(DocumentError.DocumentNotFound.class);
   }
 
@@ -144,7 +181,7 @@ public class GcpDocumentStoreTest {
     // then
     assertThat(documentOperationResponse).isNotNull();
     assertThat(documentOperationResponse).isInstanceOf(Left.class);
-    assertThat(((Left<DocumentError, InputStream>) documentOperationResponse).value())
+    assertThat(((Left<DocumentError, DocumentContent>) documentOperationResponse).value())
         .isInstanceOf(UnknownDocumentError.class);
   }
 
@@ -164,7 +201,8 @@ public class GcpDocumentStoreTest {
     // then
     assertThat(documentOperationResponse).isNotNull();
     assertThat(documentOperationResponse).isInstanceOf(Right.class);
-    assertThat(((Right<DocumentError, InputStream>) documentOperationResponse).value()).isNotNull();
+    assertThat(((Right<DocumentError, DocumentContent>) documentOperationResponse).value())
+        .isNotNull();
   }
 
   @Test
@@ -277,5 +315,163 @@ public class GcpDocumentStoreTest {
     assertThat(documentOperationResponse).isInstanceOf(Right.class);
     assertThat(((Right<DocumentError, DocumentLink>) documentOperationResponse).value().link())
         .isEqualTo("http://localhost");
+  }
+
+  @Test
+  void createDocumentShouldUseCorrectPrefix() {
+    // given
+    gcpDocumentStore =
+        new GcpDocumentStore(
+            BUCKET_NAME, "prefix/", storage, mapper, Executors.newSingleThreadExecutor());
+    final var inputStream = new ByteArrayInputStream("content".getBytes());
+    final var documentCreationRequest =
+        new DocumentCreationRequest(
+            "documentId",
+            inputStream,
+            new DocumentMetadataModel(
+                "application/json",
+                "hello.json",
+                OffsetDateTime.now(),
+                10L,
+                null,
+                null,
+                Map.of("key", "value")));
+
+    when(storage.get(BUCKET_NAME, "prefix/documentId")).thenReturn(null);
+
+    // when
+    final var documentReferenceResponse =
+        gcpDocumentStore.createDocument(documentCreationRequest).join();
+
+    // then
+    assertThat(documentReferenceResponse).isNotNull();
+    verify(storage).get(BUCKET_NAME, "prefix/documentId");
+  }
+
+  @Test
+  void getDocumentShouldUseCorrectPrefix() {
+    // given
+    gcpDocumentStore =
+        new GcpDocumentStore(
+            BUCKET_NAME, "prefix/", storage, mapper, Executors.newSingleThreadExecutor());
+    final var documentId = "documentId";
+    final var blob = mock(Blob.class);
+    final var readChannel = mock(ReadChannel.class);
+
+    when(storage.get(BUCKET_NAME, "prefix/documentId")).thenReturn(blob);
+    when(blob.reader()).thenReturn(readChannel);
+
+    // when
+    final var documentOperationResponse = gcpDocumentStore.getDocument(documentId).join();
+
+    // then
+    assertThat(documentOperationResponse).isNotNull();
+    assertThat(documentOperationResponse).isInstanceOf(Right.class);
+    assertThat(((Right<DocumentError, DocumentContent>) documentOperationResponse).value())
+        .isNotNull();
+  }
+
+  @Test
+  void deleteDocumentShouldUseCorrectPrefix() {
+    // given
+    gcpDocumentStore =
+        new GcpDocumentStore(
+            BUCKET_NAME, "prefix/", storage, mapper, Executors.newSingleThreadExecutor());
+    final var documentId = "documentId";
+
+    when(storage.delete(BUCKET_NAME, "prefix/documentId")).thenReturn(true);
+
+    // when
+    final var documentOperationResponse = gcpDocumentStore.deleteDocument(documentId).join();
+
+    // then
+    assertThat(documentOperationResponse).isNotNull();
+    assertThat(documentOperationResponse).isInstanceOf(Right.class);
+    assertThat(((Right<DocumentError, Void>) documentOperationResponse).value()).isNull();
+  }
+
+  @Test
+  void createLinkShouldUseCorrectPrefix() throws MalformedURLException {
+    // given
+    gcpDocumentStore =
+        new GcpDocumentStore(
+            BUCKET_NAME, "prefix/", storage, mapper, Executors.newSingleThreadExecutor());
+    final var documentId = "documentId";
+    final var durationInMillis = 60 * 1000L;
+    final var blob = mock(Blob.class);
+
+    when(storage.get(BUCKET_NAME, "prefix/documentId")).thenReturn(blob);
+    when(blob.signUrl(durationInMillis, TimeUnit.MILLISECONDS))
+        .thenReturn(URI.create("http://localhost").toURL());
+
+    // when
+    final var documentOperationResponse =
+        gcpDocumentStore.createLink(documentId, durationInMillis).join();
+
+    // then
+    assertThat(documentOperationResponse).isNotNull();
+    assertThat(documentOperationResponse).isInstanceOf(Right.class);
+    assertThat(((Right<DocumentError, DocumentLink>) documentOperationResponse).value().link())
+        .isEqualTo("http://localhost");
+  }
+
+  @Test
+  void shouldStoreProcessDefinitionIdIfPresent() {
+    // given
+    final var documentId = "documentId";
+    final var inputStream = new ByteArrayInputStream("content".getBytes());
+    final var documentCreationRequest =
+        new DocumentCreationRequest(
+            documentId,
+            inputStream,
+            new DocumentMetadataModel(null, null, null, null, "processDefinitionId", null, null));
+
+    when(storage.get(BUCKET_NAME, documentId)).thenReturn(null);
+
+    // when
+    final var documentReferenceResponse =
+        gcpDocumentStore.createDocument(documentCreationRequest).join();
+
+    // then
+    assertThat(documentReferenceResponse).isNotNull();
+    assertThat(documentReferenceResponse).isInstanceOf(Right.class);
+    assertThat(((Right<DocumentError, DocumentReference>) documentReferenceResponse).value())
+        .isNotNull();
+    assertThat(
+            ((Right<DocumentError, DocumentReference>) documentReferenceResponse)
+                .value()
+                .metadata()
+                .processDefinitionId())
+        .isEqualTo("processDefinitionId");
+  }
+
+  @Test
+  void shouldStoreProcessInstanceKeyIfPresent() {
+    // given
+    final var documentId = "documentId";
+    final var inputStream = new ByteArrayInputStream("content".getBytes());
+    final var documentCreationRequest =
+        new DocumentCreationRequest(
+            documentId,
+            inputStream,
+            new DocumentMetadataModel(null, null, null, null, null, 123L, null));
+
+    when(storage.get(BUCKET_NAME, documentId)).thenReturn(null);
+
+    // when
+    final var documentReferenceResponse =
+        gcpDocumentStore.createDocument(documentCreationRequest).join();
+
+    // then
+    assertThat(documentReferenceResponse).isNotNull();
+    assertThat(documentReferenceResponse).isInstanceOf(Right.class);
+    assertThat(((Right<DocumentError, DocumentReference>) documentReferenceResponse).value())
+        .isNotNull();
+    assertThat(
+            ((Right<DocumentError, DocumentReference>) documentReferenceResponse)
+                .value()
+                .metadata()
+                .processInstanceKey())
+        .isEqualTo(123L);
   }
 }

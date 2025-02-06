@@ -19,7 +19,7 @@ import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_EMPTY
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.spring.client.event.ZeebeLifecycleEventProducer;
 import io.camunda.zeebe.spring.client.testsupport.SpringZeebeTestContext;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -53,7 +53,7 @@ public class CamundaAutoConfiguration {
           .class) // only run if we are not running in a test case - as otherwise the lifecycle
   // is controlled by the test
   public ZeebeLifecycleEventProducer zeebeLifecycleEventProducer(
-      final ZeebeClient client, final ApplicationEventPublisher publisher) {
+      final CamundaClient client, final ApplicationEventPublisher publisher) {
     return new ZeebeLifecycleEventProducer(client, publisher);
   }
 }

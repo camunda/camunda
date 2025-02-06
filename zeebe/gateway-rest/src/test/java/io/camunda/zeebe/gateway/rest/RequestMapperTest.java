@@ -7,13 +7,14 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import static io.camunda.zeebe.auth.impl.Authorization.USER_TOKEN_CLAIM_PREFIX;
+import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIM_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
 import io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder;
-import io.camunda.zeebe.auth.impl.Authorization;
-import io.camunda.zeebe.auth.impl.JwtAuthorizationDecoder;
+import io.camunda.zeebe.auth.Authorization;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -39,21 +40,19 @@ class RequestMapperTest {
   }
 
   @Test
-  void tokenContainsUserKeyWithBasicAuth() {
+  void tokenContainsUsernameWithBasicAuth() {
 
     // given
-    final long userKey = 1L;
-    setUsernamePasswordAuthenticationInContext(userKey);
+    final var username = "username";
+    setUsernamePasswordAuthenticationInContext(username);
 
     // when
-    final String token = RequestMapper.getAuthentication().token();
+    final var claims = RequestMapper.getAuthentication().claims();
 
     // then
-    final JwtAuthorizationDecoder decoder = new JwtAuthorizationDecoder(token);
-    final var decodedToken = decoder.decode();
-    assertNotNull(decodedToken);
-    assertThat(decodedToken).containsKey(Authorization.AUTHORIZED_USER_KEY);
-    assertThat(decodedToken.get(Authorization.AUTHORIZED_USER_KEY)).isEqualTo(userKey);
+    assertNotNull(claims);
+    assertThat(claims).containsKey(Authorization.AUTHORIZED_USERNAME);
+    assertThat(claims.get(Authorization.AUTHORIZED_USERNAME)).isEqualTo(username);
   }
 
   @Test
@@ -65,28 +64,26 @@ class RequestMapperTest {
     setJwtAuthenticationInContext(sub1, aud1);
 
     // when
-    final String token = RequestMapper.getAuthentication().token();
+    final var claims = RequestMapper.getAuthentication().claims();
 
     // then
-    final JwtAuthorizationDecoder decoder = new JwtAuthorizationDecoder(token);
-    final var decodedToken = decoder.decode();
-    assertNotNull(decodedToken);
-    assertThat(decodedToken).containsKey(USER_TOKEN_CLAIM_PREFIX + "sub");
-    assertThat(decodedToken).containsKey(USER_TOKEN_CLAIM_PREFIX + "aud");
-    assertThat(decodedToken).containsKey(USER_TOKEN_CLAIM_PREFIX + "groups");
-    assertThat(decodedToken.get(USER_TOKEN_CLAIM_PREFIX + "sub")).isEqualTo(sub1);
-    assertThat(decodedToken.get(USER_TOKEN_CLAIM_PREFIX + "aud")).isEqualTo(aud1);
-    assertThat(decodedToken.get(USER_TOKEN_CLAIM_PREFIX + "groups")).isEqualTo(List.of("g1", "g2"));
+    assertNotNull(claims);
+    assertThat(claims).containsKey(USER_TOKEN_CLAIM_PREFIX + "sub");
+    assertThat(claims).containsKey(USER_TOKEN_CLAIM_PREFIX + "aud");
+    assertThat(claims).containsKey(USER_TOKEN_CLAIM_PREFIX + "groups");
+    assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "sub")).isEqualTo(sub1);
+    assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "aud")).isEqualTo(aud1);
+    assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "groups")).isEqualTo(List.of("g1", "g2"));
   }
 
   private void setJwtAuthenticationInContext(final String sub, final String aud) {
     final Jwt jwt =
         new Jwt(
-            Authorization.jwtEncoder()
+            JWT.create()
                 .withIssuer("issuer1")
                 .withAudience(aud)
                 .withSubject(sub)
-                .build(),
+                .sign(Algorithm.none()),
             Instant.ofEpochSecond(10),
             Instant.ofEpochSecond(100),
             Map.of("alg", "RSA256"),
@@ -95,13 +92,13 @@ class RequestMapperTest {
     SecurityContextHolder.getContext().setAuthentication(jwtAuthenticationToken);
   }
 
-  private void setUsernamePasswordAuthenticationInContext(final long userKey) {
+  private void setUsernamePasswordAuthenticationInContext(final String username) {
     final UsernamePasswordAuthenticationToken authenticationToken =
         new UsernamePasswordAuthenticationToken(
             CamundaUserBuilder.aCamundaUser()
-                .withUsername("admin")
+                .withUsername(username)
                 .withPassword("admin")
-                .withUserKey(userKey)
+                .withUserKey(1L)
                 .build(),
             null);
     SecurityContextHolder.getContext().setAuthentication(authenticationToken);

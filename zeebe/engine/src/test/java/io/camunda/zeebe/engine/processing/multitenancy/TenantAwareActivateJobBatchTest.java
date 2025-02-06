@@ -34,20 +34,25 @@ public class TenantAwareActivateJobBatchTest {
     // given
     final var username = UUID.randomUUID().toString();
     final var tenantId = UUID.randomUUID().toString();
-    final var userKey = ENGINE.user().newUser(username).create().getValue().getUserKey();
+    final var user = ENGINE.user().newUser(username).create().getValue();
     final var tenantKey =
         ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     ENGINE
         .tenant()
-        .addEntity(tenantKey)
+        .addEntity(tenantId)
         .withEntityType(EntityType.USER)
-        .withEntityKey(userKey)
+        .withEntityId(username)
         .add();
 
     // when
     final var tenantIds = new java.util.ArrayList<>(List.of("custom-tenant", "another-tenant"));
     final var rejection =
-        ENGINE.jobs().withTenantIds(tenantIds).withType("test").expectRejection().activate(userKey);
+        ENGINE
+            .jobs()
+            .withTenantIds(tenantIds)
+            .withType("test")
+            .expectRejection()
+            .activate(user.getUsername());
 
     // then
     assertThat(rejection)
@@ -62,21 +67,25 @@ public class TenantAwareActivateJobBatchTest {
     // given
     final var username = UUID.randomUUID().toString();
     final var tenantId = UUID.randomUUID().toString();
-    final var userKey = ENGINE.user().newUser(username).create().getValue().getUserKey();
-    final var tenantKey =
-        ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
+    final var user = ENGINE.user().newUser(username).create().getValue();
+    ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     ENGINE
         .tenant()
-        .addEntity(tenantKey)
+        .addEntity(tenantId)
         .withEntityType(EntityType.USER)
-        .withEntityKey(userKey)
+        .withEntityId(username)
         .add();
 
     // when
     final var tenantIds =
         new java.util.ArrayList<>(List.of("custom-tenant", "another-tenant", "tenantId"));
     final var rejection =
-        ENGINE.jobs().withTenantIds(tenantIds).withType("test").expectRejection().activate(userKey);
+        ENGINE
+            .jobs()
+            .withTenantIds(tenantIds)
+            .withType("test")
+            .expectRejection()
+            .activate(user.getUsername());
 
     // then
     assertThat(rejection)

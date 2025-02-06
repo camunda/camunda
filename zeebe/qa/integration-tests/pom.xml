@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
@@ -6,7 +13,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-qa</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>zeebe-qa-integration-tests</artifactId>
@@ -15,13 +22,17 @@
   <name>Zeebe QA Integration Tests</name>
 
   <dependencies>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-authentication</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-broker</artifactId>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.apache.httpcomponents.core5</groupId>
       <artifactId>httpcore5</artifactId>
@@ -48,7 +59,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-client-java</artifactId>
+      <artifactId>camunda-client-java</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -271,6 +282,18 @@
     </dependency>
 
     <dependency>
+      <groupId>org.keycloak</groupId>
+      <artifactId>keycloak-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.keycloak</groupId>
+      <artifactId>keycloak-admin-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
       <scope>test</scope>
@@ -474,12 +497,23 @@
       <artifactId>elasticsearch</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-service</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
     <plugins>
       <plugin>
-
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
@@ -489,6 +523,15 @@
               <value>${version.identity}</value>
             </property>
           </systemProperties>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <usedDependencies>
+            <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
+          </usedDependencies>
         </configuration>
       </plugin>
     </plugins>

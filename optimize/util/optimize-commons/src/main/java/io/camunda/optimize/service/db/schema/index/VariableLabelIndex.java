@@ -12,8 +12,10 @@ import io.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsD
 import io.camunda.optimize.dto.optimize.query.variable.LabelDto;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import io.camunda.webapps.schema.descriptors.backup.Prio6Backup;
 
-public abstract class VariableLabelIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
+public abstract class VariableLabelIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder>
+    implements Prio6Backup {
 
   public static final int VERSION = 1;
 

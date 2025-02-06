@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_EMAIL;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.UserChangeset;
@@ -22,6 +23,8 @@ import org.springframework.http.ProblemDetail;
 
 public final class UserValidator {
 
+  private static final int MAX_USERNAME_LENGTH = 256;
+
   public static Optional<ProblemDetail> validateUserUpdateRequest(final UserUpdateRequest request) {
     final UserChangeset changeset = request.getChangeset();
     return validate(
@@ -33,14 +36,21 @@ public final class UserValidator {
   public static Optional<ProblemDetail> validateUserCreateRequest(final UserRequest request) {
     return validate(
         violations -> {
-          if (request.getUsername() == null || request.getUsername().isBlank()) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("username"));
-          }
+          validateUsername(request, violations);
           if (request.getPassword() == null || request.getPassword().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("password"));
           }
           violations.addAll(validateUserNameAndEmail(request.getName(), request.getEmail()));
         });
+  }
+
+  private static void validateUsername(final UserRequest request, final List<String> violations) {
+    final var username = request.getUsername();
+    if (username == null || username.isBlank()) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("username"));
+    } else if (username.length() > MAX_USERNAME_LENGTH) {
+      violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("username", MAX_USERNAME_LENGTH));
+    }
   }
 
   private static List<String> validateUserNameAndEmail(final String name, final String email) {

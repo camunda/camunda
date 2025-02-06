@@ -14,6 +14,8 @@ import io.camunda.security.auth.SecurityContext;
 /** Strategy to apply authorization to a search query. */
 public interface AuthorizationQueryStrategy {
 
+  AuthorizationQueryStrategy NONE = (request, securityContext, queryClass) -> request;
+
   /**
    * Apply authorization to a search query.
    *

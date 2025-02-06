@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -19,13 +20,11 @@ import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 
 public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor {
@@ -60,7 +59,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
   }
 
   @Override
-  public Either<Tuple<RejectionType, String>, UserTaskRecord> validateCommand(
+  public Either<Rejection, UserTaskRecord> validateCommand(
       final TypedRecord<UserTaskRecord> command) {
     return preconditionChecker.check(command);
   }
@@ -80,9 +79,6 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
   public void onFinalizeCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
-
-    userTaskRecord.setVariables(command.getValue().getVariablesBuffer());
-    userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
 
     if (command.hasRequestMetadata()) {
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);

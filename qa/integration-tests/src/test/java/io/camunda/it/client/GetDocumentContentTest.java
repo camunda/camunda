@@ -10,84 +10,35 @@ package io.camunda.it.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.client.api.response.DocumentReferenceResponse;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.it.utils.MultiDbTest;
 import java.io.InputStream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-@ZeebeIntegration
+@MultiDbTest
 public class GetDocumentContentTest {
 
   private static final String DOCUMENT_CONTENT = "test";
 
-  private static ZeebeClient zeebeClient;
+  private static CamundaClient camundaClient;
   private static DocumentReferenceResponse documentReference;
-
-  @TestZeebe(initMethod = "initTestStandaloneCamunda")
-  private static TestStandaloneCamunda testStandaloneCamunda;
-
-  @SuppressWarnings("unused")
-  static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda();
-  }
 
   @BeforeAll
   public static void beforeAll() {
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
     documentReference =
-        zeebeClient.newCreateDocumentCommand().content(DOCUMENT_CONTENT).send().join();
-  }
-
-  @Test
-  public void shouldWorkWithOnlyDocumentId() {
-    // given
-    final var documentId = documentReference.getDocumentId();
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
-
-    // when
-    try (final InputStream is =
-        zeebeClient.newDocumentContentGetRequest(documentId).send().join()) {
-      // then
-      final String content = new String(is.readAllBytes());
-      assertThat(content).isEqualTo(DOCUMENT_CONTENT);
-
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  @Test
-  public void shouldWorkWithDocumentIdAndStoreId() {
-    // given
-    final var documentId = documentReference.getDocumentId();
-    final var storeId = documentReference.getStoreId();
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
-
-    // when
-    try (final InputStream is =
-        zeebeClient.newDocumentContentGetRequest(documentId).storeId(storeId).send().join()) {
-      // then
-      final String content = new String(is.readAllBytes());
-      assertThat(content).isEqualTo(DOCUMENT_CONTENT);
-
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
+        camundaClient.newCreateDocumentCommand().content(DOCUMENT_CONTENT).send().join();
   }
 
   @Test
   public void shouldWorkWithDocumentReference() {
     // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
     try (final InputStream is =
-        zeebeClient.newDocumentContentGetRequest(documentReference).send().join()) {
+        camundaClient.newDocumentContentGetRequest(documentReference).send().join()) {
       // then
       final String content = new String(is.readAllBytes());
       assertThat(content).isEqualTo(DOCUMENT_CONTENT);
@@ -101,10 +52,9 @@ public class GetDocumentContentTest {
   public void shouldReturnNotFoundIfDocumentDoesNotExist() {
     // given
     final var documentId = "non-existing-document";
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
-    final var command = zeebeClient.newDocumentContentGetRequest(documentId).send();
+    final var command = camundaClient.newDocumentContentGetRequest(documentId).send();
 
     // then
     final var exception = assertThrowsExactly(ProblemException.class, command::join);
@@ -120,11 +70,10 @@ public class GetDocumentContentTest {
     // given
     final var documentId = documentReference.getDocumentId();
     final var storeId = "non-existing-store";
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
     final var command =
-        zeebeClient.newDocumentContentGetRequest(documentId).storeId(storeId).send();
+        camundaClient.newDocumentContentGetRequest(documentId).storeId(storeId).send();
 
     // then
     final var exception = assertThrowsExactly(ProblemException.class, command::join);

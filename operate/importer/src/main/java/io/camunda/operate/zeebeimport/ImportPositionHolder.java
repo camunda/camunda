@@ -11,7 +11,6 @@ import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ImportStore;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
-import io.micrometer.core.instrument.Gauge;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -39,11 +38,8 @@ public class ImportPositionHolder {
   private final Map<String, ImportPositionEntity> lastScheduledPositions = new HashMap<>();
 
   private final Map<String, ImportPositionEntity> pendingImportPositionUpdates = new HashMap<>();
-  private final Map<String, ImportPositionEntity> pendingPostImportPositionUpdates =
-      new HashMap<>();
   private final Map<String, ImportPositionEntity> inflightImportPositions = new HashMap<>();
-  private final Map<String, ImportPositionEntity> inflightPostImportPositions = new HashMap<>();
-  private final Map<String, Gauge> importPositionCompletedGauges = new HashMap<>();
+  private final Map<String, Boolean> mostRecentProcessedImportPositions = new HashMap<>();
 
   private ScheduledFuture<?> scheduledImportPositionUpdateTask;
   private final ReentrantLock inflightImportPositionLock = new ReentrantLock();
@@ -62,14 +58,6 @@ public class ImportPositionHolder {
   private void init() {
     LOGGER.info("INIT: Start import position updater...");
     scheduleImportPositionUpdateTask();
-  }
-
-  public boolean getConcurrencyMode() {
-    return importStore.getConcurrencyMode();
-  }
-
-  public void setConcurrencyMode(final boolean concurrencyMode) {
-    importStore.setConcurrencyMode(concurrencyMode);
   }
 
   public void scheduleImportPositionUpdateTask() {
@@ -124,21 +112,12 @@ public class ImportPositionHolder {
         () -> {
           final var aliasName = lastProcessedPosition.getAliasName();
           final var partition = lastProcessedPosition.getPartitionId();
-          // update only import fields (not post import)
+          // update only import fields
           final String key = getKey(aliasName, partition);
           ImportPositionEntity importPosition = inflightImportPositions.get(key);
+          registerRecordReaderCompletedGauge(partition, aliasName);
           if (importPosition == null) {
             importPosition = lastProcessedPosition;
-            importPositionCompletedGauges.put(
-                key,
-                metrics.registerGauge(
-                    Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED,
-                    importPosition,
-                    (pos) -> pos.getCompleted() ? 1.0 : 0.0,
-                    Metrics.TAG_KEY_PARTITION,
-                    Integer.toString(partition),
-                    Metrics.TAG_KEY_IMPORT_POS_ALIAS,
-                    aliasName));
           } else {
             importPosition
                 .setPosition(lastProcessedPosition.getPosition())
@@ -147,28 +126,30 @@ public class ImportPositionHolder {
                 .setCompleted(lastProcessedPosition.getCompleted());
           }
           inflightImportPositions.put(key, importPosition);
+          mostRecentProcessedImportPositions.merge(
+              key,
+              importPosition.getCompleted(),
+              (oldCompleted, newCompleted) -> oldCompleted || newCompleted);
         },
         "record last loaded pos");
   }
 
-  public void recordLatestPostImportedPosition(
-      final ImportPositionEntity lastPostImportedPosition) {
-    withInflightImportPositionLock(
-        () -> {
-          final var aliasName = lastPostImportedPosition.getAliasName();
-          final var partition = lastPostImportedPosition.getPartitionId();
-          // update only post import fields (not import)
-          final String key = getKey(aliasName, partition);
-          ImportPositionEntity importPosition = inflightPostImportPositions.get(key);
-          if (importPosition == null) {
-            importPosition = lastPostImportedPosition;
-          } else {
-            importPosition.setPostImporterPosition(
-                lastPostImportedPosition.getPostImporterPosition());
+  private void registerRecordReaderCompletedGauge(final int partition, final String aliasName) {
+    final var key = getKey(aliasName, partition);
+    metrics.registerGauge(
+        Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED,
+        mostRecentProcessedImportPositions,
+        (importPositions) -> {
+          final var val = mostRecentProcessedImportPositions.get(key);
+          if (val) {
+            return 1.0;
           }
-          inflightPostImportPositions.put(key, importPosition);
+          return 0.0;
         },
-        "record latest post import");
+        Metrics.TAG_KEY_PARTITION,
+        Integer.toString(partition),
+        Metrics.TAG_KEY_IMPORT_POS_ALIAS,
+        aliasName);
   }
 
   public void updateImportPositions() {
@@ -176,21 +157,16 @@ public class ImportPositionHolder {
         () -> {
           pendingImportPositionUpdates.putAll(inflightImportPositions);
           inflightImportPositions.clear();
-          pendingPostImportPositionUpdates.putAll(inflightPostImportPositions);
-          inflightPostImportPositions.clear();
         },
         "update positions");
 
     final var result =
-        importStore.updateImportPositions(
-            pendingImportPositionUpdates.values().stream().toList(),
-            pendingPostImportPositionUpdates.values().stream().toList());
+        importStore.updateImportPositions(pendingImportPositionUpdates.values().stream().toList());
 
     if (result.getOrElse(false)) {
       // clear only map when updating the import positions
       // succeeded, otherwise, it may result in lost updates
       pendingImportPositionUpdates.clear();
-      pendingPostImportPositionUpdates.clear();
     }
 
     // self scheduling just for the case the interval is set too short
@@ -200,15 +176,9 @@ public class ImportPositionHolder {
   public void clearCache() {
     lastScheduledPositions.clear();
     pendingImportPositionUpdates.clear();
-    pendingPostImportPositionUpdates.clear();
-    importPositionCompletedGauges.clear();
+    mostRecentProcessedImportPositions.clear();
 
-    withInflightImportPositionLock(
-        () -> {
-          inflightImportPositions.clear();
-          inflightPostImportPositions.clear();
-        },
-        "clear");
+    withInflightImportPositionLock(inflightImportPositions::clear, "clear");
   }
 
   private String getKey(final String aliasTemplate, final int partitionId) {

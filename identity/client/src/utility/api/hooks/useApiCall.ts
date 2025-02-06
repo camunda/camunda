@@ -2,8 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { ApiCall, ApiDefinition, namedErrorsReducer } from "../request";
 import useTranslate from "../../localization";
 import { useNotifications } from "src/components/notifications";
-import { apiBaseUrl } from "src/configuration";
-import { useAuth } from "src/utility/auth";
+import { getApiBaseUrl } from "src/configuration";
 
 export type NamedErrors<R> = Partial<Record<keyof R, string[]>> | null;
 
@@ -36,7 +35,6 @@ export type UseApiCall = {
 const useApiCall: UseApiCall = <R, P>(
   apiDefinition: ApiDefinition<R, P>,
 ): UseApiCallResult<R, P> => {
-  const authHeaders = useAuth();
   const { enqueueNotification } = useNotifications();
   const { t } = useTranslate("components");
   const [data, setData] = useState<R | null>(null);
@@ -71,7 +69,7 @@ const useApiCall: UseApiCall = <R, P>(
         status: apiStatus,
         errors: apiErrors,
         success: apiSuccess,
-      } = await apiDefinition(params as P)(apiBaseUrl, authHeaders);
+      } = await apiDefinition(params as P)(getApiBaseUrl());
 
       if (apiStatus >= 400) {
         switch (apiStatus) {

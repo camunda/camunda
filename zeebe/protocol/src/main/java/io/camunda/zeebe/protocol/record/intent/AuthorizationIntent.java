@@ -19,7 +19,13 @@ public enum AuthorizationIntent implements Intent {
   ADD_PERMISSION(0),
   PERMISSION_ADDED(1),
   REMOVE_PERMISSION(2),
-  PERMISSION_REMOVED(3);
+  PERMISSION_REMOVED(3),
+  CREATE(4),
+  CREATED(5),
+  DELETE(6),
+  DELETED(7),
+  UPDATE(8),
+  UPDATED(9);
 
   private final short value;
 
@@ -37,6 +43,9 @@ public enum AuthorizationIntent implements Intent {
     switch (this) {
       case PERMISSION_ADDED:
       case PERMISSION_REMOVED:
+      case CREATED:
+      case DELETED:
+      case UPDATED:
         return true;
       default:
         return false;
@@ -53,6 +62,18 @@ public enum AuthorizationIntent implements Intent {
         return REMOVE_PERMISSION;
       case 3:
         return PERMISSION_REMOVED;
+      case 4:
+        return CREATE;
+      case 5:
+        return CREATED;
+      case 6:
+        return DELETE;
+      case 7:
+        return DELETED;
+      case 8:
+        return UPDATE;
+      case 9:
+        return UPDATED;
       default:
         return UNKNOWN;
     }

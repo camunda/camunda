@@ -22,15 +22,17 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 public class StandaloneCamundaTest {
 
-  @TestZeebe final TestStandaloneCamunda testStandaloneCamunda = new TestStandaloneCamunda();
+  @TestZeebe
+  final TestStandaloneCamunda testStandaloneCamunda =
+      new TestStandaloneCamunda().withUnauthenticatedAccess();
 
   @Test
   public void shouldCreateAndRetrieveInstance() {
-    // givne
-    final var zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    // given
+    final var camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
-    zeebeClient
+    camundaClient
         .newDeployResourceCommand()
         .addProcessModel(
             Bpmn.createExecutableProcess("process")
@@ -44,7 +46,7 @@ public class StandaloneCamundaTest {
         .join();
 
     final var processInstanceEvent =
-        zeebeClient
+        camundaClient
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
             .latestVersion()

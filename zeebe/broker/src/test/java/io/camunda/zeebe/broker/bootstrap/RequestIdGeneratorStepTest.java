@@ -15,6 +15,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
@@ -32,6 +33,7 @@ import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 class RequestIdGeneratorStepTest {
   private static final Duration TEST_SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
@@ -58,7 +60,9 @@ class RequestIdGeneratorStepTest {
             mock(BrokerClient.class),
             Collections.emptyList(),
             TEST_SHUTDOWN_TIMEOUT,
-            new SecurityConfiguration());
+            new SecurityConfiguration(),
+            mock(UserServices.class),
+            mock(PasswordEncoder.class));
     testBrokerStartupContext.setConcurrencyControl(spyConcurrencyControl);
   }
 

@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.processing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -23,15 +23,13 @@ import io.camunda.zeebe.qa.util.actuator.BanningActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Map;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-@AutoCloseResources
 @ZeebeIntegration
 final class BannedInstanceIT {
 
@@ -46,7 +44,7 @@ final class BannedInstanceIT {
   private final BanningActuator actuator = BanningActuator.of(ZEEBE);
   private final ActorClockActuator clock = ActorClockActuator.of(ZEEBE);
 
-  @AutoCloseResource private ZeebeClient client;
+  @AutoClose private CamundaClient client;
 
   @BeforeEach
   void beforeEach() {

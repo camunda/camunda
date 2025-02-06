@@ -26,11 +26,15 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UntypedOperation;
 import io.camunda.search.filter.VariableFilter;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-public class VariableFilterTransformer implements FilterTransformer<VariableFilter> {
+public class VariableFilterTransformer extends IndexFilterTransformer<VariableFilter> {
+
+  public VariableFilterTransformer(final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
+  }
 
   @Override
   public SearchQuery toSearchQuery(final VariableFilter filter) {
@@ -44,11 +48,6 @@ public class VariableFilterTransformer implements FilterTransformer<VariableFilt
     ofNullable(getTenantIdQuery(filter.tenantIds())).ifPresent(queries::add);
     ofNullable(getIsTruncatedQuery(filter.isTruncated())).ifPresent(queries::add);
     return and(queries);
-  }
-
-  @Override
-  public List<String> toIndices(final VariableFilter filter) {
-    return Arrays.asList("operate-variable-8.3.0_alias");
   }
 
   private List<SearchQuery> getVariablesQuery(final List<UntypedOperation> variableFilters) {

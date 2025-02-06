@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-parent</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>operate-common</artifactId>
@@ -18,7 +18,7 @@
     <!-- ZEEBE -->
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-client-java</artifactId>
+      <artifactId>camunda-client-java</artifactId>
     </dependency>
 
     <dependency>
@@ -49,7 +49,7 @@
 
     <dependency>
       <groupId>org.wiremock</groupId>
-      <artifactId>wiremock</artifactId>
+      <artifactId>wiremock-standalone</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -126,7 +126,7 @@
 
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
-      <artifactId>apache-client</artifactId>
+      <artifactId>aws-crt-client</artifactId>
     </dependency>
 
     <dependency>

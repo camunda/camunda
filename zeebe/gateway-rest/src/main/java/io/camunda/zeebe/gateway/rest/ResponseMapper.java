@@ -13,18 +13,29 @@ import static java.time.temporal.ChronoField.MINUTE_OF_HOUR;
 import static java.time.temporal.ChronoField.NANO_OF_SECOND;
 import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
 
+import io.camunda.document.api.DocumentError;
+import io.camunda.document.api.DocumentError.DocumentAlreadyExists;
+import io.camunda.document.api.DocumentError.DocumentNotFound;
+import io.camunda.document.api.DocumentError.InvalidInput;
+import io.camunda.document.api.DocumentError.OperationNotSupported;
+import io.camunda.document.api.DocumentError.StoreDoesNotExist;
 import io.camunda.document.api.DocumentLink;
+import io.camunda.service.DocumentServices.DocumentErrorResponse;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.rest.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateResponse;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecision;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionRequirements;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentForm;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentProcess;
+import io.camunda.zeebe.gateway.protocol.rest.DeploymentResource;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentResponse;
+import io.camunda.zeebe.gateway.protocol.rest.DocumentCreationBatchResponse;
+import io.camunda.zeebe.gateway.protocol.rest.DocumentCreationFailureDetail;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentReference;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentReference.CamundaDocumentTypeEnum;
@@ -40,11 +51,12 @@ import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastResponse;
-import io.camunda.zeebe.gateway.protocol.rest.TenantCreateResponse;
+import io.camunda.zeebe.gateway.protocol.rest.TenantCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserCreateResponse;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
@@ -52,6 +64,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormMetadataRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
@@ -65,18 +78,26 @@ import io.camunda.zeebe.protocol.record.value.EvaluatedInputValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedOutputValue;
 import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
+import io.camunda.zeebe.util.Either;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 
 public final class ResponseMapper {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ResponseMapper.class);
 
   /**
    * Date format <code>uuuu-MM-dd'T'HH:mm:ss.SSS[SSSSSS]Z</code>, always creating
@@ -115,17 +136,30 @@ public final class ResponseMapper {
     final Iterator<LongValue> jobKeys = activationResponse.brokerResponse().jobKeys().iterator();
     final Iterator<JobRecord> jobs = activationResponse.brokerResponse().jobs().iterator();
 
+    long currentResponseSize = 0L;
     final JobActivationResponse response = new JobActivationResponse();
+
+    final List<ActivatedJob> sizeExceedingJobs = new ArrayList<>();
+    final List<ActivatedJob> responseJobs = new ArrayList<>();
 
     while (jobKeys.hasNext() && jobs.hasNext()) {
       final LongValue jobKey = jobKeys.next();
       final JobRecord job = jobs.next();
       final ActivatedJob activatedJob = toActivatedJob(jobKey.getValue(), job);
 
-      response.addJobsItem(activatedJob);
+      // This is the message size of the message from the broker, not the size of the REST message
+      final int activatedJobSize = job.getLength();
+      if (currentResponseSize + activatedJobSize <= activationResponse.maxResponseSize()) {
+        responseJobs.add(activatedJob);
+        currentResponseSize += activatedJobSize;
+      } else {
+        sizeExceedingJobs.add(activatedJob);
+      }
     }
 
-    return new RestJobActivationResult(response);
+    response.setJobs(responseJobs);
+
+    return new RestJobActivationResult(response, sizeExceedingJobs);
   }
 
   private static ActivatedJob toActivatedJob(final long jobKey, final JobRecord job) {
@@ -158,6 +192,82 @@ public final class ResponseMapper {
 
   public static ResponseEntity<Object> toDocumentReference(
       final DocumentReferenceResponse response) {
+    final var reference = transformDocumentReferenceResponse(response);
+    return new ResponseEntity<>(reference, HttpStatus.CREATED);
+  }
+
+  public static ResponseEntity<Object> toDocumentReferenceBatch(
+      final List<Either<DocumentErrorResponse, DocumentReferenceResponse>> responses) {
+    final List<DocumentReferenceResponse> successful =
+        responses.stream().filter(Either::isRight).map(Either::get).toList();
+
+    final var response = new DocumentCreationBatchResponse();
+
+    if (successful.size() == responses.size()) {
+      final List<DocumentReference> references =
+          successful.stream().map(ResponseMapper::transformDocumentReferenceResponse).toList();
+      response.setCreatedDocuments(references);
+      return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    successful.stream()
+        .map(ResponseMapper::transformDocumentReferenceResponse)
+        .forEach(response::addCreatedDocumentsItem);
+
+    responses.stream()
+        .filter(Either::isLeft)
+        .map(Either::getLeft)
+        .forEach(
+            error -> {
+              final var detail = new DocumentCreationFailureDetail();
+              final var defaultProblemDetail = mapDocumentErrorToProblem(error.error());
+              detail.setDetail(defaultProblemDetail.getDetail());
+              detail.setFilename(error.request().metadata().fileName());
+              response.addFailedDocumentsItem(detail);
+            });
+    return ResponseEntity.status(HttpStatus.MULTI_STATUS)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(response);
+  }
+
+  public static ProblemDetail mapDocumentErrorToProblem(final DocumentError e) {
+    final String detail;
+    final HttpStatusCode status;
+    switch (e) {
+      case final DocumentNotFound notFound -> {
+        detail = String.format("Document with id '%s' not found", notFound.documentId());
+        status = HttpStatus.NOT_FOUND;
+      }
+      case final InvalidInput invalidInput -> {
+        detail = invalidInput.message();
+        status = HttpStatus.BAD_REQUEST;
+      }
+      case final DocumentAlreadyExists documentAlreadyExists -> {
+        detail =
+            String.format(
+                "Document with id '%s' already exists", documentAlreadyExists.documentId());
+        status = HttpStatus.CONFLICT;
+      }
+      case final StoreDoesNotExist storeDoesNotExist -> {
+        detail =
+            String.format(
+                "Document store with id '%s' does not exist", storeDoesNotExist.storeId());
+        status = HttpStatus.BAD_REQUEST;
+      }
+      case final OperationNotSupported operationNotSupported -> {
+        detail = operationNotSupported.message();
+        status = HttpStatus.METHOD_NOT_ALLOWED;
+      }
+      default -> {
+        detail = null;
+        status = HttpStatus.INTERNAL_SERVER_ERROR;
+      }
+    }
+    return RestErrorMapper.createProblemDetail(status, detail, e.getClass().getSimpleName());
+  }
+
+  private static DocumentReference transformDocumentReferenceResponse(
+      final DocumentReferenceResponse response) {
     final var internalMetadata = response.metadata();
     final var externalMetadata =
         new DocumentMetadata()
@@ -167,16 +277,17 @@ public final class ResponseMapper {
                     .orElse(null))
             .fileName(internalMetadata.fileName())
             .size(internalMetadata.size())
-            .contentType(internalMetadata.contentType());
+            .contentType(internalMetadata.contentType())
+            .processDefinitionId(internalMetadata.processDefinitionId())
+            .processInstanceKey(internalMetadata.processInstanceKey());
     Optional.ofNullable(internalMetadata.customProperties())
         .ifPresent(map -> map.forEach(externalMetadata::putCustomPropertiesItem));
-    final var reference =
-        new DocumentReference()
-            .camundaDocumentType(CamundaDocumentTypeEnum.CAMUNDA)
-            .documentId(response.documentId())
-            .storeId(response.storeId())
-            .metadata(externalMetadata);
-    return new ResponseEntity<>(reference, HttpStatus.CREATED);
+    return new DocumentReference()
+        .camundaDocumentType(CamundaDocumentTypeEnum.CAMUNDA)
+        .documentId(response.documentId())
+        .storeId(response.storeId())
+        .contentHash(response.contentHash())
+        .metadata(externalMetadata);
   }
 
   public static ResponseEntity<Object> toDocumentLinkResponse(final DocumentLink documentLink) {
@@ -196,6 +307,7 @@ public final class ResponseMapper {
     addDeployedDecision(response, brokerResponse.decisionsMetadata());
     addDeployedDecisionRequirements(response, brokerResponse.decisionRequirementsMetadata());
     addDeployedForm(response, brokerResponse.formMetadata());
+    addDeployedResource(response, brokerResponse.resourceMetadata());
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
@@ -224,6 +336,22 @@ public final class ResponseMapper {
         .forEach(response::addDeploymentsItem);
   }
 
+  private static void addDeployedResource(
+      final DeploymentResponse response,
+      final ValueArray<ResourceMetadataRecord> resourceMetadataRecords) {
+    resourceMetadataRecords.stream()
+        .map(
+            resource ->
+                new DeploymentResource()
+                    .resourceId(resource.getResourceId())
+                    .version(resource.getVersion())
+                    .resourceKey(resource.getResourceKey())
+                    .resourceName(resource.getResourceName())
+                    .tenantId(resource.getTenantId()))
+        .map(deploymentForm -> new DeploymentMetadata().resource(deploymentForm))
+        .forEach(response::addDeploymentsItem);
+  }
+
   private static void addDeployedDecisionRequirements(
       final DeploymentResponse response,
       final ValueArray<DecisionRequirementsMetadataRecord> decisionRequirementsMetadataRecords) {
@@ -233,7 +361,7 @@ public final class ResponseMapper {
                 new DeploymentDecisionRequirements()
                     .decisionRequirementsId(decisionRequirement.getDecisionRequirementsId())
                     .version(decisionRequirement.getDecisionRequirementsVersion())
-                    .name(decisionRequirement.getDecisionRequirementsName())
+                    .decisionRequirementsName(decisionRequirement.getDecisionRequirementsName())
                     .tenantId(decisionRequirement.getTenantId())
                     .decisionRequirementsKey(decisionRequirement.getDecisionRequirementsKey())
                     .resourceName(decisionRequirement.getResourceName()))
@@ -327,8 +455,21 @@ public final class ResponseMapper {
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
+  public static ResponseEntity<Object> toAuthorizationCreateResponse(
+      final AuthorizationRecord authorizationRecord) {
+    final var response =
+        new AuthorizationCreateResponse()
+            .authorizationKey(authorizationRecord.getAuthorizationKey());
+    return new ResponseEntity<>(response, HttpStatus.CREATED);
+  }
+
   public static ResponseEntity<Object> toUserCreateResponse(final UserRecord userRecord) {
-    final var response = new UserCreateResponse().userKey(userRecord.getUserKey());
+    final var response =
+        new UserCreateResponse()
+            .userKey(userRecord.getUserKey())
+            .username(userRecord.getUsername())
+            .email(userRecord.getEmail())
+            .name(userRecord.getName());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 
@@ -343,7 +484,12 @@ public final class ResponseMapper {
   }
 
   public static ResponseEntity<Object> toTenantCreateResponse(final TenantRecord record) {
-    final var response = new TenantCreateResponse().tenantKey(record.getTenantKey());
+    final var response =
+        new TenantCreateResult()
+            .tenantKey(Long.toString(record.getTenantKey()))
+            .tenantId(record.getTenantId())
+            .name(record.getName())
+            .description(record.getDescription());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 
@@ -352,7 +498,8 @@ public final class ResponseMapper {
         new TenantUpdateResponse()
             .tenantKey(record.getTenantKey())
             .tenantId(record.getTenantId())
-            .name(record.getName());
+            .name(record.getName())
+            .description(record.getDescription());
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
@@ -444,9 +591,13 @@ public final class ResponseMapper {
   static class RestJobActivationResult implements JobActivationResult<JobActivationResponse> {
 
     private final JobActivationResponse response;
+    private final List<io.camunda.zeebe.gateway.protocol.rest.ActivatedJob> sizeExceedingJobs;
 
-    RestJobActivationResult(final JobActivationResponse response) {
+    RestJobActivationResult(
+        final JobActivationResponse response,
+        final List<io.camunda.zeebe.gateway.protocol.rest.ActivatedJob> sizeExceedingJobs) {
       this.response = response;
+      this.sizeExceedingJobs = sizeExceedingJobs;
     }
 
     @Override
@@ -468,7 +619,19 @@ public final class ResponseMapper {
 
     @Override
     public List<ActivatedJob> getJobsToDefer() {
-      return Collections.emptyList();
+      final var result = new ArrayList<ActivatedJob>(sizeExceedingJobs.size());
+      for (final var job : sizeExceedingJobs) {
+        try {
+          final var key = job.getJobKey();
+          result.add(new ActivatedJob(key, job.getRetries()));
+        } catch (final NumberFormatException ignored) {
+          // could happen
+          LOG.warn(
+              "Expected job key to be numeric, but was {}. The job cannot be returned to the broker, but it will be retried after timeout",
+              job.getJobKey());
+        }
+      }
+      return result;
     }
   }
 }

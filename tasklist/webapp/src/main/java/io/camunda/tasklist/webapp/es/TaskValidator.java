@@ -7,8 +7,15 @@
  */
 package io.camunda.tasklist.webapp.es;
 
-import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import static io.camunda.tasklist.util.ErrorHandlingUtils.TASK_ALREADY_ASSIGNED;
+import static io.camunda.tasklist.util.ErrorHandlingUtils.TASK_IS_NOT_ACTIVE;
+import static io.camunda.tasklist.util.ErrorHandlingUtils.TASK_NOT_ASSIGNED;
+import static io.camunda.tasklist.util.ErrorHandlingUtils.TASK_NOT_ASSIGNED_TO_CURRENT_USER;
+import static io.camunda.tasklist.util.ErrorHandlingUtils.createErrorMessage;
+
+import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
+import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
@@ -45,31 +52,37 @@ public class TaskValidator {
    * @throws InvalidRequestException If the task is not active, not assigned, or not assigned to the
    *     current user.
    */
-  private void validateTaskStateAndAssignment(TaskEntity task) {
+  private void validateTaskStateAndAssignment(final TaskEntity task) {
     validateTaskIsActive(task);
 
-    final UserDTO currentUser = getCurrentUser();
-    if (currentUser.isApiUser()) {
+    if (TasklistAuthenticationUtil.isApiUser()) {
       // JWT Token/API users are allowed to complete task assigned to anyone
       return;
     }
 
     validateTaskIsAssigned(task);
+
+    final UserDTO currentUser = getCurrentUser();
     if (!task.getAssignee().equals(currentUser.getUserId())) {
-      throw new InvalidRequestException("Task is not assigned to " + currentUser.getUserId());
+      throw new InvalidRequestException(
+          createErrorMessage(
+              TASK_NOT_ASSIGNED_TO_CURRENT_USER,
+              "Task is not assigned to " + currentUser.getUserId()));
     }
   }
 
-  public void validateCanAssign(final TaskEntity taskBefore, boolean allowOverrideAssignment) {
+  public void validateCanAssign(
+      final TaskEntity taskBefore, final boolean allowOverrideAssignment) {
     validateTaskIsActive(taskBefore);
 
-    if (getCurrentUser().isApiUser() && allowOverrideAssignment) {
+    if (TasklistAuthenticationUtil.isApiUser() && allowOverrideAssignment) {
       // JWT Token/API users can reassign task
       return;
     }
 
     if (taskBefore.getAssignee() != null) {
-      throw new InvalidRequestException("Task is already assigned");
+      throw new InvalidRequestException(
+          createErrorMessage(TASK_ALREADY_ASSIGNED, "Task is already assigned"));
     }
   }
 
@@ -80,13 +93,15 @@ public class TaskValidator {
 
   private static void validateTaskIsActive(final TaskEntity taskBefore) {
     if (!taskBefore.getState().equals(TaskState.CREATED)) {
-      throw new InvalidRequestException("Task is not active");
+      throw new InvalidRequestException(
+          createErrorMessage(TASK_IS_NOT_ACTIVE, "Task is not active"));
     }
   }
 
   private static void validateTaskIsAssigned(final TaskEntity taskBefore) {
     if (taskBefore.getAssignee() == null) {
-      throw new InvalidRequestException("Task is not assigned");
+      throw new InvalidRequestException(
+          createErrorMessage(TASK_NOT_ASSIGNED, "Task is not assigned"));
     }
   }
 

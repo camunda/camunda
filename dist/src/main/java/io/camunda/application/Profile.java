@@ -20,6 +20,7 @@ public enum Profile {
   GATEWAY("gateway"),
   RESTORE("restore"),
   OPERATE("operate"),
+  OPTIMIZE("optimize"),
   TASKLIST("tasklist"),
   IDENTITY("identity"),
 
@@ -29,8 +30,7 @@ public enum Profile {
   PRODUCTION("prod"),
 
   // authentication profiles
-  AUTH_BASIC("auth-basic"),
-  AUTH_OIDC("auth-oidc"),
+  CONSOLIDATED_AUTH("consolidated-auth"),
   IDENTITY_AUTH("identity-auth"),
   SSO_AUTH("sso-auth"),
   DEFAULT_AUTH_PROFILE("auth"),
@@ -55,7 +55,7 @@ public enum Profile {
 
   public static Set<Profile> getAuthProfiles() {
     return Set.of(
-        AUTH_BASIC, AUTH_OIDC, DEFAULT_AUTH_PROFILE, IDENTITY_AUTH, LDAP_AUTH_PROFILE, SSO_AUTH);
+        CONSOLIDATED_AUTH, DEFAULT_AUTH_PROFILE, IDENTITY_AUTH, LDAP_AUTH_PROFILE, SSO_AUTH);
   }
 
   public static Set<Profile> getWebappProfiles() {

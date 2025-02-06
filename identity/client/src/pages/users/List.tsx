@@ -73,8 +73,8 @@ const List: FC = () => {
         title={t("Users")}
         data={userSearchResults == null ? [] : userSearchResults.items}
         headers={[
-          { header: t("Username"), key: "username" },
           { header: t("Name"), key: "name" },
+          { header: t("Username"), key: "username" },
           { header: t("Email"), key: "email" },
         ]}
         menuItems={[

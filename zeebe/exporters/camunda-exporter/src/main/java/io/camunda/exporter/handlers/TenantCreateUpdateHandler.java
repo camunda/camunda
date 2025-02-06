@@ -46,7 +46,7 @@ public class TenantCreateUpdateHandler implements ExportHandler<TenantEntity, Te
 
   @Override
   public List<String> generateIds(final Record<TenantRecordValue> record) {
-    return List.of(String.valueOf(record.getKey()));
+    return List.of(record.getValue().getTenantId());
   }
 
   @Override
@@ -62,6 +62,7 @@ public class TenantCreateUpdateHandler implements ExportHandler<TenantEntity, Te
         .setKey(value.getTenantKey())
         .setTenantId(value.getTenantId())
         .setName(value.getName())
+        .setDescription(value.getDescription())
         .setJoin(joinRelation);
   }
 

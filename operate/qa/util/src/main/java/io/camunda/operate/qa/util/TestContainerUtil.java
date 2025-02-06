@@ -479,12 +479,14 @@ public class TestContainerUtil {
       final String version,
       final String prefix,
       final Integer partitionCount,
-      final boolean multitenancyEnabled) {
+      final boolean multitenancyEnabled,
+      final String connectionType) {
     final TestContext testContext =
         new TestContext()
             .setZeebeIndexPrefix(prefix)
             .setPartitionCount(partitionCount)
-            .setMultitenancyEnabled(multitenancyEnabled);
+            .setMultitenancyEnabled(multitenancyEnabled)
+            .setConnectionType(connectionType);
     return startZeebe(version, testContext);
   }
 
@@ -510,7 +512,7 @@ public class TestContainerUtil {
       // this user cannot access a mounted volume that is owned by root
       broker.withCreateContainerCmdModifier(cmd -> cmd.withUser("root"));
 
-      if ("SNAPSHOT".equals(version) || SemanticVersion.fromVersion(version).isAtLeast("8.7.0")) {
+      if ("SNAPSHOT".equals(version) || SemanticVersion.fromVersion(version).isAtLeast("8.8.0")) {
         configureCamundaExporter(testContext);
       } else {
         configureElasticsearchExporter(testContext);
@@ -568,6 +570,9 @@ public class TestContainerUtil {
         .withEnv(
             "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME",
             "io.camunda.exporter.CamundaExporter")
+        .withEnv(
+            "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE",
+            testContext.getConnectionType())
         .withEnv(
             "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL", getElasticURL(testContext))
         .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_DELAY", "1")

@@ -67,7 +67,7 @@ public final class DecisionRequirementsServiceTest {
     when(decisionRequirementEntity.decisionRequirementsKey()).thenReturn(124L);
     when(decisionRequirementEntity.decisionRequirementsId()).thenReturn("decReqId");
     when(client.searchDecisionRequirements(any()))
-        .thenReturn(new SearchQueryResult(1, List.of(decisionRequirementEntity), null));
+        .thenReturn(new SearchQueryResult<>(1, List.of(decisionRequirementEntity), null, null));
     when(securityContextProvider.isAuthorized(
             "decReqId",
             authentication,
@@ -83,7 +83,7 @@ public final class DecisionRequirementsServiceTest {
   }
 
   @Test
-  public void shouldReturnDecisionRequirementsXLMyKey() {
+  public void shouldReturnDecisionRequirementsXmlByKey() {
     // given
     final var decisionRequirementEntity = mock(DecisionRequirementsEntity.class);
     when(decisionRequirementEntity.decisionRequirementsKey()).thenReturn(124L);

@@ -34,6 +34,7 @@ import io.camunda.optimize.upgrade.service.UpgradeStepLogService;
 import io.camunda.optimize.upgrade.service.UpgradeValidationService;
 import io.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -84,6 +85,11 @@ public class UpgradeProcedureTest {
         .thenReturn(USER_TEST_INDEX);
   }
 
+  @AfterAll
+  public static void afterAll() {
+    indexLookupUtil.close();
+  }
+
   @Test
   public void initializeSchemaIsNotCalled() {
     // given
@@ -108,9 +114,8 @@ public class UpgradeProcedureTest {
 
     // then the validation and execution happens in the expected order
     final InOrder inOrder = inOrder(validationService, createIndexStep);
-    // The validation order matters since we first need to ensure that the ES client
-    // is able to communicate to ElasticSearch before using it to retrieve the schema version.
-    inOrder.verify(validationService).validateDatabaseVersion(any(), any());
+    // The validation order matters since we first need to ensure that the DB client
+    // is able to communicate to the DB before using it to retrieve the schema version.
     inOrder
         .verify(validationService)
         .validateSchemaVersions(FROM_VERSION, FROM_VERSION, TARGET_VERSION);

@@ -197,7 +197,7 @@ final class ClusterConfigurationManagerTest {
     // when
     final ClusterConfiguration topologyFromOtherMember =
         initialTopology.startConfigurationChange(
-            List.of(new PartitionLeaveOperation(localMemberId, 1)));
+            List.of(new PartitionLeaveOperation(localMemberId, 1, 1)));
     clusterTopologyManager.onGossipReceived(topologyFromOtherMember);
 
     // then
@@ -218,7 +218,7 @@ final class ClusterConfigurationManagerTest {
     // given
     final ClusterConfiguration topologyWithPendingOperation =
         initialTopology.startConfigurationChange(
-            List.of(new PartitionLeaveOperation(localMemberId, 1)));
+            List.of(new PartitionLeaveOperation(localMemberId, 1, 1)));
     final ClusterConfigurationInitializer initializer =
         () -> CompletableActorFuture.completed(topologyWithPendingOperation);
 
@@ -249,7 +249,7 @@ final class ClusterConfigurationManagerTest {
     // when
     final ClusterConfiguration topologyFromOtherMember =
         initialTopology.startConfigurationChange(
-            List.of(new PartitionLeaveOperation(localMemberId, 1)));
+            List.of(new PartitionLeaveOperation(localMemberId, 1, 1)));
     clusterTopologyManager.onGossipReceived(topologyFromOtherMember);
 
     // then

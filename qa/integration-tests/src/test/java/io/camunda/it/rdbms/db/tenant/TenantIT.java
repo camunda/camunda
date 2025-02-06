@@ -16,7 +16,6 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.TenantReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.TenantDbModel;
-import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
 import io.camunda.it.rdbms.db.fixtures.TenantFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -43,7 +42,7 @@ public class TenantIT {
 
     final var tenant = createAndSaveTenant(rdbmsWriter);
 
-    final var actual = reader.findOne(tenant.tenantKey()).orElseThrow();
+    final var actual = reader.findOne(tenant.tenantId()).orElseThrow();
     compareTenant(actual, tenant);
   }
 
@@ -75,14 +74,15 @@ public class TenantIT {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final TenantReader tenantReader = rdbmsService.getTenantReader();
 
-    final var tenant = TenantFixtures.createRandomized(b -> b);
+    final var tenantId = nextStringId();
+    final var tenant = TenantFixtures.createRandomized(b -> b.tenantId(tenantId));
     createAndSaveTenant(rdbmsWriter, tenant);
 
-    final var tenantUpdate = TenantFixtures.createRandomized(b -> b.tenantKey(tenant.tenantKey()));
+    final var tenantUpdate = TenantFixtures.createRandomized(b -> b.tenantId(tenant.tenantId()));
     rdbmsWriter.getTenantWriter().update(tenantUpdate);
     rdbmsWriter.flush();
 
-    final var instance = tenantReader.findOne(tenant.tenantKey()).orElse(null);
+    final var instance = tenantReader.findOne(tenant.tenantId()).orElse(null);
 
     compareTenant(instance, tenantUpdate);
   }
@@ -95,40 +95,14 @@ public class TenantIT {
 
     final var tenant = TenantFixtures.createRandomized(b -> b);
     createAndSaveTenant(rdbmsWriter, tenant);
-    final var instance = tenantReader.findOne(tenant.tenantKey()).orElse(null);
+    final var instance = tenantReader.findOne(tenant.tenantId()).orElse(null);
     compareTenant(instance, tenant);
 
-    rdbmsWriter.getTenantWriter().delete(tenant.tenantKey());
+    rdbmsWriter.getTenantWriter().delete(tenant);
     rdbmsWriter.flush();
 
-    final var deletedInstance = tenantReader.findOne(tenant.tenantKey()).orElse(null);
+    final var deletedInstance = tenantReader.findOne(tenant.tenantId()).orElse(null);
     assertThat(deletedInstance).isNull();
-  }
-
-  @TestTemplate
-  public void shouldAddAndRemoveMember(final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final TenantReader tenantReader = rdbmsService.getTenantReader();
-
-    final var tenant = TenantFixtures.createRandomized(b -> b);
-    createAndSaveTenant(rdbmsWriter, tenant);
-
-    rdbmsWriter
-        .getTenantWriter()
-        .addMember(new TenantMemberDbModel(tenant.tenantKey(), 1337L, "USER"));
-    rdbmsWriter.flush();
-
-    final var addedMemberInstance = tenantReader.findOne(tenant.tenantKey()).orElse(null);
-    assertThat(addedMemberInstance.assignedMemberKeys()).containsExactly(1337L);
-
-    rdbmsWriter
-        .getTenantWriter()
-        .removeMember(new TenantMemberDbModel(tenant.tenantKey(), 1337L, "USER"));
-    rdbmsWriter.flush();
-
-    final var removedMemberInstance = tenantReader.findOne(tenant.tenantKey()).orElse(null);
-    assertThat(removedMemberInstance.assignedMemberKeys()).isEmpty();
   }
 
   @TestTemplate
@@ -137,12 +111,12 @@ public class TenantIT {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final TenantReader reader = rdbmsService.getTenantReader();
 
-    final var tenantId = nextStringId();
-    createAndSaveRandomTenants(rdbmsWriter, b -> b.tenantId(tenantId));
+    final var tenantName = "tenant-" + nextStringId();
+    createAndSaveRandomTenants(rdbmsWriter, b -> b.name(tenantName));
     final var searchResult =
         reader.search(
             new TenantQuery(
-                new TenantFilter.Builder().tenantId(tenantId).build(),
+                new TenantFilter.Builder().name(tenantName).build(),
                 TenantSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
 
@@ -157,7 +131,7 @@ public class TenantIT {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final TenantReader reader = rdbmsService.getTenantReader();
 
-    createAndSaveRandomTenants(rdbmsWriter);
+    createAndSaveRandomTenants(rdbmsWriter, b -> b.name("test"));
     final var instance = createAndSaveTenant(rdbmsWriter);
 
     final var searchResult =
@@ -182,20 +156,20 @@ public class TenantIT {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final TenantReader tenantReader = rdbmsService.getTenantReader();
 
-    final var tenantId = nextStringId();
-    createAndSaveRandomTenants(rdbmsWriter, b -> b.tenantId(tenantId));
+    final var tenantName = nextStringId();
+    createAndSaveRandomTenants(rdbmsWriter, b -> b.name(tenantName));
     final var sort = TenantSort.of(s -> s.name().asc().tenantId().asc());
     final var searchResult =
         tenantReader.search(
             TenantQuery.of(
-                b -> b.filter(f -> f.tenantId(tenantId)).sort(sort).page(p -> p.from(0).size(20))));
+                b -> b.filter(f -> f.name(tenantName)).sort(sort).page(p -> p.from(0).size(20))));
 
     final var instanceAfter = searchResult.items().get(9);
     final var nextPage =
         tenantReader.search(
             TenantQuery.of(
                 b ->
-                    b.filter(f -> f.tenantId(tenantId))
+                    b.filter(f -> f.name(tenantName))
                         .sort(sort)
                         .page(
                             p ->
@@ -218,6 +192,6 @@ public class TenantIT {
         .ignoringFields("assignedMemberKeys", "key")
         .isEqualTo(expected);
 
-    assertThat(actual.key()).isEqualTo(expected.tenantKey());
+    assertThat(actual.tenantId()).isEqualTo(expected.tenantId());
   }
 }

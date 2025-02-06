@@ -38,7 +38,7 @@
 #CAMUNDA_OPTIMIZE_ZEEBE_NAME=zeebe-record
 #CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT=2
 #OPTIMIZE_OPENSEARCH_HOST=localhost
-#OPTIMIZE_OPENSEARCH_HTTP_PORT=9205
+#OPTIMIZE_OPENSEARCH_HTTP_PORT=9200
 #SPRING_PROFILES_ACTIVE=ccsm
 # This should only be set if you plan to use JWTs for the public API rather than a statically configured token
 #SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/certs
@@ -48,7 +48,7 @@
 services:
   keycloak:
     container_name: keycloak
-    image: bitnami/keycloak:26.0.7@sha256:586f85341c86a793b29ab5e1be134c20193d91c152d64441940943efe6882e12
+    image: bitnami/keycloak:26.1.0@sha256:e18757062605529d3869a2f765660110cce6061d92259c83bb48fddff9b44d2f
     ports:
       - "18080:8080"
     environment:
@@ -57,6 +57,7 @@ services:
       KEYCLOAK_DATABASE_VENDOR: dev-file
       KEYCLOAK_HTTP_RELATIVE_PATH: /auth
       KEYCLOAK_ENABLE_HEALTH_ENDPOINTS: true
+      JAVA_OPTS: -XX:UseSVE=0
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8080/health/ready"]
       interval: 30s
@@ -77,7 +78,7 @@ services:
       KEYCLOAK_URL: http://keycloak:8080/auth
       IDENTITY_AUTH_PROVIDER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
       KEYCLOAK_INIT_OPTIMIZE_SECRET: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
-      KEYCLOAK_INIT_OPTIMIZE_ROOT_URL: http://localhost:8090
+      KEYCLOAK_INIT_OPTIMIZE_ROOT_URL: http://localhost:8080
       KEYCLOAK_USERS_0_USERNAME: "demo"
       KEYCLOAK_USERS_0_PASSWORD: "demo"
       KEYCLOAK_USERS_0_FIRST_NAME: "demo"
@@ -95,7 +96,8 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=false
       - action.destructive_requires_name=false
-      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g -XX:UseSVE=0
+      - CLI_JAVA_OPTS=-XX:UseSVE=0
     ulimits:
       memlock:
         soft: -1
@@ -119,9 +121,9 @@ services:
     container_name: zeebe
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
+      - "JAVA_OPTS=-XX:UseSVE=0"
     ports:
       - "26500:26500"
-      - "9600:9600"
     restart: always
     volumes:
       - ../optimize/zeebe-application.yml:/usr/local/zeebe/config/application.yaml
@@ -140,6 +142,7 @@ services:
       - camunda.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
       - camunda.tasklist.zeebe.gatewayAddress=zeebe:26500
       - spring.profiles.active=dev,dev-data,auth
+      - JAVA_OPTS=-XX:UseSVE=0
     depends_on:
       - elasticsearch
       - zeebe
@@ -165,6 +168,7 @@ services:
         - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
         - SERVER_SERVLET_CONTEXT_PATH=/
         - CAMUNDA_OPERATE_CLUSTERNODE_PARTITIONIDS=1,2
+        - JAVA_OPTS=-XX:UseSVE=0
     ports:
       - "8080:8080"
     depends_on:
@@ -194,7 +198,7 @@ services:
         soft: 65536 # maximum number of open files for the OpenSearch user, set to at least 65536 on modern systems
         hard: 65536
     ports:
-      - 9205:9200
+      - 9200:9200
       - 9305:9300
     restart: always
     cpu_count: 4

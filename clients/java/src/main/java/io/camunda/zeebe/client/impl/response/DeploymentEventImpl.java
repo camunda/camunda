@@ -15,6 +15,12 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.client.protocol.rest.DeploymentDecision;
+import io.camunda.client.protocol.rest.DeploymentDecisionRequirements;
+import io.camunda.client.protocol.rest.DeploymentForm;
+import io.camunda.client.protocol.rest.DeploymentMetadata;
+import io.camunda.client.protocol.rest.DeploymentProcess;
+import io.camunda.client.protocol.rest.DeploymentResponse;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.Decision;
 import io.camunda.zeebe.client.api.response.DecisionRequirements;
@@ -22,12 +28,6 @@ import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.Form;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.impl.Loggers;
-import io.camunda.zeebe.client.protocol.rest.DeploymentDecision;
-import io.camunda.zeebe.client.protocol.rest.DeploymentDecisionRequirements;
-import io.camunda.zeebe.client.protocol.rest.DeploymentForm;
-import io.camunda.zeebe.client.protocol.rest.DeploymentMetadata;
-import io.camunda.zeebe.client.protocol.rest.DeploymentProcess;
-import io.camunda.zeebe.client.protocol.rest.DeploymentResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Deployment;
@@ -116,7 +116,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                 decisionRequirements.add(
                     new DecisionRequirementsImpl(
                         dr.getDecisionRequirementsId(),
-                        dr.getName(),
+                        dr.getDecisionRequirementsName(),
                         dr.getVersion(),
                         dr.getDecisionRequirementsKey(),
                         dr.getResourceName(),

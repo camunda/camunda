@@ -30,9 +30,10 @@ import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistTester;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.*;
-import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
-import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
-import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse.DraftSearchVariableValue;
+import io.camunda.tasklist.webapp.dto.TaskQueryDTO;
+import io.camunda.tasklist.webapp.dto.UserDTO;
+import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
@@ -40,12 +41,14 @@ import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -175,8 +178,8 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       // when
       final var result =
           mockMvcHelper.doRequest(
-              post(TasklistURIs.TASKS_URL_V1.concat("/search"))
-                  .param("state", TaskState.CREATED.name()));
+              post(TasklistURIs.TASKS_URL_V1.concat("/search")),
+              new TaskSearchRequest().setState(TaskState.CREATED));
 
       // then
       assertThat(result)
@@ -437,16 +440,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
                   "var_1",
                   null,
                   false,
-                  new VariableSearchResponse.DraftSearchVariableValue()
-                      .setValue("1")
-                      .setPreviewValue("1")),
+                  new DraftSearchVariableValue().setValue("1").setPreviewValue("1")),
               tuple(
                   "var_2",
                   "2",
                   false,
-                  new VariableSearchResponse.DraftSearchVariableValue()
-                      .setValue("222")
-                      .setPreviewValue("222")));
+                  new DraftSearchVariableValue().setValue("222").setPreviewValue("222")));
     }
 
     @Test
@@ -650,15 +649,13 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
                   "128",
                   "128",
                   false,
-                  new VariableSearchResponse.DraftSearchVariableValue()
-                      .setValue("998")
-                      .setPreviewValue("998")),
+                  new DraftSearchVariableValue().setValue("998").setPreviewValue("998")),
               tuple(
                   "var_long_draft_str",
                   null,
                   null,
                   false,
-                  new VariableSearchResponse.DraftSearchVariableValue()
+                  new DraftSearchVariableValue()
                       .setValue(null)
                       .setIsValueTruncated(true)
                       .setPreviewValue(longDraftVarValue.substring(0, variableSizeThreshold))),
@@ -673,7 +670,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
                   null,
                   null,
                   false,
-                  new VariableSearchResponse.DraftSearchVariableValue()
+                  new DraftSearchVariableValue()
                       .setValue("{\"propA\": 12}")
                       .setPreviewValue("{\"propA\": 12}")));
     }
@@ -991,6 +988,10 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
                 assertThat(task.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
               });
 
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(5))
+          .until(() -> tester.getTaskById(taskId).getAssignee() != null);
+
       final var resultUnassign =
           mockMvcHelper.doRequest(
               patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/unassign"), taskId));
@@ -1098,10 +1099,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           new TaskAssignRequest().setAssignee("bill_doe").setAllowOverrideAssignment(false);
 
       setCurrentUser(
-          new UserDTO()
-              .setUserId("bob_doe")
-              .setPermissions(List.of(Permission.WRITE))
-              .setApiUser(true));
+          new UserDTO().setUserId("bob_doe").setPermissions(List.of(Permission.WRITE)), true);
 
       // when
       final var errorResult =
@@ -1115,7 +1113,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is already assigned");
+          .hasMessage(
+              """
+                    { "title": "TASK_ALREADY_ASSIGNED",
+                      "detail": "Task is already assigned"
+                    }
+                    """);
     }
 
     @Test
@@ -1140,7 +1143,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not active");
+          .hasMessage(
+              """
+                    { "title": "TASK_IS_NOT_ACTIVE",
+                      "detail": "Task is not active"
+                    }
+                    """);
     }
 
     @Test
@@ -1189,7 +1197,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not assigned");
+          .hasMessage(
+              """
+                       { "title": "TASK_NOT_ASSIGNED",
+                         "detail": "Task is not assigned"
+                       }
+                       """);
     }
 
     @Test
@@ -1214,7 +1227,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not active");
+          .hasMessage(
+              """
+                       { "title": "TASK_IS_NOT_ACTIVE",
+                         "detail": "Task is not active"
+                       }
+                       """);
     }
   }
 
@@ -1324,15 +1342,13 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final String taskId =
           tester
               .createAndDeploySimpleProcess(
-                  bpmnProcessId,
-                  flowNodeBpmnId,
-                  AbstractUserTaskBuilder::zeebeUserTask,
-                  task -> task.zeebeAssignee("demo"))
+                  bpmnProcessId, flowNodeBpmnId, AbstractUserTaskBuilder::zeebeUserTask)
               .processIsDeployed()
               .then()
               .startProcessInstance(bpmnProcessId)
               .then()
               .taskIsCreated(flowNodeBpmnId)
+              .claimHumanTask(flowNodeBpmnId)
               .getTaskId();
 
       final var saveVariablesRequest =
@@ -1396,7 +1412,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final String bpmnProcessId = "simpleTestProcess";
       final String flowNodeBpmnId = "taskD_".concat(UUID.randomUUID().toString());
       final var taskId = createTask(bpmnProcessId, flowNodeBpmnId, 1).getTaskId();
-      setCurrentUser(getDefaultCurrentUser().setApiUser(true));
+      setCurrentUser(getDefaultCurrentUser(), true);
 
       // when
       final var result =
@@ -1474,7 +1490,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not active");
+          .hasMessage(
+              """
+                      { "title": "TASK_IS_NOT_ACTIVE",
+                        "detail": "Task is not active"
+                      }
+                      """);
     }
 
     @Test
@@ -1496,7 +1517,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not assigned");
+          .hasMessage(
+              """
+                       { "title": "TASK_NOT_ASSIGNED",
+                         "detail": "Task is not assigned"
+                       }
+                       """);
     }
 
     @Test
@@ -1521,7 +1547,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not assigned to user_B");
+          .hasMessage(
+              """
+                        { "title": "TASK_NOT_ASSIGNED_TO_CURRENT_USER",
+                          "detail": "Task is not assigned to user_B"
+                        }
+                        """);
     }
   }
 
@@ -1571,7 +1602,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not active");
+          .hasMessage(
+              """
+           { "title": "TASK_IS_NOT_ACTIVE",
+             "detail": "Task is not active"
+           }
+           """);
     }
 
     @Test
@@ -1594,7 +1630,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not assigned");
+          .hasMessage(
+              """
+                      { "title": "TASK_NOT_ASSIGNED",
+                        "detail": "Task is not assigned"
+                      }
+                      """);
     }
 
     @Test
@@ -1608,7 +1649,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
               .setVariables(
                   List.of(
                       new VariableInputDTO().setName("object_var").setValue("{\"test\": true}")));
-      setCurrentUser(getDefaultCurrentUser().setApiUser(true));
+      setCurrentUser(getDefaultCurrentUser(), true);
 
       // when
       final var errorResult =
@@ -1643,7 +1684,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not assigned to user_B");
+          .hasMessage(
+              """
+                      { "title": "TASK_NOT_ASSIGNED_TO_CURRENT_USER",
+                        "detail": "Task is not assigned to user_B"
+                      }
+                      """);
     }
 
     @Test
@@ -1659,7 +1705,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
               .setVariables(
                   List.of(new VariableInputDTO().setName("array_var").setValue("[30, 8, 2022]")));
 
-      setCurrentUser(getDefaultCurrentUser().setUserId("user_B").setApiUser(true));
+      setCurrentUser(getDefaultCurrentUser().setUserId("user_B"), true);
 
       // when
       final var errorResult =

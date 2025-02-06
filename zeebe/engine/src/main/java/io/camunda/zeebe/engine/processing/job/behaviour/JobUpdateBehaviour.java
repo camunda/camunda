@@ -63,17 +63,7 @@ public class JobUpdateBehaviour {
                 AuthorizationResourceType.PROCESS_DEFINITION,
                 PermissionType.UPDATE_PROCESS_INSTANCE)
             .addResourceId(job.getBpmnProcessId());
-
-    if (authCheckBehavior.isAuthorized(authRequest).isLeft()) {
-      return Either.left(
-          new Rejection(
-              RejectionType.UNAUTHORIZED,
-              AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-                  authRequest.getPermissionType(),
-                  authRequest.getResourceType(),
-                  "BPMN process id '%s'".formatted(job.getBpmnProcessId()))));
-    }
-    return Either.right(job);
+    return authCheckBehavior.isAuthorized(authRequest).map(unused -> job);
   }
 
   public Optional<String> updateJobRetries(

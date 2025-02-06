@@ -106,7 +106,13 @@ final class PartitionJoinTest {
         TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
     final var systemContext =
         new SystemContext(
-            brokerCfg, actorScheduler, atomixCluster, brokerClient, new SecurityConfiguration());
+            brokerCfg,
+            actorScheduler,
+            atomixCluster,
+            brokerClient,
+            new SecurityConfiguration(),
+            null,
+            null);
 
     return new Broker(systemContext, new SpringBrokerBridge(), List.of());
   }

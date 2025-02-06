@@ -36,7 +36,6 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -64,13 +63,10 @@ import io.netty.handler.codec.compression.ZlibWrapper;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
-import io.netty.handler.timeout.IdleStateEvent;
-import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.resolver.dns.BiDnsQueryLifecycleObserverFactory;
 import io.netty.resolver.dns.DnsAddressResolverGroup;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
 import io.netty.resolver.dns.LoggingDnsQueryLifeCycleObserverFactory;
-import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
 import java.io.File;
@@ -116,6 +112,7 @@ import org.slf4j.LoggerFactory;
 public final class NettyMessagingService implements ManagedMessagingService {
   private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5);
   private static final String TLS_PROTOCOL = "TLSv1.3";
+  private static final String MESSAGE_DISPATCHER_NAME = "handler";
 
   private final Logger log = LoggerFactory.getLogger(getClass());
   private final Address advertisedAddress;
@@ -144,6 +141,10 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private final MessagingMetrics messagingMetrics = new MessagingMetricsImpl();
   private final String actorSchedulerName;
 
+  // flag for passing heartbeats down the pipeline
+  private boolean forwardHeartbeats = false;
+  private boolean heartbeatsEnabled = true;
+
   public NettyMessagingService(
       final String cluster, final Address advertisedAddress, final MessagingConfig config) {
     this(cluster, advertisedAddress, config, ProtocolVersion.latest(), "");
@@ -167,6 +168,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
     this.advertisedAddress = advertisedAddress;
     this.protocolVersion = protocolVersion;
     this.config = verifyHeartbeatConfig(config);
+    // pool of client connections
     channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
     this.actorSchedulerName = actorSchedulerName;
 
@@ -910,7 +912,6 @@ public final class NettyMessagingService implements ManagedMessagingService {
               (ChannelFutureListener)
                   f -> {
                     if (f.isSuccess()) {
-                      log.info("TCP server listening for connections on {}", address);
                       serverChannel = f.channel();
                       bind(bootstrap, addressIterator, future);
                     } else {
@@ -924,53 +925,14 @@ public final class NettyMessagingService implements ManagedMessagingService {
     }
   }
 
-  private final class HeartBeatHandler extends ChannelDuplexHandler {
-    private static final String HEARTBEAT_SUBJECT = "internal-heartbeat";
-    private static final byte[] HEARTBEAT_PAYLOAD = new byte[0];
+  @VisibleForTesting
+  void enableHeartbeatsForwarding() {
+    forwardHeartbeats = true;
+  }
 
-    @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-      if (msg instanceof final ProtocolRequest request
-          && request.subject().equals(HEARTBEAT_SUBJECT)) {
-
-        if (!Arrays.equals(request.payload(), HEARTBEAT_PAYLOAD)) {
-          log.warn(
-              "Received unexpected heartbeat payload from {}, perhaps the message subject {} is accidentally reused",
-              request.sender(),
-              request.subject());
-        }
-
-        // Swallow the heartbeat message by releasing it and not passing it to the next handler
-        ReferenceCountUtil.release(msg);
-        return;
-      }
-
-      // Pass the message to the next handler, it wasn't a heartbeat
-      ctx.fireChannelRead(msg);
-    }
-
-    @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
-      if (!(evt instanceof final IdleStateEvent idleStateEvent)) {
-        return;
-      }
-      switch (idleStateEvent.state()) {
-        case READER_IDLE -> {
-          log.warn("Connection {} timed out, closing channel", ctx.channel());
-          ctx.close();
-        }
-        case WRITER_IDLE -> ctx.writeAndFlush(createHeartBeat());
-        default -> {}
-      }
-    }
-
-    private ProtocolRequest createHeartBeat() {
-      return new ProtocolRequest(
-          messageIdGenerator.incrementAndGet(),
-          advertisedAddress,
-          HEARTBEAT_SUBJECT,
-          HEARTBEAT_PAYLOAD);
-    }
+  @VisibleForTesting
+  void disableHeartbeats() {
+    heartbeatsEnabled = false;
   }
 
   /** Channel initializer for basic connections. */
@@ -989,15 +951,6 @@ public final class NettyMessagingService implements ManagedMessagingService {
         channel.pipeline().addLast("tls", sslHandler);
       }
 
-      channel
-          .pipeline()
-          .addLast(
-              "idle",
-              new IdleStateHandler(
-                  config.getHeartbeatTimeout().toMillis(),
-                  config.getHeartbeatInterval().toMillis(),
-                  0,
-                  TimeUnit.MILLISECONDS));
       channel.pipeline().addLast("handshake", new ClientHandshakeHandlerAdapter(future));
 
       switch (config.getCompressionAlgorithm()) {
@@ -1034,15 +987,6 @@ public final class NettyMessagingService implements ManagedMessagingService {
         channel.pipeline().addLast("tls", sslHandler);
       }
 
-      channel
-          .pipeline()
-          .addLast(
-              "idle",
-              new IdleStateHandler(
-                  config.getHeartbeatTimeout().toMillis(),
-                  config.getHeartbeatInterval().toMillis(),
-                  0,
-                  TimeUnit.MILLISECONDS));
       channel.pipeline().addLast("handshake", new ServerHandshakeHandlerAdapter());
 
       switch (config.getCompressionAlgorithm()) {
@@ -1110,13 +1054,14 @@ public final class NettyMessagingService implements ManagedMessagingService {
     void activateProtocolVersion(
         final ChannelHandlerContext context,
         final Connection<M> connection,
-        final ProtocolVersion protocolVersion) {
+        final ProtocolVersion protocolVersion,
+        final boolean isClient) {
       final MessagingProtocol protocol = protocolVersion.createProtocol(advertisedAddress);
       context.pipeline().remove(this);
       context.pipeline().addLast("encoder", protocol.newEncoder());
       context.pipeline().addLast("decoder", protocol.newDecoder());
-      context.pipeline().addLast("heartbeat", new HeartBeatHandler());
-      context.pipeline().addLast("handler", new MessageDispatcher<>(connection));
+
+      context.pipeline().addLast(MESSAGE_DISPATCHER_NAME, new MessageDispatcher<>(connection));
     }
   }
 
@@ -1151,7 +1096,10 @@ public final class NettyMessagingService implements ManagedMessagingService {
                 final ProtocolVersion protocolVersion = ProtocolVersion.valueOf(version);
                 if (protocolVersion != null) {
                   activateProtocolVersion(
-                      context, getOrCreateClientConnection(context.channel()), protocolVersion);
+                      context,
+                      getOrCreateClientConnection(context.channel()),
+                      protocolVersion,
+                      true);
                 } else {
                   log.error("Failed to negotiate protocol version");
                   context.close();
@@ -1169,12 +1117,28 @@ public final class NettyMessagingService implements ManagedMessagingService {
     void activateProtocolVersion(
         final ChannelHandlerContext context,
         final Connection<ProtocolReply> connection,
-        final ProtocolVersion protocolVersion) {
+        final ProtocolVersion protocolVersion,
+        final boolean isClient) {
       log.debug(
           "Activating client protocol version {} for connection to {}",
           protocolVersion,
           context.channel().remoteAddress());
-      super.activateProtocolVersion(context, connection, protocolVersion);
+      super.activateProtocolVersion(context, connection, protocolVersion, isClient);
+      if (heartbeatsEnabled) {
+        context
+            .pipeline()
+            .addBefore(
+                MESSAGE_DISPATCHER_NAME,
+                "heartbeat-setup",
+                new HeartbeatSetupHandler.Client(
+                    "decoder",
+                    log,
+                    messageIdGenerator,
+                    advertisedAddress,
+                    config.getHeartbeatTimeout(),
+                    config.getHeartbeatInterval(),
+                    forwardHeartbeats));
+      }
       future.complete(context.channel());
     }
   }
@@ -1200,7 +1164,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
                 activateProtocolVersion(
                     context,
                     new RemoteServerConnection(handlers, context.channel()),
-                    protocolVersion);
+                    protocolVersion,
+                    false);
               });
     }
 
@@ -1208,12 +1173,21 @@ public final class NettyMessagingService implements ManagedMessagingService {
     void activateProtocolVersion(
         final ChannelHandlerContext context,
         final Connection<ProtocolRequest> connection,
-        final ProtocolVersion protocolVersion) {
+        final ProtocolVersion protocolVersion,
+        final boolean isClient) {
       log.debug(
           "Activating server protocol version {} for connection to {}",
           protocolVersion,
           context.channel().remoteAddress());
-      super.activateProtocolVersion(context, connection, protocolVersion);
+      super.activateProtocolVersion(context, connection, protocolVersion, isClient);
+      if (heartbeatsEnabled) {
+        context
+            .pipeline()
+            .addBefore(
+                MESSAGE_DISPATCHER_NAME,
+                "heartbeat-setup",
+                new HeartbeatSetupHandler.Server("decoder", log, forwardHeartbeats));
+      }
     }
   }
 
@@ -1253,6 +1227,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
         connection.dispatch((M) message);
       } catch (final RejectedExecutionException e) {
         log.warn("Unable to dispatch message due to {}", e.getMessage());
+      } catch (final ClassCastException e) {
+        log.error("Failed to dispatch message due to {}", e.getMessage());
       }
     }
   }

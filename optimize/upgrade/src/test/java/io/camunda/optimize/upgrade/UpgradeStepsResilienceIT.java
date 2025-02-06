@@ -20,7 +20,6 @@ import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import io.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import io.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
 import io.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
-import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -31,6 +30,7 @@ import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 import org.mockserver.model.MediaType;
+import org.springframework.http.HttpStatus;
 
 public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
 
@@ -188,7 +188,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
 
   private HttpResponse createSnapshotInProgressResponse(final String indexName) {
     return HttpResponse.response()
-        .withStatusCode(Response.Status.BAD_REQUEST.getStatusCode())
+        .withStatusCode(HttpStatus.BAD_REQUEST.value())
         .withBody(getSnapshotInProgressJson(indexName), MediaType.JSON_UTF_8);
   }
 

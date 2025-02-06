@@ -11,12 +11,16 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-security</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
   </parent>
 
-  <groupId>io.camunda</groupId>
   <artifactId>camunda-security-core</artifactId>
   <name>Camunda Security Core</name>
+
+  <properties>
+    <!-- must match the zeebe-protocol lowest support JDK version -->
+    <version.java>8</version.java>
+  </properties>
 
   <dependencies>
     <dependency>

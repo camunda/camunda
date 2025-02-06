@@ -53,6 +53,16 @@ public interface ElementInstanceState {
   int getNumberOfTakenSequenceFlows(final long flowScopeKey, final DirectBuffer gatewayElementId);
 
   /**
+   * Returns the number of the taken sequence flows in the scope of the given flow scope key.
+   *
+   * <p><b>NOTE</b>: Each sequence flow counts only as one, even if it is taken multiple times.
+   *
+   * @param flowScopeKey the key of the flow scope that contains the gateway
+   * @return the number of taken sequence flows in the scope of the given flow scope key
+   */
+  int getNumberOfTakenSequenceFlows(final long flowScopeKey);
+
+  /**
    * Returns the taken sequence flows that are connected to the given (joining) gateway.
    *
    * @param flowScopeKey the key of the flow scope that contains the gateway
@@ -61,6 +71,15 @@ public interface ElementInstanceState {
    */
   Set<DirectBuffer> getTakenSequenceFlows(
       final long flowScopeKey, final DirectBuffer gatewayElementId);
+
+  /**
+   * Visits all taken sequence flows of the given (joining) gateway and applies the given visitor to
+   * each taken sequence flow
+   *
+   * @param flowScopeKey the key of the flow scope that contains the gateway
+   * @param visitor the visitor that is applied for each taken sequence flow
+   */
+  void visitTakenSequenceFlows(final long flowScopeKey, final TakenSequenceFlowVisitor visitor);
 
   /**
    * Returns a list of process instance keys that belong to a specific process definition.
@@ -80,4 +99,13 @@ public interface ElementInstanceState {
    * @return a boolean indicating if there are running instances
    */
   boolean hasActiveProcessInstances(long processDefinitionKey, final List<Long> bannedInstances);
+
+  @FunctionalInterface
+  interface TakenSequenceFlowVisitor {
+    void visit(
+        final long flowScopeKey,
+        final DirectBuffer gatewayElementId,
+        final DirectBuffer sequenceFlowId,
+        final int number);
+  }
 }

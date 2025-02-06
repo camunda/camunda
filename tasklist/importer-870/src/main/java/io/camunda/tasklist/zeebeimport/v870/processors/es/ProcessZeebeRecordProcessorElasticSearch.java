@@ -98,7 +98,7 @@ public class ProcessZeebeRecordProcessorElasticSearch {
       final BiConsumer<String, String> userTaskFormCollector)
       throws PersistenceException {
 
-    final ProcessEntity processEntity = createEntity(process, userTaskFormCollector);
+    final var processEntity = createEntity(process, userTaskFormCollector);
     LOGGER.debug("Process: key {}", processEntity.getKey());
 
     try {
@@ -126,12 +126,6 @@ public class ProcessZeebeRecordProcessorElasticSearch {
     processEntity.setBpmnXml(new String(process.getResource()));
 
     final byte[] byteArray = process.getResource();
-    processEntity.setResourceName(process.getResourceName());
-
-    final var versionTag = process.getVersionTag();
-    if (versionTag != null && !versionTag.isEmpty()) {
-      processEntity.setVersionTag(versionTag);
-    }
 
     xmlUtil.extractDiagramData(
         byteArray,
@@ -142,9 +136,6 @@ public class ProcessZeebeRecordProcessorElasticSearch {
         processEntity::setFormKey,
         formId -> processEntity.setFormId(formId),
         processEntity::setIsPublic);
-
-    final var isPublic = Optional.ofNullable(processEntity.getIsPublic()).orElse(false);
-    processEntity.setIsPublic(isPublic);
 
     Optional.ofNullable(processEntity.getFormKey())
         .ifPresent(key -> processEntity.setIsFormEmbedded(true));

@@ -21,10 +21,6 @@ import java.util.stream.Collectors;
 
 public class AssertFormatUtil {
 
-  public static String formatProcessInstance(final long processInstanceKey) {
-    return String.format("Process instance [key: %s]", processInstanceKey);
-  }
-
   public static String formatNames(final String[] names) {
     return formatNames(Arrays.asList(names));
   }

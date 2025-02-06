@@ -23,10 +23,10 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-import io.camunda.zeebe.client.CredentialsProvider;
-import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
+import io.camunda.client.CredentialsProvider;
+import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
+import io.camunda.zeebe.spring.client.configuration.CamundaClientConfigurationImpl;
 import io.camunda.zeebe.spring.client.configuration.JsonMapperConfiguration;
-import io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
 import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
@@ -48,7 +48,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import wiremock.com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 @SpringBootTest(
-    classes = {JsonMapperConfiguration.class, ZeebeClientConfigurationImpl.class},
+    classes = {JsonMapperConfiguration.class, CamundaClientConfigurationImpl.class},
     properties = {
       "camunda.client.mode=self-managed",
       "camunda.client.auth.client-id=my-client-id",
@@ -67,7 +67,7 @@ public class CredentialsProviderSelfManagedTest {
   private static final String ACCESS_TOKEN =
       JWT.create().withExpiresAt(Instant.now().plusSeconds(300)).sign(Algorithm.none());
   @MockBean ZeebeClientExecutorService zeebeClientExecutorService;
-  @Autowired ZeebeClientConfigurationImpl configuration;
+  @Autowired CamundaClientConfigurationImpl configuration;
 
   @DynamicPropertySource
   static void registerPgProperties(final DynamicPropertyRegistry registry) {
@@ -107,6 +107,9 @@ public class CredentialsProviderSelfManagedTest {
                             .put("expires_in", 300))));
 
     credentialsProvider.applyCredentials(headers::put);
-    assertThat(headers).isEqualTo(Map.of("Authorization", "Bearer " + ACCESS_TOKEN));
+    credentialsProvider.applyCredentials(headers::put);
+    assertThat(credentialsProvider).isExactlyInstanceOf(OAuthCredentialsProvider.class);
+    assertThat(headers).containsEntry("Authorization", "Bearer " + ACCESS_TOKEN);
+    assertThat(headers).hasSize(1);
   }
 }

@@ -3,6 +3,9 @@ name: Camunda Helm Chart Integration Test
 on:
   schedule:
     - cron: "0 5 * * *"
+  pull_request:
+    paths:
+      - ".github/workflows/camunda-helm-integration.yml"
   workflow_dispatch:
 
 jobs:
@@ -12,7 +15,7 @@ jobs:
     secrets: inherit
     with:
       identifier: camunda-helm-int
-      camunda-helm-dir: camunda-platform-alpha
+      camunda-helm-dir: camunda-platform-alpha-8.8
       test-enabled: true
       caller-git-ref: main
       extra-values: |
@@ -38,15 +41,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: [helm-deploy]
     if: ${{ always() }}
-    env:
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
     steps:
       - id: slack-notify-failure
         name: Send failure slack notification
-        uses: slackapi/slack-github-action@v1.27.1
+        uses: slackapi/slack-github-action@v2.0.0
         if: ${{ always() && needs.helm-deploy.result != 'success' }}
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
           # For posting a rich message using Block Kit
           payload: |
             {

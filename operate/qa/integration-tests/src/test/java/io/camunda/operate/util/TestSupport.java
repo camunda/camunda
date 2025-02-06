@@ -63,8 +63,6 @@ public final class TestSupport {
       case USER_TASK -> config.userTask = value;
       case COMPENSATION_SUBSCRIPTION -> config.compensationSubscription = value;
       case MESSAGE_CORRELATION -> config.messageCorrelation = value;
-      case USER -> config.user = value;
-      case AUTHORIZATION -> config.authorization = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
@@ -111,8 +109,6 @@ public final class TestSupport {
       case USER_TASK -> config.userTask = value;
       case COMPENSATION_SUBSCRIPTION -> config.compensationSubscription = value;
       case MESSAGE_CORRELATION -> config.messageCorrelation = value;
-      case USER -> config.user = value;
-      case AUTHORIZATION -> config.authorization = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
@@ -152,6 +148,8 @@ public final class TestSupport {
             ValueType.CLOCK,
             ValueType.SCALE,
             // these are not yet supported
+            ValueType.AUTHORIZATION,
+            ValueType.USER,
             ValueType.ROLE,
             ValueType.TENANT,
             ValueType.GROUP,

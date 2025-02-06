@@ -62,8 +62,6 @@ public final class CompleteJobTest extends ClientTest {
     final CompleteJobRequest request = gatewayService.getLastRequest();
     assertThat(request.getJobKey()).isEqualTo(job.getKey());
     assertThat(request.getVariables()).isEmpty();
-    // gRPC provides the result with default value, so checking for default property value here.
-    assertThat(request.getResult().getDenied()).isFalse();
 
     rule.verifyDefaultRequestTimeout();
   }
@@ -179,57 +177,6 @@ public final class CompleteJobTest extends ClientTest {
 
     // then
     assertThat(response).isNotNull();
-  }
-
-  @Test
-  public void shouldCompleteJobWithEmptyResult() {
-    // given
-    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
-    Mockito.when(job.getKey()).thenReturn(12L);
-
-    // when
-    client.newCompleteCommand(job).result().send().join();
-
-    // then
-    final CompleteJobRequest request = gatewayService.getLastRequest();
-    assertThat(request.getJobKey()).isEqualTo(job.getKey());
-    assertThat(request.getResult().getDenied()).isFalse();
-
-    rule.verifyDefaultRequestTimeout();
-  }
-
-  @Test
-  public void shouldCompleteJobWithResultDeniedFalse() {
-    // given
-    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
-    Mockito.when(job.getKey()).thenReturn(12L);
-
-    // when
-    client.newCompleteCommand(job).result().denied(false).send().join();
-
-    // then
-    final CompleteJobRequest request = gatewayService.getLastRequest();
-    assertThat(request.getJobKey()).isEqualTo(job.getKey());
-    assertThat(request.getResult().getDenied()).isFalse();
-
-    rule.verifyDefaultRequestTimeout();
-  }
-
-  @Test
-  public void shouldCompleteJobWithResultDeniedTrue() {
-    // given
-    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
-    Mockito.when(job.getKey()).thenReturn(12L);
-
-    // when
-    client.newCompleteCommand(job).result().denied(true).send().join();
-
-    // then
-    final CompleteJobRequest request = gatewayService.getLastRequest();
-    assertThat(request.getJobKey()).isEqualTo(job.getKey());
-    assertThat(request.getResult().getDenied()).isTrue();
-
-    rule.verifyDefaultRequestTimeout();
   }
 
   public static class POJO {

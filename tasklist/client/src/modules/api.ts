@@ -329,6 +329,12 @@ const api = {
         body,
       });
     },
+    getDocument: (id: string) => {
+      return new Request(getFullURL(`/v2/documents/${id}`), {
+        method: 'GET',
+        ...BASE_REQUEST_OPTIONS,
+      });
+    },
   },
 } as const;
 

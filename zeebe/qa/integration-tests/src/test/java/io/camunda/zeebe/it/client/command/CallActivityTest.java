@@ -9,8 +9,8 @@ package io.camunda.zeebe.it.client.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.it.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;

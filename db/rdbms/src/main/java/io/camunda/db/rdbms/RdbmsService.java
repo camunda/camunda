@@ -149,6 +149,10 @@ public class RdbmsService {
   }
 
   public RdbmsWriter createWriter(final long partitionId) {
-    return rdbmsWriterFactory.createWriter(partitionId);
+    return rdbmsWriterFactory.createWriter(partitionId, -1);
+  }
+
+  public RdbmsWriter createWriter(final long partitionId, final int queueSize) {
+    return rdbmsWriterFactory.createWriter(partitionId, queueSize);
   }
 }

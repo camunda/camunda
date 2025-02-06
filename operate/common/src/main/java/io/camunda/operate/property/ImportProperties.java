@@ -12,7 +12,6 @@ public class ImportProperties {
   public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
   public static final int DEFAULT_IMPORT_POSITION_UPDATE_INTERVAL = 10000;
   private static final int DEFAULT_IMPORT_THREADS_COUNT = 3;
-  private static final int DEFAULT_POST_IMPORT_THREADS_COUNT = 1;
   private static final int DEFAULT_READER_THREADS_COUNT = 3;
   private static final int DEFAULT_IMPORT_QUEUE_SIZE = 3;
   private static final int DEFAULT_READER_BACKOFF = 5000;
@@ -21,13 +20,6 @@ public class ImportProperties {
   private static final int DEFAULT_MAX_EMPTY_RUNS = 10;
 
   private int threadsCount = DEFAULT_IMPORT_THREADS_COUNT;
-
-  private int postImportThreadsCount = DEFAULT_POST_IMPORT_THREADS_COUNT;
-
-  // is here for testing purposes
-  private boolean postImportEnabled = true;
-
-  private boolean postImporterIgnoreMissingData = false;
 
   // used for cases where sequences are not valid
   private boolean useOnlyPosition = false;
@@ -89,34 +81,6 @@ public class ImportProperties {
 
   public void setThreadsCount(final int threadsCount) {
     this.threadsCount = threadsCount;
-  }
-
-  public int getPostImportThreadsCount() {
-    return postImportThreadsCount;
-  }
-
-  public ImportProperties setPostImportThreadsCount(final int postImportThreadsCount) {
-    this.postImportThreadsCount = postImportThreadsCount;
-    return this;
-  }
-
-  public boolean isPostImportEnabled() {
-    return postImportEnabled;
-  }
-
-  public ImportProperties setPostImportEnabled(final boolean postImportEnabled) {
-    this.postImportEnabled = postImportEnabled;
-    return this;
-  }
-
-  public boolean isPostImporterIgnoreMissingData() {
-    return postImporterIgnoreMissingData;
-  }
-
-  public ImportProperties setPostImporterIgnoreMissingData(
-      final boolean postImporterIgnoreMissingData) {
-    this.postImporterIgnoreMissingData = postImporterIgnoreMissingData;
-    return this;
   }
 
   public boolean isUseOnlyPosition() {

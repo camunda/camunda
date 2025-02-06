@@ -8,6 +8,7 @@
 package io.camunda.application.commons.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.service.AuthorizationReader;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionReader;
 import io.camunda.db.rdbms.read.service.DecisionInstanceReader;
@@ -36,12 +37,16 @@ import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.MappingMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
+import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.db.rdbms.sql.TenantMapper;
 import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
+import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
+import io.camunda.search.connect.configuration.DatabaseConfig;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -49,7 +54,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(prefix = "camunda.database", name = "type", havingValue = "rdbms")
+@ConditionalOnProperty(
+    prefix = "camunda.database",
+    name = "type",
+    havingValue = DatabaseConfig.RDBMS)
 @Import(MyBatisConfiguration.class)
 public class RdbmsConfiguration {
 
@@ -140,10 +148,19 @@ public class RdbmsConfiguration {
   }
 
   @Bean
+  public RdbmsWriterMetrics rdbmsExporterMetrics(final MeterRegistry meterRegistry) {
+    return new RdbmsWriterMetrics(meterRegistry);
+  }
+
+  @Bean
   public RdbmsWriterFactory rdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
-      final ExporterPositionMapper exporterPositionMapper) {
-    return new RdbmsWriterFactory(sqlSessionFactory, exporterPositionMapper);
+      final ExporterPositionMapper exporterPositionMapper,
+      final VendorDatabaseProperties vendorDatabaseProperties,
+      final PurgeMapper purgeMapper,
+      final RdbmsWriterMetrics metrics) {
+    return new RdbmsWriterFactory(
+        sqlSessionFactory, exporterPositionMapper, vendorDatabaseProperties, purgeMapper, metrics);
   }
 
   @Bean

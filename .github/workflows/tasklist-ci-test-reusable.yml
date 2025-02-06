@@ -41,7 +41,6 @@ jobs:
   integration-tests:
     name: Test
     runs-on: gcp-perf-core-16-default
-    if: ${{ !startsWith(inputs.branch, 'fe-') && !startsWith(inputs.branch, 'renovate/') }}
     strategy:
       fail-fast: false
       matrix:
@@ -53,11 +52,11 @@ jobs:
             url: http://localhost:9200
           - database: opensearch
             testProfile: docker-os
-            url: http://localhost:9205
+            url: http://localhost:9200
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
-        uses: actions/checkout@cbb722410c2e876e24abbe8de2cc27693e501dcb
+        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2
         with:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags

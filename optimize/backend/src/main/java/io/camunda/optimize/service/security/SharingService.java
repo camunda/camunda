@@ -21,6 +21,8 @@ import io.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultResponseD
 import io.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import io.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
+import io.camunda.optimize.rest.exceptions.ForbiddenException;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.dashboard.DashboardService;
 import io.camunda.optimize.service.db.reader.SharingReader;
 import io.camunda.optimize.service.db.report.PlainReportEvaluationHandler;
@@ -33,8 +35,6 @@ import io.camunda.optimize.service.relations.DashboardReferencingService;
 import io.camunda.optimize.service.relations.ReportReferencingService;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.util.ValidationHelper;
-import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.NotFoundException;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.HashSet;

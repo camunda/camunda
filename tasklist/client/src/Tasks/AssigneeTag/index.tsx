@@ -22,6 +22,7 @@ type Props = {
 type AssigneeTagProps = {
   $isHighlighted?: boolean;
   $isAssigned?: boolean;
+  children: React.ReactNode;
 };
 
 const Tag: React.FC<

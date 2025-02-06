@@ -14,7 +14,7 @@ import (
 )
 
 func (w *UnixC8Run) OpenBrowser(protocol string, port int) error {
-	operateUrl := protocol + "://localhost:" + strconv.Itoa(port) + "/operate/login"
+	operateUrl := protocol + "://localhost:" + strconv.Itoa(port) + "/operate"
 	var openBrowserCmdString string
 	if runtime.GOOS == "darwin" {
 		openBrowserCmdString = "open"
@@ -51,7 +51,7 @@ func (w *UnixC8Run) ElasticsearchCmd(elasticsearchVersion string, parentDir stri
 }
 
 func (w *UnixC8Run) ConnectorsCmd(javaBinary string, parentDir string, camundaVersion string) *exec.Cmd {
-	classPath := parentDir + "/*:" + parentDir + "/custom_connectors/*:" + parentDir + "/camunda-zeebe-" + camundaVersion + "/lib/*"
+	classPath := parentDir + "/*:" + parentDir + "/custom_connectors/*"
 	mainClass := "io.camunda.connector.runtime.app.ConnectorRuntimeApplication"
 	springConfigLocation := "--spring.config.location=" + parentDir + "/connectors-application.properties"
 	connectorsCmd := exec.Command(javaBinary, "-cp", classPath, mainClass, springConfigLocation)

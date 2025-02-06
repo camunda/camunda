@@ -7,8 +7,8 @@
  */
 
 import {post} from 'request';
-
 import {Report, ReportType} from 'types';
+import { getFullURL } from '../api';
 
 interface ConfigParams {
   processDefinitionKey: string;
@@ -32,7 +32,7 @@ export function isTextTileTooLong(
 }
 
 export async function loadRawData(config: ConfigParams): Promise<Blob> {
-  const response = await post('api/export/csv/process/rawData/data', config);
+  const response = await post(getFullURL('api/export/csv/process/rawData/data'), config);
 
   return await response.blob();
 }
@@ -54,12 +54,12 @@ export async function evaluateReport<T extends ReportType>(
 
   if (typeof payload !== 'object') {
     // evaluate saved report
-    response = await post(`api/report/${payload}/evaluate`, {filter}, {query});
+    response = await post(getFullURL(`api/report/${payload}/evaluate`), {filter}, {query});
   } else {
     // evaluate unsaved report
     // we dont want to send report result in payload to prevent exceedeing request size limit
     const {result: _result, ...evaluationPayload} = payload;
-    response = await post(`api/report/evaluate/`, evaluationPayload, {query});
+    response = await post(getFullURL(`api/report/evaluate`), evaluationPayload, {query});
   }
 
   return await response.json();

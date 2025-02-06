@@ -9,6 +9,7 @@ package io.camunda.application.commons.backup;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.application.commons.conditions.WebappEnabledCondition;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
@@ -16,6 +17,7 @@ import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
 import io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository;
 import java.util.concurrent.Executor;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -30,14 +32,14 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
  *
  * <p>Note that the condition used refers to tasklist ElasticSearchCondition
  */
-@Conditional(ElasticSearchCondition.class)
+@Conditional({ElasticSearchCondition.class, WebappEnabledCondition.class})
 @Configuration
-@Profile("tasklist & !operate")
+@Profile("tasklist")
+@ConditionalOnMissingBean(io.camunda.application.commons.backup.ElasticsearchBackupRepository.class)
 // only active if standalone, otherwise the operate one is used
 public class ElasticsearchTasklistBackupRepository {
 
   private final ElasticsearchClient esClient;
-  private final ObjectMapper objectMapper;
   private final BackupRepositoryProps backupRepositoryProps;
   private final Executor threadPoolTaskExecutor;
 
@@ -47,7 +49,6 @@ public class ElasticsearchTasklistBackupRepository {
       final BackupRepositoryProps backupRepositoryProps,
       @Qualifier("backupThreadPoolExecutor") final ThreadPoolTaskExecutor threadPoolTaskExecutor) {
     this.esClient = esClient;
-    this.objectMapper = objectMapper;
     this.backupRepositoryProps = backupRepositoryProps;
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
   }
@@ -55,10 +56,6 @@ public class ElasticsearchTasklistBackupRepository {
   @Bean
   public BackupRepository backupRepository() {
     return new ElasticsearchBackupRepository(
-        esClient,
-        objectMapper,
-        backupRepositoryProps,
-        new WebappsSnapshotNameProvider(),
-        threadPoolTaskExecutor);
+        esClient, backupRepositoryProps, new WebappsSnapshotNameProvider(), threadPoolTaskExecutor);
   }
 }

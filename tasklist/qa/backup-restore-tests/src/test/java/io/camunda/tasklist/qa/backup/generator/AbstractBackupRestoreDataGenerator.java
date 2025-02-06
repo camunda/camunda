@@ -9,20 +9,18 @@ package io.camunda.tasklist.qa.backup.generator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.graphql.spring.boot.test.GraphQLResponse;
+import io.camunda.client.CamundaClient;
 import io.camunda.tasklist.qa.backup.BackupRestoreTestContext;
 import io.camunda.tasklist.qa.backup.TasklistAPICaller;
 import io.camunda.tasklist.qa.util.ZeebeTestUtil;
 import io.camunda.tasklist.util.ThreadUtil;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.SaveVariablesRequest;
-import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
-import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
+import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
@@ -40,26 +38,26 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
   public static final String PROCESS_BPMN_PROCESS_ID = "basicProcess";
   public static final String PROCESS_BPMN_PROCESS_ID_2 = "basicProcess2";
   public static final int PROCESS_INSTANCE_COUNT = 49;
-  private static final int ALL_DRAFT_TASK_VARIABLES_COUNT = PROCESS_INSTANCE_COUNT * 2;
   private static final int COMPLETED_TASKS_COUNT = 11;
+  private static final int ALL_DRAFT_TASK_VARIABLES_COUNT = PROCESS_INSTANCE_COUNT * 2;
   private static final int DRAFT_TASK_VARIABLES_COUNT_AFTER_TASKS_COMPLETION =
       ALL_DRAFT_TASK_VARIABLES_COUNT - COMPLETED_TASKS_COUNT * 2;
   private static final Logger LOGGER =
       LoggerFactory.getLogger(AbstractBackupRestoreDataGenerator.class);
 
   /**
-   * ZeebeClient must not be reused between different test fixtures, as this may be different
+   * CamundaClient must not be reused between different test fixtures, as this may be different
    * versions of client in the future.
    */
-  private ZeebeClient zeebeClient;
+  private CamundaClient camundaClient;
 
   @Autowired private TasklistAPICaller tasklistAPICaller;
 
   private List<Long> processInstanceKeys = new ArrayList<>();
 
   private void init(final BackupRestoreTestContext testContext) {
-    zeebeClient =
-        ZeebeClient.newClientBuilder()
+    camundaClient =
+        CamundaClient.newClientBuilder()
             .gatewayAddress(testContext.getExternalZeebeContactPoint())
             .usePlaintext()
             .build();
@@ -97,11 +95,10 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
   @Override
   public void assertData() throws IOException {
     try {
-      final GraphQLResponse response = tasklistAPICaller.getAllTasks();
-      assertTrue(response.isOk());
-      assertEquals(String.valueOf(PROCESS_INSTANCE_COUNT), response.get("$.data.tasks.length()"));
-      assertEquals("task1", response.get("$.data.tasks[0].name"));
-      assertEquals("CREATED", response.get("$.data.tasks[0].taskState"));
+      final List<TaskSearchResponse> response = tasklistAPICaller.getAllTasks();
+      assertEquals(PROCESS_INSTANCE_COUNT, response.size());
+      assertEquals("task1", response.get(0).getName());
+      assertEquals("CREATED", response.get(0).getTaskState().name());
       assertThat(countEntitiesFor(DraftTaskVariableTemplate.INDEX_NAME))
           .isEqualTo(ALL_DRAFT_TASK_VARIABLES_COUNT);
     } catch (final AssertionError er) {
@@ -113,7 +110,7 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
   @Override
   public void assertDataAfterChange() throws IOException {
     try {
-      List<TaskDTO> tasks = tasklistAPICaller.getTasks("task1");
+      List<TaskSearchResponse> tasks = tasklistAPICaller.getTasks("task1");
       assertThat(tasks).hasSize(PROCESS_INSTANCE_COUNT);
       assertThat(tasks)
           .filteredOn(t -> t.getTaskState().equals(TaskState.COMPLETED))
@@ -155,7 +152,7 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
   protected abstract void refreshIndices();
 
   private void addDraftVariablesForAllTasks() throws IOException {
-    final var tasks = tasklistAPICaller.getAllTasks().getList("$.data.tasks", TaskDTO.class);
+    final var tasks = tasklistAPICaller.getAllTasks();
     LOGGER.info("Found '{}' tasks, adding 2 draft variables to each task.", tasks.size());
     tasks.stream()
         .parallel()
@@ -178,9 +175,9 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
   protected abstract void claimAllTasks();
 
   private void closeClients() {
-    if (zeebeClient != null) {
-      zeebeClient.close();
-      zeebeClient = null;
+    if (camundaClient != null) {
+      camundaClient.close();
+      camundaClient = null;
     }
   }
 
@@ -207,7 +204,8 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
       final String bpmnProcessId, final int numberOfProcessInstances) {
     for (int i = 0; i < numberOfProcessInstances; i++) {
       final long processInstanceKey =
-          ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, "{\"var1\": \"value1\"}");
+          ZeebeTestUtil.startProcessInstance(
+              camundaClient, bpmnProcessId, "{\"var1\": \"value1\"}");
       LOGGER.debug("Started processInstance {} for process {}", processInstanceKey, bpmnProcessId);
       processInstanceKeys.add(processInstanceKey);
     }
@@ -218,7 +216,7 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
   private void deployProcess(
       final BpmnModelInstance bpmnModelInstance, final String bpmnProcessId) {
     final String processDefinitionKey =
-        ZeebeTestUtil.deployProcess(zeebeClient, bpmnModelInstance, bpmnProcessId + ".bpmn");
+        ZeebeTestUtil.deployProcess(camundaClient, bpmnModelInstance, bpmnProcessId + ".bpmn");
     LOGGER.info("Deployed process {} with key {}", bpmnProcessId, processDefinitionKey);
   }
 
@@ -258,9 +256,12 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
 
   private void completeTasks(final String taskBpmnId, final int completedTasksCount)
       throws IOException {
-    final List<TaskDTO> tasks = tasklistAPICaller.getTasks(taskBpmnId);
+    final VariableInputDTO inputDto = new VariableInputDTO();
+    inputDto.setName("varOut");
+    inputDto.setValue("123");
+    final List<TaskSearchResponse> tasks = tasklistAPICaller.getTasks(taskBpmnId);
     for (int i = 0; i < completedTasksCount; i++) {
-      tasklistAPICaller.completeTask(tasks.get(i).getId(), "{name: \"varOut\", value: \"123\"}");
+      tasklistAPICaller.completeTask(tasks.get(i).getId(), List.of(inputDto));
     }
   }
 }

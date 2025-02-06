@@ -7,30 +7,27 @@
  */
 package io.camunda.optimize.rest;
 
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
+
 import io.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import io.camunda.optimize.dto.optimize.UserDto;
 import io.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import io.camunda.optimize.dto.optimize.rest.UserResponseDto;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.security.SessionService;
-import jakarta.ws.rs.DefaultValue;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
 import org.slf4j.Logger;
-import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-@Path(IdentityRestService.IDENTITY_RESOURCE_PATH)
-@Component
+@RestController
+@RequestMapping(REST_API_PATH + IdentityRestService.IDENTITY_RESOURCE_PATH)
 public class IdentityRestService {
-
   public static final String IDENTITY_RESOURCE_PATH = "/identity";
   public static final String IDENTITY_SEARCH_SUB_PATH = "/search";
   public static final String CURRENT_USER_IDENTITY_SUB_PATH = "/current/user";
@@ -45,26 +42,21 @@ public class IdentityRestService {
     this.sessionService = sessionService;
   }
 
-  @GET
-  @Path(IDENTITY_SEARCH_SUB_PATH)
-  @Produces(MediaType.APPLICATION_JSON)
+  @GetMapping(path = IDENTITY_SEARCH_SUB_PATH)
   public IdentitySearchResultResponseDto searchIdentity(
-      @QueryParam("terms") final String searchTerms,
-      @QueryParam("limit") @DefaultValue("25") final int limit,
-      @QueryParam("excludeUserGroups") final boolean excludeUserGroups,
-      @Context final ContainerRequestContext requestContext) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @RequestParam(value = "terms", required = false) final String searchTerms,
+      @RequestParam(value = "limit", defaultValue = "25") final int limit,
+      @RequestParam(value = "excludeUserGroups", required = false) final boolean excludeUserGroups,
+      final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     return identityService.searchForIdentitiesAsUser(
         userId, Optional.ofNullable(searchTerms).orElse(""), limit, excludeUserGroups);
   }
 
-  @GET
-  @Path("/{id}")
-  @Produces(MediaType.APPLICATION_JSON)
+  @GetMapping(path = "/{id}")
   public IdentityWithMetadataResponseDto getIdentityById(
-      @PathParam("id") final String identityId,
-      @Context final ContainerRequestContext requestContext) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @PathVariable("id") final String identityId, final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     return identityService
         .getIdentityWithMetadataForIdAsUser(userId, identityId)
         .orElseThrow(
@@ -73,15 +65,11 @@ public class IdentityRestService {
                     "Could find neither a user nor a group with the id [" + identityId + "]."));
   }
 
-  @GET
-  @Path(CURRENT_USER_IDENTITY_SUB_PATH)
-  @Produces(MediaType.APPLICATION_JSON)
-  public UserResponseDto getCurrentUser(@Context final ContainerRequestContext requestContext) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+  @GetMapping(path = CURRENT_USER_IDENTITY_SUB_PATH)
+  public UserResponseDto getCurrentUser(final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     final UserDto currentUserDto =
-        identityService
-            .getCurrentUserById(userId, requestContext)
-            .orElseGet(() -> new UserDto(userId));
+        identityService.getCurrentUserById(userId, request).orElseGet(() -> new UserDto(userId));
     return new UserResponseDto(currentUserDto, identityService.getEnabledAuthorizations());
   }
 }

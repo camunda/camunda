@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-qa</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
   </parent>
   <artifactId>operate-qa-it-tests</artifactId>
 
@@ -22,12 +22,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-importer</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-archiver</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -78,6 +72,13 @@
       <artifactId>webapps-backup</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-exporter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!-- ELASTICSEARCH -->
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
@@ -188,7 +189,7 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-client-java</artifactId>
+      <artifactId>camunda-client-java</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -388,12 +389,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.apache.httpcomponents.core5</groupId>
       <artifactId>httpcore5</artifactId>
       <scope>test</scope>
@@ -436,8 +431,14 @@
     </dependency>
 
     <dependency>
+      <groupId>com.nimbusds</groupId>
+      <artifactId>nimbus-jose-jwt</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.wiremock</groupId>
-      <artifactId>wiremock</artifactId>
+      <artifactId>wiremock-standalone</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -497,6 +498,13 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-opensearch-exporter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.tomcat</groupId>
+      <artifactId>tomcat-annotations-api</artifactId>
+      <version>11.0.2</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -561,6 +569,7 @@
             <dependency>org.springframework.boot:spring-boot-starter-test</dependency>
             <dependency>org.glassfish:jakarta.json</dependency>
             <dependency>com.unboundid:unboundid-ldapsdk</dependency>
+            <dependency>org.apache.tomcat:tomcat-annotations-api</dependency>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>

@@ -23,8 +23,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -72,10 +70,13 @@ public class ElasticsearchHelper implements NoSqlHelper {
   @Override
   public TaskEntity getTask(final String taskId) {
     try {
-      final GetRequest getRequest = new GetRequest(taskTemplate.getAlias()).id(taskId);
-      final GetResponse response = esClient.get(getRequest, RequestOptions.DEFAULT);
-      if (response.isExists()) {
-        return fromSearchHit(response.getSourceAsString(), objectMapper, TaskEntity.class);
+      final SearchRequest searchRequest =
+          new SearchRequest(taskTemplate.getAlias())
+              .source(new SearchSourceBuilder().query(termQuery(TaskTemplate.KEY, taskId)));
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      if (response.getHits().getHits().length == 1) {
+        return fromSearchHit(
+            response.getHits().getHits()[0].getSourceAsString(), objectMapper, TaskEntity.class);
       } else {
         throw new NotFoundApiException(
             String.format("Could not find  task for taskId [%s].", taskId));
@@ -174,7 +175,7 @@ public class ElasticsearchHelper implements NoSqlHelper {
   @Override
   public List<TaskEntity> getTasksFromIdAndIndex(final String index, final List<String> ids) {
     final TermsQueryBuilder q =
-        termsQuery(TaskTemplate.ID, CollectionUtil.toSafeArrayOfStrings(ids));
+        termsQuery(TaskTemplate.KEY, CollectionUtil.toSafeArrayOfStrings(ids));
     final SearchRequest searchRequest =
         new SearchRequest(index).source(new SearchSourceBuilder().query(q).size(QUERY_SIZE));
     try {

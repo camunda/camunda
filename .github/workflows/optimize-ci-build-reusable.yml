@@ -55,7 +55,7 @@ jobs:
       # Setup: read java version from pom
       - name: "Read Java / Version Info"
         id: pom-info
-        uses: YunaBraska/java-info-action@ac4e56943468f969f44a260326aeb0b73f12aaf4 # 2.1.25
+        uses: YunaBraska/java-info-action@9152316d886e2947f1069cfe001930a0eab54c41 # 2.1.32
         with:
           work-dir: ./optimize
 
@@ -80,6 +80,13 @@ jobs:
           directory: ./optimize/client
 
       #########################################################################
+      # Build optimize dependencies
+      - name: Build optimize dependencies
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: -pl optimize/backend -am install -Dquickly -P skipFrontendBuild,runAssembly -T 1
+
+      #########################################################################
       # Build Optimize
       - name: Generate production .tar.gz
         uses: ./.github/actions/run-maven
@@ -89,13 +96,13 @@ jobs:
       #########################################################################
       # Build Docker image
       - name: Build and push Docker image
-        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355 # v6
+        uses: docker/build-push-action@ca877d9245402d1537745e0e356eab47c3520991 # v6
         env:
           DOCKER_BUILD_SUMMARY: false
           DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: .
-          file: optimize.Dockerfile
+          file: optimize-internal-test.Dockerfile
           provenance: false
           build-args: |
             VERSION=${{ steps.pom-info.outputs.project_version }}

@@ -18,6 +18,8 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
+import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 public class PartitionBootstrapApplier implements MemberOperationApplier {
@@ -26,7 +28,21 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
   private final int priority;
   private final MemberId memberId;
   private final PartitionChangeExecutor partitionChangeExecutor;
+  private final Optional<DynamicPartitionConfig> config;
   private DynamicPartitionConfig partitionConfig;
+
+  public PartitionBootstrapApplier(
+      final int partitionId,
+      final int priority,
+      final MemberId memberId,
+      final Optional<DynamicPartitionConfig> config,
+      final PartitionChangeExecutor partitionChangeExecutor) {
+    this.partitionId = partitionId;
+    this.priority = priority;
+    this.memberId = memberId;
+    this.config = config;
+    this.partitionChangeExecutor = partitionChangeExecutor;
+  }
 
   public PartitionBootstrapApplier(
       final int partitionId,
@@ -36,6 +52,7 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
     this.partitionId = partitionId;
     this.priority = priority;
     this.memberId = memberId;
+    config = Optional.empty();
     this.partitionChangeExecutor = partitionChangeExecutor;
   }
 
@@ -80,14 +97,11 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
                   .formatted(partitionId)));
     }
 
-    // Let's assume Partition 1 always exists
     partitionConfig =
-        currentClusterConfiguration.members().values().stream()
-            .flatMap(m -> m.partitions().entrySet().stream().filter(p -> p.getKey() == 1))
-            .findFirst()
-            .get()
-            .getValue()
-            .config();
+        config.orElse(
+            getFirstMemberFirstPartitionConfig(currentClusterConfiguration)
+                .orElse(getFallbackPartitionConfig()));
+
     return Either.right(
         memberState ->
             memberState.addPartition(
@@ -113,6 +127,21 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
             });
 
     return result;
+  }
+
+  private DynamicPartitionConfig getFallbackPartitionConfig() {
+    return DynamicPartitionConfig.init();
+  }
+
+  private Optional<DynamicPartitionConfig> getFirstMemberFirstPartitionConfig(
+      final ClusterConfiguration currentClusterConfiguration) {
+    return currentClusterConfiguration.members().values().stream()
+        .flatMap(m -> m.partitions().entrySet().stream().filter(p -> p.getKey() == 1))
+        .toList()
+        .stream()
+        .findFirst()
+        .map(Entry::getValue)
+        .map(PartitionState::config);
   }
 
   private boolean isLocalMemberIsActive(final ClusterConfiguration currentClusterConfiguration) {

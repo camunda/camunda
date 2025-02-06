@@ -96,7 +96,7 @@ public class ExporterBatchWriterMultipleHandlersTest {
     // then
     verify(batchRequest, times(2))
         .update(eq("indexA"), eq(Long.toString(record.getKey())), any(TestEntity.class));
-    verify(batchRequest).execute();
+    verify(batchRequest).execute(any());
   }
 
   @Test
@@ -125,7 +125,7 @@ public class ExporterBatchWriterMultipleHandlersTest {
         .update(eq("indexA"), eq(Long.toString(record.getKey())), any(TestEntity.class));
     verify(batchRequest)
         .update(eq("indexB"), eq(Long.toString(record.getKey())), any(TestEntity.class));
-    verify(batchRequest).execute();
+    verify(batchRequest).execute(any());
   }
 
   @Test
@@ -172,7 +172,7 @@ public class ExporterBatchWriterMultipleHandlersTest {
     inOrder
         .verify(batchRequest)
         .update(eq("indexF"), eq(Long.toString(record.getKey())), any(TestEntity.class));
-    inOrder.verify(batchRequest).execute();
+    inOrder.verify(batchRequest).execute(any());
   }
 
   @Test
@@ -202,7 +202,7 @@ public class ExporterBatchWriterMultipleHandlersTest {
         .update(eq("indexA"), eq(Long.toString(record.getKey())), any(TestEntity.class));
     verify(batchRequest)
         .update(eq("indexA"), eq(Long.toString(record.getKey())), any(OtherTestEntity.class));
-    verify(batchRequest).execute();
+    verify(batchRequest).execute(any());
   }
 
   private static class TestEntity implements ExporterEntity<TestEntity> {

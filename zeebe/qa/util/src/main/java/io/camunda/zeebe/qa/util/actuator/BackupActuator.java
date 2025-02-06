@@ -60,7 +60,7 @@ public interface BackupActuator {
    * @return a new instance of {@link BackupActuator}
    */
   static BackupActuator ofAddress(final String address) {
-    final var endpoint = String.format("http://%s/actuator/backup-runtime", address);
+    final var endpoint = String.format("http://%s/actuator/backupRuntime", address);
     return of(endpoint);
   }
 
@@ -71,7 +71,7 @@ public interface BackupActuator {
    * @return a new instance of {@link BackupActuator}
    */
   static BackupActuator of(final TestApplication<?> node) {
-    return of(node.actuatorUri("backup-runtime").toString());
+    return of(node.actuatorUri("backupRuntime").toString());
   }
 
   /**

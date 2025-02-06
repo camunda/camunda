@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.client.protocol.rest.MessagePublicationResponse;
 import io.camunda.zeebe.client.api.response.PublishMessageResponse;
-import io.camunda.zeebe.client.protocol.rest.MessagePublicationResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 
 public final class PublishMessageResponseImpl implements PublishMessageResponse {

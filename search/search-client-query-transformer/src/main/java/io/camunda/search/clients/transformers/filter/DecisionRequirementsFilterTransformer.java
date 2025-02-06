@@ -19,10 +19,15 @@ import static io.camunda.webapps.schema.descriptors.operate.index.DecisionRequir
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.DecisionRequirementsFilter;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.List;
 
 public final class DecisionRequirementsFilterTransformer
-    implements FilterTransformer<DecisionRequirementsFilter> {
+    extends IndexFilterTransformer<DecisionRequirementsFilter> {
+
+  public DecisionRequirementsFilterTransformer(final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
+  }
 
   @Override
   public SearchQuery toSearchQuery(final DecisionRequirementsFilter filter) {
@@ -34,11 +39,6 @@ public final class DecisionRequirementsFilterTransformer
     final var tenantIdsQuery = getTenantIdsQuery(filter.tenantIds());
 
     return and(keysQuery, namesQuery, versionsQuery, decisionRequirementsIdsQuery, tenantIdsQuery);
-  }
-
-  @Override
-  public List<String> toIndices(final DecisionRequirementsFilter filter) {
-    return List.of("operate-decision-requirements-8.3.0_alias");
   }
 
   private SearchQuery getKeysQuery(final List<Long> keys) {

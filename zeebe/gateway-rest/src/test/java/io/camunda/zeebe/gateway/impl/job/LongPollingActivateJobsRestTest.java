@@ -124,7 +124,7 @@ public class LongPollingActivateJobsRestTest {
     failJobStub.registerWith(brokerClient);
 
     tenantAttributeHolderMock = mockStatic(TenantAttributeHolder.class);
-    tenantAttributeHolderMock.when(TenantAttributeHolder::tenantIds).thenReturn(List.of());
+    tenantAttributeHolderMock.when(TenantAttributeHolder::getTenantIds).thenReturn(List.of());
   }
 
   @AfterEach

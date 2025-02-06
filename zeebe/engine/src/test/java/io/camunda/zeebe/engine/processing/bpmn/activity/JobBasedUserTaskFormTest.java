@@ -196,7 +196,7 @@ public class JobBasedUserTaskFormTest {
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentCreated.getKey()).resolve();
 
     // then
-    assertThat(RecordingExporter.incidentRecords().onlyEvents())
+    assertThat(RecordingExporter.incidentRecords().onlyEvents().limit(2))
         .extracting(Record::getKey, Record::getIntent)
         .describedAs("form not found incident is resolved and no new incident is created")
         .containsExactly(

@@ -37,11 +37,11 @@ public class TenantClient {
    * Creates a new {@link TenantUpdateClient} for updating a tenant. The client uses the internal
    * command writer to submit tenant update commands.
    *
-   * @param tenantKey the key of the tenant to be updated
+   * @param tenantId the id of the tenant to be updated
    * @return a new instance of {@link TenantUpdateClient}
    */
-  public TenantUpdateClient updateTenant(final long tenantKey) {
-    return new TenantUpdateClient(writer, tenantKey);
+  public TenantUpdateClient updateTenant(final String tenantId) {
+    return new TenantUpdateClient(writer, tenantId);
   }
 
   /**
@@ -53,6 +53,17 @@ public class TenantClient {
    */
   public TenantAddEntityClient addEntity(final long tenantKey) {
     return new TenantAddEntityClient(writer, tenantKey);
+  }
+
+  /**
+   * Creates a new {@link TenantAddEntityClient} for adding an entity to a tenant. The client uses
+   * the internal command writer to submit the add entity commands.
+   *
+   * @param tenantId the id of the tenant
+   * @return a new instance of {@link TenantAddEntityClient}
+   */
+  public TenantAddEntityClient addEntity(final String tenantId) {
+    return new TenantAddEntityClient(writer, tenantId);
   }
 
   /**
@@ -74,11 +85,11 @@ public class TenantClient {
    * Creates a new {@link TenantDeleteClient} for deleting a tenant. The client uses the internal
    * command writer to submit the delete tenant commands.
    *
-   * @param tenantKey the key of the tenant to be deleted
+   * @param tenantId the id of the tenant to be deleted
    * @return a new instance of {@link TenantDeleteClient}
    */
-  public TenantDeleteClient deleteTenant(final long tenantKey) {
-    return new TenantDeleteClient(writer, tenantKey);
+  public TenantDeleteClient deleteTenant(final String tenantId) {
+    return new TenantDeleteClient(writer, tenantId);
   }
 
   public static class TenantCreationClient {
@@ -182,10 +193,10 @@ public class TenantClient {
     private final TenantRecord tenantRecord;
     private Function<Long, Record<TenantRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public TenantUpdateClient(final CommandWriter writer, final long tenantKey) {
+    public TenantUpdateClient(final CommandWriter writer, final String tenantId) {
       this.writer = writer;
       tenantRecord = new TenantRecord();
-      tenantRecord.setTenantKey(tenantKey);
+      tenantRecord.setTenantId(tenantId);
     }
 
     /**
@@ -269,8 +280,19 @@ public class TenantClient {
       tenantRecord.setTenantKey(tenantKey);
     }
 
+    public TenantAddEntityClient(final CommandWriter writer, final String tenantId) {
+      this.writer = writer;
+      tenantRecord = new TenantRecord();
+      tenantRecord.setTenantId(tenantId);
+    }
+
     public TenantAddEntityClient withEntityKey(final long entityKey) {
       tenantRecord.setEntityKey(entityKey);
+      return this;
+    }
+
+    public TenantAddEntityClient withEntityId(final String entityId) {
+      tenantRecord.setEntityId(entityId);
       return this;
     }
 
@@ -359,10 +381,10 @@ public class TenantClient {
     private final TenantRecord tenantRecord;
     private Function<Long, Record<TenantRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public TenantDeleteClient(final CommandWriter writer, final long tenantKey) {
+    public TenantDeleteClient(final CommandWriter writer, final String tenantId) {
       this.writer = writer;
       tenantRecord = new TenantRecord();
-      tenantRecord.setTenantKey(tenantKey);
+      tenantRecord.setTenantId(tenantId);
     }
 
     /**

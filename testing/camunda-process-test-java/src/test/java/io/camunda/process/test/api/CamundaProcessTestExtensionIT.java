@@ -15,10 +15,11 @@
  */
 package io.camunda.process.test.api;
 
+import static io.camunda.process.test.api.assertions.ElementSelectors.byName;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
@@ -29,7 +30,7 @@ import org.junit.jupiter.api.Test;
 public class CamundaProcessTestExtensionIT {
 
   // to be injected
-  private ZeebeClient client;
+  private CamundaClient client;
   private CamundaProcessTestContext processTestContext;
 
   @Test
@@ -56,8 +57,7 @@ public class CamundaProcessTestExtensionIT {
     // then
     CamundaAssert.assertThat(processInstance)
         .isActive()
-        .hasCompletedElements("start")
-        .hasActiveElements("task")
+        .hasActiveElements(byName("task"))
         .hasVariable("status", "active");
   }
 
@@ -88,7 +88,7 @@ public class CamundaProcessTestExtensionIT {
         client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
 
     // when
-    CamundaAssert.assertThat(processInstance).hasActiveElements("A");
+    CamundaAssert.assertThat(processInstance).hasActiveElements(byName("A"));
 
     final Instant timeBefore = processTestContext.getCurrentTime();
 
@@ -97,7 +97,9 @@ public class CamundaProcessTestExtensionIT {
     final Instant timeAfter = processTestContext.getCurrentTime();
 
     // then
-    CamundaAssert.assertThat(processInstance).hasTerminatedElements("A").hasActiveElements("B");
+    CamundaAssert.assertThat(processInstance)
+        .hasTerminatedElements(byName("A"))
+        .hasActiveElements(byName("B"));
 
     assertThat(Duration.between(timeBefore, timeAfter))
         .isCloseTo(timerDuration, Duration.ofSeconds(10));

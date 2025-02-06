@@ -11,7 +11,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>migration</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -26,6 +26,10 @@
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
     </dependency>
     <dependency>
@@ -33,8 +37,24 @@
       <artifactId>spring-web</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-service</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-broker-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-auth</artifactId>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -45,8 +65,24 @@
       <artifactId>zeebe-protocol</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol-impl</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.camunda.migration</groupId>
       <artifactId>migration-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-domain</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-sdk</artifactId>
     </dependency>
 
     <!-- Test -->
@@ -63,6 +99,16 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

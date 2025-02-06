@@ -42,30 +42,15 @@ public interface SearchTestRuleProvider {
   void processAllRecordsAndWait(
       Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments);
 
-  void processAllRecordsAndWait(
-      boolean runPostImport,
-      Predicate<Object[]> predicate,
-      Supplier<Object> supplier,
-      Object... arguments);
-
   void processRecordsWithTypeAndWait(
       ImportValueType importValueType, Predicate<Object[]> predicate, Object... arguments);
-
-  void processRecordsWithTypeAndWait(
-      ImportValueType importValueType,
-      boolean runPostImport,
-      Predicate<Object[]> predicate,
-      Object... arguments);
 
   void processRecordsAndWaitFor(
       Collection<RecordsReader> readers,
       Integer maxWaitingRounds,
-      boolean runPostImport,
       Predicate<Object[]> predicate,
       Supplier<Object> supplier,
       Object... arguments);
-
-  void runPostImportActions();
 
   boolean areIndicesCreatedAfterChecks(String indexPrefix, int minCountOfIndices, int maxChecks);
 

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 import static java.util.function.Predicate.not;
 
 import io.camunda.zeebe.engine.processing.Rejection;
@@ -199,19 +198,16 @@ public final class ProcessInstanceModificationModifyProcessor
             .addResourceId(processInstance.getValue().getBpmnProcessId());
     final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
     if (isAuthorized.isLeft()) {
-      final var rejectionType = isAuthorized.getLeft();
+      final var rejection = isAuthorized.getLeft();
       final String errorMessage =
-          RejectionType.UNAUTHORIZED.equals(rejectionType)
-              ? UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-                  authRequest.getPermissionType(),
-                  authRequest.getResourceType(),
-                  "BPMN process id '%s'".formatted(processInstance.getValue().getBpmnProcessId()))
-              : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+          RejectionType.NOT_FOUND.equals(rejection.type())
+              ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
                   "modify a process instance",
                   processInstance.getValue().getProcessInstanceKey(),
-                  "such process instance");
-      responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
-      rejectionWriter.appendRejection(command, rejectionType, errorMessage);
+                  "such process instance")
+              : rejection.reason();
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
+      rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
       return;
     }
 

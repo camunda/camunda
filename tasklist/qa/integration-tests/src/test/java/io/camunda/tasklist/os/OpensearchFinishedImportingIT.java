@@ -9,6 +9,7 @@ package io.camunda.tasklist.os;
 
 import static io.camunda.tasklist.Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.tasklist.Metrics;
@@ -52,7 +53,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest {
-
   private static final OpensearchExporter EXPORTER = new OpensearchExporter();
   private static final OpensearchExporterConfiguration CONFIG =
       new OpensearchExporterConfiguration();
@@ -75,8 +75,8 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
   }
 
   @BeforeEach
-  public void beforeEach() {
-    tasklistProperties.getImporter().setImportPositionUpdateInterval(5000);
+  public void beforeEach() throws IOException {
+    tasklistProperties.getImporter().setImportPositionUpdateInterval(1000);
     CONFIG.url = tasklistProperties.getOpenSearch().getUrl();
     CONFIG.index.prefix = tasklistProperties.getZeebeOpenSearch().getPrefix();
     CONFIG.index.setNumberOfShards(1);
@@ -98,19 +98,20 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     recordsReaderHolder.resetCountEmptyBatches();
     recordsReaderHolder.resetPartitionsCompletedImporting();
     meterRegistry.clear();
+    createInitialImportPositionDocuments();
   }
 
   @Test
-  public void shouldMarkRecordReadersAsCompletedIf870RecordReceived() throws IOException {
+  public void shouldMarkRecordReadersAsCompletedIf880RecordReceived() throws IOException {
     // given
-    final var record = generateRecord(ValueType.JOB, "8.6.0", 1);
+    final var record = generateRecord(ValueType.JOB, "8.7.0", 1);
     EXPORTER.export(record);
     openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
 
     zeebeImporter.performOneRoundOfImport();
 
     // when
-    final var record2 = generateRecord(ValueType.JOB, "8.7.0", 1);
+    final var record2 = generateRecord(ValueType.JOB, "8.8.0", 1);
     EXPORTER.export(record2);
     openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
 
@@ -128,14 +129,18 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     // the import position for
     Awaitility.await()
         .atMost(Duration.ofSeconds(30))
-        .until(() -> isRecordReaderIsCompleted("1-job"));
+        .until(
+            () -> {
+              zeebeImporter.performOneRoundOfImport();
+              return isRecordReaderIsCompleted("1-job");
+            });
   }
 
   @Test
-  public void shouldMarkMultiplePositionIndexAsCompletedIf870RecordReceived() throws IOException {
-    final var processInstanceRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
-    final var jobRecord = generateRecord(ValueType.JOB, "8.6.0", 1);
-    final var variableRecord = generateRecord(ValueType.VARIABLE, "8.6.0", 1);
+  public void shouldMarkMultiplePositionIndexAsCompletedIf880RecordReceived() throws IOException {
+    final var processInstanceRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var jobRecord = generateRecord(ValueType.JOB, "8.7.0", 1);
+    final var variableRecord = generateRecord(ValueType.VARIABLE, "8.7.0", 1);
     EXPORTER.export(processInstanceRecord);
     EXPORTER.export(jobRecord);
     EXPORTER.export(variableRecord);
@@ -145,14 +150,14 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
 
     // when
     final var newVersionProcessInstanceRecord =
-        generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+        generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
     EXPORTER.export(newVersionProcessInstanceRecord);
-    final var newVersionJobRecord = generateRecord(ValueType.JOB, "8.7.0", 1);
+    final var newVersionJobRecord = generateRecord(ValueType.JOB, "8.8.0", 1);
     EXPORTER.export(newVersionJobRecord);
 
     for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
       // simulate existing variable records left to process so it is not marked as completed
-      final var decisionRecord2 = generateRecord(ValueType.VARIABLE, "8.6.0", 1);
+      final var decisionRecord2 = generateRecord(ValueType.VARIABLE, "8.7.0", 1);
       EXPORTER.export(decisionRecord2);
       openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
 
@@ -169,10 +174,10 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
   }
 
   @Test
-  public void shouldMarkMultiplePartitionsAsCompletedIfTheyReceiveAn870Record() throws IOException {
+  public void shouldMarkMultiplePartitionsAsCompletedIfTheyReceiveAn880Record() throws IOException {
     // given
-    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
-    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 2);
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
     EXPORTER.export(record);
     EXPORTER.export(partitionTwoRecord);
     openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
@@ -180,8 +185,8 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     zeebeImporter.performOneRoundOfImport();
 
     // when
-    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
-    final var partitionTwoRecord2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
+    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
+    final var partitionTwoRecord2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 2);
     EXPORTER.export(record2);
     EXPORTER.export(partitionTwoRecord2);
     openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
@@ -202,14 +207,14 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
   @Test
   public void shouldNotSetCompletedToFalseForSubsequentRecordsAfterImportingDone()
       throws IOException {
-    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     EXPORTER.export(record);
     openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
 
     zeebeImporter.performOneRoundOfImport();
 
     // when
-    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
     EXPORTER.export(record2);
     openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
 
@@ -228,7 +233,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
         .atMost(Duration.ofSeconds(30))
         .until(() -> isRecordReaderIsCompleted("1-process-instance"));
 
-    final var record3 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var record3 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
     EXPORTER.export(record3);
     openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
 
@@ -243,8 +248,8 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
   @Test
   public void shouldNotMarkedAsCompletedViaMetricsWhenImportingIsNotDone() throws IOException {
     // given
-    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
-    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 2);
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
     EXPORTER.export(record);
     EXPORTER.export(partitionTwoRecord);
     openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
@@ -270,8 +275,8 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
   @Test
   public void shouldMarkImporterCompletedViaMetricsAsWell() throws IOException {
     // given
-    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
-    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 2);
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
     EXPORTER.export(record);
     EXPORTER.export(partitionTwoRecord);
     openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
@@ -279,8 +284,8 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     zeebeImporter.performOneRoundOfImport();
 
     // when
-    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
-    final var partitionTwoRecord2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
+    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
+    final var partitionTwoRecord2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 2);
     EXPORTER.export(record2);
     EXPORTER.export(partitionTwoRecord2);
     openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
@@ -313,7 +318,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
   @Test
   public void shouldNotOverwriteImportPositionDocumentWithDefaultValue() throws IOException {
     // given
-    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     EXPORTER.export(record);
     openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
 
@@ -341,6 +346,10 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
 
   @Test
   public void shouldWriteDefaultEmptyDefaultImportPositionDocumentsOnRecordReaderStart() {
+    createInitialImportPositionDocuments();
+  }
+
+  private void createInitialImportPositionDocuments() {
     recordsReaderHolder.getAllRecordsReaders().stream()
         .map(RecordsReaderOpenSearch.class::cast)
         .forEach(RecordsReaderAbstract::postConstruct);
@@ -351,16 +360,38 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
             () -> {
               final var searchRequest =
                   new SearchRequest.Builder()
-                      .size(100)
                       .index(importPositionIndex.getFullQualifiedName())
+                      .size(100)
                       .build();
               final var documents =
                   openSearchClient.search(searchRequest, ImportPositionEntity.class);
 
-              // all initial import position documents created for each record reader
-              return documents.hits().hits().size()
+              return documents.hits().hits().stream()
+                      .map(hit -> hit.source())
+                      .filter(importPosition -> !importPosition.getCompleted())
+                      .count()
                   == recordsReaderHolder.getAllRecordsReaders().size();
             });
+  }
+
+  @Test
+  public void shouldMarkRecordReadersCompletedEvenIfZeebeIndicesDontExist() throws IOException {
+    // given
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
+    EXPORTER.export(record);
+    openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
+
+    // when
+    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+      zeebeImporter.performOneRoundOfImport();
+    }
+
+    // then
+    for (final var type : ImportValueType.values()) {
+      await()
+          .atMost(Duration.ofSeconds(30))
+          .until(() -> isRecordReaderIsCompleted("1-" + type.getAliasTemplate()));
+    }
   }
 
   private void assertImportPositionMatchesRecord(
@@ -398,7 +429,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     final var hits =
         openSearchClient
             .search(
-                new Builder().index(importPositionIndex.getFullQualifiedName()).build(),
+                new Builder().index(importPositionIndex.getFullQualifiedName()).size(100).build(),
                 ImportPositionEntity.class)
             .hits()
             .hits()

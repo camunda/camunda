@@ -14,7 +14,6 @@ public class ImportPositionIndex extends OperateIndexDescriptor implements Prio1
 
   public static final String INDEX_NAME = "import-position";
 
-  public static final String META_CONCURRENCY_MODE = "concurrencyMode";
   public static final String ALIAS_NAME = "aliasName";
   public static final String ID = "id";
   public static final String PARTITION_ID = "partitionId";

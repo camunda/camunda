@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>tasklist-parent</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>tasklist-importer</artifactId>
@@ -32,12 +32,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>tasklist-common</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>tasklist-importer-860</artifactId>
-      <scope>runtime</scope>
     </dependency>
 
     <dependency>
@@ -187,7 +181,6 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <usedDependencies>
-            <dependency>io.camunda:tasklist-importer-860</dependency>
             <dependency>io.camunda:tasklist-importer-870</dependency>
           </usedDependencies>
         </configuration>

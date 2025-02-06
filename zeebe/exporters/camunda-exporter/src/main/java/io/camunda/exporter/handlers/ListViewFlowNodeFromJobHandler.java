@@ -31,11 +31,9 @@ public class ListViewFlowNodeFromJobHandler
   private static final Set<Intent> FAILED_JOB_EVENTS = Set.of(JobIntent.FAIL, JobIntent.FAILED);
 
   private final String indexName;
-  private final boolean concurrencyMode;
 
-  public ListViewFlowNodeFromJobHandler(final String indexName, final boolean concurrencyMode) {
+  public ListViewFlowNodeFromJobHandler(final String indexName) {
     this.indexName = indexName;
-    this.concurrencyMode = concurrencyMode;
   }
 
   @Override
@@ -50,6 +48,13 @@ public class ListViewFlowNodeFromJobHandler
 
   @Override
   public boolean handlesRecord(final Record<JobRecordValue> record) {
+    // do not handle record if the job is executed on a process instance instead of a flow node
+    // instance
+    final var recordValue = record.getValue();
+    // only execute update if job is on a flownode (not on a process)
+    if (recordValue.getElementInstanceKey() == recordValue.getProcessInstanceKey()) {
+      return false;
+    }
     return true;
   }
 
@@ -101,37 +106,13 @@ public class ListViewFlowNodeFromJobHandler
     updateFields.put(JOB_POSITION, entity.getPositionJob());
 
     final Long processInstanceKey = entity.getProcessInstanceKey();
-    if (concurrencyMode) {
-      batchRequest.upsertWithScriptAndRouting(
-          indexName,
-          entity.getId(),
-          entity,
-          getFlowNodeInstanceFromJobScript(),
-          updateFields,
-          String.valueOf(processInstanceKey));
-    } else {
-      batchRequest.upsertWithRouting(
-          indexName, entity.getId(), entity, updateFields, String.valueOf(processInstanceKey));
-    }
+
+    batchRequest.upsertWithRouting(
+        indexName, entity.getId(), entity, updateFields, String.valueOf(processInstanceKey));
   }
 
   @Override
   public String getIndexName() {
     return indexName;
-  }
-
-  protected String getFlowNodeInstanceFromJobScript() {
-    return String.format(
-        "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
-            + "ctx._source.%s = params.%s; " // position
-            + "ctx._source.%s = params.%s; " // failed with retries
-            + "}",
-        JOB_POSITION,
-        JOB_POSITION,
-        JOB_POSITION,
-        JOB_POSITION,
-        JOB_POSITION,
-        JOB_FAILED_WITH_RETRIES_LEFT,
-        JOB_FAILED_WITH_RETRIES_LEFT);
   }
 }

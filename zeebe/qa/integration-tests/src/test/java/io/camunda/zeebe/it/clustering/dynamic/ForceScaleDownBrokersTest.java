@@ -16,7 +16,6 @@ import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -26,7 +25,6 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-@AutoCloseResources
 @Timeout(2 * 60)
 class ForceScaleDownBrokersTest {
   private static final int PARTITIONS_COUNT = 1;
@@ -37,7 +35,7 @@ class ForceScaleDownBrokersTest {
   void shouldForceRemoveBrokers(final int oldClusterSize, final int newClusterSize) {
     // given
     try (final var cluster = createCluster(oldClusterSize, oldClusterSize);
-        final var zeebeClient = cluster.availableGateway().newClientBuilder().build()) {
+        final var camundaClient = cluster.availableGateway().newClientBuilder().build()) {
       final var brokersToShutdown =
           IntStream.range(newClusterSize, oldClusterSize)
               .mapToObj(String::valueOf)
@@ -48,7 +46,7 @@ class ForceScaleDownBrokersTest {
       final var brokersToKeep = IntStream.range(0, newClusterSize).boxed().toList();
 
       final var createdInstances =
-          createInstanceWithAJobOnAllPartitions(zeebeClient, JOB_TYPE, PARTITIONS_COUNT);
+          createInstanceWithAJobOnAllPartitions(camundaClient, JOB_TYPE, PARTITIONS_COUNT);
 
       // when
       brokersToShutdown.forEach(TestApplication::close);
@@ -71,7 +69,7 @@ class ForceScaleDownBrokersTest {
       cluster.awaitCompleteTopology(
           newClusterSize, PARTITIONS_COUNT, newClusterSize, Duration.ofSeconds(20));
 
-      assertThatAllJobsCanBeCompleted(createdInstances, zeebeClient, JOB_TYPE);
+      assertThatAllJobsCanBeCompleted(createdInstances, camundaClient, JOB_TYPE);
     }
   }
 

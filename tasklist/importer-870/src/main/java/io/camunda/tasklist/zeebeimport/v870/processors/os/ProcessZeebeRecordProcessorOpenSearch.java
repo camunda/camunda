@@ -101,7 +101,7 @@ public class ProcessZeebeRecordProcessorOpenSearch {
       final List<BulkOperation> operations,
       final BiConsumer<String, String> userTaskFormCollector) {
 
-    final ProcessEntity processEntity = createEntity(process, userTaskFormCollector);
+    final var processEntity = createEntity(process, userTaskFormCollector);
     LOGGER.debug("Process: key {}", processEntity.getKey());
 
     operations.add(
@@ -127,12 +127,6 @@ public class ProcessZeebeRecordProcessorOpenSearch {
             .setBpmnXml(new String(process.getResource()));
 
     final byte[] byteArray = process.getResource();
-    processEntity.setResourceName(process.getResourceName());
-
-    final var versionTag = process.getVersionTag();
-    if (versionTag != null && !versionTag.isEmpty()) {
-      processEntity.setVersionTag(versionTag);
-    }
 
     xmlUtil.extractDiagramData(
         byteArray,
@@ -143,9 +137,6 @@ public class ProcessZeebeRecordProcessorOpenSearch {
         processEntity::setFormKey,
         processEntity::setFormId,
         processEntity::setIsPublic);
-
-    final var isPublic = Optional.ofNullable(processEntity.getIsPublic()).orElse(false);
-    processEntity.setIsPublic(isPublic);
 
     Optional.ofNullable(processEntity.getFormKey())
         .ifPresent(key -> processEntity.setIsFormEmbedded(true));

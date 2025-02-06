@@ -17,6 +17,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordLogger;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.ReflectUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
@@ -166,13 +167,13 @@ final class ZeebeIntegrationExtension
     // starting one fails
     resources.forEach(resource -> store.put(resource, resource));
     for (final var resource : resources) {
-      final var directory = createManagedDirectory(store, resource.cluster.name());
+      final var directory = createManagedDirectory(store, resource.cluster().name());
       manageCluster(directory, resource);
     }
   }
 
   private void manageCluster(final Path directory, final ClusterResource resource) {
-    final var cluster = resource.cluster;
+    final var cluster = resource.cluster();
 
     // assign a working directory for each broker that gets deleted with the extension lifecycle,
     // and not when the broker is shutdown. this allows to introspect or move the data around even
@@ -197,7 +198,7 @@ final class ZeebeIntegrationExtension
     // assign a working directory to the broker that gets deleted with the extension lifecycle,
     // and not when the broker is shutdown. this allows to introspect or move the data around even
     // after stopping a broker
-    if (resource.app instanceof final TestStandaloneBroker broker) {
+    if (resource.app() instanceof final TestStandaloneBroker broker) {
       final var directory = createManagedDirectory(store, "broker-" + broker.nodeId().id());
       setWorkingDirectory(directory, broker.nodeId(), broker);
     }
@@ -249,96 +250,102 @@ final class ZeebeIntegrationExtension
   }
 
   private ClusterResource asClusterResource(final Object testInstance, final Field field) {
-    final TestCluster value;
+    ReflectUtil.makeAccessible(field, testInstance);
 
-    try {
-      value = (TestCluster) ReflectionUtils.makeAccessible(field).get(testInstance);
-    } catch (final IllegalAccessException e) {
-      throw new UnsupportedOperationException(e);
-    }
-
-    return new ClusterResource(value, field.getAnnotation(TestZeebe.class));
+    return new ClusterResource(testInstance, field, field.getAnnotation(TestZeebe.class));
   }
 
   private ApplicationResource asNodeResource(final Object testInstance, final Field field) {
-    final TestApplication<?> value;
+    ReflectUtil.makeAccessible(field, testInstance);
 
-    try {
-      value = (TestApplication<?>) ReflectionUtils.makeAccessible(field).get(testInstance);
-    } catch (final IllegalAccessException e) {
-      throw new UnsupportedOperationException(e);
-    }
-
-    return new ApplicationResource(value, field.getAnnotation(TestZeebe.class));
+    return new ApplicationResource(testInstance, field, field.getAnnotation(TestZeebe.class));
   }
 
   private Store store(final ExtensionContext extensionContext) {
     return extensionContext.getStore(Namespace.create(ZeebeIntegrationExtension.class));
   }
 
-  private record ClusterResource(TestCluster cluster, TestZeebe annotation)
+  private record ClusterResource(Object testInstance, Field field, TestZeebe annotation)
       implements TestZeebeResource, CloseableResource {
+
+    public TestCluster cluster() {
+      try {
+        return (TestCluster) field.get(testInstance);
+      } catch (final IllegalAccessException e) {
+        throw new UnsupportedOperationException(e);
+      }
+    }
 
     @Override
     public void close() {
       CloseHelper.close(
-          error -> LOG.warn("Failed to close cluster {}, leaking resources", cluster.name(), error),
-          cluster);
+          error ->
+              LOG.warn("Failed to close cluster {}, leaking resources", cluster().name(), error),
+          cluster());
     }
 
     @Override
     public void start() {
-      cluster.start();
+      cluster().start();
     }
 
     @Override
     public void await(final TestHealthProbe probe) {
-      cluster.await(probe);
+      cluster().await(probe);
     }
 
     @Override
     public void awaitCompleteTopology() {
       final var clusterSize =
-          annotation.clusterSize() <= 0 ? cluster.brokers().size() : annotation.clusterSize();
+          annotation.clusterSize() <= 0 ? cluster().brokers().size() : annotation.clusterSize();
       final var partitionCount =
           annotation.partitionCount() <= 0
-              ? cluster.partitionsCount()
+              ? cluster().partitionsCount()
               : annotation.partitionCount();
       final var replicationFactor =
           annotation.replicationFactor() <= 0
-              ? cluster.replicationFactor()
+              ? cluster().replicationFactor()
               : annotation.replicationFactor();
       final var timeout =
           annotation.topologyTimeoutMs() == 0
               ? Duration.ofMinutes(clusterSize)
               : Duration.ofMillis(annotation().topologyTimeoutMs());
 
-      cluster.awaitCompleteTopology(clusterSize, partitionCount, replicationFactor, timeout);
+      cluster().awaitCompleteTopology(clusterSize, partitionCount, replicationFactor, timeout);
     }
   }
 
-  private record ApplicationResource(TestApplication<?> app, TestZeebe annotation)
+  private record ApplicationResource(Object testInstance, Field field, TestZeebe annotation)
       implements TestZeebeResource, CloseableResource {
+
+    public TestApplication<?> app() {
+      try {
+        return (TestApplication<?>) field.get(testInstance);
+      } catch (final IllegalAccessException e) {
+        throw new UnsupportedOperationException(e);
+      }
+    }
 
     @Override
     public void close() {
       CloseHelper.close(
-          error -> LOG.warn("Failed to close test app {}, leaking resources", app.nodeId()), app);
+          error -> LOG.warn("Failed to close test app {}, leaking resources", app().nodeId()),
+          app());
     }
 
     @Override
     public void start() {
-      app.start();
+      app().start();
     }
 
     @Override
     public void await(final TestHealthProbe probe) {
-      app.await(probe);
+      app().await(probe);
     }
 
     @Override
     public void awaitCompleteTopology() {
-      if (!(app.isGateway() && (app instanceof final TestGateway<?> gateway))) {
+      if (!(app().isGateway() && (app() instanceof final TestGateway<?> gateway))) {
         return;
       }
 

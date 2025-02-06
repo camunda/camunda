@@ -26,6 +26,7 @@ import io.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIds
 import io.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinitionsDto;
 import io.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
 import io.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
+import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import io.camunda.optimize.service.db.reader.DefinitionReader;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
@@ -34,7 +35,6 @@ import io.camunda.optimize.service.util.BpmnModelUtil;
 import io.camunda.optimize.service.util.configuration.CacheConfiguration;
 import io.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import jakarta.ws.rs.ForbiddenException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;

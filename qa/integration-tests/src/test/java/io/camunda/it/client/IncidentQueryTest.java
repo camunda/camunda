@@ -15,13 +15,11 @@ import static io.camunda.it.client.QueryTest.waitUntilProcessInstanceHasIncident
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.client.api.response.Process;
-import io.camunda.zeebe.client.api.search.response.Incident;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.Process;
+import io.camunda.client.api.search.response.Incident;
+import io.camunda.it.utils.MultiDbTest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -31,46 +29,38 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-@ZeebeIntegration
+@MultiDbTest
 class IncidentQueryTest {
 
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
 
-  private static ZeebeClient zeebeClient;
-
-  @TestZeebe(initMethod = "initTestStandaloneCamunda")
-  private static TestStandaloneCamunda testStandaloneCamunda;
+  private static CamundaClient camundaClient;
 
   private static Incident incident;
 
-  @SuppressWarnings("unused")
-  static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda();
-  }
-
   @BeforeAll
   static void beforeAll() {
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
 
     final var processes =
         List.of("service_tasks_v1.bpmn", "service_tasks_v2.bpmn", "incident_process_v1.bpmn");
     processes.forEach(
         process ->
             DEPLOYED_PROCESSES.addAll(
-                deployResource(zeebeClient, String.format("process/%s", process)).getProcesses()));
+                deployResource(camundaClient, String.format("process/%s", process))
+                    .getProcesses()));
 
-    waitForProcessesToBeDeployed(zeebeClient, 3);
+    waitForProcessesToBeDeployed(camundaClient, 3);
 
-    startProcessInstance(zeebeClient, "service_tasks_v1");
-    startProcessInstance(zeebeClient, "service_tasks_v2", "{\"path\":222}");
-    startProcessInstance(zeebeClient, "incident_process_v1");
-    startProcessInstance(zeebeClient, "incident_process_v1");
-    startProcessInstance(zeebeClient, "incident_process_v1");
+    startProcessInstance(camundaClient, "service_tasks_v1");
+    startProcessInstance(camundaClient, "service_tasks_v2", "{\"path\":222}");
+    startProcessInstance(camundaClient, "incident_process_v1");
+    startProcessInstance(camundaClient, "incident_process_v1");
+    startProcessInstance(camundaClient, "incident_process_v1");
 
-    waitForProcessInstancesToStart(zeebeClient, 5);
-    waitUntilProcessInstanceHasIncidents(zeebeClient, 3);
+    waitForProcessInstancesToStart(camundaClient, 5);
+    waitUntilProcessInstanceHasIncidents(camundaClient, 3);
 
-    incident = zeebeClient.newIncidentQuery().send().join().items().getFirst();
+    incident = camundaClient.newIncidentQuery().send().join().items().getFirst();
   }
 
   @AfterAll
@@ -83,7 +73,7 @@ class IncidentQueryTest {
     // given
     final var incidentKey = incident.getIncidentKey();
     // when
-    final var result = zeebeClient.newIncidentGetRequest(incidentKey).send().join();
+    final var result = camundaClient.newIncidentGetRequest(incidentKey).send().join();
 
     // then
     assertThat(result).isNotNull();
@@ -99,7 +89,7 @@ class IncidentQueryTest {
     final var exception =
         assertThrowsExactly(
             ProblemException.class,
-            () -> zeebeClient.newIncidentGetRequest(invalidIncidentKey).send().join());
+            () -> camundaClient.newIncidentGetRequest(invalidIncidentKey).send().join());
     assertThat(exception.getMessage()).startsWith("Failed with code 404");
     assertThat(exception.details()).isNotNull();
     assertThat(exception.details().getTitle()).isEqualTo("NOT_FOUND");
@@ -114,7 +104,7 @@ class IncidentQueryTest {
 
     // when
     final var result =
-        zeebeClient.newIncidentQuery().filter(f -> f.incidentKey(incidentKey)).send().join();
+        camundaClient.newIncidentQuery().filter(f -> f.incidentKey(incidentKey)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
@@ -128,7 +118,7 @@ class IncidentQueryTest {
 
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newIncidentQuery()
             .filter(f -> f.processInstanceKey(processInstanceKey))
             .send()
@@ -145,7 +135,7 @@ class IncidentQueryTest {
     final var state = incident.getState();
 
     // when
-    final var result = zeebeClient.newIncidentQuery().filter(f -> f.state(state)).send().join();
+    final var result = camundaClient.newIncidentQuery().filter(f -> f.state(state)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -159,7 +149,7 @@ class IncidentQueryTest {
 
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newIncidentQuery()
             .filter(f -> f.flowNodeInstanceKey(flowNodeInstanceKey))
             .send()
@@ -177,7 +167,7 @@ class IncidentQueryTest {
 
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newIncidentQuery()
             .filter(f -> f.processDefinitionKey(processDefinitionKey))
             .send()
@@ -195,7 +185,7 @@ class IncidentQueryTest {
 
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newIncidentQuery()
             .filter(f -> f.processDefinitionId(processDefinitionId))
             .send()
@@ -213,7 +203,7 @@ class IncidentQueryTest {
 
     // when
     final var result =
-        zeebeClient.newIncidentQuery().filter(f -> f.errorType(errorType)).send().join();
+        camundaClient.newIncidentQuery().filter(f -> f.errorType(errorType)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -227,7 +217,7 @@ class IncidentQueryTest {
 
     // when
     final var result =
-        zeebeClient.newIncidentQuery().filter(f -> f.flowNodeId(flowNodeId)).send().join();
+        camundaClient.newIncidentQuery().filter(f -> f.flowNodeId(flowNodeId)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -240,25 +230,11 @@ class IncidentQueryTest {
     final var jobKey = incident.getJobKey();
 
     // when
-    final var result = zeebeClient.newIncidentQuery().filter(f -> f.jobKey(jobKey)).send().join();
+    final var result = camundaClient.newIncidentQuery().filter(f -> f.jobKey(jobKey)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
     assertThat(result.items().getFirst().getJobKey()).isEqualTo(jobKey);
-  }
-
-  @Test
-  void shouldFilterByTreePath() {
-    // given
-    final var treePath = incident.getTreePath();
-
-    // when
-    final var result =
-        zeebeClient.newIncidentQuery().filter(f -> f.treePath(treePath)).send().join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().getFirst().getTreePath()).isEqualTo(treePath);
   }
 
   @Test
@@ -268,7 +244,7 @@ class IncidentQueryTest {
 
     // when
     final var result =
-        zeebeClient.newIncidentQuery().filter(f -> f.tenantId(tenantId)).send().join();
+        camundaClient.newIncidentQuery().filter(f -> f.tenantId(tenantId)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -278,9 +254,9 @@ class IncidentQueryTest {
   @Test
   void shouldSortByIncidentKey() {
     final var resultAsc =
-        zeebeClient.newIncidentQuery().sort(s -> s.processInstanceKey().asc()).send().join();
+        camundaClient.newIncidentQuery().sort(s -> s.processInstanceKey().asc()).send().join();
     final var resultDesc =
-        zeebeClient.newIncidentQuery().sort(s -> s.processInstanceKey().desc()).send().join();
+        camundaClient.newIncidentQuery().sort(s -> s.processInstanceKey().desc()).send().join();
 
     final var all = resultAsc.items().stream().map(Incident::getIncidentKey).toList();
     final var sortedAsc = all.stream().sorted(Comparator.naturalOrder()).toList();
@@ -296,9 +272,9 @@ class IncidentQueryTest {
   @Test
   void shouldSortByErrorType() {
     final var resultAsc =
-        zeebeClient.newIncidentQuery().sort(s -> s.errorType().asc()).send().join();
+        camundaClient.newIncidentQuery().sort(s -> s.errorType().asc()).send().join();
     final var resultDesc =
-        zeebeClient.newIncidentQuery().sort(s -> s.errorType().desc()).send().join();
+        camundaClient.newIncidentQuery().sort(s -> s.errorType().desc()).send().join();
 
     final var all = resultAsc.items().stream().map(Incident::getErrorType).toList();
     final var sortedAsc = all.stream().sorted().toList();
@@ -313,9 +289,9 @@ class IncidentQueryTest {
   @Test
   void shouldSortByProcessDefinitionKey() {
     final var resultAsc =
-        zeebeClient.newIncidentQuery().sort(s -> s.processDefinitionKey().asc()).send().join();
+        camundaClient.newIncidentQuery().sort(s -> s.processDefinitionKey().asc()).send().join();
     final var resultDesc =
-        zeebeClient.newIncidentQuery().sort(s -> s.processDefinitionKey().desc()).send().join();
+        camundaClient.newIncidentQuery().sort(s -> s.processDefinitionKey().desc()).send().join();
 
     final var all = resultAsc.items().stream().map(Incident::getProcessDefinitionKey).toList();
     final var sortedAsc = all.stream().sorted().toList();
@@ -330,9 +306,9 @@ class IncidentQueryTest {
   @Test
   void shouldSortByProcessInstanceKey() {
     final var resultAsc =
-        zeebeClient.newIncidentQuery().sort(s -> s.processInstanceKey().asc()).send().join();
+        camundaClient.newIncidentQuery().sort(s -> s.processInstanceKey().asc()).send().join();
     final var resultDesc =
-        zeebeClient.newIncidentQuery().sort(s -> s.processInstanceKey().desc()).send().join();
+        camundaClient.newIncidentQuery().sort(s -> s.processInstanceKey().desc()).send().join();
 
     final var all = resultAsc.items().stream().map(Incident::getProcessInstanceKey).toList();
     final var sortedAsc = all.stream().sorted().toList();
@@ -347,9 +323,9 @@ class IncidentQueryTest {
   @Test
   void shouldSortByTenantId() {
     final var resultAsc =
-        zeebeClient.newIncidentQuery().sort(s -> s.tenantId().asc()).send().join();
+        camundaClient.newIncidentQuery().sort(s -> s.tenantId().asc()).send().join();
     final var resultDesc =
-        zeebeClient.newIncidentQuery().sort(s -> s.tenantId().desc()).send().join();
+        camundaClient.newIncidentQuery().sort(s -> s.tenantId().desc()).send().join();
 
     final var all = resultAsc.items().stream().map(Incident::getTenantId).toList();
     final var sortedAsc = all.stream().sorted().toList();
@@ -364,9 +340,9 @@ class IncidentQueryTest {
   @Test
   void shouldSortByFlowNodeInstanceId() {
     final var resultAsc =
-        zeebeClient.newIncidentQuery().sort(s -> s.flowNodeInstanceKey().asc()).send().join();
+        camundaClient.newIncidentQuery().sort(s -> s.flowNodeInstanceKey().asc()).send().join();
     final var resultDesc =
-        zeebeClient.newIncidentQuery().sort(s -> s.flowNodeInstanceKey().desc()).send().join();
+        camundaClient.newIncidentQuery().sort(s -> s.flowNodeInstanceKey().desc()).send().join();
 
     final var all = resultAsc.items().stream().map(Incident::getFlowNodeInstanceKey).toList();
     final var sortedAsc = all.stream().sorted().toList();
@@ -381,9 +357,9 @@ class IncidentQueryTest {
   @Test
   void shouldSortByFlowNodeId() {
     final var resultAsc =
-        zeebeClient.newIncidentQuery().sort(s -> s.flowNodeId().asc()).send().join();
+        camundaClient.newIncidentQuery().sort(s -> s.flowNodeId().asc()).send().join();
     final var resultDesc =
-        zeebeClient.newIncidentQuery().sort(s -> s.flowNodeId().desc()).send().join();
+        camundaClient.newIncidentQuery().sort(s -> s.flowNodeId().desc()).send().join();
 
     final var all = resultAsc.items().stream().map(Incident::getFlowNodeId).toList();
     final var sortedAsc = all.stream().sorted().toList();
@@ -397,8 +373,9 @@ class IncidentQueryTest {
 
   @Test
   void shouldSortByState() {
-    final var resultAsc = zeebeClient.newIncidentQuery().sort(s -> s.state().asc()).send().join();
-    final var resultDesc = zeebeClient.newIncidentQuery().sort(s -> s.state().desc()).send().join();
+    final var resultAsc = camundaClient.newIncidentQuery().sort(s -> s.state().asc()).send().join();
+    final var resultDesc =
+        camundaClient.newIncidentQuery().sort(s -> s.state().desc()).send().join();
 
     final var all = resultAsc.items().stream().map(Incident::getState).toList();
     final var sortedAsc = all.stream().sorted().toList();
@@ -415,9 +392,10 @@ class IncidentQueryTest {
   @Test
   void shouldSortByJobKey() {
     // when
-    final var resultAsc = zeebeClient.newIncidentQuery().sort(s -> s.jobKey().asc()).send().join();
+    final var resultAsc =
+        camundaClient.newIncidentQuery().sort(s -> s.jobKey().asc()).send().join();
     final var resultDesc =
-        zeebeClient.newIncidentQuery().sort(s -> s.jobKey().desc()).send().join();
+        camundaClient.newIncidentQuery().sort(s -> s.jobKey().desc()).send().join();
 
     final var ascJobKeys =
         resultAsc.items().stream().map(Incident::getJobKey).filter(Objects::nonNull).toList();
@@ -439,9 +417,9 @@ class IncidentQueryTest {
   @Test
   void shouldSortByCreationTime() {
     final var resultAsc =
-        zeebeClient.newIncidentQuery().sort(s -> s.creationTime().asc()).send().join();
+        camundaClient.newIncidentQuery().sort(s -> s.creationTime().asc()).send().join();
     final var resultDesc =
-        zeebeClient.newIncidentQuery().sort(s -> s.creationTime().desc()).send().join();
+        camundaClient.newIncidentQuery().sort(s -> s.creationTime().desc()).send().join();
 
     final var all = resultAsc.items().stream().map(Incident::getCreationTime).toList();
     final var sortedAsc = all.stream().sorted().toList();
@@ -456,13 +434,13 @@ class IncidentQueryTest {
   @Test
   void shouldSearchAfterSecondItem() {
     // when
-    final var resultAll = zeebeClient.newIncidentQuery().send().join();
+    final var resultAll = camundaClient.newIncidentQuery().send().join();
 
     final var secondIncidentKey = resultAll.items().get(1).getIncidentKey();
     final var thirdIncidentKey = resultAll.items().get(2).getIncidentKey();
 
     final var resultSearchAfter =
-        zeebeClient
+        camundaClient
             .newIncidentQuery()
             .page(p -> p.limit(2).searchAfter(Collections.singletonList(secondIncidentKey)))
             .send()
@@ -476,13 +454,13 @@ class IncidentQueryTest {
   @Test
   void shouldSearchBeforeSecondItem() {
     // when
-    final var resultAll = zeebeClient.newIncidentQuery().send().join();
+    final var resultAll = camundaClient.newIncidentQuery().send().join();
 
     final var secondIncidentKey = resultAll.items().get(1).getIncidentKey();
     final var firstIncidentKey = resultAll.items().get(0).getIncidentKey();
 
     final var resultSearchBefore =
-        zeebeClient
+        camundaClient
             .newIncidentQuery()
             .page(p -> p.limit(2).searchBefore(Collections.singletonList(secondIncidentKey)))
             .send()
@@ -496,15 +474,16 @@ class IncidentQueryTest {
   @Test
   void shouldSearchByFromWithLimit() {
     // when
-    final var resultAll = zeebeClient.newIncidentQuery().send().join();
+    final var resultAll = camundaClient.newIncidentQuery().send().join();
 
-    final var resultWithLimit = zeebeClient.newIncidentQuery().page(p -> p.limit(2)).send().join();
+    final var resultWithLimit =
+        camundaClient.newIncidentQuery().page(p -> p.limit(2)).send().join();
     assertThat(resultWithLimit.items().size()).isEqualTo(2);
 
     final var thirdKey = resultAll.items().get(2).getIncidentKey();
 
     final var resultSearchFrom =
-        zeebeClient.newIncidentQuery().page(p -> p.limit(2).from(2)).send().join();
+        camundaClient.newIncidentQuery().page(p -> p.limit(2).from(2)).send().join();
 
     // then
     assertThat(resultSearchFrom.items().stream().findFirst().get().getIncidentKey())

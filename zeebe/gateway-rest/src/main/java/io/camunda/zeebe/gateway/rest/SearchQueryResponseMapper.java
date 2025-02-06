@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.gateway.rest.ResponseMapper.formatDate;
+import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.entities.AuthorizationEntity;
@@ -27,6 +28,7 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.UsageMetricsCount;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
@@ -68,6 +70,7 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
 import io.camunda.zeebe.gateway.protocol.rest.TenantItem;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UsageMetricsResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskItem;
@@ -84,6 +87,14 @@ import java.util.stream.Collectors;
 public final class SearchQueryResponseMapper {
 
   private SearchQueryResponseMapper() {}
+
+  public static UsageMetricsResponse toUsageMetricsResponse(
+      final UsageMetricsCount usageMetricsCount) {
+    return new UsageMetricsResponse()
+        .assignees(usageMetricsCount.assignees())
+        .processInstances(usageMetricsCount.processInstances())
+        .decisionInstances(usageMetricsCount.decisionInstances());
+  }
 
   public static ProcessDefinitionSearchQueryResponse toProcessDefinitionSearchQueryResponse(
       final SearchQueryResult<ProcessDefinitionEntity> result) {
@@ -230,16 +241,10 @@ public final class SearchQueryResponseMapper {
   private static SearchQueryPageResponse toSearchQueryPageResponse(
       final SearchQueryResult<?> result) {
 
-    final List<Object> sortValues =
-        ofNullable(result.sortValues()).map(Arrays::asList).orElse(Collections.emptyList());
-
     final List<Object> firstSortValues =
-        sortValues.stream().findFirst().map(List::of).orElse(Collections.emptyList());
-
+        ofNullable(result.firstSortValues()).map(Arrays::asList).orElse(emptyList());
     final List<Object> lastSortValues =
-        sortValues.isEmpty()
-            ? Collections.emptyList()
-            : List.of(sortValues.get(sortValues.size() - 1));
+        ofNullable(result.lastSortValues()).map(Arrays::asList).orElse(emptyList());
 
     return new SearchQueryPageResponse()
         .totalItems(result.total())
@@ -278,7 +283,6 @@ public final class SearchQueryResponseMapper {
         .processDefinitionKey(p.processDefinitionKey())
         .parentProcessInstanceKey(p.parentProcessInstanceKey())
         .parentFlowNodeInstanceKey(p.parentFlowNodeInstanceKey())
-        .treePath(p.treePath())
         .startDate(formatDate(p.startDate()))
         .endDate(formatDate(p.endDate()))
         .state((p.state() == null) ? null : ProcessInstanceStateEnum.fromValue(p.state().name()))
@@ -299,7 +303,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static GroupItem toGroup(final GroupEntity groupEntity) {
-    return new GroupItem().key(groupEntity.key()).name(groupEntity.name());
+    return new GroupItem().groupKey(groupEntity.groupKey()).name(groupEntity.name());
   }
 
   private static List<TenantItem> toTenants(final List<TenantEntity> tenants) {
@@ -310,11 +314,8 @@ public final class SearchQueryResponseMapper {
     return new TenantItem()
         .tenantKey(tenantEntity.key())
         .name(tenantEntity.name())
-        .tenantId(tenantEntity.tenantId())
-        .assignedMemberKeys(
-            tenantEntity.assignedMemberKeys() == null
-                ? null
-                : tenantEntity.assignedMemberKeys().stream().sorted().toList());
+        .description(tenantEntity.description())
+        .tenantId(tenantEntity.tenantId());
   }
 
   private static List<MappingItem> toMappings(final List<MappingEntity> mappings) {
@@ -325,7 +326,8 @@ public final class SearchQueryResponseMapper {
     return new MappingItem()
         .mappingKey(mappingEntity.mappingKey())
         .claimName(mappingEntity.claimName())
-        .claimValue(mappingEntity.claimValue());
+        .claimValue(mappingEntity.claimValue())
+        .name(mappingEntity.name());
   }
 
   private static List<DecisionDefinitionItem> toDecisionDefinitions(
@@ -367,7 +369,6 @@ public final class SearchQueryResponseMapper {
         .startDate(formatDate(instance.startDate()))
         .endDate(formatDate(instance.endDate()))
         .state(FlowNodeInstanceItem.StateEnum.fromValue(instance.state().name()))
-        .treePath(instance.treePath())
         .type(FlowNodeInstanceItem.TypeEnum.fromValue(instance.type().name()))
         .tenantId(instance.tenantId());
   }
@@ -388,7 +389,7 @@ public final class SearchQueryResponseMapper {
     return new DecisionRequirementsItem()
         .tenantId(d.tenantId())
         .decisionRequirementsKey(d.decisionRequirementsKey())
-        .name(d.name())
+        .decisionRequirementsName(d.name())
         .version(d.version())
         .resourceName(d.resourceName())
         .decisionRequirementsId(d.decisionRequirementsId());
@@ -425,7 +426,6 @@ public final class SearchQueryResponseMapper {
         .creationTime(formatDate(t.creationTime()))
         .state(IncidentItem.StateEnum.fromValue(t.state().name()))
         .jobKey(t.jobKey())
-        .treePath(t.treePath())
         .tenantId(t.tenantId());
   }
 

@@ -12,33 +12,22 @@ import static io.camunda.optimize.service.util.configuration.EnvironmentProperti
 import io.camunda.optimize.rest.HealthRestService;
 import io.camunda.optimize.rest.LocalizationRestService;
 import io.camunda.optimize.rest.UIConfigurationRestService;
-import io.camunda.optimize.rest.constants.RestConstants;
 import io.camunda.optimize.rest.security.cloud.CCSaasAuth0WebSecurityConfig;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.util.PanelNotificationConstants;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants;
-import io.camunda.optimize.tomcat.ExternalHomeServlet;
 import io.camunda.optimize.tomcat.OptimizeResourceConstants;
 import io.camunda.optimize.tomcat.ResponseSecurityHeaderFilter;
+import io.camunda.optimize.tomcat.ResponseTimezoneFilter;
 import io.camunda.optimize.tomcat.URLRedirectFilter;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRegistration;
-import java.net.URL;
 import java.util.Optional;
-import org.apache.catalina.connector.Connector;
-import org.apache.coyote.http2.Http2Protocol;
-import org.apache.tomcat.util.net.SSLHostConfig;
-import org.apache.tomcat.util.net.SSLHostConfigCertificate;
-import org.apache.tomcat.util.net.SSLHostConfigCertificate.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.boot.web.servlet.ServletContextInitializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -77,8 +66,9 @@ public class OptimizeTomcatConfig {
             OptimizeResourceConstants.STATIC_RESOURCE_PATH,
             OptimizeResourceConstants.ACTUATOR_ENDPOINT,
             PanelNotificationConstants.SEND_NOTIFICATION_TO_ALL_ORG_USERS_ENDPOINT,
-            RestConstants.BACKUP_ENDPOINT,
-            UIConfigurationRestService.UI_CONFIGURATION_PATH
+            UIConfigurationRestService.UI_CONFIGURATION_PATH,
+            "/favicon.ico",
+            "/index.html"
           });
 
   private static final String HTTP11_NIO_PROTOCOL = "org.apache.coyote.http11.Http11Nio2Protocol";
@@ -97,45 +87,20 @@ public class OptimizeTomcatConfig {
           factory.setContextPath(contextPath.get());
         }
 
-        // NOTE: With the current implementation, we are always installing 2 connectors,
-        //   one for HTTP, one for HTTPs. The latter can be HTTP/1.1 or HTTP/2 depending
-        //   on the configuration.
-
         factory.addConnectorCustomizers(
             connector -> {
-              configureHttpConnector(connector);
-            });
-
-        factory.addAdditionalTomcatConnectors(
-            new Connector() {
-              {
-                configureHttpsConnector(this);
+              // TODO: Remove once we read the configuration from the single application
+              if ("true".equals(environment.getProperty("useLegacyPort"))) {
+                connector.setPort(8090);
               }
+
+              connector.setProperty(
+                  "maxHttpRequestHeaderSize",
+                  String.valueOf(configurationService.getMaxRequestHeaderSizeInBytes()));
+              connector.setProperty(
+                  "maxHttpResponseHeaderSize",
+                  String.valueOf(configurationService.getMaxResponseHeaderSizeInBytes()));
             });
-      }
-    };
-  }
-
-  @Bean
-  ServletContextInitializer externalResourcesServlet() {
-    LOG.debug("Registering servlet 'externalResourcesServlet'...");
-    return new ServletContextInitializer() {
-      @Override
-      public void onStartup(final ServletContext servletContext) throws ServletException {
-        final URL webappURL = getClass().getClassLoader().getResource("webapp");
-        if (webappURL == null) {
-          LOG.debug("Static content directory 'webapp' not found. No bean will be registered.");
-          return;
-        }
-
-        final String webappPath = webappURL.toExternalForm();
-        final ServletRegistration.Dynamic webappServlet =
-            servletContext.addServlet("external-home", ExternalHomeServlet.class);
-        webappServlet.setInitParameter("resourceBase", "/webapp");
-
-        webappServlet.addMapping("/external/*");
-        webappServlet.addMapping("/*");
-        webappServlet.setLoadOnStartup(1);
       }
     };
   }
@@ -171,6 +136,17 @@ public class OptimizeTomcatConfig {
     return registrationBean;
   }
 
+  @Bean
+  FilterRegistrationBean<ResponseTimezoneFilter> responseTimezoneFilter() {
+    LOG.debug("Registering filter 'responseTimezoneFilter'...");
+    final ResponseTimezoneFilter filter = new ResponseTimezoneFilter();
+    final FilterRegistrationBean<ResponseTimezoneFilter> registrationBean =
+        new FilterRegistrationBean<>();
+    registrationBean.addUrlPatterns("/*");
+    registrationBean.setFilter(filter);
+    return registrationBean;
+  }
+
   public int getPort(final String portType) {
     final String portProperty = environment.getProperty(portType);
     if (portProperty != null) {
@@ -200,58 +176,5 @@ public class OptimizeTomcatConfig {
       return configurationService.getContextPath();
     }
     return contextPath;
-  }
-
-  private SSLHostConfig getSslHostConfig() {
-    final SSLHostConfig sslHostConfig = new SSLHostConfig();
-    sslHostConfig.setHostName(configurationService.getContainerHost());
-
-    final SSLHostConfigCertificate cert =
-        new SSLHostConfigCertificate(sslHostConfig, Type.UNDEFINED);
-    cert.setCertificateKeystoreFile(configurationService.getContainerKeystoreLocation());
-    cert.setCertificateKeystorePassword(configurationService.getContainerKeystorePassword());
-    sslHostConfig.addCertificate(cert);
-
-    return sslHostConfig;
-  }
-
-  private void enableGzipSupport(final Connector connector) {
-    connector.setProperty("compression", "on");
-    connector.setProperty("compressionMinSize", "23");
-    connector.setProperty("compressionNoCompressionMethods", ""); // all methods
-    connector.setProperty("useSendfile", "false");
-    connector.setProperty("compressableMimeType", String.join(",", COMPRESSED_MIME_TYPES));
-  }
-
-  private void applyCommonConfiguration(final Connector connector) {
-    connector.setXpoweredBy(false); // do not send server version header
-    enableGzipSupport(connector);
-    connector.setProperty(
-        "maxHttpRequestHeaderSize",
-        String.valueOf(configurationService.getMaxRequestHeaderSizeInBytes()));
-    connector.setProperty(
-        "maxHttpResponseHeaderSize",
-        String.valueOf(configurationService.getMaxResponseHeaderSizeInBytes()));
-  }
-
-  private void configureHttpConnector(final Connector connector) {
-    applyCommonConfiguration(connector);
-    connector.setPort(getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY));
-    connector.setScheme("http");
-    connector.setSecure(false);
-  }
-
-  public void configureHttpsConnector(final Connector connector) {
-    applyCommonConfiguration(connector);
-    connector.setPort(getPort(EnvironmentPropertiesConstants.HTTPS_PORT_KEY));
-    connector.setScheme("https");
-    connector.setSecure(true);
-
-    connector.setProperty("protocol", HTTP11_NIO_PROTOCOL);
-    if (configurationService.getContainerHttp2Enabled()) {
-      connector.addUpgradeProtocol(new Http2Protocol());
-    }
-
-    connector.addSslHostConfig(getSslHostConfig());
   }
 }

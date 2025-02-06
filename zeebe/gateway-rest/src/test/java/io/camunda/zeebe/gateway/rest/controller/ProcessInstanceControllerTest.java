@@ -19,6 +19,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
@@ -42,12 +43,21 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   static final String EXPECTED_START_RESPONSE =
       """
           {
-             "processDefinitionKey":123,
+             "processDefinitionKey":"123",
              "processDefinitionId":"bpmnProcessId",
              "processDefinitionVersion":-1,
-             "processInstanceKey":123,
+             "processInstanceKey":"123",
              "tenantId":"tenantId"
           }""";
+  static final String EXPECTED_START_RESPONSE_NUMBER_KEYS =
+      """
+      {
+         "processDefinitionKey":123,
+         "processDefinitionId":"bpmnProcessId",
+         "processDefinitionVersion":-1,
+         "processInstanceKey":123,
+         "tenantId":"tenantId"
+      }""";
   static final String PROCESS_INSTANCES_START_URL = "/v2/process-instances";
   static final String CANCEL_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/cancellation";
   static final String MIGRATE_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/migration";
@@ -83,7 +93,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
         {
-            "processDefinitionKey": 123,
+            "processDefinitionKey": "123",
             "tenantId": "tenantId"
         }""";
 
@@ -115,6 +125,54 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldCreateProcessInstancesWithProcessDefinitionNumberKeys() {
+    // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
+    final var mockResponse =
+        new ProcessInstanceCreationRecord()
+            .setProcessDefinitionKey(123L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setProcessInstanceKey(123L)
+            .setTenantId("tenantId");
+
+    when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+    final var request =
+        """
+        {
+            "processDefinitionKey": 123,
+            "tenantId": "tenantId"
+        }""";
+
+    // when / then
+    final ResponseSpec response =
+        withMultiTenancy(
+            "tenantId",
+            client ->
+                client
+                    .post()
+                    .uri(PROCESS_INSTANCES_START_URL)
+                    .accept(RequestMapper.MEDIA_TYPE_KEYS_NUMBER)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(request)
+                    .exchange()
+                    .expectStatus()
+                    .isOk());
+
+    response
+        .expectHeader()
+        .contentType(RequestMapper.MEDIA_TYPE_KEYS_NUMBER)
+        .expectBody()
+        .json(EXPECTED_START_RESPONSE_NUMBER_KEYS);
+
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+    final var capturedRequest = createRequestCaptor.getValue();
+    assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
+    assertThat(capturedRequest.tenantId()).isEqualTo("tenantId");
+  }
+
+  @Test
   void shouldCreateProcessInstancesWithoutTenantId() {
     // given
     final var mockResponse =
@@ -130,7 +188,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
             {
-                "processDefinitionKey": 123
+                "processDefinitionKey": "123"
             }""";
 
     // when / then
@@ -149,10 +207,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .json(
             """
 {
-   "processDefinitionKey":123,
+   "processDefinitionKey":"123",
    "processDefinitionId":"bpmnProcessId",
    "processDefinitionVersion":-1,
-   "processInstanceKey":123,
+   "processInstanceKey":"123",
    "tenantId":"<default>"
 }""");
 

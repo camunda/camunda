@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.engine.util.AuthorizationUtil;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
@@ -57,6 +59,17 @@ public class ResourceDeletionClient {
             resourceDeletionRecord,
             authorizedTenantIds.toArray(new String[0]));
     return expectation.apply(position);
+  }
+
+  public Record<ResourceDeletionRecordValue> delete(final AuthInfo authorizations) {
+    final long position =
+        writer.writeCommand(ResourceDeletionIntent.DELETE, resourceDeletionRecord, authorizations);
+    return expectation.apply(position);
+  }
+
+  public Record<ResourceDeletionRecordValue> delete(final String username) {
+    return delete(
+        AuthorizationUtil.getUsernameAuthInfo(username, TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
 
   public ResourceDeletionClient expectRejection() {

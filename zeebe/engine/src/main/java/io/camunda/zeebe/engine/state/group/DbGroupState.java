@@ -69,7 +69,7 @@ public class DbGroupState implements MutableGroupState {
   public void create(final long groupKey, final GroupRecord group) {
     this.groupKey.wrapLong(groupKey);
     groupName.wrapString(group.getName());
-    persistedGroup.copyFrom(group);
+    persistedGroup.wrap(group);
 
     groupColumnFamily.insert(this.groupKey, persistedGroup);
     groupByNameColumnFamily.insert(groupName, fkGroupKey);
@@ -124,6 +124,24 @@ public class DbGroupState implements MutableGroupState {
         });
 
     groupColumnFamily.deleteExisting(this.groupKey);
+  }
+
+  @Override
+  public void addTenant(final long groupKey, final String tenantId) {
+    this.groupKey.wrapLong(groupKey);
+    final PersistedGroup persistedGroup = groupColumnFamily.get(this.groupKey);
+    persistedGroup.addTenantId(tenantId);
+    groupColumnFamily.update(this.groupKey, persistedGroup);
+  }
+
+  @Override
+  public void removeTenant(final long groupKey, final String tenantId) {
+    this.groupKey.wrapLong(groupKey);
+    final var persistedGroup = groupColumnFamily.get(this.groupKey);
+    final List<String> tenantIdsList = persistedGroup.getTenantIdsList();
+    tenantIdsList.remove(tenantId);
+    persistedGroup.setTenantIdsList(tenantIdsList);
+    groupColumnFamily.update(this.groupKey, persistedGroup);
   }
 
   @Override

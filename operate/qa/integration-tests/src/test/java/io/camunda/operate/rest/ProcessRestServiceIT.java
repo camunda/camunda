@@ -66,7 +66,8 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
     when(processReader.getProcess(processDefinitionKey))
         .thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
+    when(permissionsService.hasPermissionForProcess(
+            bpmnProcessId, IdentityPermission.READ_PROCESS_DEFINITION))
         .thenReturn(false);
     final MvcResult mvcResult =
         getRequestShouldFailWithNoAuthorization(getProcessByIdUrl(processDefinitionKey.toString()));
@@ -83,7 +84,8 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
     when(processReader.getProcess(processDefinitionKey))
         .thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
+    when(permissionsService.hasPermissionForProcess(
+            bpmnProcessId, IdentityPermission.READ_PROCESS_DEFINITION))
         .thenReturn(false);
     final MvcResult mvcResult =
         getRequestShouldFailWithNoAuthorization(
@@ -99,9 +101,11 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
     final String bpmnProcessId = "processId";
     // when
     when(processReader.getProcess(processDefinitionKey))
-        .thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
+        .thenReturn(
+            new ProcessEntity().setKey(processDefinitionKey).setBpmnProcessId(bpmnProcessId));
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.DELETE))
+    when(permissionsService.hasPermissionForResource(
+            processDefinitionKey, IdentityPermission.DELETE_PROCESS))
         .thenReturn(true);
     when(batchOperationWriter.scheduleDeleteProcessDefinition(any()))
         .thenReturn(new BatchOperationEntity());
@@ -149,9 +153,11 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
     final String bpmnProcessId = "processId";
     // when
     when(processReader.getProcess(processDefinitionKey))
-        .thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
+        .thenReturn(
+            new ProcessEntity().setKey(processDefinitionKey).setBpmnProcessId(bpmnProcessId));
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.DELETE))
+    when(permissionsService.hasPermissionForResource(
+            processDefinitionKey, IdentityPermission.DELETE_PROCESS))
         .thenReturn(false);
     when(batchOperationWriter.scheduleDeleteProcessDefinition(any()))
         .thenReturn(new BatchOperationEntity());

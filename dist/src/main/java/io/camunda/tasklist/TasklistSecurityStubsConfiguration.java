@@ -9,7 +9,7 @@ package io.camunda.tasklist;
 
 import io.camunda.operate.webapp.security.UserService;
 import io.camunda.tasklist.property.IdentityProperties;
-import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.AssigneeMigratorNoImpl;
 import io.camunda.tasklist.webapp.security.Permission;
@@ -112,28 +112,7 @@ public class TasklistSecurityStubsConfiguration {
   /** stub to IdentityAuthorizationService that provides full access to user */
   @Bean
   public IdentityAuthorizationService stubIdentityAuthorizationService() {
-    return new IdentityAuthorizationService() {
-
-      @Override
-      public List<String> getUserGroups() {
-        return List.of(IdentityProperties.FULL_GROUP_ACCESS);
-      }
-
-      @Override
-      public boolean isAllowedToStartProcess(final String processDefinitionKey) {
-        return true;
-      }
-
-      @Override
-      public List<String> getProcessReadFromAuthorization() {
-        return List.of(IdentityProperties.ALL_RESOURCES);
-      }
-
-      @Override
-      public List<String> getProcessDefinitionsFromAuthorization() {
-        return List.of(IdentityProperties.ALL_RESOURCES);
-      }
-    };
+    return () -> List.of(IdentityProperties.FULL_GROUP_ACCESS);
   }
 
   @Bean

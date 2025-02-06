@@ -26,10 +26,16 @@ public class SignalClient {
           RecordingExporter.signalRecords(SignalIntent.BROADCASTED)
               .withSourceRecordPosition(position)
               .getFirst();
+  private static final Function<Long, Record<SignalRecordValue>> REJECTION_EXPECTATION =
+      (position) ->
+          RecordingExporter.signalRecords(SignalIntent.BROADCAST)
+              .onlyCommandRejections()
+              .withSourceRecordPosition(position)
+              .getFirst();
 
   private final CommandWriter writer;
   private final SignalRecord signalRecord = new SignalRecord();
-  private final Function<Long, Record<SignalRecordValue>> expectation = SUCCESS_EXPECTATION;
+  private Function<Long, Record<SignalRecordValue>> expectation = SUCCESS_EXPECTATION;
 
   public SignalClient(final CommandWriter writer) {
     this.writer = writer;
@@ -65,8 +71,18 @@ public class SignalClient {
     return this;
   }
 
+  public SignalClient expectRejection() {
+    expectation = REJECTION_EXPECTATION;
+    return this;
+  }
+
   public Record<SignalRecordValue> broadcast() {
     final long position = writer.writeCommand(SignalIntent.BROADCAST, signalRecord);
+    return expectation.apply(position);
+  }
+
+  public Record<SignalRecordValue> broadcast(final String username) {
+    final long position = writer.writeCommand(SignalIntent.BROADCAST, username, signalRecord);
     return expectation.apply(position);
   }
 }

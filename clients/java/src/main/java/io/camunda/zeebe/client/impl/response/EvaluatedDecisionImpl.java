@@ -16,11 +16,11 @@
 package io.camunda.zeebe.client.impl.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.client.protocol.rest.EvaluatedDecisionItem;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.EvaluatedDecision;
 import io.camunda.zeebe.client.api.response.EvaluatedDecisionInput;
 import io.camunda.zeebe.client.api.response.MatchedDecisionRule;
-import io.camunda.zeebe.client.protocol.rest.EvaluatedDecisionItem;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.ArrayList;
 import java.util.List;

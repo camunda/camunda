@@ -18,6 +18,7 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -429,9 +430,9 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
-  public JobRecord getJob(final long key, final List<String> authorizedTenantIds) {
+  public JobRecord getJob(final long key, final AuthorizedTenants authorizedTenantIds) {
     final JobRecord jobRecord = getJob(key);
-    if (jobRecord != null && authorizedTenantIds.contains(jobRecord.getTenantId())) {
+    if (jobRecord != null && authorizedTenantIds.isAuthorizedForTenantId(jobRecord.getTenantId())) {
       return jobRecord;
     }
     return null;

@@ -1,3 +1,5 @@
+import { redirectToLogin } from "src/utility/auth";
+
 export type ApiResult<R> =
   | {
       data: R;
@@ -54,7 +56,8 @@ const apiRequest: <R, P>(
   options: ApiRequestParams<P>,
 ) => ApiPromise<R> = async ({ url, method, headers, params, baseUrl }) => {
   const hasBody =
-    !!params && ["PUT", "POST", "PATCH"].includes(method.toUpperCase());
+    !!params &&
+    ["PUT", "POST", "DELETE", "PATCH"].includes(method.toUpperCase());
   const body = hasBody ? JSON.stringify(params) : undefined;
 
   // default handling for content-type
@@ -77,8 +80,12 @@ const apiRequest: <R, P>(
         body,
         headers,
         credentials: "include",
+        redirect: "manual",
       },
     );
+    if (response.status === 401) {
+      redirectToLogin();
+    }
     let data = null;
     try {
       data = await response.json();
@@ -126,9 +133,9 @@ export const apiPost = apiRequestWrapper("POST");
 
 export const apiPut = apiRequestWrapper("PUT");
 
-export const apiPatch = apiRequestWrapper("PATCH");
-
 export const apiDelete = apiRequestWrapper("DELETE");
+
+export const apiPatch = apiRequestWrapper("PATCH");
 
 export const namedErrorsReducer = (
   result: Record<string, string[]>,

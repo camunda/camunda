@@ -52,28 +52,29 @@ public class UserDeletedApplierTest {
             .setPassword("password");
     userState.create(userRecord);
 
-    authorizationState.insertOwnerTypeByKey(userRecord.getUserKey(), AuthorizationOwnerType.USER);
+    authorizationState.createOrAddPermission(
+        AuthorizationOwnerType.USER,
+        userRecord.getUsername(),
+        PROCESS_DEFINITION,
+        CREATE,
+        Set.of("process1", "process2"));
 
     authorizationState.createOrAddPermission(
-        userRecord.getUserKey(), PROCESS_DEFINITION, CREATE, Set.of("process1", "process2"));
-
-    authorizationState.createOrAddPermission(
-        userRecord.getUserKey(), DECISION_DEFINITION, DELETE, Set.of("definition1"));
-
-    final var ownerType = authorizationState.getOwnerType(userRecord.getUserKey());
-
-    assertThat(ownerType).isPresent();
-    assertThat(ownerType.get()).isEqualTo(AuthorizationOwnerType.USER);
+        AuthorizationOwnerType.USER,
+        userRecord.getUsername(),
+        DECISION_DEFINITION,
+        DELETE,
+        Set.of("definition1"));
 
     assertThat(
             authorizationState.getResourceIdentifiers(
-                userRecord.getUserKey(), PROCESS_DEFINITION, CREATE))
+                AuthorizationOwnerType.USER, userRecord.getUsername(), PROCESS_DEFINITION, CREATE))
         .hasSize(2)
         .containsExactlyInAnyOrder("process1", "process2");
 
     assertThat(
             authorizationState.getResourceIdentifiers(
-                userRecord.getUserKey(), DECISION_DEFINITION, DELETE))
+                AuthorizationOwnerType.USER, userRecord.getUsername(), DECISION_DEFINITION, DELETE))
         .hasSize(1)
         .containsExactlyInAnyOrder("definition1");
 
@@ -81,14 +82,13 @@ public class UserDeletedApplierTest {
     userDeletedApplier.applyState(userRecord.getUserKey(), userRecord);
 
     // then
-    assertThat(authorizationState.getOwnerType(userRecord.getUserKey())).isEmpty();
     assertThat(
             authorizationState.getResourceIdentifiers(
-                userRecord.getUserKey(), PROCESS_DEFINITION, CREATE))
+                AuthorizationOwnerType.USER, userRecord.getUsername(), PROCESS_DEFINITION, CREATE))
         .hasSize(0);
     assertThat(
             authorizationState.getResourceIdentifiers(
-                userRecord.getUserKey(), DECISION_DEFINITION, DELETE))
+                AuthorizationOwnerType.USER, userRecord.getUsername(), DECISION_DEFINITION, DELETE))
         .hasSize(0);
     assertThat(userState.getUser(userRecord.getUserKey())).isEmpty();
   }

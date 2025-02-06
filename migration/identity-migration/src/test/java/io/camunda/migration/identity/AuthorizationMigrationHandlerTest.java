@@ -8,44 +8,64 @@
 package io.camunda.migration.identity;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.migration.identity.dto.UserResourceAuthorization;
+import io.camunda.migration.identity.midentity.ManagementIdentityClient;
+import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
 import java.util.Collection;
 import java.util.List;
+import org.apache.commons.lang3.NotImplementedException;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-class AuthorizationMigrationHandlerTest {
+@ExtendWith(MockitoExtension.class)
+final class AuthorizationMigrationHandlerTest {
 
-  @Mock AuthorizationServices authorizationServices;
-  @Mock ManagementIdentityProxy managementIdentityProxy;
-  AuthorizationMigrationHandler migrationHandler;
+  final AuthorizationServices authorizationServices;
+  final ManagementIdentityClient managementIdentityClient;
+  final AuthorizationMigrationHandler migrationHandler;
 
-  @BeforeEach
-  void setUp() throws Exception {
-    MockitoAnnotations.openMocks(this).close();
+  public AuthorizationMigrationHandlerTest(
+      @Mock(answer = Answers.RETURNS_SELF) final AuthorizationServices authorizationServices,
+      @Mock final ManagementIdentityClient managementIdentityClient) {
+    //    when(authorizationServices.patchAuthorization(any()))
+    //        .thenReturn(CompletableFuture.completedFuture(new AuthorizationRecord()));
+    this.authorizationServices = authorizationServices;
+    this.managementIdentityClient = managementIdentityClient;
     migrationHandler =
-        new AuthorizationMigrationHandler(authorizationServices, managementIdentityProxy);
+        new AuthorizationMigrationHandler(
+            Authentication.none(), authorizationServices, managementIdentityClient);
   }
 
-  @AfterEach
-  void tearDown() {}
+  @Test
+  void stopWhenIdentityEndpointNotFound() {
+    when(managementIdentityClient.fetchUserResourceAuthorizations(anyInt()))
+        .thenThrow(new NotImplementedException());
+
+    // when
+    assertThrows(NotImplementedException.class, migrationHandler::migrate);
+
+    // then
+    verify(managementIdentityClient).fetchUserResourceAuthorizations(anyInt());
+    verifyNoMoreInteractions(managementIdentityClient);
+  }
 
   @Test
   void stopWhenNoMoreRecords() {
     // given
-    when(managementIdentityProxy.fetchUserResourceAuthorizations(any(), anyInt()))
+    when(managementIdentityClient.fetchUserResourceAuthorizations(anyInt()))
         .thenReturn(
             List.of(
                 new UserResourceAuthorization(
@@ -56,13 +76,13 @@ class AuthorizationMigrationHandlerTest {
     migrationHandler.migrate();
 
     // then
-    verify(managementIdentityProxy, times(2)).fetchUserResourceAuthorizations(any(), anyInt());
+    verify(managementIdentityClient, times(2)).fetchUserResourceAuthorizations(anyInt());
   }
 
   @Test
   void groupedByOwnerResourceType() {
     // given
-    when(managementIdentityProxy.fetchUserResourceAuthorizations(any(), anyInt()))
+    when(managementIdentityClient.fetchUserResourceAuthorizations(anyInt()))
         .thenReturn(
             List.of(
                 new UserResourceAuthorization(
@@ -81,12 +101,13 @@ class AuthorizationMigrationHandlerTest {
     migrationHandler.migrate();
 
     // then
-    verify(authorizationServices, times(3)).patchAuthorization(any());
+    //    verify(authorizationServices, times(3)).patchAuthorization(any());
 
     final ArgumentCaptor<Collection<UserResourceAuthorization>> migratedCaptor =
         ArgumentCaptor.forClass(Collection.class);
 
-    verify(managementIdentityProxy, times(3)).markAsMigrated(migratedCaptor.capture());
+    verify(managementIdentityClient, times(3))
+        .markAuthorizationsAsMigrated(migratedCaptor.capture());
 
     assertThat(
         migratedCaptor.getAllValues().get(0),

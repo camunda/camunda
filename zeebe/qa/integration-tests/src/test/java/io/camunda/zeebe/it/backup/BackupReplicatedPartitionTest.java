@@ -18,7 +18,7 @@ import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.State;
 import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.it.util.GrpcClientRule;
-import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
+import io.camunda.zeebe.test.testcontainers.MinioContainer;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;

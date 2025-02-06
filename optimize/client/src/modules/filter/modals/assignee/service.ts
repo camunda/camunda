@@ -9,6 +9,7 @@
 import {User} from 'components';
 import {post, get} from 'request';
 import {Definition} from 'types';
+import { getFullURL } from '../../../api';
 
 export async function loadUsersByDefinition(
   type: string,
@@ -18,7 +19,7 @@ export async function loadUsersByDefinition(
     terms: string;
   }
 ) {
-  const response = await post(`api/${type}/search`, payload);
+  const response = await post(getFullURL(`api/${type}/search`), payload);
 
   return await response.json();
 }
@@ -30,13 +31,13 @@ export async function loadUsersByReportIds(
     terms: string;
   }
 ) {
-  const response = await post(`api/${type}/search/reports`, payload);
+  const response = await post(getFullURL(`api/${type}/search/reports`), payload);
 
   return await response.json();
 }
 
 export async function getUsersById(type: string, ids: (string | null)[]): Promise<User[]> {
-  const response = await get(`api/${type}`, {idIn: ids.join(',')});
+  const response = await get(getFullURL(`api/${type}`), {idIn: ids.join(',')});
 
   return await response.json();
 }

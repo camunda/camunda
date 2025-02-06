@@ -26,7 +26,7 @@ public class OpenSearchProperties {
 
   @Deprecated private String host = "localhost";
 
-  @Deprecated private int port = 9205;
+  @Deprecated private int port = 9200;
 
   private String dateFormat = DATE_FORMAT_DEFAULT;
 

@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -36,6 +37,7 @@ import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
+import org.opensearch.client.opensearch.indices.FlushRequest;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.opensearch.client.opensearch.nodes.Stats;
 import org.slf4j.Logger;
@@ -86,16 +88,15 @@ public class OpenSearchTestExtension
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
-    if (indexPrefix == null) {
-      indexPrefix = indexPrefixHolder.createNewIndexPrefix();
+    indexPrefix = tasklistProperties.getOpenSearch().getIndexPrefix();
+    if (indexPrefix.isBlank()) {
+      indexPrefix =
+          Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(indexPrefix);
+      tasklistProperties.getOpenSearch().setIndexPrefix(indexPrefix);
+      tasklistProperties.getZeebeOpenSearch().setPrefix(indexPrefix);
     }
-    tasklistProperties.getOpenSearch().setIndexPrefix(indexPrefix);
-    if (tasklistProperties.getOpenSearch().isCreateSchema()) {
-      schemaManager.createSchema();
-      assertThat(areIndicesCreatedAfterChecks(indexPrefix, 4, 5 * 60 /*sec*/))
-          .describedAs("OpenSearch %s (min %d) indices are created", indexPrefix, 5)
-          .isTrue();
-    }
+    /* Needed for the tasklist-user index */
+    schemaManager.createSchema();
   }
 
   @Override
@@ -145,95 +146,22 @@ public class OpenSearchTestExtension
   @Override
   public void refreshTasklistIndices() {
     try {
-      osClient
-          .indices()
-          .refresh(r -> r.index(tasklistProperties.getOpenSearch().getIndexPrefix() + "*"));
+
+      final FlushRequest flush =
+          FlushRequest.of(
+              builder ->
+                  builder
+                      .force(true)
+                      .index(tasklistProperties.getOpenSearch().getIndexPrefix() + "*"));
+      osClient.indices().flush(flush);
     } catch (final Exception t) {
-      LOGGER.error("Could not refresh Tasklist OpenSearch indices", t);
+      LOGGER.error("Could not refresh Tasklist Opensearch indices", t);
     }
   }
 
   @Override
   public void processAllRecordsAndWait(final TestCheck testCheck, final Object... arguments) {
-    processRecordsAndWaitFor(
-        recordsReaderHolder.getAllRecordsReaders(), testCheck, null, arguments);
-  }
-
-  @Override
-  public void processAllRecordsAndWait(
-      final TestCheck testCheck, final Supplier<Object> supplier, final Object... arguments) {
-    processRecordsAndWaitFor(
-        recordsReaderHolder.getAllRecordsReaders(), testCheck, supplier, arguments);
-  }
-
-  @Override
-  public void processRecordsWithTypeAndWait(
-      final ImportValueType importValueType, final TestCheck testCheck, final Object... arguments) {
-    processRecordsAndWaitFor(getRecordsReaders(importValueType), testCheck, null, arguments);
-  }
-
-  @Override
-  public void processRecordsAndWaitFor(
-      final Collection<RecordsReader> readers,
-      final TestCheck testCheck,
-      final Supplier<Object> supplier,
-      final Object... arguments) {
-    long shouldImportCount = 0;
-    int waitingRound = 0;
-    final int maxRounds = 50;
-    boolean found = testCheck.test(arguments);
-    final long start = System.currentTimeMillis();
-    while (!found && waitingRound < maxRounds) {
-      testImportListener.resetCounters();
-      shouldImportCount = 0;
-      try {
-        if (supplier != null) {
-          supplier.get();
-        }
-        refreshIndexesInElasticsearch();
-        shouldImportCount += zeebeImporter.performOneRoundOfImportFor(readers);
-      } catch (final Exception e) {
-        LOGGER.error(e.getMessage(), e);
-      }
-      long imported = testImportListener.getImported();
-      int waitForImports = 0;
-      // Wait for imports max 30 sec (60 * 500 ms)
-      while (shouldImportCount != 0 && imported < shouldImportCount && waitForImports < 60) {
-        waitForImports++;
-        try {
-          sleepFor(500);
-          shouldImportCount += zeebeImporter.performOneRoundOfImportFor(readers);
-        } catch (final Exception e) {
-          waitingRound = 0;
-          testImportListener.resetCounters();
-          shouldImportCount = 0;
-          LOGGER.error(e.getMessage(), e);
-        }
-        imported = testImportListener.getImported();
-        LOGGER.debug(" {} of {} records processed", imported, shouldImportCount);
-      }
-      refreshTasklistIndices();
-      found = testCheck.test(arguments);
-      if (!found) {
-        sleepFor(500);
-        waitingRound++;
-      }
-    }
-    final long finishedTime = System.currentTimeMillis() - start;
-
-    if (found) {
-      LOGGER.debug(
-          "Condition {} was met in round {} ({} ms).",
-          testCheck.getName(),
-          waitingRound,
-          finishedTime);
-    } else {
-      LOGGER.error(
-          "Condition {} was not met after {} rounds ({} ms).",
-          testCheck.getName(),
-          waitingRound,
-          finishedTime);
-    }
+    processRecordsAndWaitFor(testCheck, null, arguments);
   }
 
   @Override
@@ -247,7 +175,8 @@ public class OpenSearchTestExtension
         areCreated = areIndicesAreCreated(indexPrefix, minCountOfIndices);
       } catch (final Exception t) {
         LOGGER.error(
-            "OpenSearch indices (min {}) are not created yet. Waiting {}/{}",
+            "OpenSearch {} indices (min {}) are not created yet. Waiting {}/{}",
+            indexPrefix,
             minCountOfIndices,
             checks,
             maxChecks);
@@ -313,6 +242,45 @@ public class OpenSearchTestExtension
                                                     .collect(Collectors.toList())))))
                 .build())
         .deleted();
+  }
+
+  @Override
+  public void processRecordsAndWaitFor(
+      final TestCheck testCheck, final Supplier<Object> supplier, final Object... arguments) {
+    int waitingRound = 0;
+    final int maxRounds = 50;
+    boolean found = testCheck.test(arguments);
+    final long start = System.currentTimeMillis();
+    while (!found && waitingRound < maxRounds) {
+      try {
+        if (supplier != null) {
+          supplier.get();
+        }
+        refreshIndexesInElasticsearch();
+      } catch (final Exception e) {
+        LOGGER.error(e.getMessage(), e);
+      }
+      found = testCheck.test(arguments);
+      if (!found) {
+        sleepFor(500);
+        waitingRound++;
+      }
+    }
+    final long finishedTime = System.currentTimeMillis() - start;
+
+    if (found) {
+      LOGGER.debug(
+          "Condition {} was met in round {} ({} ms).",
+          testCheck.getName(),
+          waitingRound,
+          finishedTime);
+    } else {
+      LOGGER.error(
+          "Condition {} was not met after {} rounds ({} ms).",
+          testCheck.getName(),
+          waitingRound,
+          finishedTime);
+    }
   }
 
   private boolean areIndicesAreCreated(final String indexPrefix, final int minCountOfIndices)

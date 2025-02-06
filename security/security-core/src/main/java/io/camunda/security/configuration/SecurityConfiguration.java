@@ -7,11 +7,22 @@
  */
 package io.camunda.security.configuration;
 
+import io.camunda.security.entity.AuthenticationMethod;
+
 public class SecurityConfiguration {
 
+  private AuthenticationConfiguration authentication = new AuthenticationConfiguration();
   private AuthorizationsConfiguration authorizations = new AuthorizationsConfiguration();
-
+  private InitializationConfiguration initialization = new InitializationConfiguration();
   private MultiTenancyConfiguration multiTenancy = new MultiTenancyConfiguration();
+
+  public AuthenticationConfiguration getAuthentication() {
+    return authentication;
+  }
+
+  public void setAuthentication(final AuthenticationConfiguration authentication) {
+    this.authentication = authentication;
+  }
 
   public AuthorizationsConfiguration getAuthorizations() {
     return authorizations;
@@ -21,11 +32,24 @@ public class SecurityConfiguration {
     this.authorizations = authorizations;
   }
 
+  public InitializationConfiguration getInitialization() {
+    return initialization;
+  }
+
+  public void setInitialization(final InitializationConfiguration initialization) {
+    this.initialization = initialization;
+  }
+
   public MultiTenancyConfiguration getMultiTenancy() {
     return multiTenancy;
   }
 
   public void setMultiTenancy(final MultiTenancyConfiguration multiTenancy) {
     this.multiTenancy = multiTenancy;
+  }
+
+  public boolean isUnauthenticatedApiAccessAllowed() {
+    return authentication.getMethod() == AuthenticationMethod.BASIC
+        && authentication.getBasic().getAllowUnauthenticatedApiAccess();
   }
 }

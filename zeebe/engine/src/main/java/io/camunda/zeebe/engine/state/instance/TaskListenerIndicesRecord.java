@@ -16,38 +16,45 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class TaskListenerIndicesRecord extends UnpackedObject implements DbValue {
 
-  private final IntegerProperty assignmentTaskListenerIndexProp =
-      new IntegerProperty("assignmentTaskListenerIndex", 0);
-  private final IntegerProperty completeTaskListenerIndexProp =
-      new IntegerProperty("completeTaskListenerIndex", 0);
+  private final IntegerProperty assigningTaskListenerIndexProp =
+      new IntegerProperty("assigningTaskListenerIndex", 0);
+  private final IntegerProperty updatingTaskListenerIndexProp =
+      new IntegerProperty("updatingTaskListenerIndex", 0);
+  private final IntegerProperty completingTaskListenerIndexProp =
+      new IntegerProperty("completingTaskListenerIndex", 0);
 
   TaskListenerIndicesRecord() {
-    super(2);
-    declareProperty(assignmentTaskListenerIndexProp).declareProperty(completeTaskListenerIndexProp);
+    super(3);
+    declareProperty(assigningTaskListenerIndexProp)
+        .declareProperty(updatingTaskListenerIndexProp)
+        .declareProperty(completingTaskListenerIndexProp);
   }
 
-  public Integer getTaskListenerIndex(ZeebeTaskListenerEventType eventType) {
+  public Integer getTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
     return switch (eventType) {
-      case assignment -> assignmentTaskListenerIndexProp.getValue();
-      case complete -> completeTaskListenerIndexProp.getValue();
+      case assigning -> assigningTaskListenerIndexProp.getValue();
+      case updating -> updatingTaskListenerIndexProp.getValue();
+      case completing -> completingTaskListenerIndexProp.getValue();
       default ->
           throw new IllegalArgumentException("Unsupported ZeebeTaskListenerEventType " + eventType);
     };
   }
 
-  public void incrementTaskListenerIndex(ZeebeTaskListenerEventType eventType) {
+  public void incrementTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
     switch (eventType) {
-      case assignment -> assignmentTaskListenerIndexProp.increment();
-      case complete -> completeTaskListenerIndexProp.increment();
+      case assigning -> assigningTaskListenerIndexProp.increment();
+      case updating -> updatingTaskListenerIndexProp.increment();
+      case completing -> completingTaskListenerIndexProp.increment();
       default ->
           throw new IllegalArgumentException("Unsupported ZeebeTaskListenerEventType " + eventType);
     }
   }
 
-  public void resetTaskListenerIndex(ZeebeTaskListenerEventType eventType) {
+  public void resetTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
     switch (eventType) {
-      case assignment -> assignmentTaskListenerIndexProp.reset();
-      case complete -> completeTaskListenerIndexProp.reset();
+      case assigning -> assigningTaskListenerIndexProp.reset();
+      case updating -> updatingTaskListenerIndexProp.reset();
+      case completing -> completingTaskListenerIndexProp.reset();
       default ->
           throw new IllegalArgumentException("Unsupported ZeebeTaskListenerEventType " + eventType);
     }

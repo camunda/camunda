@@ -12,11 +12,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.metric.MetricIT;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
+import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
+import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.se.store.UserStore;
 import jakarta.json.Json;
 import java.util.List;
@@ -36,14 +37,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
-@ActiveProfiles({AUTH_PROFILE, "tasklist", "test"})
+@ActiveProfiles({AUTH_PROFILE, "tasklist", "test", "standalone"})
 public class AuthenticationWithPersistentSessionIT extends TasklistIntegrationTest
     implements AuthenticationTestable {
 
-  private static final String GRAPHQL_URL = "/graphql";
-  private static final String CURRENT_USER_QUERY =
-      "{currentUser{ userId \n displayName salesPlanType roles}}";
-
+  private static final String REST_CURRENT_USER = TasklistURIs.USERS_URL_V1.concat("/current");
   private static final String USERNAME = "demo";
   private static final String PASSWORD = "demo";
 
@@ -128,18 +126,17 @@ public class AuthenticationWithPersistentSessionIT extends TasklistIntegrationTe
     final ResponseEntity<Void> loginResponse = login(USERNAME, PASSWORD);
     assertThatCookiesAreSet(loginResponse, true);
     // when
-    final ResponseEntity<String> responseEntity =
+    final ResponseEntity<UserDTO> responseEntity =
         testRestTemplate.exchange(
-            GRAPHQL_URL,
-            HttpMethod.POST,
-            prepareRequestWithCookies(loginResponse.getHeaders(), CURRENT_USER_QUERY),
-            String.class);
+            REST_CURRENT_USER,
+            HttpMethod.GET,
+            prepareRequestWithCookies(loginResponse.getHeaders()),
+            UserDTO.class);
 
     // then
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-    final GraphQLResponse response = new GraphQLResponse(responseEntity, objectMapper);
-    assertThat(response.get("$.data.currentUser.userId")).isEqualTo(USERNAME);
-    assertThat(response.get("$.data.currentUser.displayName")).isEqualTo(USERNAME);
+    assertThat(responseEntity.getBody().getUserId()).isEqualTo(USERNAME);
+    assertThat(responseEntity.getBody().getDisplayName()).isEqualTo(USERNAME);
   }
 
   @Test
@@ -148,12 +145,12 @@ public class AuthenticationWithPersistentSessionIT extends TasklistIntegrationTe
     final ResponseEntity<Void> loginResponse = login(USERNAME, PASSWORD);
 
     // then endpoint are accessible
-    ResponseEntity<String> responseEntity =
+    ResponseEntity<UserDTO> responseEntity =
         testRestTemplate.exchange(
-            GRAPHQL_URL,
-            HttpMethod.POST,
-            prepareRequestWithCookies(loginResponse.getHeaders(), CURRENT_USER_QUERY),
-            String.class);
+            REST_CURRENT_USER,
+            HttpMethod.GET,
+            prepareRequestWithCookies(loginResponse.getHeaders()),
+            UserDTO.class);
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(responseEntity.getBody()).isNotNull();
 
@@ -163,10 +160,10 @@ public class AuthenticationWithPersistentSessionIT extends TasklistIntegrationTe
     // then endpoint is not accessible
     responseEntity =
         testRestTemplate.exchange(
-            GRAPHQL_URL,
+            REST_CURRENT_USER,
             HttpMethod.POST,
-            prepareRequestWithCookies(logoutResponse.getHeaders(), CURRENT_USER_QUERY),
-            String.class);
+            prepareRequestWithCookies(logoutResponse.getHeaders()),
+            UserDTO.class);
     assertThat(responseEntity.getStatusCode()).isIn(HttpStatus.FORBIDDEN, HttpStatus.UNAUTHORIZED);
   }
 

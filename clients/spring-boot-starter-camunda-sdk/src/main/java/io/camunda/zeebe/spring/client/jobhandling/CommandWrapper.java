@@ -15,9 +15,9 @@
  */
 package io.camunda.zeebe.spring.client.jobhandling;
 
-import io.camunda.zeebe.client.api.command.FinalCommandStep;
-import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.api.worker.BackoffSupplier;
+import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.zeebe.spring.client.metrics.MetricsRecorder;
 import java.time.Instant;
 import java.util.concurrent.ScheduledExecutorService;
@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 public class CommandWrapper {
 
-  private final FinalCommandStep<Void> command;
+  private final FinalCommandStep<?> command;
   private final ActivatedJob job;
   private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
   private final MetricsRecorder metricsRecorder;
@@ -35,7 +35,7 @@ public class CommandWrapper {
   private final int maxRetries;
 
   public CommandWrapper(
-      final FinalCommandStep<Void> command,
+      final FinalCommandStep<?> command,
       final ActivatedJob job,
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,

@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.client.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -26,7 +27,6 @@ import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.FailJobResponseImpl;
-import io.camunda.zeebe.client.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;

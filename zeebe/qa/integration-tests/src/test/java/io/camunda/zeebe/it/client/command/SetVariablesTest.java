@@ -11,10 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.ZeebeFuture;
-import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
-import io.camunda.zeebe.client.api.response.SetVariablesResponse;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.command.SetVariablesCommandStep1;
+import io.camunda.client.api.response.SetVariablesResponse;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -24,25 +24,24 @@ import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Map;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @ZeebeIntegration
-@AutoCloseResources
 public final class SetVariablesTest {
 
   private static final String PROCESS_ID = "process";
 
-  @AutoCloseResource ZeebeClient client;
+  @AutoClose CamundaClient client;
 
   @TestZeebe
-  final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+  final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   ZeebeResourcesHelper resourcesHelper;
   private long processDefinitionKey;
@@ -84,7 +83,7 @@ public final class SetVariablesTest {
     final long processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
 
     // when
-    final ZeebeFuture<SetVariablesResponse> command =
+    final CamundaFuture<SetVariablesResponse> command =
         getCommand(client, useRest, processInstanceKey).variables("null").send();
 
     // then
@@ -161,7 +160,7 @@ public final class SetVariablesTest {
   }
 
   private SetVariablesCommandStep1 getCommand(
-      final ZeebeClient client, final boolean useRest, final long elementInstanceKey) {
+      final CamundaClient client, final boolean useRest, final long elementInstanceKey) {
     final SetVariablesCommandStep1 setVariablesCommand =
         client.newSetVariablesCommand(elementInstanceKey);
     return useRest ? setVariablesCommand.useRest() : setVariablesCommand.useGrpc();

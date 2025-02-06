@@ -15,7 +15,6 @@ import static org.mockito.Mockito.verify;
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -27,14 +26,14 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class ProcessHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-process";
   private final TestProcessCache processCache = new TestProcessCache();
-  private final ProcessHandler underTest =
-      new ProcessHandler(indexName, new XMLUtil(), processCache);
+  private final ProcessHandler underTest = new ProcessHandler(indexName, processCache);
 
   @Test
   void testGetHandledValueType() {
@@ -138,6 +137,12 @@ public class ProcessHandlerTest {
     assertThat(processEntity.getResourceName()).isEqualTo(processRecordValue.getResourceName());
     assertThat(processEntity.getBpmnXml())
         .isEqualTo(new String(processRecordValue.getResource(), StandardCharsets.UTF_8));
+    Assertions.assertThat(processEntity.getFlowNodes())
+        .filteredOn(flowNode -> flowNode.getId().equals("startEvent"))
+        .hasSize(1);
+    Assertions.assertThat(processEntity.getFlowNodes())
+        .filteredOn(flowNode -> flowNode.getId().equals("endEvent"))
+        .hasSize(1);
     assertThat(processEntity.getTenantId()).isEqualTo(processRecordValue.getTenantId());
     assertThat(processEntity.getIsPublic()).isFalse();
     assertThat(processEntity.getFormId()).isNull();

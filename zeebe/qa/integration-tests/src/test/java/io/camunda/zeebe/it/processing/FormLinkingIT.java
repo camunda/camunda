@@ -9,8 +9,8 @@ package io.camunda.zeebe.it.processing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
@@ -18,22 +18,22 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Optional;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 
-@AutoCloseResources
 @ZeebeIntegration
 final class FormLinkingIT {
 
-  @TestZeebe private final TestStandaloneBroker zeebe = new TestStandaloneBroker();
+  @TestZeebe
+  private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withUnauthenticatedAccess();
+
   private final PartitionsActuator partitions = PartitionsActuator.of(zeebe);
-  @AutoCloseResource private ZeebeClient client;
+  @AutoClose private CamundaClient client;
 
   @BeforeEach
   void beforeEach() {

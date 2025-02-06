@@ -12,7 +12,7 @@
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.GroupDbQuery">
     SELECT COUNT(*)
-    FROM GROUPS g
+    FROM ${prefix}GROUPS g
     <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
   </select>
 
@@ -25,8 +25,8 @@
     gm.GROUP_KEY AS MEMBER_GROUP_KEY,
     gm.ENTITY_KEY AS MEMBER_ENTITY_KEY,
     gm.ENTITY_TYPE AS MEMBER_ENTITY_TYPE
-    FROM GROUPS g
-    LEFT JOIN GROUP_MEMBER gm ON g.GROUP_KEY = gm.GROUP_KEY
+    FROM ${prefix}GROUPS g
+    LEFT JOIN ${prefix}GROUP_MEMBER gm ON g.GROUP_KEY = gm.GROUP_KEY
     <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -57,7 +57,7 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.GroupDbModel"
     flushCache="true">
-    INSERT INTO GROUPS (GROUP_KEY, NAME)
+    INSERT INTO ${prefix}GROUPS (GROUP_KEY, NAME)
     VALUES (#{groupKey}, #{name})
   </insert>
 
@@ -65,14 +65,14 @@
     id="update"
     parameterType="io.camunda.db.rdbms.write.domain.GroupDbModel"
     flushCache="true">
-    UPDATE GROUPS
+    UPDATE ${prefix}GROUPS
     SET NAME = #{name}
     WHERE GROUP_KEY = #{groupKey}
   </update>
 
   <delete id="delete" parameterType="java.lang.Long" flushCache="true">
     DELETE
-    FROM GROUPS
+    FROM ${prefix}GROUPS
     WHERE GROUP_KEY = #{groupKey}
   </delete>
 
@@ -80,7 +80,7 @@
     id="insertMember"
     parameterType="io.camunda.db.rdbms.write.domain.GroupMemberDbModel"
     flushCache="true">
-    INSERT INTO GROUP_MEMBER (GROUP_KEY, ENTITY_KEY, ENTITY_TYPE)
+    INSERT INTO ${prefix}GROUP_MEMBER (GROUP_KEY, ENTITY_KEY, ENTITY_TYPE)
     VALUES (#{groupKey}, #{entityKey}, #{entityType})
   </insert>
 
@@ -89,7 +89,7 @@
     parameterType="io.camunda.db.rdbms.write.domain.GroupMemberDbModel"
     flushCache="true">
     DELETE
-    FROM GROUP_MEMBER
+    FROM ${prefix}GROUP_MEMBER
     WHERE GROUP_KEY = #{groupKey}
       AND ENTITY_KEY = #{entityKey}
       AND ENTITY_TYPE = #{entityType}
@@ -100,7 +100,7 @@
     parameterType="java.lang.Long"
     flushCache="true">
     DELETE
-    FROM GROUP_MEMBER
+    FROM ${prefix}GROUP_MEMBER
     WHERE GROUP_KEY = #{groupKey}
   </delete>
 

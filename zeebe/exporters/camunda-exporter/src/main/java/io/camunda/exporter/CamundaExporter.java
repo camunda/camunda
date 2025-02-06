@@ -95,7 +95,10 @@ public class CamundaExporter implements Exporter {
     clientAdapter = ClientAdapter.of(configuration);
     partitionId = context.getPartitionId();
     provider.init(
-        configuration, clientAdapter.getExporterEntityCacheProvider(), context.getMeterRegistry());
+        configuration,
+        clientAdapter.getExporterEntityCacheProvider(),
+        context.getMeterRegistry(),
+        metadata);
 
     taskManager =
         new BackgroundTaskManagerFactory(
@@ -125,7 +128,6 @@ public class CamundaExporter implements Exporter {
 
     writer = createBatchWriter();
 
-    scheduleDelayedFlush();
     checkImportersCompletedAndReschedule();
     controller.readMetadata().ifPresent(metadata::deserialize);
     taskManager.start();
@@ -135,6 +137,8 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void close() {
+    provider.close();
+
     if (writer != null) {
       try {
         flush();
@@ -161,7 +165,7 @@ public class CamundaExporter implements Exporter {
 
     final var recordVersion = getVersion(record.getBrokerVersion());
 
-    if (recordVersion.major() == 8 && recordVersion.minor() < 7) {
+    if (recordVersion.major() == 8 && recordVersion.minor() < 8) {
       LOG.debug(
           "Skip record with broker version '{}'. Last exported position will be updated to '{}'",
           record.getBrokerVersion(),
@@ -234,6 +238,7 @@ public class CamundaExporter implements Exporter {
   private ExporterBatchWriter createBatchWriter() {
     final var builder = ExporterBatchWriter.Builder.begin();
     provider.getExportHandlers().forEach(builder::withHandler);
+    builder.withCustomErrorHandlers(provider.getCustomErrorHandlers());
     return builder.build();
   }
 
@@ -272,6 +277,10 @@ public class CamundaExporter implements Exporter {
           searchEngineClient.importersCompleted(partitionId, importPositionIndices);
     } catch (final Exception e) {
       LOG.warn("Unexpected exception occurred checking importers completed, will retry later.", e);
+    }
+
+    if (importersCompleted) {
+      scheduleDelayedFlush();
     }
   }
 

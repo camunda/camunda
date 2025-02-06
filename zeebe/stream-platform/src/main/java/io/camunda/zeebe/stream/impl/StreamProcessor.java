@@ -114,7 +114,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private ProcessingScheduleServiceImpl processorActorService;
   private ProcessingScheduleServiceImpl asyncScheduleService;
   private AsyncProcessingScheduleServiceActor asyncActor;
-  private ScheduledTaskMetrics scheduledTaskMetrics;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
@@ -131,7 +130,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     logStream = streamProcessorContext.getLogStream();
     partitionId = logStream.getPartitionId();
     actorName = buildActorName("StreamProcessor", partitionId);
-    metrics = new StreamProcessorMetrics(partitionId);
+    metrics = new StreamProcessorMetrics(streamProcessorContext.getMeterRegistry());
     metrics.initializeProcessorPhase(streamProcessorContext.getStreamProcessorPhase());
     recordProcessors.addAll(processorBuilder.getRecordProcessors());
   }
@@ -162,11 +161,12 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   @Override
   protected void onActorStarted() {
     try {
-      LOG.debug("Recovering state of partition {} from snapshot", partitionId);
       final var startRecoveryTimer = metrics.startRecoveryTimer();
+      LOG.debug("Recovering state of partition {} from snapshot", partitionId);
       final long snapshotPosition = recoverFromSnapshot();
 
-      scheduledTaskMetrics = ScheduledTaskMetrics.of(streamProcessorContext.getMeterRegistry());
+      final var scheduledTaskMetrics =
+          ScheduledTaskMetrics.of(streamProcessorContext.getMeterRegistry());
       processorActorService =
           new ProcessingScheduleServiceImpl(
               streamProcessorContext::getStreamProcessorPhase,
@@ -352,7 +352,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             streamProcessorContext.getTransactionContext(),
             streamProcessorContext.getPartitionCommandSender(),
             streamProcessorContext.getKeyGeneratorControls(),
-            streamProcessorContext.getClock());
+            streamProcessorContext.getClock(),
+            streamProcessorContext.getMeterRegistry());
 
     recordProcessors.forEach(processor -> processor.init(processorContext));
 

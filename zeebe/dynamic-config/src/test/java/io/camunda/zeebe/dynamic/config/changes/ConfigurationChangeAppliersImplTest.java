@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
@@ -33,7 +34,7 @@ final class ConfigurationChangeAppliersImplTest {
   void shouldReturnExpectedApplier(
       final ClusterConfigurationChangeOperation operation, final Class<?> expectedClass) {
     // given
-    final var topologyChangeAppliers = new ConfigurationChangeAppliersImpl(null, null, null);
+    final var topologyChangeAppliers = new ConfigurationChangeAppliersImpl(null, null, null, null);
 
     // when
     final var applier = topologyChangeAppliers.getApplier(operation);
@@ -47,7 +48,7 @@ final class ConfigurationChangeAppliersImplTest {
     final MemberId localMemberId = MemberId.from("1");
     return Stream.of(
         Arguments.of(new PartitionJoinOperation(localMemberId, 1, 1), PartitionJoinApplier.class),
-        Arguments.of(new PartitionLeaveOperation(localMemberId, 1), PartitionLeaveApplier.class),
+        Arguments.of(new PartitionLeaveOperation(localMemberId, 1, 1), PartitionLeaveApplier.class),
         Arguments.of(new MemberJoinOperation(localMemberId), MemberJoinApplier.class),
         Arguments.of(new MemberLeaveOperation(localMemberId), MemberLeaveApplier.class),
         Arguments.of(
@@ -61,6 +62,7 @@ final class ConfigurationChangeAppliersImplTest {
             PartitionDisableExporterApplier.class),
         Arguments.of(
             new PartitionEnableExporterOperation(localMemberId, 1, "expId", Optional.empty()),
-            PartitionEnableExporterApplier.class));
+            PartitionEnableExporterApplier.class),
+        Arguments.of(new DeleteHistoryOperation(localMemberId), DeleteHistoryApplier.class));
   }
 }

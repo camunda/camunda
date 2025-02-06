@@ -25,17 +25,17 @@ public final class IncidentFixtures extends CommonFixtures {
         new IncidentDbModel.Builder()
             .incidentKey(nextKey())
             .processDefinitionKey(nextKey())
-            .processDefinitionId("process-" + RANDOM.nextInt(10000))
+            .processDefinitionId("process-" + generateRandomString(20))
             .flowNodeInstanceKey(nextKey())
             .processInstanceKey(nextKey())
             .jobKey(nextKey())
             .flowNodeId("flowNode-" + nextKey())
             .state(randomEnum(IncidentState.class))
             .errorType(randomEnum(ErrorType.class))
-            .errorMessage("error-" + RANDOM.nextInt(10000))
+            .errorMessage("error-" + generateRandomString(20))
             .creationDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
-            .tenantId("tenant-" + RANDOM.nextInt(10000))
-            .treePath("tree-" + RANDOM.nextInt(10000));
+            .tenantId("tenant-" + generateRandomString(20))
+            .treePath("tree-" + generateRandomString(20));
 
     return builderFunction.apply(builder).build();
   }

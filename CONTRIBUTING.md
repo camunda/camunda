@@ -117,7 +117,7 @@ This is a small overview of the contents of this repository:
 ### Build
 
 > [!NOTE]
-> All Camunda core modules are built and tested with JDK 21. Most modules use language level 21, exceptions are: camunda-client-java, camunda-process-test-java, zeebe-bpmn-model, zeebe-build-tools, zeebe-client-java, zeebe-gateway-protocol zeebe-gateway-protocol-impl, zeebe-protocol, and zeebe-protocol-jackson which use language level 8.
+> All Camunda core modules are built and tested with JDK 21. Most modules use language level 21, exceptions are: camunda-client-java, camunda-process-test-java, zeebe-bpmn-model, zeebe-build-tools, camunda-client-java, zeebe-gateway-protocol zeebe-gateway-protocol-impl, zeebe-protocol, and zeebe-protocol-jackson which use language level 8.
 
 To **quickly** build all components for development, run the command: `mvn clean install -Dquickly` in the root folder.
 
@@ -296,5 +296,5 @@ Should describe the motivation for the change. This is optional but encouraged. 
 [forum]: https://forum.camunda.io/
 [sample]: https://github.com/zeebe-io/zeebe-test-template-java
 [clients/java]: https://github.com/camunda/camunda/labels/scope%2Fclients-java
-[changelog generation]: https://github.com/zeebe-io/zeebe-changelog
+[changelog generation]: https://github.com/camunda/zeebe-changelog
 

@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>tasklist-qa</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
   </parent>
   <artifactId>tasklist-qa-backup-restore-tests</artifactId>
 
@@ -69,7 +69,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-client-java</artifactId>
+      <artifactId>camunda-client-java</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -164,20 +164,8 @@
     </dependency>
 
     <dependency>
-      <groupId>com.graphql-java-kickstart</groupId>
-      <artifactId>graphql-spring-boot-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>com.jayway.jsonpath</groupId>
-      <artifactId>json-path</artifactId>
       <scope>test</scope>
     </dependency>
 

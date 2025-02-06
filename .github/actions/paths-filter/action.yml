@@ -12,6 +12,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
         steps.filter-common.outputs.github-actions-change == 'true'
       }}
   maven-spotless-linter:
@@ -19,6 +20,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-common.outputs.java-code-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
@@ -29,6 +31,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-common.outputs.java-code-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true'
@@ -38,6 +41,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-identity.outputs.identity-frontend-change == 'true'
       }}
@@ -46,8 +50,10 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-operate.outputs.operate-backend-change == 'true' ||
+        steps.filter-common.outputs.webapps-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.dockerfile-change == 'true'
       }}
@@ -56,6 +62,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-tasklist.outputs.tasklist-frontend-change == 'true'
       }}
@@ -64,8 +71,10 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-tasklist.outputs.tasklist-backend-change == 'true' ||
+        steps.filter-common.outputs.webapps-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.dockerfile-change == 'true'
       }}
@@ -74,6 +83,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-optimize.outputs.optimize-frontend-change == 'true'
       }}
@@ -82,14 +92,18 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
-        steps.filter-optimize.outputs.optimize-backend-change == 'true'
+        steps.filter-optimize.outputs.optimize-backend-change == 'true' ||
+        steps.filter-common.outputs.webapps-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true'
       }}
   camunda-docker-tests:
     description: Output whether Camunda Docker tests should be run based on GitHub event and files changed
     value: >-
       ${{
         github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-common.outputs.java-code-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
@@ -101,6 +115,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-common.outputs.frontend-change == 'true' ||
         steps.filter-identity.outputs.frontend-identity == 'true'
@@ -110,7 +125,9 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-common.outputs.webapps-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-zeebe.outputs.zeebe-change == 'true'
       }}
@@ -119,13 +136,14 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
-        steps.filter-common.outputs.protobuf-change == 'true'
+        (steps.filter-common.outputs.protobuf-change == 'true' &&  github.event_name != 'schedule')
       }}
   openapi-changes:
     description: Output whether any C8 OpenAPI code has changed
     value: >-
       ${{
         github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
         steps.filter-common.outputs.openapi-change == 'true'
       }}
 
@@ -167,6 +185,11 @@ runs:
         markdown-change:
           - '**/*.md'
 
+        webapps-change:
+          - 'webapps-backup/**'
+          - 'webapps-common/**'
+          - 'webapps-schema/**'
+
         frontend-change:
           - 'operate/client/**'
           - 'tasklist/client/**'
@@ -178,7 +201,9 @@ runs:
           - 'buf.yaml'
 
         openapi-change:
-          - '**/rest-api.yaml'
+          - 'zeebe/gateway-protocol/src/main/proto/rest-api.yaml'
+          - 'zeebe/gateway-protocol/vacuum-ruleset.yaml'
+          - 'zeebe/gateway-protocol/vacuum-ignores.yaml'
 
   - uses: dorny/paths-filter@v3
     id: filter-identity

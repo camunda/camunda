@@ -28,7 +28,6 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
@@ -56,10 +55,15 @@ public class OpenSearchHelper implements NoSqlHelper {
   @Override
   public TaskEntity getTask(final String taskId) {
     try {
-      final GetResponse<TaskEntity> response =
-          osClient.get(g -> g.index(taskTemplate.getAlias()).id(taskId), TaskEntity.class);
-      if (response.found()) {
-        return response.source();
+      final SearchResponse<TaskEntity> response =
+          osClient.search(
+              g ->
+                  g.index(taskTemplate.getAlias())
+                      .query(
+                          q -> q.term(t -> t.field(TaskTemplate.KEY).value(FieldValue.of(taskId)))),
+              TaskEntity.class);
+      if (response.hits().hits().size() == 1) {
+        return response.hits().hits().getFirst().source();
       } else {
         throw new NotFoundApiException(
             String.format("Could not find  task for taskId [%s].", taskId));

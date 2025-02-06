@@ -35,8 +35,6 @@ import io.camunda.optimize.service.util.configuration.security.CloudAuthConfigur
 import io.camunda.optimize.tomcat.CCSaasRequestAdjustmentFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +51,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -302,7 +301,7 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
         // authenticationCookieFilter granting the user access.
         // This is also a technique documented at w3.org
         // https://www.w3.org/TR/WCAG20-TECHS/H76.html
-        response.setContentType(MediaType.TEXT_HTML);
+        response.setContentType(MediaType.TEXT_HTML_VALUE);
         response
             .getWriter()
             // @formatter:off
@@ -327,7 +326,7 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
                     getClusterIdPath(), getClusterIdPath(), getClusterIdPath()));
         // @formatter:on
       } else {
-        response.setStatus(Response.Status.FORBIDDEN.getStatusCode());
+        response.setStatus(HttpStatus.FORBIDDEN.value());
       }
     };
   }

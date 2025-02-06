@@ -48,7 +48,8 @@ public final class AuthorizationAddPermissionProcessor
   public void processNewCommand(final TypedRecord<AuthorizationRecord> command) {
     permissionsBehavior
         .isAuthorized(command)
-        .flatMap(permissionsBehavior::ownerExists)
+        // TODO: this class needs to be removed
+        //        .flatMap(permissionsBehavior::hasValidPermissionTypes)
         .flatMap(permissionsBehavior::permissionAlreadyExists)
         .ifRightOrLeft(
             authorizationRecord -> writeEventAndDistribute(command, authorizationRecord),

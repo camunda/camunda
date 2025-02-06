@@ -181,18 +181,13 @@ public final class BpmnJobBehavior {
       final TaskListener listener) {
     evaluateTaskListenerJobExpressions(listener.getJobWorkerProperties(), context, taskRecordValue)
         .thenDo(
-            listenerJobProperties -> {
-              final var taskHeaders =
-                  Collections.singletonMap(
-                      Protocol.RESERVED_HEADER_NAME_PREFIX + "userTaskKey",
-                      Objects.toString(taskRecordValue.getUserTaskKey()));
-              writeJobCreatedEvent(
-                  context,
-                  listenerJobProperties,
-                  JobKind.TASK_LISTENER,
-                  fromTaskListenerEventType(listener.getEventType()),
-                  taskHeaders);
-            })
+            listenerJobProperties ->
+                writeJobCreatedEvent(
+                    context,
+                    listenerJobProperties,
+                    JobKind.TASK_LISTENER,
+                    fromTaskListenerEventType(listener.getEventType()),
+                    extractUserTaskHeaders(taskRecordValue)))
         .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
   }
 
@@ -200,7 +195,19 @@ public final class BpmnJobBehavior {
       final JobWorkerProperties jobWorkerProps,
       final BpmnElementContext context,
       final UserTaskRecord taskRecordValue) {
-    return evaluateJobExpressions(jobWorkerProps, context)
+    final var scopeKey = context.getElementInstanceKey();
+    return Either.<Failure, JobProperties>right(new JobProperties())
+        // Evaluate and set basic job properties
+        .flatMap(p -> evalTypeExp(jobWorkerProps.getType(), scopeKey).map(p::type))
+        .flatMap(p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey).map(p::retries))
+        // Handle user task-related properties
+        .map(
+            p ->
+                Optional.of(taskRecordValue.getFormKey())
+                    .filter(formKey -> formKey > 0)
+                    .map(Objects::toString)
+                    .map(p::formKey)
+                    .orElse(p))
         .map(
             p ->
                 Optional.of(taskRecordValue.getAssignee())
@@ -209,13 +216,13 @@ public final class BpmnJobBehavior {
                     .orElse(p))
         .map(
             p ->
-                Optional.ofNullable(taskRecordValue.getCandidateGroupsList())
+                Optional.of(taskRecordValue.getCandidateGroupsList())
                     .map(BpmnJobBehavior::asNotEmptyListLiteralOrNull)
                     .map(p::candidateGroups)
                     .orElse(p))
         .map(
             p ->
-                Optional.ofNullable(taskRecordValue.getCandidateUsersList())
+                Optional.of(taskRecordValue.getCandidateUsersList())
                     .map(BpmnJobBehavior::asNotEmptyListLiteralOrNull)
                     .map(p::candidateUsers)
                     .orElse(p))
@@ -244,9 +251,11 @@ public final class BpmnJobBehavior {
   private static JobListenerEventType fromTaskListenerEventType(
       final ZeebeTaskListenerEventType eventType) {
     return switch (eventType) {
-      case assignment -> JobListenerEventType.ASSIGNMENT;
-      case complete -> JobListenerEventType.COMPLETE;
-      default -> throw new IllegalStateException("Unexpected value: " + eventType);
+      case assigning -> JobListenerEventType.ASSIGNING;
+      case updating -> JobListenerEventType.UPDATING;
+      case completing -> JobListenerEventType.COMPLETING;
+      default ->
+          throw new IllegalStateException("Unexpected ZeebeTaskListenerEventType: " + eventType);
     };
   }
 
@@ -328,6 +337,26 @@ public final class BpmnJobBehavior {
       headers.put(Protocol.USER_TASK_FORM_KEY_HEADER_NAME, formKey);
     }
     return headerEncoder.encode(headers);
+  }
+
+  private Map<String, String> extractUserTaskHeaders(final UserTaskRecord userTaskRecord) {
+    final var headers = new HashMap<String, String>();
+
+    if (userTaskRecord.getUserTaskKey() > 0) {
+      headers.put(
+          Protocol.USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskRecord.getUserTaskKey()));
+    }
+
+    if (userTaskRecord.getPriority() > 0) {
+      headers.put(
+          Protocol.USER_TASK_PRIORITY_HEADER_NAME, String.valueOf(userTaskRecord.getPriority()));
+    }
+
+    if (StringUtils.isNotEmpty(userTaskRecord.getAction())) {
+      headers.put(Protocol.USER_TASK_ACTION_HEADER_NAME, userTaskRecord.getAction());
+    }
+
+    return Collections.unmodifiableMap(headers);
   }
 
   public void cancelJob(final BpmnElementContext context) {

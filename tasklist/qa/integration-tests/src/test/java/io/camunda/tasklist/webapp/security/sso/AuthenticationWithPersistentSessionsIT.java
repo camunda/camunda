@@ -33,10 +33,9 @@ import com.auth0.AuthorizeUrl;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.sso.AuthSSOApplication;
-import io.camunda.tasklist.webapp.graphql.entity.C8AppLink;
+import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
@@ -89,7 +88,7 @@ import org.springframework.web.client.RestTemplate;
       "camunda.tasklist.archiver.rolloverEnabled = false",
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({SSO_AUTH_PROFILE, "tasklist", "test"})
+@ActiveProfiles({SSO_AUTH_PROFILE, "tasklist", "test", "standalone"})
 public class AuthenticationWithPersistentSessionsIT implements AuthenticationTestable {
 
   private static final String COOKIE_KEY = "Cookie";
@@ -264,15 +263,16 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   public void testLoginToAPIResource(final BiFunction<String, String, Tokens> orgExtractor)
       throws Exception {
     // Step 1: try to access current user
-    ResponseEntity<String> response = getCurrentUserByGraphQL(new HttpEntity<>(new HttpHeaders()));
+    final ResponseEntity<UserDTO> response =
+        getCurrentUserByRestApi(new HttpEntity<>(new HttpHeaders()));
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
     assertThatUnauthorizedIsReturned(response);
 
     // Step 2: Get Login provider url
     mockPermissionAllowed();
-    response = get(LOGIN_RESOURCE, cookies);
-    assertThat(redirectLocationIn(response))
+    final ResponseEntity<String> stringResponse = get(LOGIN_RESOURCE, cookies);
+    assertThat(redirectLocationIn(stringResponse))
         .contains(
             tasklistProperties.getAuth0().getDomain(),
             SSO_CALLBACK,
@@ -290,34 +290,21 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     mockEmptyClusterMetadata();
 
     final HttpEntity<?> loggedCookies = loginWithSSO(orgExtractor);
-    ResponseEntity<String> responseEntity = getCurrentUserByGraphQL(loggedCookies);
-    GraphQLResponse graphQLResponse = new GraphQLResponse(responseEntity, objectMapper);
-    assertThat(graphQLResponse.get("$.data.currentUser.c8Links", List.class)).isEmpty();
+    ResponseEntity<UserDTO> responseEntity = getCurrentUserByRestApi(loggedCookies);
 
     // Test with ClusterMetadata
     mockClusterMetadata();
     // when
-    responseEntity = getCurrentUserByGraphQL(loggedCookies);
+    responseEntity = getCurrentUserByRestApi(loggedCookies);
+
+    final UserDTO currentUser = responseEntity.getBody();
 
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-    graphQLResponse = new GraphQLResponse(responseEntity, objectMapper);
-    assertThat(graphQLResponse.get("$.data.currentUser.userId")).isEqualTo(TASKLIST_TESTUSER_EMAIL);
-    assertThat(graphQLResponse.get("$.data.currentUser.displayName")).isEqualTo(TASKLIST_TESTUSER);
-    assertThat(graphQLResponse.get("$.data.currentUser.salesPlanType"))
-        .isEqualTo(TASKLIST_TEST_SALESPLAN.getType());
-    assertThat(graphQLResponse.get("$.data.currentUser.roles", List.class))
-        .asList()
-        .isEqualTo(TASKLIST_TEST_ROLES);
-    assertThat(graphQLResponse.getList("$.data.currentUser.c8Links", C8AppLink.class))
-        .containsExactly(
-            new C8AppLink()
-                .setName("console")
-                .setLink("https://console.audience/org/3/cluster/test-clusterId"),
-            new C8AppLink().setName("operate").setLink("http://operate-url"),
-            new C8AppLink().setName("optimize").setLink("http://optimize-url"),
-            new C8AppLink().setName("modeler").setLink("https://modeler.audience/org/3"),
-            new C8AppLink().setName("tasklist").setLink("http://tasklist-url"),
-            new C8AppLink().setName("zeebe").setLink("grpc://zeebe-url"));
+    assertThat(currentUser).isNotNull();
+    assertThat(currentUser.getUserId()).isEqualTo(TASKLIST_TESTUSER_EMAIL);
+    assertThat(currentUser.getDisplayName()).isEqualTo(TASKLIST_TESTUSER);
+    assertThat(currentUser.getSalesPlanType()).isEqualTo(TASKLIST_TEST_SALESPLAN.getType());
+    assertThat(currentUser.getRoles()).isEqualTo(TASKLIST_TEST_ROLES);
   }
 
   @Test
@@ -370,7 +357,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     return cookies;
   }
 
-  private HttpEntity<?> httpEntityWithCookie(final ResponseEntity<String> response) {
+  private HttpEntity<?> httpEntityWithCookie(final ResponseEntity<?> response) {
     final HttpHeaders headers = new HttpHeaders();
     if (response.getHeaders().containsKey("Set-Cookie")) {
       headers.add(COOKIE_KEY, response.getHeaders().get("Set-Cookie").get(0));

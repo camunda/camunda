@@ -7,27 +7,26 @@
  */
 package io.camunda.optimize.rest;
 
-import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
-import io.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
-import io.camunda.optimize.service.security.authentication.AbstractAuthenticationService;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.Response;
-import org.springframework.stereotype.Component;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
-@Path(AuthenticationRestService.AUTHENTICATION_PATH)
-@Component
+import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
+import io.camunda.optimize.service.security.authentication.AbstractAuthenticationService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping(REST_API_PATH + AuthenticationRestService.AUTHENTICATION_PATH)
 public class AuthenticationRestService {
 
   public static final String AUTHENTICATION_PATH = "/authentication";
   public static final String LOGOUT = "/logout";
-  public static final String TEST = "/test";
   public static final String CALLBACK = "/callback";
 
   private final AbstractAuthenticationService authenticationService;
@@ -36,34 +35,28 @@ public class AuthenticationRestService {
     this.authenticationService = authenticationService;
   }
 
-  @POST
-  @Produces("application/json")
-  @Consumes("application/json")
-  public Response authenticateUser(
-      @Context final ContainerRequestContext requestContext,
-      final CredentialsRequestDto credentials) {
-    return authenticationService.authenticateUser(requestContext, credentials);
+  @GetMapping(path = CALLBACK)
+  public void loginCallback(
+      final @RequestParam(name = "code", required = false) String code,
+      final @RequestParam(name = "state", required = false) String state,
+      final @RequestParam(name = "error", required = false) String error,
+      final HttpServletRequest request,
+      final HttpServletResponse response)
+      throws IOException {
+    final AuthCodeDto authCode = new AuthCodeDto(code, state, error);
+    authenticationService.loginCallback(authCode, getUri(request), response);
   }
 
-  @GET
-  @Path(TEST)
-  public Response testAuthentication() {
-    return authenticationService.testAuthentication();
+  @GetMapping(path = LOGOUT)
+  public void logoutUser(final HttpServletRequest request, final HttpServletResponse response) {
+    authenticationService.logout(request.getCookies(), response);
   }
 
-  @GET
-  @Path(CALLBACK)
-  public Response loginCallback(
-      @Context final ContainerRequestContext requestContext,
-      final @QueryParam("code") String code,
-      final @QueryParam("state") String state,
-      final @QueryParam("error") String error) {
-    return authenticationService.loginCallback(requestContext, new AuthCodeDto(code, state, error));
-  }
-
-  @GET
-  @Path(LOGOUT)
-  public Response logoutUser(@Context final ContainerRequestContext requestContext) {
-    return authenticationService.logout(requestContext);
+  private URI getUri(final HttpServletRequest request) {
+    try {
+      return new URI(request.getRequestURL().toString());
+    } catch (final URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

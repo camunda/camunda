@@ -9,6 +9,7 @@ on:
     paths:
       - ".github/workflows/rdbms-integration-tests.yml"
       - "db/rdbms/**"
+      - "db/rdbms-schema/**"
       - "parent/**"
       - "qa/integration-tests/**"
       - "search/search-domain/**"
@@ -41,7 +42,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild -D skipOptimize
+          maven-extra-args: -T1C -PskipFrontendBuild
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
@@ -49,7 +50,7 @@ jobs:
           ./mvnw -B -T1C --no-snapshot-updates
           -D forkCount=1
           -D maven.javadoc.skip=true
-          -D skipUTs -D skipChecks -D skipOptimize
+          -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P rdbms
           -pl qa/integration-tests

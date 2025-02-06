@@ -5,14 +5,22 @@
   <parent>
     <groupId>io.camunda.optimize</groupId>
     <artifactId>optimize-parent</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>client</artifactId>
-  <packaging>pom</packaging>
-  <name>Optimize Client</name>
+  <name>Optimize Webjar</name>
+  <artifactId>optimize-webjar</artifactId>
+  <packaging>jar</packaging>
+
 
   <build>
+    <resources>
+      <resource>
+        <directory>dist</directory>
+        <targetPath>${project.build.outputDirectory}/META-INF/resources/optimize</targetPath>
+      </resource>
+    </resources>
+
     <plugins>
       <plugin>
         <groupId>com.github.eirslett</groupId>
@@ -42,6 +50,7 @@
             <configuration>
               <failOnError>false</failOnError>
               <skip>${skip.fe.build}</skip>
+              <arguments>install --mutex file:/tmp/.yarn-mutex</arguments>
             </configuration>
           </execution>
 

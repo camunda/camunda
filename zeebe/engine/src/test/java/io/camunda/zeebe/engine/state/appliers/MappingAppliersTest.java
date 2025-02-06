@@ -22,7 +22,10 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,13 +56,15 @@ public class MappingAppliersTest {
   void shouldDeleteMapping() {
     // given
     final long mappingKey = 1L;
+    final String mappingId = String.valueOf(mappingKey);
     final String claimName = "foo";
     final String claimValue = "bar";
     final var mappingRecord =
         new MappingRecord()
             .setMappingKey(mappingKey)
             .setClaimName(claimName)
-            .setClaimValue(claimValue);
+            .setClaimValue(claimValue)
+            .setName(claimName);
     mappingState.create(mappingRecord);
     // create role
     final long roleKey = 2L;
@@ -73,9 +78,11 @@ public class MappingAppliersTest {
     roleState.addEntity(role);
     // create tenant
     final long tenantKey = 3L;
-    mappingState.addTenant(mappingKey, tenantKey);
+    final var tenantId = "tenant";
+    mappingState.addTenant(mappingKey, tenantId);
     final var tenant =
         new TenantRecord()
+            .setTenantId(tenantId)
             .setTenantKey(tenantKey)
             .setEntityKey(mappingKey)
             .setEntityType(EntityType.MAPPING);
@@ -91,18 +98,26 @@ public class MappingAppliersTest {
             .setEntityType(EntityType.MAPPING);
     groupState.create(groupKey, group);
     groupState.addEntity(groupKey, group);
-    // create owner
-    authorizationState.insertOwnerTypeByKey(mappingKey, AuthorizationOwnerType.MAPPING);
+    // create authorization
+    authorizationState.createOrAddPermission(
+        AuthorizationOwnerType.MAPPING,
+        mappingId,
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.READ,
+        Set.of("process"));
 
     // when
     mappingDeletedApplier.applyState(mappingKey, mappingRecord);
 
     // then
     assertThat(mappingState.get(mappingKey)).isEmpty();
-    assertThat(roleState.getEntitiesByType(roleKey)).isEmpty();
-    assertThat(tenantState.getEntitiesByType(tenantKey)).isEmpty();
-    assertThat(authorizationState.getOwnerType(mappingKey)).isEmpty();
-    assertThat(groupState.getEntitiesByType(groupKey)).isEmpty();
+    assertThat(
+            authorizationState.getResourceIdentifiers(
+                AuthorizationOwnerType.MAPPING,
+                mappingId,
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                PermissionType.READ))
+        .isEmpty();
   }
 
   @Test

@@ -7,120 +7,99 @@
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
+import io.camunda.zeebe.broker.exporter.stream.ExporterMetricsDoc.ExporterActionKeyNames;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.prometheus.client.Counter;
-import io.prometheus.client.Gauge;
-import io.prometheus.client.Histogram;
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.collection.Table;
+import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class ExporterMetrics {
-
-  private static final String LABEL_NAME_PARTITION = "partition";
   private static final String LABEL_NAME_EXPORTER = "exporter";
   private static final String LABEL_NAME_ACTION = "action";
   private static final String LABEL_NAME_VALUE_TYPE = "valueType";
-  private static final String NAMESPACE_ZEEBE = "zeebe";
 
-  private static final Histogram EXPORTING_LATENCY =
-      Histogram.build()
-          .namespace(NAMESPACE_ZEEBE)
-          .name("exporting_latency")
-          .help("Time between a record is written until it is picked up for exporting (in seconds)")
-          .labelNames(LABEL_NAME_PARTITION, LABEL_NAME_VALUE_TYPE)
-          .register();
+  private final Map<String, AtomicLong> lastExportedPositions = new HashMap<>();
+  private final Map<String, AtomicLong> lastUpdatedExportedPositions = new HashMap<>();
+  private final AtomicInteger exporterState = new AtomicInteger();
+  private final Map<ValueType, Timer> exportingLatency = new HashMap<>();
+  private final Table<String, ValueType, Timer> exporterExportingDuration = Table.simple();
+  private final Table<ExporterActionKeyNames, ValueType, Counter> exporterEvents =
+      Table.ofEnum(ExporterActionKeyNames.class, ValueType.class, Counter[]::new);
 
-  private static final Histogram EXPORTER_EXPORTING_DURATION =
-      Histogram.build()
-          .namespace(NAMESPACE_ZEEBE)
-          .name("exporter_exporting_duration")
-          .help("The time an exporter needs to export certain record (duration in seconds)")
-          .labelNames(LABEL_NAME_PARTITION, LABEL_NAME_EXPORTER, LABEL_NAME_VALUE_TYPE)
-          .register();
+  private final MeterRegistry meterRegistry;
 
-  private static final Counter EXPORTER_EVENTS =
-      Counter.build()
-          .namespace(NAMESPACE_ZEEBE)
-          .name("exporter_events_total")
-          .help("Number of events processed by exporter")
-          .labelNames(LABEL_NAME_ACTION, LABEL_NAME_PARTITION, LABEL_NAME_VALUE_TYPE)
-          .register();
-
-  private static final Gauge LAST_EXPORTED_POSITION =
-      Gauge.build()
-          .namespace(NAMESPACE_ZEEBE)
-          .name("exporter_last_exported_position")
-          .help("The last exported position by exporter and partition.")
-          .labelNames(LABEL_NAME_EXPORTER, LABEL_NAME_PARTITION)
-          .register();
-
-  private static final Gauge LAST_UPDATED_EXPORTED_POSITION =
-      Gauge.build()
-          .namespace(NAMESPACE_ZEEBE)
-          .name("exporter_last_updated_exported_position")
-          .help("The last exported position which was also updated/committed by the exporter.")
-          .labelNames(LABEL_NAME_EXPORTER, LABEL_NAME_PARTITION)
-          .register();
-
-  private static final Gauge EXPORTER_PHASE =
-      Gauge.build()
-          .namespace(NAMESPACE_ZEEBE)
-          .name("exporter_state")
-          .help(
-              "Describes the phase of the exporter, namely if it is exporting, paused or soft paused.")
-          .labelNames(LABEL_NAME_PARTITION)
-          .register();
-  private final String partitionIdLabel;
-
-  private final Gauge.Child exporterPhase;
-
-  public ExporterMetrics(final int partitionId) {
-    partitionIdLabel = String.valueOf(partitionId);
-    exporterPhase = EXPORTER_PHASE.labels(partitionIdLabel);
-  }
-
-  private void event(final String action, final ValueType valueType) {
-    EXPORTER_EVENTS.labels(action, partitionIdLabel, valueType.name()).inc();
+  public ExporterMetrics(final MeterRegistry meterRegistry) {
+    this.meterRegistry = Objects.requireNonNull(meterRegistry, "must specify a meter registry");
   }
 
   public void setExporterActive() {
-    exporterPhase.set(0);
+    exporterState.set(0);
   }
 
   public void setExporterPaused() {
-    exporterPhase.set(1);
+    exporterState.set(1);
   }
 
   public void setExporterSoftPaused() {
-    exporterPhase.set(2);
+    exporterState.set(2);
   }
 
   public void eventExported(final ValueType valueType) {
-    event("exported", valueType);
+    event(ExporterActionKeyNames.EXPORTED, valueType);
   }
 
   public void eventSkipped(final ValueType valueType) {
-    event("skipped", valueType);
+    event(ExporterActionKeyNames.SKIPPED, valueType);
   }
 
   public void setLastUpdatedExportedPosition(final String exporter, final long position) {
-    LAST_UPDATED_EXPORTED_POSITION.labels(exporter, partitionIdLabel).set(position);
+    lastUpdatedExportedPositions
+        .computeIfAbsent(
+            exporter,
+            id ->
+                registerPerExporterGauge(
+                    ExporterMetricsDoc.LAST_UPDATED_EXPORTED_POSITION, id, position))
+        .set(position);
   }
 
   public void setLastExportedPosition(final String exporter, final long position) {
-    LAST_EXPORTED_POSITION.labels(exporter, partitionIdLabel).set(position);
+    lastExportedPositions
+        .computeIfAbsent(
+            exporter,
+            id -> registerPerExporterGauge(ExporterMetricsDoc.LAST_EXPORTED_POSITION, id, position))
+        .set(position);
   }
 
   public void exportingLatency(
       final ValueType valueType, final long written, final long exporting) {
-    EXPORTING_LATENCY
-        .labels(partitionIdLabel, valueType.name())
-        .observe((exporting - written) / 1000f);
+    exportingLatency
+        .computeIfAbsent(valueType, this::registerExportingLatency)
+        .record(exporting - written, TimeUnit.MILLISECONDS);
   }
 
-  public Histogram.Timer startExporterExportingTimer(
+  public CloseableSilently startExporterExportingTimer(
       final ValueType valueType, final String exporter) {
-    return EXPORTER_EXPORTING_DURATION
-        .labels(partitionIdLabel, exporter, valueType.name())
-        .startTimer();
+    final var timer =
+        exporterExportingDuration.computeIfAbsent(
+            exporter, valueType, this::registerExportingDuration);
+    return MicrometerUtil.timer(timer, Timer.start(meterRegistry));
+  }
+
+  private void event(final ExporterActionKeyNames action, final ValueType valueType) {
+    exporterEvents
+        .computeIfAbsent(action, valueType, this::registerExporterEventCounter)
+        .increment();
   }
 
   public void initializeExporterState(final ExporterPhase state) {
@@ -135,5 +114,51 @@ public final class ExporterMetrics {
         setExporterActive();
         break;
     }
+
+    final ExtendedMeterDocumentation meterDoc = ExporterMetricsDoc.EXPORTER_STATE;
+    Gauge.builder(meterDoc.getName(), exporterState, Number::intValue)
+        .description(meterDoc.getDescription())
+        .register(meterRegistry);
+  }
+
+  private Counter registerExporterEventCounter(
+      final ExporterActionKeyNames action, final ValueType valueType) {
+    final var meterDoc = ExporterMetricsDoc.EXPORTER_EVENTS;
+    return Counter.builder(meterDoc.getName())
+        .description(meterDoc.getDescription())
+        .tag(LABEL_NAME_ACTION, action.name())
+        .tag(LABEL_NAME_VALUE_TYPE, valueType.name())
+        .register(meterRegistry);
+  }
+
+  private AtomicLong registerPerExporterGauge(
+      final ExtendedMeterDocumentation meterDoc,
+      final String exporterId,
+      final long initialPosition) {
+    final var position = new AtomicLong(initialPosition);
+    Gauge.builder(meterDoc.getName(), position, Number::longValue)
+        .tag(LABEL_NAME_EXPORTER, exporterId)
+        .description(meterDoc.getDescription())
+        .register(meterRegistry);
+    return position;
+  }
+
+  private Timer registerExportingDuration(final String exporterId, final ValueType valueType) {
+    final var meterDoc = ExporterMetricsDoc.EXPORTING_DURATION;
+    return Timer.builder(meterDoc.getName())
+        .description(meterDoc.getDescription())
+        .serviceLevelObjectives(meterDoc.getTimerSLOs())
+        .tag(LABEL_NAME_VALUE_TYPE, valueType.name())
+        .tag(LABEL_NAME_EXPORTER, exporterId)
+        .register(meterRegistry);
+  }
+
+  private Timer registerExportingLatency(final ValueType valueType) {
+    final var meterDoc = ExporterMetricsDoc.EXPORTING_LATENCY;
+    return Timer.builder(meterDoc.getName())
+        .description(meterDoc.getDescription())
+        .serviceLevelObjectives(meterDoc.getTimerSLOs())
+        .tag(LABEL_NAME_VALUE_TYPE, valueType.name())
+        .register(meterRegistry);
   }
 }

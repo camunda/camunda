@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.monitoring;
 
+import io.camunda.zeebe.broker.system.monitoring.HealthMetricsDoc.NodesKeyNames;
 import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthStatus;
@@ -22,14 +23,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class HealthTreeMetrics implements ComponentTreeListener {
-  public static final String NODES_NAME = "zeebe.broker.health.nodes";
   private static final Logger LOG = LoggerFactory.getLogger(HealthTreeMetrics.class);
   private static final int MAX_PATH_ITERATIONS = 8;
   private final MeterRegistry meterRegistry;
   private final Map<String, Meter.Id> meters = new HashMap<>();
   // Map of child -> parent: a child only has 1 parent
   private final Map<String, String> relationships = new HashMap<>();
-  private final Tag extraTags;
+  private final Tags extraTags;
 
   public HealthTreeMetrics(final MeterRegistry meterRegistry) {
     this(meterRegistry, null);
@@ -37,7 +37,7 @@ public final class HealthTreeMetrics implements ComponentTreeListener {
 
   public HealthTreeMetrics(final MeterRegistry meterRegistry, final Tag extraTags) {
     this.meterRegistry = meterRegistry;
-    this.extraTags = extraTags;
+    this.extraTags = extraTags != null ? Tags.of(extraTags) : null;
   }
 
   /**
@@ -88,16 +88,22 @@ public final class HealthTreeMetrics implements ComponentTreeListener {
   }
 
   private Gauge buildNodeGauge(final HealthMonitorable component) {
-    return Gauge.builder(
-            NODES_NAME,
-            component,
-            // make sure to not close over anything else than `c`
-            c -> c != null ? statusValue(c.getHealthReport().getStatus()) : statusValue(null))
-        .tags(
-            tagsFor(
-                Tags.of(
-                    "id", component.componentName(), "path", pathOf(component.componentName()))))
-        .register(meterRegistry);
+    final var meterDoc = HealthMetricsDoc.NODES;
+    final var builder =
+        Gauge.builder(
+                meterDoc.getName(),
+                component,
+                // make sure to not close over anything else than `c`
+                c -> c != null ? statusValue(c.getHealthReport().getStatus()) : statusValue(null))
+            .description(meterDoc.getDescription())
+            .tag(NodesKeyNames.ID.asString(), component.componentName())
+            .tag(NodesKeyNames.PATH.asString(), pathOf(component.componentName()));
+
+    if (extraTags != null) {
+      builder.tags(extraTags);
+    }
+
+    return builder.register(meterRegistry);
   }
 
   public String pathOf(final String from) {
@@ -110,14 +116,6 @@ public final class HealthTreeMetrics implements ComponentTreeListener {
       parent = relationships.get(parent);
     }
     return String.join("/", pathElements);
-  }
-
-  private Tags tagsFor(final Tags tags) {
-    if (extraTags != null) {
-      return tags.and(extraTags);
-    } else {
-      return tags;
-    }
   }
 
   private void removeFromRegistry(final String metricName) {

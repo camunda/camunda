@@ -10,6 +10,8 @@ package io.camunda.tasklist.schema.manager;
 import static io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor.formatIndexPrefix;
 import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,27 +25,27 @@ import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import jakarta.json.Json;
-import jakarta.json.JsonArray;
-import jakarta.json.JsonObject;
 import jakarta.json.spi.JsonProvider;
 import jakarta.json.stream.JsonParser;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.apache.http.util.EntityUtils;
-import org.opensearch.client.Request;
-import org.opensearch.client.Response;
-import org.opensearch.client.RestClient;
 import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.json.JsonpMapper;
+import org.opensearch.client.json.jackson.JacksonJsonpGenerator;
+import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.mapping.Property;
@@ -79,10 +81,6 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   @Autowired protected RetryOpenSearchClient retryOpenSearchClient;
 
-  @Autowired
-  @Qualifier("tasklistOsRestClient")
-  private RestClient opensearchRestClient;
-
   @Autowired private List<AbstractIndexDescriptor> indexDescriptors;
   @Autowired private List<IndexTemplateDescriptor> templateDescriptors;
 
@@ -96,9 +94,6 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   @Override
   public void createSchema() {
-    if (tasklistProperties.getArchiver().isIlmEnabled()) {
-      createIndexLifeCyclesIfNotExist();
-    }
     createDefaults();
     createTemplates();
     createIndices();
@@ -138,34 +133,31 @@ public class OpenSearchSchemaManager implements SchemaManager {
       throws IOException {
     final Map<String, IndexMapping> mappings = new HashMap<>();
 
-    final Request request = new Request("GET", "/" + indexNamePattern + "/_mapping/");
-    final Response response = opensearchRestClient.performRequest(request);
-    final String responseBody = EntityUtils.toString(response.getEntity());
-
-    // Initialize ObjectMapper instance
-    final ObjectMapper objectMapper = new ObjectMapper();
-
-    // Parse the JSON response body
-    final Map<String, Map<String, Map<String, Object>>> parsedResponse =
-        objectMapper.readValue(responseBody, new TypeReference<>() {});
+    final Map<String, TypeMapping> indexMappings =
+        openSearchClient
+            .indices()
+            .getMapping(req -> req.index(indexNamePattern).ignoreUnavailable(true))
+            .result()
+            .entrySet()
+            .stream()
+            .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().mappings()));
 
     // Iterate over the parsed JSON to build the mappings
-    for (final Map.Entry<String, Map<String, Map<String, Object>>> indexEntry :
-        parsedResponse.entrySet()) {
+    for (final Entry<String, TypeMapping> indexEntry : indexMappings.entrySet()) {
       final String indexName = indexEntry.getKey();
-      final Map<String, Object> indexMappingData = indexEntry.getValue().get("mappings");
-      final String dynamicSetting = (String) indexMappingData.get("dynamic");
+      final Map<String, Property> indexMappingData = indexEntry.getValue().properties();
+      final String dynamic =
+          indexEntry.getValue().dynamic() == null
+              ? "strict"
+              : indexEntry.getValue().dynamic().toString().toLowerCase();
 
-      // Extract the properties
-      final Map<String, Object> propertiesData =
-          (Map<String, Object>) indexMappingData.get("properties");
       final Set<IndexMapping.IndexMappingProperty> propertiesSet = new HashSet<>();
 
-      for (final Map.Entry<String, Object> propertyEntry : propertiesData.entrySet()) {
+      for (final Map.Entry<String, Property> propertyEntry : indexMappingData.entrySet()) {
         final IndexMapping.IndexMappingProperty property =
             new IndexMapping.IndexMappingProperty()
                 .setName(propertyEntry.getKey())
-                .setTypeDefinition(propertyEntry.getValue());
+                .setTypeDefinition(propertyToMap(propertyEntry.getValue()));
         propertiesSet.add(property);
       }
 
@@ -173,7 +165,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
       final IndexMapping indexMapping =
           new IndexMapping()
               .setIndexName(indexName)
-              .setDynamic(dynamicSetting)
+              .setDynamic(dynamic)
               .setProperties(propertiesSet);
 
       // Add to mappings map
@@ -280,66 +272,6 @@ public class OpenSearchSchemaManager implements SchemaManager {
     final JsonParser jsonParser =
         JsonProvider.provider().createParser(new StringReader(mappingsAsJSON.toPrettyString()));
     return TypeMapping._DESERIALIZER.deserialize(jsonParser, jsonpMapper);
-  }
-
-  public void createIndexLifeCyclesIfNotExist() {
-    if (retryOpenSearchClient.getLifecyclePolicy(TASKLIST_DELETE_ARCHIVED_INDICES).isPresent()) {
-      LOGGER.info("{} ISM policy already exists", TASKLIST_DELETE_ARCHIVED_INDICES);
-      return;
-    }
-    LOGGER.info("Creating ISM Policy for deleting archived indices");
-
-    final Request request =
-        new Request("PUT", "/_plugins/_ism/policies/" + TASKLIST_DELETE_ARCHIVED_INDICES);
-
-    final JsonObject deleteJson =
-        Json.createObjectBuilder().add("delete", Json.createObjectBuilder().build()).build();
-    final JsonArray actionsDelete = Json.createArrayBuilder().add(deleteJson).build();
-    final JsonObject deleteState =
-        Json.createObjectBuilder()
-            .add("name", Json.createValue("delete"))
-            .add("actions", actionsDelete)
-            .build();
-    final JsonObject openCondition =
-        Json.createObjectBuilder()
-            .add(
-                "min_index_age",
-                Json.createValue(
-                    tasklistProperties.getArchiver().getIlmMinAgeForDeleteArchivedIndices()))
-            .build();
-    final JsonObject openTransition =
-        Json.createObjectBuilder()
-            .add("state_name", Json.createValue("delete"))
-            .add("conditions", openCondition)
-            .build();
-    final JsonArray transitionOpenActions = Json.createArrayBuilder().add(openTransition).build();
-    final JsonObject openActionJson =
-        Json.createObjectBuilder().add("open", Json.createObjectBuilder().build()).build();
-    final JsonArray openActions = Json.createArrayBuilder().add(openActionJson).build();
-    final JsonObject openState =
-        Json.createObjectBuilder()
-            .add("name", Json.createValue("open"))
-            .add("actions", openActions)
-            .add("transitions", transitionOpenActions)
-            .build();
-    final JsonArray statesJson = Json.createArrayBuilder().add(openState).add(deleteState).build();
-    final JsonObject policyJson =
-        Json.createObjectBuilder()
-            .add("policy_id", Json.createValue(TASKLIST_DELETE_ARCHIVED_INDICES))
-            .add(
-                "description",
-                Json.createValue("Policy to delete archived indices older than configuration"))
-            .add("default_state", Json.createValue("open"))
-            .add("states", statesJson)
-            .build();
-    final JsonObject requestJson = Json.createObjectBuilder().add("policy", policyJson).build();
-
-    request.setJsonEntity(requestJson.toString());
-    try {
-      final Response response = opensearchRestClient.performRequest(request);
-    } catch (final IOException e) {
-      throw new TasklistRuntimeException(e);
-    }
   }
 
   private void createDefaults() {
@@ -495,6 +427,36 @@ public class OpenSearchSchemaManager implements SchemaManager {
     } catch (final Exception e) {
       throw new TasklistRuntimeException(
           "Exception occurred when reading template JSON: " + e.getMessage(), e);
+    }
+  }
+
+  // Ported from CamundaExporter
+  private Map<String, Object> serialize(
+      final Function<JsonGenerator, jakarta.json.stream.JsonGenerator> jacksonGenerator,
+      final Consumer<jakarta.json.stream.JsonGenerator> serialize)
+      throws IOException {
+    try (final var out = new StringWriter();
+        final var jsonGenerator = new JsonFactory().createGenerator(out);
+        final jakarta.json.stream.JsonGenerator jacksonJsonpGenerator =
+            jacksonGenerator.apply(jsonGenerator)) {
+      serialize.accept(jacksonJsonpGenerator);
+      jacksonJsonpGenerator.flush();
+
+      return objectMapper.readValue(
+          out.toString(), new TypeReference<TreeMap<String, Object>>() {});
+    }
+  }
+
+  // Ported from CamundaExporter
+  private Map<String, Object> propertyToMap(final Property property) {
+    try {
+      return serialize(
+          (JacksonJsonpGenerator::new),
+          (jacksonJsonpGenerator) ->
+              property.serialize(jacksonJsonpGenerator, new JacksonJsonpMapper(objectMapper)));
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(
+          String.format("Failed to serialize property [%s]", property.toString()), e);
     }
   }
 }

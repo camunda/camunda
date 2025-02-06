@@ -27,6 +27,12 @@ public class AuthProperties {
 
   private String issuer;
 
+  private String keystorePath;
+  private String keystorePassword;
+  private String keystoreKeyPassword;
+  private String truststorePath;
+  private String truststorePassword;
+
   public String getIssuer() {
     return issuer;
   }
@@ -65,5 +71,45 @@ public class AuthProperties {
 
   public void setClientSecret(final String clientSecret) {
     this.clientSecret = clientSecret;
+  }
+
+  public String getKeystorePath() {
+    return keystorePath;
+  }
+
+  public void setKeystorePath(final String keystorePath) {
+    this.keystorePath = keystorePath;
+  }
+
+  public String getKeystorePassword() {
+    return keystorePassword;
+  }
+
+  public void setKeystorePassword(final String keystorePassword) {
+    this.keystorePassword = keystorePassword;
+  }
+
+  public String getKeystoreKeyPassword() {
+    return keystoreKeyPassword;
+  }
+
+  public void setKeystoreKeyPassword(final String keystoreKeyPassword) {
+    this.keystoreKeyPassword = keystoreKeyPassword;
+  }
+
+  public String getTruststorePath() {
+    return truststorePath;
+  }
+
+  public void setTruststorePath(final String truststorePath) {
+    this.truststorePath = truststorePath;
+  }
+
+  public String getTruststorePassword() {
+    return truststorePassword;
+  }
+
+  public void setTruststorePassword(final String truststorePassword) {
+    this.truststorePassword = truststorePassword;
   }
 }

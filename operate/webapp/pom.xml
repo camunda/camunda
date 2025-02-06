@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-parent</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>operate-webapp</artifactId>
@@ -31,12 +31,11 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-importer</artifactId>
-      <scope>runtime</scope>
+      <artifactId>camunda-search-domain</artifactId>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-archiver</artifactId>
+      <artifactId>operate-importer</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
@@ -54,7 +53,7 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-client-java</artifactId>
+      <artifactId>camunda-client-java</artifactId>
     </dependency>
 
     <dependency>
@@ -426,7 +425,6 @@
         <configuration>
           <usedDependencies>
             <dependency>io.camunda:operate-importer</dependency>
-            <dependency>io.camunda:operate-archiver</dependency>
             <dependency>io.camunda:operate-webjar</dependency>
             <dependency>io.camunda:identity-spring-boot-starter</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>

@@ -37,14 +37,13 @@ public class ListViewFlowNodeFromProcessInstanceHandler
   private static final Set<Intent> PI_AND_AI_START_STATES = Set.of(ELEMENT_ACTIVATING);
   private static final Set<Intent> PI_AND_AI_FINISH_STATES =
       Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
+  private static final Set<BpmnElementType> UNHANDLED_TYPES =
+      Set.of(BpmnElementType.PROCESS, BpmnElementType.SEQUENCE_FLOW);
 
   private final String indexName;
-  private final boolean concurrencyMode;
 
-  public ListViewFlowNodeFromProcessInstanceHandler(
-      final String indexName, final boolean concurrencyMode) {
+  public ListViewFlowNodeFromProcessInstanceHandler(final String indexName) {
     this.indexName = indexName;
-    this.concurrencyMode = concurrencyMode;
   }
 
   @Override
@@ -60,7 +59,7 @@ public class ListViewFlowNodeFromProcessInstanceHandler
   @Override
   public boolean handlesRecord(final Record<ProcessInstanceRecordValue> record) {
     final var intent = record.getIntent();
-    if (!isProcessEvent(record.getValue())) {
+    if (!isOfTypes(record.getValue(), UNHANDLED_TYPES)) {
       return PI_AND_AI_START_STATES.contains(intent)
           || PI_AND_AI_FINISH_STATES.contains(intent)
           || ELEMENT_MIGRATED.equals(intent);
@@ -131,18 +130,9 @@ public class ListViewFlowNodeFromProcessInstanceHandler
     updateFields.put(ACTIVITY_STATE, entity.getActivityState());
 
     final Long processInstanceKey = entity.getProcessInstanceKey();
-    if (concurrencyMode) {
-      batchRequest.upsertWithScriptAndRouting(
-          indexName,
-          entity.getId(),
-          entity,
-          getFlowNodeInstanceScript(),
-          updateFields,
-          processInstanceKey.toString());
-    } else {
-      batchRequest.upsertWithRouting(
-          indexName, entity.getId(), entity, updateFields, processInstanceKey.toString());
-    }
+
+    batchRequest.upsertWithRouting(
+        indexName, entity.getId(), entity, updateFields, processInstanceKey.toString());
   }
 
   @Override
@@ -150,37 +140,12 @@ public class ListViewFlowNodeFromProcessInstanceHandler
     return indexName;
   }
 
-  private boolean isProcessEvent(final ProcessInstanceRecordValue recordValue) {
-    return isOfType(recordValue, BpmnElementType.PROCESS);
-  }
-
-  private boolean isOfType(
-      final ProcessInstanceRecordValue recordValue, final BpmnElementType type) {
+  private boolean isOfTypes(
+      final ProcessInstanceRecordValue recordValue, final Set<BpmnElementType> types) {
     final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();
     if (bpmnElementType == null) {
       return false;
     }
-    return bpmnElementType.equals(type);
-  }
-
-  protected String getFlowNodeInstanceScript() {
-    return String.format(
-        "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
-            + "ctx._source.%s = params.%s; " // position
-            + "ctx._source.%s = params.%s; " // activity id
-            + "ctx._source.%s = params.%s; " // activity type
-            + "ctx._source.%s = params.%s; " // activity state
-            + "}",
-        POSITION,
-        POSITION,
-        POSITION,
-        POSITION,
-        POSITION,
-        ACTIVITY_ID,
-        ACTIVITY_ID,
-        ACTIVITY_TYPE,
-        ACTIVITY_TYPE,
-        ACTIVITY_STATE,
-        ACTIVITY_STATE);
+    return types.contains(bpmnElementType);
   }
 }

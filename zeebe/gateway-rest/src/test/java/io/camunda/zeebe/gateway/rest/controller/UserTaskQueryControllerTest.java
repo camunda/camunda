@@ -20,6 +20,7 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
@@ -30,7 +31,6 @@ import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItem;
-import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -47,11 +47,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(value = UserTaskQueryController.class, properties = "camunda.rest.query.enabled=true")
-@Import(JacksonConfig.class)
+@WebMvcTest(value = UserTaskController.class)
 public class UserTaskQueryControllerTest extends RestControllerTest {
 
   private static final Long VALID_USER_TASK_KEY = 0L;
@@ -63,16 +61,16 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               "items": [
                   {
                       "tenantId": "t",
-                      "userTaskKey": 0,
-                      "processInstanceKey": 1,
-                      "processDefinitionKey": 2,
-                      "elementInstanceKey": 3,
+                      "userTaskKey": "0",
+                      "processInstanceKey": "1",
+                      "processDefinitionKey": "2",
+                      "elementInstanceKey": "3",
                       "processDefinitionId": "b",
                       "state": "CREATED",
                       "assignee": "a",
                       "candidateUsers": [],
                       "candidateGroups": [],
-                      "formKey": 0,
+                      "formKey": "0",
                       "elementId": "e",
                       "name": "name",
                       "creationDate": "2020-11-11T00:00:00.000Z",
@@ -87,7 +85,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": ["v"],
+                  "firstSortValues": ["f"],
                   "lastSortValues": [
                       "v"
                   ]
@@ -99,19 +97,19 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
       {
         "items": [
           {
-              "variableKey":0,
+              "variableKey":"0",
               "name":"name",
               "value":"value",
               "fullValue":"test",
-              "scopeKey":1,
-              "processInstanceKey":2,
+              "scopeKey":"1",
+              "processInstanceKey":"2",
               "tenantId":"<default>",
               "isTruncated":false
           }
         ],
         "page": {
           "totalItems": 1,
-          "firstSortValues": ["v"],
+          "firstSortValues": ["f"],
           "lastSortValues": [
             "v"
           ]
@@ -123,16 +121,16 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
       """
           {
                       "tenantId": "t",
-                      "userTaskKey": 0,
-                      "processInstanceKey": 1,
-                      "processDefinitionKey": 2,
-                      "elementInstanceKey": 3,
+                      "userTaskKey": "0",
+                      "processInstanceKey": "1",
+                      "processDefinitionKey": "2",
+                      "elementInstanceKey": "3",
                       "processDefinitionId": "b",
                       "state": "CREATED",
                       "assignee": "a",
                       "candidateUsers": [],
                       "candidateGroups": [],
-                      "formKey": 0,
+                      "formKey": "0",
                       "elementId": "e",
                       "name": "name",
                       "creationDate": "2020-11-11T00:00:00.000Z",
@@ -151,7 +149,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
   private static final String FORM_ITEM_JSON =
       """
       {
-        "formKey": 0,
+        "formKey": "0",
         "tenantId": "tenant-1",
         "bpmnId": "bpmn-1",
         "schema": "schema",
@@ -186,7 +184,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       Collections.emptyMap(), // customHeaders
                       50 // priority
                       )))
-          .sortValues(new Object[] {"v"})
+          .firstSortValues(new Object[] {"f"})
+          .lastSortValues(new Object[] {"v"})
           .build();
 
   private static final SearchQueryResult<VariableEntity> SEARCH_VAR_QUERY_RESULT =
@@ -196,7 +195,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               List.of(
                   new VariableEntity(
                       0L, "name", "value", "test", false, 1L, 2L, "bpid", "<default>")))
-          .sortValues(new Object[] {"v"})
+          .firstSortValues(new Object[] {"f"})
+          .lastSortValues(new Object[] {"v"})
           .build();
 
   @MockBean UserTaskServices userTaskServices;
@@ -348,9 +348,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unknown sortOrder: dsc.",
+                  "detail": "Unexpected value 'dsc' for enum field 'order'. Use any of the following values: [ASC, DESC]",
                   "instance": "%s"
                 }""",
             USER_TASKS_SEARCH_URL);
@@ -382,7 +382,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "unknownField",
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";
@@ -391,9 +391,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unknown sortBy: unknownField.",
+                  "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [creationDate, completionDate, followUpDate, dueDate, priority]",
                   "instance": "%s"
                 }""",
             USER_TASKS_SEARCH_URL);
@@ -424,7 +424,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             {
                 "sort": [
                     {
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";
@@ -611,14 +611,27 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
 
   @Test
   public void shouldReturnVariableForValidUserTaskKey() {
+    final var request =
+        """
+            {
+                "filter":
+                    {
+                        "name": "varName"
+                    }
+
+            }""";
+
     when(userTaskServices.searchUserTaskVariables(
-            VALID_USER_TASK_KEY, variableSearchQuery().build()))
+            VALID_USER_TASK_KEY,
+            variableSearchQuery().filter(f -> f.nameOperations(Operation.eq("varName"))).build()))
         .thenReturn(SEARCH_VAR_QUERY_RESULT);
     // when and then
     webClient
         .post()
         .uri("/v2/user-tasks/" + VALID_USER_TASK_KEY + "/variables/search")
         .accept(APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
         .exchange()
         .expectStatus()
         .isOk()
@@ -626,7 +639,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_VARIABLE_RESULT_JSON);
 
     verify(userTaskServices)
-        .searchUserTaskVariables(VALID_USER_TASK_KEY, variableSearchQuery().build());
+        .searchUserTaskVariables(
+            VALID_USER_TASK_KEY,
+            variableSearchQuery().filter(f -> f.nameOperations(Operation.eq("varName"))).build());
   }
 
   private static Stream<Arguments> provideAdvancedSearchParameters() {

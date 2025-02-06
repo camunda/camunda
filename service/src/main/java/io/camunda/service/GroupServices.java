@@ -20,13 +20,13 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupDeleteRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupMemberAddRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupMemberRemoveRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupMemberRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public class GroupServices extends SearchQueryService<GroupServices, GroupQuery, GroupEntity> {
@@ -51,6 +51,14 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
         .searchGroups(query);
   }
 
+  public List<GroupEntity> findAll(final GroupQuery query) {
+    return groupSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.group().read())))
+        .findAllGroups(query);
+  }
+
   @Override
   public GroupServices withAuthentication(final Authentication authentication) {
     return new GroupServices(
@@ -67,11 +75,29 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
             () -> new NotFoundException("Group with groupKey %d not found".formatted(groupKey)));
   }
 
+  public Optional<GroupEntity> findGroupByName(final String name) {
+    return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.name(name)).build())
+        .items()
+        .stream()
+        .findFirst();
+  }
+
+  public GroupEntity getGroupByName(final String name) {
+    return findGroupByName(name)
+        .orElseThrow(
+            () -> new NotFoundException("Group with group name %s not found".formatted(name)));
+  }
+
   public List<GroupEntity> getGroupsByUserKey(final long userKey) {
     return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.memberKey(userKey)).build())
         .items()
         .stream()
         .toList();
+  }
+
+  public List<GroupEntity> getGroupsByMemberKeys(final Set<Long> memberKeys) {
+    return findAll(
+        SearchQueryBuilders.groupSearchQuery().filter(f -> f.memberKeys(memberKeys)).build());
   }
 
   public Optional<GroupEntity> findGroup(final Long groupKey) {
@@ -92,7 +118,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   public CompletableFuture<GroupRecord> assignMember(
       final long groupKey, final long memberKey, final EntityType memberType) {
     return sendBrokerRequest(
-        new BrokerGroupMemberAddRequest(groupKey)
+        BrokerGroupMemberRequest.createAddRequest(groupKey)
             .setMemberKey(memberKey)
             .setMemberType(memberType));
   }
@@ -100,7 +126,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   public CompletableFuture<GroupRecord> removeMember(
       final long groupKey, final long memberKey, final EntityType memberType) {
     return sendBrokerRequest(
-        new BrokerGroupMemberRemoveRequest(groupKey)
+        BrokerGroupMemberRequest.createRemoveRequest(groupKey)
             .setMemberKey(memberKey)
             .setMemberType(memberType));
   }

@@ -33,7 +33,7 @@ public final class TestClusterBuilder {
 
   private Consumer<TestApplication<?>> nodeConfig = node -> {};
   private BiConsumer<MemberId, TestStandaloneBroker> brokerConfig = (id, broker) -> {};
-  private BiConsumer<MemberId, TestGateway<?>> gatewayConfig = (id, gateway) -> {};
+  private BiConsumer<MemberId, TestStandaloneGateway> gatewayConfig = (id, gateway) -> {};
 
   private final Map<MemberId, TestStandaloneGateway> gateways = new HashMap<>();
   private final Map<MemberId, TestStandaloneBroker> brokers = new HashMap<>();
@@ -182,7 +182,8 @@ public final class TestClusterBuilder {
    *     included)
    * @return this builder instance for chaining
    */
-  public TestClusterBuilder withGatewayConfig(final BiConsumer<MemberId, TestGateway<?>> modifier) {
+  public TestClusterBuilder withGatewayConfig(
+      final BiConsumer<MemberId, TestStandaloneGateway> modifier) {
     gatewayConfig = modifier;
     return this;
   }
@@ -201,7 +202,7 @@ public final class TestClusterBuilder {
    *     included)
    * @return this builder instance for chaining
    */
-  public TestClusterBuilder withGatewayConfig(final Consumer<TestGateway<?>> modifier) {
+  public TestClusterBuilder withGatewayConfig(final Consumer<TestStandaloneGateway> modifier) {
     gatewayConfig = (memberId, gateway) -> modifier.accept(gateway);
     return this;
   }
@@ -280,7 +281,7 @@ public final class TestClusterBuilder {
   private void applyConfigFunctions(final MemberId id, final TestApplication<?> zeebe) {
     nodeConfig.accept(zeebe);
 
-    if (zeebe instanceof final TestGateway<?> gateway) {
+    if (zeebe instanceof final TestStandaloneGateway gateway) {
       gatewayConfig.accept(id, gateway);
     }
 
@@ -334,18 +335,20 @@ public final class TestClusterBuilder {
   }
 
   private TestStandaloneBroker createBroker(final int index) {
-    return new TestStandaloneBroker()
-        .withBrokerConfig(
-            cfg -> {
-              final var cluster = cfg.getCluster();
-              cluster.setNodeId(index);
-              cluster.setPartitionsCount(partitionsCount);
-              cluster.setReplicationFactor(replicationFactor);
-              cluster.setClusterSize(brokersCount);
-              cluster.setClusterName(name);
-            })
-        .withBrokerConfig(cfg -> cfg.getGateway().setEnable(useEmbeddedGateway))
-        .withRecordingExporter(useRecordingExporter);
+    final TestStandaloneBroker broker =
+        new TestStandaloneBroker()
+            .withBrokerConfig(
+                cfg -> {
+                  final var cluster = cfg.getCluster();
+                  cluster.setNodeId(index);
+                  cluster.setPartitionsCount(partitionsCount);
+                  cluster.setReplicationFactor(replicationFactor);
+                  cluster.setClusterSize(brokersCount);
+                  cluster.setClusterName(name);
+                })
+            .withBrokerConfig(cfg -> cfg.getGateway().setEnable(useEmbeddedGateway))
+            .withRecordingExporter(useRecordingExporter);
+    return broker;
   }
 
   private void createGateways() {
@@ -360,14 +363,16 @@ public final class TestClusterBuilder {
   }
 
   private TestStandaloneGateway createGateway(final String id) {
-    return new TestStandaloneGateway()
-        .withGatewayConfig(
-            cfg -> {
-              final var cluster = cfg.getCluster();
-              cluster.setMemberId(id);
-              cluster.setClusterName(name);
-              cluster.setInitialContactPoints(getInitialContactPoints());
-            });
+    final TestStandaloneGateway gateway =
+        new TestStandaloneGateway()
+            .withGatewayConfig(
+                cfg -> {
+                  final var cluster = cfg.getCluster();
+                  cluster.setMemberId(id);
+                  cluster.setClusterName(name);
+                  cluster.setInitialContactPoints(getInitialContactPoints());
+                });
+    return gateway;
   }
 
   private List<String> getInitialContactPoints() {

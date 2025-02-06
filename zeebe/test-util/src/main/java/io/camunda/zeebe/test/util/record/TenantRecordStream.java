@@ -8,6 +8,7 @@
 package io.camunda.zeebe.test.util.record;
 
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import java.util.stream.Stream;
 
@@ -37,5 +38,13 @@ public class TenantRecordStream
 
   public TenantRecordStream withEntityKey(final long entityKey) {
     return valueFilter(v -> v.getEntityKey() == entityKey);
+  }
+
+  public TenantRecordStream withEntityId(final String entityId) {
+    return valueFilter(v -> v.getEntityId().equals(entityId));
+  }
+
+  public TenantRecordStream withEntityType(final EntityType entityType) {
+    return valueFilter(v -> v.getEntityType() == entityType);
   }
 }

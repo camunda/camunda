@@ -62,14 +62,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ update-identity ]
     if: ${{ failure() && inputs.dryRun == false }}
-    env:
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
     steps:
       - id: slack-notify-failure
         name: Send failure slack notification
-        uses: slackapi/slack-github-action@v1.27.1
+        uses: slackapi/slack-github-action@v2.0.0
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
           # For posting a rich message using Block Kit
           payload: |
             {

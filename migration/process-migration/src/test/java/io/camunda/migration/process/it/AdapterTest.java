@@ -147,9 +147,9 @@ public abstract class AdapterTest {
 
   protected void runMigration() {
     if (isElasticsearch) {
-      esMigrator.run();
+      esMigrator.call();
     } else {
-      osMigrator.run();
+      osMigrator.call();
     }
   }
 
