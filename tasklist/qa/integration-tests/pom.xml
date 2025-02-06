@@ -507,7 +507,6 @@
       <artifactId>zeebe-exporter-api</artifactId>
       <scope>test</scope>
     </dependency>
-
   </dependencies>
 
   <build>
