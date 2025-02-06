@@ -18,7 +18,7 @@ public enum MetaStoreMetricsDoc implements ExtendedMeterDocumentation {
   LAST_FLUSHED_INDEX {
     @Override
     public String getName() {
-      return "atomix.last_flushed_index_update";
+      return "atomix.last.flushed.index.update";
     }
 
     @Override
@@ -38,7 +38,7 @@ public enum MetaStoreMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public KeyName[] getKeyNames() {
-      return PartitionKeyNames.values();
+      return new KeyName[] {PartitionKeyNames.PARTITION, RaftKeyNames.PARTITION_GROUP};
     }
   }
 }
