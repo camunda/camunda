@@ -7,27 +7,33 @@
  */
 package io.atomix.raft.metrics;
 
-import io.prometheus.client.Histogram;
-import io.prometheus.client.Histogram.Timer;
+import static io.atomix.raft.metrics.MetaStoreMetricsDoc.LAST_FLUSHED_INDEX;
+
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import java.util.Objects;
 
 public final class MetaStoreMetrics extends RaftMetrics {
-  private static final Histogram LAST_FLUSHED_INDEX_UPDATE =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("last_flushed_index_update")
-          .help("Time it takes to update the last flushed index")
-          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
-          .register();
+  private final Timer lastFlushedIndexUpdate;
+  private final Clock clock;
 
-  private final Histogram.Child lastFlushedIndexUpdate;
-
-  public MetaStoreMetrics(final String partitionName) {
+  public MetaStoreMetrics(final String partitionName, final MeterRegistry registry) {
     super(partitionName);
-
-    lastFlushedIndexUpdate = LAST_FLUSHED_INDEX_UPDATE.labels(partitionGroupName, partition);
+    Objects.requireNonNull(registry, "MeterRegistry cannot be null");
+    lastFlushedIndexUpdate =
+        Timer.builder(LAST_FLUSHED_INDEX.getName())
+            .description(LAST_FLUSHED_INDEX.getDescription())
+            // FIXME use KeyNames
+            .tag(PARTITION_GROUP_NAME_LABEL, partitionName)
+            // FIXME add SLOs
+            .register(registry);
+    clock = registry.config().clock();
   }
 
-  public Timer observeLastFlushedIndexUpdate() {
-    return lastFlushedIndexUpdate.startTimer();
+  public CloseableSilently observeLastFlushedIndexUpdate() {
+    return MicrometerUtil.timer(lastFlushedIndexUpdate, Timer.start(clock));
   }
 }
