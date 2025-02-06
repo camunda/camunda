@@ -26,10 +26,10 @@ public final class AuthorizationFixtures extends CommonFixtures {
     final var ownerId = nextStringId();
 
     final var randomPermissionType1 = randomEnum(PermissionType.class);
-    var randomPermissionType2 = randomEnum(PermissionType.class);
-    while (randomPermissionType2 == randomPermissionType1) {
+    PermissionType randomPermissionType2;
+    do {
       randomPermissionType2 = randomEnum(PermissionType.class);
-    }
+    } while (randomPermissionType2 == randomPermissionType1);
 
     final var builder =
         new Builder()
