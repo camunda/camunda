@@ -83,7 +83,6 @@ public class AuthorizationCreateProcessor
       final TypedRecord<AuthorizationRecord> command,
       final AuthorizationRecord authorizationRecord) {
     final long key = keyGenerator.nextKey();
-    authorizationRecord.setAuthorizationKey(key);
     stateWriter.appendFollowUpEvent(key, AuthorizationIntent.CREATED, authorizationRecord);
     responseWriter.writeEventOnCommand(
         key, AuthorizationIntent.CREATED, authorizationRecord, command);

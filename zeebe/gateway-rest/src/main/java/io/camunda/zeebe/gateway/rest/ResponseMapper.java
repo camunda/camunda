@@ -456,10 +456,9 @@ public final class ResponseMapper {
   }
 
   public static ResponseEntity<Object> toAuthorizationCreateResponse(
-      final AuthorizationRecord authorizationRecord) {
+      final BrokerResponse<AuthorizationRecord> brokerResponse) {
     final var response =
-        new AuthorizationCreateResponse()
-            .authorizationKey(authorizationRecord.getAuthorizationKey());
+        new AuthorizationCreateResponse().authorizationKey(brokerResponse.getKey());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 

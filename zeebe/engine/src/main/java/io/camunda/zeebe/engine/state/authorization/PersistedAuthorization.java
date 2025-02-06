@@ -27,7 +27,6 @@ import java.util.stream.StreamSupport;
 
 public class PersistedAuthorization extends UnpackedObject implements DbValue {
 
-  private final LongProperty authorizationKeyProp = new LongProperty("authorizationKey");
   private final StringProperty ownerIdProp = new StringProperty("ownerId");
   private final EnumProperty<AuthorizationOwnerType> ownerTypeProp =
       new EnumProperty<>("ownerType", AuthorizationOwnerType.class);
@@ -38,9 +37,8 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
       new ArrayProperty<>("permissionTypes", StringValue::new);
 
   public PersistedAuthorization() {
-    super(6);
-    declareProperty(authorizationKeyProp)
-        .declareProperty(ownerIdProp)
+    super(5);
+    declareProperty(ownerIdProp)
         .declareProperty(ownerTypeProp)
         .declareProperty(resourceIdProp)
         .declareProperty(resourceTypeProp)
@@ -48,21 +46,11 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
   }
 
   public void wrap(final AuthorizationRecord authorizationRecord) {
-    setAuthorizationKey(authorizationRecord.getAuthorizationKey())
-        .setOwnerId(authorizationRecord.getOwnerId())
+    setOwnerId(authorizationRecord.getOwnerId())
         .setOwnerType(authorizationRecord.getOwnerType())
         .setResourceId(authorizationRecord.getResourceId())
         .setResourceType(authorizationRecord.getResourceType())
         .setPermissionTypes(authorizationRecord.getAuthorizationPermissions());
-  }
-
-  public long getAuthorizationKey() {
-    return authorizationKeyProp.getValue();
-  }
-
-  public PersistedAuthorization setAuthorizationKey(final long authorizationKey) {
-    authorizationKeyProp.setValue(authorizationKey);
-    return this;
   }
 
   public String getOwnerId() {

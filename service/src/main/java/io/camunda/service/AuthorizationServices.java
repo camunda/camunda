@@ -18,8 +18,10 @@ import io.camunda.security.entity.Permission;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationDeleteRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerBroadcastSignalRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -114,7 +116,7 @@ public class AuthorizationServices
         .collect(Collectors.toSet());
   }
 
-  public CompletableFuture<AuthorizationRecord> createAuthorization(
+  public CompletableFuture<BrokerResponse<AuthorizationRecord>> createAuthorization(
       final CreateAuthorizationRequest request) {
     final var brokerRequest =
         new BrokerAuthorizationCreateRequest()
@@ -123,7 +125,8 @@ public class AuthorizationServices
             .setResourceId(request.resourceId())
             .setResourceType(request.resourceType())
             .setPermissions(request.permissions());
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequestWithFullResponse(
+        brokerRequest);
   }
 
   public CompletableFuture<AuthorizationRecord> deleteAuthorization(final long authorizationKey) {

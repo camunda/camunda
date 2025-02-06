@@ -20,7 +20,6 @@ public class BrokerAuthorizationDeleteRequest extends BrokerExecuteCommand<Autho
   public BrokerAuthorizationDeleteRequest(final long authorizationKey) {
     super(ValueType.AUTHORIZATION, AuthorizationIntent.DELETE);
     request.setKey(authorizationKey);
-    requestDto.setAuthorizationKey(authorizationKey);
   }
 
   @Override

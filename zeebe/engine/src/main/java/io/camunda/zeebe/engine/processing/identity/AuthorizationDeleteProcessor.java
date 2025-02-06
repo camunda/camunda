@@ -55,10 +55,10 @@ public class AuthorizationDeleteProcessor
         .flatMap(
             authorizationRecord ->
                 permissionsBehavior.authorizationExists(
+                    command.getKey(),
                     authorizationRecord, AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_DELETION))
-        .map(PersistedAuthorization::getAuthorizationKey)
         .ifRightOrLeft(
-            authorizationKey -> writeEventAndDistribute(command, authorizationKey),
+            authorizationKey -> writeEventAndDistribute(command, command.getKey()),
             (rejection) -> {
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
               responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
@@ -69,11 +69,12 @@ public class AuthorizationDeleteProcessor
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
     permissionsBehavior
         .authorizationExists(
+            command.getKey(),
             command.getValue(), AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_DELETION)
         .ifRightOrLeft(
             ignored ->
                 stateWriter.appendFollowUpEvent(
-                    command.getValue().getAuthorizationKey(),
+                    command.getKey(),
                     AuthorizationIntent.DELETED,
                     command.getValue()),
             rejection ->
@@ -85,7 +86,6 @@ public class AuthorizationDeleteProcessor
   private void writeEventAndDistribute(
       final TypedRecord<AuthorizationRecord> command, final long authorizationKey) {
     final long key = keyGenerator.nextKey();
-    command.getValue().setAuthorizationKey(authorizationKey);
     stateWriter.appendFollowUpEvent(
         authorizationKey, AuthorizationIntent.DELETED, command.getValue());
     distributionBehavior

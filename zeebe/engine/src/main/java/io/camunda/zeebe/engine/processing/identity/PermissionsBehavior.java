@@ -59,8 +59,7 @@ public class PermissionsBehavior {
   }
 
   public Either<Rejection, PersistedAuthorization> authorizationExists(
-      final AuthorizationRecord authorizationRecord, final String rejectionMessage) {
-    final var key = authorizationRecord.getAuthorizationKey();
+      final long key, final AuthorizationRecord authorizationRecord, final String rejectionMessage) {
     return authorizationState
         .get(key)
         .map(Either::<Rejection, PersistedAuthorization>right)

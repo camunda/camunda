@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 public final class AuthorizationRecord extends UnifiedRecordValue
     implements AuthorizationRecordValue {
 
-  private final LongProperty authorizationKeyProp = new LongProperty("authorizationKey", -1L);
   private final StringProperty ownerIdProp = new StringProperty("ownerId", "");
   // TODO: remove in: https://github.com/camunda/camunda/issues/26883
   private final LongProperty ownerKeyProp = new LongProperty("ownerKey", -1L);
@@ -46,25 +45,14 @@ public final class AuthorizationRecord extends UnifiedRecordValue
       new ArrayProperty<>("authorizationPermissions", StringValue::new);
 
   public AuthorizationRecord() {
-    super(8);
-    declareProperty(authorizationKeyProp)
-        .declareProperty(ownerIdProp)
+    super(7);
+    declareProperty(ownerIdProp)
         .declareProperty(ownerTypeProp)
         .declareProperty(ownerKeyProp)
         .declareProperty(resourceIdProp)
         .declareProperty(resourceTypeProp)
         .declareProperty(permissionsProp)
         .declareProperty(authorizationPermissionsProp);
-  }
-
-  @Override
-  public Long getAuthorizationKey() {
-    return authorizationKeyProp.getValue();
-  }
-
-  public AuthorizationRecord setAuthorizationKey(final Long authenticationKey) {
-    authorizationKeyProp.setValue(authenticationKey);
-    return this;
   }
 
   @Override

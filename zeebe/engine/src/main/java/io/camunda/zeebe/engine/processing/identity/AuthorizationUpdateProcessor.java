@@ -53,6 +53,7 @@ public class AuthorizationUpdateProcessor
         .flatMap(
             authorizationRecord ->
                 permissionsBehavior.authorizationExists(
+                    command.getKey(),
                     authorizationRecord, AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_UPDATE))
         .flatMap(
             record ->
@@ -72,11 +73,11 @@ public class AuthorizationUpdateProcessor
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
     permissionsBehavior
-        .authorizationExists(command.getValue(), AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_UPDATE)
+        .authorizationExists(command.getKey(), command.getValue(), AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_UPDATE)
         .ifRightOrLeft(
             ignored ->
                 stateWriter.appendFollowUpEvent(
-                    command.getValue().getAuthorizationKey(),
+                    command.getKey(),
                     AuthorizationIntent.UPDATED,
                     command.getValue()),
             rejection ->
@@ -90,7 +91,7 @@ public class AuthorizationUpdateProcessor
       final AuthorizationRecord authorizationRecord) {
     final long key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(
-        authorizationRecord.getAuthorizationKey(),
+        command.getKey(),
         AuthorizationIntent.UPDATED,
         authorizationRecord);
     distributionBehavior
@@ -98,7 +99,7 @@ public class AuthorizationUpdateProcessor
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
         .distribute(command);
     responseWriter.writeEventOnCommand(
-        authorizationRecord.getAuthorizationKey(),
+        command.getKey(),
         AuthorizationIntent.UPDATED,
         authorizationRecord,
         command);
