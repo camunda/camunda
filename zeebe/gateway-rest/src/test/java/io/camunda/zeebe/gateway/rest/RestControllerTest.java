@@ -96,15 +96,6 @@ public abstract class RestControllerTest {
         operationsToJSON(filterKey, operations, stringValues), consumer.apply(operations));
   }
 
-  public static void basicLongOperationTestCases(
-      final Stream.Builder<Arguments> streamBuilder,
-      final String filterKey,
-      final Function<List<Operation<Long>>, Object> builderMethod) {
-    BASIC_LONG_OPERATIONS.stream()
-        .map(ops -> generateParameterizedArguments(filterKey, builderMethod, ops, false))
-        .forEach(streamBuilder::add);
-  }
-
   public static Operation<Integer> toIntOperation(final Operation<Long> op) {
     return new Operation<>(
         op.operator(),
@@ -125,11 +116,11 @@ public abstract class RestControllerTest {
         .forEach(streamBuilder::add);
   }
 
-  public static void basicStringOperationTestCases(
+  public static void keyOperationTestCases(
       final Stream.Builder<Arguments> streamBuilder,
       final String filterKey,
-      final Function<List<Operation<String>>, Object> builderMethod) {
-    BASIC_STRING_OPERATIONS.stream()
+      final Function<List<Operation<Long>>, Object> builderMethod) {
+    BASIC_LONG_OPERATIONS.stream()
         .map(ops -> generateParameterizedArguments(filterKey, builderMethod, ops, true))
         .forEach(streamBuilder::add);
   }

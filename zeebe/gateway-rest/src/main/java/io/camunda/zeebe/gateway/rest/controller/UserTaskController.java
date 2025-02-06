@@ -13,15 +13,15 @@ import io.camunda.search.entities.FormEntity;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.service.UserTaskServices;
-import io.camunda.zeebe.gateway.protocol.rest.FormItem;
+import io.camunda.zeebe.gateway.protocol.rest.FormResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskItem;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskResult;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskVariableSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RequestMapper.AssignUserTaskRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.CompleteUserTaskRequest;
@@ -89,14 +89,14 @@ public class UserTaskController {
   }
 
   @CamundaPostMapping(path = "/search")
-  public ResponseEntity<UserTaskSearchQueryResponse> searchUserTasks(
-      @RequestBody(required = false) final UserTaskSearchQueryRequest query) {
+  public ResponseEntity<UserTaskSearchQueryResult> searchUserTasks(
+      @RequestBody(required = false) final UserTaskSearchQuery query) {
     return SearchQueryRequestMapper.toUserTaskQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
   @CamundaGetMapping(path = "/{userTaskKey}")
-  public ResponseEntity<UserTaskItem> getByKey(
+  public ResponseEntity<UserTaskResult> getByKey(
       @PathVariable("userTaskKey") final Long userTaskKey) {
     try {
       final var userTask =
@@ -111,7 +111,7 @@ public class UserTaskController {
   }
 
   @CamundaGetMapping(path = "/{userTaskKey}/form")
-  public ResponseEntity<FormItem> getFormByUserTaskKey(
+  public ResponseEntity<FormResult> getFormByUserTaskKey(
       @PathVariable("userTaskKey") final long userTaskKey) {
     try {
       final Optional<FormEntity> form =
@@ -127,7 +127,7 @@ public class UserTaskController {
   }
 
   @CamundaPostMapping(path = "/{userTaskKey}/variables/search")
-  public ResponseEntity<VariableSearchQueryResponse> searchVariables(
+  public ResponseEntity<VariableSearchQueryResult> searchVariables(
       @PathVariable("userTaskKey") final long userTaskKey,
       @RequestBody(required = false)
           final UserTaskVariableSearchQueryRequest userTaskVariablesSearchQueryRequest) {
@@ -138,7 +138,7 @@ public class UserTaskController {
             query -> searchUserTaskVariableQuery(userTaskKey, query));
   }
 
-  private ResponseEntity<UserTaskSearchQueryResponse> search(final UserTaskQuery query) {
+  private ResponseEntity<UserTaskSearchQueryResult> search(final UserTaskQuery query) {
     try {
       final var result =
           userTaskServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
@@ -150,7 +150,7 @@ public class UserTaskController {
     }
   }
 
-  private ResponseEntity<VariableSearchQueryResponse> searchUserTaskVariableQuery(
+  private ResponseEntity<VariableSearchQueryResult> searchUserTaskVariableQuery(
       final long userTaskKey, final VariableQuery query) {
     try {
       final var result =

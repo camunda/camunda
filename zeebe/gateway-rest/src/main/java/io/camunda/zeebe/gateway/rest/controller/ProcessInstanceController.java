@@ -17,11 +17,11 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
-import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -51,7 +51,7 @@ public class ProcessInstanceController {
 
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createProcessInstance(
-      @RequestBody final CreateProcessInstanceRequest request) {
+      @RequestBody final ProcessInstanceCreationInstruction request) {
     return RequestMapper.toCreateProcessInstance(request, multiTenancyCfg.isEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createProcessInstance);
   }
@@ -67,7 +67,7 @@ public class ProcessInstanceController {
   @CamundaPostMapping(path = "/{processInstanceKey}/migration")
   public CompletableFuture<ResponseEntity<Object>> migrateProcessInstance(
       @PathVariable final long processInstanceKey,
-      @RequestBody final MigrateProcessInstanceRequest migrationRequest) {
+      @RequestBody final ProcessInstanceMigrationInstruction migrationRequest) {
     return RequestMapper.toMigrateProcessInstance(processInstanceKey, migrationRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::migrateProcessInstance);
   }
@@ -75,14 +75,14 @@ public class ProcessInstanceController {
   @CamundaPostMapping(path = "/{processInstanceKey}/modification")
   public CompletableFuture<ResponseEntity<Object>> modifyProcessInstance(
       @PathVariable final long processInstanceKey,
-      @RequestBody final ModifyProcessInstanceRequest modifyRequest) {
+      @RequestBody final ProcessInstanceModificationInstruction modifyRequest) {
     return RequestMapper.toModifyProcessInstance(processInstanceKey, modifyRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::modifyProcessInstance);
   }
 
   @CamundaPostMapping(path = "/search")
-  public ResponseEntity<ProcessInstanceSearchQueryResponse> searchProcessInstances(
-      @RequestBody(required = false) final ProcessInstanceSearchQueryRequest query) {
+  public ResponseEntity<ProcessInstanceSearchQueryResult> searchProcessInstances(
+      @RequestBody(required = false) final ProcessInstanceSearchQuery query) {
     return SearchQueryRequestMapper.toProcessInstanceQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
@@ -103,7 +103,7 @@ public class ProcessInstanceController {
     }
   }
 
-  private ResponseEntity<ProcessInstanceSearchQueryResponse> search(
+  private ResponseEntity<ProcessInstanceSearchQueryResult> search(
       final ProcessInstanceQuery query) {
     try {
       final var result =

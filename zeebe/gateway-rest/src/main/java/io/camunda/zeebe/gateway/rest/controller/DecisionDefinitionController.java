@@ -12,10 +12,10 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionItem;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
-import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionResult;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationInstruction;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RequestMapper.DecisionEvaluationRequest;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
@@ -48,21 +48,21 @@ public class DecisionDefinitionController {
 
   @CamundaPostMapping(path = "/evaluation")
   public CompletableFuture<ResponseEntity<Object>> evaluateDecision(
-      @RequestBody final EvaluateDecisionRequest evaluateDecisionRequest) {
+      @RequestBody final DecisionEvaluationInstruction evaluateDecisionRequest) {
     return RequestMapper.toEvaluateDecisionRequest(
             evaluateDecisionRequest, multiTenancyCfg.isEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::evaluateDecision);
   }
 
   @CamundaPostMapping(path = "/search")
-  public ResponseEntity<DecisionDefinitionSearchQueryResponse> searchDecisionDefinitions(
-      @RequestBody(required = false) final DecisionDefinitionSearchQueryRequest query) {
+  public ResponseEntity<DecisionDefinitionSearchQueryResult> searchDecisionDefinitions(
+      @RequestBody(required = false) final DecisionDefinitionSearchQuery query) {
     return SearchQueryRequestMapper.toDecisionDefinitionQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
   @CamundaGetMapping(path = "/{decisionDefinitionKey}")
-  public ResponseEntity<DecisionDefinitionItem> getDecisionDefinitionByKey(
+  public ResponseEntity<DecisionDefinitionResult> getDecisionDefinitionByKey(
       @PathVariable("decisionDefinitionKey") final long decisionDefinitionKey) {
     try {
       return ResponseEntity.ok(
@@ -92,7 +92,7 @@ public class DecisionDefinitionController {
     }
   }
 
-  private ResponseEntity<DecisionDefinitionSearchQueryResponse> search(
+  private ResponseEntity<DecisionDefinitionSearchQueryResult> search(
       final DecisionDefinitionQuery query) {
     try {
       final var result =

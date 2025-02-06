@@ -12,9 +12,9 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.service.FlowNodeInstanceServices;
-import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceItem;
-import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceResult;
+import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
@@ -41,14 +41,14 @@ public class FlowNodeInstanceController {
   }
 
   @CamundaPostMapping(path = "/search")
-  public ResponseEntity<FlowNodeInstanceSearchQueryResponse> searchFlownodeInstances(
-      @RequestBody(required = false) final FlowNodeInstanceSearchQueryRequest query) {
+  public ResponseEntity<FlowNodeInstanceSearchQueryResult> searchFlownodeInstances(
+      @RequestBody(required = false) final FlowNodeInstanceSearchQuery query) {
     return SearchQueryRequestMapper.toFlownodeInstanceQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
   @CamundaGetMapping(path = "/{flowNodeInstanceKey}")
-  public ResponseEntity<FlowNodeInstanceItem> getByKey(
+  public ResponseEntity<FlowNodeInstanceResult> getByKey(
       @PathVariable("flowNodeInstanceKey") final Long flowNodeInstanceKey) {
     try {
       final FlowNodeInstanceEntity flowNode =
@@ -62,7 +62,7 @@ public class FlowNodeInstanceController {
     }
   }
 
-  private ResponseEntity<FlowNodeInstanceSearchQueryResponse> search(
+  private ResponseEntity<FlowNodeInstanceSearchQueryResult> search(
       final FlowNodeInstanceQuery query) {
     try {
       final var result =

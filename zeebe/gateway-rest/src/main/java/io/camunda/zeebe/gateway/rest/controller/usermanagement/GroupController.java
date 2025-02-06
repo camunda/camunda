@@ -13,9 +13,9 @@ import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.service.GroupServices;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RequestMapper.CreateGroupRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateGroupRequest;
@@ -91,12 +91,12 @@ public class GroupController {
   }
 
   @CamundaGetMapping(path = "/{groupKey}/users")
-  public ResponseEntity<UserSearchResponse> usersByGroup(
+  public ResponseEntity<UserSearchResult> usersByGroup(
       @PathVariable("groupKey") final long groupKey) {
     return searchUsersByGroupKey(groupKey);
   }
 
-  private ResponseEntity<UserSearchResponse> searchUsersByGroupKey(final long groupKey) {
+  private ResponseEntity<UserSearchResult> searchUsersByGroupKey(final long groupKey) {
     try {
       // TODO - implement a usersearch by group key
       final SearchQueryResult result = new Builder().build();
@@ -121,13 +121,13 @@ public class GroupController {
   }
 
   @CamundaPostMapping(path = "/search")
-  public ResponseEntity<GroupSearchQueryResponse> searchGroups(
+  public ResponseEntity<GroupSearchQueryResult> searchGroups(
       @RequestBody(required = false) final GroupSearchQueryRequest query) {
     return SearchQueryRequestMapper.toGroupQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  private ResponseEntity<GroupSearchQueryResponse> search(final GroupQuery query) {
+  private ResponseEntity<GroupSearchQueryResult> search(final GroupQuery query) {
     try {
       final var result =
           groupServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
