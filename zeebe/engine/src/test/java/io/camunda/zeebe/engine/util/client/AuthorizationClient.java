@@ -250,10 +250,12 @@ public final class AuthorizationClient {
     private final CommandWriter writer;
     private final AuthorizationRecord authorizationDeletionRecord;
     private boolean expectRejection = false;
+    private final long authorizationKey;
 
     public AuthorizationDeleteClient(final CommandWriter writer, final long authorizationKey) {
       this.writer = writer;
-      authorizationDeletionRecord = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
+      authorizationDeletionRecord = new AuthorizationRecord();
+      this.authorizationKey = authorizationKey;
     }
 
     public AuthorizationDeleteClient expectRejection() {
@@ -264,14 +266,14 @@ public final class AuthorizationClient {
     public Record<AuthorizationRecordValue> delete() {
       expectation = expectRejection ? DELETE_REJECTION_SUPPLIER : DELETE_SUCCESS_SUPPLIER;
       final long position =
-          writer.writeCommand(AuthorizationIntent.DELETE, authorizationDeletionRecord);
+          writer.writeCommand(authorizationKey, AuthorizationIntent.DELETE, authorizationDeletionRecord);
       return expectation.apply(position);
     }
 
     public Record<AuthorizationRecordValue> delete(final String username) {
       expectation = expectRejection ? DELETE_REJECTION_SUPPLIER : DELETE_SUCCESS_SUPPLIER;
       final long position =
-          writer.writeCommand(AuthorizationIntent.DELETE, username, authorizationDeletionRecord);
+          writer.writeCommand(authorizationKey, AuthorizationIntent.DELETE, username, authorizationDeletionRecord);
       return expectation.apply(position);
     }
   }
@@ -296,10 +298,12 @@ public final class AuthorizationClient {
     private final CommandWriter writer;
     private final AuthorizationRecord authorizationUpdateRecord;
     private boolean expectRejection = false;
+    private final long authorizationKey;
 
     public AuthorizationUpdateClient(final CommandWriter writer, final long authorizationKey) {
       this.writer = writer;
-      authorizationUpdateRecord = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
+      authorizationUpdateRecord = new AuthorizationRecord();
+      this.authorizationKey = authorizationKey;
     }
 
     public AuthorizationUpdateClient withOwnerId(final String ownerId) {
@@ -336,14 +340,14 @@ public final class AuthorizationClient {
     public Record<AuthorizationRecordValue> update() {
       expectation = expectRejection ? UPDATE_REJECTION_SUPPLIER : UPDATE_SUCCESS_SUPPLIER;
       final long position =
-          writer.writeCommand(AuthorizationIntent.UPDATE, authorizationUpdateRecord);
+          writer.writeCommand(authorizationKey, AuthorizationIntent.UPDATE, authorizationUpdateRecord);
       return expectation.apply(position);
     }
 
     public Record<AuthorizationRecordValue> update(final String username) {
       expectation = expectRejection ? UPDATE_REJECTION_SUPPLIER : UPDATE_SUCCESS_SUPPLIER;
       final long position =
-          writer.writeCommand(AuthorizationIntent.UPDATE, username, authorizationUpdateRecord);
+          writer.writeCommand(authorizationKey, AuthorizationIntent.UPDATE, username, authorizationUpdateRecord);
       return expectation.apply(position);
     }
   }

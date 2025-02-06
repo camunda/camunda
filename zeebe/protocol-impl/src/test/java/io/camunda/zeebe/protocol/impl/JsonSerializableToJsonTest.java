@@ -2701,7 +2701,6 @@ final class JsonSerializableToJsonTest {
         (Supplier<AuthorizationRecord>)
             () ->
                 new AuthorizationRecord()
-                    .setAuthorizationKey(1L)
                     .setOwnerKey(1L)
                     .setOwnerId("ownerId")
                     .setOwnerType(AuthorizationOwnerType.USER)
@@ -2717,7 +2716,6 @@ final class JsonSerializableToJsonTest {
                     .setAuthorizationPermissions(Set.of(PermissionType.CREATE)),
         """
         {
-          "authorizationKey": 1,
           "ownerKey": 1,
           "ownerId": "ownerId",
           "ownerType": "USER",
@@ -2751,7 +2749,6 @@ final class JsonSerializableToJsonTest {
                     .setResourceType(AuthorizationResourceType.RESOURCE),
         """
         {
-          "authorizationKey": -1,
           "ownerId": "",
           "ownerKey": 1,
           "ownerType": "UNSPECIFIED",

@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import org.assertj.core.api.Assertions;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -39,17 +40,14 @@ public class DeleteAuthorizationTest {
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)
             .create()
-            .getValue()
-            .getAuthorizationKey();
+            .getKey();
 
     // when
-    final var deletedAuthorization =
-        engine.authorization().deleteAuthorization(authorizationKey).delete().getValue();
+    final var command =
+        engine.authorization().deleteAuthorization(authorizationKey).delete();
 
     // then
-    assertThat(deletedAuthorization)
-        .isNotNull()
-        .hasFieldOrPropertyWithValue("authorizationKey", authorizationKey);
+    Assertions.assertThat(command.getKey()).isEqualTo(authorizationKey);
   }
 
   @Test

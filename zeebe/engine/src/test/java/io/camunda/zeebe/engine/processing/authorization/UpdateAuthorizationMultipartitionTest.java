@@ -52,8 +52,7 @@ public class UpdateAuthorizationMultipartitionTest {
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)
             .create()
-            .getValue()
-            .getAuthorizationKey();
+            .getKey();
 
     engine.authorization().updateAuthorization(key).update();
 
@@ -123,8 +122,7 @@ public class UpdateAuthorizationMultipartitionTest {
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)
             .create()
-            .getValue()
-            .getAuthorizationKey();
+            .getKey();
 
     engine.authorization().updateAuthorization(key).update();
 
@@ -155,8 +153,7 @@ public class UpdateAuthorizationMultipartitionTest {
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)
             .create()
-            .getValue()
-            .getAuthorizationKey();
+            .getKey();
 
     engine.authorization().updateAuthorization(key).update();
 

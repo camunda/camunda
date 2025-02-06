@@ -43,11 +43,10 @@ public class UpdateAuthorizationTest {
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)
             .create()
-            .getValue()
-            .getAuthorizationKey();
+            .getKey();
 
     // when
-    final var updatedAuthorization =
+    final var command =
         engine
             .authorization()
             .updateAuthorization(authorizationKey)
@@ -56,25 +55,24 @@ public class UpdateAuthorizationTest {
             .withResourceId("resourceId")
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)
-            .update()
-            .getValue();
+            .update();
 
     // then
+    final var updatedAuthorization = command.getValue();
     assertThat(updatedAuthorization)
         .extracting(
-            AuthorizationRecordValue::getAuthorizationKey,
             AuthorizationRecordValue::getOwnerId,
             AuthorizationRecordValue::getOwnerType,
             AuthorizationRecordValue::getResourceId,
             AuthorizationRecordValue::getResourceType,
             AuthorizationRecordValue::getAuthorizationPermissions)
         .containsExactly(
-            authorizationKey,
             "ownerId",
             AuthorizationOwnerType.GROUP,
             "resourceId",
             AuthorizationResourceType.RESOURCE,
             Set.of(PermissionType.CREATE));
+    assertThat(command.getKey()).isEqualTo(authorizationKey);
   }
 
   @Test
@@ -106,8 +104,7 @@ public class UpdateAuthorizationTest {
             .withResourceType(resourceType)
             .withPermissions(PermissionType.CREATE)
             .create()
-            .getValue()
-            .getAuthorizationKey();
+            .getKey();
 
     final var rejection =
         engine

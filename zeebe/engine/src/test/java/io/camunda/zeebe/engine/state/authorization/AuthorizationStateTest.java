@@ -57,7 +57,6 @@ public class AuthorizationStateTest {
     final Set<PermissionType> permissions = Set.of(PermissionType.CREATE, PermissionType.DELETE);
     final var authorizationRecord =
         new AuthorizationRecord()
-            .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
             .setResourceId(resourceId)
@@ -71,7 +70,6 @@ public class AuthorizationStateTest {
     final var persistedAuthorization = authorizationState.get(authorizationKey);
     assertThat(persistedAuthorization).isPresent();
     final var authorization = persistedAuthorization.get();
-    assertThat(authorization.getAuthorizationKey()).isEqualTo(authorizationKey);
     assertThat(authorization.getOwnerId()).isEqualTo(ownerId);
     assertThat(authorization.getOwnerType()).isEqualTo(ownerType);
     assertThat(authorization.getResourceId()).isEqualTo(resourceId);
@@ -286,7 +284,6 @@ public class AuthorizationStateTest {
     final Set<PermissionType> permissions = Set.of(PermissionType.CREATE, PermissionType.DELETE);
     final var authorizationRecord =
         new AuthorizationRecord()
-            .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
             .setResourceId(resourceId)
@@ -298,7 +295,6 @@ public class AuthorizationStateTest {
     // when
     final var updatedAuthorizationRecord =
         new AuthorizationRecord()
-            .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
             .setResourceId("anotherResourceId")
@@ -310,7 +306,6 @@ public class AuthorizationStateTest {
     final var persistedAuthorization = authorizationState.get(authorizationKey);
     assertThat(persistedAuthorization).isPresent();
     final var authorization = persistedAuthorization.get();
-    assertThat(authorization.getAuthorizationKey()).isEqualTo(authorizationKey);
     assertThat(authorization.getOwnerId()).isEqualTo(ownerId);
     assertThat(authorization.getOwnerType()).isEqualTo(ownerType);
     assertThat(authorization.getResourceId()).isEqualTo("anotherResourceId");
@@ -350,7 +345,6 @@ public class AuthorizationStateTest {
     final Set<PermissionType> permissions = Set.of(PermissionType.CREATE, PermissionType.DELETE);
     final var authorizationRecord =
         new AuthorizationRecord()
-            .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
             .setResourceId(resourceId)
@@ -362,7 +356,6 @@ public class AuthorizationStateTest {
     // when
     final var updatedAuthorizationRecord =
         new AuthorizationRecord()
-            .setAuthorizationKey(authorizationKey)
             .setOwnerId("anotherOwnerId")
             .setOwnerType(ownerType)
             .setResourceId("anotherResourceId")
@@ -374,7 +367,6 @@ public class AuthorizationStateTest {
     final var persistedAuthorization = authorizationState.get(authorizationKey);
     assertThat(persistedAuthorization).isPresent();
     final var authorization = persistedAuthorization.get();
-    assertThat(authorization.getAuthorizationKey()).isEqualTo(authorizationKey);
     assertThat(authorization.getOwnerId()).isEqualTo("anotherOwnerId");
     assertThat(authorization.getOwnerType()).isEqualTo(ownerType);
     assertThat(authorization.getResourceId()).isEqualTo("anotherResourceId");
@@ -413,7 +405,6 @@ public class AuthorizationStateTest {
     final Set<PermissionType> permissions = Set.of(PermissionType.CREATE, PermissionType.DELETE);
     final var authorizationRecord =
         new AuthorizationRecord()
-            .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
             .setResourceId(resourceId)
@@ -425,7 +416,6 @@ public class AuthorizationStateTest {
     // when
     final var updatedAuthorizationRecord =
         new AuthorizationRecord()
-            .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
             .setResourceId(resourceId)
@@ -437,7 +427,6 @@ public class AuthorizationStateTest {
     final var persistedAuthorization = authorizationState.get(authorizationKey);
     assertThat(persistedAuthorization).isPresent();
     final var authorization = persistedAuthorization.get();
-    assertThat(authorization.getAuthorizationKey()).isEqualTo(authorizationKey);
     assertThat(authorization.getOwnerId()).isEqualTo(ownerId);
     assertThat(authorization.getOwnerType()).isEqualTo(ownerType);
     assertThat(authorization.getResourceId()).isEqualTo(resourceId);
@@ -483,7 +472,6 @@ public class AuthorizationStateTest {
     final Set<PermissionType> permissions = Set.of(PermissionType.CREATE, PermissionType.DELETE);
     final var authorizationRecord =
         new AuthorizationRecord()
-            .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
             .setResourceId(resourceId)
@@ -494,7 +482,6 @@ public class AuthorizationStateTest {
 
     final var anotherRecord =
         new AuthorizationRecord()
-            .setAuthorizationKey(2L)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
             .setResourceId("resourceId2")
@@ -506,7 +493,6 @@ public class AuthorizationStateTest {
     // when
     final var updatedAuthorizationRecord =
         new AuthorizationRecord()
-            .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
             .setResourceId(resourceId)
@@ -518,7 +504,6 @@ public class AuthorizationStateTest {
     final var persistedAuthorization = authorizationState.get(authorizationKey);
     assertThat(persistedAuthorization).isPresent();
     final var authorization = persistedAuthorization.get();
-    assertThat(authorization.getAuthorizationKey()).isEqualTo(authorizationKey);
     assertThat(authorization.getOwnerId()).isEqualTo(ownerId);
     assertThat(authorization.getOwnerType()).isEqualTo(ownerType);
     assertThat(authorization.getResourceId()).isEqualTo(resourceId);
@@ -557,7 +542,6 @@ public class AuthorizationStateTest {
     final Set<PermissionType> permissions = Set.of(PermissionType.CREATE, PermissionType.DELETE);
     final var authorizationRecord =
         new AuthorizationRecord()
-            .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
             .setResourceId(resourceId)
@@ -594,7 +578,6 @@ public class AuthorizationStateTest {
     final Set<PermissionType> permissions1 = Set.of(PermissionType.CREATE, PermissionType.DELETE);
     final var authorizationRecord1 =
         new AuthorizationRecord()
-            .setAuthorizationKey(authorizationKey1)
             .setOwnerId(ownerId1)
             .setOwnerType(ownerType1)
             .setResourceId(resourceId1)
@@ -609,7 +592,6 @@ public class AuthorizationStateTest {
     final Set<PermissionType> permissions2 = Set.of(PermissionType.CREATE, PermissionType.DELETE);
     final var authorizationRecord2 =
         new AuthorizationRecord()
-            .setAuthorizationKey(authorizationKey2)
             .setOwnerId(ownerId2)
             .setOwnerType(ownerType2)
             .setResourceId(resourceId2)

@@ -57,8 +57,7 @@ public class AuthorizationUpdateAuthorizationTest {
             .withResourceId("*")
             .withPermissions(PermissionType.CREATE)
             .create(DEFAULT_USER.getUsername())
-            .getValue()
-            .getAuthorizationKey();
+            .getKey();
 
     // when
     engine
@@ -70,7 +69,7 @@ public class AuthorizationUpdateAuthorizationTest {
     // then
     assertThat(
             RecordingExporter.authorizationRecords(AuthorizationIntent.UPDATED)
-                .withAuthorizationKey(authorizationKey)
+                .withRecordKey(authorizationKey)
                 .exists())
         .isTrue();
   }
@@ -90,8 +89,7 @@ public class AuthorizationUpdateAuthorizationTest {
             .withResourceId("*")
             .withPermissions(PermissionType.CREATE)
             .create(DEFAULT_USER.getUsername())
-            .getValue()
-            .getAuthorizationKey();
+            .getKey();
 
     // when
     engine
@@ -103,7 +101,7 @@ public class AuthorizationUpdateAuthorizationTest {
     // then
     assertThat(
             RecordingExporter.authorizationRecords(AuthorizationIntent.UPDATED)
-                .withAuthorizationKey(authorizationKey)
+                .withRecordKey(authorizationKey)
                 .exists())
         .isTrue();
   }
@@ -122,8 +120,7 @@ public class AuthorizationUpdateAuthorizationTest {
             .withResourceId("*")
             .withPermissions(PermissionType.CREATE)
             .create(DEFAULT_USER.getUsername())
-            .getValue()
-            .getAuthorizationKey();
+            .getKey();
 
     // when
     final var rejection =

@@ -52,8 +52,7 @@ public class DeleteAuthorizationMultipartitionTest {
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)
             .create()
-            .getValue()
-            .getAuthorizationKey();
+            .getKey();
 
     engine.authorization().deleteAuthorization(key).delete();
 
@@ -123,8 +122,7 @@ public class DeleteAuthorizationMultipartitionTest {
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)
             .create()
-            .getValue()
-            .getAuthorizationKey();
+            .getKey();
 
     engine.authorization().deleteAuthorization(key).delete();
 
@@ -155,8 +153,7 @@ public class DeleteAuthorizationMultipartitionTest {
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)
             .create()
-            .getValue()
-            .getAuthorizationKey();
+            .getKey();
 
     engine.authorization().deleteAuthorization(key).delete();
 

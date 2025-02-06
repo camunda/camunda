@@ -171,8 +171,7 @@ public class CommandDistributionIdempotencyTest {
                           .withResourceType(AuthorizationResourceType.USER)
                           .withPermissions(PermissionType.READ)
                           .create()
-                          .getValue()
-                          .getAuthorizationKey();
+                          .getKey();
 
                   ENGINE.authorization().deleteAuthorization(key).delete();
                 },
@@ -196,8 +195,7 @@ public class CommandDistributionIdempotencyTest {
                           .withResourceType(AuthorizationResourceType.USER)
                           .withPermissions(PermissionType.READ)
                           .create()
-                          .getValue()
-                          .getAuthorizationKey();
+                          .getKey();
 
                   ENGINE.authorization().updateAuthorization(key).update();
                 },

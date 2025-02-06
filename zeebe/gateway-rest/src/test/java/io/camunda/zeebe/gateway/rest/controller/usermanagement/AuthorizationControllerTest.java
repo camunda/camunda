@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
@@ -70,7 +71,6 @@ public class AuthorizationControllerTest extends RestControllerTest {
 
     final var authorizationRecord =
         new AuthorizationRecord()
-            .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(AuthorizationOwnerType.USER)
             .setResourceId(resourceId)
@@ -78,7 +78,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
             .setAuthorizationPermissions(Set.of(PermissionType.CREATE));
 
     when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class)))
-        .thenReturn(CompletableFuture.completedFuture(authorizationRecord));
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(authorizationRecord)));
 
     webClient
         .post()
@@ -200,7 +200,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     // given
     final long authorizationKey = 100L;
 
-    final var record = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
+    final var record = new AuthorizationRecord();
 
     when(authorizationServices.deleteAuthorization(authorizationKey))
         .thenReturn(CompletableFuture.completedFuture(record));

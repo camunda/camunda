@@ -59,7 +59,7 @@ public class AuthorizationDeleteAuthorizationTest {
     // when
     assertThat(
             RecordingExporter.authorizationRecords(AuthorizationIntent.DELETED)
-                .withAuthorizationKey(authorizationKey)
+                .withRecordKey(authorizationKey)
                 .exists())
         .isTrue();
   }
@@ -78,7 +78,7 @@ public class AuthorizationDeleteAuthorizationTest {
     // then
     assertThat(
             RecordingExporter.authorizationRecords(AuthorizationIntent.DELETED)
-                .withAuthorizationKey(authorizationKey)
+                .withRecordKey(authorizationKey)
                 .exists())
         .isTrue();
   }
@@ -131,7 +131,6 @@ public class AuthorizationDeleteAuthorizationTest {
         .withResourceId(resourceId)
         .withPermissions(permissionType)
         .create(DEFAULT_USER.getUsername())
-        .getValue()
-        .getAuthorizationKey();
+        .getKey();
   }
 }
