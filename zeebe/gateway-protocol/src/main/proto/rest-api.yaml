@@ -6043,20 +6043,6 @@ components:
         - GROUP
         - MAPPING
         - UNSPECIFIED
-    PermissionDTO:
-      type: object
-      properties:
-        permissionType:
-          description: Specifies the type of permissions.
-          type: object
-          allOf:
-            - $ref: "#/components/schemas/PermissionTypeEnum"
-        resourceIds:
-          type: array
-          description: A list of resource IDs the permission relates to.
-          uniqueItems: true
-          items:
-            type: string
 
     AuthorizationCreateRequest:
       type: object
@@ -6112,8 +6098,9 @@ components:
           description: The field to sort by.
           type: string
           enum:
+            - ownerId
             - ownerType
-            - ownerKey
+            - resourceId
             - resourceType
         order:
           $ref: "#/components/schemas/SortOrderEnum"
@@ -6153,11 +6140,24 @@ components:
       description: Base properties for AuthorizationFilterRequest
       type: object
       properties:
+        ownerId:
+          description: The ID of the owner of permissions.
+          type: string
         ownerType:
           description: The type of the owner of permissions.
           type: object
           allOf:
             - $ref: "#/components/schemas/OwnerTypeEnum"
+        resourceIds:
+          description: The IDs of the resource to search permissions for.
+          type: array
+          items:
+            type: string
+        resourceType:
+          description: The type of resource to search permissions for.
+          type: object
+          allOf:
+            - $ref: "#/components/schemas/ResourceTypeEnum"
     AuthorizationFilterRequest:
       description: Authorization search filter.
       deprecated: true
@@ -6165,22 +6165,24 @@ components:
       allOf:
         - $ref: "#/components/schemas/AuthorizationFilterRequestBase"
       properties:
-        ownerKey:
+        ownerId:
           description: The ID of the owner of permissions.
-          type: integer
-          format: int64
+          type: string
     AuthorizationFilter:
       description: Authorization search filter. Key attributes as string values.
       type: object
       allOf:
         - $ref: "#/components/schemas/AuthorizationFilterRequestBase"
       properties:
-        ownerKey:
+        ownerId:
           description: The ID of the owner of permissions.
           type: string
     AuthorizationResponseBase:
       type: "object"
       properties:
+        ownerId:
+          description: The ID of the owner of permissions.
+          type: string
         ownerType:
           description: The type of the owner of permissions.
           type: object
@@ -6191,18 +6193,21 @@ components:
           type: object
           allOf:
             - $ref: "#/components/schemas/ResourceTypeEnum"
-        permissions:
+        resourceId:
+          description: ID of the resource the permission relates to.
+          type: string
+        permissionTypes:
+          description: Specifies the types of the permissions.
           type: array
-          description: The permissions.
           items:
-            $ref: "#/components/schemas/PermissionDTO"
+            $ref: "#/components/schemas/PermissionTypeEnum"
     AuthorizationResponse:
       type: "object"
       allOf:
         - $ref: "#/components/schemas/AuthorizationResponseBase"
       properties:
-        ownerKey:
-          description: The ID of the owner of permissions.
+        authorizationKey:
+          description: The key of the authorization.
           type: integer
           format: int64
     AuthorizationResult:
@@ -6210,8 +6215,8 @@ components:
       allOf:
         - $ref: "#/components/schemas/AuthorizationResponseBase"
       properties:
-        ownerKey:
-          description: The ID of the owner of permissions.
+        authorizationKey:
+          description: The key of the authorization.
           type: string
     AuthorizationSearchResponse:
       deprecated: true
