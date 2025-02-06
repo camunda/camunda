@@ -36,7 +36,8 @@ public class ZeebeLinkedResourcesValidationTest {
                 "my_service_task",
                 s ->
                     s.zeebeLinkedResources(
-                        l -> l.bindingType(ZeebeBindingType.deployment).resourceType("RPA")))
+                        l -> l.bindingType(ZeebeBindingType.deployment).resourceType("RPA"))
+                        .zeebeJobType("type"))
             .endEvent()
             .done();
 
