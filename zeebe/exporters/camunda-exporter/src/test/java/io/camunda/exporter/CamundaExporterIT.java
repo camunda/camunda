@@ -170,7 +170,7 @@ final class CamundaExporterIT {
     exporter.open(exporterController);
 
     // when
-    final var record = generateRecordWithSupportedBrokerVersion(ValueType.AUTHORIZATION);
+    final var record = generateRecordWithSupportedBrokerVersion(ValueType.USER);
     assertThat(exporterController.getPosition()).isEqualTo(-1);
 
     exporter.export(record);
@@ -192,8 +192,8 @@ final class CamundaExporterIT {
     exporter.open(controllerSpy);
 
     // when
-    final var record = generateRecordWithSupportedBrokerVersion(ValueType.AUTHORIZATION);
-    final var record2 = generateRecordWithSupportedBrokerVersion(ValueType.AUTHORIZATION);
+    final var record = generateRecordWithSupportedBrokerVersion(ValueType.USER);
+    final var record2 = generateRecordWithSupportedBrokerVersion(ValueType.USER);
 
     exporter.export(record);
     exporter.export(record2);
@@ -226,7 +226,7 @@ final class CamundaExporterIT {
     container.stop();
     Awaitility.await().until(() -> !container.isRunning());
 
-    final var record = generateRecordWithSupportedBrokerVersion(ValueType.AUTHORIZATION);
+    final var record = generateRecordWithSupportedBrokerVersion(ValueType.USER);
 
     assertThatThrownBy(() -> exporter.export(record))
         .isInstanceOf(ExporterException.class)
@@ -238,7 +238,7 @@ final class CamundaExporterIT {
         .setPortBindings(List.of(currentPort + ":9200"));
     container.start();
 
-    final var record2 = generateRecordWithSupportedBrokerVersion(ValueType.AUTHORIZATION);
+    final var record2 = generateRecordWithSupportedBrokerVersion(ValueType.USER);
     exporter.export(record2);
 
     Awaitility.await()
@@ -522,8 +522,7 @@ final class CamundaExporterIT {
     final var recordPosition = 123456789L;
     final var record =
         factory.generateRecord(
-            ValueType.AUTHORIZATION,
-            r -> r.withBrokerVersion("8.7.0").withPosition(recordPosition));
+            ValueType.USER, r -> r.withBrokerVersion("8.7.0").withPosition(recordPosition));
 
     final CamundaExporter camundaExporter = new CamundaExporter();
     final var controller = new ExporterTestController();
@@ -681,7 +680,7 @@ final class CamundaExporterIT {
       // when
       final var record =
           factory.generateRecord(
-              ValueType.AUTHORIZATION,
+              ValueType.USER,
               r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()));
 
       camundaExporter.export(record);
@@ -722,7 +721,7 @@ final class CamundaExporterIT {
       // when
       final var record =
           factory.generateRecord(
-              ValueType.AUTHORIZATION,
+              ValueType.USER,
               r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()));
 
       camundaExporter.export(record);
@@ -772,14 +771,14 @@ final class CamundaExporterIT {
       // when
       final var record =
           factory.generateRecord(
-              ValueType.AUTHORIZATION,
+              ValueType.USER,
               r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()));
 
       camundaExporter.export(record);
 
       final var record2 =
           factory.generateRecord(
-              ValueType.AUTHORIZATION,
+              ValueType.USER,
               r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()));
 
       // then
