@@ -87,7 +87,7 @@ public interface Table<T, RowT, ColT> {
   }
 
   /** A very simple implementation using nested maps. */
-  final class MapTable<RowT, ColT, T> implements Table<RowT, ColT, T> {
+  final class MapTable<T, RowT, ColT> implements Table<T, RowT, ColT> {
     private final Map<RowT, Map<ColT, T>> table = new HashMap<>();
 
     private MapTable() {}
@@ -132,8 +132,8 @@ public interface Table<T, RowT, ColT> {
    * on a row is stored contiguously. So the first row starts at index 0, and the second row starts
    * at the index equal to the cardinality of the second enum.
    */
-  final class EnumTable<RowT extends Enum<RowT>, ColT extends Enum<ColT>, T>
-      implements Table<RowT, ColT, T> {
+  final class EnumTable<T, RowT extends Enum<RowT>, ColT extends Enum<ColT>>
+      implements Table<T, RowT, ColT> {
     private final MArray<T> marray;
 
     private EnumTable(final MArray<T> marray) {
