@@ -6095,6 +6095,10 @@ components:
             As a result, the completion request is rejected and the task remains active.
             Defaults to false.
           nullable: true
+        deniedReason:
+          type: string
+          description: The reason provided by the user task listener for denying the work.
+          nullable: true
         corrections:
           $ref: "#/components/schemas/JobResultCorrections"
     JobResultCorrections:
