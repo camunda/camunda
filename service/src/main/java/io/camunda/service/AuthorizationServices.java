@@ -117,7 +117,7 @@ public class AuthorizationServices
             .setOwnerType(request.ownerType())
             .setResourceType(request.resourceType())
             .setResourceId(request.resourceId())
-            .setPermissionTypes(request.permissionType());
+            .setPermissionTypes(request.permissionTypes());
     return sendBrokerRequest(brokerRequest);
   }
 
@@ -135,7 +135,7 @@ public class AuthorizationServices
             .setOwnerType(request.ownerType())
             .setResourceId(request.resourceId())
             .setResourceType(request.resourceType())
-            .setPermissionTypes(request.permissions());
+            .setPermissionTypes(request.permissionTypes());
     return sendBrokerRequest(brokerRequest);
   }
 
@@ -144,7 +144,7 @@ public class AuthorizationServices
       AuthorizationOwnerType ownerType,
       String resourceId,
       AuthorizationResourceType resourceType,
-      Set<PermissionType> permissionType) {}
+      Set<PermissionType> permissionTypes) {}
 
   public record UpdateAuthorizationRequest(
       long authorizationKey,
@@ -152,5 +152,5 @@ public class AuthorizationServices
       AuthorizationOwnerType ownerType,
       String resourceId,
       AuthorizationResourceType resourceType,
-      Set<PermissionType> permissions) {}
+      Set<PermissionType> permissionTypes) {}
 }

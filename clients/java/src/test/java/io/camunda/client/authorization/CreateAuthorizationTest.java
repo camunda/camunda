@@ -48,7 +48,7 @@ public class CreateAuthorizationTest extends ClientRestTest {
     assertThat(request.getOwnerType()).isEqualTo(OwnerTypeEnum.USER);
     assertThat(request.getResourceId()).isEqualTo("resourceId");
     assertThat(request.getResourceType()).isEqualTo(ResourceTypeEnum.RESOURCE);
-    assertThat(request.getPermissions())
+    assertThat(request.getPermissionTypes())
         .containsExactly(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ);
   }
 

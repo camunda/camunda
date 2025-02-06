@@ -37,8 +37,8 @@ public final class AuthorizationRequestValidator {
           }
 
           // permissions validation
-          if (request.getPermissions() == null || request.getPermissions().isEmpty()) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("permissions"));
+          if (request.getPermissionTypes() == null || request.getPermissionTypes().isEmpty()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("permissionTypes"));
           }
         });
   }
