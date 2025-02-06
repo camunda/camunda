@@ -27,7 +27,6 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -349,7 +348,7 @@ public class JobControllerTest extends RestControllerTest {
         ArgumentCaptor.forClass(JobResult.class);
     Mockito.verify(jobServices)
         .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
-    Assertions.assertTrue(jobResultArgumentCaptor.getValue().isDenied());
+    assertThat(jobResultArgumentCaptor.getValue().isDenied()).isTrue();
   }
 
   @Test
@@ -384,7 +383,7 @@ public class JobControllerTest extends RestControllerTest {
         ArgumentCaptor.forClass(JobResult.class);
     Mockito.verify(jobServices)
         .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
-    Assertions.assertTrue(jobResultArgumentCaptor.getValue().isDenied());
+    assertThat(jobResultArgumentCaptor.getValue().isDenied()).isTrue();
     assertThat(jobResultArgumentCaptor.getValue().getDeniedReason())
         .isEqualTo("Reason to deny lifecycle transition");
   }
@@ -584,7 +583,7 @@ public class JobControllerTest extends RestControllerTest {
         ArgumentCaptor.forClass(JobResult.class);
     Mockito.verify(jobServices)
         .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
-    Assertions.assertFalse(jobResultArgumentCaptor.getValue().isDenied());
+    assertThat(jobResultArgumentCaptor.getValue().isDenied()).isFalse();
     assertThat(jobResultArgumentCaptor.getValue().getDeniedReason()).isEqualTo("");
   }
 
@@ -619,7 +618,7 @@ public class JobControllerTest extends RestControllerTest {
         ArgumentCaptor.forClass(JobResult.class);
     Mockito.verify(jobServices)
         .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
-    Assertions.assertFalse(jobResultArgumentCaptor.getValue().isDenied());
+    assertThat(jobResultArgumentCaptor.getValue().isDenied()).isFalse();
     assertThat(jobResultArgumentCaptor.getValue().getDeniedReason()).isEqualTo("");
   }
 
