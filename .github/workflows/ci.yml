@@ -572,18 +572,19 @@ jobs:
     timeout-minutes: 3
     permissions:
       checks: read
-    needs:
+    needs:  # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
-      - java-unit-tests
+      - build-platform-frontend
+      - detect-changes
       - docker-checks
       - identity-frontend-tests
       - integration-tests
       - java-checks
-      - build-platform-frontend
-      - zeebe-ci
+      - java-unit-tests
       - optimize-frontend-unit-tests
       - optimize-backend-unit-tests
       - protobuf-checks
+      - zeebe-ci
     steps:
       - uses: actions/checkout@v4
       - name: Check for aborted jobs
