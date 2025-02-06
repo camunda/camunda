@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.util.collection;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.IntFunction;
@@ -77,6 +78,94 @@ public interface Table<RowT, ColT, T> {
       final Class<RowT> rowClass,
       final Class<ColT> columnClass,
       final IntFunction<T[]> arraySupplier) {
-    return new EnumTable<>(rowClass, columnClass, arraySupplier);
+    final var marray =
+        MArray.of(
+            arraySupplier,
+            rowClass.getEnumConstants().length,
+            columnClass.getEnumConstants().length);
+    return new EnumTable<>(marray);
+  }
+
+  /** A very simple implementation using nested maps. */
+  final class MapTable<RowT, ColT, T> implements Table<RowT, ColT, T> {
+    private final Map<RowT, Map<ColT, T>> table = new HashMap<>();
+
+    private MapTable() {}
+
+    @Override
+    public T get(final RowT rowKey, final ColT columnKey) {
+      final var row = table.get(rowKey);
+      if (row == null) {
+        return null;
+      }
+
+      return row.get(columnKey);
+    }
+
+    @Override
+    public void put(final RowT rowKey, final ColT columnKey, final T value) {
+      table.computeIfAbsent(rowKey, ignored -> new HashMap<>()).put(columnKey, value);
+    }
+
+    @Override
+    public T computeIfAbsent(
+        final RowT rowKey, final ColT columnKey, final BiFunction<RowT, ColT, T> computer) {
+      return table
+          .computeIfAbsent(rowKey, ignored -> new HashMap<>())
+          .computeIfAbsent(columnKey, ignored -> computer.apply(rowKey, columnKey));
+    }
+  }
+
+  /**
+   * A table implementation optimized for {@link Enum} keys.
+   *
+   * <p>Enums allow us to define a finite keyspace, so we can efficiently use a single array to
+   * represent all possible value combinations. The cardinality of the {@link RowT} enum represents
+   * how many rows are in the table, and the cardinality of the {@link ColT} enum represents how
+   * many columns.
+   *
+   * <p>The table indexes all possible combination of the {@link RowT} and {@link ColT} enums in a
+   * single array whose size is equal to the cardinality of T times the cardinality of U. So given
+   * two enums, one with 3 elements, and the other with 4, the array size would be 12.
+   *
+   * <p>The values in the table are stored in row-major order; that is, in rows where every element
+   * on a row is stored contiguously. So the first row starts at index 0, and the second row starts
+   * at the index equal to the cardinality of the second enum.
+   */
+  final class EnumTable<RowT extends Enum<RowT>, ColT extends Enum<ColT>, T>
+      implements Table<RowT, ColT, T> {
+    private final MArray<T> marray;
+
+    private EnumTable(final MArray<T> marray) {
+      if (marray.dimensions() != 2) {
+        throw new IllegalArgumentException(
+            "Expected a 2D m-array, but got %d dimensions".formatted(marray.dimensions()));
+      }
+
+      this.marray = marray;
+    }
+
+    @Override
+    public T get(final RowT rowKey, final ColT columnKey) {
+      return marray.get(rowKey.ordinal(), columnKey.ordinal());
+    }
+
+    @Override
+    public void put(final RowT rowKey, final ColT columnKey, final T value) {
+      marray.put(value, rowKey.ordinal(), columnKey.ordinal());
+    }
+
+    @Override
+    public T computeIfAbsent(
+        final RowT rowKey, final ColT columnKey, final BiFunction<RowT, ColT, T> computer) {
+      final var value = marray.get(rowKey.ordinal(), columnKey.ordinal());
+      if (value != null) {
+        return value;
+      }
+
+      final var updated = computer.apply(rowKey, columnKey);
+      marray.put(updated, rowKey.ordinal(), columnKey.ordinal());
+      return updated;
+    }
   }
 }
