@@ -28,7 +28,8 @@ public final class ProcessEngineMetrics {
       System.getenv().getOrDefault("CAMUNDA_CLOUD_ORGANIZATION_ID", "null");
   private final MeterRegistry registry;
 
-  private final Map<CreationMode, Counter> rootProcessInstances = new EnumMap<>(CreationMode.class);
+  private final Map<CreationMode, Counter> createdRootProcessInstances =
+      new EnumMap<>(CreationMode.class);
   private final Map3D<EngineAction, BpmnElementType, BpmnEventType, Counter> elementInstanceEvents =
       Map3D.ofEnum(EngineAction.class, BpmnElementType.class, BpmnEventType.class, Counter[]::new);
   private final Map<EngineAction, Counter> executedEvents = new EnumMap<>(EngineAction.class);
@@ -44,8 +45,8 @@ public final class ProcessEngineMetrics {
             ? CreationMode.CREATION_AT_GIVEN_ELEMENT
             : CreationMode.CREATION_AT_DEFAULT_START_EVENT;
 
-    rootProcessInstances
-        .computeIfAbsent(creationMode, this::registerRootProcessInstanceCounter)
+    createdRootProcessInstances
+        .computeIfAbsent(creationMode, this::registerCreatedRootProcessInstanceCounter)
         .increment();
   }
 
@@ -120,8 +121,8 @@ public final class ProcessEngineMetrics {
     return eventType != null ? eventType : BpmnEventType.UNSPECIFIED;
   }
 
-  private Counter registerRootProcessInstanceCounter(final CreationMode creationMode) {
-    final var meterDoc = EngineMetricsDoc.ROOT_PROCESS_INSTANCE_COUNT;
+  private Counter registerCreatedRootProcessInstanceCounter(final CreationMode creationMode) {
+    final var meterDoc = EngineMetricsDoc.CREATED_ROOT_PROCESS_INSTANCES;
     return Counter.builder(meterDoc.getName())
         .description(meterDoc.getDescription())
         .tag(EngineKeyNames.CREATION_MODE.asString(), creationMode.toString())
