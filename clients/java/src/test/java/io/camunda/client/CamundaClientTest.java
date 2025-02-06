@@ -644,7 +644,7 @@ public final class CamundaClientTest {
 
   @ParameterizedTest
   @ValueSource(strings = {REST_ADDRESS, io.camunda.zeebe.client.ClientProperties.REST_ADDRESS})
-  public void shouldThrowExceptionWhenRestAddressIsNotAbsoluteFromPropertyWithClientBuilder2(
+  public void shouldThrowExceptionWhenRestAddressIsNotAbsoluteFromPropertyWithClientBuilder(
       final String propertyName) throws URISyntaxException {
     // given
     final URI restAddress = new URI("localhost:9090");
