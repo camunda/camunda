@@ -50,8 +50,7 @@ public class ArchitectureTest {
           }
 
           final JavaClass declaringClass = javaMethod.getOwner();
-
-          // Allow calls if they are from within the same class
+          
           return declaringClass.getMethodCallsFromSelf().stream()
               .anyMatch(call -> call.getTarget().equals(declaringClass));
         }
