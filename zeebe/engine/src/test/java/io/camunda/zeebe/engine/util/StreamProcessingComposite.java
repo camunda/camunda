@@ -27,6 +27,7 @@ import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorBuilder;
 import io.camunda.zeebe.stream.impl.StreamProcessorListener;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -140,6 +141,10 @@ public class StreamProcessingComposite implements CommandWriter {
 
   public StreamClock getStreamClock(final int partitionId) {
     return streams.getStreamClock(getLogName(partitionId));
+  }
+
+  public MeterRegistry getMeterRegistry(final int partitionId) {
+    return streams.getMeterRegistry(getLogName(partitionId));
   }
 
   public MutableProcessingState getProcessingState() {
