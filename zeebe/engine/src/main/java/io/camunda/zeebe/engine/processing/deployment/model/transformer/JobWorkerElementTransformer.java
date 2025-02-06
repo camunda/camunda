@@ -11,9 +11,11 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJob
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.LinkedResourcesTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskDefinitionTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskHeadersTransformer;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResources;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 
@@ -24,6 +26,8 @@ public final class JobWorkerElementTransformer<T extends FlowElement>
   private final TaskDefinitionTransformer taskDefinitionTransformer =
       new TaskDefinitionTransformer();
   private final TaskHeadersTransformer taskHeadersTransformer = new TaskHeadersTransformer();
+  private final LinkedResourcesTransformer linkedResourcesTransformer =
+      new LinkedResourcesTransformer();
 
   public JobWorkerElementTransformer(final Class<T> type) {
     this.type = type;
@@ -46,5 +50,8 @@ public final class JobWorkerElementTransformer<T extends FlowElement>
 
     final var taskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
     taskHeadersTransformer.transform(jobWorkerElement, taskHeaders, element);
+
+    final var linkedResources = element.getSingleExtensionElement(ZeebeLinkedResources.class);
+    linkedResourcesTransformer.transform(jobWorkerElement, linkedResources);
   }
 }
