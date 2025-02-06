@@ -26,9 +26,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
-@SpringBootTest(
-    classes = Config.class,
-    properties = {"logging.level.root=INFO", "io.camunda.process.test.camundaVersion=8.7.0-alpha3"})
+
+@SpringBootTest(classes = Config.class, properties = "logging.level.root=INFO")
 @CamundaSpringProcessTest
 public class CamundaPlatform7AdapterTest {
 
