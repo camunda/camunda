@@ -187,7 +187,10 @@ public class TenantController {
       final String tenantId, final UserQuery userQuery) {
     try {
       final var composedUserQuery = buildUserQuery(tenantId, userQuery);
-      final var result = userServices.search(composedUserQuery);
+      final var result =
+          userServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .search(composedUserQuery);
       return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
