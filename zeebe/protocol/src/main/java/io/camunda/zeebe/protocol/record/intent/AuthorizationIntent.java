@@ -16,16 +16,12 @@
 package io.camunda.zeebe.protocol.record.intent;
 
 public enum AuthorizationIntent implements Intent {
-  ADD_PERMISSION(0),
-  PERMISSION_ADDED(1),
-  REMOVE_PERMISSION(2),
-  PERMISSION_REMOVED(3),
-  CREATE(4),
-  CREATED(5),
-  DELETE(6),
-  DELETED(7),
-  UPDATE(8),
-  UPDATED(9);
+  CREATE(0),
+  CREATED(1),
+  DELETE(2),
+  DELETED(3),
+  UPDATE(4),
+  UPDATED(5);
 
   private final short value;
 
@@ -41,8 +37,6 @@ public enum AuthorizationIntent implements Intent {
   @Override
   public boolean isEvent() {
     switch (this) {
-      case PERMISSION_ADDED:
-      case PERMISSION_REMOVED:
       case CREATED:
       case DELETED:
       case UPDATED:
@@ -55,24 +49,16 @@ public enum AuthorizationIntent implements Intent {
   public static Intent from(final short value) {
     switch (value) {
       case 0:
-        return ADD_PERMISSION;
-      case 1:
-        return PERMISSION_ADDED;
-      case 2:
-        return REMOVE_PERMISSION;
-      case 3:
-        return PERMISSION_REMOVED;
-      case 4:
         return CREATE;
-      case 5:
+      case 1:
         return CREATED;
-      case 6:
+      case 2:
         return DELETE;
-      case 7:
+      case 3:
         return DELETED;
-      case 8:
+      case 4:
         return UPDATE;
-      case 9:
+      case 5:
         return UPDATED;
       default:
         return UNKNOWN;
