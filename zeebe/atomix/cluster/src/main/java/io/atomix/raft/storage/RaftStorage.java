@@ -28,6 +28,7 @@ import io.atomix.utils.concurrent.ThreadContextFactory;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -63,6 +64,7 @@ public final class RaftStorage {
   private final ReceivableSnapshotStore persistedSnapshotStore;
   private final int journalIndexDensity;
   private final boolean preallocateSegmentFiles;
+  private final MeterRegistry meterRegistry;
   private final RaftLogFlusher.Factory flusherFactory;
 
   private RaftStorage(
@@ -74,7 +76,8 @@ public final class RaftStorage {
       final RaftLogFlusher.Factory flusherFactory,
       final ReceivableSnapshotStore persistedSnapshotStore,
       final int journalIndexDensity,
-      final boolean preallocateSegmentFiles) {
+      final boolean preallocateSegmentFiles,
+      final MeterRegistry meterRegistry) {
     this.prefix = prefix;
     this.partitionId = partitionId;
     this.directory = directory;
@@ -84,6 +87,7 @@ public final class RaftStorage {
     this.persistedSnapshotStore = persistedSnapshotStore;
     this.journalIndexDensity = journalIndexDensity;
     this.preallocateSegmentFiles = preallocateSegmentFiles;
+    this.meterRegistry = meterRegistry;
 
     try {
       FileUtil.ensureDirectoryExists(directory.toPath());
@@ -154,7 +158,7 @@ public final class RaftStorage {
    */
   public MetaStore openMetaStore() {
     try {
-      return new MetaStore(this);
+      return new MetaStore(this, meterRegistry);
     } catch (final IOException e) {
       throw new StorageException("Failed to open metastore", e);
     }
@@ -261,6 +265,7 @@ public final class RaftStorage {
     private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
     private boolean preallocateSegmentFiles = DEFAULT_PREALLOCATE_SEGMENT_FILES;
     private int partitionId = DEFAULT_PARTITION_ID;
+    private MeterRegistry meterRegistry;
 
     private Builder() {}
 
@@ -375,6 +380,12 @@ public final class RaftStorage {
       return this;
     }
 
+    /** MeterRegistry to use for metrics */
+    public Builder withMeterRegistry(final MeterRegistry meterRegistry) {
+      this.meterRegistry = checkNotNull(meterRegistry, "meterRegistry cannot be null");
+      return this;
+    }
+
     /**
      * Builds the {@link RaftStorage} object.
      *
@@ -391,7 +402,8 @@ public final class RaftStorage {
           flusherFactory,
           persistedSnapshotStore,
           journalIndexDensity,
-          preallocateSegmentFiles);
+          preallocateSegmentFiles,
+          meterRegistry);
     }
   }
 }
