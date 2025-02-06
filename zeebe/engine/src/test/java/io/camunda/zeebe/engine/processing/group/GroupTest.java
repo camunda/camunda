@@ -14,8 +14,6 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -295,15 +293,6 @@ public class GroupTest {
     // given
     final var name = UUID.randomUUID().toString();
     final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
-    final var groupId = String.valueOf(groupKey);
-    engine
-        .authorization()
-        .newAuthorization()
-        .withOwnerKey(groupKey)
-        .withOwnerId(groupId)
-        .withOwnerType(AuthorizationOwnerType.GROUP)
-        .withResourceType(AuthorizationResourceType.ROLE)
-        .create();
 
     // when
     final var deletedGroup = engine.group().deleteGroup(groupKey).delete().getValue();
