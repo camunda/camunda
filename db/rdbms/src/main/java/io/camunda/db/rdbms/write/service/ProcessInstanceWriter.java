@@ -35,6 +35,15 @@ public class ProcessInstanceWriter {
             processInstance));
   }
 
+  public void update(final ProcessInstanceDbModel processInstance) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            processInstance.processInstanceKey(),
+            "io.camunda.db.rdbms.sql.ProcessInstanceMapper.update",
+            processInstance));
+  }
+
   public void finish(
       final long key, final ProcessInstanceState state, final OffsetDateTime endDate) {
     final boolean wasMerged = mergeToQueue(key, b -> b.state(state).endDate(endDate));
