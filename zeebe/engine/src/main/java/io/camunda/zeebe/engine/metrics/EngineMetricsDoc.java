@@ -16,7 +16,7 @@ import io.micrometer.core.instrument.Meter.Type;
 @SuppressWarnings("NullableProblems")
 public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
   /** Number of created (root) process instances */
-  ROOT_PROCESS_INSTANCE_COUNT {
+  CREATED_ROOT_PROCESS_INSTANCES {
     private static final KeyName[] KEY_NAMES = new KeyName[] {EngineKeyNames.CREATION_MODE};
 
     @Override
