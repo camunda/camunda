@@ -7,7 +7,7 @@
  */
 package io.camunda.search.clients.transformers.filter;
 
-import static io.camunda.search.entities.TenantMemberEntity.MemberType.USER;
+import static io.camunda.search.entities.TenantMemberEntity.TenantMemberType.USER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchQuery;

@@ -10,8 +10,8 @@ package io.camunda.search.entities;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record TenantMemberEntity(String id, MemberType memberType) {
-  public enum MemberType {
+public record TenantMemberEntity(String id, TenantMemberType tenantMemberType) {
+  public enum TenantMemberType {
     USER,
     GROUP,
     MAPPING,
