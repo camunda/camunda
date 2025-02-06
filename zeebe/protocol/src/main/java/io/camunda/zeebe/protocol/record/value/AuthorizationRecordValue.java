@@ -17,7 +17,6 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import java.util.List;
 import java.util.Set;
 import org.immutables.value.Value;
 
@@ -29,15 +28,11 @@ public interface AuthorizationRecordValue extends RecordValue {
 
   String getOwnerId();
 
-  Long getOwnerKey();
-
   AuthorizationOwnerType getOwnerType();
 
   String getResourceId();
 
   AuthorizationResourceType getResourceType();
-
-  List<PermissionValue> getPermissions();
 
   Set<PermissionType> getAuthorizationPermissions();
 

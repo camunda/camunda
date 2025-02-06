@@ -64,7 +64,7 @@ public class PermissionsBehavior {
 
   public Either<Rejection, AuthorizationRecord> permissionsAlreadyExist(
       final AuthorizationRecord record) {
-    for (final PermissionType permission : record.getAuthorizationPermissions()) {
+    for (final PermissionType permission : record.getPermissionTypes()) {
       final var addedResourceId = record.getResourceId();
       final var currentResourceIds =
           authCheckBehavior.getDirectAuthorizedResourceIdentifiers(

@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.user;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -98,26 +97,23 @@ public class CreateUserTest {
     final var username = UUID.randomUUID().toString();
 
     // when
-    final var userKey =
-        ENGINE
-            .user()
-            .newUser(username)
-            .withName("Foo Bar")
-            .withEmail("foo@bar.com")
-            .withPassword("password")
-            .create()
-            .getKey();
+    ENGINE
+        .user()
+        .newUser(username)
+        .withName("Foo Bar")
+        .withEmail("foo@bar.com")
+        .withPassword("password")
+        .create();
 
     // then
     assertThat(
             RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
-                .withOwnerKey(userKey)
+                .withOwnerId(username)
                 .getFirst()
                 .getValue())
-        .hasOwnerKey(userKey)
         .hasOwnerType(AuthorizationOwnerType.USER)
         .hasResourceType(AuthorizationResourceType.USER)
         .hasResourceId(username)
-        .hasAuthorizationPermissions(PermissionType.READ, PermissionType.UPDATE);
+        .hasOnlyAuthorizationPermissions(PermissionType.READ, PermissionType.UPDATE);
   }
 }

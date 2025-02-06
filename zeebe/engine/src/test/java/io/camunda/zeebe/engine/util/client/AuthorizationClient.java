@@ -64,11 +64,6 @@ public final class AuthorizationClient {
       authorizationCreationRecord = new AuthorizationRecord();
     }
 
-    public AuthorizationCreateClient withOwnerKey(final Long ownerKey) {
-      authorizationCreationRecord.setOwnerKey(ownerKey);
-      return this;
-    }
-
     public AuthorizationCreateClient withOwnerId(final String ownerId) {
       authorizationCreationRecord.setOwnerId(ownerId);
       return this;

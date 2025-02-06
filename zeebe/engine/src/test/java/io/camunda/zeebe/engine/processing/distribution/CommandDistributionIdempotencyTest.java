@@ -141,7 +141,6 @@ public class CommandDistributionIdempotencyTest {
                   ENGINE
                       .authorization()
                       .newAuthorization()
-                      .withOwnerKey(user.getKey())
                       .withOwnerId(user.getValue().getUsername())
                       .withResourceId("*")
                       .withResourceType(AuthorizationResourceType.USER)
@@ -162,7 +161,6 @@ public class CommandDistributionIdempotencyTest {
                       ENGINE
                           .authorization()
                           .newAuthorization()
-                          .withOwnerKey(user.getKey())
                           .withOwnerId(user.getValue().getUsername())
                           .withResourceId("*")
                           .withResourceType(AuthorizationResourceType.USER)
@@ -187,7 +185,6 @@ public class CommandDistributionIdempotencyTest {
                       ENGINE
                           .authorization()
                           .newAuthorization()
-                          .withOwnerKey(user.getKey())
                           .withOwnerId(user.getValue().getUsername())
                           .withResourceId("*")
                           .withResourceType(AuthorizationResourceType.USER)
