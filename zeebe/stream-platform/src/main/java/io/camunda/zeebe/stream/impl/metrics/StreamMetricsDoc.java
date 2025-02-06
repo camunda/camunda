@@ -204,6 +204,101 @@ public enum StreamMetricsDoc implements ExtendedMeterDocumentation {
     public Type getType() {
       return Type.TIMER;
     }
+  },
+
+  /** Number of records processed by stream processor */
+  STREAM_PROCESSOR_EVENTS {
+    @Override
+    public String getDescription() {
+      return "Number of records processed by stream processor";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.stream.processor.records.total";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return StreamProcessorActionKeys.values();
+    }
+  },
+
+  /** The last position the stream processor has processed */
+  LAST_PROCESSED_POSITION {
+    @Override
+    public String getDescription() {
+      return "The last position the stream processor has processed";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.stream.processor.last.processed.position";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+  },
+
+  /** Time between a command is written until it is picked up for processing (in seconds) */
+  PROCESSING_LATENCY {
+    @Override
+    public String getDescription() {
+      return "Time between a command is written until it is picked up for processing (in seconds)";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.stream.processor.latency";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
+  },
+
+  /** Time for processing a record (in seconds) */
+  PROCESSING_DURATION {
+    @Override
+    public String getDescription() {
+      return "Time for processing a record (in seconds)";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.stream.processor.processing.duration";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
+  },
+
+  /** Time taken for startup and recovery of stream processor (in ms) */
+  STARTUP_RECOVERY_TIME {
+    @Override
+    public String getDescription() {
+      return "Time taken for startup and recovery of stream processor (in ms)";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.stream.processor.startup.recovery.time";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
   };
 
   public enum ErrorHandlingPhaseKeys implements KeyName {
@@ -220,5 +315,35 @@ public enum StreamMetricsDoc implements ExtendedMeterDocumentation {
         return "zeebe_stream_processor_error_handling_phase";
       }
     }
+  }
+
+  /** The action counted by the given {@link #STREAM_PROCESSOR_EVENTS} series */
+  public enum StreamProcessorActionKeys implements KeyName {
+    /** Denotes the actual action applied to the event: one of written, skipped, or processed. */
+    ACTION {
+      @Override
+      public String asString() {
+        return "action";
+      }
+    }
+  }
+
+  /** The value type and intent combination denoting the command which was measured */
+  public enum ProcessingDurationKeys implements KeyName {
+    /** The value type of the record whose processing duration was just measured */
+    VALUE_TYPE {
+      @Override
+      public String asString() {
+        return "valueType";
+      }
+    },
+
+    /** The intent of the record whose processing duration was just measured */
+    INTENT {
+      @Override
+      public String asString() {
+        return "intent";
+      }
+    },
   }
 }
