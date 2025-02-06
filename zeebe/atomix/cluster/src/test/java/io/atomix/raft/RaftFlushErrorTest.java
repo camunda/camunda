@@ -120,7 +120,7 @@ public class RaftFlushErrorTest {
         final var storage = builder.storage;
         Objects.requireNonNull(storage);
         builder.withStorage(
-            RaftStorage.builder()
+            RaftStorage.builder(builder.meterRegistry)
                 .withDirectory(storage.directory())
                 .withSnapshotStore(storage.getPersistedSnapshotStore())
                 .withFlusherFactory(faultyFlusher(faultyWhen, notifyFaultyFlush))
