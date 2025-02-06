@@ -27,6 +27,7 @@ public final class UserTaskClient {
   private static final long DEFAULT_KEY = -1L;
   private static final int DEFAULT_REQUEST_STREAM_ID = 1;
   private static final long DEFAULT_REQUEST_ID = 1L;
+  private static final int DEFAULT_PARTITION_ID = 1;
 
   private static final Function<Long, Record<UserTaskRecordValue>> SUCCESS_SUPPLIER =
       (position) ->
@@ -199,7 +200,7 @@ public final class UserTaskClient {
 
   public Record<UserTaskRecordValue> complete() {
     final long userTaskKey = findUserTaskKey();
-    final int partitionId = Protocol.decodePartitionId(userTaskKey);
+    final int partitionId = decodePartitionId(userTaskKey);
     final long position =
         writer.writeCommandOnPartition(
             partitionId,
@@ -211,6 +212,15 @@ public final class UserTaskClient {
                     .event(userTaskRecord.setUserTaskKey(userTaskKey))
                     .authorizations(authorizedTenantIds.toArray(new String[0])));
     return expectation.apply(position);
+  }
+
+  private static int decodePartitionId(final long userTaskKey) {
+    final var partitionId = Protocol.decodePartitionId(userTaskKey);
+    if (partitionId <= 0) {
+      // the userTaskKey does not encode a partition id
+      return DEFAULT_PARTITION_ID;
+    }
+    return partitionId;
   }
 
   public Record<UserTaskRecordValue> complete(final String username) {
