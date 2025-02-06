@@ -93,4 +93,50 @@ public class ProcessingMetrics {
         .serviceLevelObjectives(meterDoc.getTimerSLOs())
         .register(registry);
   }
+<<<<<<< HEAD
+=======
+
+  private void registerLastProcessedPosition() {
+    final var meterDoc = StreamMetricsDoc.LAST_PROCESSED_POSITION;
+    Gauge.builder(meterDoc.getName(), lastProcessedPosition, AtomicLong::longValue)
+        .description(meterDoc.getDescription())
+        .register(registry);
+  }
+
+  private void event(final String action) {
+    countStreamProcessorEvent(action, 1);
+  }
+
+  private void countStreamProcessorEvent(final String action, final long count) {
+    streamProcessorEvents
+        .computeIfAbsent(action, this::registerStreamProcessorEventCounter)
+        .increment(count);
+  }
+
+  private Counter registerStreamProcessorEventCounter(final String action) {
+    final var meterDoc = StreamMetricsDoc.STREAM_PROCESSOR_EVENTS;
+    return Counter.builder(meterDoc.getName())
+        .description(meterDoc.getDescription())
+        .tag(StreamProcessorActionKeys.ACTION.asString(), action)
+        .register(registry);
+  }
+
+  private Timer registerProcessingLatency() {
+    final var meterDoc = StreamMetricsDoc.PROCESSING_LATENCY;
+    return Timer.builder(meterDoc.getName())
+        .description(meterDoc.getDescription())
+        .serviceLevelObjectives(meterDoc.getTimerSLOs())
+        .register(registry);
+  }
+
+  private Timer registerProcessingDurationTimer(final ValueType valueType, final Intent intent) {
+    final var meterDoc = StreamMetricsDoc.PROCESSING_DURATION;
+    return Timer.builder(meterDoc.getName())
+        .description(meterDoc.getDescription())
+        .serviceLevelObjectives(meterDoc.getTimerSLOs())
+        .tag(ProcessingDurationKeys.VALUE_TYPE.asString(), valueType.name())
+        .tag(ProcessingDurationKeys.INTENT.asString(), intent.name())
+        .register(registry);
+  }
+>>>>>>> e8b1a771 (refactor: use default SLOs for backwards compat)
 }
