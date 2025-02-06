@@ -48,6 +48,9 @@ import io.camunda.zeebe.stream.impl.TypedEventRegistry;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -260,6 +263,13 @@ public final class TestStreams {
     final var streamProcessorListeners = new ArrayList<StreamProcessorListener>();
     streamProcessorListenerOpt.ifPresent(streamProcessorListeners::add);
 
+    final var meterRegistry = new SimpleMeterRegistry();
+    meterRegistry
+        .config()
+        .commonTags(
+            Tags.of(
+                PartitionKeyNames.PARTITION.asString(), String.valueOf(stream.getPartitionId())));
+
     final var builder =
         StreamProcessor.builder()
             .logStream(stream.getAsyncLogStream())
@@ -271,7 +281,7 @@ public final class TestStreams {
             .streamProcessorMode(streamProcessorMode)
             .maxCommandsInBatch(maxCommandsInBatch)
             .partitionCommandSender(mock(InterPartitionCommandSender.class))
-            .meterRegistry(new SimpleMeterRegistry());
+            .meterRegistry(meterRegistry);
 
     processorConfiguration.accept(builder);
 
@@ -288,7 +298,8 @@ public final class TestStreams {
     openFuture.join(15, TimeUnit.SECONDS);
 
     final ProcessorContext processorContext =
-        ProcessorContext.createStreamContext(streamProcessor, zeebeDb, storage, snapshot);
+        ProcessorContext.createStreamContext(
+            streamProcessor, zeebeDb, storage, snapshot, meterRegistry);
     streamContextMap.put(logName, processorContext);
     closeables.manage(processorContext);
 
@@ -303,6 +314,10 @@ public final class TestStreams {
   public void resumeProcessing(final String streamName) {
     streamContextMap.get(streamName).streamProcessor.resumeProcessing();
     LOG.info("Resume processing for stream {}", streamName);
+  }
+
+  public MeterRegistry getMeterRegistry(final String streamName) {
+    return streamContextMap.get(streamName).meterRegistry;
   }
 
   public void resetLog() {
@@ -447,25 +462,30 @@ public final class TestStreams {
     private final StreamProcessor streamProcessor;
     private final Path runtimePath;
     private final Path snapshotPath;
+    private final MeterRegistry meterRegistry;
     private boolean closed = false;
 
     private ProcessorContext(
         final StreamProcessor streamProcessor,
         final ZeebeDb zeebeDb,
         final Path runtimePath,
-        final Path snapshotPath) {
+        final Path snapshotPath,
+        final MeterRegistry meterRegistry) {
       this.streamProcessor = streamProcessor;
       this.zeebeDb = zeebeDb;
       this.runtimePath = runtimePath;
       this.snapshotPath = snapshotPath;
+      this.meterRegistry = meterRegistry;
     }
 
     public static ProcessorContext createStreamContext(
         final StreamProcessor streamProcessor,
         final ZeebeDb zeebeDb,
         final Path runtimePath,
-        final Path snapshotPath) {
-      return new ProcessorContext(streamProcessor, zeebeDb, runtimePath, snapshotPath);
+        final Path snapshotPath,
+        final MeterRegistry meterRegistry) {
+      return new ProcessorContext(
+          streamProcessor, zeebeDb, runtimePath, snapshotPath, meterRegistry);
     }
 
     public void snapshot() {

@@ -120,6 +120,11 @@
       <artifactId>micrometer-core</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-commons</artifactId>
+    </dependency>
+
     <!-- TEST DEPENDENCIES -->
     <dependency>
       <groupId>io.camunda</groupId>
