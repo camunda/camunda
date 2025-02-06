@@ -313,6 +313,95 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  opensearch-integration-tests:
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes ]
+    name: "[IT] OpenSearch"
+    timeout-minutes: 10
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    runs-on: gcp-perf-core-8-default
+    env:
+      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+    services:
+      # Set up an OpenSearch service container
+      # https://docs.github.com/en/actions/use-cases-and-examples/using-containerized-services/about-service-containers
+      opensearch:
+        image: opensearchproject/opensearch:2.18.0
+        # Exposing the ports allow to be accessible via http://localhost:9200 in the runner
+        ports:
+          - 9200:9200
+        options: >-
+          --health-cmd "curl --silent --fail http://localhost:9200/_cluster/health"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        env:
+          # Disabling the security to make sure we can access without tls in our tests
+          # https://opensearch.org/docs/latest/security/configuration/disable-enable-security/
+          DISABLE_SECURITY_PLUGIN: "true"
+          # We run a single node for our integration tests
+          discovery.type: "single-node"
+          # Disabling to make sure we can delete indices via wildcards
+          # https://opensearch.org/docs/latest/install-and-configure/configuring-opensearch/index-settings/
+          action.destructive_requires_name: "false"
+          # We have to specify an initial password to bootstrap OpenSearch
+          # https://opensearch.org/blog/replacing-default-admin-credentials/
+          OPENSEARCH_INITIAL_ADMIN_PASSWORD: "yourStrongPassword123!"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: it-elasticsearch
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      # Build the platform before running the integration tests; skipping frontend
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+      # Run specific integration tests with OS service container
+      #
+      # To communicate to the IT what database to expect and run against:
+      # -D test.integration.camunda.database.type=os
+      #
+      - name: Run integration test with externalized OS
+        run: >
+          ./mvnw -B -T 1 --no-snapshot-updates
+          -D forkCount=1
+          -D maven.javadoc.skip=true
+          -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
+          -D test.integration.camunda.database.type=os
+          -pl 'qa/integration-tests'
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[IT] OpenSearch"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "[IT] ${{ matrix.name }}"
@@ -839,6 +928,7 @@ jobs:
       - java-unit-tests
       - maven-spotless-linter
       - openapi-lint
+      - opensearch-integration-tests
       - optimize-backend-unit-tests
       - optimize-frontend-unit-tests
       - protobuf-checks
