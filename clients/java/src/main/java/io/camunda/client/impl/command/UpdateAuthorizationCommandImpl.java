@@ -32,7 +32,7 @@ import io.camunda.client.protocol.rest.OwnerTypeEnum;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import java.time.Duration;
-import java.util.List;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
@@ -91,19 +91,9 @@ public class UpdateAuthorizationCommandImpl
 
   @Override
   public UpdateAuthorizationCommandStep6 permissionTypes(
-      final List<PermissionTypeEnum> permissionTypes) {
+      final PermissionTypeEnum... permissionTypes) {
     ArgumentUtil.ensureNotNull("permissionTypes", permissionTypes);
-    ArgumentUtil.ensureNotEmpty("permissionTypes", permissionTypes);
-    request.setPermissions(permissionTypes);
-    return this;
-  }
-
-  @Override
-  public UpdateAuthorizationCommandStep6 permissionType(final PermissionTypeEnum permissionType) {
-    ArgumentUtil.ensureNotNull("permissionType", permissionType);
-    final List<PermissionTypeEnum> permissions = request.getPermissions();
-    permissions.add(permissionType);
-    request.setPermissions(permissions);
+    request.setPermissions(Arrays.asList(permissionTypes));
     return this;
   }
 

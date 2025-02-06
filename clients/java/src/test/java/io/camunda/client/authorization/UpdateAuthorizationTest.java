@@ -23,8 +23,6 @@ import io.camunda.client.protocol.rest.OwnerTypeEnum;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.client.util.ClientRestTest;
-import java.util.ArrayList;
-import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 public class UpdateAuthorizationTest extends ClientRestTest {
@@ -38,7 +36,7 @@ public class UpdateAuthorizationTest extends ClientRestTest {
         .ownerType(OwnerTypeEnum.USER)
         .resourceId("resourceId")
         .resourceType(ResourceTypeEnum.RESOURCE)
-        .permissionTypes(Arrays.asList(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ))
+        .permissionTypes(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ)
         .send()
         .join();
 
@@ -63,8 +61,7 @@ public class UpdateAuthorizationTest extends ClientRestTest {
                     .ownerType(OwnerTypeEnum.USER)
                     .resourceId("resourceId")
                     .resourceType(ResourceTypeEnum.RESOURCE)
-                    .permissionTypes(
-                        Arrays.asList(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ))
+                    .permissionTypes(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
@@ -82,8 +79,7 @@ public class UpdateAuthorizationTest extends ClientRestTest {
                     .ownerType(OwnerTypeEnum.USER)
                     .resourceId("resourceId")
                     .resourceType(ResourceTypeEnum.RESOURCE)
-                    .permissionTypes(
-                        Arrays.asList(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ))
+                    .permissionTypes(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
@@ -101,8 +97,7 @@ public class UpdateAuthorizationTest extends ClientRestTest {
                     .ownerType(null)
                     .resourceId("resourceId")
                     .resourceType(ResourceTypeEnum.RESOURCE)
-                    .permissionTypes(
-                        Arrays.asList(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ))
+                    .permissionTypes(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
@@ -120,8 +115,7 @@ public class UpdateAuthorizationTest extends ClientRestTest {
                     .ownerType(OwnerTypeEnum.USER)
                     .resourceId(null)
                     .resourceType(ResourceTypeEnum.RESOURCE)
-                    .permissionTypes(
-                        Arrays.asList(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ))
+                    .permissionTypes(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
@@ -139,8 +133,7 @@ public class UpdateAuthorizationTest extends ClientRestTest {
                     .ownerType(OwnerTypeEnum.USER)
                     .resourceId("")
                     .resourceType(ResourceTypeEnum.RESOURCE)
-                    .permissionTypes(
-                        Arrays.asList(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ))
+                    .permissionTypes(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
@@ -158,8 +151,7 @@ public class UpdateAuthorizationTest extends ClientRestTest {
                     .ownerType(OwnerTypeEnum.USER)
                     .resourceId("resourceId")
                     .resourceType(null)
-                    .permissionTypes(
-                        Arrays.asList(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ))
+                    .permissionTypes(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
@@ -182,41 +174,5 @@ public class UpdateAuthorizationTest extends ClientRestTest {
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("permissionTypes must not be null");
-  }
-
-  @Test
-  void shouldRaiseExceptionOnEmptyPermissions() {
-    // when then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUpdateAuthorizationCommand(1L)
-                    .ownerId("ownerId")
-                    .ownerType(OwnerTypeEnum.USER)
-                    .resourceId("resourceId")
-                    .resourceType(ResourceTypeEnum.RESOURCE)
-                    .permissionTypes(new ArrayList<>())
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("permissionTypes must not be empty");
-  }
-
-  @Test
-  void shouldRaiseExceptionOnNullPermission() {
-    // when then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUpdateAuthorizationCommand(1L)
-                    .ownerId("ownerId")
-                    .ownerType(OwnerTypeEnum.USER)
-                    .resourceId("resourceId")
-                    .resourceType(ResourceTypeEnum.RESOURCE)
-                    .permissionType(null)
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("permissionType must not be null");
   }
 }
