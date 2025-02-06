@@ -89,7 +89,7 @@ public class AuthorizationsUtil implements CloseableSilently {
             .ownerType(OwnerTypeEnum.USER)
             .resourceId(resourceId)
             .resourceType(permission.resourceType())
-            .permission(permission.permissionType())
+            .permissionTypes(permission.permissionType())
             .send()
             .join();
       }
