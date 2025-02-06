@@ -300,7 +300,14 @@ public final class MessageStreamProcessorTest {
     // when
     rule.writeCommand(MessageSubscriptionIntent.CREATE, subscription);
     rule.writeCommand(MessageIntent.PUBLISH, message);
-    rule.writeCommand(MessageSubscriptionIntent.CORRELATE, subscription);
+
+    final var firstMessage =
+        awaitAndGet(
+            () ->
+                rule.events().onlyMessageRecords().withIntent(MessageIntent.PUBLISHED).findFirst());
+
+    rule.writeCommand(
+        MessageSubscriptionIntent.CORRELATE, subscription.setMessageKey(firstMessage.getKey()));
     rule.writeCommand(MessageIntent.PUBLISH, message);
 
     // then
@@ -308,8 +315,6 @@ public final class MessageStreamProcessorTest {
         () ->
             rule.events().onlyMessageRecords().withIntent(MessageIntent.PUBLISHED).limit(2).count()
                 == 2);
-    final long firstMessageKey =
-        rule.events().onlyMessageRecords().withIntent(MessageIntent.PUBLISHED).getFirst().getKey();
     final long lastMessageKey =
         rule.events()
             .onlyMessageRecords()
@@ -324,7 +329,7 @@ public final class MessageStreamProcessorTest {
             eq(subscription.getElementInstanceKey()),
             eq(subscription.getBpmnProcessIdBuffer()),
             any(),
-            eq(firstMessageKey),
+            eq(firstMessage.getKey()),
             any(),
             any(),
             eq(DEFAULT_TENANT));
@@ -359,7 +364,12 @@ public final class MessageStreamProcessorTest {
                 .withIntent(MessageSubscriptionIntent.CREATED)
                 .exists());
 
-    rule.writeCommand(MessageSubscriptionIntent.CORRELATE, subscription);
+    final var firstMessageRecord =
+        rule.events().onlyMessageRecords().withIntent(MessageIntent.PUBLISHED).getFirst();
+
+    rule.writeCommand(
+        MessageSubscriptionIntent.CORRELATE,
+        subscription.setMessageKey(firstMessageRecord.getKey()));
     rule.writeCommand(MessageIntent.PUBLISH, second);
 
     // then
@@ -384,7 +394,13 @@ public final class MessageStreamProcessorTest {
                 .onlyMessageSubscriptionRecords()
                 .withIntent(MessageSubscriptionIntent.CREATED)
                 .exists());
-    rule.writeCommand(MessageSubscriptionIntent.CORRELATE, subscription);
+
+    final var firstMessage =
+        awaitAndGet(
+            () ->
+                rule.events().onlyMessageRecords().withIntent(MessageIntent.PUBLISHED).findFirst());
+    rule.writeCommand(
+        MessageSubscriptionIntent.CORRELATE, subscription.setMessageKey(firstMessage.getKey()));
 
     // then
     assertAllMessagesReceived(subscription);
