@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
@@ -38,6 +39,8 @@ import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.Duration;
+import java.util.Optional;
+import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.awaitility.Awaitility;
 import org.junit.Before;
@@ -92,7 +95,9 @@ public final class MessageStreamProcessorTest {
     rule.writeCommand(MessageSubscriptionIntent.CREATE, subscription);
 
     // then
-    final Record<MessageSubscriptionRecord> rejection = awaitAndGetFirstSubscriptionRejection();
+    final Record<MessageSubscriptionRecord> rejection =
+        awaitAndGet(
+            () -> rule.events().onlyMessageSubscriptionRecords().onlyRejections().findFirst());
 
     assertThat(rejection.getIntent()).isEqualTo(MessageSubscriptionIntent.CREATE);
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
@@ -195,7 +200,9 @@ public final class MessageStreamProcessorTest {
     rule.writeCommand(MessageSubscriptionIntent.CORRELATE, subscription);
 
     // then
-    final Record<MessageSubscriptionRecord> rejection = awaitAndGetFirstSubscriptionRejection();
+    final Record<MessageSubscriptionRecord> rejection =
+        awaitAndGet(
+            () -> rule.events().onlyMessageSubscriptionRecords().onlyRejections().findFirst());
 
     assertThat(rejection.getIntent()).isEqualTo(MessageSubscriptionIntent.CORRELATE);
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
@@ -219,7 +226,9 @@ public final class MessageStreamProcessorTest {
     rule.writeCommand(MessageSubscriptionIntent.DELETE, subscription);
 
     // then
-    final Record<MessageSubscriptionRecord> rejection = awaitAndGetFirstSubscriptionRejection();
+    final Record<MessageSubscriptionRecord> rejection =
+        awaitAndGet(
+            () -> rule.events().onlyMessageSubscriptionRecords().onlyRejections().findFirst());
 
     assertThat(rejection.getIntent()).isEqualTo(MessageSubscriptionIntent.DELETE);
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
@@ -479,15 +488,9 @@ public final class MessageStreamProcessorTest {
     return message;
   }
 
-  private Record<MessageSubscriptionRecord> awaitAndGetFirstSubscriptionRejection() {
-    waitUntil(
-        () ->
-            rule.events()
-                .onlyMessageSubscriptionRecords()
-                .onlyRejections()
-                .findFirst()
-                .isPresent());
-
-    return rule.events().onlyMessageSubscriptionRecords().onlyRejections().findFirst().get();
+  private <T extends RecordValue> Record<T> awaitAndGet(
+      final Supplier<Optional<Record<T>>> supplier) {
+    waitUntil(() -> supplier.get().isPresent());
+    return supplier.get().get();
   }
 }
