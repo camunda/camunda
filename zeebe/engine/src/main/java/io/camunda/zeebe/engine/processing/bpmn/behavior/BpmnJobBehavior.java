@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Function;
 import com.google.common.base.Strings;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
+import io.camunda.zeebe.engine.processing.deployment.model.element.LinkedResource;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -42,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,6 +96,19 @@ public final class BpmnJobBehavior {
     return Either.<Failure, JobProperties>right(new JobProperties())
         .flatMap(p -> evalTypeExp(jobWorkerProps.getType(), scopeKey).map(p::type))
         .flatMap(p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey).map(p::retries))
+        .flatMap(p -> evalLinkedResourceKey(jobWorkerProps).map(p::resourceKey))
+        .flatMap(
+            p ->
+                evalLinkedResourceProperty(jobWorkerProps, LinkedResource::getResourceId)
+                    .map(p::resourceId))
+        .flatMap(
+            p ->
+                evalLinkedResourceProperty(jobWorkerProps, LinkedResource::getResourceType)
+                    .map(p::resourceType))
+        .flatMap(
+            p ->
+                evalLinkedResourceProperty(jobWorkerProps, LinkedResource::getLinkName)
+                    .map(p::linkName))
         .flatMap(
             p ->
                 userTaskBehavior
@@ -132,6 +148,34 @@ public final class BpmnJobBehavior {
                         scopeKey)
                     .map(key -> Objects.toString(key, null))
                     .map(p::formKey));
+  }
+
+  private Either<Failure, String> evalLinkedResourceProperty(
+      final JobWorkerProperties props, final Function<LinkedResource, String> propertyFunction) {
+    final List<LinkedResource> linkedResources = props.getLinkedResources();
+    if (linkedResources == null || linkedResources.isEmpty()) {
+      return Either.right(null);
+    }
+    return Either.right(
+        linkedResources.stream()
+            .map(propertyFunction)
+            .collect(Collectors.joining(PROPERTY_DELIMITER)));
+  }
+
+  private Either<Failure, String> evalLinkedResourceKey(final JobWorkerProperties props) {
+    final List<LinkedResource> linkedResources = props.getLinkedResources();
+    if (linkedResources == null || linkedResources.isEmpty()) {
+      return Either.right(null);
+    }
+    return Either.right(
+        linkedResources.stream()
+            .map(l -> resolveLinkedResourceKey(l))
+            .collect(Collectors.joining(PROPERTY_DELIMITER)));
+  }
+
+  private String resolveLinkedResourceKey(final LinkedResource linkedResource) {
+    // TODO Add implementation in the next PR
+    return "";
   }
 
   private static String asListLiteralOrNull(final List<String> list) {
