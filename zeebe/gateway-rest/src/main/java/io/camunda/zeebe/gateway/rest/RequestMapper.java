@@ -528,7 +528,7 @@ public class RequestMapper {
   }
 
   public static Authentication getAuthentication() {
-    Long authenticatedUserKey = null;
+    String authenticatedUsername = null;
     final List<Long> authenticatedRoleKeys = new ArrayList<>();
     final List<String> authorizedTenants = TenantAttributeHolder.getTenantIds();
 
@@ -544,8 +544,8 @@ public class RequestMapper {
                 .map(RoleEntity::roleKey)
                 .toList());
         if (authenticatedPrincipal instanceof final CamundaUser user) {
-          authenticatedUserKey = user.getUserKey();
-          claims.put(Authorization.AUTHORIZED_USERNAME, user.getUsername());
+          authenticatedUsername = user.getUsername();
+          claims.put(Authorization.AUTHORIZED_USERNAME, authenticatedUsername);
         }
       }
 
@@ -558,7 +558,7 @@ public class RequestMapper {
 
     return new Builder()
         .claims(claims)
-        .user(authenticatedUserKey)
+        .user(authenticatedUsername)
         .roleKeys(authenticatedRoleKeys)
         .tenants(authorizedTenants)
         .build();

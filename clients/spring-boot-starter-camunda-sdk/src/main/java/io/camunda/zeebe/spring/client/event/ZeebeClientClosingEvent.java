@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.event;
 
-import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import org.springframework.context.ApplicationEvent;
 
 /**
@@ -23,16 +23,17 @@ import org.springframework.context.ApplicationEvent;
  * maybe more often in test case or never if the CamundaClient is disabled, see {@link
  * ZeebeClientCreatedEvent} for more details
  */
+@Deprecated(since = "8.6", forRemoval = true)
 public class ZeebeClientClosingEvent extends ApplicationEvent {
 
-  public final CamundaClient client;
+  public final ZeebeClient client;
 
-  public ZeebeClientClosingEvent(final Object source, final CamundaClient client) {
+  public ZeebeClientClosingEvent(final Object source, final ZeebeClient client) {
     super(source);
     this.client = client;
   }
 
-  public CamundaClient getClient() {
+  public ZeebeClient getClient() {
     return client;
   }
 }

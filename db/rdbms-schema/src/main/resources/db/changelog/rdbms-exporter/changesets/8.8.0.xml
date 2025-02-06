@@ -411,15 +411,20 @@
   <changeSet id="create_authorization_permission_table" author="cthiel">
     <!-- no PK possible, would have too many columns (ALL) -->
     <createTable tableName="${prefix}AUTHORIZATIONS">
-      <column name="OWNER_KEY" type="BIGINT" />
+      <column name="AUTHORIZATION_KEY" type="BIGINT" />
+      <column name="OWNER_ID" type="VARCHAR(255)" />
       <column name="OWNER_TYPE" type="VARCHAR(255)" />
       <column name="RESOURCE_TYPE" type="VARCHAR(255)" />
+      <column name="RESOURCE_ID" type="VARCHAR(255)" />
       <column name="PERMISSION_TYPE" type="VARCHAR(255)" />
-      <column name="RESOURCE_ID" type="VARCHAR(255)"/>
     </createTable>
 
+    <createIndex tableName="${prefix}AUTHORIZATIONS" indexName="${prefix}IDX_AUTHORIZATIONS_AUTHORIZATION_KEY">
+      <column name="AUTHORIZATION_KEY"/>
+    </createIndex>
+
     <createIndex tableName="${prefix}AUTHORIZATIONS" indexName="${prefix}IDX_AUTHORIZATIONS">
-      <column name="OWNER_KEY"/>
+      <column name="OWNER_ID"/>
       <column name="OWNER_TYPE"/>
       <column name="RESOURCE_TYPE"/>
     </createIndex>

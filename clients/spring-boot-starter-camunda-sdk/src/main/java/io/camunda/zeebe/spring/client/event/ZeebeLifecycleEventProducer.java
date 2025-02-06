@@ -15,20 +15,21 @@
  */
 package io.camunda.zeebe.spring.client.event;
 
-import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.SmartLifecycle;
 
+@Deprecated(forRemoval = true, since = "8.6")
 public class ZeebeLifecycleEventProducer implements SmartLifecycle {
 
   protected boolean running = false;
 
   private final ApplicationEventPublisher publisher;
 
-  private final CamundaClient client;
+  private final ZeebeClient client;
 
   public ZeebeLifecycleEventProducer(
-      final CamundaClient client, final ApplicationEventPublisher publisher) {
+      final ZeebeClient client, final ApplicationEventPublisher publisher) {
     this.client = client;
     this.publisher = publisher;
   }

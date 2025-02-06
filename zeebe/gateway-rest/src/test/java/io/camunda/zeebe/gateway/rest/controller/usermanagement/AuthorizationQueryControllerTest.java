@@ -18,7 +18,6 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.AuthorizationSort;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.entity.Permission;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
@@ -44,17 +43,12 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
-                 "ownerKey": "1",
+                 "authorizationKey": "1",
+                 "ownerId": "foo",
                  "ownerType": "USER",
                  "resourceType": "PROCESS_DEFINITION",
-                 "permissions": [
-                   {
-                     "permissionType": "CREATE",
-                     "resourceIds": [
-                       "2"
-                     ]
-                   }
-                 ]
+                 "resourceId": "2",
+                 "permissionTypes": ["CREATE"]
                }
              ],
              "page": {
@@ -74,9 +68,11 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
               List.of(
                   new AuthorizationEntity(
                       1L,
+                      "foo",
                       OwnerTypeEnum.USER.getValue(),
                       ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
-                      List.of(new Permission(PermissionType.CREATE, Set.of("2"))))))
+                      "2",
+                      Set.of(PermissionType.CREATE))))
           .firstSortValues(new Object[] {"f"})
           .lastSortValues(new Object[] {"v"})
           .build();
@@ -206,7 +202,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                 {
                     "sort": [
                         {
-                            "field": "ownerKey",
+                            "field": "ownerId",
                             "order": "dsc"
                         }
                     ]
@@ -238,7 +234,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                       "type": "about:blank",
                       "title": "Bad Request",
                       "status": 400,
-                      "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [ownerType, ownerKey, resourceType]",
+                      "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [ownerId, ownerType, resourceId, resourceType]",
                       "instance": "%s"
                     }""",
                 endpoint)),

@@ -364,7 +364,7 @@ public class IdentitySetupInitializeTest {
             .toList();
 
     Assertions.assertThat(addedPermissions)
-        .describedAs("Added permissions for all resource types")
+        .describedAs("Added permissions for all resource types except UNSPECIFIED")
         .extracting(AuthorizationRecordValue::getResourceType)
         .containsExactly(expectedResourceTypes);
 

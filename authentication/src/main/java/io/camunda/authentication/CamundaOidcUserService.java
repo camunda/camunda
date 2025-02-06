@@ -70,7 +70,10 @@ public class CamundaOidcUserService extends OidcUserService {
         mappingKeys,
         new AuthenticationContext(
             roleServices.getRolesByMemberKeys(mappingKeys),
-            authorizationServices.getAuthorizedApplications(mappingKeys),
+            authorizationServices.getAuthorizedApplications(
+                mappingKeys.stream()
+                    .map(String::valueOf)
+                    .collect(Collectors.toSet())), // TODO remove mapping when refactoring to IDs
             tenantServices.getTenantsByMemberKeys(mappingKeys).stream()
                 .map(TenantDTO::fromEntity)
                 .toList(),
