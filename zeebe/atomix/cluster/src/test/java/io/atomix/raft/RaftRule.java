@@ -48,6 +48,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
@@ -169,8 +170,7 @@ public final class RaftRule extends ExternalResource {
     memberLog = null;
     position = 0;
     directory = null;
-    meterRegistry.clear();
-    meterRegistry.close();
+    MicrometerUtil.closeRegistry(meterRegistry);
   }
 
   /**
@@ -551,11 +551,12 @@ public final class RaftRule extends ExternalResource {
     configurator.configure(snapshotStore);
 
     final var builder =
-        RaftStorage.builder()
+        RaftStorage.builder(meterRegistry)
             .withDirectory(memberDirectory)
             .withMaxSegmentSize(1024 * 10)
             .withFreeDiskSpace(100)
             .withSnapshotStore(snapshotStore);
+
     return builder.build();
   }
 
