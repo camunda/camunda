@@ -36,6 +36,7 @@ public final class ReplayMetrics {
     final var meterDoc = StreamMetricsDoc.REPLAY_DURATION;
     return Timer.builder(meterDoc.getName())
         .description(meterDoc.getDescription())
+        .serviceLevelObjectives(meterDoc.getTimerSLOs())
         .register(registry);
   }
 
