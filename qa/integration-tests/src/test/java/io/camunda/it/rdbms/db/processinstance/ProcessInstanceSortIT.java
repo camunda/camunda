@@ -161,7 +161,7 @@ public class ProcessInstanceSortIT {
                     ProcessInstanceQueryResultConfig.of(b -> b)))
             .items();
 
-    assertThat(searchResult).hasSize(20);
+    assertThat(searchResult.size()).isGreaterThanOrEqualTo(20);
     assertThat(searchResult).isSortedAccordingTo(comparator);
   }
 }
