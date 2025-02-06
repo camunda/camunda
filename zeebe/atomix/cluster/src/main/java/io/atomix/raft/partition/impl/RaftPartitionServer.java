@@ -74,6 +74,7 @@ public class RaftPartitionServer implements HealthMonitorable {
 
   private final ReceivableSnapshotStore persistedSnapshotStore;
   private final RaftServer server;
+  private final MeterRegistry meterRegistry;
 
   public RaftPartitionServer(
       final RaftPartition partition,
@@ -89,6 +90,7 @@ public class RaftPartitionServer implements HealthMonitorable {
     this.localMemberId = localMemberId;
     this.membershipService = membershipService;
     this.clusterCommunicator = clusterCommunicator;
+    this.meterRegistry = meterRegistry;
     log =
         ContextualLoggerFactory.getLogger(
             getClass(),
@@ -308,6 +310,7 @@ public class RaftPartitionServer implements HealthMonitorable {
         .withSnapshotStore(persistedSnapshotStore)
         .withJournalIndexDensity(storageConfig.getJournalIndexDensity())
         .withPreallocateSegmentFiles(storageConfig.isPreallocateSegmentFiles())
+        .withMeterRegistry(meterRegistry)
         .build();
   }
 
