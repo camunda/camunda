@@ -483,7 +483,7 @@ class RdbmsExporterIT {
     final var processInstanceKey =
         ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
     exporter.export(processInstanceRecord);
-    final var flowNodeRecord = getFlowNodeActivatingRecord(1L);
+    final var flowNodeRecord = getFlowNodeActivatingRecord(1L, processInstanceKey);
     final var flowNodeInstanceKey = flowNodeRecord.getKey();
     exporter.export(flowNodeRecord);
 
