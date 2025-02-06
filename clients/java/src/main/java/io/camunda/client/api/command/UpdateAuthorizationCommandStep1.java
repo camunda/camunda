@@ -72,15 +72,7 @@ public interface UpdateAuthorizationCommandStep1 {
      * @param permissionTypes the permission types
      * @return the builder for this command
      */
-    UpdateAuthorizationCommandStep6 permissionTypes(List<PermissionTypeEnum> permissionTypes);
-
-    /**
-     * Adds a permission type to the authorization.
-     *
-     * @param permissionType the permission type
-     * @return the builder for this command
-     */
-    UpdateAuthorizationCommandStep6 permissionType(PermissionTypeEnum permissionType);
+    UpdateAuthorizationCommandStep6 permissionTypes(PermissionTypeEnum... permissionTypes);
   }
 
   interface UpdateAuthorizationCommandStep6
