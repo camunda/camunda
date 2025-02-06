@@ -137,6 +137,7 @@ jobs:
           #   Per default it is not required, but the release plugin is configured in the camunda release plugin (and this property is used)
           #   This is the reason why we have to set it at least as empty string.
           ./mvnw release:prepare -B \
+            -X \
             -Dresume=false \
             -Dtag=${RELEASE_VERSION} \
             -DreleaseVersion=${RELEASE_VERSION} \
