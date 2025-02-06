@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -36,7 +37,8 @@ class CommandRateLimiterTest {
   private static final int INITIAL_LIMIT = 5;
   private final SettableLimit limit = new SettableLimit(INITIAL_LIMIT);
 
-  private final CommandRateLimiter rateLimiter = CommandRateLimiter.builder().limit(limit).build(0);
+  private final CommandRateLimiter rateLimiter =
+      CommandRateLimiter.builder().limit(limit).build(new SimpleMeterRegistry(), 0);
   private final Intent context = ProcessInstanceCreationIntent.CREATE;
 
   @Test
@@ -124,7 +126,8 @@ class CommandRateLimiterTest {
     final int poolSize = 300;
     final int limit = 100;
     final Limit myLimit = new SettableLimit(limit);
-    final CommandRateLimiter myRateLimiter = CommandRateLimiter.builder().limit(myLimit).build(0);
+    final CommandRateLimiter myRateLimiter =
+        CommandRateLimiter.builder().limit(myLimit).build(new SimpleMeterRegistry(), 0);
     final ExecutorService threadPool = Executors.newFixedThreadPool(poolSize);
 
     final Collection<Callable<Object>> tasks =
@@ -159,7 +162,8 @@ class CommandRateLimiterTest {
     final int poolSize = 300;
     final int limit = 100;
     final Limit myLimit = new SettableLimit(limit);
-    final CommandRateLimiter myRateLimiter = CommandRateLimiter.builder().limit(myLimit).build(0);
+    final CommandRateLimiter myRateLimiter =
+        CommandRateLimiter.builder().limit(myLimit).build(new SimpleMeterRegistry(), 0);
     final ExecutorService threadPool = Executors.newFixedThreadPool(poolSize);
     final JobIntent whitelistedIntentContext = JobIntent.COMPLETE;
 

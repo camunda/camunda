@@ -33,6 +33,7 @@ import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.ExpandableArrayBuffer;
@@ -44,7 +45,7 @@ import org.mockito.Mockito;
 
 public class CommandApiRequestHandlerTest {
   @Rule public final ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
-  final CommandApiRequestHandler handler = new CommandApiRequestHandler();
+  final CommandApiRequestHandler handler = new CommandApiRequestHandler(new SimpleMeterRegistry());
   private LogStreamWriter logStreamWriter;
 
   @Before
