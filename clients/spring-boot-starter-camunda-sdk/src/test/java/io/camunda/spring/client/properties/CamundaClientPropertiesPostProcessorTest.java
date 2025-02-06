@@ -16,6 +16,7 @@
 package io.camunda.spring.client.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import java.net.URI;
 import java.time.Duration;
@@ -55,6 +56,30 @@ public class CamundaClientPropertiesPostProcessorTest {
     void shouldMapLists() {
       assertThat(camundaClientProperties.getWorker().getDefaults().getTenantIds())
           .contains("<default>", "another one");
+    }
+  }
+
+  @Nested
+  class InvalidPropertiesTest {
+
+    @Test
+    void shouldThrowExceptionOnInvalidGrpcURI() {
+      assertThatThrownBy(
+              () -> {
+                new CamundaClientProperties().setGrpcAddress(new URI("invalid:26500"));
+              })
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("The gRPC address must be an absolute URI");
+    }
+
+    @Test
+    void shouldThrowExceptionOnInvalidRestURI() {
+      assertThatThrownBy(
+              () -> {
+                new CamundaClientProperties().setRestAddress(new URI("invalid:8080"));
+              })
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("The REST address must be an absolute URI");
     }
   }
 
