@@ -18,9 +18,7 @@ package io.camunda.zeebe.model.bpmn.validation.zeebe;
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResources;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
-import java.util.Collection;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -34,27 +32,19 @@ public class ServiceTaskValidator implements ModelElementValidator<ServiceTask> 
   @Override
   public void validate(
       final ServiceTask serviceTask, final ValidationResultCollector validationResultCollector) {
-    if (!hasOneOrLessExtension(serviceTask)) {
+    if (!exactlyOneTaskDefinition(serviceTask)) {
       validationResultCollector.addError(
           0,
           String.format(
-              "Must have either one 'zeebe:%s' or one 'zeebe:%s' extension element",
-              ZeebeConstants.ELEMENT_LINKED_RESOURCES, ZeebeConstants.ELEMENT_TASK_DEFINITION));
+              "Must have 'zeebe:%s' extension element", ZeebeConstants.ELEMENT_TASK_DEFINITION));
     }
   }
 
-  private boolean hasOneOrLessExtension(final ServiceTask element) {
+  private boolean exactlyOneTaskDefinition(final ServiceTask element) {
     final ExtensionElements extensionElements = element.getExtensionElements();
-
     if (extensionElements == null) {
       return false;
     }
-    final Collection<ZeebeLinkedResources> linkedResources =
-        extensionElements.getChildElementsByType(ZeebeLinkedResources.class);
-    final Collection<ZeebeTaskDefinition> taskDefinitions =
-        extensionElements.getChildElementsByType(ZeebeTaskDefinition.class);
-
-    return linkedResources.size() == 1 && taskDefinitions.isEmpty()
-        || linkedResources.isEmpty() && taskDefinitions.size() == 1;
+    return extensionElements.getChildElementsByType(ZeebeTaskDefinition.class).size() == 1;
   }
 }
