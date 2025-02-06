@@ -9,22 +9,10 @@ package io.atomix.raft.metrics;
 
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import io.micrometer.core.instrument.Meter.Type;
-import java.time.Duration;
 
 public enum LeaderMetricsDoc implements ExtendedMeterDocumentation {
+  /** Latency to append an entry to a follower */
   APPEND_ENTRIES_LATENCY {
-    // FIXME check values
-    private static final Duration[] BUCKETS = {
-      Duration.ofNanos(100_000), // 100 micros
-      Duration.ofMillis(1),
-      Duration.ofMillis(10),
-      Duration.ofMillis(100),
-      Duration.ofMillis(250),
-      Duration.ofMillis(500),
-      Duration.ofSeconds(1),
-      Duration.ofSeconds(2)
-    };
-
     @Override
     public String getBaseUnit() {
       return "ms";
@@ -37,18 +25,12 @@ public enum LeaderMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public Type getType() {
-      // FIXME CHECK
       return Type.TIMER;
     }
 
     @Override
     public String getDescription() {
       return "Latency to append an entry to a follower";
-    }
-
-    @Override
-    public Duration[] getTimerSLOs() {
-      return BUCKETS;
     }
   },
   APPEND_RATE {
@@ -67,6 +49,7 @@ public enum LeaderMetricsDoc implements ExtendedMeterDocumentation {
       return "The count of entries appended (counting entries, not their size)";
     }
   },
+  /** The count of entries appended (counting entries, not their size) */
   APPEND_DATA_RATE {
     @Override
     public String getName() {
@@ -83,6 +66,7 @@ public enum LeaderMetricsDoc implements ExtendedMeterDocumentation {
       return "The count of entries appended (counting entries, not their size)";
     }
   },
+  /** The number of non-replicated entries for a given followers */
   NON_REPLICATED_ENTRIES {
     @Override
     public String getName() {
@@ -99,6 +83,7 @@ public enum LeaderMetricsDoc implements ExtendedMeterDocumentation {
       return "The number of non-replicated entries for a given followers";
     }
   },
+  /** The count of entries committed (counting entries, not their size) */
   COMMIT_RATE {
     @Override
     public String getName() {
@@ -115,6 +100,7 @@ public enum LeaderMetricsDoc implements ExtendedMeterDocumentation {
       return "The count of entries committed (counting entries, not their size)";
     }
   },
+  /** The number of non-committed entries on the leader */
   NON_COMMITTED_ENTRIES {
     @Override
     public String getName() {
