@@ -274,10 +274,9 @@ jobs:
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       # Run specific integration tests with ES service container
-      # During the migration of tests we run only specific package, where classes moved into
       #
       # To communicate to the IT what database to expect and run against:
-      # -Dcamunda.it.database.type=es
+      # -D test.integration.camunda.database.type=es
       #
       - name: Run integration test with externalized ES
         run: >
