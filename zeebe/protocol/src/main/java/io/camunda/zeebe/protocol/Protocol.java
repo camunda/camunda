@@ -95,6 +95,18 @@ public final class Protocol {
   public static final String USER_TASK_FOLLOW_UP_DATE_HEADER_NAME =
       RESERVED_HEADER_NAME_PREFIX + "followUpDate";
 
+  /** Linked resource id header used in service task */
+  public static final String LINKED_RESOURCES_RESOURCE_ID_NAME = "resourceId";
+
+  /** Linked resource key header used in service task */
+  public static final String LINKED_RESOURCES_RESOURCE_KEY = "key";
+
+  /** Linked resource type header used in service task */
+  public static final String LINKED_RESOURCES_RESOURCE_TYPE = "resourceType";
+
+  /** Linked resource type header used in service task */
+  public static final String LINKED_RESOURCES_LINK_NAME = "linkName";
+
   public static long encodePartitionId(final int partitionId, final long key) {
     return ((long) partitionId << KEY_BITS) + key;
   }

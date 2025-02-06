@@ -234,6 +234,10 @@ public final class BpmnJobBehavior {
     final String dueDate = props.getDueDate();
     final String followUpDate = props.getFollowUpDate();
     final String formKey = props.getFormKey();
+    final String resourceId = props.getResourceId();
+    final String resourceKey = props.getResourceKey();
+    final String resourceType = props.getResourceType();
+    final String linkName = props.getLinkName();
 
     if (assignee != null && !assignee.isEmpty()) {
       headers.put(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, assignee);
@@ -252,6 +256,18 @@ public final class BpmnJobBehavior {
     }
     if (formKey != null && !formKey.isEmpty()) {
       headers.put(Protocol.USER_TASK_FORM_KEY_HEADER_NAME, formKey);
+    }
+    if (resourceId != null && !resourceId.isEmpty()) {
+      headers.put(Protocol.LINKED_RESOURCES_RESOURCE_ID_NAME, resourceId);
+    }
+    if (resourceKey != null && !resourceKey.isEmpty()) {
+      headers.put(Protocol.LINKED_RESOURCES_RESOURCE_KEY, resourceKey);
+    }
+    if (resourceType != null && !resourceType.isEmpty()) {
+      headers.put(Protocol.LINKED_RESOURCES_RESOURCE_TYPE, resourceType);
+    }
+    if (linkName != null && !linkName.isEmpty()) {
+      headers.put(Protocol.LINKED_RESOURCES_LINK_NAME, linkName);
     }
     return headerEncoder.encode(headers);
   }
@@ -290,6 +306,10 @@ public final class BpmnJobBehavior {
     private String dueDate;
     private String followUpDate;
     private String formKey;
+    private String resourceId;
+    private String resourceKey;
+    private String resourceType;
+    private String linkName;
 
     public JobProperties type(final String type) {
       this.type = type;
@@ -361,6 +381,42 @@ public final class BpmnJobBehavior {
 
     public String getFormKey() {
       return formKey;
+    }
+
+    public JobProperties resourceId(final String resourceId) {
+      this.resourceId = resourceId;
+      return this;
+    }
+
+    public String getResourceId() {
+      return resourceId;
+    }
+
+    public JobProperties resourceKey(final String resourceKey) {
+      this.resourceKey = resourceKey;
+      return this;
+    }
+
+    public String getResourceKey() {
+      return resourceKey;
+    }
+
+    public JobProperties resourceType(final String resourceType) {
+      this.resourceType = resourceType;
+      return this;
+    }
+
+    public String getResourceType() {
+      return resourceType;
+    }
+
+    public JobProperties linkName(final String linkName) {
+      this.linkName = linkName;
+      return this;
+    }
+
+    public String getLinkName() {
+      return linkName;
     }
   }
 }
