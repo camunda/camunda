@@ -2419,7 +2419,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AuthorizationCreateRequest"
+              $ref: "#/components/schemas/AuthorizationRequest"
         required: true
       responses:
         "201":
@@ -2457,6 +2457,39 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
   /authorizations/{authorizationKey}:
+    put:
+      tags:
+        - Authorization
+      operationId: updateAuthorization
+      summary: Update authorization
+      description: Update the authorization with the given key.
+      parameters:
+        - name: authorizationKey
+          in: path
+          required: true
+          description: The key of the authorization to delete.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthorizationRequest"
+        required: true
+      responses:
+        "204":
+          description: The authorization was updated successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The authorization with the authorizationKey was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     delete:
       tags:
         - Authorization
@@ -6044,7 +6077,7 @@ components:
         - MAPPING
         - UNSPECIFIED
 
-    AuthorizationCreateRequest:
+    AuthorizationRequest:
       type: object
       properties:
         ownerId:
