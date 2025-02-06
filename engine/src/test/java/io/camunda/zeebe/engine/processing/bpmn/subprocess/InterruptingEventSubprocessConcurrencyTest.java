@@ -15,7 +15,9 @@ import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -71,28 +73,34 @@ public class InterruptingEventSubprocessConcurrencyTest {
 
     // when
     final var intermediateSubscriptionCreated =
-        RecordingExporter.processMessageSubscriptionRecords(
-                ProcessMessageSubscriptionIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withMessageName("msg")
-            .getFirst();
+        (ProcessMessageSubscriptionRecord)
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("msg")
+                .getFirst()
+                .getValue();
 
     final var eventSubprocessSubscriptionCreated =
-        RecordingExporter.processMessageSubscriptionRecords(
-                ProcessMessageSubscriptionIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withMessageName(MSG_NAME)
-            .getFirst();
+        (ProcessMessageSubscriptionRecord)
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName(MSG_NAME)
+                .getFirst()
+                .getValue();
 
     engineRule.writeRecords(
         RecordToWrite.command()
             .processMessageSubscription(
                 ProcessMessageSubscriptionIntent.CORRELATE,
-                intermediateSubscriptionCreated.getValue()),
+                intermediateSubscriptionCreated.setMessageKey(
+                    Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 1))),
         RecordToWrite.command()
             .processMessageSubscription(
                 ProcessMessageSubscriptionIntent.CORRELATE,
-                eventSubprocessSubscriptionCreated.getValue()));
+                eventSubprocessSubscriptionCreated.setMessageKey(
+                    Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 2))));
 
     // then
     assertThat(
