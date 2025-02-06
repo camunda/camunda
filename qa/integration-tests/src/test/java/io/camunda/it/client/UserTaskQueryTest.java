@@ -444,16 +444,19 @@ class UserTaskQueryTest {
         .isLessThan(result.items().get(2).getCreationDate());
 
     // Assert First and Last Sort Value matches the first and last item
-    assertThat(result.page().firstSortValues())
+    // We need to make use of toString, such the test work with ES/OS
+    assertThat(result.page().firstSortValues().stream().map(Object::toString).toList())
         .isEqualTo(
             List.of(
-                OffsetDateTime.parse(firstItem.getCreationDate()).toInstant().toEpochMilli(),
-                firstItem.getUserTaskKey()));
-    assertThat(result.page().lastSortValues())
+                Long.toString(
+                    OffsetDateTime.parse(firstItem.getCreationDate()).toInstant().toEpochMilli()),
+                Long.toString(firstItem.getUserTaskKey())));
+    assertThat(result.page().lastSortValues().stream().map(Object::toString).toList())
         .isEqualTo(
             List.of(
-                OffsetDateTime.parse(lastItem.getCreationDate()).toInstant().toEpochMilli(),
-                lastItem.getUserTaskKey()));
+                Long.toString(
+                    OffsetDateTime.parse(lastItem.getCreationDate()).toInstant().toEpochMilli()),
+                Long.toString(lastItem.getUserTaskKey())));
   }
 
   @Test
