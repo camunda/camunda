@@ -32,6 +32,7 @@ import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
@@ -173,6 +174,10 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
 
   public SynchronousLogStream getLogStream(final int partitionId) {
     return streamProcessingComposite.getLogStream(partitionId);
+  }
+
+  public MeterRegistry getMeterRegistry(final int partitionId) {
+    return streamProcessingComposite.getMeterRegistry(partitionId);
   }
 
   public CommandResponseWriter getCommandResponseWriter() {

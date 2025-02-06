@@ -97,8 +97,7 @@ public final class EngineProcessors {
 
     final var jobMetrics = new JobMetrics(partitionId);
     final var processEngineMetrics =
-        new ProcessEngineMetrics(
-            typedRecordProcessorContext.getMeterRegistry(), processingState.getPartitionId());
+        new ProcessEngineMetrics(typedRecordProcessorContext.getMeterRegistry());
 
     subscriptionCommandSender.setWriters(writers);
 
