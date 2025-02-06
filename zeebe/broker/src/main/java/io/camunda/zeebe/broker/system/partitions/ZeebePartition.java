@@ -90,7 +90,9 @@ public final class ZeebePartition extends Actor
     healthMetrics = new HealthMetrics(transitionContext.getBrokerMeterRegistry(), partitionId);
     healthMetrics.setUnhealthy();
     failureListeners = new ArrayList<>();
-    roleMetrics = new RoleMetrics(transitionContext.getPartitionId());
+    roleMetrics =
+        new RoleMetrics(
+            transitionContext.getBrokerMeterRegistry(), transitionContext.getPartitionId());
   }
 
   public PartitionAdminAccess getAdminAccess() {
