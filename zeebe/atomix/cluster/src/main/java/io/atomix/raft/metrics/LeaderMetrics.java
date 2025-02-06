@@ -45,13 +45,13 @@ public class LeaderMetrics extends RaftMetrics {
     nonReplicatedEntries = new HashMap<>();
 
     commitRate =
-        Counter.builder(LeaderMetricsDoc.COMMIT_RATE.name())
+        Counter.builder(LeaderMetricsDoc.COMMIT_RATE.getName())
             .description(LeaderMetricsDoc.COMMIT_RATE.getDescription())
             .tags(PARTITION_GROUP_NAME_LABEL, partitionGroupName)
             .register(meterRegistry);
 
     nonCommittedEntriesValue = new AtomicLong(0L);
-    Gauge.builder(LeaderMetricsDoc.NON_COMMITTED_ENTRIES.name(), nonCommittedEntriesValue::get)
+    Gauge.builder(LeaderMetricsDoc.NON_COMMITTED_ENTRIES.getName(), nonCommittedEntriesValue::get)
         .description(LeaderMetricsDoc.NON_COMMITTED_ENTRIES.getDescription())
         .tags(PARTITION_GROUP_NAME_LABEL, partitionGroupName)
         .register(meterRegistry);
@@ -83,7 +83,7 @@ public class LeaderMetrics extends RaftMetrics {
     return appendLatency.computeIfAbsent(
         memberId,
         id ->
-            Timer.builder(LeaderMetricsDoc.APPEND_ENTRIES_LATENCY.name())
+            Timer.builder(LeaderMetricsDoc.APPEND_ENTRIES_LATENCY.getName())
                 .description(LeaderMetricsDoc.APPEND_ENTRIES_LATENCY.getDescription())
                 .serviceLevelObjectives(LeaderMetricsDoc.APPEND_ENTRIES_LATENCY.getTimerSLOs())
                 .tags(FOLLOWER_LABEL, memberId, PARTITION_GROUP_NAME_LABEL, partitionGroupName)
@@ -94,7 +94,7 @@ public class LeaderMetrics extends RaftMetrics {
     return appendDataRate.computeIfAbsent(
         memberId,
         id ->
-            Counter.builder(LeaderMetricsDoc.APPEND_DATA_RATE.name())
+            Counter.builder(LeaderMetricsDoc.APPEND_DATA_RATE.getName())
                 .description(LeaderMetricsDoc.APPEND_DATA_RATE.getDescription())
                 .tags(FOLLOWER_LABEL, id, PARTITION_GROUP_NAME_LABEL, partitionGroupName)
                 .register(meterRegistry));
@@ -104,7 +104,7 @@ public class LeaderMetrics extends RaftMetrics {
     return appendRate.computeIfAbsent(
         memberId,
         id ->
-            Counter.builder(LeaderMetricsDoc.APPEND_RATE.name())
+            Counter.builder(LeaderMetricsDoc.APPEND_RATE.getName())
                 .description(LeaderMetricsDoc.APPEND_RATE.getDescription())
                 .tags(FOLLOWER_LABEL, id, PARTITION_GROUP_NAME_LABEL, partitionGroupName)
                 .register(meterRegistry));
@@ -115,7 +115,7 @@ public class LeaderMetrics extends RaftMetrics {
     if (inMap == null) {
       inMap = new AtomicLong(0L);
       // add new gauge for this entry
-      Gauge.builder(LeaderMetricsDoc.NON_REPLICATED_ENTRIES.name(), inMap::get)
+      Gauge.builder(LeaderMetricsDoc.NON_REPLICATED_ENTRIES.getName(), inMap::get)
           .description(LeaderMetricsDoc.NON_REPLICATED_ENTRIES.getDescription())
           .tags(FOLLOWER_LABEL, memberId, PARTITION_GROUP_NAME_LABEL, partitionGroupName)
           .register(meterRegistry);
