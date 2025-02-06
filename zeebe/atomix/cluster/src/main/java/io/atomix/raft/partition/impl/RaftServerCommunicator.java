@@ -44,6 +44,7 @@ import io.atomix.raft.protocol.VersionedAppendRequest;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.utils.serializer.Serializer;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -65,7 +66,8 @@ public class RaftServerCommunicator implements RaftServerProtocol {
       final ClusterCommunicationService clusterCommunicator,
       final Duration requestTimeout,
       final Duration snapshotRequestTimeout,
-      final Duration configurationChangeTimeout) {
+      final Duration configurationChangeTimeout,
+      final MeterRegistry meterRegistry) {
     context = new RaftMessageContext(prefix);
     this.serializer = Preconditions.checkNotNull(serializer, "serializer cannot be null");
     this.clusterCommunicator =
@@ -73,7 +75,7 @@ public class RaftServerCommunicator implements RaftServerProtocol {
     this.requestTimeout = requestTimeout;
     this.snapshotRequestTimeout = snapshotRequestTimeout;
     this.configurationChangeTimeout = configurationChangeTimeout;
-    metrics = new RaftRequestMetrics(prefix);
+    metrics = new RaftRequestMetrics(prefix, meterRegistry);
   }
 
   @Override
