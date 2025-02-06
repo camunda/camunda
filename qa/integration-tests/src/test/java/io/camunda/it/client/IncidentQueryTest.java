@@ -226,11 +226,12 @@ class IncidentQueryTest {
                     .send()
                     .join())
         .describedAs(
-            "Incident query should execute successfully for errorType '%s'.\n"
-                + " If it fails, ensure the following are updated:\n"
-                + "- `client` module: `io.camunda.client.api.search.response.IncidentErrorType` - new type defined\n"
-                + "- `search-domain` module: `io.camunda.search.entities.IncidentEntity.ErrorType` - new type defined\n"
-                + "- `gateway-protocol` module: `zeebe/gateway-protocol/src/main/proto/rest-api.yaml` - new `errorType` defined for `IncidentFilterRequestBase` document\n",
+            """
+                Incident query should execute successfully for filter.errorType = '%1$s'.
+                If it fails, ensure the following are updated:
+                  - `client` module: `io.camunda.client.api.search.response.IncidentErrorType` - '%1$s' type defined
+                  - `search-domain` module: `io.camunda.search.entities.IncidentEntity.ErrorType` - '%1$s' type defined
+                  - `gateway-protocol` module: `zeebe/gateway-protocol/src/main/proto/rest-api.yaml` - '%1$s' `errorType` defined for `IncidentFilterRequestBase` document""",
             errorType)
         .doesNotThrowAnyException();
   }
