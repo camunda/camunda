@@ -26,9 +26,7 @@ public final class MetaStoreMetrics extends RaftMetrics {
     lastFlushedIndexUpdate =
         Timer.builder(LAST_FLUSHED_INDEX.getName())
             .description(LAST_FLUSHED_INDEX.getDescription())
-            // FIXME use KeyNames
-            .tag(PARTITION_GROUP_NAME_LABEL, partitionName)
-            // FIXME add SLOs
+            .tag(RaftKeyNames.PARTITION_GROUP.asString(), partitionName)
             .register(registry);
     clock = registry.config().clock();
   }
