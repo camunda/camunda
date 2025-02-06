@@ -26,8 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class LeaderMetrics extends RaftMetrics {
-  private static final String FOLLOWER_LABEL = "follower";
-
   private final MeterRegistry meterRegistry;
   private final Map<String, Timer> appendLatency;
   private final Map<String, Counter> appendDataRate;
@@ -86,7 +84,11 @@ public class LeaderMetrics extends RaftMetrics {
             Timer.builder(LeaderMetricsDoc.APPEND_ENTRIES_LATENCY.getName())
                 .description(LeaderMetricsDoc.APPEND_ENTRIES_LATENCY.getDescription())
                 .serviceLevelObjectives(LeaderMetricsDoc.APPEND_ENTRIES_LATENCY.getTimerSLOs())
-                .tags(FOLLOWER_LABEL, memberId, PARTITION_GROUP_NAME_LABEL, partitionGroupName)
+                .tags(
+                    RaftKeyNames.FOLLOWER.asString(),
+                    memberId,
+                    PARTITION_GROUP_NAME_LABEL,
+                    partitionGroupName)
                 .register(meterRegistry));
   }
 
@@ -96,7 +98,11 @@ public class LeaderMetrics extends RaftMetrics {
         id ->
             Counter.builder(LeaderMetricsDoc.APPEND_DATA_RATE.getName())
                 .description(LeaderMetricsDoc.APPEND_DATA_RATE.getDescription())
-                .tags(FOLLOWER_LABEL, id, PARTITION_GROUP_NAME_LABEL, partitionGroupName)
+                .tags(
+                    RaftKeyNames.FOLLOWER.asString(),
+                    id,
+                    PARTITION_GROUP_NAME_LABEL,
+                    partitionGroupName)
                 .register(meterRegistry));
   }
 
@@ -106,7 +112,11 @@ public class LeaderMetrics extends RaftMetrics {
         id ->
             Counter.builder(LeaderMetricsDoc.APPEND_RATE.getName())
                 .description(LeaderMetricsDoc.APPEND_RATE.getDescription())
-                .tags(FOLLOWER_LABEL, id, PARTITION_GROUP_NAME_LABEL, partitionGroupName)
+                .tags(
+                    RaftKeyNames.FOLLOWER.asString(),
+                    id,
+                    PARTITION_GROUP_NAME_LABEL,
+                    partitionGroupName)
                 .register(meterRegistry));
   }
 
@@ -117,7 +127,11 @@ public class LeaderMetrics extends RaftMetrics {
       // add new gauge for this entry
       Gauge.builder(LeaderMetricsDoc.NON_REPLICATED_ENTRIES.getName(), inMap::get)
           .description(LeaderMetricsDoc.NON_REPLICATED_ENTRIES.getDescription())
-          .tags(FOLLOWER_LABEL, memberId, PARTITION_GROUP_NAME_LABEL, partitionGroupName)
+          .tags(
+              RaftKeyNames.FOLLOWER.asString(),
+              memberId,
+              PARTITION_GROUP_NAME_LABEL,
+              partitionGroupName)
           .register(meterRegistry);
       nonReplicatedEntries.put(memberId, inMap);
     }
