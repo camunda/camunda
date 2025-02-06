@@ -13,14 +13,12 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.it.utils.MultiDbTest;
 import java.io.InputStream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-@ZeebeIntegration
+@MultiDbTest
 public class GetDocumentContentTest {
 
   private static final String DOCUMENT_CONTENT = "test";
@@ -28,17 +26,8 @@ public class GetDocumentContentTest {
   private static CamundaClient camundaClient;
   private static DocumentReferenceResponse documentReference;
 
-  @TestZeebe(initMethod = "initTestStandaloneCamunda")
-  private static TestStandaloneCamunda testStandaloneCamunda;
-
-  @SuppressWarnings("unused")
-  static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda();
-  }
-
   @BeforeAll
   public static void beforeAll() {
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     documentReference =
         camundaClient.newCreateDocumentCommand().content(DOCUMENT_CONTENT).send().join();
   }
@@ -46,7 +35,6 @@ public class GetDocumentContentTest {
   @Test
   public void shouldWorkWithDocumentReference() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
     try (final InputStream is =
@@ -64,7 +52,6 @@ public class GetDocumentContentTest {
   public void shouldReturnNotFoundIfDocumentDoesNotExist() {
     // given
     final var documentId = "non-existing-document";
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
     final var command = camundaClient.newDocumentContentGetRequest(documentId).send();
@@ -83,7 +70,6 @@ public class GetDocumentContentTest {
     // given
     final var documentId = documentReference.getDocumentId();
     final var storeId = "non-existing-store";
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
     final var command =
