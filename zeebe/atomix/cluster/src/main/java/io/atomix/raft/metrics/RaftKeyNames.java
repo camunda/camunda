@@ -16,5 +16,12 @@ public enum RaftKeyNames implements KeyName {
     public String asString() {
       return "partitionGroupName";
     }
+  },
+  /** follower */
+  FOLLOWER {
+    @Override
+    public String asString() {
+      return "follower";
+    }
   }
 }
