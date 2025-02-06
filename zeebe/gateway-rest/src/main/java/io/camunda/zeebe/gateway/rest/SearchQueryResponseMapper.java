@@ -33,51 +33,52 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResponse;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResponse;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionItem;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResult;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionResult;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceGetQueryResponse;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceItem;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceGetQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceResult;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceStateEnum;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsItem;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsResult;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionInputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
-import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceItem;
-import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryResponse;
-import io.camunda.zeebe.gateway.protocol.rest.FormItem;
-import io.camunda.zeebe.gateway.protocol.rest.GroupItem;
-import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResponse;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentItem;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResponse;
-import io.camunda.zeebe.gateway.protocol.rest.MappingItem;
-import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceResult;
+import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.FormResult;
+import io.camunda.zeebe.gateway.protocol.rest.GroupResult;
+import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentResult;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.MappingResult;
+import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionItem;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResponse;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.RoleItem;
-import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.RoleResult;
+import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
-import io.camunda.zeebe.gateway.protocol.rest.TenantItem;
-import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.TenantResult;
+import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.UsageMetricsResponse;
-import io.camunda.zeebe.gateway.protocol.rest.UserResponse;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskItem;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResponse;
-import io.camunda.zeebe.gateway.protocol.rest.VariableItem;
-import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UserResult;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskResult;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.VariableResult;
+import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItem;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -96,10 +97,10 @@ public final class SearchQueryResponseMapper {
         .decisionInstances(usageMetricsCount.decisionInstances());
   }
 
-  public static ProcessDefinitionSearchQueryResponse toProcessDefinitionSearchQueryResponse(
+  public static ProcessDefinitionSearchQueryResult toProcessDefinitionSearchQueryResponse(
       final SearchQueryResult<ProcessDefinitionEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return new ProcessDefinitionSearchQueryResponse()
+    return new ProcessDefinitionSearchQueryResult()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -107,10 +108,10 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static ProcessInstanceSearchQueryResponse toProcessInstanceSearchQueryResponse(
+  public static ProcessInstanceSearchQueryResult toProcessInstanceSearchQueryResponse(
       final SearchQueryResult<ProcessInstanceEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return new ProcessInstanceSearchQueryResponse()
+    return new ProcessInstanceSearchQueryResult()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -118,19 +119,19 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static RoleSearchQueryResponse toRoleSearchQueryResponse(
+  public static RoleSearchQueryResult toRoleSearchQueryResponse(
       final SearchQueryResult<RoleEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return new RoleSearchQueryResponse()
+    return new RoleSearchQueryResult()
         .page(page)
         .items(
             ofNullable(result.items()).map(SearchQueryResponseMapper::toRoles).orElseGet(List::of));
   }
 
-  public static GroupSearchQueryResponse toGroupSearchQueryResponse(
+  public static GroupSearchQueryResult toGroupSearchQueryResponse(
       final SearchQueryResult<GroupEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return new GroupSearchQueryResponse()
+    return new GroupSearchQueryResult()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -138,10 +139,10 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(List::of));
   }
 
-  public static TenantSearchQueryResponse toTenantSearchQueryResponse(
+  public static TenantSearchQueryResult toTenantSearchQueryResponse(
       final SearchQueryResult<TenantEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return new TenantSearchQueryResponse()
+    return new TenantSearchQueryResult()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -149,10 +150,10 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(List::of));
   }
 
-  public static MappingSearchQueryResponse toMappingSearchQueryResponse(
+  public static MappingSearchQueryResult toMappingSearchQueryResponse(
       final SearchQueryResult<MappingEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return new MappingSearchQueryResponse()
+    return new MappingSearchQueryResult()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -160,10 +161,10 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(List::of));
   }
 
-  public static DecisionDefinitionSearchQueryResponse toDecisionDefinitionSearchQueryResponse(
+  public static DecisionDefinitionSearchQueryResult toDecisionDefinitionSearchQueryResponse(
       final SearchQueryResult<DecisionDefinitionEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return new DecisionDefinitionSearchQueryResponse()
+    return new DecisionDefinitionSearchQueryResult()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -171,10 +172,10 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static DecisionRequirementsSearchQueryResponse toDecisionRequirementsSearchQueryResponse(
+  public static DecisionRequirementsSearchQueryResult toDecisionRequirementsSearchQueryResponse(
       final SearchQueryResult<DecisionRequirementsEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return new DecisionRequirementsSearchQueryResponse()
+    return new DecisionRequirementsSearchQueryResult()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -182,11 +183,11 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static FlowNodeInstanceSearchQueryResponse toFlowNodeInstanceSearchQueryResponse(
+  public static FlowNodeInstanceSearchQueryResult toFlowNodeInstanceSearchQueryResponse(
       final SearchQueryResult<FlowNodeInstanceEntity> result,
       final Map<Long, ProcessCacheItem> processCacheItems) {
     final var page = toSearchQueryPageResponse(result);
-    return new FlowNodeInstanceSearchQueryResponse()
+    return new FlowNodeInstanceSearchQueryResult()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -194,10 +195,10 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static DecisionInstanceSearchQueryResponse toDecisionInstanceSearchQueryResponse(
+  public static DecisionInstanceSearchQueryResult toDecisionInstanceSearchQueryResponse(
       final SearchQueryResult<DecisionInstanceEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return new DecisionInstanceSearchQueryResponse()
+    return new DecisionInstanceSearchQueryResult()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -205,11 +206,11 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static UserTaskSearchQueryResponse toUserTaskSearchQueryResponse(
+  public static UserTaskSearchQueryResult toUserTaskSearchQueryResponse(
       final SearchQueryResult<UserTaskEntity> result,
       final Map<Long, ProcessCacheItem> processCacheItems) {
     final var page = toSearchQueryPageResponse(result);
-    return new UserTaskSearchQueryResponse()
+    return new UserTaskSearchQueryResult()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -217,9 +218,9 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static UserSearchResponse toUserSearchQueryResponse(
+  public static UserSearchResult toUserSearchQueryResponse(
       final SearchQueryResult<UserEntity> result) {
-    return new UserSearchResponse()
+    return new UserSearchResult()
         .page(toSearchQueryPageResponse(result))
         .items(
             ofNullable(result.items())
@@ -227,10 +228,10 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static IncidentSearchQueryResponse toIncidentSearchQueryResponse(
+  public static IncidentSearchQueryResult toIncidentSearchQueryResponse(
       final SearchQueryResult<IncidentEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return new IncidentSearchQueryResponse()
+    return new IncidentSearchQueryResult()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -252,14 +253,14 @@ public final class SearchQueryResponseMapper {
         .lastSortValues(lastSortValues);
   }
 
-  private static List<ProcessDefinitionItem> toProcessDefinitions(
+  private static List<ProcessDefinitionResult> toProcessDefinitions(
       final List<ProcessDefinitionEntity> processDefinitions) {
     return processDefinitions.stream().map(SearchQueryResponseMapper::toProcessDefinition).toList();
   }
 
-  public static ProcessDefinitionItem toProcessDefinition(final ProcessDefinitionEntity entity) {
-    return new ProcessDefinitionItem()
-        .processDefinitionKey(entity.processDefinitionKey())
+  public static ProcessDefinitionResult toProcessDefinition(final ProcessDefinitionEntity entity) {
+    return new ProcessDefinitionResult()
+        .processDefinitionKey(KeyUtil.keyToString(entity.processDefinitionKey()))
         .name(entity.name())
         .resourceName(entity.resourceName())
         .version(entity.version())
@@ -268,21 +269,21 @@ public final class SearchQueryResponseMapper {
         .tenantId(entity.tenantId());
   }
 
-  private static List<ProcessInstanceItem> toProcessInstances(
+  private static List<ProcessInstanceResult> toProcessInstances(
       final List<ProcessInstanceEntity> instances) {
     return instances.stream().map(SearchQueryResponseMapper::toProcessInstance).toList();
   }
 
-  public static ProcessInstanceItem toProcessInstance(final ProcessInstanceEntity p) {
-    return new ProcessInstanceItem()
-        .processInstanceKey(p.processInstanceKey())
+  public static ProcessInstanceResult toProcessInstance(final ProcessInstanceEntity p) {
+    return new ProcessInstanceResult()
+        .processInstanceKey(KeyUtil.keyToString(p.processInstanceKey()))
         .processDefinitionId(p.processDefinitionId())
         .processDefinitionName(p.processDefinitionName())
         .processDefinitionVersion(p.processDefinitionVersion())
         .processDefinitionVersionTag(p.processDefinitionVersionTag())
-        .processDefinitionKey(p.processDefinitionKey())
-        .parentProcessInstanceKey(p.parentProcessInstanceKey())
-        .parentFlowNodeInstanceKey(p.parentFlowNodeInstanceKey())
+        .processDefinitionKey(KeyUtil.keyToString(p.processDefinitionKey()))
+        .parentProcessInstanceKey(KeyUtil.keyToString(p.parentProcessInstanceKey()))
+        .parentFlowNodeInstanceKey(KeyUtil.keyToString(p.parentFlowNodeInstanceKey()))
         .startDate(formatDate(p.startDate()))
         .endDate(formatDate(p.endDate()))
         .state((p.state() == null) ? null : ProcessInstanceStateEnum.fromValue(p.state().name()))
@@ -290,57 +291,59 @@ public final class SearchQueryResponseMapper {
         .tenantId(p.tenantId());
   }
 
-  private static List<RoleItem> toRoles(final List<RoleEntity> roles) {
+  private static List<RoleResult> toRoles(final List<RoleEntity> roles) {
     return roles.stream().map(SearchQueryResponseMapper::toRole).toList();
   }
 
-  public static RoleItem toRole(final RoleEntity roleEntity) {
-    return new RoleItem().key(roleEntity.roleKey()).name(roleEntity.name());
+  public static RoleResult toRole(final RoleEntity roleEntity) {
+    return new RoleResult().key(KeyUtil.keyToString(roleEntity.roleKey())).name(roleEntity.name());
   }
 
-  private static List<GroupItem> toGroups(final List<GroupEntity> groups) {
+  private static List<GroupResult> toGroups(final List<GroupEntity> groups) {
     return groups.stream().map(SearchQueryResponseMapper::toGroup).toList();
   }
 
-  public static GroupItem toGroup(final GroupEntity groupEntity) {
-    return new GroupItem().groupKey(groupEntity.groupKey()).name(groupEntity.name());
+  public static GroupResult toGroup(final GroupEntity groupEntity) {
+    return new GroupResult()
+        .groupKey(KeyUtil.keyToString(groupEntity.groupKey()))
+        .name(groupEntity.name());
   }
 
-  private static List<TenantItem> toTenants(final List<TenantEntity> tenants) {
+  private static List<TenantResult> toTenants(final List<TenantEntity> tenants) {
     return tenants.stream().map(SearchQueryResponseMapper::toTenant).toList();
   }
 
-  public static TenantItem toTenant(final TenantEntity tenantEntity) {
-    return new TenantItem()
-        .tenantKey(tenantEntity.key())
+  public static TenantResult toTenant(final TenantEntity tenantEntity) {
+    return new TenantResult()
+        .tenantKey(KeyUtil.keyToString(tenantEntity.key()))
         .name(tenantEntity.name())
         .description(tenantEntity.description())
         .tenantId(tenantEntity.tenantId());
   }
 
-  private static List<MappingItem> toMappings(final List<MappingEntity> mappings) {
+  private static List<MappingResult> toMappings(final List<MappingEntity> mappings) {
     return mappings.stream().map(SearchQueryResponseMapper::toMapping).toList();
   }
 
-  public static MappingItem toMapping(final MappingEntity mappingEntity) {
-    return new MappingItem()
-        .mappingKey(mappingEntity.mappingKey())
+  public static MappingResult toMapping(final MappingEntity mappingEntity) {
+    return new MappingResult()
+        .mappingKey(KeyUtil.keyToString(mappingEntity.mappingKey()))
         .claimName(mappingEntity.claimName())
         .claimValue(mappingEntity.claimValue())
         .name(mappingEntity.name());
   }
 
-  private static List<DecisionDefinitionItem> toDecisionDefinitions(
+  private static List<DecisionDefinitionResult> toDecisionDefinitions(
       final List<DecisionDefinitionEntity> instances) {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionDefinition).toList();
   }
 
-  private static List<DecisionRequirementsItem> toDecisionRequirements(
+  private static List<DecisionRequirementsResult> toDecisionRequirements(
       final List<DecisionRequirementsEntity> instances) {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionRequirements).toList();
   }
 
-  private static List<FlowNodeInstanceItem> toFlowNodeInstance(
+  private static List<FlowNodeInstanceResult> toFlowNodeInstance(
       final List<FlowNodeInstanceEntity> instances,
       final Map<Long, ProcessCacheItem> processCacheItems) {
     return instances.stream()
@@ -355,47 +358,47 @@ public final class SearchQueryResponseMapper {
         .toList();
   }
 
-  public static FlowNodeInstanceItem toFlowNodeInstance(
+  public static FlowNodeInstanceResult toFlowNodeInstance(
       final FlowNodeInstanceEntity instance, final String name) {
-    return new FlowNodeInstanceItem()
-        .flowNodeInstanceKey(instance.flowNodeInstanceKey())
+    return new FlowNodeInstanceResult()
+        .flowNodeInstanceKey(KeyUtil.keyToString(instance.flowNodeInstanceKey()))
         .flowNodeId(instance.flowNodeId())
         .flowNodeName(name)
-        .processDefinitionKey(instance.processDefinitionKey())
+        .processDefinitionKey(KeyUtil.keyToString(instance.processDefinitionKey()))
         .processDefinitionId(instance.processDefinitionId())
-        .processInstanceKey(instance.processInstanceKey())
-        .incidentKey(instance.incidentKey())
+        .processInstanceKey(KeyUtil.keyToString(instance.processInstanceKey()))
+        .incidentKey(KeyUtil.keyToString(instance.incidentKey()))
         .hasIncident(instance.hasIncident())
         .startDate(formatDate(instance.startDate()))
         .endDate(formatDate(instance.endDate()))
-        .state(FlowNodeInstanceItem.StateEnum.fromValue(instance.state().name()))
-        .type(FlowNodeInstanceItem.TypeEnum.fromValue(instance.type().name()))
+        .state(FlowNodeInstanceResult.StateEnum.fromValue(instance.state().name()))
+        .type(FlowNodeInstanceResult.TypeEnum.fromValue(instance.type().name()))
         .tenantId(instance.tenantId());
   }
 
-  public static DecisionDefinitionItem toDecisionDefinition(final DecisionDefinitionEntity d) {
-    return new DecisionDefinitionItem()
+  public static DecisionDefinitionResult toDecisionDefinition(final DecisionDefinitionEntity d) {
+    return new DecisionDefinitionResult()
         .tenantId(d.tenantId())
-        .decisionDefinitionKey(d.decisionDefinitionKey())
+        .decisionDefinitionKey(KeyUtil.keyToString(d.decisionDefinitionKey()))
         .name(d.name())
         .version(d.version())
         .decisionDefinitionId(d.decisionDefinitionId())
-        .decisionRequirementsKey(d.decisionRequirementsKey())
+        .decisionRequirementsKey(KeyUtil.keyToString(d.decisionRequirementsKey()))
         .decisionRequirementsId(d.decisionRequirementsId());
   }
 
-  public static DecisionRequirementsItem toDecisionRequirements(
+  public static DecisionRequirementsResult toDecisionRequirements(
       final DecisionRequirementsEntity d) {
-    return new DecisionRequirementsItem()
+    return new DecisionRequirementsResult()
         .tenantId(d.tenantId())
-        .decisionRequirementsKey(d.decisionRequirementsKey())
+        .decisionRequirementsKey(KeyUtil.keyToString(d.decisionRequirementsKey()))
         .decisionRequirementsName(d.name())
         .version(d.version())
         .resourceName(d.resourceName())
         .decisionRequirementsId(d.decisionRequirementsId());
   }
 
-  private static List<UserTaskItem> toUserTasks(
+  private static List<UserTaskResult> toUserTasks(
       final List<UserTaskEntity> tasks, final Map<Long, ProcessCacheItem> processCacheItems) {
     return tasks.stream()
         .map(
@@ -409,40 +412,40 @@ public final class SearchQueryResponseMapper {
         .toList();
   }
 
-  private static List<IncidentItem> toIncidents(final List<IncidentEntity> incidents) {
+  private static List<IncidentResult> toIncidents(final List<IncidentEntity> incidents) {
     return incidents.stream().map(SearchQueryResponseMapper::toIncident).toList();
   }
 
-  public static IncidentItem toIncident(final IncidentEntity t) {
-    return new IncidentItem()
-        .incidentKey(t.incidentKey())
-        .processDefinitionKey(t.processDefinitionKey())
+  public static IncidentResult toIncident(final IncidentEntity t) {
+    return new IncidentResult()
+        .incidentKey(KeyUtil.keyToString(t.incidentKey()))
+        .processDefinitionKey(KeyUtil.keyToString(t.processDefinitionKey()))
         .processDefinitionId(t.processDefinitionId())
-        .processInstanceKey(t.processInstanceKey())
-        .errorType(IncidentItem.ErrorTypeEnum.fromValue(t.errorType().name()))
+        .processInstanceKey(KeyUtil.keyToString(t.processInstanceKey()))
+        .errorType(IncidentResult.ErrorTypeEnum.fromValue(t.errorType().name()))
         .errorMessage(t.errorMessage())
         .flowNodeId(t.flowNodeId())
-        .flowNodeInstanceKey(t.flowNodeInstanceKey())
+        .flowNodeInstanceKey(KeyUtil.keyToString(t.flowNodeInstanceKey()))
         .creationTime(formatDate(t.creationTime()))
-        .state(IncidentItem.StateEnum.fromValue(t.state().name()))
-        .jobKey(t.jobKey())
+        .state(IncidentResult.StateEnum.fromValue(t.state().name()))
+        .jobKey(KeyUtil.keyToString(t.jobKey()))
         .tenantId(t.tenantId());
   }
 
-  public static UserTaskItem toUserTask(final UserTaskEntity t, final String name) {
-    return new UserTaskItem()
+  public static UserTaskResult toUserTask(final UserTaskEntity t, final String name) {
+    return new UserTaskResult()
         .tenantId(t.tenantId())
-        .userTaskKey(t.userTaskKey())
+        .userTaskKey(KeyUtil.keyToString(t.userTaskKey()))
         .name(name)
-        .processInstanceKey(t.processInstanceKey())
-        .processDefinitionKey(t.processDefinitionKey())
-        .elementInstanceKey(t.elementInstanceKey())
+        .processInstanceKey(KeyUtil.keyToString(t.processInstanceKey()))
+        .processDefinitionKey(KeyUtil.keyToString(t.processDefinitionKey()))
+        .elementInstanceKey(KeyUtil.keyToString(t.elementInstanceKey()))
         .processDefinitionId(t.processDefinitionId())
-        .state(UserTaskItem.StateEnum.fromValue(t.state().name()))
+        .state(UserTaskResult.StateEnum.fromValue(t.state().name()))
         .assignee(t.assignee())
         .candidateUsers(t.candidateUsers())
         .candidateGroups(t.candidateGroups())
-        .formKey(t.formKey())
+        .formKey(KeyUtil.keyToString(t.formKey()))
         .elementId(t.elementId())
         .creationDate(formatDate(t.creationDate()))
         .completionDate(formatDate(t.completionDate()))
@@ -454,42 +457,42 @@ public final class SearchQueryResponseMapper {
         .priority(t.priority());
   }
 
-  public static FormItem toFormItem(final FormEntity f) {
-    return new FormItem()
-        .formKey(f.formKey())
+  public static FormResult toFormItem(final FormEntity f) {
+    return new FormResult()
+        .formKey(KeyUtil.keyToString(f.formKey()))
         .bpmnId(f.formId())
         .version(f.version())
         .schema(f.schema())
         .tenantId(f.tenantId());
   }
 
-  public static List<UserResponse> toUsers(final List<UserEntity> users) {
+  public static List<UserResult> toUsers(final List<UserEntity> users) {
     return users.stream().map(SearchQueryResponseMapper::toUser).toList();
   }
 
-  public static UserResponse toUser(final UserEntity user) {
-    return new UserResponse()
-        .key(user.userKey())
+  public static UserResult toUser(final UserEntity user) {
+    return new UserResult()
+        .key(KeyUtil.keyToString(user.userKey()))
         .username(user.username())
         .email(user.email())
         .name(user.name());
   }
 
-  private static List<DecisionInstanceItem> toDecisionInstances(
+  private static List<DecisionInstanceResult> toDecisionInstances(
       final List<DecisionInstanceEntity> instances) {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionInstance).toList();
   }
 
-  public static DecisionInstanceItem toDecisionInstance(final DecisionInstanceEntity entity) {
-    return new DecisionInstanceItem()
-        .decisionInstanceKey(entity.decisionInstanceKey())
+  public static DecisionInstanceResult toDecisionInstance(final DecisionInstanceEntity entity) {
+    return new DecisionInstanceResult()
+        .decisionInstanceKey(KeyUtil.keyToString(entity.decisionInstanceKey()))
         .decisionInstanceId(entity.decisionInstanceId())
         .state(toDecisionInstanceStateEnum(entity.state()))
         .evaluationDate(formatDate(entity.evaluationDate()))
         .evaluationFailure(entity.evaluationFailure())
-        .processDefinitionKey(entity.processDefinitionKey())
-        .processInstanceKey(entity.processInstanceKey())
-        .decisionDefinitionKey(entity.decisionDefinitionKey())
+        .processDefinitionKey(KeyUtil.keyToString(entity.processDefinitionKey()))
+        .processInstanceKey(KeyUtil.keyToString(entity.processInstanceKey()))
+        .decisionDefinitionKey(KeyUtil.keyToString(entity.decisionDefinitionKey()))
         .decisionDefinitionId(entity.decisionDefinitionId())
         .decisionDefinitionName(entity.decisionDefinitionName())
         .decisionDefinitionVersion(entity.decisionDefinitionVersion())
@@ -497,17 +500,17 @@ public final class SearchQueryResponseMapper {
         .result(entity.result());
   }
 
-  public static DecisionInstanceGetQueryResponse toDecisionInstanceGetQueryResponse(
+  public static DecisionInstanceGetQueryResult toDecisionInstanceGetQueryResponse(
       final DecisionInstanceEntity entity) {
-    return new DecisionInstanceGetQueryResponse()
-        .decisionInstanceKey(entity.decisionInstanceKey())
+    return new DecisionInstanceGetQueryResult()
+        .decisionInstanceKey(KeyUtil.keyToString(entity.decisionInstanceKey()))
         .decisionInstanceId(entity.decisionInstanceId())
         .state(toDecisionInstanceStateEnum(entity.state()))
         .evaluationDate(formatDate(entity.evaluationDate()))
         .evaluationFailure(entity.evaluationFailure())
-        .processDefinitionKey(entity.processDefinitionKey())
-        .processInstanceKey(entity.processInstanceKey())
-        .decisionDefinitionKey(entity.decisionDefinitionKey())
+        .processDefinitionKey(KeyUtil.keyToString(entity.processDefinitionKey()))
+        .processInstanceKey(KeyUtil.keyToString(entity.processInstanceKey()))
+        .decisionDefinitionKey(KeyUtil.keyToString(entity.decisionDefinitionKey()))
         .decisionDefinitionId(entity.decisionDefinitionId())
         .decisionDefinitionName(entity.decisionDefinitionName())
         .decisionDefinitionVersion(entity.decisionDefinitionVersion())
@@ -587,10 +590,10 @@ public final class SearchQueryResponseMapper {
     };
   }
 
-  public static VariableSearchQueryResponse toVariableSearchQueryResponse(
+  public static VariableSearchQueryResult toVariableSearchQueryResponse(
       final SearchQueryResult<VariableEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return new VariableSearchQueryResponse()
+    return new VariableSearchQueryResult()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -598,25 +601,25 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  private static List<VariableItem> toVariables(final List<VariableEntity> variableEntities) {
+  private static List<VariableResult> toVariables(final List<VariableEntity> variableEntities) {
     return variableEntities.stream().map(SearchQueryResponseMapper::toVariable).toList();
   }
 
-  public static VariableItem toVariable(final VariableEntity variableEntity) {
-    return new VariableItem()
-        .variableKey(variableEntity.variableKey())
+  public static VariableResult toVariable(final VariableEntity variableEntity) {
+    return new VariableResult()
+        .variableKey(KeyUtil.keyToString(variableEntity.variableKey()))
         .name(variableEntity.name())
         .value(variableEntity.value())
         .fullValue(variableEntity.fullValue())
-        .processInstanceKey(variableEntity.processInstanceKey())
+        .processInstanceKey(KeyUtil.keyToString(variableEntity.processInstanceKey()))
         .tenantId(variableEntity.tenantId())
         .isTruncated(variableEntity.isPreview())
-        .scopeKey(variableEntity.scopeKey());
+        .scopeKey(KeyUtil.keyToString(variableEntity.scopeKey()));
   }
 
-  public static AuthorizationSearchResponse toAuthorizationSearchQueryResponse(
+  public static AuthorizationSearchResult toAuthorizationSearchQueryResponse(
       final SearchQueryResult<AuthorizationEntity> result) {
-    return new AuthorizationSearchResponse()
+    return new AuthorizationSearchResult()
         .page(toSearchQueryPageResponse(result))
         .items(
             ofNullable(result.items())
@@ -624,14 +627,14 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static List<AuthorizationResponse> toAuthorizations(
+  public static List<AuthorizationResult> toAuthorizations(
       final List<AuthorizationEntity> authorizations) {
     return authorizations.stream().map(SearchQueryResponseMapper::toAuthorization).toList();
   }
 
-  public static AuthorizationResponse toAuthorization(final AuthorizationEntity authorization) {
-    return new AuthorizationResponse()
-        .authorizationKey(authorization.authorizationKey())
+  public static AuthorizationResult toAuthorization(final AuthorizationEntity authorization) {
+    return new AuthorizationResult()
+        .authorizationKey(KeyUtil.keyToString(authorization.authorizationKey()))
         .ownerId(authorization.ownerId())
         .ownerType(OwnerTypeEnum.fromValue(authorization.ownerType()))
         .resourceType(ResourceTypeEnum.valueOf(authorization.resourceType()))

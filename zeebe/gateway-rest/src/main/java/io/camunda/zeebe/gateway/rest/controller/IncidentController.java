@@ -11,9 +11,9 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.service.IncidentServices;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentItem;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentResult;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
@@ -49,14 +49,14 @@ public class IncidentController {
   }
 
   @CamundaPostMapping(path = "/search")
-  public ResponseEntity<IncidentSearchQueryResponse> searchIncidents(
-      @RequestBody(required = false) final IncidentSearchQueryRequest query) {
+  public ResponseEntity<IncidentSearchQueryResult> searchIncidents(
+      @RequestBody(required = false) final IncidentSearchQuery query) {
     return SearchQueryRequestMapper.toIncidentQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
   @CamundaGetMapping(path = "/{incidentKey}")
-  public ResponseEntity<IncidentItem> getByKey(
+  public ResponseEntity<IncidentResult> getByKey(
       @PathVariable("incidentKey") final Long incidentKey) {
     try {
       return ResponseEntity.ok()
@@ -70,7 +70,7 @@ public class IncidentController {
     }
   }
 
-  private ResponseEntity<IncidentSearchQueryResponse> search(final IncidentQuery query) {
+  private ResponseEntity<IncidentSearchQueryResult> search(final IncidentQuery query) {
     try {
       final var result =
           incidentServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
