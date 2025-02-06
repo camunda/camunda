@@ -30,7 +30,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest(
     properties = {
-      "camunda.client.zeebe.defaults.enabled=false" // disable all job workers
+      "camunda.client.worker.defaults.enabled=false" // disable all job workers
     })
 @CamundaSpringProcessTest
 public class ProcessUnitTest {

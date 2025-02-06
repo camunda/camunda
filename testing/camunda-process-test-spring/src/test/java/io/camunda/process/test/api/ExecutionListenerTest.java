@@ -30,8 +30,8 @@ import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
-import io.camunda.zeebe.spring.client.event.ZeebeClientClosingEvent;
-import io.camunda.zeebe.spring.client.event.ZeebeClientCreatedEvent;
+import io.camunda.spring.client.event.CamundaClientClosingEvent;
+import io.camunda.spring.client.event.CamundaClientCreatedEvent;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -74,8 +74,8 @@ public class ExecutionListenerTest {
 
   @Captor private ArgumentCaptor<CamundaClient> zeebeClientArgumentCaptor;
   @Captor private ArgumentCaptor<CamundaProcessTestContext> camundaProcessTestContextArgumentCaptor;
-  @Captor private ArgumentCaptor<ZeebeClientCreatedEvent> zeebeClientCreatedEventArgumentCaptor;
-  @Captor private ArgumentCaptor<ZeebeClientClosingEvent> zeebeClientClosingEventArgumentCaptor;
+  @Captor private ArgumentCaptor<CamundaClientCreatedEvent> zeebeClientCreatedEventArgumentCaptor;
+  @Captor private ArgumentCaptor<CamundaClientClosingEvent> zeebeClientClosingEventArgumentCaptor;
 
   @BeforeEach
   void configureMocks() {
@@ -115,7 +115,7 @@ public class ExecutionListenerTest {
 
     verify(applicationContext).publishEvent(zeebeClientCreatedEventArgumentCaptor.capture());
 
-    final ZeebeClientCreatedEvent createdEvent = zeebeClientCreatedEventArgumentCaptor.getValue();
+    final CamundaClientCreatedEvent createdEvent = zeebeClientCreatedEventArgumentCaptor.getValue();
     assertThat(createdEvent).isNotNull();
     assertThat(createdEvent.getClient()).isEqualTo(camundaClient);
   }
@@ -203,10 +203,10 @@ public class ExecutionListenerTest {
 
     // then
     verify(applicationContext).publishEvent(zeebeClientCreatedEventArgumentCaptor.capture());
-    final ZeebeClientCreatedEvent createdEvent = zeebeClientCreatedEventArgumentCaptor.getValue();
+    final CamundaClientCreatedEvent createdEvent = zeebeClientCreatedEventArgumentCaptor.getValue();
 
     verify(applicationContext).publishEvent(zeebeClientClosingEventArgumentCaptor.capture());
-    final ZeebeClientClosingEvent closedClient = zeebeClientClosingEventArgumentCaptor.getValue();
+    final CamundaClientClosingEvent closedClient = zeebeClientClosingEventArgumentCaptor.getValue();
 
     assertThat(createdEvent.getClient()).isEqualTo(closedClient.getClient());
 
