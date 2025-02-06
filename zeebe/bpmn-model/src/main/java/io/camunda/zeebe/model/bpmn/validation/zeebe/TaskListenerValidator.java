@@ -27,11 +27,17 @@ import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 public class TaskListenerValidator implements ModelElementValidator<ZeebeTaskListener> {
 
   private static final List<ZeebeTaskListenerEventType> SUPPORTED_VALUES =
-      Arrays.asList(ZeebeTaskListenerEventType.assigning, ZeebeTaskListenerEventType.completing);
+      Arrays.asList(
+          ZeebeTaskListenerEventType.assigning,
+          ZeebeTaskListenerEventType.updating,
+          ZeebeTaskListenerEventType.completing);
 
   @SuppressWarnings("deprecation")
   private static final List<ZeebeTaskListenerEventType> SUPPORTED_DEPRECATED_VALUES =
-      Arrays.asList(ZeebeTaskListenerEventType.assignment, ZeebeTaskListenerEventType.complete);
+      Arrays.asList(
+          ZeebeTaskListenerEventType.assignment,
+          ZeebeTaskListenerEventType.update,
+          ZeebeTaskListenerEventType.complete);
 
   @Override
   public Class<ZeebeTaskListener> getElementType() {
