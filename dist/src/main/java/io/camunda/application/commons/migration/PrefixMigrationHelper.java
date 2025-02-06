@@ -8,11 +8,15 @@
 package io.camunda.application.commons.migration;
 
 import io.camunda.exporter.schema.PrefixMigrationClient;
+import io.camunda.exporter.schema.elasticsearch.ElasticsearchPrefixMigrationClient;
+import io.camunda.exporter.schema.opensearch.OpensearchPrefixMigrationClient;
 import io.camunda.exporter.utils.CloneResult;
 import io.camunda.exporter.utils.ReindexResult;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
+import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
@@ -88,7 +92,7 @@ public final class PrefixMigrationHelper {
 
     final var clientAdapter = SchemaManagerHelper.createClientAdapter(connectConfiguration);
 
-    SchemaManagerHelper.createSchema(connectConfiguration, clientAdapter.getSearchEngineClient());
+    SchemaManagerHelper.createSchema(connectConfiguration, clientAdapter);
 
     LOG.info("... finished creating/updating schema for Camunda");
 
@@ -109,7 +113,7 @@ public final class PrefixMigrationHelper {
         operatePrefix,
         tasklistPrefix,
         connectConfiguration,
-        clientAdapter.getPrefixMigrationClient(),
+        getPrefixMigrationClient(connectConfiguration),
         executor);
 
     LOG.info("... finished migrating runtime indices");
@@ -120,12 +124,24 @@ public final class PrefixMigrationHelper {
         operatePrefix,
         tasklistPrefix,
         connectConfiguration,
-        clientAdapter.getPrefixMigrationClient(),
+        getPrefixMigrationClient(connectConfiguration),
         executor);
 
     LOG.info("... finished migrating historic indices");
 
     clientAdapter.close();
+  }
+
+  private static PrefixMigrationClient getPrefixMigrationClient(
+      final ConnectConfiguration connectConfiguration) {
+    if (connectConfiguration.getTypeEnum() == DatabaseType.ELASTICSEARCH) {
+
+      return new ElasticsearchPrefixMigrationClient(
+          new ElasticsearchConnector(connectConfiguration).createClient());
+    } else {
+      return new OpensearchPrefixMigrationClient(
+          new OpensearchConnector(connectConfiguration).createClient());
+    }
   }
 
   public static void migrateRuntimeIndices(
@@ -168,20 +184,30 @@ public final class PrefixMigrationHelper {
       final PrefixMigrationClient prefixMigrationClient,
       final ExecutorService executor) {
 
-    var failedClones =
-        cloneIndices(srcToDestCloneMap, prefixMigrationClient, executor).stream()
-            .filter(res -> !res.successful())
-            .collect(Collectors.toMap(CloneResult::source, CloneResult::destination));
+    Map<String, String> failedClones = srcToDestCloneMap;
 
-    for (int i = 0; i < MIGRATION_MAX_RETRIES; i++) {
-      if (failedClones.isEmpty()) {
-        break;
-      }
-
+    final int retries = 0;
+    do {
       failedClones =
-          cloneIndices(srcToDestCloneMap, prefixMigrationClient, executor).stream()
+          cloneIndices(failedClones, prefixMigrationClient, executor).stream()
               .filter(res -> !res.successful())
+              .peek(
+                  res -> {
+                    LOG.warn(
+                        "Failed to clone {} to {} due to {}",
+                        res.source(),
+                        res.destination(),
+                        res.failureReason());
+                  })
               .collect(Collectors.toMap(CloneResult::source, CloneResult::destination));
+
+      if (!failedClones.isEmpty()) {
+        LOG.warn("Clone attempt {} failed, retrying...", retries + 1);
+      }
+    } while (!failedClones.isEmpty() && retries < MIGRATION_MAX_RETRIES);
+
+    if (!failedClones.isEmpty()) {
+      LOG.error("Cloning {} failed, aborting...", srcToDestCloneMap);
     }
   }
 
@@ -189,21 +215,31 @@ public final class PrefixMigrationHelper {
       final Map<String, String> srcToDestMigrationMap,
       final ExecutorService executor,
       final PrefixMigrationClient prefixMigrationClient) {
+    Map<String, String> failedReindex = srcToDestMigrationMap;
 
-    var failedReindex =
-        migrateIndices(srcToDestMigrationMap, executor, prefixMigrationClient).stream()
-            .filter(res -> !res.successful())
-            .collect(Collectors.toMap(ReindexResult::source, ReindexResult::destination));
-
-    for (int i = 0; i < MIGRATION_MAX_RETRIES; i++) {
-      if (failedReindex.isEmpty()) {
-        break;
-      }
-
+    int retries = 0;
+    do {
       failedReindex =
           migrateIndices(failedReindex, executor, prefixMigrationClient).stream()
               .filter(res -> !res.successful())
+              .peek(
+                  res ->
+                      LOG.warn(
+                          "Failed to migrate {} to {} due to {}",
+                          res.source(),
+                          res.destination(),
+                          res.failureReason()))
               .collect(Collectors.toMap(ReindexResult::source, ReindexResult::destination));
+
+      if (!failedReindex.isEmpty()) {
+        LOG.warn("Reindex attempt {} failed, retrying...", retries + 1);
+      }
+
+      retries++;
+    } while (!failedReindex.isEmpty() && retries < MIGRATION_MAX_RETRIES);
+
+    if (!failedReindex.isEmpty()) {
+      LOG.error("Reindexing {} failed, aborting...", srcToDestMigrationMap);
     }
   }
 

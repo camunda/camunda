@@ -11,8 +11,15 @@ import io.camunda.exporter.schema.PrefixMigrationClient;
 import io.camunda.exporter.utils.CloneResult;
 import io.camunda.exporter.utils.ReindexResult;
 import java.util.List;
+import org.opensearch.client.opensearch.OpenSearchClient;
 
 public class OpensearchPrefixMigrationClient implements PrefixMigrationClient {
+
+  private final OpenSearchClient client;
+
+  public OpensearchPrefixMigrationClient(final OpenSearchClient client) {
+    this.client = client;
+  }
 
   @Override
   public ReindexResult reindex(final String source, final String destination) {

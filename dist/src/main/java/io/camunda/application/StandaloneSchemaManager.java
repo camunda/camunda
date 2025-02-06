@@ -88,8 +88,7 @@ public class StandaloneSchemaManager {
     LOG.info("Creating/updating Elasticsearch schema for Camunda ...");
 
     final var clientAdapter = SchemaManagerHelper.createClientAdapter(connectConfiguration);
-    SchemaManagerHelper.createSchema(connectConfiguration, clientAdapter.getSearchEngineClient());
-
+    SchemaManagerHelper.createSchema(connectConfiguration, clientAdapter);
     LOG.info("... finished creating/updating schema for Camunda");
     clientAdapter.close();
     System.exit(0);
