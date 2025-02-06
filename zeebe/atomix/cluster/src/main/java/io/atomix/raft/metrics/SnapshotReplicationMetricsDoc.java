@@ -8,8 +8,11 @@
 package io.atomix.raft.metrics;
 
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 
+@SuppressWarnings("NullableProblems")
 public enum SnapshotReplicationMetricsDoc implements ExtendedMeterDocumentation {
   /** Count of ongoing snapshot replication */
   COUNT {
@@ -26,6 +29,11 @@ public enum SnapshotReplicationMetricsDoc implements ExtendedMeterDocumentation 
     @Override
     public String getDescription() {
       return "Count of ongoing snapshot replication";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {PartitionKeyNames.PARTITION, RaftKeyNames.PARTITION_GROUP};
     }
   },
   /** Approximate duration of replication in milliseconds */
@@ -48,6 +56,11 @@ public enum SnapshotReplicationMetricsDoc implements ExtendedMeterDocumentation 
     @Override
     public String getBaseUnit() {
       return "ms";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {PartitionKeyNames.PARTITION, RaftKeyNames.PARTITION_GROUP};
     }
   }
 }
