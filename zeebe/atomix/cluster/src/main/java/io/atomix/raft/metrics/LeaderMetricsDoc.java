@@ -8,8 +8,11 @@
 package io.atomix.raft.metrics;
 
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 
+@SuppressWarnings("NullableProblems")
 public enum LeaderMetricsDoc implements ExtendedMeterDocumentation {
   /** Latency to append an entry to a follower */
   APPEND_ENTRIES_LATENCY {
@@ -32,6 +35,13 @@ public enum LeaderMetricsDoc implements ExtendedMeterDocumentation {
     public String getDescription() {
       return "Latency to append an entry to a follower";
     }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {
+        PartitionKeyNames.PARTITION, RaftKeyNames.FOLLOWER, RaftKeyNames.PARTITION_GROUP
+      };
+    }
   },
   APPEND_RATE {
     @Override
@@ -47,6 +57,13 @@ public enum LeaderMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public String getDescription() {
       return "The count of entries appended (counting entries, not their size)";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {
+        PartitionKeyNames.PARTITION, RaftKeyNames.FOLLOWER, RaftKeyNames.PARTITION_GROUP
+      };
     }
   },
   /** The count of entries appended (counting entries, not their size) */
@@ -65,6 +82,13 @@ public enum LeaderMetricsDoc implements ExtendedMeterDocumentation {
     public String getDescription() {
       return "The count of entries appended (counting entries, not their size)";
     }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {
+        PartitionKeyNames.PARTITION, RaftKeyNames.FOLLOWER, RaftKeyNames.PARTITION_GROUP
+      };
+    }
   },
   /** The number of non-replicated entries for a given followers */
   NON_REPLICATED_ENTRIES {
@@ -81,6 +105,13 @@ public enum LeaderMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public String getDescription() {
       return "The number of non-replicated entries for a given followers";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {
+        PartitionKeyNames.PARTITION, RaftKeyNames.FOLLOWER, RaftKeyNames.PARTITION_GROUP
+      };
     }
   },
   /** The count of entries committed (counting entries, not their size) */
@@ -99,6 +130,11 @@ public enum LeaderMetricsDoc implements ExtendedMeterDocumentation {
     public String getDescription() {
       return "The count of entries committed (counting entries, not their size)";
     }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {RaftKeyNames.PARTITION_GROUP, PartitionKeyNames.PARTITION};
+    }
   },
   /** The number of non-committed entries on the leader */
   NON_COMMITTED_ENTRIES {
@@ -115,6 +151,11 @@ public enum LeaderMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public String getDescription() {
       return "The number of non-committed entries on the leader";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {RaftKeyNames.PARTITION_GROUP, PartitionKeyNames.PARTITION};
     }
   }
 }
