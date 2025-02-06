@@ -23,14 +23,16 @@ public enum RaftKeyNames implements KeyName {
     @Override
     public String asString() {
       return "follower";
-  /** to */
+    }
+  },
+  /** member of the cluster the message is sent */
   TO {
     @Override
     public String asString() {
       return "to";
     }
   },
-  /** type */
+  /** type of the message received */
   TYPE {
     @Override
     public String asString() {
