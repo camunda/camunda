@@ -10,6 +10,7 @@ package io.camunda.zeebe.util.micrometer;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.Builder;
 import io.micrometer.core.instrument.Timer.Sample;
@@ -83,6 +84,16 @@ public final class MicrometerUtil {
   public static CloseableSilently timer(
       final LongConsumer setter, final TimeUnit unit, final Clock clock) {
     return new CloseableGaugeTimer(setter, unit, clock, clock.monotonicTime());
+  }
+
+  /**
+   * Closes the registry after clearing it. In this way all metrics registered are removed.
+   *
+   * @param registry the registry to clear and close.
+   */
+  public static void closeRegistry(final MeterRegistry registry) {
+    registry.clear();
+    registry.close();
   }
 
   private record CloseableTimer(Timer timer, Timer.Sample sample) implements CloseableSilently {
