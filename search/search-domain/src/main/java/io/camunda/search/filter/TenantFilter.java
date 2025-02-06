@@ -7,7 +7,7 @@
  */
 package io.camunda.search.filter;
 
-import io.camunda.search.entities.TenantMemberEntity.MemberType;
+import io.camunda.search.entities.TenantMemberEntity.TenantMemberType;
 import io.camunda.util.ObjectBuilder;
 import java.util.Set;
 import java.util.function.Function;
@@ -17,7 +17,7 @@ public record TenantFilter(
     String tenantId,
     String name,
     String joinParentId,
-    MemberType memberType,
+    TenantMemberType tenantMemberType,
     Set<Long> memberKeys)
     implements FilterBase {
 
@@ -31,7 +31,7 @@ public record TenantFilter(
     private String tenantId;
     private String name;
     private String joinParentId;
-    private MemberType memberType;
+    private TenantMemberType tenantMemberType;
     private Set<Long> memberKeys;
 
     public Builder key(final Long value) {
@@ -54,8 +54,8 @@ public record TenantFilter(
       return this;
     }
 
-    public Builder memberType(final MemberType value) {
-      memberType = value;
+    public Builder memberType(final TenantMemberType value) {
+      tenantMemberType = value;
       return this;
     }
 
@@ -70,7 +70,7 @@ public record TenantFilter(
 
     @Override
     public TenantFilter build() {
-      return new TenantFilter(key, tenantId, name, joinParentId, memberType, memberKeys);
+      return new TenantFilter(key, tenantId, name, joinParentId, tenantMemberType, memberKeys);
     }
   }
 }

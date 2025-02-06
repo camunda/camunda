@@ -9,7 +9,7 @@ package io.camunda.search.clients.transformers.entity;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.entities.TenantMemberEntity;
-import io.camunda.search.entities.TenantMemberEntity.MemberType;
+import io.camunda.search.entities.TenantMemberEntity.TenantMemberType;
 
 public class TenantMemberEntityTransformer
     implements ServiceTransformer<
@@ -18,6 +18,6 @@ public class TenantMemberEntityTransformer
   public TenantMemberEntity apply(
       final io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity source) {
     return new TenantMemberEntity(
-        source.getMemberId(), MemberType.valueOf(source.getMemberType().name()));
+        source.getMemberId(), TenantMemberType.valueOf(source.getMemberType().name()));
   }
 }

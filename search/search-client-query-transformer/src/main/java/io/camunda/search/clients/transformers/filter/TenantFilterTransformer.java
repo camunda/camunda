@@ -32,9 +32,9 @@ public class TenantFilterTransformer extends IndexFilterTransformer<TenantFilter
         filter.key() == null ? null : term(KEY, filter.key()),
         filter.tenantId() == null ? null : term(TENANT_ID, filter.tenantId()),
         filter.name() == null ? null : term(NAME, filter.name()),
-        filter.memberType() == null
+        filter.tenantMemberType() == null
             ? null
-            : term(TenantIndex.MEMBER_TYPE, filter.memberType().name()),
+            : term(TenantIndex.MEMBER_TYPE, filter.tenantMemberType().name()),
         filter.joinParentId() == null
             ? term(TenantIndex.JOIN, IdentityJoinRelationshipType.TENANT.getType())
             : hasParentQuery(

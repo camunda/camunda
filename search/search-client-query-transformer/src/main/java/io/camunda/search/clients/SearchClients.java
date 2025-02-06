@@ -7,7 +7,7 @@
  */
 package io.camunda.search.clients;
 
-import static io.camunda.search.entities.TenantMemberEntity.MemberType.USER;
+import static io.camunda.search.entities.TenantMemberEntity.TenantMemberType.USER;
 
 import io.camunda.search.clients.auth.DocumentAuthorizationQueryStrategy;
 import io.camunda.search.clients.transformers.ServiceTransformers;
