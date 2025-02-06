@@ -26,6 +26,7 @@ public final class MetaStoreMetrics extends RaftMetrics {
     lastFlushedIndexUpdate =
         Timer.builder(LAST_FLUSHED_INDEX.getName())
             .description(LAST_FLUSHED_INDEX.getDescription())
+            .serviceLevelObjectives(LAST_FLUSHED_INDEX.getTimerSLOs())
             .tag(RaftKeyNames.PARTITION_GROUP.asString(), partitionName)
             .register(registry);
     clock = registry.config().clock();
