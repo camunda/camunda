@@ -19,7 +19,6 @@ import io.camunda.client.api.response.UpdateAuthorizationResponse;
 import io.camunda.client.protocol.rest.OwnerTypeEnum;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
-import java.util.List;
 
 public interface UpdateAuthorizationCommandStep1 {
 

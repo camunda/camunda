@@ -61,8 +61,7 @@ public class UpdateAuthorizationCommandImpl
 
   @Override
   public UpdateAuthorizationCommandStep2 ownerId(final String ownerId) {
-    ArgumentUtil.ensureNotNull("ownerId", ownerId);
-    ArgumentUtil.ensureNotEmpty("ownerId", ownerId);
+    ArgumentUtil.ensureNotNullNorEmpty("ownerId", ownerId);
     request.setOwnerId(ownerId);
     return this;
   }
@@ -76,8 +75,7 @@ public class UpdateAuthorizationCommandImpl
 
   @Override
   public UpdateAuthorizationCommandStep4 resourceId(final String resourceId) {
-    ArgumentUtil.ensureNotNull("resourceId", resourceId);
-    ArgumentUtil.ensureNotEmpty("resourceId", resourceId);
+    ArgumentUtil.ensureNotNullNorEmpty("resourceId", resourceId);
     request.setResourceId(resourceId);
     return this;
   }
