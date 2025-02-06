@@ -17,7 +17,6 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
@@ -103,68 +102,6 @@ public class ResourceControllerTest extends RestControllerTest {
                              "processDefinitionId":"processId",
                              "processDefinitionVersion":1,
                              "processDefinitionKey":"123456",
-                             "resourceName":"process.bpmn",
-                             "tenantId":"<default>"
-                          }
-                       }
-                    ],
-                    "tenantId":"<default>"
-                 }
-                """);
-  }
-
-  @Test
-  void shouldDeployASingleResourceNumberKeys() {
-    // given
-    final var filename = "process.bpmn";
-    final var contentType = MediaType.APPLICATION_OCTET_STREAM;
-    final var content = new byte[] {1, 2, 3};
-
-    final var mockedResponse = new DeploymentRecord().setDeploymentKey(123);
-    mockedResponse
-        .processesMetadata()
-        .add()
-        .setResourceName(filename)
-        .setBpmnProcessId("processId")
-        .setDeploymentKey(123L)
-        .setVersion(1)
-        .setKey(123456L)
-        .setChecksum(BufferUtil.wrapString("checksum"));
-    when(resourceServices.deployResources(any()))
-        .thenReturn(CompletableFuture.completedFuture(mockedResponse));
-
-    final var multipartBodyBuilder = new MultipartBodyBuilder();
-    multipartBodyBuilder.part("resources", content).contentType(contentType).filename(filename);
-
-    // when/then
-    final var response =
-        webClient
-            .post()
-            .uri(DEPLOY_RESOURCES_ENDPOINT)
-            .contentType(MediaType.MULTIPART_FORM_DATA)
-            .bodyValue(multipartBodyBuilder.build())
-            .accept(RequestMapper.MEDIA_TYPE_KEYS_NUMBER)
-            .exchange()
-            .expectStatus()
-            .isOk();
-
-    verify(resourceServices).deployResources(deployRequestCaptor.capture());
-    final var capturedRequest = deployRequestCaptor.getValue();
-    assertThat(capturedRequest.resources()).isNotEmpty();
-    assertThat(capturedRequest.resources()).size().isEqualTo(1);
-
-    response
-        .expectBody()
-        .json(
-            """
-                 {
-                    "deploymentKey":123,
-                    "deployments":[
-                       {
-                          "processDefinition":{
-                             "processDefinitionId":"processId",
-                             "processDefinitionVersion":1,
-                             "processDefinitionKey":123456,
                              "resourceName":"process.bpmn",
                              "tenantId":"<default>"
                           }

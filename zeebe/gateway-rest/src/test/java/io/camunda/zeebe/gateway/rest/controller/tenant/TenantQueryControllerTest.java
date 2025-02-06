@@ -20,7 +20,6 @@ import io.camunda.search.query.TenantQuery;
 import io.camunda.search.sort.TenantSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.TenantServices;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Set;
@@ -87,21 +86,6 @@ public class TenantQueryControllerTest extends RestControllerTest {
           TENANT_ENTITIES.get(1).description(),
           TENANT_ENTITIES.get(1).tenantId(),
           "\"%s\"".formatted(TENANT_ENTITIES.get(2).key()),
-          TENANT_ENTITIES.get(2).name(),
-          TENANT_ENTITIES.get(2).description(),
-          TENANT_ENTITIES.get(2).tenantId(),
-          TENANT_ENTITIES.size());
-  private static final String EXPECTED_RESPONSE_NUMBER_KEYS =
-      RESPONSE.formatted(
-          TENANT_ENTITIES.get(0).key(),
-          TENANT_ENTITIES.get(0).name(),
-          TENANT_ENTITIES.get(0).description(),
-          TENANT_ENTITIES.get(0).tenantId(),
-          TENANT_ENTITIES.get(1).key(),
-          TENANT_ENTITIES.get(1).name(),
-          TENANT_ENTITIES.get(1).description(),
-          TENANT_ENTITIES.get(1).tenantId(),
-          TENANT_ENTITIES.get(2).key(),
           TENANT_ENTITIES.get(2).name(),
           TENANT_ENTITIES.get(2).description(),
           TENANT_ENTITIES.get(2).tenantId(),
@@ -213,36 +197,6 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
         .json(EXPECTED_RESPONSE);
-
-    verify(tenantServices).search(new TenantQuery.Builder().build());
-  }
-
-  @Test
-  void shouldSearchTenantsWithEmptyQueryNumberKeys() {
-    // given
-    when(tenantServices.search(any(TenantQuery.class)))
-        .thenReturn(
-            new SearchQueryResult.Builder<TenantEntity>()
-                .total(3)
-                .firstSortValues(new Object[] {"f"})
-                .lastSortValues(new Object[] {"v"})
-                .items(TENANT_ENTITIES)
-                .build());
-
-    // when / then
-    webClient
-        .post()
-        .uri(SEARCH_TENANT_URL)
-        .accept(RequestMapper.MEDIA_TYPE_KEYS_NUMBER)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue("{}")
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(RequestMapper.MEDIA_TYPE_KEYS_NUMBER)
-        .expectBody()
-        .json(EXPECTED_RESPONSE_NUMBER_KEYS);
 
     verify(tenantServices).search(new TenantQuery.Builder().build());
   }
