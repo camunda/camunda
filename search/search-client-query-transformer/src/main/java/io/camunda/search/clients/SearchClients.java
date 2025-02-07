@@ -251,8 +251,7 @@ public class SearchClients
 
     final var overlayQuery = injectUsernamesIntoQuery(usernames, userQuery);
 
-    return getSearchExecutor()
-        .search(overlayQuery, io.camunda.webapps.schema.entities.usermanagement.UserEntity.class);
+    return searchUsers(overlayQuery);
   }
 
   @Override
@@ -317,17 +316,8 @@ public class SearchClients
 
   private UserQuery injectUsernamesIntoQuery(
       final Set<String> usernames, final UserQuery userQuery) {
-    return UserQuery.of(
-        builder ->
-            builder
-                .filter(
-                    f ->
-                        f.name(userQuery.filter().name())
-                            .email(userQuery.filter().email())
-                            .key(userQuery.filter().key())
-                            .username(userQuery.filter().username())
-                            .usernames(usernames))
-                .sort(userQuery.sort())
-                .page(userQuery.page()));
+    return userQuery.toBuilder()
+        .filter(userQuery.filter().toBuilder().usernames(usernames).build())
+        .build();
   }
 }
