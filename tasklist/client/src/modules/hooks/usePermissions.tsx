@@ -13,10 +13,12 @@ const usePermissions = (scopes: Permissions) => {
   const {data: currentUser} = useCurrentUser();
 
   const permissions = currentUser?.permissions;
+  if (currentUser && permissions === undefined) {
+    return {hasPermission: true};
+  }
 
   const hasPermission =
-    permissions !== undefined &&
-    permissions.some((permission) => scopes?.includes(permission));
+    permissions?.some((permission) => scopes?.includes(permission)) ?? false;
 
   return {hasPermission};
 };
