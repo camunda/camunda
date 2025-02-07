@@ -40,6 +40,10 @@ import io.atomix.cluster.messaging.impl.TestMessagingServiceFactory;
 import io.atomix.cluster.messaging.impl.TestUnicastServiceFactory;
 import io.atomix.utils.Version;
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
@@ -56,6 +60,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /** SWIM membership protocol test. */
+@AutoCloseResources
 public class SwimProtocolTest extends ConcurrentTestCase {
 
   private static final Duration GOSSIP_INTERVAL = Duration.ofMillis(25);
@@ -74,6 +79,8 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   private Collection<Member> members;
   private Collection<Node> nodes;
   private Map<MemberId, TestGroupMembershipEventListener> listeners = Maps.newConcurrentMap();
+  @AutoCloseResource
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   private Member member(final String id, final String host, final int port, final Version version) {
     return new SwimMembershipProtocol.SwimMember(
@@ -353,7 +360,8 @@ public class SwimProtocolTest extends ConcurrentTestCase {
                     .setProbeInterval(PROBE_INTERVAL)
                     .setProbeTimeout(PROBE_TIMEOUT)
                     .setFailureTimeout(FAILURE_INTERVAL)
-                    .setSyncInterval(SYNC_INTERVAL)));
+                    .setSyncInterval(SYNC_INTERVAL)),
+            meterRegistry);
     final TestGroupMembershipEventListener listener = new TestGroupMembershipEventListener();
     listeners.put(member.id(), listener);
     protocol.addListener(listener);

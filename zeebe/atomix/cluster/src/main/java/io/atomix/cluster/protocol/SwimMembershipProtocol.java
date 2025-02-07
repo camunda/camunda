@@ -36,6 +36,7 @@ import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -123,11 +124,13 @@ public class SwimMembershipProtocol
   private ScheduledFuture<?> probeFuture;
   private ScheduledFuture<?> syncFuture;
 
-  private final SwimMembershipProtocolMetrics swimMembershipProtocolMetrics =
-      new SwimMembershipProtocolMetrics();
+  private final SwimMembershipProtocolMetrics swimMembershipProtocolMetrics ;
 
-  SwimMembershipProtocol(final SwimMembershipProtocolConfig config) {
+  SwimMembershipProtocol(
+      final SwimMembershipProtocolConfig config,
+      final MeterRegistry registry) {
     this.config = config;
+    swimMembershipProtocolMetrics = new SwimMembershipProtocolMetrics(registry);
   }
 
   /**
@@ -135,8 +138,8 @@ public class SwimMembershipProtocol
    *
    * @return a new bootstrap provider builder
    */
-  public static SwimMembershipProtocolBuilder builder() {
-    return new SwimMembershipProtocolBuilder();
+  public static SwimMembershipProtocolBuilder builder(final MeterRegistry registry) {
+    return new SwimMembershipProtocolBuilder(registry);
   }
 
   @Override
@@ -386,7 +389,7 @@ public class SwimMembershipProtocol
    */
   private void recordUpdate(final ImmutableMember member) {
     updates.put(member.id(), member);
-    SwimMembershipProtocolMetrics.updateMemberIncarnationNumber(
+    swimMembershipProtocolMetrics.updateMemberIncarnationNumber(
         member.id().id(), member.incarnationNumber);
   }
 
@@ -884,8 +887,10 @@ public class SwimMembershipProtocol
     }
 
     @Override
-    public GroupMembershipProtocol newProtocol(final SwimMembershipProtocolConfig config) {
-      return new SwimMembershipProtocol(config);
+    public GroupMembershipProtocol newProtocol(
+        final SwimMembershipProtocolConfig config,
+        final MeterRegistry registry) {
+      return new SwimMembershipProtocol(config, registry);
     }
   }
 

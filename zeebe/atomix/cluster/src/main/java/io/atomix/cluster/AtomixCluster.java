@@ -110,7 +110,7 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
         config,
         version,
         buildMessagingService(config, registry),
-        buildUnicastService(config),
+        buildUnicastService(config, registry),
         registry);
   }
 
@@ -123,7 +123,7 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
     this.messagingService =
         messagingService != null ? messagingService : buildMessagingService(config, registry);
     this.unicastService =
-        unicastService != null ? unicastService : buildUnicastService(config);
+        unicastService != null ? unicastService : buildUnicastService(config, registry);
 
     discoveryProvider = buildLocationProvider(config);
     membershipProtocol = buildMembershipProtocol(config, registry);
@@ -308,12 +308,12 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
 
   /** Builds a default unicast service. */
   protected static ManagedUnicastService buildUnicastService(
-      final ClusterConfig config) {
+      final ClusterConfig config, final MeterRegistry registry) {
     return new NettyUnicastService(
         config.getClusterId(),
         config.getNodeConfig().getAddress(),
-        config.getMessagingConfig()
-        );
+        config.getMessagingConfig(),
+        registry);
   }
 
   /** Builds a member location provider. */
@@ -331,7 +331,7 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   @SuppressWarnings("unchecked")
   protected static GroupMembershipProtocol buildMembershipProtocol(
       final ClusterConfig config, final MeterRegistry registry) {
-    return config.getProtocolConfig().getType().newProtocol(config.getProtocolConfig());
+    return config.getProtocolConfig().getType().newProtocol(config.getProtocolConfig(), registry);
   }
 
   /** Builds a cluster service. */
