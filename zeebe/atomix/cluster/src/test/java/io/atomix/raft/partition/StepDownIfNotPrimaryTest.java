@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
@@ -18,13 +19,12 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
 
 final class StepDownIfNotPrimaryTest {
-  @AutoClose MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  @AutoCloseResource MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @Test
   void shouldStepDownIfNotPrimary(@TempDir final Path tempDir) throws IllegalAccessException {

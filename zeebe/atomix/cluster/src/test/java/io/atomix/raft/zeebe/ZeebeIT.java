@@ -23,6 +23,7 @@ import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.zeebe.util.TestAppender;
 import io.atomix.raft.zeebe.util.ZeebeTestHelper;
 import io.atomix.raft.zeebe.util.ZeebeTestNode;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
@@ -46,7 +47,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -56,7 +56,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class ZeebeIT {
 
-  @AutoClose static MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  @AutoCloseResource static MeterRegistry meterRegistry = new SimpleMeterRegistry();
   // rough estimate of how many entries we'd need to write to fill a segment
   // segments are configured for 1kb, and one entry takes ~30 bytes (plus some metadata I guess)
   private static final int ENTRIES_PER_SEGMENT = (1024 / 30) + 1;

@@ -23,6 +23,7 @@ import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.zeebe.util.TestAppender;
 import io.atomix.raft.zeebe.util.ZeebeTestHelper;
 import io.atomix.raft.zeebe.util.ZeebeTestNode;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.ByteBuffer;
@@ -32,7 +33,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 public class ZeebeLogAppenderTest {
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  @AutoClose MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  @AutoCloseResource MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final Stopwatch stopwatch = Stopwatch.createUnstarted();
   private final TestAppender appenderListener = new TestAppender();
