@@ -8,8 +8,11 @@
 package io.atomix.raft.metrics;
 
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 
+@SuppressWarnings("NullableProblems")
 public enum RaftRequestMetricsDoc implements ExtendedMeterDocumentation {
   /** Number of raft requests received */
   RAFT_MESSAGE_RECEIVED {
@@ -27,6 +30,13 @@ public enum RaftRequestMetricsDoc implements ExtendedMeterDocumentation {
     public String getDescription() {
       return "Number of raft requests received";
     }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {
+        RaftKeyNames.TYPE, RaftKeyNames.PARTITION_GROUP, PartitionKeyNames.PARTITION
+      };
+    }
   },
   /** Number of raft requests send */
   RAFT_MESSAGE_SEND {
@@ -43,6 +53,16 @@ public enum RaftRequestMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public String getDescription() {
       return "Number of raft requests send";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {
+        RaftKeyNames.TYPE,
+        RaftKeyNames.TYPE,
+        RaftKeyNames.PARTITION_GROUP,
+        PartitionKeyNames.PARTITION
+      };
     }
   }
 }
