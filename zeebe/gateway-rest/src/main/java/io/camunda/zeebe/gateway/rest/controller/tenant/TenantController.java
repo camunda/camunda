@@ -198,18 +198,9 @@ public class TenantController {
   }
 
   private UserQuery buildUserQuery(final String tenantId, final UserQuery userQuery) {
-    return UserQuery.of(
-        builder ->
-            builder
-                .filter(
-                    f ->
-                        f.name(userQuery.filter().name())
-                            .email(userQuery.filter().email())
-                            .key(userQuery.filter().key())
-                            .username(userQuery.filter().username())
-                            .tenantId(tenantId))
-                .sort(userQuery.sort())
-                .page(userQuery.page()));
+    return userQuery.toBuilder()
+        .filter(userQuery.filter().toBuilder().tenantId(tenantId).build())
+        .build();
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateTenant(final TenantDTO tenantDTO) {
