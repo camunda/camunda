@@ -321,7 +321,8 @@ public class RaftPartitionServer implements HealthMonitorable {
         clusterCommunicator,
         requestTimeout,
         snapshotRequestTimeout,
-        configurationChangeTimeout);
+        configurationChangeTimeout,
+        meterRegistry);
   }
 
   public CompletableFuture<Void> stepDown() {
