@@ -41,6 +41,7 @@ import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.net.Address;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -103,8 +104,11 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   private final AtomicBoolean started = new AtomicBoolean();
 
   public AtomixCluster(
-      final ClusterConfig config, final Version version, final String actorSchedulerName) {
-    this(config, version, null, null, actorSchedulerName);
+      final ClusterConfig config,
+      final Version version,
+      final String actorSchedulerName,
+      final MeterRegistry registry) {
+    this(config, version, null, null, actorSchedulerName, registry);
   }
 
   protected AtomixCluster(
@@ -112,11 +116,12 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
       final Version version,
       final ManagedMessagingService messagingService,
       final ManagedUnicastService unicastService,
-      final String actorSchedulerName) {
+      final String actorSchedulerName,
+      final MeterRegistry registry) {
     this.messagingService =
         messagingService != null
             ? messagingService
-            : buildMessagingService(config, actorSchedulerName);
+            : buildMessagingService(config, actorSchedulerName, registry);
     this.unicastService =
         unicastService != null ? unicastService : buildUnicastService(config, actorSchedulerName);
 
@@ -135,8 +140,8 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
    *
    * @return a new Atomix builder
    */
-  public static AtomixClusterBuilder builder() {
-    return builder(new ClusterConfig());
+  public static AtomixClusterBuilder builder(final MeterRegistry registry) {
+    return builder(new ClusterConfig(), registry);
   }
 
   /**
@@ -145,8 +150,9 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
    * @param config the Atomix configuration
    * @return a new Atomix builder
    */
-  public static AtomixClusterBuilder builder(final ClusterConfig config) {
-    return new AtomixClusterBuilder(config);
+  public static AtomixClusterBuilder builder(
+      final ClusterConfig config, final MeterRegistry registry) {
+    return new AtomixClusterBuilder(config, registry);
   }
 
   /**
@@ -292,12 +298,13 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
 
   /** Builds a default messaging service. */
   protected static ManagedMessagingService buildMessagingService(
-      final ClusterConfig config, final String actorSchedulerName) {
+      final ClusterConfig config, final String actorSchedulerName, final MeterRegistry registry) {
     return new NettyMessagingService(
         config.getClusterId(),
         config.getNodeConfig().getAddress(),
         config.getMessagingConfig(),
-        actorSchedulerName);
+        actorSchedulerName,
+        registry);
   }
 
   /** Builds a default unicast service. */

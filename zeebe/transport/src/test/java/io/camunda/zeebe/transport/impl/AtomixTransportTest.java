@@ -25,6 +25,8 @@ import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.ServerTransport;
 import io.camunda.zeebe.transport.TransportFactory;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.Arrays;
@@ -48,6 +50,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
@@ -66,6 +69,7 @@ public class AtomixTransportTest {
   private static String serverAddress;
   private static TransportFactory transportFactory;
   private static NettyMessagingService nettyMessagingService;
+  @AutoClose private static MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @Parameter(0)
   public String testName;
@@ -114,7 +118,10 @@ public class AtomixTransportTest {
                     nodeAddressSupplier = () -> serverAddress;
                     nettyMessagingService =
                         new NettyMessagingService(
-                            "cluster", Address.from(serverAddress), new MessagingConfig());
+                            "cluster",
+                            Address.from(serverAddress),
+                            new MessagingConfig(),
+                            meterRegistry);
                     nettyMessagingService.start().join();
                   }
 
@@ -132,7 +139,7 @@ public class AtomixTransportTest {
     nodeAddressSupplier = () -> serverAddress;
 
     cluster =
-        AtomixCluster.builder()
+        AtomixCluster.builder(meterRegistry)
             .withAddress(Address.from(serverAddress))
             .withMemberId("0")
             .withClusterId("cluster")
