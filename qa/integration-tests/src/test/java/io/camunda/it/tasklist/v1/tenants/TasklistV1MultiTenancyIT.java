@@ -90,7 +90,6 @@ public class TasklistV1MultiTenancyIT {
         final var tasklistClient2 =
             testInstance.newTasklistClient().withAuthentication(USERNAME_2, PASSWORD)) {
 
-
       // user 1 can read process definition 1
       assertThat(tasklistClient1.getProcessDefinition(processDefinitionKey1).statusCode())
           .isEqualTo(OK.value());
