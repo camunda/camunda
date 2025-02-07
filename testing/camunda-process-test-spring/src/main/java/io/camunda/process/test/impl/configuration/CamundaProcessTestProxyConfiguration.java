@@ -17,7 +17,9 @@ package io.camunda.process.test.impl.configuration;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.spec.CamundaProcessSpecRunner;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
+import io.camunda.process.test.impl.proxy.CamundaProcessSpecRunnerProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -66,5 +68,20 @@ public class CamundaProcessTestProxyConfiguration {
             getClass().getClassLoader(),
             new Class[] {CamundaProcessTestContext.class},
             camundaProcessTestContextProxy);
+  }
+
+  @Bean
+  public CamundaProcessSpecRunnerProxy camundaProcessSpecRunnerProxy() {
+    return new CamundaProcessSpecRunnerProxy();
+  }
+
+  @Bean
+  public CamundaProcessSpecRunner camundaProcessSpecRunner(
+      final CamundaProcessSpecRunnerProxy camundaProcessSpecRunnerProxy) {
+    return (CamundaProcessSpecRunner)
+        Proxy.newProxyInstance(
+            getClass().getClassLoader(),
+            new Class[] {CamundaProcessSpecRunner.class},
+            camundaProcessSpecRunnerProxy);
   }
 }
