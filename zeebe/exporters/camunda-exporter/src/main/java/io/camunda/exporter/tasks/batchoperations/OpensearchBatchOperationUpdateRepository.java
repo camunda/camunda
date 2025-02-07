@@ -179,7 +179,4 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
         .map(b -> new OperationsAggData(b.key(), b.docCount()))
         .collect(Collectors.toList());
   }
-
-  @Override
-  public void close() throws Exception {}
 }
