@@ -243,7 +243,7 @@ async function mockProcessStart(page: Page) {
 }
 
 async function mockCurrentUser(page: Page) {
-  await page.route(/^.*\/v1\/internal\/users\/current$/i, (route) =>
+  await page.route(/^.*\/v2\/authentication\/me$/i, (route) =>
     route.fulfill({
       status: 200,
       body: JSON.stringify({

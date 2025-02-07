@@ -47,7 +47,7 @@ describe('Restricted', () => {
   it('should not render content that user has no permission for', async () => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentRestrictedUser);
         },
@@ -71,7 +71,7 @@ describe('Restricted', () => {
   it('should render content that user has permission for at least one scope', async () => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentRestrictedUser);
         },
@@ -95,7 +95,7 @@ describe('Restricted', () => {
   it('should render content that user has permission for', async () => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -119,7 +119,7 @@ describe('Restricted', () => {
   it('should not render content when API returns an unknown permission', async () => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUserWithUnknownRole);
         },
@@ -143,7 +143,7 @@ describe('Restricted', () => {
   it('should not render content when API returns no permissions', async () => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUserWithoutRole);
         },
@@ -167,7 +167,7 @@ describe('Restricted', () => {
   it('should render a fallback', async () => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentRestrictedUser);
         },

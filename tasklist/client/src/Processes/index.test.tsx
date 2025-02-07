@@ -69,7 +69,7 @@ describe('Processes', () => {
   beforeEach(() => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -209,7 +209,7 @@ describe('Processes', () => {
         return HttpResponse.json([createMockProcess('process-0')]);
       }),
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentRestrictedUser);
         },
@@ -262,7 +262,7 @@ describe('Processes', () => {
         return HttpResponse.json([]);
       }),
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUserWithTenants);
         },
@@ -300,7 +300,7 @@ describe('Processes', () => {
         return HttpResponse.json([]);
       }),
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUserWithTenants);
         },
@@ -337,7 +337,7 @@ describe('Processes', () => {
         return HttpResponse.json([]);
       }),
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },

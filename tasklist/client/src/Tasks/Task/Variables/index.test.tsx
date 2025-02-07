@@ -44,7 +44,7 @@ describe('<Variables />', () => {
   beforeEach(() => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -804,7 +804,7 @@ describe('<Variables />', () => {
 
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentRestrictedUser);
         },
@@ -1149,7 +1149,7 @@ describe('<Variables />', () => {
   it('should complete a task with a truncated variable', async () => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -1228,7 +1228,7 @@ describe('<Variables />', () => {
     const mockNewValue = '"new-value"';
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -1303,7 +1303,7 @@ describe('<Variables />', () => {
   it('should show the preview value of a truncated variable', async () => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -1326,7 +1326,7 @@ describe('<Variables />', () => {
         },
       ),
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
