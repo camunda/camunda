@@ -34,7 +34,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -48,8 +47,7 @@ public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
   private final ObjectMapper objectMapper;
 
   public ProcessOverviewRepositoryES(
-      final OptimizeElasticsearchClient esClient,
-      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper) {
+      final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
   }

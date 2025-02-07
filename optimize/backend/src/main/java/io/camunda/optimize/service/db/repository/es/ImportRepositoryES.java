@@ -40,7 +40,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -56,7 +55,7 @@ public class ImportRepositoryES implements ImportRepository {
 
   public ImportRepositoryES(
       final OptimizeElasticsearchClient esClient,
-      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper,
+      final ObjectMapper objectMapper,
       final ConfigurationService configurationService,
       final DateTimeFormatter dateTimeFormatter) {
     this.esClient = esClient;

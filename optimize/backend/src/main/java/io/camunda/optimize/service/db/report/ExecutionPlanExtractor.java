@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
@@ -41,7 +40,7 @@ public class ExecutionPlanExtractor {
   public ExecutionPlanExtractor(
       final ApplicationContext applicationContext,
       final ConfigurationService configurationService,
-      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper) {
     this.applicationContext = applicationContext;
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;

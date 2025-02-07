@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -42,8 +41,7 @@ public class SettingsWriterES implements SettingsWriter {
   private final ObjectMapper objectMapper;
 
   public SettingsWriterES(
-      final OptimizeElasticsearchClient esClient,
-      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper) {
+      final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
   }

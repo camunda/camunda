@@ -18,7 +18,6 @@ import io.camunda.optimize.service.importing.zeebe.mediator.StorePositionBasedIm
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.List;
 import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -32,7 +31,7 @@ public class StorePositionBasedImportProgressMediatorFactory
       final ImportIndexHandlerRegistry importIndexHandlerRegistry,
       final ConfigurationService configurationService,
       final PositionBasedImportIndexWriter importIndexWriter,
-      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper,
+      final ObjectMapper objectMapper,
       final DatabaseClient databaseClient) {
     super(
         beanFactory,

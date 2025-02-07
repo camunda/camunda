@@ -36,7 +36,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.text.StringSubstitutor;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -51,7 +50,7 @@ public class ProcessVariableUpdateWriter {
   private final VariableRepository variableRepository;
 
   public ProcessVariableUpdateWriter(
-      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper,
+      final ObjectMapper objectMapper,
       final IndexRepository indexRepository,
       final VariableRepository variableRepository) {
     this.objectMapper = objectMapper;

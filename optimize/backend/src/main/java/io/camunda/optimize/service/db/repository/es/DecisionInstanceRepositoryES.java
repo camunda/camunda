@@ -25,7 +25,6 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -44,7 +43,7 @@ public class DecisionInstanceRepositoryES implements DecisionInstanceRepository 
   public DecisionInstanceRepositoryES(
       final OptimizeElasticsearchClient esClient,
       final ConfigurationService configurationService,
-      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper,
+      final ObjectMapper objectMapper,
       final DateTimeFormatter dateTimeFormatter,
       final TaskRepositoryES taskRepositoryES) {
     this.esClient = esClient;

@@ -81,7 +81,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -101,7 +100,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
 
   public DurationOutliersReaderES(
       final OptimizeElasticsearchClient esClient,
-      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper,
+      final ObjectMapper objectMapper,
       final ProcessDefinitionReader processDefinitionReader,
       final ProcessVariableReader processVariableReader,
       final ProcessQueryFilterEnhancerES queryFilterEnhancer,

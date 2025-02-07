@@ -67,7 +67,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -86,7 +85,7 @@ public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataI
 
   public ProcessViewRawDataInterpreterES(
       final ConfigurationService configurationService,
-      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper,
+      final ObjectMapper objectMapper,
       final OptimizeElasticsearchClient esClient,
       final DefinitionService definitionService,
       final VariableRepositoryES variableRepository) {

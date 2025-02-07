@@ -45,7 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -63,7 +62,7 @@ public class DecisionViewRawDataInterpreterES extends AbstractDecisionViewRawDat
 
   public DecisionViewRawDataInterpreterES(
       final ConfigurationService configurationService,
-      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper,
+      final ObjectMapper objectMapper,
       final OptimizeElasticsearchClient esClient,
       final DecisionVariableReader decisionVariableReader) {
     this.configurationService = configurationService;

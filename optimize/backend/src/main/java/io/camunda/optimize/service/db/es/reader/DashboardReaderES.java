@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -45,8 +44,7 @@ public class DashboardReaderES implements DashboardReader {
   private final ObjectMapper objectMapper;
 
   public DashboardReaderES(
-      final OptimizeElasticsearchClient esClient,
-      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper) {
+      final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
   }

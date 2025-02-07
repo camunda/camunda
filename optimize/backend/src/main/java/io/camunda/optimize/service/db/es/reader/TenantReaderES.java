@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -39,7 +38,7 @@ public class TenantReaderES implements TenantReader {
   public TenantReaderES(
       final OptimizeElasticsearchClient esClient,
       final ConfigurationService configurationService,
-      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;

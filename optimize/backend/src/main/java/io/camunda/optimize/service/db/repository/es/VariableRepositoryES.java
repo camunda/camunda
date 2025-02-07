@@ -114,7 +114,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -134,7 +133,7 @@ public class VariableRepositoryES implements VariableRepository {
 
   public VariableRepositoryES(
       final OptimizeElasticsearchClient esClient,
-      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper,
+      final ObjectMapper objectMapper,
       final ConfigurationService configurationService,
       final DateTimeFormatter dateTimeFormatter,
       final DecisionDefinitionReader decisionDefinitionReader,

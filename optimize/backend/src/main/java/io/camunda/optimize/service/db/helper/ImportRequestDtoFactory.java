@@ -17,7 +17,6 @@ import io.camunda.optimize.dto.optimize.RequestType;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.writer.DatabaseWriterUtil;
 import java.util.Set;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -25,8 +24,7 @@ public class ImportRequestDtoFactory {
 
   final ObjectMapper objectMapper;
 
-  public ImportRequestDtoFactory(
-      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper) {
+  public ImportRequestDtoFactory(final ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
 

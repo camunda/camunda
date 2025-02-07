@@ -43,7 +43,6 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import java.io.IOException;
 import java.util.Optional;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -58,7 +57,7 @@ public class DashboardWriterES implements DashboardWriter {
 
   public DashboardWriterES(
       final OptimizeElasticsearchClient esClient,
-      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper,
+      final ObjectMapper objectMapper,
       final TaskRepositoryES taskRepositoryES) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;

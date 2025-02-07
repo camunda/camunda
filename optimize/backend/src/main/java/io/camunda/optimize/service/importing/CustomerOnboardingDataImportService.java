@@ -29,7 +29,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -51,7 +50,7 @@ public class CustomerOnboardingDataImportService {
 
   public CustomerOnboardingDataImportService(
       final ProcessDefinitionWriter processDefinitionWriter,
-      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper,
+      final ObjectMapper objectMapper,
       final ConfigurationService configurationService,
       final ProcessInstanceWriter processInstanceWriter,
       final ProcessInstanceRepository processInstanceRepository) {

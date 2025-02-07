@@ -38,7 +38,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -55,7 +54,7 @@ public class ProcessInstanceWriter {
 
   public ProcessInstanceWriter(
       final IndexRepository indexRepository,
-      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper,
+      final ObjectMapper objectMapper,
       final ImportRequestDtoFactory importRequestDtoFactory,
       final ProcessInstanceRepository processInstanceRepository) {
     this.indexRepository = indexRepository;

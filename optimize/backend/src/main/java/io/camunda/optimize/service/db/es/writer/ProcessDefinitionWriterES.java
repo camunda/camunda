@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -60,7 +59,7 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
 
   public ProcessDefinitionWriterES(
       final OptimizeElasticsearchClient esClient,
-      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper,
+      final ObjectMapper objectMapper,
       final ConfigurationService configurationService,
       final TaskRepositoryES taskRepositoryES) {
     super(objectMapper, esClient, taskRepositoryES);

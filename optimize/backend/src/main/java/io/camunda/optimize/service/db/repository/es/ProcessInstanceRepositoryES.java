@@ -49,7 +49,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -68,7 +67,7 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
   public ProcessInstanceRepositoryES(
       final ConfigurationService configurationService,
       final OptimizeElasticsearchClient esClient,
-      final @Qualifier("optimizeObjectMapper") ObjectMapper objectMapper,
+      final ObjectMapper objectMapper,
       final DateTimeFormatter dateTimeFormatter,
       final TaskRepositoryES taskRepositoryES) {
     this.configurationService = configurationService;
