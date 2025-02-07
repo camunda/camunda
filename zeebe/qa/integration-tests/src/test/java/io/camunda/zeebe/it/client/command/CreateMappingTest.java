@@ -164,6 +164,6 @@ public class CreateMappingTest {
         .isInstanceOf(RuntimeException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining(
-            "Expected to create mapping with id 'Map ID' but a mapping with this id already exists.");
+            "Expected to create mapping with id 'Map ID', but a mapping with this id already exists.");
   }
 }
