@@ -104,7 +104,8 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   public CompletableFuture<RaftPartitionServer> bootstrap() {
-    final RaftStartupMetrics raftStartupMetrics = new RaftStartupMetrics(partition.name());
+    final RaftStartupMetrics raftStartupMetrics =
+        new RaftStartupMetrics(partition.name(), meterRegistry);
     log.info("Server bootstrapping partition {}", partition.id());
     final long bootstrapStartTime = System.currentTimeMillis();
     return server
@@ -126,7 +127,7 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   public CompletableFuture<RaftPartitionServer> join() {
-    final var metrics = new RaftStartupMetrics(partition.name());
+    final var metrics = new RaftStartupMetrics(partition.name(), meterRegistry);
     final long joinStartTime = System.currentTimeMillis();
     log.info("Server joining partition {}", partition.id());
     return server
