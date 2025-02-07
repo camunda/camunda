@@ -75,7 +75,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
   private LogCompactor logCompactor;
   private final ThreadContext threadContext = new InlineThreadContext();
   @Mock private RaftLog raftLog;
-  private final RaftServiceMetrics raftMetrics = new RaftServiceMetrics("1");
+  private final RaftServiceMetrics raftMetrics = new RaftServiceMetrics("1", meterRegistry);
 
   @BeforeEach
   void setUp() {
