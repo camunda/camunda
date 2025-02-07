@@ -21,6 +21,8 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,6 +31,11 @@ import java.util.function.Function;
 import java.util.function.LongUnaryOperator;
 import org.agrona.collections.ArrayUtil;
 import org.awaitility.Awaitility;
+<<<<<<< HEAD
+=======
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
+>>>>>>> 4a4a7677 (feat: migrated MessagingMetrics to micrometer)
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -42,10 +49,20 @@ import org.junit.jupiter.api.Test;
 final class RemoteStreamTransportTest {
   private final List<Node> nodes = List.of(createNode("sender"), createNode("receiver"));
   private final RecordingBackoffSupplier senderBackoffSupplier = new RecordingBackoffSupplier();
+<<<<<<< HEAD
 
   @AutoCloseResource private final AtomixCluster sender = createClusterNode(nodes.get(0), nodes);
 
   @AutoCloseResource
+=======
+  private final ActorScheduler scheduler =
+      ActorScheduler.newActorScheduler()
+          .setCpuBoundActorThreadCount(1)
+          .setIoBoundActorThreadCount(0)
+          .build();
+  @AutoClose private MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private final AtomixCluster sender = createClusterNode(nodes.get(0), nodes);
+>>>>>>> 4a4a7677 (feat: migrated MessagingMetrics to micrometer)
   private final RemoteStreamTransport<TestSerializableData> transport =
       new RemoteStreamTransport<>(
           sender.getCommunicationService(),
@@ -57,6 +74,7 @@ final class RemoteStreamTransportTest {
                 return data;
               }),
           senderBackoffSupplier);
+<<<<<<< HEAD
 
   @AutoCloseResource
   private final ActorScheduler scheduler =
@@ -66,6 +84,16 @@ final class RemoteStreamTransportTest {
           .build();
 
   @AutoCloseResource private final AtomixCluster receiver = createClusterNode(nodes.get(1), nodes);
+=======
+  private final AtomixCluster receiver = createClusterNode(nodes.get(1), nodes);
+
+  @AfterEach
+  void afterEach() {
+    // We need to make sure that the Actor is closed last, otherwise we end up in a deadlock
+    // Thus, usage of @AutoClose is not possible, as there are no guarantees about ordering
+    CloseHelper.quietCloseAll(transport, sender, receiver, scheduler);
+  }
+>>>>>>> 4a4a7677 (feat: migrated MessagingMetrics to micrometer)
 
   @BeforeEach
   void beforeEach() {
@@ -162,7 +190,7 @@ final class RemoteStreamTransportTest {
   }
 
   private AtomixCluster createClusterNode(final Node localNode, final Collection<Node> nodes) {
-    return AtomixCluster.builder()
+    return AtomixCluster.builder(meterRegistry)
         .withAddress(localNode.address())
         .withMemberId(localNode.id().id())
         .withMembershipProvider(new BootstrapDiscoveryProvider(nodes))

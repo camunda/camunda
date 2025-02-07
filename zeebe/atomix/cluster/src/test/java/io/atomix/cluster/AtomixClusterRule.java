@@ -18,6 +18,8 @@ package io.atomix.cluster;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.util.NetUtil;
 import java.io.File;
 import java.io.IOException;
@@ -31,14 +33,16 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 public final class AtomixClusterRule extends ExternalResource {
-
   private static final int TIMEOUT_IN_S = 90;
+
+  @AutoClose public final MeterRegistry registry = new SimpleMeterRegistry();
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private File dataDir;
   private Map<Integer, Address> addressMap;
@@ -88,7 +92,7 @@ public final class AtomixClusterRule extends ExternalResource {
                 })
             .collect(Collectors.toList());
 
-    return new AtomixClusterBuilder(new ClusterConfig())
+    return new AtomixClusterBuilder(new ClusterConfig(), registry)
         .withClusterId("test")
         .withMemberId(String.valueOf(id))
         .withHost("localhost")

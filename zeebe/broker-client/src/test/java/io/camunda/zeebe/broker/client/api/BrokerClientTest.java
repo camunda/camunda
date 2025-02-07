@@ -36,6 +36,8 @@ import io.camunda.zeebe.test.broker.protocol.brokerapi.StubBroker;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
@@ -45,6 +47,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.DirectBuffer;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
+<<<<<<< HEAD
+=======
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
+>>>>>>> 4a4a7677 (feat: migrated MessagingMetrics to micrometer)
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -55,9 +62,16 @@ public final class BrokerClientTest {
   @AutoCloseResource
   private final ActorScheduler actorScheduler = ActorScheduler.newActorScheduler().build();
 
+<<<<<<< HEAD
   @AutoCloseResource private final StubBroker broker = new StubBroker().start();
   @AutoCloseResource private BrokerClient client;
   @AutoCloseResource private AtomixCluster atomixCluster;
+=======
+  private final StubBroker broker = new StubBroker().start();
+  private BrokerClient client;
+  private AtomixCluster atomixCluster;
+  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+>>>>>>> 4a4a7677 (feat: migrated MessagingMetrics to micrometer)
 
   // keep as field to ensure it gets closed at the end
   @SuppressWarnings({"FieldCanBeLocal", "Unused"})
@@ -70,7 +84,7 @@ public final class BrokerClientTest {
         Address.from(broker.getCurrentStubHost(), broker.getCurrentStubPort());
     final var membership = BootstrapDiscoveryProvider.builder().withNodes(brokerAddress).build();
     atomixCluster =
-        AtomixCluster.builder()
+        AtomixCluster.builder(meterRegistry)
             .withPort(SocketUtil.getNextAddress().getPort())
             .withMembershipProvider(membership)
             .withClusterId(broker.clusterId())

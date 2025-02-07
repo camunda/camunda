@@ -70,6 +70,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.util.NetUtil;
 import java.io.File;
@@ -103,6 +104,7 @@ import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
 import org.junit.Assert;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.Description;
@@ -144,6 +146,7 @@ public class ClusteringRule extends ExternalResource {
   private final Map<Integer, SpringBrokerBridge> springBrokerBridge;
   private final Map<Integer, SystemContext> systemContexts;
   private final ActorClockConfiguration actorClockConfiguration;
+  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   public ClusteringRule() {
     this(3);
@@ -342,7 +345,14 @@ public class ClusteringRule extends ExternalResource {
 
     final var atomixCluster =
         new AtomixCluster(
+<<<<<<< HEAD
             brokerSpringConfig.clusterConfig(), Version.from(VersionUtil.getVersion()));
+=======
+            brokerSpringConfig.clusterConfig(),
+            Version.from(VersionUtil.getVersion()),
+            "Broker",
+            meterRegistry);
+>>>>>>> 4a4a7677 (feat: migrated MessagingMetrics to micrometer)
 
     final var scheduler =
         new ActorSchedulerConfiguration(
@@ -474,7 +484,12 @@ public class ClusteringRule extends ExternalResource {
                 actorConfig, IdleStrategySupplier.ofDefault(), actorClockConfiguration)
             .scheduler();
 
+<<<<<<< HEAD
     final var clusterConfiguration = new AtomixClusterConfiguration(clusterConfig);
+=======
+    final var clusterConfiguration =
+        new AtomixClusterConfiguration(clusterConfig, actorConfig, meterRegistry);
+>>>>>>> 4a4a7677 (feat: migrated MessagingMetrics to micrometer)
     final var atomixCluster = clusterConfiguration.atomixCluster();
     atomixCluster.start().join();
 

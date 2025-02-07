@@ -29,6 +29,15 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+<<<<<<< HEAD
+=======
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.util.ReferenceCountUtil;
+>>>>>>> 4a4a7677 (feat: migrated MessagingMetrics to micrometer)
 import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.file.Files;
@@ -62,6 +71,7 @@ import org.junit.jupiter.api.condition.OS;
 final class NettyMessagingServiceTest {
   private static final String CLUSTER_NAME = "zeebe";
   private static final int UID_COLUMN = 7;
+  @AutoClose private final MeterRegistry registry = new SimpleMeterRegistry();
 
   private MessagingConfig defaultConfig() {
     return new MessagingConfig()
@@ -75,7 +85,12 @@ final class NettyMessagingServiceTest {
   }
 
   private NettyMessagingService newMessagingService() {
+<<<<<<< HEAD
     return new NettyMessagingService(CLUSTER_NAME, newAddress(), defaultConfig());
+=======
+    return new NettyMessagingService(
+        CLUSTER_NAME, newAddress(), defaultConfig(), "testingPrefix", registry);
+>>>>>>> 4a4a7677 (feat: migrated MessagingMetrics to micrometer)
   }
 
   private Address newAddress() {
@@ -205,7 +220,13 @@ final class NettyMessagingServiceTest {
 
       // when
       final var nonBindableAddress = new Address("invalid.host", 1);
+<<<<<<< HEAD
       try (final var service = new NettyMessagingService("test", nonBindableAddress, config)) {
+=======
+      try (final var service =
+          new NettyMessagingService(
+              "test", nonBindableAddress, config, "testingPrefix", registry)) {
+>>>>>>> 4a4a7677 (feat: migrated MessagingMetrics to micrometer)
         // then - should not fail by using advertisedAddress for binding
         assertThat(service.start()).succeedsWithin(Duration.ofSeconds(5));
         assertThat(service.bindingAddresses()).contains(bindingAddress);
@@ -708,7 +729,104 @@ final class NettyMessagingServiceTest {
       channel.pipeline().remove("idle");
 
       // then - the other side notices a lack of heartbeats and closes the channel
+<<<<<<< HEAD
       assertThat(channel.closeFuture()).succeedsWithin(Duration.ofSeconds(5));
+=======
+      assertThat(clientChannel.closeFuture()).succeedsWithin(Duration.ofSeconds(5));
+    }
+
+    @Test
+    void shouldNotCloseTheConnectionFromTheServerIfNoHeartbeatsIsReceived() {
+      // given
+      final var subject = nextSubject();
+      netty2.enableHeartbeatsForwarding();
+      final var receivedHeartbeats = new AtomicInteger(0);
+      netty2.registerHandler(
+          HeartbeatHandler.HEARTBEAT_SUBJECT,
+          (addr, bytes) -> {
+            receivedHeartbeats.incrementAndGet();
+            return CompletableFuture.completedFuture(null);
+          });
+      // heartbeats are not sent from the client
+      netty1.disableHeartbeats();
+      // a client channel
+      final var channel = netty1.getChannelPool().getChannel(netty2.address(), subject).join();
+
+      // when
+      // a request is made without heartbeats
+      netty1.sendAndReceive(netty2.address(), subject, new byte[0], true);
+
+      // then
+      // the channel is not closed (because the future times out)
+      final var timeout = defaultConfig().getHeartbeatTimeout().toSeconds() + 1;
+      assertThatThrownBy(() -> channel.closeFuture().get(timeout, TimeUnit.SECONDS))
+          .isInstanceOf(TimeoutException.class);
+      assertThat(receivedHeartbeats.get()).isEqualTo(0);
+    }
+
+    @Test
+    void shouldSendHeartbeatTimeoutFromClientToServer() throws Exception {
+      // given
+      final var subject = nextSubject();
+      // new service with a different timeout;
+      final var netty3Config = defaultConfig();
+      // heartbeatTimeout on netty3 (server) is very small
+      netty3Config
+          .setHeartbeatTimeout(Duration.ofMillis(2))
+          .setHeartbeatInterval(Duration.ofMillis(1));
+      try (final var netty3 =
+          new NettyMessagingService(
+              CLUSTER_NAME, newAddress(), netty3Config, "testingPrefix", registry)) {
+        startMessagingServices(netty3);
+        // when
+        final var clientChannel =
+            netty1.getChannelPool().getChannel(netty3.address(), subject).join();
+        // then
+        // the channel stays open because netty3's config are ignored
+        assertThatThrownBy(() -> clientChannel.closeFuture().get(1, TimeUnit.SECONDS))
+            .isInstanceOf(TimeoutException.class);
+      }
+    }
+
+    @Test
+    void shouldNotCloseTheConnectionFromTheClientIfNoHeartbeatsIsReceived()
+        throws InterruptedException {
+      // given
+      final var subject = nextSubject();
+      // the server does not support heartbeats
+      netty2.disableHeartbeats();
+      // a client channel
+      final var channel = netty1.getChannelPool().getChannel(netty2.address(), subject).join();
+
+      // a Handler that does not forward back replies to heartbeats to simulate a server with an old
+      // version that does not support heartbeats
+      final var interceptingHandler =
+          new ChannelInboundHandlerAdapter() {
+            @Override
+            public void channelRead(final ChannelHandlerContext ctx, final Object msg)
+                throws Exception {
+              if (msg instanceof IdleStateEvent) {
+                // nothing
+                ctx.fireChannelRead(msg);
+              } else if (msg instanceof final ProtocolReply reply) {
+                // don't swallow the handshake
+                if (reply.id() > 1) {
+                  ReferenceCountUtil.release(msg);
+                } else {
+                  ctx.fireChannelRead(msg);
+                }
+              }
+            }
+          };
+
+      // handler added after decoder so it can see the decoded messages
+      channel.pipeline().addAfter("decoder", "interceptor", interceptingHandler);
+
+      // the channel is not closed (because the future times out)
+      final var timeout = defaultConfig().getHeartbeatTimeout().toSeconds() + 1;
+      assertThatThrownBy(() -> channel.closeFuture().get(timeout, TimeUnit.SECONDS))
+          .isInstanceOf(TimeoutException.class);
+>>>>>>> 4a4a7677 (feat: migrated MessagingMetrics to micrometer)
     }
   }
 }
