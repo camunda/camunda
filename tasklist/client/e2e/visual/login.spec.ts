@@ -29,7 +29,10 @@ test.describe('login page', () => {
   });
 
   test('form level error', async ({page}) => {
-    await page.route('**/api/login', (route) =>
+    await page.goto('/login', {
+      waitUntil: 'networkidle',
+    });
+    await page.route('/login', (route) =>
       route.fulfill({
         status: 401,
         headers: {
@@ -40,9 +43,6 @@ test.describe('login page', () => {
         }),
       }),
     );
-    await page.goto('/login', {
-      waitUntil: 'networkidle',
-    });
 
     await page.getByLabel(/^username$/i).fill('demo');
     await page.getByLabel(/^password$/i).fill('wrongpassword');

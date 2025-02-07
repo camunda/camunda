@@ -43,7 +43,7 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
   it('should hide part of the empty message for new users', async () => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -72,7 +72,7 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
   it('should show an empty page message for new users', async () => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -113,7 +113,7 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
   it('should show an empty page message for old users', async () => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -140,7 +140,7 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
   it('should not show an empty page message for old users', async () => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -167,7 +167,7 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
   it('should show an empty page message for old readonly users', async () => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentRestrictedUser);
         },

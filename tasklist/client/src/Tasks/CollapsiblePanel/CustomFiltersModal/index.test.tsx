@@ -32,7 +32,7 @@ describe('<CustomFiltersModal />', () => {
   beforeEach(() => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -302,7 +302,7 @@ describe('<CustomFiltersModal />', () => {
   it('should load user groups', async () => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUserWithGroups);
         },
