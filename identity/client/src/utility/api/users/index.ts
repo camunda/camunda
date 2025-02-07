@@ -1,4 +1,4 @@
-import {ApiDefinition, apiDelete, apiPost, apiPut} from "../request";
+import { ApiDefinition, apiDelete, apiPost, apiPut } from "../request";
 import { SearchResponse } from "src/utility/api";
 import { EntityData } from "src/components/entityList/EntityList";
 
@@ -33,7 +33,9 @@ export const createUser: ApiDefinition<undefined, CreateUserParams> = (user) =>
 export const updateUser: ApiDefinition<undefined, User> = (user) => {
   const { name, email, username, password } = user;
   return apiPut(`${USERS_ENDPOINT}/${username}`, {
-    name, email, password: password ?? ""
+    name,
+    email,
+    password: password ?? "",
   });
 };
 
