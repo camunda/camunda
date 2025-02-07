@@ -204,7 +204,7 @@ public class RaftTest extends ConcurrentTestCase {
       final Function<RaftStorage.Builder, RaftStorage.Builder> configurator) {
     final var directory = new File(this.directory.toFile(), memberId.toString());
     final RaftStorage.Builder defaults =
-        RaftStorage.builder()
+        RaftStorage.builder(meterRegistry)
             .withDirectory(directory)
             .withSnapshotStore(new TestSnapshotStore(new AtomicReference<>()))
             .withMaxSegmentSize(1024 * 10);

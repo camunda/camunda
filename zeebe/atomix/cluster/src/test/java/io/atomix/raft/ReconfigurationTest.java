@@ -135,7 +135,7 @@ final class ReconfigurationTest {
     final var memberId = membershipService.getLocalMember().id();
     final var protocol = protocolFactory.newServerProtocol(memberId);
     final var storage =
-        RaftStorage.builder()
+        RaftStorage.builder(meterRegistry)
             .withDirectory(dir.resolve(memberId.toString()).toFile())
             .withSnapshotStore(new TestSnapshotStore(new AtomicReference<>()))
             .withMaxSegmentSize(1024 * 10)

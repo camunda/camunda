@@ -25,6 +25,7 @@ import io.atomix.raft.storage.StorageException;
 import io.atomix.raft.storage.serializer.MetaEncoder;
 import io.atomix.raft.storage.serializer.MetaStoreSerializer;
 import io.camunda.zeebe.journal.JournalMetaStore;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -62,13 +63,14 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
   // volatile to avoid synchronizing on the whole meta store when reading this single value
   private volatile long lastFlushedIndex;
 
-  public MetaStore(final RaftStorage storage) throws IOException {
+  public MetaStore(final RaftStorage storage, final MeterRegistry meterRegistry)
+      throws IOException {
     if (!(storage.directory().isDirectory() || storage.directory().mkdirs())) {
       throw new IllegalArgumentException(
           String.format("Can't create storage directory [%s].", storage.directory()));
     }
 
-    metrics = new MetaStoreMetrics(String.valueOf(storage.partitionId()));
+    metrics = new MetaStoreMetrics(String.valueOf(storage.partitionId()), meterRegistry);
 
     // Note that for raft safety, irrespective of the storage level, <term, vote> metadata is always
     // persisted on disk.
