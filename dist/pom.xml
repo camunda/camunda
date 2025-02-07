@@ -177,6 +177,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>operate-schema</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>operate-importer</artifactId>
     </dependency>
 
@@ -198,6 +203,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>tasklist-importer</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>tasklist-els-schema</artifactId>
     </dependency>
 
     <dependency>
@@ -599,7 +609,7 @@
               <goal>assemble</goal>
             </goals>
             <phase>package</phase>
-            <configuration />
+            <configuration></configuration>
           </execution>
         </executions>
       </plugin>
