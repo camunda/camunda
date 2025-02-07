@@ -34,11 +34,11 @@ public class RaftReplicationMetrics extends RaftMetrics {
 
     Gauge.builder(COMMIT_INDEX.getName(), commitIndex::get)
         .description(COMMIT_INDEX.getDescription())
-        .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionName)
+        .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
         .register(registry);
     Gauge.builder(APPEND_INDEX.getName(), appendIndex::get)
         .description(APPEND_INDEX.getDescription())
-        .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionName)
+        .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
         .register(registry);
   }
 
