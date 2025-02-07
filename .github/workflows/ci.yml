@@ -508,13 +508,15 @@ jobs:
       matrix:
         version: ["${{ github.event.inputs.c8Version }}"]
         project: ["chromium"]
+    defaults:
+      run:
+        working-directory: qa/e2e-tests/core-component-test-suite
     steps:
       - uses: actions/checkout@v4
       - name: Run tests
         uses: ./.github/actions/core-component-test-suite
         with:
           version: ${{ matrix.version }}
-          directory: qa/e2e-tests/core-component-test-suite
 
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"
