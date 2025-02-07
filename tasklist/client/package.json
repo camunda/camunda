@@ -24,7 +24,7 @@
     "i18next-browser-languagedetector": "^8.0.0",
     "lodash": "4.17.21",
     "mixpanel-browser": "2.55.1",
-    "mobx": "6.13.5",
+    "mobx": "6.13.6",
     "mobx-react-lite": "4.0.7",
     "react": "18.3.1",
     "react-dom": "18.3.1",
@@ -35,7 +35,7 @@
     "react-router-dom": "6.26.2",
     "react-transition-group": "4.4.5",
     "sass": "1.79.6",
-    "styled-components": "6.1.14",
+    "styled-components": "6.1.15",
     "ts-pattern": "5.3.1",
     "zod": "3.23.8"
   },
@@ -83,8 +83,8 @@
     "@typescript-eslint/eslint-plugin": "8.6.0",
     "@typescript-eslint/parser": "8.6.0",
     "@vitejs/plugin-react": "4.3.4",
-    "@vitest/coverage-istanbul": "2.1.8",
-    "@vitest/ui": "2.1.8",
+    "@vitest/coverage-istanbul": "2.1.9",
+    "@vitest/ui": "2.1.9",
     "@vzeta/rollup-plugin-sbom": "2.0.0",
     "axe-core": "4.10.2",
     "browserslist": "4.23.3",
@@ -111,7 +111,7 @@
     "vite": "5.4.14",
     "vite-plugin-svgr": "4.2.0",
     "vite-tsconfig-paths": "5.0.1",
-    "vitest": "2.1.8",
+    "vitest": "2.1.9",
     "zeebe-node": "8.3.2"
   },
   "scarfSettings": {
