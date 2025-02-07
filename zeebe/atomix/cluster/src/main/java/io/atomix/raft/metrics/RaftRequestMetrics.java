@@ -51,7 +51,11 @@ public class RaftRequestMetrics extends RaftMetrics {
         tpe ->
             Counter.builder(RAFT_MESSAGE_RECEIVED.getName())
                 .description(RAFT_MESSAGE_RECEIVED.getDescription())
-                .tags(RaftKeyNames.TYPE.asString(), type, RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
+                .tags(
+                    RaftKeyNames.TYPE.asString(),
+                    type,
+                    RaftKeyNames.PARTITION_GROUP.asString(),
+                    partitionGroupName)
                 .register(registry));
   }
 
