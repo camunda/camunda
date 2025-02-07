@@ -73,7 +73,6 @@ class ScaleResiliencyTest {
                   b.withWorkingDirectory(
                       getDataDirectory(tmpDir, b.brokerConfig().getCluster().getNodeId()));
                 })
-            .withUnauthenticatedAccess()
             .build();
     cluster.start();
     cluster.awaitCompleteTopology();
@@ -149,7 +148,6 @@ class ScaleResiliencyTest {
         final Path dataDirectory) {
       final var newBroker =
           new TestStandaloneBroker()
-              .withUnauthenticatedAccess()
               .withBrokerConfig(
                   b -> {
                     b.getCluster().setClusterSize(newClusterSize);

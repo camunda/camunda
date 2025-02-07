@@ -8,6 +8,7 @@
 package io.camunda.exporter.utils;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import java.util.Optional;
@@ -45,6 +46,8 @@ public abstract class SearchDBExtension
       return new AWSSearchDBExtension(openSearchAwsInstanceUrl);
     }
   }
+
+  public abstract ObjectMapper objectMapper();
 
   public abstract ElasticsearchClient esClient();
 

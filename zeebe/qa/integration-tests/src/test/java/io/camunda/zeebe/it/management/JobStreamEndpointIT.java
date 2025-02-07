@@ -32,12 +32,7 @@ final class JobStreamEndpointIT {
 
   @SuppressWarnings("unused")
   static void initTestCluster() {
-    cluster =
-        TestCluster.builder()
-            .withGatewaysCount(2)
-            .withEmbeddedGateway(false)
-            .withUnauthenticatedAccess()
-            .build();
+    cluster = TestCluster.builder().withGatewaysCount(2).withEmbeddedGateway(false).build();
   }
 
   @AfterEach

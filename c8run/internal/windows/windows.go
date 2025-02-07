@@ -13,7 +13,7 @@ import (
 )
 
 func (w *WindowsC8Run) OpenBrowser(protocol string, port int) error {
-	operateUrl := protocol + "://localhost:" + strconv.Itoa(port) + "/operate/login"
+	operateUrl := protocol + "://localhost:" + strconv.Itoa(port) + "/operate"
 	openBrowserCmdString := "start " + operateUrl
 	openBrowserCmd := exec.Command("cmd", "/C", openBrowserCmdString)
 	openBrowserCmd.SysProcAttr = &syscall.SysProcAttr{

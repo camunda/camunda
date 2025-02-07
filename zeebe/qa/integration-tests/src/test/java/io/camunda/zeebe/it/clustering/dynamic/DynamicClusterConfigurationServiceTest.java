@@ -41,7 +41,6 @@ final class DynamicClusterConfigurationServiceTest {
           .withBrokersCount(3)
           .withPartitionsCount(PARTITIONS_COUNT)
           .withReplicationFactor(1)
-          .withUnauthenticatedAccess()
           .withBrokerConfig(this::configureDynamicClusterTopology)
           .build();
 

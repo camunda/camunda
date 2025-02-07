@@ -58,7 +58,6 @@ final class GcsBackupAcceptanceIT implements BackupAcceptance {
           .withEmbeddedGateway(false)
           .withBrokerConfig(this::configureBroker)
           .withNodeConfig(this::configureNode)
-          .withUnauthenticatedAccess()
           .build();
 
   @AutoClose private CamundaClient client;

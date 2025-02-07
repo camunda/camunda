@@ -38,11 +38,16 @@
 }
 
 .validationMessage {
-  margin-block: var(--cds-spacing-06);
+  justify-content: start;
 }
 
 .hr {
+  width: 100%;
   border: 0;
   height: 1px;
   background: var(--cds-border-subtle);
+}
+
+.formLevelErrorContainer {
+  width: 100%;
 }

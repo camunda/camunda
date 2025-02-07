@@ -100,10 +100,13 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     final var userTaskElementInstance = getUserTaskElementInstance(intermediateUserTaskRecord);
     final var context = buildContext(userTaskElementInstance);
 
-    if (!command.getValue().getChangedAttributes().isEmpty()) {
-      intermediateUserTaskRecord.wrapChangedAttributes(command.getValue(), true);
-      stateWriter.appendFollowUpEvent(
-          command.getKey(), UserTaskIntent.CORRECTED, intermediateUserTaskRecord);
+    if (command.getValue().hasChangedAttributes()) {
+      intermediateUserTaskRecord.wrapChangedAttributesIfValueChanged(command.getValue());
+
+      if (intermediateUserTaskRecord.hasChangedAttributes()) {
+        stateWriter.appendFollowUpEvent(
+            command.getKey(), UserTaskIntent.CORRECTED, intermediateUserTaskRecord);
+      }
     }
 
     findNextTaskListener(listenerEventType, userTaskElement, userTaskElementInstance)

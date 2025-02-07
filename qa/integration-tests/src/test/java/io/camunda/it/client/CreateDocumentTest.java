@@ -13,9 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.it.utils.MultiDbTest;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.Duration;
@@ -24,23 +22,14 @@ import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-@ZeebeIntegration
+@MultiDbTest
 public class CreateDocumentTest {
 
   private static CamundaClient camundaClient;
 
-  @TestZeebe(initMethod = "initTestStandaloneCamunda")
-  private static TestStandaloneCamunda testStandaloneCamunda;
-
-  @SuppressWarnings("unused")
-  static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda().withUnauthenticatedAccess();
-  }
-
   @Test
   public void shouldCreateDocumentFromInputStream() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = new ByteArrayInputStream("test".getBytes());
 
     // when
@@ -54,7 +43,6 @@ public class CreateDocumentTest {
   @Test
   public void shouldCreateDocumentFromByteArray() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = "test".getBytes();
 
     // when
@@ -68,7 +56,6 @@ public class CreateDocumentTest {
   @Test
   public void shouldThrowIfContentIsNull() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
     final var exception =
@@ -85,7 +72,7 @@ public class CreateDocumentTest {
   @Test
   public void shouldUseTheProvidedDocumentId() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
+
     final var documentContent = "test";
     final var documentId = "test";
 
@@ -121,7 +108,6 @@ public class CreateDocumentTest {
   @Test
   public void shouldUseTheProvidedStoreId() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = "test";
     final var storeId = "in-memory";
 
@@ -142,7 +128,6 @@ public class CreateDocumentTest {
   @Test
   public void shouldReturnBadRequestForNonExistingStoreId() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = "test";
     final var storeId = "non-existing";
 
@@ -162,7 +147,6 @@ public class CreateDocumentTest {
   @Test
   public void shouldIncludeFileName() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = "test";
     final var fileName = "test.txt";
 
@@ -182,7 +166,6 @@ public class CreateDocumentTest {
   @Test
   public void shouldIncludeTimeToLive() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = "test";
     final var timeToLive = Duration.ofMinutes(1);
 
@@ -203,7 +186,6 @@ public class CreateDocumentTest {
   @Test
   public void shouldIncludeContentType() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = "test";
     final var contentType = "text/plain";
 
@@ -224,7 +206,6 @@ public class CreateDocumentTest {
   @Test
   public void shouldCalculateSize() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = "test";
 
     // when
@@ -239,7 +220,6 @@ public class CreateDocumentTest {
   @Test
   public void shouldAddCustomMetadata() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = "test";
     final String key = "key1";
     final String value = "value1";
@@ -266,7 +246,6 @@ public class CreateDocumentTest {
   @Test
   public void shouldAddProcessDefinitionId() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = "test";
     final String processDefinitionId = "test";
 
@@ -288,7 +267,6 @@ public class CreateDocumentTest {
   @Test
   public void shouldAddProcessInstanceKey() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = "test";
     final long processInstanceKey = 1;
 

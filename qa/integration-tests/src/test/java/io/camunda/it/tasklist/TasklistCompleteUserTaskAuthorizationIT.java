@@ -58,8 +58,7 @@ public class TasklistCompleteUserTaskAuthorizationIT {
   private TestStandaloneCamunda standaloneCamunda =
       new TestStandaloneCamunda()
           .withCamundaExporter()
-          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
-          .withUnauthenticatedAccess();
+          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true));
 
   @BeforeEach
   public void beforeAll() {
@@ -156,7 +155,6 @@ public class TasklistCompleteUserTaskAuthorizationIT {
   public void shouldBeAuthorizedToCompleteUserTask() {
     // given
     adminAuthClient.createPermissions(
-        testUserKey,
         TEST_USER_NAME,
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,
@@ -179,7 +177,6 @@ public class TasklistCompleteUserTaskAuthorizationIT {
   public void shouldBeAuthorizedToCompleteJobBasedUserTask() {
     // given
     adminAuthClient.createPermissions(
-        testUserKey,
         TEST_USER_NAME,
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,

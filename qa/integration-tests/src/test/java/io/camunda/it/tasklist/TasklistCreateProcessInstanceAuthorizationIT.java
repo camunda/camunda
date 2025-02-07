@@ -48,8 +48,7 @@ public class TasklistCreateProcessInstanceAuthorizationIT {
   private final TestStandaloneCamunda standaloneCamunda =
       new TestStandaloneCamunda()
           .withCamundaExporter()
-          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
-          .withUnauthenticatedAccess();
+          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true));
 
   @BeforeEach
   public void beforeAll() {
@@ -111,7 +110,6 @@ public class TasklistCreateProcessInstanceAuthorizationIT {
   public void shouldBeAuthorizedToCreateInstance() {
     // given
     adminAuthClient.createPermissions(
-        testUserKey,
         TEST_USER_NAME,
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,

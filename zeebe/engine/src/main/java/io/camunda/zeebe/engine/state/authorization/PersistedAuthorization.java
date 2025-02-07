@@ -34,8 +34,8 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
   private final StringProperty resourceIdProp = new StringProperty("resourceId");
   private final EnumProperty<AuthorizationResourceType> resourceTypeProp =
       new EnumProperty<>("resourceType", AuthorizationResourceType.class);
-  private final ArrayProperty<StringValue> permissionsProp =
-      new ArrayProperty<>("permissions", StringValue::new);
+  private final ArrayProperty<StringValue> permissionTypesProp =
+      new ArrayProperty<>("permissionTypes", StringValue::new);
 
   public PersistedAuthorization() {
     super(6);
@@ -44,7 +44,7 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
         .declareProperty(ownerTypeProp)
         .declareProperty(resourceIdProp)
         .declareProperty(resourceTypeProp)
-        .declareProperty(permissionsProp);
+        .declareProperty(permissionTypesProp);
   }
 
   public void wrap(final AuthorizationRecord authorizationRecord) {
@@ -53,7 +53,7 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
         .setOwnerType(authorizationRecord.getOwnerType())
         .setResourceId(authorizationRecord.getResourceId())
         .setResourceType(authorizationRecord.getResourceType())
-        .setPermissions(authorizationRecord.getAuthorizationPermissions());
+        .setPermissionTypes(authorizationRecord.getAuthorizationPermissions());
   }
 
   public long getAuthorizationKey() {
@@ -101,23 +101,23 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public Set<PermissionType> getPermissions() {
-    return StreamSupport.stream(permissionsProp.spliterator(), false)
+  public Set<PermissionType> getPermissionTypes() {
+    return StreamSupport.stream(permissionTypesProp.spliterator(), false)
         .map(StringValue::getValue)
         .map(BufferUtil::bufferAsString)
         .map(PermissionType::valueOf)
         .collect(Collectors.toSet());
   }
 
-  public PersistedAuthorization setPermissions(final Set<PermissionType> permissions) {
-    permissionsProp.reset();
-    permissions.forEach(
-        permission -> permissionsProp.add().wrap(BufferUtil.wrapString(permission.name())));
+  public PersistedAuthorization setPermissionTypes(final Set<PermissionType> permissionTypes) {
+    permissionTypesProp.reset();
+    permissionTypes.forEach(
+        permission -> permissionTypesProp.add().wrap(BufferUtil.wrapString(permission.name())));
     return this;
   }
 
   public PersistedAuthorization addPermission(final PermissionType permission) {
-    permissionsProp.add().wrap(BufferUtil.wrapString(permission.name()));
+    permissionTypesProp.add().wrap(BufferUtil.wrapString(permission.name()));
     return this;
   }
 }

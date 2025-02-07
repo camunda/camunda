@@ -39,14 +39,13 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache;
 import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
 import io.camunda.zeebe.stream.impl.metrics.ProcessingMetrics;
-import io.camunda.zeebe.stream.impl.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
 import io.camunda.zeebe.stream.impl.records.UnwrittenRecord;
+import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
-import io.prometheus.client.Histogram;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -139,7 +138,6 @@ public final class ProcessingStateMachine {
   private final BooleanSupplier abortCondition;
   private final RecordValues recordValues;
   private final TypedRecordImpl typedCommand;
-  private final StreamProcessorMetrics metrics;
   private final StreamProcessorListener streamProcessorListener;
   // current iteration
   private LoggedEvent currentRecord;
@@ -149,7 +147,7 @@ public final class ProcessingStateMachine {
   private long lastWrittenPosition = StreamProcessor.UNSET_POSITION;
   private int onErrorRetries;
   // Used for processing duration metrics
-  private Histogram.Timer processingTimer;
+  private CloseableSilently processingTimer;
   private boolean reachedEnd = true;
   private final StreamProcessorContext context;
   private final List<RecordProcessor> recordProcessors;
@@ -191,12 +189,8 @@ public final class ProcessingStateMachine {
     final int partitionId = context.getLogStream().getPartitionId();
     typedCommand = new TypedRecordImpl(partitionId);
 
-    metrics = new StreamProcessorMetrics(partitionId);
-    metrics.initializeProcessorPhase(context.getStreamProcessorPhase());
     streamProcessorListener = context.getStreamProcessorListener();
-
-    processingMetrics = new ProcessingMetrics(Integer.toString(partitionId));
-
+    processingMetrics = new ProcessingMetrics(context.getMeterRegistry());
     processingFilter =
         new MetadataEventFilter(
                 recordMetadata -> recordMetadata.getRecordType() == RecordType.COMMAND)
@@ -209,7 +203,7 @@ public final class ProcessingStateMachine {
     notifySkippedListener(currentRecord);
     markProcessingCompleted();
     actor.submit(this::tryToReadNextRecord);
-    metrics.eventSkipped();
+    processingMetrics.eventSkipped();
   }
 
   void markProcessingCompleted() {
@@ -273,9 +267,10 @@ public final class ProcessingStateMachine {
       // Here we need to get the current time, since we want to calculate
       // how long it took between writing to the dispatcher and processing.
       // In all other cases we should prefer to use the Prometheus Timer API.
-      metrics.processingLatency(loggedEvent.getTimestamp(), clock.millis());
+      processingMetrics.processingLatency(loggedEvent.getTimestamp(), clock.millis());
       processingTimer =
-          metrics.startProcessingDurationTimer(metadata.getValueType(), metadata.getIntent());
+          processingMetrics.startProcessingDurationTimer(
+              metadata.getValueType(), metadata.getIntent());
 
       final var value = recordValues.readRecordValue(loggedEvent, metadata.getValueType());
       typedCommand.wrap(loggedEvent, metadata, value);
@@ -388,7 +383,7 @@ public final class ProcessingStateMachine {
 
       lastProcessingResultSize = currentProcessingResult.getRecordBatch().entries().size();
       processedCommandsCount++;
-      metrics.commandsProcessed();
+      processingMetrics.commandsProcessed();
     }
   }
 
@@ -592,7 +587,7 @@ public final class ProcessingStateMachine {
     if (currentProcessingResult.isEmpty()) {
       // we skipped the processing entirely; we have no results
       notifySkippedListener(currentRecord);
-      metrics.eventSkipped();
+      processingMetrics.eventSkipped();
       writeFuture = CompletableActorFuture.completed(true);
     } else if (pendingWrites.isEmpty()) {
       // we might have nothing to write but likely something to send as response
@@ -635,7 +630,7 @@ public final class ProcessingStateMachine {
             // incremented by 1 for one record (even in a batch), so we can count the amount
             // of written records via the lastWritten and now written position.
             final var amount = writtenPosition - lastWrittenPosition;
-            metrics.recordsWritten(amount);
+            processingMetrics.recordsWritten(amount);
             updateState();
           }
         });
@@ -647,7 +642,7 @@ public final class ProcessingStateMachine {
             () -> {
               zeebeDbTransaction.commit();
               lastSuccessfulProcessedRecordPosition = currentRecord.getPosition();
-              metrics.setLastProcessedPosition(lastSuccessfulProcessedRecordPosition);
+              processingMetrics.setLastProcessedPosition(lastSuccessfulProcessedRecordPosition);
               lastWrittenPosition = writtenPosition;
               return true;
             },

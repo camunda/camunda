@@ -17,10 +17,14 @@ package io.camunda.zeebe.spring.client.annotation;
 
 import java.lang.annotation.*;
 
+/**
+ * @deprecated please use {@link io.camunda.spring.client.annotation.Deployment}
+ */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Inherited // has to be inherited to work on spring aop beans
+@Deprecated(forRemoval = true, since = "8.8")
 public @interface Deployment {
 
   String[] resources() default {};

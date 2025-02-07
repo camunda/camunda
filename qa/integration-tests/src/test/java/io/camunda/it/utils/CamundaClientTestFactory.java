@@ -117,7 +117,7 @@ public final class CamundaClientTestFactory implements AutoCloseable {
           .ownerType(OwnerTypeEnum.USER)
           .resourceId("*")
           .resourceType(permission.resourceType())
-          .permission(permission.permissionType())
+          .permissionTypes(permission.permissionType())
           .send()
           .join();
     }

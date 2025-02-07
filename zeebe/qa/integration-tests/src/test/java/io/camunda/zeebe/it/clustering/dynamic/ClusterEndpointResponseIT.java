@@ -27,7 +27,6 @@ final class ClusterEndpointResponseIT {
   static void initTestStandaloneBroker() {
     broker =
         new TestStandaloneBroker()
-            .withUnauthenticatedAccess()
             .withBrokerConfig(
                 cfg -> cfg.getExperimental().getFeatures().setEnablePartitionScaling(true));
   }

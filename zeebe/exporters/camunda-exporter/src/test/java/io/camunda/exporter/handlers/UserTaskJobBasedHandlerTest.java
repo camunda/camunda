@@ -17,6 +17,7 @@ import io.camunda.exporter.cache.TestFormCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
+import io.camunda.exporter.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
@@ -53,9 +54,11 @@ public class UserTaskJobBasedHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-tasklist-task";
   private final TestFormCache formCache = new TestFormCache();
-  private final ExporterMetadata exporterMetadata = new ExporterMetadata();
+  private final ExporterMetadata exporterMetadata =
+      new ExporterMetadata(TestObjectMapper.objectMapper());
   private final UserTaskJobBasedHandler underTest =
-      new UserTaskJobBasedHandler(indexName, formCache, exporterMetadata);
+      new UserTaskJobBasedHandler(
+          indexName, formCache, exporterMetadata, TestObjectMapper.objectMapper());
 
   @BeforeEach
   void resetMetadata() {

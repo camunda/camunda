@@ -27,4 +27,12 @@ public class AuthorizationRecordStream
   public AuthorizationRecordStream withOwnerKey(final long ownerKey) {
     return valueFilter(v -> v.getOwnerKey() == ownerKey);
   }
+
+  public AuthorizationRecordStream withOwnerId(final String ownerId) {
+    return valueFilter(v -> v.getOwnerId().equals(ownerId));
+  }
+
+  public AuthorizationRecordStream withAuthorizationKey(final long authorizationKey) {
+    return valueFilter(v -> v.getAuthorizationKey() == authorizationKey);
+  }
 }

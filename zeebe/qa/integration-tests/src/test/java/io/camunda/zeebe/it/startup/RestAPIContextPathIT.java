@@ -22,9 +22,7 @@ import org.junit.jupiter.api.Test;
 public final class RestAPIContextPathIT {
   @TestZeebe
   private final TestStandaloneBroker zeebe =
-      new TestStandaloneBroker()
-          .withProperty("server.servlet.context-path", "/zeebe")
-          .withUnauthenticatedAccess();
+      new TestStandaloneBroker().withProperty("server.servlet.context-path", "/zeebe");
 
   @Test
   void shouldConnectWithContextPath() {

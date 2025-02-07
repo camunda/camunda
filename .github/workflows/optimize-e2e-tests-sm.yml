@@ -78,13 +78,13 @@ jobs:
           project_name: e2e
           additional_flags: "--profile self-managed"
 
-      - name: Build backend
-        run: ./mvnw clean install -T1C -DskipTests -Dskip.docker -pl optimize/backend -am -P skipFrontendBuild
+      - name: Build dist
+        run: ./mvnw clean install -T1C -DskipTests -Dskip.docker -pl dist -am -P skipFrontendBuild
 
       - name: Create backend logs file
         run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
 
-      - name: Start back-end
+      - name: Start backend
         working-directory: ./optimize/client
         run: |
           yarn run start-backend ci &> ./build/backendLogs.log &

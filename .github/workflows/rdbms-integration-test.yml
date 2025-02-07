@@ -9,6 +9,7 @@ on:
     paths:
       - ".github/workflows/rdbms-integration-tests.yml"
       - "db/rdbms/**"
+      - "db/rdbms-schema/**"
       - "parent/**"
       - "qa/integration-tests/**"
       - "search/search-domain/**"

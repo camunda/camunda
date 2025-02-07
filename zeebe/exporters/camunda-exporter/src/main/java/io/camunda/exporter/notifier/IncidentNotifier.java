@@ -9,7 +9,7 @@ package io.camunda.exporter.notifier;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfiguration;
@@ -50,8 +50,6 @@ public class IncidentNotifier {
   protected static final String FIELD_NAME_PROCESS_NAME = "processName";
   protected static final String FIELD_NAME_PROCESS_VERSION = "processVersion";
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentNotifier.class);
-  private static final ObjectMapper MAPPER =
-      new ObjectMapper().registerModule(new JavaTimeModule());
 
   private final M2mTokenManager m2mTokenManager;
 
@@ -59,18 +57,21 @@ public class IncidentNotifier {
   private final IncidentNotifierConfiguration configuration;
   private final HttpClient httpClient;
   private final Executor executor;
+  private final ObjectWriter objectWriter;
 
   public IncidentNotifier(
       final M2mTokenManager m2mTokenManager,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
       final IncidentNotifierConfiguration configuration,
       final HttpClient httpClient,
-      final Executor executor) {
+      final Executor executor,
+      final ObjectMapper objectMapper) {
     this.m2mTokenManager = m2mTokenManager;
     this.processCache = processCache;
     this.configuration = configuration;
     this.httpClient = httpClient;
     this.executor = executor;
+    objectWriter = objectMapper.writer();
   }
 
   public void notifyAsync(final List<IncidentEntity> incidents) {
@@ -152,6 +153,6 @@ public class IncidentNotifier {
       }
       incidentList.add(incidentFields);
     }
-    return MAPPER.writeValueAsString(Map.of(FIELD_NAME_ALERTS, incidentList));
+    return objectWriter.writeValueAsString(Map.of(FIELD_NAME_ALERTS, incidentList));
   }
 }

@@ -60,8 +60,7 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
       new TestStandaloneCamunda()
           .withCamundaExporter()
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
-          .withProperty("camunda.tasklist.zeebe.compatibility.enabled", true)
-          .withUnauthenticatedAccess();
+          .withProperty("camunda.tasklist.zeebe.compatibility.enabled", true);
 
   @BeforeEach
   public void beforeAll() {
@@ -158,7 +157,6 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
   public void shouldBeAuthorizedToAssignJobBasedUserTask() {
     // given
     adminAuthClient.createPermissions(
-        testUserKey,
         TEST_USER_NAME,
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,

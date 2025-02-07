@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.authorization;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
@@ -52,8 +51,11 @@ public class UpdateAuthorizationTest {
         engine
             .authorization()
             .updateAuthorization(authorizationKey)
+            .withOwnerId("ownerId")
             .withOwnerType(AuthorizationOwnerType.GROUP)
-            .withChangeset(Set.of(AuthorizationRecord.OWNER_TYPE))
+            .withResourceId("resourceId")
+            .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withPermissions(PermissionType.CREATE)
             .update()
             .getValue();
 
@@ -111,8 +113,11 @@ public class UpdateAuthorizationTest {
         engine
             .authorization()
             .updateAuthorization(authorizationKey)
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.GROUP)
+            .withResourceId("resourceId")
+            .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.ACCESS)
-            .withChangeset(Set.of(AuthorizationRecord.PERMISSIONS))
             .expectRejection()
             .update();
 

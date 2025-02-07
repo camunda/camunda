@@ -29,7 +29,6 @@ import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryBase;
 import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.entity.Permission;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,7 +56,7 @@ class DocumentAuthorizationQueryStrategyTest {
   void shouldReturnRequestUnchangedWhenAuthorizationNotRequired() {
     // given
     final var originalRequest = mock(SearchQueryRequest.class);
-    final var securityContext = SecurityContext.of(s -> s.withAuthentication(a -> a.user(123L)));
+    final var securityContext = SecurityContext.of(s -> s.withAuthentication(a -> a.user("foo")));
 
     // when
     final SearchQueryRequest result =
@@ -96,7 +95,7 @@ class DocumentAuthorizationQueryStrategyTest {
     final var securityContext =
         SecurityContext.of(
             s ->
-                s.withAuthentication(a -> a.user(123L))
+                s.withAuthentication(a -> a.user("foo"))
                     .withAuthorization(
                         a ->
                             a.permissionType(READ_PROCESS_DEFINITION)
@@ -105,12 +104,7 @@ class DocumentAuthorizationQueryStrategyTest {
         .thenReturn(
             List.of(
                 new AuthorizationEntity(
-                    null,
-                    null,
-                    null,
-                    List.of(
-                        new Permission(READ_PROCESS_DEFINITION, Set.of("foo", "*")),
-                        new Permission(CREATE, Set.of("bar"))))));
+                    null, null, null, null, "*", Set.of(READ_PROCESS_DEFINITION, CREATE))));
 
     // when
     final SearchQueryRequest result =
@@ -129,7 +123,7 @@ class DocumentAuthorizationQueryStrategyTest {
     final var securityContext =
         SecurityContext.of(
             s ->
-                s.withAuthentication(a -> a.user(123L))
+                s.withAuthentication(a -> a.user("foo"))
                     .withAuthorization(
                         a ->
                             a.permissionType(READ_PROCESS_DEFINITION)
@@ -153,7 +147,7 @@ class DocumentAuthorizationQueryStrategyTest {
     final var securityContext =
         SecurityContext.of(
             s ->
-                s.withAuthentication(a -> a.user(123L))
+                s.withAuthentication(a -> a.user("foo"))
                     .withAuthorization(
                         a ->
                             a.permissionType(READ_PROCESS_DEFINITION)
@@ -163,12 +157,8 @@ class DocumentAuthorizationQueryStrategyTest {
         .thenReturn(
             List.of(
                 new AuthorizationEntity(
-                    null,
-                    null,
-                    null,
-                    List.of(
-                        new Permission(READ_PROCESS_DEFINITION, Set.of("foo")),
-                        new Permission(CREATE, Set.of("bar"))))));
+                    null, null, null, null, "foo", Set.of(READ_PROCESS_DEFINITION)),
+                new AuthorizationEntity(null, null, null, null, "bar", Set.of(CREATE))));
 
     // when
     final SearchQueryRequest result =
@@ -184,7 +174,7 @@ class DocumentAuthorizationQueryStrategyTest {
                 q ->
                     q.filter(
                         f ->
-                            f.ownerKeys(List.of(123L))
+                            f.ownerIds(List.of("foo"))
                                 .resourceType("PROCESS_DEFINITION")
                                 .permissionType(READ_PROCESS_DEFINITION))));
   }

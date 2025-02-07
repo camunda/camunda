@@ -137,8 +137,7 @@ public class ZeebeMigrationHelper {
             .withRecordingExporter(true)
             .withBrokerConfig(cfg -> cfg.getGateway().setEnable(true))
             .withExporter("CamundaExporter", exporterConfig)
-            .withWorkingDirectory(zeebeDataPath.resolve("usr/local/zeebe"))
-            .withUnauthenticatedAccess();
+            .withWorkingDirectory(zeebeDataPath.resolve("usr/local/zeebe"));
     final Map<String, String> env =
         databaseType.equals(DatabaseType.ELASTICSEARCH)
             ? zeebe87ElasticsearchDefaultConfig()

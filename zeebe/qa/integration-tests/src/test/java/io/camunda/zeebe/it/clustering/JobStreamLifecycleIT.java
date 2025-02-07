@@ -46,7 +46,6 @@ final class JobStreamLifecycleIT {
             .withBrokersCount(2)
             .withGatewaysCount(2)
             .withEmbeddedGateway(false)
-            .withUnauthenticatedAccess()
             .build();
   }
 

@@ -18,9 +18,13 @@ package io.camunda.zeebe.spring.client.annotation;
 import io.camunda.client.CamundaClientConfiguration;
 import java.lang.annotation.*;
 
+/**
+ * @deprecated please use {@link io.camunda.spring.client.annotation.JobWorker}
+ */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
+@Deprecated(forRemoval = true, since = "8.8")
 public @interface JobWorker {
 
   /**
@@ -93,7 +97,7 @@ public @interface JobWorker {
    *
    * <p>You can still throw exceptions if you want to raise a problem instead of job completion. You
    * could also raise a BPMN problem throwing a {@link
-   * io.camunda.zeebe.spring.common.exception.ZeebeBpmnError}
+   * io.camunda.spring.client.exception.CamundaBpmnError}
    */
   boolean autoComplete() default true;
 

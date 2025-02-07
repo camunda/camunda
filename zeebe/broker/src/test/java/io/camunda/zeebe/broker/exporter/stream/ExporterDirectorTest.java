@@ -56,8 +56,6 @@ import org.mockito.verification.VerificationWithTimeout;
 
 public final class ExporterDirectorTest {
 
-  private static final int PARTITION_ID = 1;
-
   private static final String EXPORTER_ID_1 = "exporter-1";
   private static final String EXPORTER_ID_2 = "exporter-2";
 

@@ -21,7 +21,6 @@ public class ExporterMetricsIT {
   @TestZeebe
   private final TestStandaloneBroker zeebe =
       new TestStandaloneBroker()
-          .withUnauthenticatedAccess()
           .withExporter(
               "foo", cfg -> cfg.setClassName(ExporterMetricsTestExporter.class.getName()));
 

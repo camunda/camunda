@@ -39,7 +39,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
     classes = {CommonsModuleConfiguration.class},
     properties = {
       "spring.profiles.active=consolidated-auth",
-      "camunda.security.authentication.method=basic"
+      "camunda.security.authentication.method=basic",
+      "camunda.security.authentication.basic.allow-unauthenticated-api-access=false"
     })
 @WebAppConfiguration
 @AutoConfigureMockMvc

@@ -14,6 +14,7 @@ import jakarta.servlet.ServletContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.unit.DataSize;
 
 @Component
 public class ClientConfig {
@@ -47,6 +48,11 @@ public class ClientConfig {
   @Value("${CAMUNDA_TASKLIST_IDENTITY_USER_ACCESS_RESTRICTIONS_ENABLED:#{true}}")
   public boolean isUserAccessRestrictionsEnabled;
 
+  public long maxRequestSize;
+
+  @Value("${spring.servlet.multipart.max-request-size:4MB}")
+  private DataSize maxRequestSizeConfigValue;
+
   @Autowired private TasklistProfileService profileService;
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private ServletContext context;
@@ -59,5 +65,6 @@ public class ClientConfig {
     baseName = context.getContextPath() + "/tasklist";
     canLogout = profileService.currentProfileCanLogout();
     isLoginDelegated = profileService.isLoginDelegated();
+    maxRequestSize = maxRequestSizeConfigValue.toBytes();
   }
 }

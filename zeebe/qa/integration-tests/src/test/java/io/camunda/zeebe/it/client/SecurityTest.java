@@ -40,7 +40,6 @@ public final class SecurityTest {
           .withPartitionsCount(1)
           .withReplicationFactor(1)
           .withGatewayConfig(this::configureGatewayForTls)
-          .withUnauthenticatedAccess()
           .build();
 
   @BeforeEach

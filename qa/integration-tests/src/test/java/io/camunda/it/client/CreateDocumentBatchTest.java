@@ -12,32 +12,21 @@ import static org.assertj.core.api.Assertions.within;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.it.utils.MultiDbTest;
 import java.io.ByteArrayInputStream;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.Test;
 
-@ZeebeIntegration
+@MultiDbTest
 public class CreateDocumentBatchTest {
 
   private static CamundaClient camundaClient;
 
-  @TestZeebe(initMethod = "initTestStandaloneCamunda")
-  private static TestStandaloneCamunda testStandaloneCamunda;
-
-  @SuppressWarnings("unused")
-  static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda().withUnauthenticatedAccess();
-  }
-
   @Test
   public void shouldCreateDocumentsFromInputStreams() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent1 = new ByteArrayInputStream("test one".getBytes());
     final var documentContent2 = new ByteArrayInputStream("test two".getBytes());
 
@@ -65,7 +54,6 @@ public class CreateDocumentBatchTest {
   @Test
   public void shouldCreateDocumentsFromDifferentSources() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent1 = new ByteArrayInputStream("test one".getBytes());
     final var documentContent2 = "test two".getBytes();
 
@@ -93,7 +81,6 @@ public class CreateDocumentBatchTest {
   @Test
   public void shouldCreateDocumentsWithBasicMetadata() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent1 = new ByteArrayInputStream("test one".getBytes());
     final var documentContent2 = new ByteArrayInputStream("test two".getBytes());
 
@@ -143,7 +130,6 @@ public class CreateDocumentBatchTest {
   @Test
   public void shouldCreateDocumentsWithCustomMetadata() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent1 = new ByteArrayInputStream("test one".getBytes());
     final var documentContent2 = new ByteArrayInputStream("test two".getBytes());
 
@@ -193,7 +179,6 @@ public class CreateDocumentBatchTest {
   @Test
   public void shouldThrowIfContentIsMissing() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
     final var command = camundaClient.newCreateDocumentBatchCommand().addDocument().done();
@@ -206,7 +191,6 @@ public class CreateDocumentBatchTest {
   @Test
   public void shouldCalculateSize() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent1 = new ByteArrayInputStream("test one".getBytes());
     final var documentContent2 = new ByteArrayInputStream("test two".getBytes());
 
@@ -240,7 +224,6 @@ public class CreateDocumentBatchTest {
   @Test
   public void shouldUseProvidedStoreId() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = new ByteArrayInputStream("test one".getBytes());
     final var storeId = "in-memory";
 
@@ -266,7 +249,6 @@ public class CreateDocumentBatchTest {
   @Test
   public void shouldReturnBadRequestForNonExistingStoreId() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = new ByteArrayInputStream("test one".getBytes());
 
     // when
@@ -288,7 +270,6 @@ public class CreateDocumentBatchTest {
   @Test
   public void shouldUseProvidedProcessDefinitionIdAndProcessInstanceKey() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent1 = new ByteArrayInputStream("test one".getBytes());
     final var documentContent2 = new ByteArrayInputStream("test two".getBytes());
 

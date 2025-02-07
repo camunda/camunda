@@ -92,8 +92,7 @@ class OpensearchBackupRepositoryTest {
                         .snapshot("test-snapshot")
                         .state(SnapshotState.STARTED.name())
                         .startTimeInMillis("23")));
-    final var response =
-        GetSnapshotResponse.of(b -> defaultFields(b).total(1).snapshots(snapshotInfos));
+    final var response = GetSnapshotResponse.of(b -> defaultFields(b).snapshots(snapshotInfos));
 
     when(openSearchClient.snapshot().get((GetSnapshotRequest) any())).thenReturn(response);
 
@@ -237,8 +236,7 @@ class OpensearchBackupRepositoryTest {
                         // end time was double the timeout from now
                         .endTimeInMillis(Long.toString(endtime))));
     when(openSearchClient.snapshot().get((GetSnapshotRequest) any()))
-        .thenReturn(
-            GetSnapshotResponse.of(b -> defaultFields(b).total(1).snapshots(snapshotInfos)));
+        .thenReturn(GetSnapshotResponse.of(b -> defaultFields(b).snapshots(snapshotInfos)));
 
     final var response = repository.getBackupState("repo", 5L);
 
@@ -294,7 +292,6 @@ class OpensearchBackupRepositoryTest {
             GetSnapshotResponse.of(
                 b ->
                     defaultFields(b)
-                        .total(1)
                         .snapshots(
                             List.of(
                                 SnapshotInfo.of(
@@ -446,7 +443,7 @@ class OpensearchBackupRepositoryTest {
   }
 
   private GetSnapshotResponse.Builder defaultFields(final GetSnapshotResponse.Builder b) {
-    return b.total(0).remaining(0);
+    return b.snapshots(List.of());
   }
 
   private GetSnapshotResponse emptyResponse() {
