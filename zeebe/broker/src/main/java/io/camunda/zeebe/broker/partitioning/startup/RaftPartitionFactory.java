@@ -19,6 +19,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -29,9 +30,11 @@ public final class RaftPartitionFactory {
   public static final String GROUP_NAME = "raft-partition";
 
   private final BrokerCfg brokerCfg;
+  private final MeterRegistry meterRegistry;
 
-  public RaftPartitionFactory(final BrokerCfg brokerCfg) {
+  public RaftPartitionFactory(final BrokerCfg brokerCfg, final MeterRegistry meterRegistry) {
     this.brokerCfg = brokerCfg;
+    this.meterRegistry = meterRegistry;
   }
 
   public RaftPartition createRaftPartition(final PartitionMetadata partitionMetadata) {
@@ -94,7 +97,8 @@ public final class RaftPartitionFactory {
     partitionConfig.setPreferSnapshotReplicationThreshold(
         brokerCfg.getExperimental().getRaft().getPreferSnapshotReplicationThreshold());
 
-    return new RaftPartition(partitionMetadata, partitionConfig, partitionDirectory.toFile());
+    return new RaftPartition(
+        partitionMetadata, partitionConfig, partitionDirectory.toFile(), meterRegistry);
   }
 
   private RaftLogFlusher.Factory createFlusherFactory(

@@ -48,6 +48,8 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -97,6 +99,7 @@ public final class RaftRule extends ExternalResource {
   private Map<String, TestSnapshotStore> snapshotStores;
   private final Configurator configurator;
   private final Random random = new Random();
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   private RaftRule(final int nodeCount, final Configurator configurator) {
     this.nodeCount = nodeCount;
@@ -166,6 +169,8 @@ public final class RaftRule extends ExternalResource {
     memberLog = null;
     position = 0;
     directory = null;
+    meterRegistry.clear();
+    meterRegistry.close();
   }
 
   /**
@@ -513,6 +518,7 @@ public final class RaftRule extends ExternalResource {
             .withMembershipService(mock(ClusterMembershipService.class))
             .withProtocol(protocol)
             .withEntryValidator(entryValidator)
+            .withMeterRegistry(meterRegistry)
             .withStorage(storage);
     configurator.configure(memberId, builder);
 

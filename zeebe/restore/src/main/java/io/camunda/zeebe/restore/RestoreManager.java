@@ -19,6 +19,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Path;
@@ -32,10 +33,15 @@ public class RestoreManager {
   private static final Logger LOG = LoggerFactory.getLogger(RestoreManager.class);
   private final BrokerCfg configuration;
   private final BackupStore backupStore;
+  private final MeterRegistry meterRegistry;
 
-  public RestoreManager(final BrokerCfg configuration, final BackupStore backupStore) {
+  public RestoreManager(
+      final BrokerCfg configuration,
+      final BackupStore backupStore,
+      final MeterRegistry meterRegistry) {
     this.configuration = configuration;
     this.backupStore = backupStore;
+    this.meterRegistry = meterRegistry;
   }
 
   public CompletableFuture<Void> restore(final long backupId, final boolean validateConfig) {
@@ -109,7 +115,7 @@ public class RestoreManager {
                     configuration.getExperimental().getPartitioning(),
                     localMember)
                 .generatePartitionDistribution());
-    final var raftPartitionFactory = new RaftPartitionFactory(configuration);
+    final var raftPartitionFactory = new RaftPartitionFactory(configuration, meterRegistry);
 
     return clusterTopology.partitions().stream()
         .filter(partitionMetadata -> partitionMetadata.members().contains(localMember))

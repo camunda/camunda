@@ -30,8 +30,11 @@ import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.test.DynamicAutoCloseable;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -60,6 +63,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
   private static final Logger LOG = LoggerFactory.getLogger(ConcurrentBackupCompactionTest.class);
   private static final String SNAPSHOT_FILE_NAME = "file1";
   @TempDir Path dataDirectory;
+  @AutoCloseResource MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private ActorScheduler actorScheduler;
   private SegmentedJournal journal;
   private FileBasedSnapshotStore snapshotStore;
@@ -84,7 +88,8 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
     final var partitionMetadata =
         new PartitionMetadata(
             PartitionId.from("raft", partitionId), Set.of(), Map.of(), 1, new MemberId("1"));
-    final var raftPartition = new RaftPartition(partitionMetadata, null, dataDirectory.toFile());
+    final var raftPartition =
+        new RaftPartition(partitionMetadata, null, dataDirectory.toFile(), meterRegistry);
 
     journal =
         manage(

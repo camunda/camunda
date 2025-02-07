@@ -21,7 +21,9 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.topology.util.RoundRobinPartitionDistributor;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,6 +43,8 @@ import org.junit.Test;
 public final class RaftRolesTest {
 
   @Rule public AtomixClusterRule atomixClusterRule = new AtomixClusterRule();
+
+  @AutoCloseResource MeterRegistry meterRegistry;
 
   @Test
   public void testRoleChangedListener() throws Exception {
@@ -161,7 +165,8 @@ public final class RaftRolesTest {
                   return new RaftPartition(
                       metadata,
                       raftPartitionConfig,
-                      new File(new File(atomixClusterRule.getDataDir(), "log"), "" + nodeId));
+                      new File(new File(atomixClusterRule.getDataDir(), "log"), "" + nodeId),
+                      meterRegistry);
                 })
             .toList();
 

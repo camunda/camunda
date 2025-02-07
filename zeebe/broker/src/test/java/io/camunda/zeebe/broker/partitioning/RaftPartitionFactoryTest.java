@@ -15,6 +15,9 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
@@ -24,6 +27,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.util.unit.DataSize;
 
 public final class RaftPartitionFactoryTest {
+  @AutoCloseResource MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @Test
   void shouldSetElectionTimeout() {
@@ -208,7 +212,7 @@ public final class RaftPartitionFactoryTest {
   }
 
   private RaftPartition buildRaftPartition(final BrokerCfg brokerCfg) {
-    return new RaftPartitionFactory(brokerCfg)
+    return new RaftPartitionFactory(brokerCfg, meterRegistry)
         .createRaftPartition(
             new PartitionMetadata(
                 PartitionId.from("test", 1),

@@ -80,6 +80,7 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
@@ -158,6 +159,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private long lastHeartbeat;
   private final RaftPartitionConfig partitionConfig;
   private final int partitionId;
+  private final MeterRegistry meterRegistry;
 
   public RaftContext(
       final String name,
@@ -169,13 +171,15 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       final RaftThreadContextFactory threadContextFactory,
       final Supplier<Random> randomFactory,
       final RaftElectionConfig electionConfig,
-      final RaftPartitionConfig partitionConfig) {
+      final RaftPartitionConfig partitionConfig,
+      final MeterRegistry meterRegistry) {
     this.name = checkNotNull(name, "name cannot be null");
     this.membershipService = checkNotNull(membershipService, "membershipService cannot be null");
     this.protocol = checkNotNull(protocol, "protocol cannot be null");
     this.storage = checkNotNull(storage, "storage cannot be null");
     random = randomFactory.get();
     this.partitionId = partitionId;
+    this.meterRegistry = checkNotNull(meterRegistry, "meterRegistry cannot be null");
 
     raftRoleMetrics = new RaftRoleMetrics(name);
 
@@ -710,6 +714,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         completeTransition();
       }
     }
+  }
+
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
   }
 
   private void startTransition() {
