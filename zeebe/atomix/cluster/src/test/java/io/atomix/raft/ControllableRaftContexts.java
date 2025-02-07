@@ -97,11 +97,10 @@ public final class ControllableRaftContexts {
   private final NavigableMap<Long, MemberId> leadersAtTerms = new TreeMap<>();
   private final AppendListener appendListener = mock(AppendListener.class);
   private final DataLossChecker dataLossChecker = new DataLossChecker(appendListener);
-  private final SimpleMeterRegistry meterRegistry;
+  private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   public ControllableRaftContexts(final int nodeCount) {
     this.nodeCount = nodeCount;
-    meterRegistry = new SimpleMeterRegistry();
   }
 
   public Map<MemberId, RaftContext> getRaftServers() {
@@ -222,7 +221,7 @@ public final class ControllableRaftContexts {
       final Function<RaftStorage.Builder, RaftStorage.Builder> configurator) {
     final var memberDirectory = getMemberDirectory(directory, memberId.toString());
     final RaftStorage.Builder defaults =
-        RaftStorage.builder()
+        RaftStorage.builder(meterRegistry)
             .withDirectory(memberDirectory)
             .withMaxSegmentSize(1024 * 10)
             .withFreeDiskSpace(100);

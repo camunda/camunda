@@ -23,6 +23,8 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.storage.RaftStorage;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -31,6 +33,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -41,13 +44,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class MetaStoreTest {
   @TempDir Path temporaryFolder;
+  @AutoClose MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private MetaStore metaStore;
   private RaftStorage storage;
 
   @BeforeEach
   public void setup() throws IOException {
-    storage = RaftStorage.builder().withDirectory(temporaryFolder.toFile()).build();
-    metaStore = new MetaStore(storage);
+    storage = RaftStorage.builder(meterRegistry).withDirectory(temporaryFolder.toFile()).build();
+    metaStore = new MetaStore(storage, meterRegistry);
   }
 
   @AfterEach
@@ -83,7 +87,7 @@ class MetaStoreTest {
 
       // when
       metaStore.close();
-      metaStore = new MetaStore(storage);
+      metaStore = new MetaStore(storage, meterRegistry);
 
       // then
       assertThat(metaStore.loadTerm()).isEqualTo(2L);
@@ -96,7 +100,7 @@ class MetaStoreTest {
 
       // when
       metaStore.close();
-      metaStore = new MetaStore(storage);
+      metaStore = new MetaStore(storage, meterRegistry);
 
       // then
       assertThat(metaStore.loadVote().id()).isEqualTo("id");
@@ -130,7 +134,7 @@ class MetaStoreTest {
 
       // when
       metaStore.close();
-      metaStore = new MetaStore(storage);
+      metaStore = new MetaStore(storage, meterRegistry);
 
       // then
       assertThat(metaStore.loadTerm()).isEqualTo(3L);
@@ -153,7 +157,7 @@ class MetaStoreTest {
 
       // when
       metaStore.close();
-      metaStore = new MetaStore(storage);
+      metaStore = new MetaStore(storage, meterRegistry);
 
       // then
       assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(5L);
@@ -174,7 +178,7 @@ class MetaStoreTest {
       metaStore.storeLastFlushedIndex(8L);
 
       metaStore.close();
-      metaStore = new MetaStore(storage);
+      metaStore = new MetaStore(storage, meterRegistry);
 
       // then
       assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(8L);
@@ -224,7 +228,7 @@ class MetaStoreTest {
 
       // when
       metaStore.close();
-      metaStore = new MetaStore(storage);
+      metaStore = new MetaStore(storage, meterRegistry);
 
       // then
       final Configuration readConfig = metaStore.loadConfiguration();
@@ -242,7 +246,7 @@ class MetaStoreTest {
 
       // when
       metaStore.close();
-      metaStore = new MetaStore(storage);
+      metaStore = new MetaStore(storage, meterRegistry);
       final Configuration readConfig = metaStore.loadConfiguration();
 
       // then
