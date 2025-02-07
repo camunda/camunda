@@ -31,6 +31,7 @@ import io.atomix.utils.net.Address;
 import io.camunda.zeebe.util.StringUtil;
 import io.camunda.zeebe.util.TlsConfigUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
@@ -141,19 +142,24 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private SslContext serverSslContext;
   private SslContext clientSslContext;
   private DnsAddressResolverGroup dnsResolverGroup;
-  private final MessagingMetrics messagingMetrics = new MessagingMetricsImpl();
+  private final MessagingMetrics messagingMetrics;
 
   public NettyMessagingService(
-      final String cluster, final Address advertisedAddress, final MessagingConfig config) {
-    this(cluster, advertisedAddress, config, ProtocolVersion.latest());
-  }
-
-  NettyMessagingService(
       final String cluster,
       final Address advertisedAddress,
       final MessagingConfig config,
-      final ProtocolVersion protocolVersion) {
+      final MeterRegistry registry) {
+    this(cluster, advertisedAddress, config, ProtocolVersion.latest(), registry);
+  }
+
+  public NettyMessagingService(
+      final String cluster,
+      final Address advertisedAddress,
+      final MessagingConfig config,
+      final ProtocolVersion protocolVersion,
+      final MeterRegistry registry) {
     preamble = cluster.hashCode();
+    messagingMetrics = new MessagingMetricsImpl(registry);
     this.advertisedAddress = advertisedAddress;
     this.protocolVersion = protocolVersion;
     this.config = verifyHeartbeatConfig(config);
