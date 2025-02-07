@@ -99,6 +99,7 @@ public class ZeebeDecisionInstanceImportService
   private DecisionInstanceDto mapZeebeRecordsToOptimizeEntities(
       final ZeebeDecisionInstanceRecordDto zeebeDecisionInstanceRecord) {
     final ZeebeDecisionInstanceDataDto recordData = zeebeDecisionInstanceRecord.getValue();
+    LOG.error("====ZeebeDecisionInstanceDataDto: {}", recordData);
     final DecisionInstanceDto instanceDto = new DecisionInstanceDto();
     instanceDto.setDecisionInstanceId(String.valueOf(recordData.getDecisionKey()));
     instanceDto.setProcessDefinitionId(String.valueOf(recordData.getProcessDefinitionKey()));
@@ -132,6 +133,7 @@ public class ZeebeDecisionInstanceImportService
       }
 
       for (final MatchedRule matchedRule : evaluatedDecision.getMatchedRules()) {
+        LOG.error("====MATCHED RULE: {}", matchedRule);
         matchedRuleIds.add(matchedRule.getRuleId());
         for (final EvaluatedOutput evaluatedOutput : matchedRule.getEvaluatedOutputs()) {
           final OutputInstanceDto output =
@@ -156,7 +158,6 @@ public class ZeebeDecisionInstanceImportService
     }
     if (!matchedRuleIds.isEmpty()) {
       instanceDto.setMatchedRules(matchedRuleIds);
-
     }
     return instanceDto;
   }

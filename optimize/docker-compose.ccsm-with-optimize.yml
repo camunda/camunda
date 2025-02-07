@@ -2,7 +2,7 @@ services:
   optimize:
     profiles: ["", "elasticsearch"]
     container_name: optimize
-    image: dmnimport_alex
+    image: testimage27
     depends_on:
       - elasticsearch
       - identity

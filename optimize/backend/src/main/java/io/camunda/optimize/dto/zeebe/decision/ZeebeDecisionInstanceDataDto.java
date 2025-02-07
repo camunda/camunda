@@ -170,6 +170,55 @@ public class ZeebeDecisionInstanceDataDto implements RecordValue {
     this.evaluatedDecisions = evaluatedDecisions;
   }
 
+  @Override
+  public String toString() {
+    return "ZeebeDecisionInstanceDataDto{"
+        + "evaluationFailureMessage='"
+        + evaluationFailureMessage
+        + '\''
+        + ", decisionName='"
+        + decisionName
+        + '\''
+        + ", decisionVersion="
+        + decisionVersion
+        + ", decisionRequirementsId='"
+        + decisionRequirementsId
+        + '\''
+        + ", decisionRequirementsKey="
+        + decisionRequirementsKey
+        + ", decisionOutput='"
+        + decisionOutput
+        + '\''
+        + ", failedDecisionId='"
+        + failedDecisionId
+        + '\''
+        + ", variables="
+        + (variables != null ? variables.toString() : "null")
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + ", bpmnProcessId='"
+        + bpmnProcessId
+        + '\''
+        + ", processInstanceKey="
+        + processInstanceKey
+        + ", decisionId='"
+        + decisionId
+        + '\''
+        + ", decisionKey="
+        + decisionKey
+        + ", elementInstanceKey="
+        + elementInstanceKey
+        + ", processDefinitionKey="
+        + processDefinitionKey
+        + ", elementId='"
+        + elementId
+        + '\''
+        + ", evaluatedDecisions="
+        + (evaluatedDecisions != null ? evaluatedDecisions.toString() : "null")
+        + '}';
+  }
+
   public static class EvaluatedDecision {
     private String decisionName;
     private int decisionVersion;
@@ -255,6 +304,35 @@ public class ZeebeDecisionInstanceDataDto implements RecordValue {
       this.matchedRules = matchedRules;
     }
 
+    @Override
+    public String toString() {
+      return "EvaluatedDecision{"
+          + "decisionName='"
+          + decisionName
+          + '\''
+          + ", decisionVersion="
+          + decisionVersion
+          + ", decisionType='"
+          + decisionType
+          + '\''
+          + ", decisionOutput='"
+          + decisionOutput
+          + '\''
+          + ", tenantId='"
+          + tenantId
+          + '\''
+          + ", decisionId='"
+          + decisionId
+          + '\''
+          + ", decisionKey="
+          + decisionKey
+          + ", evaluatedInputs="
+          + (evaluatedInputs != null ? evaluatedInputs.toString() : "null")
+          + ", matchedRules="
+          + (matchedRules != null ? matchedRules.toString() : "null")
+          + '}';
+    }
+
     public static class EvaluatedInput {
       private String inputId;
       private String inputName;
@@ -284,6 +362,21 @@ public class ZeebeDecisionInstanceDataDto implements RecordValue {
 
       public void setInputValue(final String inputValue) {
         this.inputValue = inputValue;
+      }
+
+      @Override
+      public String toString() {
+        return "EvaluatedInput{"
+            + "inputId='"
+            + inputId
+            + '\''
+            + ", inputName='"
+            + inputName
+            + '\''
+            + ", inputValue='"
+            + inputValue
+            + '\''
+            + '}';
       }
     }
 
@@ -318,6 +411,19 @@ public class ZeebeDecisionInstanceDataDto implements RecordValue {
         this.evaluatedOutputs = evaluatedOutputs;
       }
 
+      @Override
+      public String toString() {
+        return "MatchedRule{"
+            + "ruleId='"
+            + ruleId
+            + '\''
+            + ", ruleIndex="
+            + ruleIndex
+            + ", evaluatedOutputs="
+            + (evaluatedOutputs != null ? evaluatedOutputs.toString() : "null")
+            + '}';
+      }
+
       public static class EvaluatedOutput {
         private String outputId;
         private String outputName;
@@ -347,6 +453,21 @@ public class ZeebeDecisionInstanceDataDto implements RecordValue {
 
         public void setOutputValue(final String outputValue) {
           this.outputValue = outputValue;
+        }
+
+        @Override
+        public String toString() {
+          return "EvaluatedOutput{"
+              + "outputId='"
+              + outputId
+              + '\''
+              + ", outputName='"
+              + outputName
+              + '\''
+              + ", outputValue='"
+              + outputValue
+              + '\''
+              + '}';
         }
       }
     }

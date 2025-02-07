@@ -36,6 +36,8 @@ import jakarta.validation.Valid;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,6 +54,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(REST_API_PATH + ReportRestService.REPORT_PATH)
 public class ReportRestService {
   public static final String REPORT_PATH = "/report";
+  private static final Logger LOG = LoggerFactory.getLogger(ReportRestService.class);
   private final ReportService reportService;
   private final ReportEvaluationService reportEvaluationService;
   private final SessionService sessionService;
@@ -172,6 +175,7 @@ public class ReportRestService {
       @Valid @RequestBody final ReportDefinitionDto reportDefinitionDto,
       @Valid final PaginationRequestDto paginationRequestDto,
       final HttpServletRequest request) {
+    LOG.error("========STARTING EVALUATE");
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     if (reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto
         && ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto)
@@ -186,8 +190,10 @@ public class ReportRestService {
             timezone,
             reportDefinitionDto,
             PaginationDto.fromPaginationRequest(paginationRequestDto));
-    return reportRestMapper.mapToLocalizedEvaluationResponseDto(
+    final AuthorizedReportEvaluationResponseDto returnVal = reportRestMapper.mapToLocalizedEvaluationResponseDto(
         reportEvaluationResult, request.getHeader(X_OPTIMIZE_CLIENT_LOCALE));
+    LOG.error("========ENDING EVALUATE");
+    return returnVal;
   }
 
   @PutMapping("/process/single/{id}")

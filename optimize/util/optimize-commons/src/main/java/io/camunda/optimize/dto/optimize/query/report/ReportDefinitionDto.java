@@ -30,13 +30,13 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
 
   @Valid protected D data;
 
-  private final boolean combined;
+  private final boolean combined = false;
 
   private final ReportType reportType;
 
   protected ReportDefinitionDto(final D data, final Boolean combined, final ReportType reportType) {
     this.data = data;
-    this.combined = combined;
+    // this.combined = combined;
     this.reportType = reportType;
   }
 
@@ -61,7 +61,7 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
     this.lastModifier = lastModifier;
     this.collectionId = collectionId;
     this.data = data;
-    this.combined = combined;
+    // this.combined = combined;
     this.reportType = reportType;
   }
 
@@ -75,7 +75,7 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
     lastModifier = b.lastModifier;
     collectionId = b.collectionId;
     data = b.data;
-    combined = b.combined;
+    // combined = b.combined;
     reportType = b.reportType;
   }
 
