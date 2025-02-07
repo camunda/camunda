@@ -22,6 +22,8 @@ import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerTransport;
 import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.util.VersionUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.function.Consumer;
@@ -42,6 +44,7 @@ public final class StubBroker implements AutoCloseable {
   private int currentStubPort;
   private String currentStubHost;
   private ServerTransport serverTransport;
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   public StubBroker() {
     this(0);
@@ -82,7 +85,7 @@ public final class StubBroker implements AutoCloseable {
     currentStubHost = socketAddress.getHostName();
     currentStubPort = socketAddress.getPort();
     cluster =
-        AtomixCluster.builder()
+        AtomixCluster.builder(meterRegistry)
             .withPort(currentStubPort)
             .withMemberId("0")
             .withClusterId(CLUSTER_ID)
