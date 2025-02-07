@@ -156,7 +156,6 @@ public class TasklistAssignUserTaskAuthorizationIT {
   public void shouldBeAuthorizedToAssignUserTask() {
     // given
     adminAuthClient.createPermissions(
-        testUserKey,
         TEST_USER_NAME,
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,
@@ -179,7 +178,6 @@ public class TasklistAssignUserTaskAuthorizationIT {
   public void shouldBeAuthorizedToAssignJobBasedUserTask() {
     // given
     adminAuthClient.createPermissions(
-        testUserKey,
         TEST_USER_NAME,
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,

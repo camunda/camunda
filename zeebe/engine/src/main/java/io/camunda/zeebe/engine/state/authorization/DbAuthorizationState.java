@@ -143,6 +143,15 @@ public class DbAuthorizationState implements MutableAuthorizationState {
   }
 
   @Override
+  public void update(final long authorizationKey, final AuthorizationRecord authorization) {
+    // delete old authorization record
+    delete(authorizationKey);
+
+    // create the new authorization record
+    create(authorizationKey, authorization);
+  }
+
+  @Override
   public void delete(final long authorizationKey) {
     this.authorizationKey.wrapLong(authorizationKey);
     final var persistedAuthorization =
@@ -150,7 +159,7 @@ public class DbAuthorizationState implements MutableAuthorizationState {
 
     // remove the old permissions
     persistedAuthorization
-        .getPermissions()
+        .getPermissionTypes()
         .forEach(
             permissionType -> {
               removePermission(

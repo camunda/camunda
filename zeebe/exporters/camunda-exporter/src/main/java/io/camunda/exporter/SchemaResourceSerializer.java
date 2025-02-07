@@ -18,11 +18,14 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public final class SchemaResourceSerializer {
-  private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  private SchemaResourceSerializer() {}
+  private final ObjectMapper objectMapper;
 
-  public static Map<String, Object> serialize(
+  public SchemaResourceSerializer(final ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
+
+  public Map<String, Object> serialize(
       final Function<JsonGenerator, jakarta.json.stream.JsonGenerator> jacksonGenerator,
       final Consumer<jakarta.json.stream.JsonGenerator> serialize)
       throws IOException {
@@ -33,7 +36,7 @@ public final class SchemaResourceSerializer {
       serialize.accept(jacksonJsonpGenerator);
       jacksonJsonpGenerator.flush();
 
-      return MAPPER.readValue(out.toString(), new TypeReference<>() {});
+      return objectMapper.readValue(out.toString(), new TypeReference<>() {});
     }
   }
 }

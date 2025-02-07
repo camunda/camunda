@@ -14,6 +14,7 @@ import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
+import io.camunda.exporter.utils.TestObjectMapper;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
@@ -68,7 +69,7 @@ final class OpenSearchArchiverRepositoryIT {
   private static final OpensearchContainer<?> OPENSEARCH =
       TestSearchContainers.createDefaultOpensearchContainer();
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = TestObjectMapper.objectMapper();
   @AutoClose private final RestClientTransport transport = createRestClient();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final ArchiverConfiguration config = new ArchiverConfiguration();
@@ -369,7 +370,7 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   private void createLifeCyclePolicy() {
-    final var engineClient = new OpensearchEngineClient(testClient);
+    final var engineClient = new OpensearchEngineClient(testClient, MAPPER);
     try {
       engineClient.putIndexLifeCyclePolicy(retention.getPolicyName(), retention.getMinimumAge());
     } catch (final Exception e) {

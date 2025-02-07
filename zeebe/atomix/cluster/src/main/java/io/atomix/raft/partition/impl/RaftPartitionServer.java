@@ -47,6 +47,7 @@ import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -81,7 +82,8 @@ public class RaftPartitionServer implements HealthMonitorable {
       final ClusterMembershipService membershipService,
       final ClusterCommunicationService clusterCommunicator,
       final ReceivableSnapshotStore persistedSnapshotStore,
-      final PartitionMetadata partitionMetadata) {
+      final PartitionMetadata partitionMetadata,
+      final MeterRegistry meterRegistry) {
     this.partition = partition;
     this.config = config;
     this.localMemberId = localMemberId;
@@ -96,7 +98,7 @@ public class RaftPartitionServer implements HealthMonitorable {
     requestTimeout = config.getRequestTimeout();
     snapshotRequestTimeout = config.getSnapshotRequestTimeout();
     configurationChangeTimeout = config.getConfigurationChangeTimeout();
-    server = buildServer();
+    server = buildServer(meterRegistry);
   }
 
   public CompletableFuture<RaftPartitionServer> bootstrap() {
@@ -160,7 +162,7 @@ public class RaftPartitionServer implements HealthMonitorable {
     return server.reconfigurePriority(newPriority);
   }
 
-  private RaftServer buildServer() {
+  private RaftServer buildServer(final MeterRegistry meterRegistry) {
     final var partitionId = partition.id().id();
     final var electionConfig =
         config.isPriorityElectionEnabled()
@@ -177,6 +179,7 @@ public class RaftPartitionServer implements HealthMonitorable {
         .withStorage(createRaftStorage())
         .withEntryValidator(config.getEntryValidator())
         .withElectionConfig(electionConfig)
+        .withMeterRegistry(meterRegistry)
         .build();
   }
 

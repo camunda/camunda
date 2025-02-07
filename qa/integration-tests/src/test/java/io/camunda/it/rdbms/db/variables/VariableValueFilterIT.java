@@ -55,10 +55,13 @@ public class VariableValueFilterIT {
       final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final var randomizedVariable = prepareRandomVariablesAndReturnOne(testApplication);
+    final String varName = "var-name-" + nextStringId();
+    final String valueForOne = "value-42000";
+    final var randomizedVariable =
+        prepareRandomVariablesAndReturnOne(testApplication, varName, valueForOne);
 
     // and an eq value filter
-    final Operation<String> operation = Operation.eq(randomizedVariable.value());
+    final Operation<String> operation = Operation.eq(valueForOne);
 
     // when we search for it, we should find one
     searchAndAssertVariableValueFilter(
@@ -88,10 +91,10 @@ public class VariableValueFilterIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final String varName = "var-name-" + nextStringId();
     final var randomizedVariable =
-        prepareRandomVariablesAndReturnOne(testApplication, varName, "42");
+        prepareRandomVariablesAndReturnOne(testApplication, varName, "42000");
 
     // and an eq value filter
-    final Operation<String> operation = Operation.eq("42");
+    final Operation<String> operation = Operation.eq("42000");
 
     // when we search for it, we should find one
     searchAndAssertVariableValueFilter(

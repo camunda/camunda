@@ -10,66 +10,66 @@ package io.camunda.exporter.utils;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.ilm.get_lifecycle.Lifecycle;
 import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
-import co.elastic.clients.json.JsonpMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.SchemaResourceSerializer;
 import java.io.IOException;
 import java.util.Objects;
 import org.opensearch.client.json.jackson.JacksonJsonpGenerator;
-import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.opensearch.indices.IndexState;
 
 public class SearchClientAdapter {
-  private static final ObjectMapper MAPPER = new ObjectMapper();
-  private static final JsonpMapper ELS_JSON_MAPPER =
-      new co.elastic.clients.json.jackson.JacksonJsonpMapper(MAPPER);
-  private static final org.opensearch.client.json.JsonpMapper OPENSEARCH_JSON_MAPPER =
-      new JacksonJsonpMapper(MAPPER);
 
   private final ElasticsearchClient elsClient;
   private final OpenSearchClient osClient;
+  private final SchemaResourceSerializer schemaResourceSerializer;
+  private final ObjectMapper objectMapper;
 
-  public SearchClientAdapter(final ElasticsearchClient elsClient) {
+  public SearchClientAdapter(final ElasticsearchClient elsClient, final ObjectMapper objectMapper) {
     Objects.requireNonNull(elsClient, "elsClient cannot be null");
     this.elsClient = elsClient;
     osClient = null;
+    this.objectMapper = objectMapper;
+    schemaResourceSerializer = new SchemaResourceSerializer(objectMapper);
   }
 
-  public SearchClientAdapter(final OpenSearchClient osClient) {
+  public SearchClientAdapter(final OpenSearchClient osClient, final ObjectMapper objectMapper) {
     Objects.requireNonNull(osClient, "osClient cannot be null");
     elsClient = null;
+    this.objectMapper = objectMapper;
     this.osClient = osClient;
+    schemaResourceSerializer = new SchemaResourceSerializer(objectMapper);
   }
 
   private JsonNode opensearchIndexToNode(final IndexState index) throws IOException {
     final var indexAsMap =
-        SchemaResourceSerializer.serialize(
-            JacksonJsonpGenerator::new, (gen) -> index.serialize(gen, OPENSEARCH_JSON_MAPPER));
+        schemaResourceSerializer.serialize(
+            JacksonJsonpGenerator::new,
+            (gen) -> index.serialize(gen, osClient._transport().jsonpMapper()));
 
-    return MAPPER.valueToTree(indexAsMap);
+    return objectMapper.valueToTree(indexAsMap);
   }
 
   private JsonNode elsIndexToNode(final co.elastic.clients.elasticsearch.indices.IndexState index)
       throws IOException {
     final var indexAsMap =
-        SchemaResourceSerializer.serialize(
+        schemaResourceSerializer.serialize(
             co.elastic.clients.json.jackson.JacksonJsonpGenerator::new,
-            (gen) -> index.serialize(gen, ELS_JSON_MAPPER));
+            (gen) -> index.serialize(gen, elsClient._jsonpMapper()));
 
-    return MAPPER.valueToTree(indexAsMap);
+    return objectMapper.valueToTree(indexAsMap);
   }
 
   private JsonNode elsIndexTemplateToNode(final IndexTemplateItem indexTemplate)
       throws IOException {
     final var templateAsMap =
-        SchemaResourceSerializer.serialize(
+        schemaResourceSerializer.serialize(
             co.elastic.clients.json.jackson.JacksonJsonpGenerator::new,
-            (gen) -> indexTemplate.serialize(gen, ELS_JSON_MAPPER));
+            (gen) -> indexTemplate.serialize(gen, elsClient._jsonpMapper()));
 
-    return MAPPER.valueToTree(templateAsMap);
+    return objectMapper.valueToTree(templateAsMap);
   }
 
   private JsonNode opensearchIndexTemplateToNode(
@@ -77,20 +77,20 @@ public class SearchClientAdapter {
           indexTemplate)
       throws IOException {
     final var templateAsMap =
-        SchemaResourceSerializer.serialize(
+        schemaResourceSerializer.serialize(
             JacksonJsonpGenerator::new,
-            (gen) -> indexTemplate.serialize(gen, OPENSEARCH_JSON_MAPPER));
+            (gen) -> indexTemplate.serialize(gen, osClient._transport().jsonpMapper()));
 
-    return MAPPER.valueToTree(templateAsMap);
+    return objectMapper.valueToTree(templateAsMap);
   }
 
   private JsonNode elsPolicyToNode(final Lifecycle lifecyclePolicy) throws IOException {
     final var policyAsMap =
-        SchemaResourceSerializer.serialize(
+        schemaResourceSerializer.serialize(
             co.elastic.clients.json.jackson.JacksonJsonpGenerator::new,
-            (gen) -> lifecyclePolicy.serialize(gen, ELS_JSON_MAPPER));
+            (gen) -> lifecyclePolicy.serialize(gen, elsClient._jsonpMapper()));
 
-    return MAPPER.valueToTree(policyAsMap);
+    return objectMapper.valueToTree(policyAsMap);
   }
 
   public JsonNode getIndexAsNode(final String indexName) throws IOException {
@@ -114,7 +114,7 @@ public class SearchClientAdapter {
       final var request =
           Requests.builder().method("GET").endpoint("_plugins/_ism/policies/" + policyName).build();
 
-      return MAPPER.readTree(osClient.generic().execute(request).getBody().get().body());
+      return objectMapper.readTree(osClient.generic().execute(request).getBody().get().body());
     }
     return null;
   }

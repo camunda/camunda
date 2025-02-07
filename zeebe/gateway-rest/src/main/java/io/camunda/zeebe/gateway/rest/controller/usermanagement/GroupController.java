@@ -110,7 +110,11 @@ public class GroupController {
   public ResponseEntity<Object> getGroup(@PathVariable final long groupKey) {
     try {
       return ResponseEntity.ok()
-          .body(SearchQueryResponseMapper.toGroup(groupServices.getGroup(groupKey)));
+          .body(
+              SearchQueryResponseMapper.toGroup(
+                  groupServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .getGroup(groupKey)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
@@ -125,7 +129,8 @@ public class GroupController {
 
   private ResponseEntity<GroupSearchQueryResponse> search(final GroupQuery query) {
     try {
-      final var result = groupServices.search(query);
+      final var result =
+          groupServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toGroupSearchQueryResponse(result));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);

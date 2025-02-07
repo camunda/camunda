@@ -43,24 +43,24 @@ public class CustomMethodSecurityExpressionRootTest {
   @BeforeEach
   void setup() {
     when(authorizationServices.fetchAssignedPermissions(
-            1234L, AuthorizationResourceType.PROCESS_DEFINITION, "*"))
+            "foo", AuthorizationResourceType.PROCESS_DEFINITION, "*"))
         .thenReturn(
             Arrays.stream(PermissionType.values()).map(Enum::name).collect(Collectors.toSet()));
     when(authorizationServices.fetchAssignedPermissions(
-            4321L, AuthorizationResourceType.PROCESS_DEFINITION, "*"))
+            "bar", AuthorizationResourceType.PROCESS_DEFINITION, "*"))
         .thenReturn(Set.of(PermissionType.READ.name()));
     when(authorizationServices.fetchAssignedPermissions(
-            4321L, AuthorizationResourceType.PROCESS_DEFINITION, "process1"))
+            "bar", AuthorizationResourceType.PROCESS_DEFINITION, "process1"))
         .thenReturn(
             Set.of(
                 PermissionType.CREATE.name(),
                 PermissionType.DELETE.name(),
                 PermissionType.UPDATE.name()));
     when(authorizationServices.fetchAssignedPermissions(
-            6789L, AuthorizationResourceType.DECISION_DEFINITION, "*"))
+            "baz", AuthorizationResourceType.DECISION_DEFINITION, "*"))
         .thenReturn(Set.of(PermissionType.READ.name()));
     when(authorizationServices.fetchAssignedPermissions(
-            6789L, AuthorizationResourceType.PROCESS_DEFINITION, "process1"))
+            "baz", AuthorizationResourceType.PROCESS_DEFINITION, "process1"))
         .thenReturn(Set.of(PermissionType.READ.name()));
   }
 
@@ -97,18 +97,18 @@ public class CustomMethodSecurityExpressionRootTest {
     return Stream.of(
         Arguments.of(jwtAuthentication(), AuthorizationResourceType.PROCESS_DEFINITION, "*", false),
         Arguments.of(
-            basicAuthentication(1234L), AuthorizationResourceType.PROCESS_DEFINITION, "*", true),
+            basicAuthentication("foo"), AuthorizationResourceType.PROCESS_DEFINITION, "*", true),
         Arguments.of(
-            basicAuthentication(4321L), AuthorizationResourceType.PROCESS_DEFINITION, "*", true),
+            basicAuthentication("bar"), AuthorizationResourceType.PROCESS_DEFINITION, "*", true),
         Arguments.of(
-            basicAuthentication(4321L),
+            basicAuthentication("bar"),
             AuthorizationResourceType.PROCESS_DEFINITION,
             "process1",
             false),
         Arguments.of(
-            basicAuthentication(6789L), AuthorizationResourceType.PROCESS_DEFINITION, "*", false),
+            basicAuthentication("baz"), AuthorizationResourceType.PROCESS_DEFINITION, "*", false),
         Arguments.of(
-            basicAuthentication(6789L),
+            basicAuthentication("baz"),
             AuthorizationResourceType.PROCESS_DEFINITION,
             "process1",
             true));
@@ -118,18 +118,18 @@ public class CustomMethodSecurityExpressionRootTest {
     return Stream.of(
         Arguments.of(jwtAuthentication(), AuthorizationResourceType.PROCESS_DEFINITION, "*", false),
         Arguments.of(
-            basicAuthentication(1234L), AuthorizationResourceType.PROCESS_DEFINITION, "*", true),
+            basicAuthentication("foo"), AuthorizationResourceType.PROCESS_DEFINITION, "*", true),
         Arguments.of(
-            basicAuthentication(4321L), AuthorizationResourceType.PROCESS_DEFINITION, "*", false),
+            basicAuthentication("bar"), AuthorizationResourceType.PROCESS_DEFINITION, "*", false),
         Arguments.of(
-            basicAuthentication(4321L),
+            basicAuthentication("bar"),
             AuthorizationResourceType.PROCESS_DEFINITION,
             "process1",
             true),
         Arguments.of(
-            basicAuthentication(6789L), AuthorizationResourceType.PROCESS_DEFINITION, "*", false),
+            basicAuthentication("baz"), AuthorizationResourceType.PROCESS_DEFINITION, "*", false),
         Arguments.of(
-            basicAuthentication(6789L),
+            basicAuthentication("baz"),
             AuthorizationResourceType.PROCESS_DEFINITION,
             "process1",
             false));
@@ -150,13 +150,9 @@ public class CustomMethodSecurityExpressionRootTest {
     return new JwtAuthenticationToken(jwt);
   }
 
-  private static Authentication basicAuthentication(final long userKey) {
+  private static Authentication basicAuthentication(final String username) {
     return new UsernamePasswordAuthenticationToken(
-        CamundaUserBuilder.aCamundaUser()
-            .withUsername("admin")
-            .withPassword("admin")
-            .withUserKey(userKey)
-            .build(),
+        CamundaUserBuilder.aCamundaUser().withUsername(username).withPassword("admin").build(),
         null);
   }
 }

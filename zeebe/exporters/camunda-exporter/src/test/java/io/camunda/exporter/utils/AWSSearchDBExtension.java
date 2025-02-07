@@ -8,6 +8,7 @@
 package io.camunda.exporter.utils;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
@@ -21,6 +22,7 @@ public class AWSSearchDBExtension extends SearchDBExtension {
   private static OpenSearchClient osClient;
 
   private final String osUrl;
+  private ObjectMapper objectMapper;
 
   public AWSSearchDBExtension(final String openSearchAwsInstanceUrl) {
     osUrl = openSearchAwsInstanceUrl;
@@ -32,7 +34,9 @@ public class AWSSearchDBExtension extends SearchDBExtension {
     osConfig.getConnect().setType("opensearch");
     osConfig.getConnect().setUrl(osUrl);
     osConfig.getIndex().setPrefix("test-" + UUID.randomUUID());
-    osClient = new OpensearchConnector(osConfig.getConnect()).createClient();
+    final var connector = new OpensearchConnector(osConfig.getConnect());
+    objectMapper = connector.objectMapper();
+    osClient = connector.createClient();
   }
 
   @Override
@@ -42,7 +46,13 @@ public class AWSSearchDBExtension extends SearchDBExtension {
 
   @Override
   public void beforeEach(final ExtensionContext context) throws Exception {
-    new OpensearchEngineClient(osClient).createIndex(PROCESS_INDEX, new IndexSettings());
+    new OpensearchEngineClient(osClient, objectMapper)
+        .createIndex(PROCESS_INDEX, new IndexSettings());
+  }
+
+  @Override
+  public ObjectMapper objectMapper() {
+    return objectMapper;
   }
 
   @Override

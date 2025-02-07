@@ -106,7 +106,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
     streamProcessorMode = context.getProcessorMode();
     logStream = context.getLogStream();
     logStreamBatchReader = new LogStreamBatchReaderImpl(context.getLogStreamReader());
-    replayMetrics = new ReplayMetrics(logStream.getPartitionId());
+    replayMetrics = new ReplayMetrics(context.getMeterRegistry());
   }
 
   /**

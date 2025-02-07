@@ -14,13 +14,13 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.entity.Permission;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationDeleteRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -67,7 +67,7 @@ public class AuthorizationServices
   }
 
   public List<String> getAuthorizedResources(
-      final Set<Long> ownerKeys,
+      final Set<String> ownerIds,
       final PermissionType permissionType,
       final AuthorizationResourceType resourceType) {
     final var authorizationQuery =
@@ -75,24 +75,19 @@ public class AuthorizationServices
             fn ->
                 fn.filter(
                     f ->
-                        f.ownerKeys(ownerKeys.stream().toList())
+                        f.ownerIds(ownerIds.stream().toList())
                             .permissionType(permissionType)
                             .resourceType(resourceType.name())));
-    return findAll(authorizationQuery).stream()
-        .map(AuthorizationEntity::permissions)
-        .flatMap(List::stream)
-        .map(Permission::resourceIds)
-        .flatMap(Set::stream)
-        .collect(Collectors.toList());
+    return findAll(authorizationQuery).stream().map(AuthorizationEntity::resourceId).toList();
   }
 
-  public List<String> getAuthorizedApplications(final Set<Long> ownerKeys) {
+  public List<String> getAuthorizedApplications(final Set<String> ownerIds) {
     return getAuthorizedResources(
-        ownerKeys, PermissionType.READ, AuthorizationResourceType.APPLICATION);
+        ownerIds, PermissionType.READ, AuthorizationResourceType.APPLICATION);
   }
 
   public Set<String> fetchAssignedPermissions(
-      final Long ownerKey, final AuthorizationResourceType resourceType, final String resourceId) {
+      final String ownerId, final AuthorizationResourceType resourceType, final String resourceId) {
     final SearchQueryResult<AuthorizationEntity> result =
         search(
             SearchQueryBuilders.authorizationSearchQuery(
@@ -104,25 +99,25 @@ public class AuthorizationServices
                                         resourceId != null && !resourceId.isEmpty()
                                             ? resourceId
                                             : null)
-                                    .ownerKeys(ownerKey))
+                                    .ownerIds(ownerId))
                         .page(p -> p.size(1))));
     // TODO logic to fetch indirect authorizations via roles/groups should be added later
     return result.items().stream()
-        .flatMap(authorization -> authorization.permissions().stream())
-        .filter(permission -> permission.resourceIds().contains(resourceId))
-        .map(Permission -> Permission.type().name())
+        .filter(authorization -> authorization.resourceId().contains(resourceId))
+        .flatMap(authorization -> authorization.permissionTypes().stream())
+        .map(PermissionType::name)
         .collect(Collectors.toSet());
   }
 
   public CompletableFuture<AuthorizationRecord> createAuthorization(
       final CreateAuthorizationRequest request) {
     final var brokerRequest =
-        new BrokerAuthorizationCreateRequest()
+        new BrokerAuthorizationRequest(AuthorizationIntent.CREATE)
             .setOwnerId(request.ownerId())
             .setOwnerType(request.ownerType())
-            .setResourceId(request.resourceId())
             .setResourceType(request.resourceType())
-            .setPermissions(request.permissions());
+            .setResourceId(request.resourceId())
+            .setPermissionTypes(request.permissionType());
     return sendBrokerRequest(brokerRequest);
   }
 
@@ -131,7 +126,28 @@ public class AuthorizationServices
     return sendBrokerRequest(brokerRequest);
   }
 
+  public CompletableFuture<AuthorizationRecord> updateAuthorization(
+      final UpdateAuthorizationRequest request) {
+    final var brokerRequest =
+        new BrokerAuthorizationRequest(AuthorizationIntent.UPDATE)
+            .setAuthorizationKey(request.authorizationKey())
+            .setOwnerId(request.ownerId())
+            .setOwnerType(request.ownerType())
+            .setResourceId(request.resourceId())
+            .setResourceType(request.resourceType())
+            .setPermissionTypes(request.permissions());
+    return sendBrokerRequest(brokerRequest);
+  }
+
   public record CreateAuthorizationRequest(
+      String ownerId,
+      AuthorizationOwnerType ownerType,
+      String resourceId,
+      AuthorizationResourceType resourceType,
+      Set<PermissionType> permissionType) {}
+
+  public record UpdateAuthorizationRequest(
+      long authorizationKey,
       String ownerId,
       AuthorizationOwnerType ownerType,
       String resourceId,

@@ -2419,7 +2419,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AuthorizationCreateRequest"
+              $ref: "#/components/schemas/AuthorizationRequest"
         required: true
       responses:
         "201":
@@ -2457,6 +2457,39 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
   /authorizations/{authorizationKey}:
+    put:
+      tags:
+        - Authorization
+      operationId: updateAuthorization
+      summary: Update authorization
+      description: Update the authorization with the given key.
+      parameters:
+        - name: authorizationKey
+          in: path
+          required: true
+          description: The key of the authorization to delete.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthorizationRequest"
+        required: true
+      responses:
+        "204":
+          description: The authorization was updated successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The authorization with the authorizationKey was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     delete:
       tags:
         - Authorization
@@ -3213,14 +3246,11 @@ paths:
       tags:
         - Document
       operationId: createDocument
-      summary: Upload document (alpha)
+      summary: Upload document
       description: |
         Upload a document to the Camunda 8 cluster.
 
-        Note that this currently only supports an in-memory document store, which is not meant for production use.
-
-        This endpoint is an alpha feature and may be subject to change
-        in future releases.
+        Note that this is currently supported for document stores of type: AWS, GCP, in-memory, local
       parameters:
         - name: storeId
           in: query
@@ -3272,7 +3302,7 @@ paths:
       tags:
         - Document
       operationId: createDocuments
-      summary: Upload multiple documents (alpha)
+      summary: Upload multiple documents
       description: |
         Upload multiple documents to the Camunda 8 cluster.
 
@@ -3285,10 +3315,7 @@ paths:
         each of which contains the file name of the document that failed to upload and the reason for the failure.
         The client can choose to retry the whole batch or individual documents based on the response.
 
-        Note that this currently only supports an in-memory document store, which is not meant for production use.
-
-        This endpoint is an alpha feature and may be subject to change
-        in future releases.
+        Note that this is currently supported for document stores of type: AWS, GCP, in-memory, local
       parameters:
         - name: storeId
           in: query
@@ -3348,14 +3375,11 @@ paths:
       tags:
         - Document
       operationId: getDocument
-      summary: Download document (alpha)
+      summary: Download document
       description: |
         Download a document from the Camunda 8 cluster.
 
-        Note that this currently only supports an in-memory document store, which is not meant for production use.
-
-        This endpoint is an alpha feature and may be subject to change
-        in future releases.
+        Note that this is currently supported for document stores of type: AWS, GCP, in-memory, local
       parameters:
         - name: documentId
           in: path
@@ -3401,14 +3425,11 @@ paths:
       tags:
         - Document
       operationId: deleteDocument
-      summary: Delete document (alpha)
+      summary: Delete document
       description: |
         Delete a document from the Camunda 8 cluster.
 
-        Note that this currently only supports an in-memory document store, which is not meant for production use.
-
-        This endpoint is an alpha feature and may be subject to change
-        in future releases.
+        Note that this is currently supported for document stores of type: AWS, GCP, in-memory, local
       parameters:
         - name: documentId
           in: path
@@ -3440,14 +3461,11 @@ paths:
       tags:
         - Document
       operationId: createDocumentLink
-      summary: Create document link (alpha)
+      summary: Create document link
       description: |
         Create a link to a document in the Camunda 8 cluster.
 
-        Note that this currently only supports an in-memory document store, which is not meant for production use.
-
-        This endpoint is an alpha feature and may be subject to change
-        in future releases.
+        Note that this is currently supported for document stores of type: AWS, GCP
       parameters:
         - name: documentId
           in: path
@@ -5740,6 +5758,7 @@ components:
             - IO_MAPPING_ERROR
             - JOB_NO_RETRIES
             - EXECUTION_LISTENER_NO_RETRIES
+            - TASK_LISTENER_NO_RETRIES
             - CONDITION_ERROR
             - EXTRACT_VALUE_ERROR
             - CALLED_ELEMENT_ERROR
@@ -5854,6 +5873,7 @@ components:
             - IO_MAPPING_ERROR
             - JOB_NO_RETRIES
             - EXECUTION_LISTENER_NO_RETRIES
+            - TASK_LISTENER_NO_RETRIES
             - CONDITION_ERROR
             - EXTRACT_VALUE_ERROR
             - CALLED_ELEMENT_ERROR
@@ -6058,22 +6078,8 @@ components:
         - GROUP
         - MAPPING
         - UNSPECIFIED
-    PermissionDTO:
-      type: object
-      properties:
-        permissionType:
-          description: Specifies the type of permissions.
-          type: object
-          allOf:
-            - $ref: "#/components/schemas/PermissionTypeEnum"
-        resourceIds:
-          type: array
-          description: A list of resource IDs the permission relates to.
-          uniqueItems: true
-          items:
-            type: string
 
-    AuthorizationCreateRequest:
+    AuthorizationRequest:
       type: object
       properties:
         ownerId:
@@ -6127,8 +6133,9 @@ components:
           description: The field to sort by.
           type: string
           enum:
+            - ownerId
             - ownerType
-            - ownerKey
+            - resourceId
             - resourceType
         order:
           $ref: "#/components/schemas/SortOrderEnum"
@@ -6168,11 +6175,24 @@ components:
       description: Base properties for AuthorizationFilterRequest
       type: object
       properties:
+        ownerId:
+          description: The ID of the owner of permissions.
+          type: string
         ownerType:
           description: The type of the owner of permissions.
           type: object
           allOf:
             - $ref: "#/components/schemas/OwnerTypeEnum"
+        resourceIds:
+          description: The IDs of the resource to search permissions for.
+          type: array
+          items:
+            type: string
+        resourceType:
+          description: The type of resource to search permissions for.
+          type: object
+          allOf:
+            - $ref: "#/components/schemas/ResourceTypeEnum"
     AuthorizationFilterRequest:
       description: Authorization search filter.
       deprecated: true
@@ -6180,22 +6200,24 @@ components:
       allOf:
         - $ref: "#/components/schemas/AuthorizationFilterRequestBase"
       properties:
-        ownerKey:
+        ownerId:
           description: The ID of the owner of permissions.
-          type: integer
-          format: int64
+          type: string
     AuthorizationFilter:
       description: Authorization search filter. Key attributes as string values.
       type: object
       allOf:
         - $ref: "#/components/schemas/AuthorizationFilterRequestBase"
       properties:
-        ownerKey:
+        ownerId:
           description: The ID of the owner of permissions.
           type: string
     AuthorizationResponseBase:
       type: "object"
       properties:
+        ownerId:
+          description: The ID of the owner of permissions.
+          type: string
         ownerType:
           description: The type of the owner of permissions.
           type: object
@@ -6206,18 +6228,21 @@ components:
           type: object
           allOf:
             - $ref: "#/components/schemas/ResourceTypeEnum"
-        permissions:
+        resourceId:
+          description: ID of the resource the permission relates to.
+          type: string
+        permissionTypes:
+          description: Specifies the types of the permissions.
           type: array
-          description: The permissions.
           items:
-            $ref: "#/components/schemas/PermissionDTO"
+            $ref: "#/components/schemas/PermissionTypeEnum"
     AuthorizationResponse:
       type: "object"
       allOf:
         - $ref: "#/components/schemas/AuthorizationResponseBase"
       properties:
-        ownerKey:
-          description: The ID of the owner of permissions.
+        authorizationKey:
+          description: The key of the authorization.
           type: integer
           format: int64
     AuthorizationResult:
@@ -6225,8 +6250,8 @@ components:
       allOf:
         - $ref: "#/components/schemas/AuthorizationResponseBase"
       properties:
-        ownerKey:
-          description: The ID of the owner of permissions.
+        authorizationKey:
+          description: The key of the authorization.
           type: string
     AuthorizationSearchResponse:
       deprecated: true

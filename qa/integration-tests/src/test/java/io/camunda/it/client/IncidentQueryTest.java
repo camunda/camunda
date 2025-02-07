@@ -13,15 +13,16 @@ import static io.camunda.it.client.QueryTest.waitForProcessInstancesToStart;
 import static io.camunda.it.client.QueryTest.waitForProcessesToBeDeployed;
 import static io.camunda.it.client.QueryTest.waitUntilProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.response.Incident;
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.client.api.search.response.IncidentErrorType;
+import io.camunda.it.utils.MultiDbTest;
+import io.camunda.webapps.schema.entities.operate.ErrorType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -30,27 +31,20 @@ import java.util.Objects;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
-@ZeebeIntegration
+@MultiDbTest
 class IncidentQueryTest {
 
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
 
   private static CamundaClient camundaClient;
 
-  @TestZeebe(initMethod = "initTestStandaloneCamunda")
-  private static TestStandaloneCamunda testStandaloneCamunda;
-
   private static Incident incident;
-
-  @SuppressWarnings("unused")
-  static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda().withUnauthenticatedAccess();
-  }
 
   @BeforeAll
   static void beforeAll() {
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     final var processes =
         List.of("service_tasks_v1.bpmn", "service_tasks_v2.bpmn", "incident_process_v1.bpmn");
@@ -219,6 +213,27 @@ class IncidentQueryTest {
     // then
     assertThat(result.items().size()).isEqualTo(3);
     assertThat(result.items().getFirst().getErrorType()).isEqualTo(errorType);
+  }
+
+  @ParameterizedTest(name = "Querying incidents with filter.errorType = ''{0}''")
+  @EnumSource(value = ErrorType.class)
+  void shouldRecognizeAllErrorTypesSupportedByOperateInIncidentQuery(final ErrorType errorType) {
+    assertThatCode(
+            () ->
+                camundaClient
+                    .newIncidentQuery()
+                    .filter(f -> f.errorType(IncidentErrorType.valueOf(errorType.name())))
+                    .send()
+                    .join())
+        .describedAs(
+            """
+                Incident query should execute successfully for filter.errorType = '%1$s'.
+                If it fails, ensure the following are updated:
+                  - `client` module: `io.camunda.client.api.search.response.IncidentErrorType` - '%1$s' type defined
+                  - `search-domain` module: `io.camunda.search.entities.IncidentEntity.ErrorType` - '%1$s' type defined
+                  - `gateway-protocol` module: `zeebe/gateway-protocol/src/main/proto/rest-api.yaml` - '%1$s' `errorType` defined for `IncidentFilterRequestBase` document""",
+            errorType)
+        .doesNotThrowAnyException();
   }
 
   @Test

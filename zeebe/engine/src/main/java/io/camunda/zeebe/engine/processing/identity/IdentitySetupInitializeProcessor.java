@@ -26,7 +26,6 @@ import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -40,7 +39,6 @@ import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.agrona.collections.MutableBoolean;
@@ -239,21 +237,21 @@ public final class IdentitySetupInitializeProcessor
   private void addAllPermissions(final long roleKey) {
 
     for (final AuthorizationResourceType resourceType : AuthorizationResourceType.values()) {
+      if (resourceType == AuthorizationResourceType.UNSPECIFIED) {
+        // We shouldn't add empty permissions for an unspecified resource type
+        continue;
+      }
+
       // TODO: refactor when Roles use String IDs as unique identifiers
       final var record =
           new AuthorizationRecord()
-              .setOwnerKey(roleKey)
               .setOwnerId(String.valueOf(roleKey))
-              .setOwnerType(AuthorizationOwnerType.ROLE);
-      record.setResourceType(resourceType);
+              .setOwnerType(AuthorizationOwnerType.ROLE)
+              .setResourceType(resourceType)
+              .setResourceId(WILDCARD_PERMISSION)
+              .setAuthorizationPermissions(resourceType.getSupportedPermissionTypes());
 
-      for (final PermissionType permissionType : resourceType.getSupportedPermissionTypes()) {
-        final var permission =
-            new Permission().setPermissionType(permissionType).addResourceId(WILDCARD_PERMISSION);
-        record.addPermission(permission);
-      }
-
-      stateWriter.appendFollowUpEvent(roleKey, AuthorizationIntent.PERMISSION_ADDED, record);
+      stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), AuthorizationIntent.CREATED, record);
     }
   }
 }

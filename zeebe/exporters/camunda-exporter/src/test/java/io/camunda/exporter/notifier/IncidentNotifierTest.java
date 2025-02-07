@@ -40,6 +40,7 @@ import com.jayway.jsonpath.JsonPath;
 import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfiguration;
+import io.camunda.exporter.utils.TestObjectMapper;
 import io.camunda.webapps.schema.entities.operate.ErrorType;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
@@ -90,7 +91,13 @@ class IncidentNotifierTest {
     final IncidentNotifierConfiguration configuration = new IncidentNotifierConfiguration();
     configuration.setWebhook(ALERT_WEBHOOKURL_URL);
     incidentNotifier =
-        new IncidentNotifier(m2mTokenManager, processCache, configuration, httpClient, null);
+        new IncidentNotifier(
+            m2mTokenManager,
+            processCache,
+            configuration,
+            httpClient,
+            null,
+            TestObjectMapper.objectMapper());
     when(processCache.get(any()))
         .thenReturn(Optional.of(new CachedProcessEntity(processName, processVersion, null)));
   }

@@ -123,6 +123,7 @@ func PackageWindows(camundaVersion string, elasticsearchVersion string, connecto
 		filepath.Join("c8run", "log"),
 		filepath.Join("c8run", "camunda-zeebe-"+camundaVersion),
 		filepath.Join("c8run", "package.bat"),
+		filepath.Join("c8run", ".env"),
 		filepath.Join("c8run", composeExtractionPath),
 	}
 	err = archive.ZipSource(filesToArchive, filepath.Join("c8run", "camunda8-run-"+camundaVersion+"-windows-x86_64.zip"))
@@ -210,6 +211,7 @@ func PackageUnix(camundaVersion string, elasticsearchVersion string, connectorsV
 		filepath.Join("c8run", "start.sh"),
 		filepath.Join("c8run", "shutdown.sh"),
 		filepath.Join("c8run", "package.sh"),
+		filepath.Join("c8run", ".env"),
 		filepath.Join("c8run", composeExtractionPath),
 	}
 	outputArchive, err := os.Create(filepath.Join("c8run", "camunda8-run-"+camundaVersion+"-"+runtime.GOOS+"-"+architecture+".tar.gz"))

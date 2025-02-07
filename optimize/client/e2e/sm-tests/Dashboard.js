@@ -463,6 +463,43 @@ test('version selection', async (t) => {
   await t.expect(Common.option('Test alert').exists).notOk();
 });
 
+test('add a report from the dashboard', async (t) => {
+  await u.createNewDashboard(t);
+
+  await t
+    .click(Common.addButton)
+    .click(e.createTileModalReportOptions)
+    .click(Common.carbonOption('New report from a template'))
+    .click(e.addTileButton);
+
+  await t.expect(Common.templateModalProcessField.visible).ok();
+  await t
+    .click(Common.templateModalProcessField)
+    .click(Common.carbonOption('Order process'))
+    .click(e.blankReportButton)
+    .click(Common.modalConfirmButton)
+    .hover(Common.addButton)
+    .click('.DashboardRenderer');
+
+  await t
+    .click(Common.addButton)
+    .click(e.createTileModalReportOptions)
+    .click(Common.carbonOption('New report from a template'))
+    .click(e.addTileButton);
+
+  await t.expect(Common.templateModalProcessField.visible).ok();
+  await t.click(Common.templateModalProcessField);
+
+  await t.expect(Common.selectedOption('Order process').exists).ok();
+
+  await t.click(Common.modalConfirmButton).hover(Common.addButton).click('.DashboardRenderer');
+
+  await u.save(t);
+
+  await t.expect(e.reportTile.nth(0).textContent).contains('Blank report');
+  await t.expect(e.reportTile.nth(1).textContent).contains('Locate bottlenecks on a heatmap');
+});
+
 test('add, edit and remove dashboards description', async (t) => {
   await u.createNewDashboard(t);
 

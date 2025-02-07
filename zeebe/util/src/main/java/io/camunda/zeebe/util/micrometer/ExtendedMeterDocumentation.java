@@ -17,14 +17,20 @@ import java.time.Duration;
  */
 public interface ExtendedMeterDocumentation extends MeterDocumentation {
 
+  double[] EMPTY_DISTRIBUTION_SLOS = new double[0];
+
   /** Returns the description (also known as {@code help} in some systems) for the given meter. */
   String getDescription();
 
-  /**
-   * Returns the buckets to be used if the meter type is a {@link Meter.Type#TIMER} or {@link
-   * Meter.Type#DISTRIBUTION_SUMMARY}.
-   */
-  default Duration[] getServiceLevelObjectives() {
+  /** Returns the buckets to be used if the meter type is a {@link Meter.Type#TIMER}. */
+  default Duration[] getTimerSLOs() {
     return MicrometerUtil.defaultPrometheusBuckets();
+  }
+
+  /**
+   * Returns the buckets to be used if the meter type is a {@link Meter.Type#DISTRIBUTION_SUMMARY}.
+   */
+  default double[] getDistributionSLOs() {
+    return EMPTY_DISTRIBUTION_SLOS;
   }
 }

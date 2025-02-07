@@ -12,24 +12,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
-import co.elastic.clients.json.JsonpMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.exporter.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 
 public final class SchemaTestUtil {
-
-  private static final ObjectMapper MAPPER = new ObjectMapper();
-  private static final JsonpMapper ELS_JSON_MAPPER =
-      new co.elastic.clients.json.jackson.JacksonJsonpMapper(MAPPER);
-  private static final org.opensearch.client.json.JsonpMapper OPENSEARCH_JSON_MAPPER =
-      new JacksonJsonpMapper(MAPPER);
 
   private SchemaTestUtil() {}
 
@@ -97,8 +89,9 @@ public final class SchemaTestUtil {
       throws IOException {
     try (final var expectedMappings = SchemaTestUtil.class.getResourceAsStream(fileName)) {
       final var jsonMap =
-          MAPPER.readValue(
-              expectedMappings, new TypeReference<Map<String, Map<String, Object>>>() {});
+          TestObjectMapper.objectMapper()
+              .readValue(
+                  expectedMappings, new TypeReference<Map<String, Map<String, Object>>>() {});
       return (Map<String, Map<String, Object>>) jsonMap.get("mappings").get("properties");
     }
   }
@@ -106,7 +99,8 @@ public final class SchemaTestUtil {
   public static boolean mappingsMatch(final JsonNode mappings, final String fileName)
       throws IOException {
     try (final var expectedMappingsJson = SchemaTestUtil.class.getResourceAsStream(fileName)) {
-      final var expectedMappingsTree = new ObjectMapper().readTree(expectedMappingsJson);
+      final var expectedMappingsTree =
+          TestObjectMapper.objectMapper().readTree(expectedMappingsJson);
       return mappings.equals(expectedMappingsTree.get("mappings"));
     }
   }
