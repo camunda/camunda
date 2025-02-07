@@ -13,6 +13,16 @@ import java.util.Set;
 public record UserFilter(
     Long key, String username, Set<String> usernames, String name, String email, String tenantId)
     implements FilterBase {
+
+  public Builder toBuilder() {
+    return new Builder()
+        .username(username)
+        .usernames(usernames)
+        .name(name)
+        .email(email)
+        .tenantId(tenantId);
+  }
+
   public static final class Builder implements ObjectBuilder<UserFilter> {
     private Long key;
     private String username;
@@ -32,7 +42,7 @@ public record UserFilter(
     }
 
     public Builder usernames(final Set<String> value) {
-      usernames = value;
+      usernames = value == null ? Set.of() : value;
       return this;
     }
 
