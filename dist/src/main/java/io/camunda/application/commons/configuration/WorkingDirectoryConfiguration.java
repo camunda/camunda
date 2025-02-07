@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -23,6 +24,7 @@ import org.springframework.core.env.Profiles;
 public record WorkingDirectoryConfiguration(Environment environment) {
 
   @Bean
+  @ConditionalOnMissingBean
   public WorkingDirectory workingDirectory() {
     final Path workingDirectory;
 
