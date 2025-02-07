@@ -67,25 +67,6 @@ public class DbAuthorizationState implements MutableAuthorizationState {
   }
 
   @Override
-  public void createOrAddPermission(
-      final AuthorizationOwnerType ownerType,
-      final String ownerId,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType,
-      final Set<String> resourceIds) {
-    this.ownerType.wrapString(ownerType.name());
-    this.ownerId.wrapString(ownerId);
-    this.resourceType.wrapString(resourceType.name());
-
-    final var identifiers =
-        Optional.ofNullable(permissionsColumnFamily.get(ownerTypeOwnerIdAndResourceType))
-            .orElse(new Permissions());
-
-    identifiers.addResourceIdentifiers(permissionType, resourceIds);
-    permissionsColumnFamily.upsert(ownerTypeOwnerIdAndResourceType, identifiers);
-  }
-
-  @Override
   public void create(final long authorizationKey, final AuthorizationRecord authorization) {
     this.authorizationKey.wrapLong(authorizationKey);
     persistedAuthorization.wrap(authorization);
@@ -110,36 +91,19 @@ public class DbAuthorizationState implements MutableAuthorizationState {
   }
 
   @Override
-  public void removePermission(
-      final AuthorizationOwnerType ownerType,
-      final String ownerId,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType,
-      final Set<String> resourceIds) {
-    this.ownerType.wrapString(ownerType.name());
-    this.ownerId.wrapString(ownerId);
-    this.resourceType.wrapString(resourceType.name());
-
-    final var permissions = permissionsColumnFamily.get(ownerTypeOwnerIdAndResourceType);
-    permissions.removeResourceIdentifiers(permissionType, resourceIds);
-
-    if (permissions.isEmpty()) {
-      permissionsColumnFamily.deleteExisting(ownerTypeOwnerIdAndResourceType);
-    } else {
-      permissionsColumnFamily.update(ownerTypeOwnerIdAndResourceType, permissions);
-    }
-  }
-
-  @Override
   public void deleteAuthorizationsByOwnerTypeAndIdPrefix(
       final AuthorizationOwnerType ownerType, final String ownerId) {
     this.ownerType.wrapString(ownerType.name());
     this.ownerId.wrapString(ownerId);
-    permissionsColumnFamily.whileEqualPrefix(
-        ownerTypeAndOwnerId,
-        (compositeKey, permissions) -> {
-          permissionsColumnFamily.deleteExisting(compositeKey);
-        });
+
+    authorizationByAuthorizationKeyColumnFamily.forEach(
+        (authorizationKey, authorization) -> {
+          if (authorization.getOwnerType().equals(ownerType)
+              && authorization.getOwnerId().equals(ownerId)) {
+            delete(authorizationKey.getValue());
+          }
+        }
+    );
   }
 
   @Override
@@ -199,5 +163,25 @@ public class DbAuthorizationState implements MutableAuthorizationState {
         : persistedPermissions
             .getPermissions()
             .getOrDefault(permissionType, Collections.emptySet());
+  }
+
+  private void removePermission(
+      final AuthorizationOwnerType ownerType,
+      final String ownerId,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType,
+      final Set<String> resourceIds) {
+    this.ownerType.wrapString(ownerType.name());
+    this.ownerId.wrapString(ownerId);
+    this.resourceType.wrapString(resourceType.name());
+
+    final var permissions = permissionsColumnFamily.get(ownerTypeOwnerIdAndResourceType);
+    permissions.removeResourceIdentifiers(permissionType, resourceIds);
+
+    if (permissions.isEmpty()) {
+      permissionsColumnFamily.deleteExisting(ownerTypeOwnerIdAndResourceType);
+    } else {
+      permissionsColumnFamily.update(ownerTypeOwnerIdAndResourceType, permissions);
+    }
   }
 }
