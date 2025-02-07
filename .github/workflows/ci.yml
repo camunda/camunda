@@ -508,18 +508,29 @@ jobs:
       matrix:
         version: ["${{ github.event.inputs.c8Version }}"]
         project: ["chromium"]
-    defaults:
-      run:
-        working-directory: qa/e2e-tests/core-component-test-suite
     steps:
       - uses: actions/checkout@v4
+
       - name: Debug directory structure
         shell: bash
-        run: ls -R
+        run: ls -R qa/e2e-tests/core-component-test-suite
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: qa/e2e-tests/core-component-test-suite/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: qa/e2e-tests/core-component-test-suite
+
       - name: Run tests
         uses: ./.github/actions/core-component-test-suite
         with:
           version: ${{ matrix.version }}
+
 
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"

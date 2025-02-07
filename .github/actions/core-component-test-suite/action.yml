@@ -9,20 +9,10 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/setup-node@v4
-      with:
-        node-version: 20
-        cache: 'npm'
-
-    - name: Install dependencies
-      shell: bash
-      run: npm ci
-      working-directory: qa/e2e-tests/core-component-test-suite  # Specify working-directory for this step
-
     - name: Install Playwright Browsers
       shell: bash
-      run: npx playwright install --with-deps ${{ inputs.project }}
-      working-directory: qa/e2e-tests/core-component-test-suite  # Specify working-directory for this step
+      run: npx playwright install --with-deps chromium
+      working-directory: qa/e2e-tests/core-component-test-suite
 
     - name: Set minor version
       shell: bash
@@ -30,12 +20,13 @@ runs:
         c8_version="${{ github.event.inputs.c8Version }}"
         minor_version=${c8_version}
         echo "minor_version=$minor_version" >> $GITHUB_ENV
-      working-directory: qa/e2e-tests/core-component-test-suite  # Specify working-directory for this step
+      working-directory: qa/e2e-tests/core-component-test-suite
 
     - name: Run tests
       shell: bash
       env:
         CLUSTER_VERSION: ${{ inputs.version }}
         MINOR_VERSION: ${{ env.minor_version }}
-      run: npm run test -- --project=${{ inputs.project }}
-      working-directory: qa/e2e-tests/core-component-test-suite  # Specify working-directory for this step
+      run: npm run test -- --project=chromium
+      working-directory: qa/e2e-tests/core-component-test-suite
+ 
