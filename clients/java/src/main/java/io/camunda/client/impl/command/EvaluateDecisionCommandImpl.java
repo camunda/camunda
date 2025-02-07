@@ -28,6 +28,8 @@ import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.EvaluateDecisionResponseImpl;
+import io.camunda.client.impl.util.ParseUtil;
+import io.camunda.client.protocol.rest.DecisionEvaluationInstruction;
 import io.camunda.client.protocol.rest.EvaluateDecisionResult;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -49,7 +51,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   private Duration requestTimeout;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private final io.camunda.client.protocol.rest.EvaluateDecisionRequest httpRequestObject;
+  private final DecisionEvaluationInstruction httpRequestObject;
   private boolean useRest;
 
   public EvaluateDecisionCommandImpl(
@@ -66,7 +68,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
     grpcRequestObjectBuilder = EvaluateDecisionRequest.newBuilder();
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
-    httpRequestObject = new io.camunda.client.protocol.rest.EvaluateDecisionRequest();
+    httpRequestObject = new DecisionEvaluationInstruction();
     useRest = config.preferRestOverGrpc();
     tenantId(config.getDefaultTenantId());
     requestTimeout(requestTimeout);
@@ -97,7 +99,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
     grpcRequestObjectBuilder = EvaluateDecisionRequest.newBuilder();
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
-    httpRequestObject = new io.camunda.client.protocol.rest.EvaluateDecisionRequest();
+    httpRequestObject = new DecisionEvaluationInstruction();
     tenantId(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
     requestTimeout(requestTimeout);
   }
@@ -128,7 +130,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   @Override
   public EvaluateDecisionCommandStep2 decisionKey(final long decisionKey) {
     grpcRequestObjectBuilder.setDecisionKey(decisionKey);
-    httpRequestObject.setDecisionDefinitionKey(decisionKey);
+    httpRequestObject.setDecisionDefinitionKey(ParseUtil.keyToString(decisionKey));
     return this;
   }
 

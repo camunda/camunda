@@ -16,7 +16,7 @@
 package io.camunda.client.api.search.response;
 
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.FlowNodeInstanceFilterRequest;
+import io.camunda.client.protocol.rest.FlowNodeInstanceFilter;
 import io.camunda.client.protocol.rest.FlowNodeInstanceResult;
 
 public enum FlowNodeInstanceType {
@@ -47,9 +47,8 @@ public enum FlowNodeInstanceType {
   UNKNOWN,
   UNKNOWN_ENUM_VALUE;
 
-  public static FlowNodeInstanceFilterRequest.TypeEnum toProtocolType(
-      final FlowNodeInstanceType value) {
-    return (value == null) ? null : FlowNodeInstanceFilterRequest.TypeEnum.fromValue(value.name());
+  public static FlowNodeInstanceFilter.TypeEnum toProtocolType(final FlowNodeInstanceType value) {
+    return (value == null) ? null : FlowNodeInstanceFilter.TypeEnum.fromValue(value.name());
   }
 
   public static FlowNodeInstanceType fromProtocolType(final FlowNodeInstanceResult.TypeEnum value) {
