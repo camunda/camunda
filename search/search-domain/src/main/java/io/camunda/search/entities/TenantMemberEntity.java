@@ -8,13 +8,7 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record TenantMemberEntity(String id, TenantMemberType tenantMemberType) {
-  public enum TenantMemberType {
-    USER,
-    GROUP,
-    MAPPING,
-    UNSPECIFIED
-  }
-}
+public record TenantMemberEntity(String id, EntityType entityType) {}
