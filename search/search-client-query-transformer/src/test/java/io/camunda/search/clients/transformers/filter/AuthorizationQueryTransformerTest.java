@@ -58,7 +58,7 @@ public class AuthorizationQueryTransformerTest extends AbstractTransformerTest {
             "user"),
         Arguments.of(
             (Function<Builder, ObjectBuilder<AuthorizationFilter>>) f -> f.resourceIds("456"),
-            "permissions.resourceIds",
+            "resourceId",
             "456"),
         Arguments.of(
             (Function<Builder, ObjectBuilder<AuthorizationFilter>>)
@@ -67,8 +67,8 @@ public class AuthorizationQueryTransformerTest extends AbstractTransformerTest {
             "process-definition"),
         Arguments.of(
             (Function<Builder, ObjectBuilder<AuthorizationFilter>>)
-                f -> f.permissionType(PermissionType.READ),
-            "permissions.type",
+                f -> f.permissionTypes(PermissionType.READ),
+            "permissionTypes",
             PermissionType.READ.name()));
   }
 }

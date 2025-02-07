@@ -76,7 +76,7 @@ public class AuthorizationServices
                 fn.filter(
                     f ->
                         f.ownerIds(ownerIds.stream().toList())
-                            .permissionType(permissionType)
+                            .permissionTypes(permissionType)
                             .resourceType(resourceType.name())));
     return findAll(authorizationQuery).stream().map(AuthorizationEntity::resourceId).toList();
   }

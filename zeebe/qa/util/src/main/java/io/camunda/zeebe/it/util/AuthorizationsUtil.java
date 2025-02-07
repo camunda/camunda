@@ -202,7 +202,7 @@ public class AuthorizationsUtil implements CloseableSilently {
                     f ->
                         f.ownerIds(username)
                             .resourceType(resourceType)
-                            .permissionType(permissionType)
+                            .permissionTypes(permissionType)
                             .resourceIds(resourceIds)));
 
     awaitEntityExistsInElasticsearch(() -> searchClients.searchAuthorizations(permissionQuery));
