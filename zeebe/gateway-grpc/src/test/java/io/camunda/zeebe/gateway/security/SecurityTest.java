@@ -24,11 +24,17 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+<<<<<<< HEAD
+=======
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+>>>>>>> 4a4a7677 (feat: migrated MessagingMetrics to micrometer)
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.File;
 import java.io.IOException;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -40,6 +46,7 @@ final class SecurityTest {
   private BrokerClient brokerClient;
   private JobStreamClient jobStreamClient;
   private BrokerTopologyManagerImpl topologyManager;
+  @AutoClose private MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @BeforeEach
   void beforeEach() throws Exception {
@@ -155,7 +162,7 @@ final class SecurityTest {
   private Gateway buildGateway(final GatewayCfg gatewayCfg) {
     final var clusterAddress = SocketUtil.getNextAddress();
     atomix =
-        AtomixCluster.builder()
+        AtomixCluster.builder(meterRegistry)
             .withAddress(Address.from(clusterAddress.getHostName(), clusterAddress.getPort()))
             .build();
     actorScheduler = ActorScheduler.newActorScheduler().build();

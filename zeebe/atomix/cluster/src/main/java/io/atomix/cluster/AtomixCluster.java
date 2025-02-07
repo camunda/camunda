@@ -41,6 +41,7 @@ import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.net.Address;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -102,18 +103,39 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   protected final ThreadContext threadContext = new SingleThreadContext("atomix-cluster-%d");
   private final AtomicBoolean started = new AtomicBoolean();
 
+<<<<<<< HEAD
   public AtomixCluster(final ClusterConfig config, final Version version) {
     this(config, version, buildMessagingService(config), buildUnicastService(config));
+=======
+  public AtomixCluster(
+      final ClusterConfig config,
+      final Version version,
+      final String actorSchedulerName,
+      final MeterRegistry registry) {
+    this(config, version, null, null, actorSchedulerName, registry);
+>>>>>>> 4a4a7677 (feat: migrated MessagingMetrics to micrometer)
   }
 
   protected AtomixCluster(
       final ClusterConfig config,
       final Version version,
       final ManagedMessagingService messagingService,
+<<<<<<< HEAD
       final ManagedUnicastService unicastService) {
     this.messagingService =
         messagingService != null ? messagingService : buildMessagingService(config);
     this.unicastService = unicastService != null ? unicastService : buildUnicastService(config);
+=======
+      final ManagedUnicastService unicastService,
+      final String actorSchedulerName,
+      final MeterRegistry registry) {
+    this.messagingService =
+        messagingService != null
+            ? messagingService
+            : buildMessagingService(config, actorSchedulerName, registry);
+    this.unicastService =
+        unicastService != null ? unicastService : buildUnicastService(config, actorSchedulerName);
+>>>>>>> 4a4a7677 (feat: migrated MessagingMetrics to micrometer)
 
     discoveryProvider = buildLocationProvider(config);
     membershipProtocol = buildMembershipProtocol(config);
@@ -130,8 +152,8 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
    *
    * @return a new Atomix builder
    */
-  public static AtomixClusterBuilder builder() {
-    return builder(new ClusterConfig());
+  public static AtomixClusterBuilder builder(final MeterRegistry registry) {
+    return builder(new ClusterConfig(), registry);
   }
 
   /**
@@ -140,8 +162,9 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
    * @param config the Atomix configuration
    * @return a new Atomix builder
    */
-  public static AtomixClusterBuilder builder(final ClusterConfig config) {
-    return new AtomixClusterBuilder(config);
+  public static AtomixClusterBuilder builder(
+      final ClusterConfig config, final MeterRegistry registry) {
+    return new AtomixClusterBuilder(config, registry);
   }
 
   /**
@@ -286,9 +309,20 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   }
 
   /** Builds a default messaging service. */
+<<<<<<< HEAD
   protected static ManagedMessagingService buildMessagingService(final ClusterConfig config) {
     return new NettyMessagingService(
         config.getClusterId(), config.getNodeConfig().getAddress(), config.getMessagingConfig());
+=======
+  protected static ManagedMessagingService buildMessagingService(
+      final ClusterConfig config, final String actorSchedulerName, final MeterRegistry registry) {
+    return new NettyMessagingService(
+        config.getClusterId(),
+        config.getNodeConfig().getAddress(),
+        config.getMessagingConfig(),
+        actorSchedulerName,
+        registry);
+>>>>>>> 4a4a7677 (feat: migrated MessagingMetrics to micrometer)
   }
 
   /** Builds a default unicast service. */

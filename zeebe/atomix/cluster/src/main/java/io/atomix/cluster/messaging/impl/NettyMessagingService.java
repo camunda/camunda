@@ -31,6 +31,7 @@ import io.atomix.utils.net.Address;
 import io.camunda.zeebe.util.StringUtil;
 import io.camunda.zeebe.util.TlsConfigUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
@@ -141,23 +142,60 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private SslContext serverSslContext;
   private SslContext clientSslContext;
   private DnsAddressResolverGroup dnsResolverGroup;
+<<<<<<< HEAD
   private final MessagingMetrics messagingMetrics = new MessagingMetricsImpl();
 
   public NettyMessagingService(
       final String cluster, final Address advertisedAddress, final MessagingConfig config) {
     this(cluster, advertisedAddress, config, ProtocolVersion.latest());
+=======
+  private final MessagingMetrics messagingMetrics;
+  private final String actorSchedulerName;
+
+  // flag for passing heartbeats down the pipeline
+  private boolean forwardHeartbeats = false;
+  private boolean heartbeatsEnabled = true;
+
+  public NettyMessagingService(
+      final String cluster,
+      final Address advertisedAddress,
+      final MessagingConfig config,
+      final MeterRegistry registry) {
+    this(cluster, advertisedAddress, config, ProtocolVersion.latest(), "", registry);
+  }
+
+  public NettyMessagingService(
+      final String cluster,
+      final Address advertisedAddress,
+      final MessagingConfig config,
+      final String actorSchedulerName,
+      final MeterRegistry registry) {
+    this(
+        cluster, advertisedAddress, config, ProtocolVersion.latest(), actorSchedulerName, registry);
+>>>>>>> 4a4a7677 (feat: migrated MessagingMetrics to micrometer)
   }
 
   NettyMessagingService(
       final String cluster,
       final Address advertisedAddress,
       final MessagingConfig config,
+<<<<<<< HEAD
       final ProtocolVersion protocolVersion) {
+=======
+      final ProtocolVersion protocolVersion,
+      final String actorSchedulerName,
+      final MeterRegistry registry) {
+>>>>>>> 4a4a7677 (feat: migrated MessagingMetrics to micrometer)
     preamble = cluster.hashCode();
     this.advertisedAddress = advertisedAddress;
     this.protocolVersion = protocolVersion;
     this.config = verifyHeartbeatConfig(config);
     channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
+<<<<<<< HEAD
+=======
+    this.actorSchedulerName = actorSchedulerName;
+    messagingMetrics = new MessagingMetricsImpl(registry);
+>>>>>>> 4a4a7677 (feat: migrated MessagingMetrics to micrometer)
 
     initAddresses(config);
   }

@@ -21,14 +21,19 @@ import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 
 final class NettyMessagingServiceTlsTest {
+
+  @AutoClose private final MeterRegistry registry = new SimpleMeterRegistry();
 
   @Test
   void shouldCommunicateOverTls() throws CertificateException {
@@ -106,7 +111,12 @@ final class NettyMessagingServiceTlsTest {
   private NettyMessagingService createInsecureMessagingService() {
     final var config =
         new MessagingConfig().setPort(SocketUtil.getNextAddress().getPort()).setTlsEnabled(false);
+<<<<<<< HEAD
     return new NettyMessagingService("cluster", Address.from(config.getPort()), config);
+=======
+    return new NettyMessagingService(
+        "cluster", Address.from(config.getPort()), config, "insecureTestPrefix", registry);
+>>>>>>> 4a4a7677 (feat: migrated MessagingMetrics to micrometer)
   }
 
   private NettyMessagingService createSecureMessagingService(
@@ -117,6 +127,11 @@ final class NettyMessagingServiceTlsTest {
             .setTlsEnabled(true)
             .setCertificateChain(certificate.certificate())
             .setPrivateKey(certificate.privateKey());
+<<<<<<< HEAD
     return new NettyMessagingService("cluster", Address.from(config.getPort()), config);
+=======
+    return new NettyMessagingService(
+        "cluster", Address.from(config.getPort()), config, "secureTestPrefix", registry);
+>>>>>>> 4a4a7677 (feat: migrated MessagingMetrics to micrometer)
   }
 }

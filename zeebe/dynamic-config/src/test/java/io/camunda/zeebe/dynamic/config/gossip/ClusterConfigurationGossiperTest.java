@@ -22,6 +22,8 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
@@ -30,6 +32,7 @@ import java.util.stream.Stream;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,6 +47,7 @@ final class ClusterConfigurationGossiperTest {
   private TestGossiper node1;
   private TestGossiper node2;
   private TestGossiper node3;
+  @AutoClose private MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @BeforeEach
   void setup() {
@@ -99,7 +103,7 @@ final class ClusterConfigurationGossiperTest {
   }
 
   private AtomixCluster createClusterNode(final Node localNode, final Collection<Node> nodes) {
-    return AtomixCluster.builder()
+    return AtomixCluster.builder(meterRegistry)
         .withAddress(localNode.address())
         .withMemberId(localNode.id().id())
         .withMembershipProvider(new BootstrapDiscoveryProvider(nodes))

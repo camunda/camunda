@@ -12,12 +12,19 @@ import io.atomix.utils.Version;
 import io.camunda.zeebe.broker.clustering.ClusterConfigFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.util.VersionUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 
 public final class TestClusterFactory {
   private TestClusterFactory() {}
 
-  public static AtomixCluster createAtomixCluster(final BrokerCfg config) {
+  public static AtomixCluster createAtomixCluster(
+      final BrokerCfg config, final MeterRegistry meterRegistry) {
     final var clusterConfig = new ClusterConfigFactory().mapConfiguration(config);
+<<<<<<< HEAD
     return new AtomixCluster(clusterConfig, Version.from(VersionUtil.getVersion()));
+=======
+    return new AtomixCluster(
+        clusterConfig, Version.from(VersionUtil.getVersion()), "", meterRegistry);
+>>>>>>> 4a4a7677 (feat: migrated MessagingMetrics to micrometer)
   }
 }
