@@ -13,6 +13,7 @@ runs:
       with:
         node-version: 20
         cache: 'npm'
+      working-directory: qa/e2e-tests/core-component-test-suite
 
     - name: Install dependencies
       shell: bash
