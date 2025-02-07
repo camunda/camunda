@@ -34,9 +34,9 @@ public final class AuthorizationFilterTransformer
         filter.ownerType() == null ? null : term(OWNER_TYPE, filter.ownerType()),
         stringTerms(PERMISSIONS_RESOURCEID, filter.resourceIds()),
         filter.resourceType() == null ? null : term(RESOURCE_TYPE, filter.resourceType()),
-        filter.permissionType() == null
+        filter.permissionTypes() == null
             ? null
             : stringTerms(
-                PERMISSIONS_TYPES, filter.permissionType().stream().map(Enum::name).toList()));
+                PERMISSIONS_TYPES, filter.permissionTypes().stream().map(Enum::name).toList()));
   }
 }

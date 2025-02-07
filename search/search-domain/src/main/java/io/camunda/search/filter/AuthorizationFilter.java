@@ -19,7 +19,7 @@ public record AuthorizationFilter(
     String ownerType,
     List<String> resourceIds,
     String resourceType,
-    List<PermissionType> permissionType)
+    List<PermissionType> permissionTypes)
     implements FilterBase {
   public static final class Builder implements ObjectBuilder<AuthorizationFilter> {
     private List<String> ownerIds;
