@@ -18,6 +18,7 @@ import io.atomix.cluster.protocol.GroupMembershipEventListener;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
 import io.atomix.cluster.protocol.GroupMembershipProtocolConfig;
 import io.atomix.utils.event.AbstractListenerManager;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -145,7 +146,8 @@ public final class DiscoveryMembershipProtocol
     }
 
     @Override
-    public GroupMembershipProtocol newProtocol(final Config config) {
+    public GroupMembershipProtocol newProtocol(
+        final Config config, final MeterRegistry registry) {
       return new DiscoveryMembershipProtocol(config);
     }
   }

@@ -88,10 +88,14 @@ public class NettyUnicastService implements ManagedUnicastService {
   private DnsAddressResolverGroup dnsAddressResolverGroup;
 
   public NettyUnicastService(
-      final String clusterId, final Address advertisedAddress, final MessagingConfig config) {
+      final String clusterId,
+      final Address advertisedAddress,
+      final MessagingConfig config,
+      final MeterRegistry registry) {
     this.advertisedAddress = advertisedAddress;
     this.config = config;
     preamble = clusterId.hashCode();
+    this.registry = registry;
 
     // as we use SO_BROADCAST, it's only possible to bind to wildcard without root privilege, so we
     // don't support binding to multiple interfaces here; wouldn't make sense anyway
@@ -215,7 +219,7 @@ public class NettyUnicastService implements ManagedUnicastService {
     return bootstrap()
         .thenRun(
             () -> {
-              final var metrics = new NettyDnsMetrics();
+              final var metrics = new NettyDnsMetrics(registry);
               started.set(true);
               dnsAddressResolverGroup =
                   new DnsAddressResolverGroup(
