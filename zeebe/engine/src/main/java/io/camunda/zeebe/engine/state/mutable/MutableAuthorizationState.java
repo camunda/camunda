@@ -10,9 +10,6 @@ package io.camunda.zeebe.engine.state.mutable;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.Set;
 
 public interface MutableAuthorizationState extends AuthorizationState {
 

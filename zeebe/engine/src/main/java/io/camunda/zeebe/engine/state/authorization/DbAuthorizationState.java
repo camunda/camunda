@@ -102,8 +102,7 @@ public class DbAuthorizationState implements MutableAuthorizationState {
               && authorization.getOwnerId().equals(ownerId)) {
             delete(authorizationKey.getValue());
           }
-        }
-    );
+        });
   }
 
   @Override

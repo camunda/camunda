@@ -119,8 +119,7 @@ public class RoleAppliersTest {
             .setResourceType(AuthorizationResourceType.ROLE)
             .setAuthorizationPermissions(Set.of(PermissionType.DELETE))
             .setOwnerType(AuthorizationOwnerType.ROLE)
-            .setOwnerId(roleId)
-    );
+            .setOwnerId(roleId));
     authorizationState.create(
         2L,
         new io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord()
@@ -129,8 +128,7 @@ public class RoleAppliersTest {
             .setResourceType(AuthorizationResourceType.ROLE)
             .setAuthorizationPermissions(Set.of(PermissionType.DELETE))
             .setOwnerType(AuthorizationOwnerType.ROLE)
-            .setOwnerId(roleId)
-    );
+            .setOwnerId(roleId));
 
     // when
     roleDeletedApplier.applyState(roleKey, roleRecord);
