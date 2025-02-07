@@ -158,7 +158,7 @@ public class ExecutionListenerMisconfiguredIT {
     CLUSTER.getBrokers().values().stream()
         .findFirst()
         .get()
-        .setDockerImageName("camunda/zeebe:8.6.8");
+        .setDockerImageName("camunda/zeebe:current-test");
 
     // then this will probably fail to complete due to the replay error
     CLUSTER.start();
@@ -182,6 +182,7 @@ public class ExecutionListenerMisconfiguredIT {
           .send()
           .join();
     }
+    assert false;
 
     // cleanup
     CLUSTER.close();

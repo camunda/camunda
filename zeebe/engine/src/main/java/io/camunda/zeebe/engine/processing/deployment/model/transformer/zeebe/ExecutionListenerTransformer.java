@@ -10,9 +10,14 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ExecutionListenerTransformer {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ExecutionListenerTransformer.class);
 
   public void transform(
       final ExecutableFlowNode executableFlowNode,
@@ -28,9 +33,17 @@ public final class ExecutionListenerTransformer {
       final ExecutableFlowNode flowNode,
       final ExpressionLanguage expressionLanguage) {
 
-    flowNode.addListener(
-        listener.getEventType(),
-        expressionLanguage.parseExpression(listener.getType()),
-        expressionLanguage.parseExpression(listener.getRetries()));
+    try {
+      flowNode.addListener(
+          listener.getEventType(),
+          expressionLanguage.parseExpression(listener.getType()),
+          expressionLanguage.parseExpression(listener.getRetries()));
+    } catch (final Exception e) {
+      LOGGER.warn(
+          "Failed to transform execution listener for flow node '{}', caught an exception: '{}: {}. Ignoring this listener definition.'",
+          BufferUtil.bufferAsString(flowNode.getId()),
+          e.getClass().getSimpleName(),
+          e.getMessage());
+    }
   }
 }
