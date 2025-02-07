@@ -17,6 +17,7 @@ import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
@@ -116,7 +117,7 @@ public class CamundaMultiDBExtension
   private final HttpClient httpClient;
 
   public CamundaMultiDBExtension() {
-    this(new TestSimpleCamundaApplication());
+    this(new TestStandaloneBroker());
     closeables.add(testApplication);
     testApplication
         .withBrokerConfig(cfg -> cfg.getGateway().setEnable(true))
