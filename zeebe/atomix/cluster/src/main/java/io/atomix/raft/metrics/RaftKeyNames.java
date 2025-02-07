@@ -9,6 +9,7 @@ package io.atomix.raft.metrics;
 
 import io.micrometer.common.docs.KeyName;
 
+@SuppressWarnings("NullableProblems")
 public enum RaftKeyNames implements KeyName {
   /** partitionGroupName */
   PARTITION_GROUP {
