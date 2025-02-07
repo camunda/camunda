@@ -62,8 +62,6 @@ public class ObjectMapperFactory {
     return buildObjectMapper(optimizeDateTimeFormatter, unknownPropsEnable);
   }
 
-  @Qualifier("engineMapper")
-  @Bean
   public ObjectMapper createEngineMapper() {
     return buildObjectMapper(createEngineDateTimeFormatter(), true);
   }
