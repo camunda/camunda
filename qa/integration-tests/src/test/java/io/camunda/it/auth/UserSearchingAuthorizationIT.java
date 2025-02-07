@@ -19,7 +19,6 @@ import io.camunda.it.utils.BrokerITInvocationProvider;
 import io.camunda.it.utils.CamundaClientTestFactory.Authenticated;
 import io.camunda.it.utils.CamundaClientTestFactory.Permissions;
 import io.camunda.it.utils.CamundaClientTestFactory.User;
-import io.camunda.security.entity.AuthenticationMethod;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -72,7 +71,7 @@ class UserSearchingAuthorizationIT {
   static final BrokerITInvocationProvider PROVIDER =
       new BrokerITInvocationProvider()
           .withoutRdbmsExporter()
-          .withAuthenticationMethod(AuthenticationMethod.BASIC)
+          .withBasicAuth()
           .withAuthorizationsEnabled()
           .withUsers(ADMIN_USER, RESTRICTED_USER, RESTRICTED_USER_WITH_READ_PERMISSION);
 
