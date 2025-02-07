@@ -23,13 +23,14 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class RaftRoleMetrics extends RaftMetrics {
 
   private final Counter heartbeatMiss;
   private final Timer heartbeatTime;
-  private final AtomicLong roleValue = new AtomicLong(0L);
+  private final AtomicInteger roleValue = new AtomicInteger(0);
   private final AtomicLong electionLatencyValue = new AtomicLong(0L);
 
   public RaftRoleMetrics(final String partitionName, final MeterRegistry registry) {
