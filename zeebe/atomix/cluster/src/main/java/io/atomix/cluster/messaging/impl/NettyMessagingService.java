@@ -143,6 +143,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private SslContext clientSslContext;
   private DnsAddressResolverGroup dnsResolverGroup;
   private final MessagingMetrics messagingMetrics;
+  private final MeterRegistry registry;
 
   public NettyMessagingService(
       final String cluster,
@@ -159,6 +160,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
       final ProtocolVersion protocolVersion,
       final MeterRegistry registry) {
     preamble = cluster.hashCode();
+    this.registry = registry;
     messagingMetrics = new MessagingMetricsImpl(registry);
     this.advertisedAddress = advertisedAddress;
     this.protocolVersion = protocolVersion;
@@ -403,7 +405,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
         .thenCompose(ok -> bootstrapServer())
         .thenRun(
             () -> {
-              final var metrics = new NettyDnsMetrics();
+              final var metrics = new NettyDnsMetrics(registry);
               dnsResolverGroup =
                   new DnsAddressResolverGroup(
                       new DnsNameResolverBuilder(clientGroup.next())
