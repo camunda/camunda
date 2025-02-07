@@ -12,7 +12,7 @@ import io.camunda.zeebe.gateway.impl.configuration.LongPollingCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.controller.JobActivationRequestResponseObserver;
@@ -49,9 +49,9 @@ public class JobHandlerConfiguration {
   }
 
   @Bean
-  public ActivateJobsHandler<JobActivationResponse> activateJobsHandler() {
+  public ActivateJobsHandler<JobActivationResult> activateJobsHandler() {
     final var handler = buildActivateJobsHandler(brokerClient);
-    final var future = new CompletableFuture<ActivateJobsHandler<JobActivationResponse>>();
+    final var future = new CompletableFuture<ActivateJobsHandler<JobActivationResult>>();
     final var actor =
         Actor.newActor()
             .name(config.actorName())
@@ -61,7 +61,7 @@ public class JobHandlerConfiguration {
     return handler;
   }
 
-  private ActivateJobsHandler<JobActivationResponse> buildActivateJobsHandler(
+  private ActivateJobsHandler<JobActivationResult> buildActivateJobsHandler(
       final BrokerClient brokerClient) {
     if (config.longPolling().isEnabled()) {
       return buildLongPollingHandler(brokerClient);
@@ -74,9 +74,9 @@ public class JobHandlerConfiguration {
     }
   }
 
-  private LongPollingActivateJobsHandler<JobActivationResponse> buildLongPollingHandler(
+  private LongPollingActivateJobsHandler<JobActivationResult> buildLongPollingHandler(
       final BrokerClient brokerClient) {
-    return LongPollingActivateJobsHandler.<JobActivationResponse>newBuilder()
+    return LongPollingActivateJobsHandler.<JobActivationResult>newBuilder()
         .setBrokerClient(brokerClient)
         .setMaxMessageSize(config.maxMessageSize().toBytes())
         .setLongPollingTimeout(config.longPolling().getTimeout())
