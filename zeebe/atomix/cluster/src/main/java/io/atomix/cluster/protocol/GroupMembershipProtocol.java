@@ -23,6 +23,7 @@ import io.atomix.cluster.discovery.NodeDiscoveryService;
 import io.atomix.utils.NamedType;
 import io.atomix.utils.config.Configured;
 import io.atomix.utils.event.ListenerService;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -75,6 +76,7 @@ public interface GroupMembershipProtocol
      * @param actorSchedulerName the value for actor-scheduler to be set on MDC
      * @return the protocol instance
      */
-    GroupMembershipProtocol newProtocol(C config, final String actorSchedulerName);
+    GroupMembershipProtocol newProtocol(
+        C config, final String actorSchedulerName, final MeterRegistry registry);
   }
 }
