@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       c8Version:
-        description: "c8Run Version"
+        description: "C8 Version"
         required: true
 
 # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
@@ -511,10 +511,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Debug directory structure
-        shell: bash
-        run: ls -R qa/e2e-tests/core-component-test-suite
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -530,7 +526,6 @@ jobs:
         uses: ./.github/actions/core-component-test-suite
         with:
           version: ${{ matrix.version }}
-
 
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"

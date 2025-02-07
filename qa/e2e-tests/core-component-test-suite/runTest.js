@@ -1,5 +1,5 @@
 import {select} from '@inquirer/prompts';
-import versions from './.github/c8_versions.json' assert {type: 'json'};
+import versions from './c8_versions.json' assert {type: 'json'};
 import {spawn} from 'node:child_process';
 import {object, string, safeParse} from 'valibot';
 
