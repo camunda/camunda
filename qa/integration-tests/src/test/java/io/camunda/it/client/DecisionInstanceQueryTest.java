@@ -134,7 +134,9 @@ class DecisionInstanceQueryTest {
     final var result =
         camundaClient
             .newDecisionInstanceQuery()
-            .filter(f -> f.decisionDefinitionKey(b -> b.in(Long.MAX_VALUE, decisionDefinitionKey)))
+            .filter(
+                f ->
+                    f.decisionDefinitionKey(b -> b.in("-1", String.valueOf(decisionDefinitionKey))))
             .send()
             .join();
 
