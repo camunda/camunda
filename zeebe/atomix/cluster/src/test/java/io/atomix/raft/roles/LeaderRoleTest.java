@@ -45,6 +45,8 @@ import io.atomix.raft.zeebe.util.TestAppender;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -55,6 +57,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.jupiter.api.AutoClose;
 import org.mockito.Mockito;
 
 public class LeaderRoleTest {
@@ -63,6 +66,7 @@ public class LeaderRoleTest {
   private RaftContext context;
   private RaftLog log;
   private LogCompactor logCompactor;
+  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @Before
   public void setup() {
@@ -91,7 +95,8 @@ public class LeaderRoleTest {
     final ReceivableSnapshotStore persistedSnapshotStore = mock(ReceivableSnapshotStore.class);
     when(context.getPersistedSnapshotStore()).thenReturn(persistedSnapshotStore);
     when(context.getEntryValidator()).thenReturn((a, b) -> ValidationResult.ok());
-    when(context.getStorage()).thenReturn(RaftStorage.builder().withMaxSegmentSize(1024).build());
+    when(context.getStorage())
+        .thenReturn(RaftStorage.builder(meterRegistry).withMaxSegmentSize(1024).build());
 
     leaderRole = new LeaderRole(context);
     // since we mock RaftContext we should simulate leader close on transition
