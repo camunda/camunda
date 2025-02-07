@@ -19,6 +19,8 @@ import io.camunda.zeebe.broker.test.TestBrokerClientFactory;
 import io.camunda.zeebe.broker.test.TestClusterFactory;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -29,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 final class PartitionLeaveTest {
+  private static final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @Test
   void canStillProcessAfterLeaving(@TempDir final Path tmp) {
@@ -213,7 +216,7 @@ final class PartitionLeaveTest {
     brokerCfg.init(tmp.toAbsolutePath().toString());
     configure.accept(brokerCfg);
     final var actorScheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg);
-    final var atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg);
+    final var atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg, meterRegistry);
     final var brokerClient =
         TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
     final var systemContext =

@@ -36,6 +36,7 @@ import io.camunda.zeebe.test.broker.protocol.brokerapi.StubBroker;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Optional;
@@ -59,6 +60,7 @@ public final class BrokerClientTest {
   @AutoCloseResource private final StubBroker broker = new StubBroker().start();
   @AutoCloseResource private BrokerClient client;
   @AutoCloseResource private AtomixCluster atomixCluster;
+  @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   // keep as field to ensure it gets closed at the end
   @SuppressWarnings({"FieldCanBeLocal", "Unused"})
@@ -67,12 +69,11 @@ public final class BrokerClientTest {
 
   @BeforeEach
   void beforeEach() {
-    final var meterRegistry = new SimpleMeterRegistry();
     final var brokerAddress =
         Address.from(broker.getCurrentStubHost(), broker.getCurrentStubPort());
     final var membership = BootstrapDiscoveryProvider.builder().withNodes(brokerAddress).build();
     atomixCluster =
-        AtomixCluster.builder()
+        AtomixCluster.builder(meterRegistry)
             .withPort(SocketUtil.getNextAddress().getPort())
             .withMembershipProvider(membership)
             .withClusterId(broker.clusterId())

@@ -344,7 +344,7 @@ public class ClusteringRule extends ExternalResource {
 
     final var atomixCluster =
         new AtomixCluster(
-            brokerSpringConfig.clusterConfig(), Version.from(VersionUtil.getVersion()));
+            brokerSpringConfig.clusterConfig(), Version.from(VersionUtil.getVersion()), meterRegistry);
 
     final var scheduler =
         new ActorSchedulerConfiguration(
@@ -472,7 +472,6 @@ public class ClusteringRule extends ExternalResource {
     final var config = new GatewayBasedConfiguration(gatewayCfg, new LifecycleProperties());
     final var clusterConfig = config.clusterConfig();
     final var actorConfig = config.schedulerConfiguration();
-    final var meterRegistry = new SimpleMeterRegistry();
 
     final ActorScheduler actorScheduler =
         new ActorSchedulerConfiguration(
@@ -509,7 +508,7 @@ public class ClusteringRule extends ExternalResource {
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer(),
-            new SimpleMeterRegistry());
+            meterRegistry);
     gateway.start().join();
 
     return new GatewayResource(

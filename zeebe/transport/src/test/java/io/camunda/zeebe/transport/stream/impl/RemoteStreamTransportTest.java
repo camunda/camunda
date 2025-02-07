@@ -21,6 +21,8 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,6 +45,7 @@ final class RemoteStreamTransportTest {
   private final List<Node> nodes = List.of(createNode("sender"), createNode("receiver"));
   private final RecordingBackoffSupplier senderBackoffSupplier = new RecordingBackoffSupplier();
 
+  @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   @AutoCloseResource private final AtomixCluster sender = createClusterNode(nodes.get(0), nodes);
 
   @AutoCloseResource
@@ -162,7 +165,7 @@ final class RemoteStreamTransportTest {
   }
 
   private AtomixCluster createClusterNode(final Node localNode, final Collection<Node> nodes) {
-    return AtomixCluster.builder()
+    return AtomixCluster.builder(meterRegistry)
         .withAddress(localNode.address())
         .withMemberId(localNode.id().id())
         .withMembershipProvider(new BootstrapDiscoveryProvider(nodes))

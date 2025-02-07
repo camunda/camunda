@@ -17,6 +17,8 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.test.TestActorSchedulerFactory;
 import io.camunda.zeebe.broker.test.TestBrokerClientFactory;
 import io.camunda.zeebe.broker.test.TestClusterFactory;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -29,6 +31,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 final class PartitionJoinTest {
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+
   @Test
   void canJoinPartition(@TempDir final Path tmp) {
     // given
@@ -99,7 +103,7 @@ final class PartitionJoinTest {
     assignSocketAddresses(brokerCfg);
     brokerCfg.init(tmp.toAbsolutePath().toString());
     configure.accept(brokerCfg);
-    final var atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg);
+    final var atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg, meterRegistry);
     final var actorScheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg);
     final var brokerClient =
         TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
