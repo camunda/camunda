@@ -58,7 +58,7 @@ public enum RaftRequestMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public KeyName[] getKeyNames() {
       return new KeyName[] {
-        RaftKeyNames.TYPE,
+        RaftKeyNames.TO,
         RaftKeyNames.TYPE,
         RaftKeyNames.PARTITION_GROUP,
         PartitionKeyNames.PARTITION
