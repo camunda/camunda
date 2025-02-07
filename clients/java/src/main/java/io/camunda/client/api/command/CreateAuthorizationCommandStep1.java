@@ -19,7 +19,6 @@ import io.camunda.client.api.response.CreateAuthorizationResponse;
 import io.camunda.client.protocol.rest.OwnerTypeEnum;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
-import java.util.List;
 
 public interface CreateAuthorizationCommandStep1 {
 
@@ -67,20 +66,12 @@ public interface CreateAuthorizationCommandStep1 {
   interface CreateAuthorizationCommandStep5 {
 
     /**
-     * List the permissions for the authorization.
+     * List the permission types for the authorization.
      *
-     * @param permissions the permissions
+     * @param permissionTypes the permission types
      * @return the builder for this command
      */
-    CreateAuthorizationCommandStep6 permissions(List<PermissionTypeEnum> permissions);
-
-    /**
-     * Adds a permission to the authorization.
-     *
-     * @param permission the permission
-     * @return the builder for this command
-     */
-    CreateAuthorizationCommandStep6 permission(PermissionTypeEnum permission);
+    CreateAuthorizationCommandStep6 permissionTypes(PermissionTypeEnum... permissionTypes);
   }
 
   interface CreateAuthorizationCommandStep6

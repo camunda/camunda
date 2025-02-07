@@ -324,7 +324,7 @@ public class RequestMapper {
                 AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
                 request.getResourceId(),
                 AuthorizationResourceType.valueOf(request.getResourceType().name()),
-                transfomPermissions(request.getPermissions())));
+                transformPermissionTypes(request.getPermissionTypes())));
   }
 
   public static Either<ProblemDetail, UpdateAuthorizationRequest> toUpdateAuthorizationRequest(
@@ -338,12 +338,12 @@ public class RequestMapper {
                 AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
                 request.getResourceId(),
                 AuthorizationResourceType.valueOf(request.getResourceType().name()),
-                transfomPermissions(request.getPermissions())));
+                transformPermissionTypes(request.getPermissionTypes())));
   }
 
-  private static Set<PermissionType> transfomPermissions(
-      final List<PermissionTypeEnum> permissions) {
-    return permissions.stream()
+  private static Set<PermissionType> transformPermissionTypes(
+      final List<PermissionTypeEnum> permissionTypes) {
+    return permissionTypes.stream()
         .map(permission -> PermissionType.valueOf(permission.name()))
         .collect(Collectors.toSet());
   }
