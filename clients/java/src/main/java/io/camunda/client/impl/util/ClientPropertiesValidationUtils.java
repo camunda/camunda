@@ -21,28 +21,16 @@ public final class ClientPropertiesValidationUtils {
 
   private ClientPropertiesValidationUtils() {}
 
-  /**
-   * Validates that the provided gRPC address is an absolute URI.
-   *
-   * <p>We use {@code URI.getHost() == null} to check for absolute URIs because:
-   *
-   * <ul>
-   *   <li>For absolute URIs (with a scheme) (e.g., "https://example.com"), {@code URI.getHost()}
-   *       returns the hostname (e.g., "example.com").
-   *   <li>For relative URIs (without a scheme) (e.g., "example.com"), {@code URI.getHost()} returns
-   *       {@code null}.
-   * </ul>
-   *
-   * throws IllegalArgumentException if the provided gRPC address is not an absolute URI
-   */
   public static void validateGrpcAddress(final URI grpcAddress) {
-    if (grpcAddress != null && grpcAddress.getHost() == null) {
-      throw new IllegalArgumentException("The gRPC address must be an absolute URI");
-    }
+    validateAddress(grpcAddress, "grpcAddress");
+  }
+
+  public static void validateRestAddress(final URI restAddress) {
+    validateAddress(restAddress, "restAddress");
   }
 
   /**
-   * Validates that the provided rest address is an absolute URI.
+   * Validates that the provided address is an absolute URI.
    *
    * <p>We use {@code URI.getHost() == null} to check for absolute URIs because:
    *
@@ -53,11 +41,12 @@ public final class ClientPropertiesValidationUtils {
    *       {@code null}.
    * </ul>
    *
-   * throws IllegalArgumentException if the provided rest address is not an absolute URI
+   * throws IllegalArgumentException if the provided address is not an absolute URI
    */
-  public static void validateRestAddress(final URI restAddress) {
-    if (restAddress != null && restAddress.getHost() == null) {
-      throw new IllegalArgumentException("The REST address must be an absolute URI");
+  private static void validateAddress(final URI address, final String propertyName) {
+    if (address != null && address.getHost() == null) {
+      throw new IllegalArgumentException(
+          String.format("'%s' must be an absolute URI", propertyName));
     }
   }
 }
