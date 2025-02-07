@@ -20,8 +20,8 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.protocol.rest.DeploymentResponse;
-import io.camunda.client.protocol.rest.EvaluateDecisionResponse;
-import io.camunda.client.protocol.rest.JobActivationResponse;
+import io.camunda.client.protocol.rest.EvaluateDecisionResult;
+import io.camunda.client.protocol.rest.JobActivationResult;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.protocol.rest.TopologyResponse;
 import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
@@ -50,7 +50,7 @@ public class RestGatewayService {
    *
    * @param jobActivationResponse the response to provide upon a job activation request
    */
-  public void onActivateJobsRequest(final JobActivationResponse jobActivationResponse) {
+  public void onActivateJobsRequest(final JobActivationResult jobActivationResponse) {
     mockInfo
         .getWireMock()
         .register(
@@ -71,7 +71,7 @@ public class RestGatewayService {
                 .willReturn(WireMock.okJson(JSON_MAPPER.toJson(topologyResponse))));
   }
 
-  public void onEvaluateDecisionRequest(final EvaluateDecisionResponse response) {
+  public void onEvaluateDecisionRequest(final EvaluateDecisionResult response) {
     mockInfo
         .getWireMock()
         .register(

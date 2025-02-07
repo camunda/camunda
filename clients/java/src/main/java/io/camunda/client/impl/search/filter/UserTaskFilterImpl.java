@@ -24,7 +24,7 @@ import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
-import io.camunda.client.protocol.rest.UserTaskFilterRequest;
+import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -32,18 +32,19 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserTaskFilterRequest>
+public class UserTaskFilterImpl
+    extends TypedSearchRequestPropertyProvider<io.camunda.client.protocol.rest.UserTaskFilter>
     implements UserTaskFilter {
 
-  private final UserTaskFilterRequest filter;
+  private final io.camunda.client.protocol.rest.UserTaskFilter filter;
 
   public UserTaskFilterImpl() {
-    filter = new UserTaskFilterRequest();
+    filter = new io.camunda.client.protocol.rest.UserTaskFilter();
   }
 
   @Override
   public UserTaskFilter userTaskKey(final Long value) {
-    filter.setUserTaskKey(value);
+    filter.setUserTaskKey(ParseUtil.keyToString(value));
     return this;
   }
 
@@ -117,13 +118,13 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
 
   @Override
   public UserTaskFilter processDefinitionKey(final Long processDefinitionKey) {
-    filter.setProcessDefinitionKey(processDefinitionKey);
+    filter.setProcessDefinitionKey(ParseUtil.keyToString(processDefinitionKey));
     return this;
   }
 
   @Override
   public UserTaskFilter processInstanceKey(final Long processInstanceKey) {
-    filter.setProcessInstanceKey(processInstanceKey);
+    filter.setProcessInstanceKey(ParseUtil.keyToString(processInstanceKey));
     return this;
   }
 
@@ -194,7 +195,7 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
   // elementInstanceKey
   @Override
   public UserTaskFilter elementInstanceKey(final Long elementInstanceKey) {
-    filter.setElementInstanceKey(elementInstanceKey);
+    filter.setElementInstanceKey(ParseUtil.keyToString(elementInstanceKey));
     return this;
   }
 
@@ -255,7 +256,7 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
   }
 
   @Override
-  protected UserTaskFilterRequest getSearchRequestProperty() {
+  protected io.camunda.client.protocol.rest.UserTaskFilter getSearchRequestProperty() {
     return filter;
   }
 }

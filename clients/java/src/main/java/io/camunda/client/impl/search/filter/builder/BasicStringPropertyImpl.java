@@ -15,45 +15,45 @@
  */
 package io.camunda.client.impl.search.filter.builder;
 
-import io.camunda.client.api.search.filter.builder.BasicLongProperty;
+import io.camunda.client.api.search.filter.builder.BasicStringProperty;
 import io.camunda.client.impl.util.CollectionUtil;
-import io.camunda.client.protocol.rest.BasicLongFilterProperty;
+import io.camunda.client.protocol.rest.BasicStringFilterProperty;
 import java.util.List;
 
-public class BasicLongPropertyImpl implements BasicLongProperty {
-  private final BasicLongFilterProperty filterProperty = new BasicLongFilterProperty();
+public class BasicStringPropertyImpl implements BasicStringProperty {
+  private final BasicStringFilterProperty filterProperty = new BasicStringFilterProperty();
 
   @Override
-  public BasicLongProperty eq(final Long value) {
+  public BasicStringProperty eq(final String value) {
     filterProperty.set$Eq(value);
     return this;
   }
 
   @Override
-  public BasicLongProperty neq(final Long value) {
+  public BasicStringProperty neq(final String value) {
     filterProperty.set$Neq(value);
     return this;
   }
 
   @Override
-  public BasicLongProperty exists(final boolean value) {
+  public BasicStringProperty exists(final boolean value) {
     filterProperty.set$Exists(value);
     return this;
   }
 
   @Override
-  public BasicLongProperty in(final List<Long> values) {
+  public BasicStringProperty in(final List<String> values) {
     filterProperty.set$In(values);
     return this;
   }
 
   @Override
-  public BasicLongProperty in(final Long... values) {
+  public BasicStringProperty in(final String... values) {
     return in(CollectionUtil.toList(values));
   }
 
   @Override
-  public BasicLongFilterProperty build() {
+  public BasicStringFilterProperty build() {
     return filterProperty;
   }
 }
