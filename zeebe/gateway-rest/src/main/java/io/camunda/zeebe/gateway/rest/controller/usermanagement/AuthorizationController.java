@@ -41,7 +41,7 @@ public class AuthorizationController {
   }
 
   @CamundaPostMapping(path = "/authorizations")
-  public CompletableFuture<ResponseEntity<Object>> create(
+  public CompletableFuture<ResponseEntity<Object>> createAuthorization(
       @RequestBody final AuthorizationRequest authorizationCreateRequest) {
     return RequestMapper.toCreateAuthorizationRequest(authorizationCreateRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::create);
