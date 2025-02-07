@@ -14,6 +14,9 @@ import io.atomix.raft.snapshot.InMemorySnapshot;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.utils.concurrent.ThreadContext;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -29,6 +32,7 @@ final class LogCompactorTest {
   private ThreadContext threadContext;
   private RaftLog raftLog;
   private LogCompactor compactor;
+  @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @BeforeEach
   void beforeEach() {
@@ -48,7 +52,7 @@ final class LogCompactorTest {
             threadContext,
             raftLog,
             5,
-            new RaftServiceMetrics("1"),
+            new RaftServiceMetrics("1", meterRegistry),
             LoggerFactory.getLogger(getClass()));
   }
 
