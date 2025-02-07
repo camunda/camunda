@@ -7,6 +7,7 @@
  */
 package io.camunda.application;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,8 +17,10 @@ import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
+import org.springframework.context.annotation.Primary;
 
 /**
  * Create or update Schemas for ElasticSearch by running this standalone application.
@@ -116,20 +119,11 @@ public class StandaloneSchemaManager {
     System.exit(0);
   }
 
-  /*
-  io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager operateSchemaManager =
-      new io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager();
-  io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager tasklistSchemaManager =
-      new io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager();
-  io.camunda.exporter.schema.ElasticsearchSchemaManager exporterSchemaManager =
-      new io.camunda.exporter.schema.ElasticsearchSchemaManager(null, null, null, null);
-  io.camunda.operate.connect.ElasticsearchConnector operateEsConnector;
-  io.camunda.tasklist.es.ElasticsearchConnector tasklistEsConnector;
-  */
-
-  /*
-  operateSchemaManager.createSchema();
-  tasklistSchemaManager.createSchema();
-  exporterSchemaManager.initialiseResources();
-  */
+  @Bean
+  @Primary // required for some Spring Boot auto-configuration, as we have a tasklistObjectMapper
+  // and
+  // an operateObjectMapper
+  public ObjectMapper defaultObjectMapper() {
+    return new ObjectMapper();
+  }
 }
