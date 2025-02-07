@@ -21,13 +21,20 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+@AutoCloseResources
 class NettyMessagingServiceCompressionTest {
+
+  @AutoCloseResource private final MeterRegistry registry = new SimpleMeterRegistry();
 
   @ParameterizedTest
   @EnumSource(CompressionAlgorithm.class)
@@ -41,12 +48,12 @@ class NettyMessagingServiceCompressionTest {
 
     final var senderNetty =
         (ManagedMessagingService)
-            new NettyMessagingService("test", senderAddress, config).start().join();
+            new NettyMessagingService("test", senderAddress, config, registry).start().join();
 
     final var receiverAddress = Address.from(SocketUtil.getNextAddress().getPort());
     final var receiverNetty =
         (ManagedMessagingService)
-            new NettyMessagingService("test", receiverAddress, config).start().join();
+            new NettyMessagingService("test", receiverAddress, config, registry).start().join();
 
     final String subject = "subject";
     final String requestString = "message";

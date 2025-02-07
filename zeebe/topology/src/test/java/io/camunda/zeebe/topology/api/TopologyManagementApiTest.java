@@ -16,6 +16,8 @@ import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.topology.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.topology.api.TopologyCoordinatorSupplier.ClusterTopologyAwareCoordinatorSupplier;
@@ -31,6 +33,8 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOp
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +47,7 @@ import org.junit.jupiter.api.Test;
 
 // Test to verify that server handles requests from the clients. This test uses the actual
 // communicationService to ensure that request subscription and handling is done correctly.
+@AutoCloseResources
 final class TopologyManagementApiTest {
   private TopologyManagementRequestSender clientApi;
   private final RecordingChangeCoordinator recordingCoordinator = new RecordingChangeCoordinator();
@@ -53,6 +58,7 @@ final class TopologyManagementApiTest {
   private final MemberId id1 = MemberId.from("1");
   private final MemberId id2 = MemberId.from("2");
   private final MemberId id3 = MemberId.from("3");
+  @AutoCloseResource private final MeterRegistry registry = new SimpleMeterRegistry();
   private final ClusterTopology initialTopology =
       ClusterTopology.init().addMember(id0, MemberState.initializeAsActive(Map.of()));
 
@@ -95,7 +101,7 @@ final class TopologyManagementApiTest {
   }
 
   private AtomixCluster createClusterNode(final Node localNode, final Collection<Node> nodes) {
-    return AtomixCluster.builder()
+    return AtomixCluster.builder(registry)
         .withAddress(localNode.address())
         .withMemberId(localNode.id().id())
         .withMembershipProvider(new BootstrapDiscoveryProvider(nodes))

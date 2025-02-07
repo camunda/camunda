@@ -69,6 +69,7 @@ import io.camunda.zeebe.shared.management.ActorClockService.MutableClock;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.VersionUtil;
@@ -148,6 +149,7 @@ public class ClusteringRule extends ExternalResource {
   private final Map<Integer, SpringBrokerBridge> springBrokerBridge;
   private final Map<Integer, SystemContext> systemContexts;
   private final ActorClockConfiguration actorClockConfiguration;
+  @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   public ClusteringRule() {
     this(3);
@@ -352,8 +354,9 @@ public class ClusteringRule extends ExternalResource {
 
     final var atomixCluster =
         new AtomixCluster(
-            new BrokerClusterConfiguration().clusterConfig(brokerSpringConfig),
-            Version.from(VersionUtil.getVersion()));
+            new BrokerClusterConfiguration().clusterConfig(brokerSpringConfig, meterRegistry),
+            Version.from(VersionUtil.getVersion()),
+            meterRegistry);
     final var scheduler =
         new io.camunda.zeebe.broker.ActorSchedulerConfiguration(
                 brokerSpringConfig, actorClockConfiguration, null)
@@ -481,7 +484,8 @@ public class ClusteringRule extends ExternalResource {
   private GatewayResource createGateway(final GatewayProperties gatewayCfg) {
     final var config = new GatewayConfiguration(gatewayCfg, new LifecycleProperties());
     final var clusterFactory = new GatewayClusterConfiguration();
-    final var atomixCluster = clusterFactory.atomixCluster(clusterFactory.clusterConfig(config));
+    final var atomixCluster =
+        clusterFactory.atomixCluster(clusterFactory.clusterConfig(config, meterRegistry));
     atomixCluster.start().join();
 
     final ActorScheduler actorScheduler =

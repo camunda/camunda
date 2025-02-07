@@ -29,6 +29,8 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.file.Files;
@@ -62,6 +64,7 @@ import org.junit.jupiter.api.condition.OS;
 final class NettyMessagingServiceTest {
   private static final String CLUSTER_NAME = "zeebe";
   private static final int UID_COLUMN = 7;
+  @AutoCloseResource  private final MeterRegistry registry = new SimpleMeterRegistry();
 
   private MessagingConfig defaultConfig() {
     return new MessagingConfig()
@@ -75,7 +78,7 @@ final class NettyMessagingServiceTest {
   }
 
   private NettyMessagingService newMessagingService() {
-    return new NettyMessagingService(CLUSTER_NAME, newAddress(), defaultConfig());
+    return new NettyMessagingService(CLUSTER_NAME, newAddress(), defaultConfig(), registry);
   }
 
   private Address newAddress() {
@@ -205,7 +208,8 @@ final class NettyMessagingServiceTest {
 
       // when
       final var nonBindableAddress = new Address("invalid.host", 1);
-      try (final var service = new NettyMessagingService("test", nonBindableAddress, config)) {
+      try (final var service =
+          new NettyMessagingService("test", nonBindableAddress, config, registry)) {
         // then - should not fail by using advertisedAddress for binding
         assertThat(service.start()).succeedsWithin(Duration.ofSeconds(5));
         assertThat(service.bindingAddresses()).contains(bindingAddress);

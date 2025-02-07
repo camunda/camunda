@@ -20,6 +20,7 @@ import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MembershipCfg;
 import io.camunda.zeebe.util.VersionUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Collectors;
@@ -28,8 +29,13 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
 public final class GatewayClusterConfiguration {
+
+  private MeterRegistry meterRegistry;
+
   @Bean
-  public ClusterConfig clusterConfig(final GatewayConfiguration gatewayConfig) {
+  public ClusterConfig clusterConfig(
+      final GatewayConfiguration gatewayConfig, final MeterRegistry meterRegistry) {
+    this.meterRegistry = meterRegistry;
     final var config = gatewayConfig.config();
     final var cluster = config.getCluster();
     final var name = cluster.getClusterName();
@@ -48,7 +54,7 @@ public final class GatewayClusterConfiguration {
 
   @Bean(destroyMethod = "stop")
   public AtomixCluster atomixCluster(final ClusterConfig config) {
-    return new AtomixCluster(config, Version.from(VersionUtil.getVersion()));
+    return new AtomixCluster(config, Version.from(VersionUtil.getVersion()), meterRegistry);
   }
 
   private MemberConfig memberConfig(final ClusterCfg cluster) {

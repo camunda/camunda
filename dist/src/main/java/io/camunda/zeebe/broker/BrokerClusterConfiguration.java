@@ -13,19 +13,25 @@ import io.atomix.utils.Version;
 import io.camunda.zeebe.broker.clustering.ClusterConfigFactory;
 import io.camunda.zeebe.broker.shared.BrokerConfiguration;
 import io.camunda.zeebe.util.VersionUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
 public final class BrokerClusterConfiguration {
+
+  private MeterRegistry meterRegistry;
+
   @Bean
-  public ClusterConfig clusterConfig(final BrokerConfiguration config) {
+  public ClusterConfig clusterConfig(
+      final BrokerConfiguration config, final MeterRegistry meterRegistry) {
+    this.meterRegistry = meterRegistry;
     final var configFactory = new ClusterConfigFactory();
     return configFactory.mapConfiguration(config.config());
   }
 
   @Bean(destroyMethod = "stop")
   public AtomixCluster atomixCluster(final ClusterConfig config) {
-    return new AtomixCluster(config, Version.from(VersionUtil.getVersion()));
+    return new AtomixCluster(config, Version.from(VersionUtil.getVersion()), meterRegistry);
   }
 }
