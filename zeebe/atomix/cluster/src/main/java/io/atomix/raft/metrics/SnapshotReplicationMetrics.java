@@ -34,13 +34,13 @@ public class SnapshotReplicationMetrics extends RaftMetrics {
     count = new AtomicLong(0L);
     Gauge.builder(COUNT.getName(), count::get)
         .description(COUNT.getDescription())
-        .tags(PARTITION_GROUP_NAME_LABEL, partitionName)
+        .tags(PARTITION_GROUP_NAME_LABEL, partitionGroupName)
         .register(meterRegistry);
 
     duration = new AtomicLong(0L);
     Gauge.builder(DURATION.getName(), duration::get)
         .description(DURATION.getDescription())
-        .tags(PARTITION_GROUP_NAME_LABEL, partitionName)
+        .tags(PARTITION_GROUP_NAME_LABEL, partitionGroupName)
         .register(meterRegistry);
   }
 
