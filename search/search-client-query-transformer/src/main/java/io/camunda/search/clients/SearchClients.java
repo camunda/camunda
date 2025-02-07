@@ -52,7 +52,6 @@ import io.camunda.security.auth.SecurityContext;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class SearchClients
@@ -230,28 +229,12 @@ public class SearchClients
 
   @Override
   public SearchQueryResult<UserEntity> searchUsers(final UserQuery userQuery) {
-    if (userQuery.filter().tenantId() != null) {
-      return searchUsersInTenant(userQuery);
+    var query = userQuery;
+    if (query.filter().tenantId() != null) {
+      query = expandTenantFilter(query);
     }
-
     return getSearchExecutor()
-        .search(userQuery, io.camunda.webapps.schema.entities.usermanagement.UserEntity.class);
-  }
-
-  private SearchQueryResult<UserEntity> searchUsersInTenant(final UserQuery userQuery) {
-    final List<TenantMemberEntity> tenantMembers =
-        getSearchExecutor()
-            .findAll(
-                new TenantQuery.Builder()
-                    .filter(f -> f.joinParentId(userQuery.filter().tenantId()).memberType(USER))
-                    .build(),
-                io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity.class);
-    final var usernames =
-        tenantMembers.stream().map(TenantMemberEntity::id).collect(Collectors.toSet());
-
-    final var overlayQuery = injectUsernamesIntoQuery(usernames, userQuery);
-
-    return searchUsers(overlayQuery);
+        .search(query, io.camunda.webapps.schema.entities.usermanagement.UserEntity.class);
   }
 
   @Override
@@ -314,8 +297,17 @@ public class SearchClients
     return metrics.stream().map(UsageMetricsEntity::value).distinct().count();
   }
 
-  private UserQuery injectUsernamesIntoQuery(
-      final Set<String> usernames, final UserQuery userQuery) {
+  private UserQuery expandTenantFilter(final UserQuery userQuery) {
+    final List<TenantMemberEntity> tenantMembers =
+        getSearchExecutor()
+            .findAll(
+                new TenantQuery.Builder()
+                    .filter(f -> f.joinParentId(userQuery.filter().tenantId()).memberType(USER))
+                    .build(),
+                io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity.class);
+    final var usernames =
+        tenantMembers.stream().map(TenantMemberEntity::id).collect(Collectors.toSet());
+
     return userQuery.toBuilder()
         .filter(userQuery.filter().toBuilder().usernames(usernames).build())
         .build();
