@@ -38,23 +38,23 @@ public class RaftRoleMetrics extends RaftMetrics {
     heartbeatMiss =
         Counter.builder(HEARTBEAT_MISS.getName())
             .description(HEARTBEAT_MISS.getDescription())
-            .tags(PARTITION_GROUP_NAME_LABEL, partitionName)
+            .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionName)
             .register(registry);
     heartbeatTime =
         Timer.builder(HEARTBEAT_TIME.getName())
             .description(HEARTBEAT_TIME.getDescription())
             .serviceLevelObjectives(HEARTBEAT_TIME.getTimerSLOs())
-            .tags(PARTITION_GROUP_NAME_LABEL, partitionName)
+            .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionName)
             .register(registry);
 
     Gauge.builder(ROLE.getName(), roleValue::get)
         .description(ROLE.getDescription())
-        .tags(PARTITION_GROUP_NAME_LABEL, partitionName)
+        .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionName)
         .register(registry);
 
     Gauge.builder(ELECTION_LATENCY.getName(), electionLatencyValue::get)
         .description(ELECTION_LATENCY.getDescription())
-        .tags(PARTITION_GROUP_NAME_LABEL, partitionName)
+        .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionName)
         .register(registry);
   }
 
