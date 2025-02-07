@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.client.protocol.rest.MessagePublicationRequest;
-import io.camunda.client.protocol.rest.MessagePublicationResponse;
+import io.camunda.client.protocol.rest.MessagePublicationResult;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
@@ -148,7 +148,7 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
         "/messages/publication",
         objectMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        MessagePublicationResponse.class,
+        MessagePublicationResult.class,
         PublishMessageResponseImpl::new,
         result);
     return result;

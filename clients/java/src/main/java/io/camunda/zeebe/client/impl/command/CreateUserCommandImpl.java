@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.client.protocol.rest.UserCreateResponse;
+import io.camunda.client.protocol.rest.UserCreateResult;
 import io.camunda.client.protocol.rest.UserRequest;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -61,7 +61,7 @@ public final class CreateUserCommandImpl implements CreateUserCommandStep1 {
         "/users",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        UserCreateResponse.class,
+        UserCreateResult.class,
         response::setResponse,
         result);
     return result;

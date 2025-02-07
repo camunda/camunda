@@ -35,8 +35,7 @@ import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.impl.search.SearchRequestPageImpl;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.client.protocol.rest.IncidentFilterRequest;
-import io.camunda.client.protocol.rest.IncidentSearchQueryRequest;
+import io.camunda.client.protocol.rest.IncidentSearchQuery;
 import io.camunda.client.protocol.rest.IncidentSearchQueryResult;
 import java.time.Duration;
 import java.util.List;
@@ -44,17 +43,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class IncidentQueryImpl
-    extends TypedSearchRequestPropertyProvider<IncidentSearchQueryRequest>
+public class IncidentQueryImpl extends TypedSearchRequestPropertyProvider<IncidentSearchQuery>
     implements IncidentQuery {
 
-  private final IncidentSearchQueryRequest request;
+  private final IncidentSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
   public IncidentQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
-    request = new IncidentSearchQueryRequest();
+    request = new IncidentSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -81,7 +79,8 @@ public class IncidentQueryImpl
 
   @Override
   public IncidentQuery filter(final IncidentFilter value) {
-    final IncidentFilterRequest filter = provideSearchRequestProperty(value);
+    final io.camunda.client.protocol.rest.IncidentFilter filter =
+        provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
@@ -116,7 +115,7 @@ public class IncidentQueryImpl
   }
 
   @Override
-  protected IncidentSearchQueryRequest getSearchRequestProperty() {
+  protected IncidentSearchQuery getSearchRequestProperty() {
     return request;
   }
 }

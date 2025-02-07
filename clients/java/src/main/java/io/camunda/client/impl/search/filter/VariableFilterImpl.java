@@ -16,32 +16,33 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.VariableFilter;
-import io.camunda.client.api.search.filter.builder.BasicLongProperty;
+import io.camunda.client.api.search.filter.builder.BasicStringProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
+import io.camunda.client.impl.search.filter.builder.BasicStringPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
-import io.camunda.client.protocol.rest.VariableFilterRequest;
+import io.camunda.client.impl.util.ParseUtil;
 import java.util.function.Consumer;
 
-public class VariableFilterImpl extends TypedSearchRequestPropertyProvider<VariableFilterRequest>
+public class VariableFilterImpl
+    extends TypedSearchRequestPropertyProvider<io.camunda.client.protocol.rest.VariableFilter>
     implements VariableFilter {
 
-  private final VariableFilterRequest filter;
+  private final io.camunda.client.protocol.rest.VariableFilter filter;
 
   public VariableFilterImpl() {
-    filter = new VariableFilterRequest();
+    filter = new io.camunda.client.protocol.rest.VariableFilter();
   }
 
   @Override
   public VariableFilter variableKey(final Long key) {
-    variableKey(b -> b.eq(key));
+    variableKey(b -> b.eq(ParseUtil.keyToString(key)));
     return this;
   }
 
   @Override
-  public VariableFilter variableKey(final Consumer<BasicLongProperty> fn) {
-    final BasicLongProperty property = new BasicLongPropertyImpl();
+  public VariableFilter variableKey(final Consumer<BasicStringProperty> fn) {
+    final BasicStringProperty property = new BasicStringPropertyImpl();
     fn.accept(property);
     filter.setVariableKey(property.build());
     return this;
@@ -77,13 +78,13 @@ public class VariableFilterImpl extends TypedSearchRequestPropertyProvider<Varia
 
   @Override
   public VariableFilter scopeKey(final Long scopeKey) {
-    scopeKey(b -> b.eq(scopeKey));
+    scopeKey(b -> b.eq(ParseUtil.keyToString(scopeKey)));
     return this;
   }
 
   @Override
-  public VariableFilter scopeKey(final Consumer<BasicLongProperty> fn) {
-    final BasicLongProperty property = new BasicLongPropertyImpl();
+  public VariableFilter scopeKey(final Consumer<BasicStringProperty> fn) {
+    final BasicStringProperty property = new BasicStringPropertyImpl();
     fn.accept(property);
     filter.setScopeKey(property.build());
     return this;
@@ -91,13 +92,13 @@ public class VariableFilterImpl extends TypedSearchRequestPropertyProvider<Varia
 
   @Override
   public VariableFilter processInstanceKey(final Long processInstanceKey) {
-    processInstanceKey(b -> b.eq(processInstanceKey));
+    processInstanceKey(b -> b.eq(ParseUtil.keyToString(processInstanceKey)));
     return this;
   }
 
   @Override
-  public VariableFilter processInstanceKey(final Consumer<BasicLongProperty> fn) {
-    final BasicLongProperty property = new BasicLongPropertyImpl();
+  public VariableFilter processInstanceKey(final Consumer<BasicStringProperty> fn) {
+    final BasicStringProperty property = new BasicStringPropertyImpl();
     fn.accept(property);
     filter.setProcessInstanceKey(property.build());
     return this;
@@ -116,7 +117,7 @@ public class VariableFilterImpl extends TypedSearchRequestPropertyProvider<Varia
   }
 
   @Override
-  protected VariableFilterRequest getSearchRequestProperty() {
+  protected io.camunda.client.protocol.rest.VariableFilter getSearchRequestProperty() {
     return filter;
   }
 }

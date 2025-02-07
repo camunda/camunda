@@ -17,9 +17,9 @@ package io.camunda.client.variable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.protocol.rest.BasicLongFilterProperty;
-import io.camunda.client.protocol.rest.VariableFilterRequest;
-import io.camunda.client.protocol.rest.VariableSearchQueryRequest;
+import io.camunda.client.protocol.rest.BasicStringFilterProperty;
+import io.camunda.client.protocol.rest.VariableFilter;
+import io.camunda.client.protocol.rest.VariableSearchQuery;
 import io.camunda.client.util.ClientRestTest;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
@@ -32,8 +32,7 @@ public class SearchVariableTest extends ClientRestTest {
     client.newVariableQuery().send().join();
 
     // then
-    final VariableSearchQueryRequest request =
-        gatewayService.getLastRequest(VariableSearchQueryRequest.class);
+    final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
     assertThat(request.getFilter()).isNull();
   }
 
@@ -43,8 +42,7 @@ public class SearchVariableTest extends ClientRestTest {
     client.newVariableQuery().filter(f -> f.value("demo")).send().join();
 
     // then
-    final VariableSearchQueryRequest request =
-        gatewayService.getLastRequest(VariableSearchQueryRequest.class);
+    final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
     assertThat(request.getFilter().getValue().get$Eq()).isEqualTo("demo");
   }
 
@@ -54,8 +52,7 @@ public class SearchVariableTest extends ClientRestTest {
     client.newVariableQuery().filter(f -> f.name("demo")).send().join();
 
     // then
-    final VariableSearchQueryRequest request =
-        gatewayService.getLastRequest(VariableSearchQueryRequest.class);
+    final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
     assertThat(request.getFilter().getName().get$Eq()).isEqualTo("demo");
   }
 
@@ -65,8 +62,7 @@ public class SearchVariableTest extends ClientRestTest {
     client.newVariableQuery().filter(f -> f.name(b -> b.in("this", "that"))).send().join();
 
     // then
-    final VariableSearchQueryRequest request =
-        gatewayService.getLastRequest(VariableSearchQueryRequest.class);
+    final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
     assertThat(request.getFilter().getName().get$In()).isEqualTo(Arrays.asList("this", "that"));
   }
 
@@ -76,9 +72,8 @@ public class SearchVariableTest extends ClientRestTest {
     client.newVariableQuery().filter(f -> f.scopeKey(1L)).send().join();
 
     // then
-    final VariableSearchQueryRequest request =
-        gatewayService.getLastRequest(VariableSearchQueryRequest.class);
-    assertThat(request.getFilter().getScopeKey().get$Eq()).isEqualTo(1);
+    final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
+    assertThat(request.getFilter().getScopeKey().get$Eq()).isEqualTo("1");
   }
 
   @Test
@@ -87,9 +82,8 @@ public class SearchVariableTest extends ClientRestTest {
     client.newVariableQuery().filter(f -> f.processInstanceKey(1L)).send().join();
 
     // then
-    final VariableSearchQueryRequest request =
-        gatewayService.getLastRequest(VariableSearchQueryRequest.class);
-    assertThat(request.getFilter().getProcessInstanceKey().get$Eq()).isEqualTo(1);
+    final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
+    assertThat(request.getFilter().getProcessInstanceKey().get$Eq()).isEqualTo("1");
   }
 
   @Test
@@ -98,18 +92,17 @@ public class SearchVariableTest extends ClientRestTest {
     client
         .newVariableQuery()
         .sort(s -> s.processInstanceKey().asc().variableKey())
-        .filter(f -> f.processInstanceKey(b -> b.in(1L, 10L)))
+        .filter(f -> f.processInstanceKey(b -> b.in("1", "10")))
         .send()
         .join();
 
     // then
-    final VariableSearchQueryRequest request =
-        gatewayService.getLastRequest(VariableSearchQueryRequest.class);
-    final VariableFilterRequest filter = request.getFilter();
+    final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
+    final VariableFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
-    final BasicLongFilterProperty processInstanceKey = filter.getProcessInstanceKey();
+    final BasicStringFilterProperty processInstanceKey = filter.getProcessInstanceKey();
     assertThat(processInstanceKey).isNotNull();
-    assertThat(processInstanceKey.get$In()).isEqualTo(Arrays.asList(1L, 10L));
+    assertThat(processInstanceKey.get$In()).isEqualTo(Arrays.asList("1", "10"));
   }
 
   @Test
@@ -118,8 +111,7 @@ public class SearchVariableTest extends ClientRestTest {
     client.newVariableQuery().filter(f -> f.tenantId("tenant1")).send().join();
 
     // then
-    final VariableSearchQueryRequest request =
-        gatewayService.getLastRequest(VariableSearchQueryRequest.class);
+    final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
     assertThat(request.getFilter().getTenantId()).isEqualTo("tenant1");
   }
 
@@ -129,8 +121,7 @@ public class SearchVariableTest extends ClientRestTest {
     client.newVariableQuery().filter(f -> f.isTruncated(true)).send().join();
 
     // then
-    final VariableSearchQueryRequest request =
-        gatewayService.getLastRequest(VariableSearchQueryRequest.class);
+    final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
     assertThat(request.getFilter().getIsTruncated()).isEqualTo(true);
   }
 
@@ -140,8 +131,7 @@ public class SearchVariableTest extends ClientRestTest {
     client.newVariableQuery().filter(f -> f.variableKey(1L)).send().join();
 
     // then
-    final VariableSearchQueryRequest request =
-        gatewayService.getLastRequest(VariableSearchQueryRequest.class);
-    assertThat(request.getFilter().getVariableKey().get$Eq()).isEqualTo(1);
+    final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
+    assertThat(request.getFilter().getVariableKey().get$Eq()).isEqualTo("1");
   }
 }
