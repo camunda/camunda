@@ -79,7 +79,9 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
         // test overrides - to control data clean up; (and some components are not installed on
         // Tests)
         TestOperateElasticsearchSchemaManager.class,
+        TestOperateOpensearchSchemaManager.class,
         TestTasklistElasticsearchSchemaManager.class,
+        TestTasklistOpensearchSchemaManager.class,
         TestOperateSchemaStartup.class,
         TestTasklistSchemaStartup.class,
         IndexTemplateDescriptorsConfigurator.class);
@@ -323,12 +325,6 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
                   "bulk",
                   Map.of("size", 1)));
         });
-    return this;
-  }
-
-  public TestStandaloneCamunda withBackupRepository(final String repositoryName) {
-    operateProperties.getBackup().setRepositoryName(repositoryName);
-    tasklistProperties.getBackup().setRepositoryName(repositoryName);
     return this;
   }
 

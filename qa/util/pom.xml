@@ -44,7 +44,6 @@
       <groupId>org.testcontainers</groupId>
       <artifactId>elasticsearch</artifactId>
     </dependency>
-
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway</artifactId>
@@ -63,7 +62,6 @@
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jsr310</artifactId>
     </dependency>
-
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-zeebe</artifactId>
@@ -145,6 +143,7 @@
       <groupId>io.camunda</groupId>
       <artifactId>webapps-backup</artifactId>
     </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-elasticsearch-exporter</artifactId>
