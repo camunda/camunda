@@ -16,11 +16,13 @@
 package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.process.test.api.spec.CamundaProcessSpecRunner;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
+import io.camunda.process.test.impl.spec.ProcessSpecRunner;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
@@ -155,6 +157,10 @@ public class CamundaProcessTestExtension
       injectField(context, CamundaClient.class, camundaProcessTestContext::createClient);
       injectField(context, ZeebeClient.class, camundaProcessTestContext::createZeebeClient);
       injectField(context, CamundaProcessTestContext.class, () -> camundaProcessTestContext);
+      injectField(
+          context,
+          CamundaProcessSpecRunner.class,
+          () -> new ProcessSpecRunner(camundaProcessTestContext));
     } catch (final Exception e) {
       closeCreatedClients();
       containerRuntime.close();
