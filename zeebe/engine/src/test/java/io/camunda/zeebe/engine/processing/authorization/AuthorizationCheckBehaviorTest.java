@@ -802,6 +802,7 @@ public class AuthorizationCheckBehaviorTest {
             .mapping()
             .newMapping(firstClaimName)
             .withClaimValue(firstClaimValue)
+            .withId(UUID.randomUUID().toString())
             .create()
             .getKey();
     final var secondClaimName = UUID.randomUUID().toString();
@@ -811,6 +812,7 @@ public class AuthorizationCheckBehaviorTest {
             .mapping()
             .newMapping(secondClaimName)
             .withClaimValue(secondClaimValue)
+            .withId(UUID.randomUUID().toString())
             .create()
             .getKey();
 
@@ -873,10 +875,22 @@ public class AuthorizationCheckBehaviorTest {
     final var claimName = UUID.randomUUID().toString();
     final var firstClaimValue = UUID.randomUUID().toString();
     final var firstMappingKey =
-        engine.mapping().newMapping(claimName).withClaimValue(firstClaimValue).create().getKey();
+        engine
+            .mapping()
+            .newMapping(claimName)
+            .withClaimValue(firstClaimValue)
+            .withId(UUID.randomUUID().toString())
+            .create()
+            .getKey();
     final var secondClaimValue = UUID.randomUUID().toString();
     final var secondMappingKey =
-        engine.mapping().newMapping(claimName).withClaimValue(secondClaimValue).create().getKey();
+        engine
+            .mapping()
+            .newMapping(claimName)
+            .withClaimValue(secondClaimValue)
+            .withId(UUID.randomUUID().toString())
+            .create()
+            .getKey();
 
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;

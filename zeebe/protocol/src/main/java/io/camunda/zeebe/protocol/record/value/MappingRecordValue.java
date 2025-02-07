@@ -37,4 +37,7 @@ public interface MappingRecordValue extends RecordValue {
    * mapping.
    */
   String getName();
+
+  /** The unique identifier of the mapping for external usage. */
+  String getId();
 }
