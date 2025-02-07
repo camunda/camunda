@@ -240,7 +240,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
             threadContext,
             raftLog,
             partitionConfig.getPreferSnapshotReplicationThreshold(),
-            new RaftServiceMetrics(name),
+            new RaftServiceMetrics(name, meterRegistry),
             ContextualLoggerFactory.getLogger(
                 LogCompactor.class, LoggerContext.builder(getClass()).addValue(name).build()));
 
