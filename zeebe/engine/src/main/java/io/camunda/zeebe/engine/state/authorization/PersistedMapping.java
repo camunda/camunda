@@ -34,7 +34,7 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
       new ArrayProperty<>("groupKeys", LongValue::new);
 
   public PersistedMapping() {
-    super(7);
+    super(8);
     declareProperty(mappingKeyProp)
         .declareProperty(claimNameProp)
         .declareProperty(claimValueProp)

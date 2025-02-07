@@ -75,13 +75,12 @@ public class AuthorizationsUtil implements CloseableSilently {
             .send()
             .join();
     awaitUserExistsInElasticsearch(username);
-    createPermissions(userCreateResponse.getUserKey(), username, permissions);
+    createPermissions(username, permissions);
     return userCreateResponse.getUserKey();
   }
 
   // TODO: use for authorization creation based on owner Type + ID
-  public void createPermissions(
-      final long userKey, final String username, final Permissions... permissions) {
+  public void createPermissions(final String username, final Permissions... permissions) {
     for (final Permissions permission : permissions) {
       for (final String resourceId : permission.resourceIds()) {
         client
@@ -90,13 +89,13 @@ public class AuthorizationsUtil implements CloseableSilently {
             .ownerType(OwnerTypeEnum.USER)
             .resourceId(resourceId)
             .resourceType(permission.resourceType())
-            .permission(permission.permissionType())
+            .permissionTypes(permission.permissionType())
             .send()
             .join();
       }
     }
     if (permissions != null && permissions.length > 0) {
-      awaitPermissionExistsInElasticsearch(userKey, Arrays.asList(permissions).getLast());
+      awaitPermissionExistsInElasticsearch(username, Arrays.asList(permissions).getLast());
     }
   }
 
@@ -192,7 +191,7 @@ public class AuthorizationsUtil implements CloseableSilently {
   }
 
   private void awaitPermissionExistsInElasticsearch(
-      final long userKey, final Permissions permissions) {
+      final String username, final Permissions permissions) {
     final var resourceType = permissions.resourceType().getValue();
     final var permissionType = PermissionType.valueOf(permissions.permissionType().getValue());
     final var resourceIds = permissions.resourceIds();
@@ -202,7 +201,7 @@ public class AuthorizationsUtil implements CloseableSilently {
             b ->
                 b.filter(
                     f ->
-                        f.ownerKeys(userKey)
+                        f.ownerIds(username)
                             .resourceType(resourceType)
                             .permissionType(permissionType)
                             .resourceIds(resourceIds)));

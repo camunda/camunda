@@ -35,14 +35,16 @@ public class SchemaWithExporter {
         config,
         clientAdapter.getExporterEntityCacheProvider(),
         new SimpleMeterRegistry(),
-        new ExporterMetadata());
+        new ExporterMetadata(clientAdapter.objectMapper()),
+        clientAdapter.objectMapper());
 
     schemaManager =
         new SchemaManager(
             clientAdapter.getSearchEngineClient(),
             provider.getIndexDescriptors(),
             provider.getIndexTemplateDescriptors(),
-            config);
+            config,
+            clientAdapter.objectMapper());
   }
 
   public void createSchema() {

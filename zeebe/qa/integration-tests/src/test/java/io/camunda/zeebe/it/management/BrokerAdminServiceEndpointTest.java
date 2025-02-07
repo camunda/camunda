@@ -32,9 +32,7 @@ public class BrokerAdminServiceEndpointTest {
 
   @TestZeebe
   private static final TestStandaloneBroker BROKER =
-      new TestStandaloneBroker()
-          .withProperty("management.server.base-path", "/foo")
-          .withUnauthenticatedAccess();
+      new TestStandaloneBroker().withProperty("management.server.base-path", "/foo");
 
   private static final String EXPECTED_PARTITIONS_JSON =
       // language=JSON

@@ -9,8 +9,9 @@ package io.camunda.exporter.notifier;
 
 import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfiguration;
 import io.camunda.exporter.exceptions.IncidentNotifierException;
 import java.io.IOException;
@@ -30,8 +31,10 @@ public class M2mTokenManager {
   protected static final String FIELD_NAME_CLIENT_SECRET = "client_secret";
   protected static final String FIELD_NAME_AUDIENCE = "audience";
   protected static final String FIELD_NAME_ACCESS_TOKEN = "access_token";
-  private static final ObjectMapper MAPPER =
-      new ObjectMapper().registerModule(new JavaTimeModule());
+
+  private final ObjectMapper mapper;
+  private final ObjectWriter objectWriter;
+  private final ObjectReader objectReader;
   private final IncidentNotifierConfiguration configuration;
   private final HttpClient client;
 
@@ -42,8 +45,13 @@ public class M2mTokenManager {
   private final Object cacheLock = new Object();
 
   public M2mTokenManager(
-      final IncidentNotifierConfiguration configuration, final HttpClient client) {
+      final IncidentNotifierConfiguration configuration,
+      final HttpClient client,
+      final ObjectMapper mapper) {
     this.configuration = configuration;
+    this.mapper = mapper;
+    objectWriter = mapper.writer();
+    objectReader = mapper.reader();
     this.client = client;
   }
 
@@ -80,7 +88,7 @@ public class M2mTokenManager {
               .header("Content-Type", "application/json")
               .POST(
                   HttpRequest.BodyPublishers.ofString(
-                      MAPPER.writeValueAsString(createGetTokenRequest())))
+                      objectWriter.writeValueAsString(createGetTokenRequest())))
               .build();
 
       final HttpResponse<String> response =
@@ -92,7 +100,7 @@ public class M2mTokenManager {
                 "Unable to get the M2M auth token, response status: %s.", response.statusCode()));
       }
 
-      final Map<String, Object> responseBody = MAPPER.readValue(response.body(), Map.class);
+      final Map<String, Object> responseBody = objectReader.readValue(response.body(), Map.class);
       return (String) responseBody.get(FIELD_NAME_ACCESS_TOKEN);
     } catch (final IOException | InterruptedException e) {
       throw new IncidentNotifierException("Unable to get the M2M auth token", e);
@@ -101,7 +109,7 @@ public class M2mTokenManager {
 
   private ObjectNode createGetTokenRequest() {
     final ObjectNode request =
-        MAPPER
+        mapper
             .createObjectNode()
             .put(FIELD_NAME_GRANT_TYPE, GRANT_TYPE_VALUE)
             .put(FIELD_NAME_CLIENT_ID, configuration.getM2mClientId())

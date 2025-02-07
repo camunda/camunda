@@ -11,10 +11,13 @@ import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@TestMethodOrder(OrderAnnotation.class)
 final class OpensearchBatchOperationUpdateRepositoryIT extends BatchOperationUpdateRepositoryIT {
 
   private static final Logger LOGGER =

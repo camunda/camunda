@@ -85,12 +85,14 @@ public class CamundaExporterITInvocationProvider
     osContainer.start();
 
     final var osConfig = getConfigWithConnectionDetails(OPENSEARCH);
-    osClient = new OpensearchConnector(osConfig.getConnect()).createClient();
-    osClientAdapter = new SearchClientAdapter(osClient);
+    final var osConnector = new OpensearchConnector(osConfig.getConnect());
+    osClient = osConnector.createClient();
+    osClientAdapter = new SearchClientAdapter(osClient, osConnector.objectMapper());
 
     final var elsConfig = getConfigWithConnectionDetails(ELASTICSEARCH);
-    elsClient = new ElasticsearchConnector(elsConfig.getConnect()).createClient();
-    elsClientAdapter = new SearchClientAdapter(elsClient);
+    final var esConnector = new ElasticsearchConnector(elsConfig.getConnect());
+    elsClient = esConnector.createClient();
+    elsClientAdapter = new SearchClientAdapter(elsClient, esConnector.objectMapper());
 
     closeables.add(elsContainer);
     closeables.add(osContainer);

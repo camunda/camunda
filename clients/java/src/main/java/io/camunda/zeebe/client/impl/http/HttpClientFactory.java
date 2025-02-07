@@ -18,6 +18,7 @@ package io.camunda.zeebe.client.impl.http;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import io.camunda.zeebe.client.api.command.InternalClientException;
 import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
 import io.camunda.zeebe.client.impl.util.VersionUtil;
 import java.io.File;
@@ -111,7 +112,7 @@ public class HttpClientFactory {
 
       return builder.build();
     } catch (final URISyntaxException e) {
-      throw new RuntimeException(e);
+      throw new InternalClientException("Issues with REST API URI.", e);
     }
   }
 

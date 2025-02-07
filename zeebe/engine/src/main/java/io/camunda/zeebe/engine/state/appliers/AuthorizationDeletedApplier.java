@@ -23,7 +23,6 @@ public class AuthorizationDeletedApplier
 
   @Override
   public void applyState(final long key, final AuthorizationRecord value) {
-    // TODO: call the delete authorization method once
-    // https://github.com/camunda/camunda/issues/27033 is implemented
+    authorizationState.delete(key);
   }
 }

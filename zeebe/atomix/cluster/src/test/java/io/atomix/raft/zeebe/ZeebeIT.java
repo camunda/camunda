@@ -23,6 +23,8 @@ import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.zeebe.util.TestAppender;
 import io.atomix.raft.zeebe.util.ZeebeTestHelper;
 import io.atomix.raft.zeebe.util.ZeebeTestNode;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -44,6 +46,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -53,10 +56,10 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class ZeebeIT {
 
+  @AutoClose static MeterRegistry meterRegistry = new SimpleMeterRegistry();
   // rough estimate of how many entries we'd need to write to fill a segment
   // segments are configured for 1kb, and one entry takes ~30 bytes (plus some metadata I guess)
   private static final int ENTRIES_PER_SEGMENT = (1024 / 30) + 1;
-
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   @Parameter public String name;
 
@@ -78,7 +81,7 @@ public class ZeebeIT {
   }
 
   private static Function<TemporaryFolder, ZeebeTestNode> provideNode(final int id) {
-    return tmp -> new ZeebeTestNode(id, newFolderUnchecked(tmp, id));
+    return tmp -> new ZeebeTestNode(id, newFolderUnchecked(tmp, id), meterRegistry);
   }
 
   private static File newFolderUnchecked(final TemporaryFolder tmp, final int id) {

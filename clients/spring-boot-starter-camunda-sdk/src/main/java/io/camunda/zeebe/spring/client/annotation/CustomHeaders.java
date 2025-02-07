@@ -17,7 +17,11 @@ package io.camunda.zeebe.spring.client.annotation;
 
 import java.lang.annotation.*;
 
+/**
+ * @deprecated please use {@link io.camunda.spring.client.annotation.CustomHeaders}
+ */
 @Target(ElementType.PARAMETER)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
+@Deprecated(forRemoval = true, since = "8.8")
 public @interface CustomHeaders {}

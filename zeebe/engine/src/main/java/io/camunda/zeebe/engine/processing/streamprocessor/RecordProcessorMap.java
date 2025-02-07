@@ -10,34 +10,23 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import java.util.Iterator;
+import io.camunda.zeebe.util.collection.MArray;
 
 @SuppressWarnings({"rawtypes"})
 public final class RecordProcessorMap {
-  private final TypedRecordProcessor[] elements;
+  private final MArray<TypedRecordProcessor> elements;
 
-  private final int valueTypeCardinality;
-  private final int intentCardinality;
-
-  private final ValueIterator valueIt = new ValueIterator();
-
-  public <R extends Enum<R>, S extends Enum<S>> RecordProcessorMap() {
-    final int recordTypeCardinality = RecordType.class.getEnumConstants().length;
-    valueTypeCardinality = ValueType.class.getEnumConstants().length;
-    intentCardinality = Intent.maxCardinality();
-
-    final int cardinality = recordTypeCardinality * valueTypeCardinality * intentCardinality;
-    elements = new TypedRecordProcessor[cardinality];
+  public RecordProcessorMap() {
+    elements =
+        MArray.of(
+            TypedRecordProcessor[]::new,
+            RecordType.values().length,
+            ValueType.values().length,
+            Intent.maxCardinality());
   }
 
   public TypedRecordProcessor get(final RecordType key1, final ValueType key2, final int key3) {
-    final int index = mapToIndex(key1, key2, key3);
-
-    if (index >= 0) {
-      return elements[index];
-    } else {
-      return null;
-    }
+    return elements.get(key1.ordinal(), key2.ordinal(), key3);
   }
 
   public void put(
@@ -45,13 +34,7 @@ public final class RecordProcessorMap {
       final ValueType key2,
       final int key3,
       final TypedRecordProcessor value) {
-    final int index = mapToIndex(key1, key2, key3);
-
-    if (index < 0) {
-      throw new RuntimeException("Invalid intent value " + key3);
-    }
-
-    final TypedRecordProcessor oldElement = elements[index];
+    final TypedRecordProcessor oldElement = get(key1, key2, key3);
     if (oldElement != null) {
       final String exceptionMsg =
           String.format(
@@ -63,49 +46,6 @@ public final class RecordProcessorMap {
       throw new IllegalStateException(exceptionMsg);
     }
 
-    elements[index] = value;
-  }
-
-  private int mapToIndex(final RecordType key1, final ValueType key2, final int key3) {
-    if (key3 >= intentCardinality) {
-      return -1;
-    }
-
-    return (key1.ordinal() * valueTypeCardinality * intentCardinality)
-        + (key2.ordinal() * intentCardinality)
-        + key3;
-  }
-
-  /** BEWARE: does not detect concurrent modifications and behaves incorrectly in this case */
-  public Iterator<TypedRecordProcessor> values() {
-    valueIt.init();
-    return valueIt;
-  }
-
-  private final class ValueIterator implements Iterator<TypedRecordProcessor> {
-    private int next;
-
-    private void scanToNext() {
-      do {
-        next++;
-      } while (next < elements.length && elements[next] == null);
-    }
-
-    public void init() {
-      next = -1;
-      scanToNext();
-    }
-
-    @Override
-    public boolean hasNext() {
-      return next < elements.length;
-    }
-
-    @Override
-    public TypedRecordProcessor next() {
-      final TypedRecordProcessor element = elements[next];
-      scanToNext();
-      return element;
-    }
+    elements.put(value, key1.ordinal(), key2.ordinal(), key3);
   }
 }

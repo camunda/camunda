@@ -229,7 +229,7 @@ public enum ZbColumnFamilies implements EnumValue {
   RESOURCE_KEY_BY_RESOURCE_ID_AND_DEPLOYMENT_KEY(118),
 
   USERNAME_BY_USER_KEY(119),
-  PERMISSION_KEY_BY_AUTHORIZATION_KEY(120);
+  CLAIM_BY_ID(120);
 
   private final int value;
 

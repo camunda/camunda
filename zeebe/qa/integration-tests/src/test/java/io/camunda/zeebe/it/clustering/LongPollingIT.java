@@ -39,7 +39,6 @@ final class LongPollingIT {
           .withPartitionsCount(1)
           .withEmbeddedGateway(false)
           .withGatewayConfig(this::configureGateway)
-          .withUnauthenticatedAccess()
           .build();
 
   @BeforeEach

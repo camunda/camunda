@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationCreateRequest;
+import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentMetadata;
@@ -40,6 +40,7 @@ import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authentication.Builder;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
+import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
@@ -58,7 +59,7 @@ import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.auth.ClaimTransformer;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
@@ -314,21 +315,35 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
-      final AuthorizationCreateRequest request) {
+      final AuthorizationRequest request) {
     return getResult(
-        validateAuthorizationCreateRequest(request),
+        validateAuthorizationRequest(request),
         () ->
             new CreateAuthorizationRequest(
                 request.getOwnerId(),
                 AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
                 request.getResourceId(),
                 AuthorizationResourceType.valueOf(request.getResourceType().name()),
-                transfomPermissions(request.getPermissions())));
+                transformPermissionTypes(request.getPermissionTypes())));
   }
 
-  private static Set<PermissionType> transfomPermissions(
-      final List<PermissionTypeEnum> permissions) {
-    return permissions.stream()
+  public static Either<ProblemDetail, UpdateAuthorizationRequest> toUpdateAuthorizationRequest(
+      final long authorizationKey, final AuthorizationRequest request) {
+    return getResult(
+        validateAuthorizationRequest(request),
+        () ->
+            new UpdateAuthorizationRequest(
+                authorizationKey,
+                request.getOwnerId(),
+                AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
+                request.getResourceId(),
+                AuthorizationResourceType.valueOf(request.getResourceType().name()),
+                transformPermissionTypes(request.getPermissionTypes())));
+  }
+
+  private static Set<PermissionType> transformPermissionTypes(
+      final List<PermissionTypeEnum> permissionTypes) {
+    return permissionTypes.stream()
         .map(permission -> PermissionType.valueOf(permission.name()))
         .collect(Collectors.toSet());
   }
@@ -533,7 +548,7 @@ public class RequestMapper {
   }
 
   public static Authentication getAuthentication() {
-    Long authenticatedUserKey = null;
+    String authenticatedUsername = null;
     final List<Long> authenticatedRoleKeys = new ArrayList<>();
     final List<String> authorizedTenants = TenantAttributeHolder.getTenantIds();
 
@@ -549,8 +564,8 @@ public class RequestMapper {
                 .map(RoleEntity::roleKey)
                 .toList());
         if (authenticatedPrincipal instanceof final CamundaUser user) {
-          authenticatedUserKey = user.getUserKey();
-          claims.put(Authorization.AUTHORIZED_USERNAME, user.getUsername());
+          authenticatedUsername = user.getUsername();
+          claims.put(Authorization.AUTHORIZED_USERNAME, authenticatedUsername);
         }
       }
 
@@ -563,7 +578,7 @@ public class RequestMapper {
 
     return new Builder()
         .claims(claims)
-        .user(authenticatedUserKey)
+        .user(authenticatedUsername)
         .roleKeys(authenticatedRoleKeys)
         .tenants(authorizedTenants)
         .build();

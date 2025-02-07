@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.authorization;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.WILDCARD_PERMISSION;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
@@ -24,21 +23,20 @@ import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
-import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
-import org.assertj.core.groups.Tuple;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -341,6 +339,9 @@ public class IdentitySetupInitializeTest {
             tuple(mapping1.getClaimName(), mapping1.getClaimValue()),
             tuple(mapping2.getClaimName(), mapping2.getClaimValue()));
     Assertions.assertThat(createdMappings)
+        .extracting(MappingRecordValue::getId)
+        .containsExactly(mapping1.getId(), mapping2.getId());
+    Assertions.assertThat(createdMappings)
         .satisfiesExactly(
             m1 ->
                 assertThatEntityIsAssignedToRole(
@@ -355,34 +356,35 @@ public class IdentitySetupInitializeTest {
   }
 
   private static void assertThatAllPermissionsAreAddedToRole(final long roleKey) {
+    final var expectedResourceTypes =
+        Arrays.stream(AuthorizationResourceType.values())
+            .filter(resourceType -> resourceType != AuthorizationResourceType.UNSPECIFIED)
+            .toArray(AuthorizationResourceType[]::new);
     final var addedPermissions =
-        RecordingExporter.authorizationRecords(AuthorizationIntent.PERMISSION_ADDED)
-            .withOwnerKey(roleKey)
-            .limit(AuthorizationResourceType.values().length)
+        RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
+            .withOwnerId(String.valueOf(roleKey))
+            // exclude UNSPECIFIED resource type
+            .limit(AuthorizationResourceType.values().length - 1)
             .map(Record::getValue)
             .toList();
 
     Assertions.assertThat(addedPermissions)
-        .describedAs("Added permissions for all resource types")
+        .describedAs("Added permissions for all resource types except UNSPECIFIED")
         .extracting(AuthorizationRecordValue::getResourceType)
-        .containsExactly(AuthorizationResourceType.values());
+        .containsExactly(expectedResourceTypes);
 
-    final Map<AuthorizationResourceType, List<Tuple>> expectedPermissions = new HashMap<>();
-    for (final AuthorizationResourceType resourceType : AuthorizationResourceType.values()) {
-      final var permissions = new ArrayList<Tuple>();
-      resourceType.getSupportedPermissionTypes().stream()
-          .map(permissionType -> tuple(permissionType, Set.of(WILDCARD_PERMISSION)))
-          .forEach(permissions::add);
-      expectedPermissions.put(resourceType, permissions);
+    final Map<AuthorizationResourceType, Set<PermissionType>> expectedPermissions = new HashMap<>();
+    for (final AuthorizationResourceType resourceType : expectedResourceTypes) {
+      final var permissionTypes = new HashSet<>(resourceType.getSupportedPermissionTypes());
+      expectedPermissions.put(resourceType, permissionTypes);
     }
 
     for (final var resourceType : expectedPermissions.keySet()) {
       Assertions.assertThat(addedPermissions)
           .filteredOn(record -> record.getResourceType() == resourceType)
           .describedAs("Added supported permission types for resource type %s", resourceType)
-          .flatMap(AuthorizationRecordValue::getPermissions)
-          .extracting(PermissionValue::getPermissionType, PermissionValue::getResourceIds)
-          .containsOnly(expectedPermissions.get(resourceType).toArray(new Tuple[0]));
+          .flatMap(AuthorizationRecordValue::getAuthorizationPermissions)
+          .containsOnly(expectedPermissions.get(resourceType).toArray(new PermissionType[0]));
     }
   }
 

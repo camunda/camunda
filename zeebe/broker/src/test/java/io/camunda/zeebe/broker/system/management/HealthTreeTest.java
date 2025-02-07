@@ -18,7 +18,7 @@ import org.junit.Test;
 
 public class HealthTreeTest {
   @Test
-  public void unhealthyComponentsArePropagatedUpperwards() {
+  public void unhealthyComponentsArePropagatedUpwards() {
     final var root =
         new HealthReport(
             "A",

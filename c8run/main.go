@@ -4,8 +4,6 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"github.com/camunda/camunda/c8run/internal/unix"
-	"github.com/camunda/camunda/c8run/internal/windows"
 	"net/http"
 	"os"
 	"os/exec"
@@ -15,6 +13,10 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/camunda/camunda/c8run/internal/unix"
+	"github.com/camunda/camunda/c8run/internal/windows"
+	"github.com/joho/godotenv"
 )
 
 func printStatus(port int) error {
@@ -36,73 +38,70 @@ func printStatus(port int) error {
 }
 
 func queryElasticsearchHealth(name string, url string) {
-	healthy := false
-	for retries := 12; retries >= 0; retries-- {
-		fmt.Println("Waiting for " + name + " to start. " + strconv.Itoa(retries) + " retries left")
-		time.Sleep(10 * time.Second)
-		resp, err := http.Get(url)
-		if err != nil {
-			continue
-		}
-		if resp.StatusCode >= 200 && resp.StatusCode <= 400 {
-			healthy = true
-			break
-		}
-	}
-	if !healthy {
+	if isRunning(name, url, 12, 10*time.Second) {
+		fmt.Println(name + " has successfully been started.")
+	} else {
 		fmt.Println("Error: " + name + " did not start!")
 		os.Exit(1)
 	}
-	fmt.Println(name + " has successfully been started.")
 }
 
 func queryCamundaHealth(c8 C8Run, name string, settings C8RunSettings) error {
-	healthy := false
-
 	protocol := "http"
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	if settings.keystore != "" && settings.keystorePassword != "" {
 		protocol = "https"
 	}
 	url := protocol + "://localhost:9600/actuator/health"
-	for retries := 24; retries >= 0; retries-- {
-		fmt.Println("Waiting for " + name + " to start. " + strconv.Itoa(retries) + " retries left")
-		time.Sleep(14 * time.Second)
-		resp, err := http.Get(url)
+	if isRunning(name, url, 24, 14*time.Second) {
+		fmt.Println(name + " has successfully been started.")
+		err := c8.OpenBrowser(protocol, settings.port)
 		if err != nil {
-			continue
+			fmt.Println("Failed to open browser")
+			return nil
 		}
-		if resp.StatusCode >= 200 && resp.StatusCode <= 400 {
-			healthy = true
-			break
+		if err := printStatus(settings.port); err != nil {
+			fmt.Println("Failed to print status:", err)
+			return err
 		}
-	}
-	if !healthy {
+		return nil
+	} else {
 		return fmt.Errorf("Error: %s did not start!", name)
 	}
-	fmt.Println(name + " has successfully been started.")
-	err := c8.OpenBrowser(protocol, settings.port)
-	if err != nil {
-		// failing to open the browser is not a critical error. It could simply be a sign the script is running in a CI node without a browser installed, or a docker image.
-		fmt.Println("Failed to open browser")
-		return nil
-	}
-	printStatus(settings.port)
-	return nil
 }
 
-func stopProcess(c8 C8Run, pidfile string) {
+func isRunning(name, url string, retries int, delay time.Duration) bool {
+	for retries >= 0 {
+		fmt.Printf("Waiting for %s to start. %d retries left\n", name, retries)
+		time.Sleep(delay)
+		resp, err := http.Get(url)
+		if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 400 {
+			return true
+		}
+		retries--
+	}
+	return false
+}
+
+func stopProcess(c8 C8Run, pidfile string) error {
 	if _, err := os.Stat(pidfile); err == nil {
 		commandPidText, _ := os.ReadFile(pidfile)
 		commandPidStripped := strings.TrimSpace(string(commandPidText))
-		commandPid, _ := strconv.Atoi(string(commandPidStripped))
+		commandPid, err := strconv.Atoi(string(commandPidStripped))
+		if err != nil {
+			return fmt.Errorf("stopProcess: could not stop process %d, %w", commandPid, err)
+		}
 
 		for _, process := range c8.ProcessTree(int(commandPid)) {
-			process.Kill()
+			err = process.Kill()
+			if err != nil {
+				return fmt.Errorf("stopProcess: could not kill process %d, %w", commandPid, err)
+			}
 		}
 		os.Remove(pidfile)
 
 	}
+	return nil
 }
 
 func getC8RunPlatform() C8Run {
@@ -155,39 +154,31 @@ func validateKeystore(settings C8RunSettings, parentDir string) error {
 	return nil
 }
 
-func startDocker(extractedComposePath string) error {
-	os.Chdir(extractedComposePath)
+func runDockerCommand(composeExtractedFolder string, args ...string) error {
+	err := os.Chdir(composeExtractedFolder)
+	if err != nil {
+		return fmt.Errorf("failed to chdir to %s: %w", composeExtractedFolder, err)
+	}
 
-	_, err := exec.LookPath("docker")
+	_, err = exec.LookPath("docker")
 	if err != nil {
 		return err
 	}
 
-	composeCmd := exec.Command("docker", "compose", "up", "-d")
+	composeCmd := exec.Command("docker", append([]string{"compose"}, args...)...)
 	composeCmd.Stdout = os.Stdout
 	composeCmd.Stderr = os.Stderr
+
 	err = composeCmd.Run()
 	if err != nil {
 		return err
 	}
-	os.Chdir("..")
-	return nil
-}
 
-func stopDocker(extractedComposePath string) error {
-	os.Chdir(extractedComposePath)
-	_, err := exec.LookPath("docker")
+	err = os.Chdir("..")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to chdir back: %w", err)
 	}
-	composeCmd := exec.Command("docker", "compose", "down")
-	composeCmd.Stdout = os.Stdout
-	composeCmd.Stderr = os.Stderr
-	err = composeCmd.Run()
-	if err != nil {
-		return err
-	}
-	os.Chdir("..")
+
 	return nil
 }
 
@@ -196,64 +187,97 @@ func usage(exitcode int) {
 	os.Exit(exitcode)
 }
 
-func main() {
-	c8 := getC8RunPlatform()
-	baseDir, _ := os.Getwd()
-	parentDir := baseDir
-	elasticsearchVersion := "8.13.4"
-	camundaReleaseTag := "8.7.0-alpha3"
-	camundaVersion := "8.7.0-alpha3"
-	connectorsVersion := "8.7.0-alpha3.2"
-	composeTag := "8.7-alpha3"
-	composeExtractedFolder := "camunda-platform-8.7-alpha3"
-
-	if os.Getenv("CAMUNDA_VERSION") != "" {
-		camundaVersion = os.Getenv("CAMUNDA_VERSION")
+func setEnvVars() error {
+	envVars := map[string]string{
+		"CAMUNDA_OPERATE_CSRFPREVENTIONENABLED":                  "false",
+		"CAMUNDA_OPERATE_IMPORTER_READERBACKOFF":                 "1000",
+		"CAMUNDA_REST_QUERY_ENABLED":                             "true",
+		"CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED":                 "false",
+		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY":   "1",
+		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE":    "1",
+		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX": "zeebe-record",
+		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL":          "http://localhost:9200",
+		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME":         "io.camunda.zeebe.exporter.ElasticsearchExporter",
 	}
-	expectedJavaVersion := 21
 
-	elasticsearchPidPath := filepath.Join(baseDir, "elasticsearch.pid")
-	connectorsPidPath := filepath.Join(baseDir, "connectors.pid")
-	camundaPidPath := filepath.Join(baseDir, "camunda.pid")
+	for key, value := range envVars {
+		if err := os.Setenv(key, value); err != nil {
+			return fmt.Errorf("failed to set environment variable %s: %w", key, err)
+		}
+	}
 
-	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME", "io.camunda.zeebe.exporter.ElasticsearchExporter")
-	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", "http://localhost:9200")
-	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX", "zeebe-record")
+	return nil
+}
 
-	os.Setenv("CAMUNDA_REST_QUERY_ENABLED", "true")
-	os.Setenv("CAMUNDA_OPERATE_CSRFPREVENTIONENABLED", "false")
-	os.Setenv("CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED", "false")
-	os.Setenv("CAMUNDA_OPERATE_IMPORTER_READERBACKOFF", "1000")
-	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY", "1")
-	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
+func getBaseCommand() (string, error) {
+	if len(os.Args) == 1 {
+		usage(1)
+	}
 
-	os.Setenv("CAMUNDA_OPERATE_IMPORTER_READERBACKOFF", "1000")
-	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY", "1")
-	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
-
-	// classPath := filepath.Join(parentDir, "configuration", "userlib") + "," + filepath.Join(parentDir, "configuration", "keystore")
-
-	baseCommand := ""
-	// insideConfigFlag := false
-
-        if len(os.Args) == 1 {
-                usage(1)
-        } else if os.Args[1] == "start" {
-		baseCommand = "start"
-	} else if os.Args[1] == "stop" {
-		baseCommand = "stop"
-	} else if os.Args[1] == "package" {
-		baseCommand = "package"
-	} else if os.Args[1] == "clean" {
-		baseCommand = "clean"
-	} else if os.Args[1] == "-h" || os.Args[1] == "--help" {
+	switch os.Args[1] {
+	case "start":
+		return "start", nil
+	case "stop":
+		return "stop", nil
+	case "package":
+		return "package", nil
+	case "clean":
+		return "clean", nil
+	case "-h", "--help":
 		usage(0)
-	} else {
-		panic(fmt.Sprintln("Unsupported operation", os.Args[1]))
+	default:
+		return "", fmt.Errorf("unsupported operation: %s", os.Args[1])
 	}
-	fmt.Print("Command: " + baseCommand + "\n")
 
+	return "", nil
+}
+
+func handleDockerCommand(settings C8RunSettings, baseCommand string, composeExtractedFolder string) error {
+	if !settings.docker {
+		return nil
+	}
+
+	var err error
+	switch baseCommand {
+	case "start":
+		err = runDockerCommand(composeExtractedFolder, "up", "-d")
+	case "stop":
+		err = runDockerCommand(composeExtractedFolder, "down")
+	default:
+		err = fmt.Errorf("No valid command. Only start and stop supported.")
+	}
+
+	if err != nil {
+		return err
+	}
+
+	os.Exit(0)
+	return nil // This line will never be reached, but it's required to satisfy the function signature
+}
+
+func getBaseCommandSettings(baseCommand string) (C8RunSettings, error) {
 	var settings C8RunSettings
+
+	startFlagSet := createStartFlagSet(&settings)
+	stopFlagSet := createStopFlagSet(&settings)
+
+	switch baseCommand {
+	case "start":
+		err := startFlagSet.Parse(os.Args[2:])
+		if err != nil {
+			return settings, fmt.Errorf("error parsing start argument: %w", err)
+		}
+	case "stop":
+		err := stopFlagSet.Parse(os.Args[2:])
+		if err != nil {
+			return settings, fmt.Errorf("error parsing stop argument: %w", err)
+		}
+	}
+
+	return settings, nil
+}
+
+func createStartFlagSet(settings *C8RunSettings) *flag.FlagSet {
 	startFlagSet := flag.NewFlagSet("start", flag.ExitOnError)
 	startFlagSet.StringVar(&settings.config, "config", "", "Applies the specified configuration file.")
 	startFlagSet.BoolVar(&settings.detached, "detached", false, "Starts Camunda Run as a detached process")
@@ -265,44 +289,71 @@ func main() {
 	startFlagSet.BoolVar(&settings.docker, "docker", false, "Run Camunda from docker-compose.")
 	startFlagSet.StringVar(&settings.username, "username", "demo", "Change the first users username (default: demo)")
 	startFlagSet.StringVar(&settings.password, "password", "demo", "Change the first users password (default: demo)")
+	return startFlagSet
+}
 
+func createStopFlagSet(settings *C8RunSettings) *flag.FlagSet {
 	stopFlagSet := flag.NewFlagSet("stop", flag.ExitOnError)
 	stopFlagSet.BoolVar(&settings.disableElasticsearch, "disable-elasticsearch", false, "Do not stop Elasticsearch")
 	stopFlagSet.BoolVar(&settings.docker, "docker", false, "Stop docker-compose distribution of camunda.")
+	return stopFlagSet
+}
 
-	switch baseCommand {
-	case "start":
-		startFlagSet.Parse(os.Args[2:])
-	case "stop":
-		stopFlagSet.Parse(os.Args[2:])
+func main() {
+	c8 := getC8RunPlatform()
+	baseDir, _ := os.Getwd()
+	parentDir := baseDir
+
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	elasticsearchVersion := os.Getenv("ELASTICSEARCH_VERSION")
+	camundaReleaseTag := os.Getenv("CAMUNDA_RELEASE_TAG")
+	camundaVersion := os.Getenv("CAMUNDA_VERSION")
+	connectorsVersion := os.Getenv("CONNECTORS_VERSION")
+	composeTag := os.Getenv("COMPOSE_TAG")
+	composeExtractedFolder := os.Getenv("COMPOSE_EXTRACTED_FOLDER")
+
+	expectedJavaVersion := 21
+
+	elasticsearchPidPath := filepath.Join(baseDir, "elasticsearch.pid")
+	connectorsPidPath := filepath.Join(baseDir, "connectors.pid")
+	camundaPidPath := filepath.Join(baseDir, "camunda.pid")
+
+	err = setEnvVars()
+	if err != nil {
+		fmt.Println("Failed to set envVars:", err)
+	}
+
+	// classPath := filepath.Join(parentDir, "configuration", "userlib") + "," + filepath.Join(parentDir, "configuration", "keystore")
+
+	baseCommand, err := getBaseCommand()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	settings, err := getBaseCommandSettings(baseCommand)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 
 	if settings.logLevel != "" {
 		os.Setenv("ZEEBE_LOG_LEVEL", settings.logLevel)
 	}
 
-	err := validateKeystore(settings, parentDir)
+	err = validateKeystore(settings, parentDir)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
 
-	if settings.docker && baseCommand == "start" {
-		err = startDocker(composeExtractedFolder)
-		if err != nil {
-			fmt.Println(err.Error())
-			os.Exit(1)
-		}
-		os.Exit(0)
-	}
-
-	if settings.docker && baseCommand == "stop" {
-		err = stopDocker(composeExtractedFolder)
-		if err != nil {
-			fmt.Println(err.Error())
-			os.Exit(1)
-		}
-		os.Exit(0)
+	err = handleDockerCommand(settings, baseCommand, composeExtractedFolder)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 
 	javaHome := os.Getenv("JAVA_HOME")
@@ -314,7 +365,7 @@ func main() {
 	}
 	javaHome = javaHomeAfterSymlink
 	if javaHome != "" {
-		filepath.Walk(javaHome, func(path string, info os.FileInfo, err error) error {
+		err = filepath.Walk(javaHome, func(path string, info os.FileInfo, err error) error {
 			_, filename := filepath.Split(path)
 			if strings.Compare(filename, "java.exe") == 0 || strings.Compare(filename, "java") == 0 {
 				javaBinary = path
@@ -322,6 +373,10 @@ func main() {
 			}
 			return nil
 		})
+		if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
 		// fallback to bin/java.exe
 		if javaBinary == "" {
 			if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
@@ -351,7 +406,11 @@ func main() {
 			var stderr strings.Builder
 			javaVersionCmd.Stdout = &out
 			javaVersionCmd.Stderr = &stderr
-			javaVersionCmd.Run()
+			err = javaVersionCmd.Run()
+			if err != nil {
+				fmt.Println(err.Error())
+				os.Exit(1)
+			}
 			javaVersionOutput := out.String()
 			javaVersionOutputSplit := strings.Split(javaVersionOutput, " ")
 			if len(javaVersionOutputSplit) < 2 {
@@ -411,7 +470,10 @@ func main() {
 				fmt.Print("Failed to open file: " + elasticsearchPidPath)
 				os.Exit(1)
 			}
-			elasticsearchPidFile.Write([]byte(strconv.Itoa(elasticsearchCmd.Process.Pid)))
+			_, err = elasticsearchPidFile.Write([]byte(strconv.Itoa(elasticsearchCmd.Process.Pid)))
+			if err != nil {
+				fmt.Print("Failed to write to file: " + elasticsearchPidPath + " continuing...")
+			}
 			queryElasticsearchHealth("Elasticsearch", "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s")
 		}
 
@@ -435,7 +497,10 @@ func main() {
 			fmt.Print("Failed to open file: " + connectorsPidPath)
 			os.Exit(1)
 		}
-		connectorsPidFile.Write([]byte(strconv.Itoa(connectorsCmd.Process.Pid)))
+		_, err = connectorsPidFile.Write([]byte(strconv.Itoa(connectorsCmd.Process.Pid)))
+		if err != nil {
+			fmt.Print("Failed to write to file: " + connectorsPidPath + " continuing...")
+		}
 		var extraArgs string
 		if settings.config != "" {
 			extraArgs = "--spring.config.location=" + filepath.Join(parentDir, settings.config)
@@ -461,7 +526,10 @@ func main() {
 			fmt.Print("Failed to open file: " + camundaPidPath)
 			os.Exit(1)
 		}
-		camundaPidFile.Write([]byte(strconv.Itoa(camundaCmd.Process.Pid)))
+		_, err = camundaPidFile.Write([]byte(strconv.Itoa(camundaCmd.Process.Pid)))
+		if err != nil {
+			fmt.Print("Failed to write to file: " + camundaPidPath + " continuing...")
+		}
 
 		err = queryCamundaHealth(c8, "Camunda", settings)
 		if err != nil {
@@ -472,12 +540,21 @@ func main() {
 
 	if baseCommand == "stop" {
 		if !settings.disableElasticsearch {
-			stopProcess(c8, elasticsearchPidPath)
+			err = stopProcess(c8, elasticsearchPidPath)
+			if err != nil {
+				fmt.Printf("%+v", err)
+			}
 			fmt.Println("Elasticsearch is stopped.")
 		}
-		stopProcess(c8, connectorsPidPath)
+		err = stopProcess(c8, connectorsPidPath)
+		if err != nil {
+			fmt.Printf("%+v", err)
+		}
 		fmt.Println("Connectors is stopped.")
-		stopProcess(c8, camundaPidPath)
+		err = stopProcess(c8, camundaPidPath)
+		if err != nil {
+			fmt.Printf("%+v", err)
+		}
 		fmt.Println("Camunda is stopped.")
 	}
 

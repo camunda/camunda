@@ -22,7 +22,7 @@ public class MappingRecord extends UnifiedRecordValue implements MappingRecordVa
   private final StringProperty idProp = new StringProperty("id", "");
 
   public MappingRecord() {
-    super(4);
+    super(5);
     declareProperty(mappingKeyProp)
         .declareProperty(claimNameProp)
         .declareProperty(claimValueProp)

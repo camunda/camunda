@@ -14,7 +14,6 @@ import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.entity.Permission;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.ArrayList;
@@ -45,7 +44,7 @@ public class AuthorizationChecker {
    * @return a list of authorized resource keys for the user or group in the SecurityContext
    */
   public List<String> retrieveAuthorizedResourceKeys(final SecurityContext securityContext) {
-    final var ownerKeys = collectOwnerKeys(securityContext.authentication());
+    final var ownerIds = collectOwnerIds(securityContext.authentication());
     final var resourceType = securityContext.authorization().resourceType();
     final var permissionType = securityContext.authorization().permissionType();
     final var authorizationEntities =
@@ -54,15 +53,12 @@ public class AuthorizationChecker {
                 q ->
                     q.filter(
                         f ->
-                            f.ownerKeys(ownerKeys)
+                            f.ownerIds(ownerIds)
                                 .resourceType(resourceType.name())
                                 .permissionType(permissionType))));
     return authorizationEntities.stream()
-        .flatMap(
-            e ->
-                e.permissions().stream()
-                    .filter(permission -> permissionType.equals(permission.type()))
-                    .flatMap(permission -> permission.resourceIds().stream()))
+        .filter(e -> e.permissionTypes().contains(permissionType))
+        .map(AuthorizationEntity::resourceId)
         .toList();
   }
 
@@ -76,7 +72,7 @@ public class AuthorizationChecker {
    * @return true if the resource key is authorized, false otherwise
    */
   public boolean isAuthorized(final String resourceId, final SecurityContext securityContext) {
-    final var ownerKeys = collectOwnerKeys(securityContext.authentication());
+    final var ownerIds = collectOwnerIds(securityContext.authentication());
     final var resourceType = securityContext.authorization().resourceType();
     final var permissionType = securityContext.authorization().permissionType();
     return authorizationSearchClient
@@ -85,7 +81,7 @@ public class AuthorizationChecker {
                     q ->
                         q.filter(
                                 f ->
-                                    f.ownerKeys(ownerKeys)
+                                    f.ownerIds(ownerIds)
                                         .resourceType(resourceType.name())
                                         .permissionType(permissionType)
                                         .resourceIds(List.of(WILDCARD, resourceId)))
@@ -107,14 +103,14 @@ public class AuthorizationChecker {
       final String resourceId,
       final AuthorizationResourceType resourceType,
       final Authentication authentication) {
-    final var ownerKeys = collectOwnerKeys(authentication);
+    final var ownerIds = collectOwnerIds(authentication);
     final var authorizationEntities =
         authorizationSearchClient.findAllAuthorizations(
             AuthorizationQuery.of(
                 q ->
                     q.filter(
                         f ->
-                            f.ownerKeys(ownerKeys)
+                            f.ownerIds(ownerIds)
                                 .resourceType(resourceType.name())
                                 .resourceIds(List.of(WILDCARD, resourceId)))));
 
@@ -124,16 +120,23 @@ public class AuthorizationChecker {
   private Set<PermissionType> collectPermissionTypes(
       final List<AuthorizationEntity> authorizationEntities) {
     return authorizationEntities.stream()
-        .flatMap(a -> a.permissions().stream())
-        .map(Permission::type)
+        .flatMap(a -> a.permissionTypes().stream())
         .collect(Collectors.toSet());
   }
 
-  private List<Long> collectOwnerKeys(final Authentication authentication) {
-    final List<Long> ownerKeys = new ArrayList<>();
-    ownerKeys.add(authentication.authenticatedUserKey());
-    ownerKeys.addAll(authentication.authenticatedGroupKeys());
-    ownerKeys.addAll(authentication.authenticatedRoleKeys());
-    return ownerKeys;
+  private List<String> collectOwnerIds(final Authentication authentication) {
+    final List<String> ownerIds = new ArrayList<>();
+    ownerIds.add(authentication.authenticatedUsername());
+    ownerIds.addAll(
+        // TODO remove this mapping when refactoring Groups to IDs
+        authentication.authenticatedGroupKeys().stream()
+            .map(Object::toString)
+            .collect(Collectors.toSet()));
+    ownerIds.addAll(
+        // TODO remove this mapping when refactoring Roles to IDs
+        authentication.authenticatedRoleKeys().stream()
+            .map(Object::toString)
+            .collect(Collectors.toSet()));
+    return ownerIds;
   }
 }

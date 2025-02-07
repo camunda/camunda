@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler.SnapshotTaskVariableBatch;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -34,7 +35,7 @@ public class UserTaskCompletionVariableHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-tasklist-task";
   private final UserTaskCompletionVariableHandler underTest =
-      new UserTaskCompletionVariableHandler(indexName, 100);
+      new UserTaskCompletionVariableHandler(indexName, 100, TestObjectMapper.objectMapper());
 
   @Test
   void testGetHandledValueType() {

@@ -46,7 +46,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
                 clusterServices.getCommunicationService(),
                 JobStreamServiceStep::readJobActivationProperties,
                 errorHandlerService,
-                new JobStreamMetrics());
+                new JobStreamMetrics(brokerStartupContext.getMeterRegistry()));
     final var errorHandlerStarted = scheduler.submitActor(errorHandlerService);
 
     errorHandlerStarted.onComplete(

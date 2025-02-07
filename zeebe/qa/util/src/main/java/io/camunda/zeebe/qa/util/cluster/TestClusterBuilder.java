@@ -34,7 +34,6 @@ public final class TestClusterBuilder {
   private Consumer<TestApplication<?>> nodeConfig = node -> {};
   private BiConsumer<MemberId, TestStandaloneBroker> brokerConfig = (id, broker) -> {};
   private BiConsumer<MemberId, TestStandaloneGateway> gatewayConfig = (id, gateway) -> {};
-  private boolean allowUnauthenticatedAccess = false;
 
   private final Map<MemberId, TestStandaloneGateway> gateways = new HashMap<>();
   private final Map<MemberId, TestStandaloneBroker> brokers = new HashMap<>();
@@ -250,12 +249,6 @@ public final class TestClusterBuilder {
     return this;
   }
 
-  /** Configures the cluster to allow unauthenticated access to the gateway. */
-  public TestClusterBuilder withUnauthenticatedAccess() {
-    allowUnauthenticatedAccess = true;
-    return this;
-  }
-
   /**
    * Builds a new Zeebe cluster. Will create {@link #brokersCount} brokers (accessible later via
    * {@link TestCluster#brokers()}) and {@link #gatewaysCount} standalone gateways (accessible later
@@ -355,7 +348,7 @@ public final class TestClusterBuilder {
                 })
             .withBrokerConfig(cfg -> cfg.getGateway().setEnable(useEmbeddedGateway))
             .withRecordingExporter(useRecordingExporter);
-    return allowUnauthenticatedAccess ? broker.withUnauthenticatedAccess() : broker;
+    return broker;
   }
 
   private void createGateways() {
@@ -379,7 +372,7 @@ public final class TestClusterBuilder {
                   cluster.setClusterName(name);
                   cluster.setInitialContactPoints(getInitialContactPoints());
                 });
-    return allowUnauthenticatedAccess ? gateway.withUnauthenticatedAccess() : gateway;
+    return gateway;
   }
 
   private List<String> getInitialContactPoints() {

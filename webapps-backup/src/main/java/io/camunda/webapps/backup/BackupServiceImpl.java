@@ -8,6 +8,7 @@
 package io.camunda.webapps.backup;
 
 import io.camunda.webapps.backup.BackupException.*;
+import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
 import io.camunda.webapps.schema.descriptors.backup.SnapshotIndexCollection;
@@ -110,6 +111,8 @@ public class BackupServiceImpl implements BackupService {
       final SnapshotRequest snapshotRequest =
           new SnapshotRequest(repositoryName, snapshotName, indexCollection, metadata);
 
+      LOGGER.debug(
+          "Snapshot part {} contains indices {}", metadata.partNo(), indexCollection.allIndices());
       requestsQueue.offer(snapshotRequest);
       LOGGER.debug("Snapshot scheduled: {}", snapshotName);
       snapshotNames.add(snapshotName);
@@ -142,6 +145,10 @@ public class BackupServiceImpl implements BackupService {
           indices.requiredIndices().stream().filter(idx -> !foundIndices.contains(idx)).toList();
       if (!missingRequiredIndices.isEmpty()) {
         missingIndicesList.addAll(missingRequiredIndices);
+        LOGGER.warn(
+            "Missing required indices:{}. All indices found are {}",
+            missingRequiredIndices,
+            foundIndices);
       }
       // skip this part if there is no index, but they are not required
       if (!foundIndices.isEmpty()) {

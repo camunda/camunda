@@ -1075,7 +1075,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_stream_processor_latency_sum{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) / sum(rate(zeebe_stream_processor_latency_count{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]))",
+              "expr": "sum(rate(zeebe_stream_processor_latency_sum{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_stream_processor_latency_seconds_sum{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) / sum(rate(zeebe_stream_processor_latency_count{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_stream_processor_latency_seconds_count{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]))",
               "hide": false,
               "instant": false,
               "legendFormat": "Processing latency",
@@ -1167,7 +1167,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_stream_processor_latency_sum{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) / sum(rate(zeebe_stream_processor_latency_count{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]))",
+              "expr": "sum(rate(zeebe_stream_processor_latency_sum{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_stream_processor_latency_seconds_sum{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) / sum(rate(zeebe_stream_processor_latency_count{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_stream_processor_latency_seconds_count{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]))",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
@@ -1439,7 +1439,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.5, sum(rate(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.5, sum(rate(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_stream_processor_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
@@ -1453,7 +1453,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.99, sum(rate(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.99, sum(rate(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_stream_processor_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "instant": false,
               "legendFormat": "p99",
@@ -1466,7 +1466,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.90, sum(rate(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.90, sum(rate(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_stream_processor_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "instant": false,
               "legendFormat": "p90",
@@ -1579,7 +1579,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.5, sum(rate(zeebe_exporting_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.5, sum(rate(zeebe_exporting_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_exporting_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "p50 (avg)",
@@ -1592,7 +1592,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.99, sum(rate(zeebe_exporting_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.99, sum(rate(zeebe_exporting_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_exporting_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "instant": false,
               "legendFormat": "p99",
@@ -1605,7 +1605,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.90, sum(rate(zeebe_exporting_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.90, sum(rate(zeebe_exporting_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_exporting_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "instant": false,
               "legendFormat": "p90",
@@ -1831,7 +1831,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.50, sum(rate(zeebe_stream_processor_processing_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.50, sum(rate(zeebe_stream_processor_processing_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_stream_processor_processing_duration_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "p50",
@@ -1844,7 +1844,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.99, sum(rate(zeebe_stream_processor_processing_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.99, sum(rate(zeebe_stream_processor_processing_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_stream_processor_processing_duration_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "instant": false,
               "legendFormat": "p99",
@@ -1857,7 +1857,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.90, sum(rate(zeebe_stream_processor_processing_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.90, sum(rate(zeebe_stream_processor_processing_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_stream_processor_processing_duration_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "instant": false,
               "legendFormat": "p90",
@@ -1970,7 +1970,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.50, sum(rate(zeebe_exporter_exporting_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.50, sum(rate(zeebe_exporter_exporting_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_exporter_exporting_duration_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "p50",
@@ -1983,7 +1983,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.99, sum(rate(zeebe_exporter_exporting_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.99, sum(rate(zeebe_exporter_exporting_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_exporter_exporting_duration_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "instant": false,
               "legendFormat": "p99",
@@ -1996,7 +1996,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.90, sum(rate(zeebe_exporter_exporting_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.90, sum(rate(zeebe_exporter_exporting_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_exporter_exporting_duration_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "instant": false,
               "legendFormat": "p90",

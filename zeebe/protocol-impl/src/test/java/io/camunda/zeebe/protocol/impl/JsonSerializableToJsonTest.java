@@ -2714,8 +2714,7 @@ final class JsonSerializableToJsonTest {
                             .addResourceId("bpmnProcessId:foo"))
                     .addPermission(
                         new Permission().setPermissionType(PermissionType.READ).addResourceId("*"))
-                    .setAuthorizationPermissions(Set.of(PermissionType.CREATE))
-                    .setChangedAttributes(Set.of(AuthorizationRecord.OWNER_TYPE)),
+                    .setAuthorizationPermissions(Set.of(PermissionType.CREATE)),
         """
         {
           "authorizationKey": 1,
@@ -2736,9 +2735,6 @@ final class JsonSerializableToJsonTest {
           ],
           "authorizationPermissions": [
             "CREATE"
-          ],
-          "changedAttributes": [
-            "ownerType"
           ]
         }
         """
@@ -2762,8 +2758,7 @@ final class JsonSerializableToJsonTest {
           "resourceId": "",
           "resourceType": "RESOURCE",
           "permissions": [],
-          "authorizationPermissions": [],
-          "changedAttributes": []
+          "authorizationPermissions": []
         }
         """
       },

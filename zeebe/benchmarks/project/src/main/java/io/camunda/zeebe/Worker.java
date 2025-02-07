@@ -54,7 +54,7 @@ public class Worker extends App {
     final CamundaClient client = createCamundaClient();
     final JobWorkerMetrics metrics =
         JobWorkerMetrics.micrometer()
-            .withMeterRegistry(prometheusRegistry)
+            .withMeterRegistry(registry)
             .withTags(Tags.of("workerName", workerCfg.getWorkerName(), "jobType", jobType))
             .build();
     printTopology(client);

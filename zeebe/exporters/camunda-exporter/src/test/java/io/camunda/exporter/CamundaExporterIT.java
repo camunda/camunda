@@ -38,6 +38,7 @@ import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.CamundaExporterITTemplateExtension;
 import io.camunda.exporter.utils.SearchClientAdapter;
 import io.camunda.exporter.utils.SearchDBExtension;
+import io.camunda.exporter.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
@@ -52,6 +53,9 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -170,7 +174,7 @@ final class CamundaExporterIT {
     exporter.open(exporterController);
 
     // when
-    final var record = generateRecordWithSupportedBrokerVersion(ValueType.AUTHORIZATION);
+    final var record = generateRecordWithSupportedBrokerVersion(ValueType.USER, UserIntent.CREATED);
     assertThat(exporterController.getPosition()).isEqualTo(-1);
 
     exporter.export(record);
@@ -192,8 +196,9 @@ final class CamundaExporterIT {
     exporter.open(controllerSpy);
 
     // when
-    final var record = generateRecordWithSupportedBrokerVersion(ValueType.AUTHORIZATION);
-    final var record2 = generateRecordWithSupportedBrokerVersion(ValueType.AUTHORIZATION);
+    final var record = generateRecordWithSupportedBrokerVersion(ValueType.USER, UserIntent.CREATED);
+    final var record2 =
+        generateRecordWithSupportedBrokerVersion(ValueType.USER, UserIntent.CREATED);
 
     exporter.export(record);
     exporter.export(record2);
@@ -226,7 +231,7 @@ final class CamundaExporterIT {
     container.stop();
     Awaitility.await().until(() -> !container.isRunning());
 
-    final var record = generateRecordWithSupportedBrokerVersion(ValueType.AUTHORIZATION);
+    final var record = generateRecordWithSupportedBrokerVersion(ValueType.USER, UserIntent.CREATED);
 
     assertThatThrownBy(() -> exporter.export(record))
         .isInstanceOf(ExporterException.class)
@@ -238,7 +243,8 @@ final class CamundaExporterIT {
         .setPortBindings(List.of(currentPort + ":9200"));
     container.start();
 
-    final var record2 = generateRecordWithSupportedBrokerVersion(ValueType.AUTHORIZATION);
+    final var record2 =
+        generateRecordWithSupportedBrokerVersion(ValueType.USER, UserIntent.CREATED);
     exporter.export(record2);
 
     Awaitility.await()
@@ -397,13 +403,15 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter) {
     // given
     final var valueType = ValueType.VARIABLE;
-    final Record record = generateRecordWithSupportedBrokerVersion(valueType);
+    final Record record =
+        generateRecordWithSupportedBrokerVersion(valueType, VariableIntent.CREATED);
     final var resourceProvider = new DefaultExporterResourceProvider();
     resourceProvider.init(
         config,
         mock(ExporterEntityCacheProvider.class),
         new SimpleMeterRegistry(),
-        new ExporterMetadata());
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
     final var expectedHandlers =
         resourceProvider.getExportHandlers().stream()
             .filter(exportHandler -> exportHandler.getHandledValueType() == valueType)
@@ -465,7 +473,8 @@ final class CamundaExporterIT {
         config,
         mock(ExporterEntityCacheProvider.class),
         new SimpleMeterRegistry(),
-        new ExporterMetadata());
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
 
     final CamundaExporter camundaExporter = new CamundaExporter();
     final ExporterTestContext exporterTestContext =
@@ -497,7 +506,8 @@ final class CamundaExporterIT {
         config,
         mock(ExporterEntityCacheProvider.class),
         new SimpleMeterRegistry(),
-        new ExporterMetadata());
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
 
     final CamundaExporter camundaExporter = new CamundaExporter();
     final ExporterTestContext exporterTestContext =
@@ -522,8 +532,9 @@ final class CamundaExporterIT {
     final var recordPosition = 123456789L;
     final var record =
         factory.generateRecord(
-            ValueType.AUTHORIZATION,
-            r -> r.withBrokerVersion("8.7.0").withPosition(recordPosition));
+            ValueType.USER,
+            r -> r.withBrokerVersion("8.7.0").withPosition(recordPosition),
+            UserIntent.CREATED);
 
     final CamundaExporter camundaExporter = new CamundaExporter();
     final var controller = new ExporterTestController();
@@ -564,7 +575,8 @@ final class CamundaExporterIT {
         config,
         mock(ExporterEntityCacheProvider.class),
         new SimpleMeterRegistry(),
-        new ExporterMetadata());
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
 
     return defaultExporterResourceProvider.getExportHandlers().stream()
         .map(handler -> (ExportHandler<T, R>) handler)
@@ -580,8 +592,9 @@ final class CamundaExporterIT {
     return expectedEntity;
   }
 
-  private Record<?> generateRecordWithSupportedBrokerVersion(final ValueType valueType) {
-    return factory.generateRecord(valueType, r -> r.withBrokerVersion("8.8.0"));
+  private Record<?> generateRecordWithSupportedBrokerVersion(
+      final ValueType valueType, final Intent intent) {
+    return factory.generateRecord(valueType, r -> r.withBrokerVersion("8.8.0"), intent);
   }
 
   private static Stream<Arguments> containerProvider() {
@@ -641,7 +654,8 @@ final class CamundaExporterIT {
         config,
         mock(ExporterEntityCacheProvider.class),
         new SimpleMeterRegistry(),
-        new ExporterMetadata());
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
 
     when(provider.getIndexDescriptors()).thenReturn(indexDescriptors);
     when(provider.getIndexTemplateDescriptors()).thenReturn(templateDescriptors);
@@ -681,8 +695,9 @@ final class CamundaExporterIT {
       // when
       final var record =
           factory.generateRecord(
-              ValueType.AUTHORIZATION,
-              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()));
+              ValueType.USER,
+              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
+              UserIntent.CREATED);
 
       camundaExporter.export(record);
 
@@ -722,8 +737,9 @@ final class CamundaExporterIT {
       // when
       final var record =
           factory.generateRecord(
-              ValueType.AUTHORIZATION,
-              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()));
+              ValueType.USER,
+              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
+              UserIntent.CREATED);
 
       camundaExporter.export(record);
 
@@ -772,15 +788,17 @@ final class CamundaExporterIT {
       // when
       final var record =
           factory.generateRecord(
-              ValueType.AUTHORIZATION,
-              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()));
+              ValueType.USER,
+              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
+              UserIntent.CREATED);
 
       camundaExporter.export(record);
 
       final var record2 =
           factory.generateRecord(
-              ValueType.AUTHORIZATION,
-              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()));
+              ValueType.USER,
+              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
+              UserIntent.CREATED);
 
       // then
       assertThatThrownBy(() -> camundaExporter.export(record2))

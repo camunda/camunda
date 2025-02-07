@@ -70,7 +70,11 @@ public class MappingController {
   public ResponseEntity<MappingItem> getMapping(@PathVariable final long mappingKey) {
     try {
       return ResponseEntity.ok()
-          .body(SearchQueryResponseMapper.toMapping(mappingServices.getMapping(mappingKey)));
+          .body(
+              SearchQueryResponseMapper.toMapping(
+                  mappingServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .getMapping(mappingKey)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
@@ -85,7 +89,8 @@ public class MappingController {
 
   private ResponseEntity<MappingSearchQueryResponse> search(final MappingQuery query) {
     try {
-      final var result = mappingServices.search(query);
+      final var result =
+          mappingServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toMappingSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);

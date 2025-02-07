@@ -54,7 +54,7 @@ public class CamundaUserDetailsService implements UserDetailsService {
     final Long userKey = storedUser.userKey();
 
     final var authorizedApplications =
-        authorizationServices.getAuthorizedApplications(Set.of(storedUser.userKey()));
+        authorizationServices.getAuthorizedApplications(Set.of(storedUser.username()));
 
     final var roles = roleServices.findAll(RoleQuery.of(q -> q.filter(f -> f.memberKey(userKey))));
 

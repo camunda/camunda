@@ -94,7 +94,6 @@ class ForceScaleDownBrokersTest {
                         // the default values.
                         .setSyncInterval(Duration.ofSeconds(1))
                         .setFailureTimeout(Duration.ofSeconds(2)))
-            .withUnauthenticatedAccess()
             .build()
             .start();
     cluster.awaitCompleteTopology();
