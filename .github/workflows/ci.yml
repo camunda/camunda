@@ -513,6 +513,9 @@ jobs:
         working-directory: qa/e2e-tests/core-component-test-suite
     steps:
       - uses: actions/checkout@v4
+      - name: Debug directory structure
+        shell: bash
+        run: ls -R
       - name: Run tests
         uses: ./.github/actions/core-component-test-suite
         with:
