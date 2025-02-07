@@ -15,32 +15,31 @@
  */
 package io.atomix.raft.metrics;
 
-import io.prometheus.client.Gauge;
+import static io.atomix.raft.metrics.RaftStartupMetricsDoc.*;
+
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class RaftStartupMetrics extends RaftMetrics {
-  private static final Gauge BOOTSTRAP_DURATION =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
-          .help("Time taken to bootstrap the partition server (in ms)")
-          .name("partition_server_bootstrap_time")
-          .register();
 
-  private static final Gauge JOIN_DURATION =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
-          .help("Time taken for the partition server to join (in ms)")
-          .name("partition_server_join_time")
-          .register();
+  private final AtomicLong bootstrapDuration;
+  private final AtomicLong joinDuration;
 
-  private final Gauge.Child bootstrapDuration;
-  private final Gauge.Child joinDuration;
-
-  public RaftStartupMetrics(final String partitionName) {
+  public RaftStartupMetrics(final String partitionName, final MeterRegistry registry) {
     super(partitionName);
-    bootstrapDuration = BOOTSTRAP_DURATION.labels(partitionGroupName, partition);
-    joinDuration = JOIN_DURATION.labels(partitionGroupName, partition);
+    bootstrapDuration = new AtomicLong(0L);
+    joinDuration = new AtomicLong(0L);
+
+    Gauge.builder(BOOTSTRAP_DURATION.getName(), bootstrapDuration::get)
+        .description(BOOTSTRAP_DURATION.getDescription())
+        .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
+        .register(registry);
+
+    Gauge.builder(JOIN_DURATION.getName(), joinDuration::get)
+        .description(JOIN_DURATION.getDescription())
+        .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
+        .register(registry);
   }
 
   public void observeBootstrapDuration(final long durationMillis) {
