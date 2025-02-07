@@ -99,12 +99,14 @@ public class MappingAppliersTest {
     groupState.create(groupKey, group);
     groupState.addEntity(groupKey, group);
     // create authorization
-    authorizationState.createOrAddPermission(
-        AuthorizationOwnerType.MAPPING,
-        mappingId,
-        AuthorizationResourceType.PROCESS_DEFINITION,
-        PermissionType.READ,
-        Set.of("process"));
+    authorizationState.create(
+        5L,
+        new io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord()
+            .setAuthorizationPermissions(Set.of(PermissionType.READ))
+            .setResourceId("process")
+            .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .setOwnerType(AuthorizationOwnerType.MAPPING)
+            .setOwnerId(mappingId));
 
     // when
     mappingDeletedApplier.applyState(mappingKey, mappingRecord);

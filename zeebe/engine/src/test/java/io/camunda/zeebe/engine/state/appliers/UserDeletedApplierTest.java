@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import java.util.Set;
@@ -52,19 +53,33 @@ public class UserDeletedApplierTest {
             .setPassword("password");
     userState.create(userRecord);
 
-    authorizationState.createOrAddPermission(
-        AuthorizationOwnerType.USER,
-        userRecord.getUsername(),
-        PROCESS_DEFINITION,
-        CREATE,
-        Set.of("process1", "process2"));
-
-    authorizationState.createOrAddPermission(
-        AuthorizationOwnerType.USER,
-        userRecord.getUsername(),
-        DECISION_DEFINITION,
-        DELETE,
-        Set.of("definition1"));
+    authorizationState.create(
+        1L,
+        new AuthorizationRecord()
+            .setAuthorizationKey(1L)
+            .setResourceId("process1")
+            .setResourceType(PROCESS_DEFINITION)
+            .setOwnerId(userRecord.getUsername())
+            .setOwnerType(AuthorizationOwnerType.USER)
+            .setAuthorizationPermissions(Set.of(CREATE)));
+    authorizationState.create(
+        2L,
+        new AuthorizationRecord()
+            .setAuthorizationKey(2L)
+            .setResourceId("process2")
+            .setResourceType(PROCESS_DEFINITION)
+            .setOwnerId(userRecord.getUsername())
+            .setOwnerType(AuthorizationOwnerType.USER)
+            .setAuthorizationPermissions(Set.of(CREATE)));
+    authorizationState.create(
+        3L,
+        new AuthorizationRecord()
+            .setAuthorizationKey(3L)
+            .setResourceId("definition1")
+            .setResourceType(DECISION_DEFINITION)
+            .setOwnerId(userRecord.getUsername())
+            .setOwnerType(AuthorizationOwnerType.USER)
+            .setAuthorizationPermissions(Set.of(DELETE)));
 
     assertThat(
             authorizationState.getResourceIdentifiers(

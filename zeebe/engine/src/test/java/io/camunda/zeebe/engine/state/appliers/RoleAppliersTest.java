@@ -111,12 +111,26 @@ public class RoleAppliersTest {
     final String roleName = "foo";
     final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName(roleName);
     roleState.create(roleRecord);
-    authorizationState.createOrAddPermission(
-        AuthorizationOwnerType.ROLE,
-        roleName,
-        AuthorizationResourceType.ROLE,
-        PermissionType.DELETE,
-        Set.of("role1", "role2"));
+    authorizationState.create(
+        1L,
+        new io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord()
+            .setAuthorizationKey(1L)
+            .setResourceId("role1")
+            .setResourceType(AuthorizationResourceType.ROLE)
+            .setAuthorizationPermissions(Set.of(PermissionType.DELETE))
+            .setOwnerType(AuthorizationOwnerType.ROLE)
+            .setOwnerId(roleId)
+    );
+    authorizationState.create(
+        2L,
+        new io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord()
+            .setAuthorizationKey(2L)
+            .setResourceId("role2")
+            .setResourceType(AuthorizationResourceType.ROLE)
+            .setAuthorizationPermissions(Set.of(PermissionType.DELETE))
+            .setOwnerType(AuthorizationOwnerType.ROLE)
+            .setOwnerId(roleId)
+    );
 
     // when
     roleDeletedApplier.applyState(roleKey, roleRecord);
