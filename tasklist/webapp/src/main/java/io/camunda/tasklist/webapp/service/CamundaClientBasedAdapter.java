@@ -16,9 +16,9 @@ import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCo
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.util.ConditionalOnTasklistCompatibility;
+import io.camunda.tasklist.webapp.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
-import io.camunda.tasklist.webapp.security.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
