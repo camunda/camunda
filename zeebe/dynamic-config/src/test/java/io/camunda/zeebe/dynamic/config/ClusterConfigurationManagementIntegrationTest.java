@@ -23,6 +23,8 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
@@ -44,6 +46,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+@AutoCloseResources
 class ClusterConfigurationManagementIntegrationTest {
 
   @TempDir Path rootDir;
@@ -55,6 +58,7 @@ class ClusterConfigurationManagementIntegrationTest {
       List.of(createNode("0"), createNode("1"), createNode("2"));
   private final Map<Integer, TestNode> nodes = new HashMap<>();
   private Set<MemberId> clusterMemberIds;
+  @AutoCloseResource private MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @BeforeEach
   void setup() {
@@ -237,7 +241,7 @@ class ClusterConfigurationManagementIntegrationTest {
   }
 
   private AtomixCluster createClusterNode(final Node localNode, final Collection<Node> nodes) {
-    return AtomixCluster.builder()
+    return AtomixCluster.builder(meterRegistry)
         .withAddress(localNode.address())
         .withMemberId(localNode.id().id())
         .withMembershipProvider(new BootstrapDiscoveryProvider(nodes))
