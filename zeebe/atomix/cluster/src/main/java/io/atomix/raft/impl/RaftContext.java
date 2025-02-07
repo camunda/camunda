@@ -246,7 +246,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     this.partitionConfig = partitionConfig;
     cluster = new RaftClusterContext(localMemberId, this);
 
-    replicationMetrics = new RaftReplicationMetrics(name);
+    replicationMetrics = new RaftReplicationMetrics(name, meterRegistry);
     replicationMetrics.setAppendIndex(raftLog.getLastIndex());
     lastHeartbeat = System.currentTimeMillis();
 
