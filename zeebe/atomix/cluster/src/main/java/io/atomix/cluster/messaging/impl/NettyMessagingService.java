@@ -31,6 +31,7 @@ import io.atomix.utils.net.Address;
 import io.camunda.zeebe.util.StringUtil;
 import io.camunda.zeebe.util.TlsConfigUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
@@ -138,7 +139,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private SslContext serverSslContext;
   private SslContext clientSslContext;
   private DnsAddressResolverGroup dnsResolverGroup;
-  private final MessagingMetrics messagingMetrics = new MessagingMetricsImpl();
+  private final MessagingMetrics messagingMetrics;
   private final String actorSchedulerName;
 
   // flag for passing heartbeats down the pipeline
@@ -146,16 +147,21 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private boolean heartbeatsEnabled = true;
 
   public NettyMessagingService(
-      final String cluster, final Address advertisedAddress, final MessagingConfig config) {
-    this(cluster, advertisedAddress, config, ProtocolVersion.latest(), "");
+      final String cluster,
+      final Address advertisedAddress,
+      final MessagingConfig config,
+      final MeterRegistry registry) {
+    this(cluster, advertisedAddress, config, ProtocolVersion.latest(), "", registry);
   }
 
   public NettyMessagingService(
       final String cluster,
       final Address advertisedAddress,
       final MessagingConfig config,
-      final String actorSchedulerName) {
-    this(cluster, advertisedAddress, config, ProtocolVersion.latest(), actorSchedulerName);
+      final String actorSchedulerName,
+      final MeterRegistry registry) {
+    this(
+        cluster, advertisedAddress, config, ProtocolVersion.latest(), actorSchedulerName, registry);
   }
 
   NettyMessagingService(
@@ -163,7 +169,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
       final Address advertisedAddress,
       final MessagingConfig config,
       final ProtocolVersion protocolVersion,
-      final String actorSchedulerName) {
+      final String actorSchedulerName,
+      final MeterRegistry registry) {
     preamble = cluster.hashCode();
     this.advertisedAddress = advertisedAddress;
     this.protocolVersion = protocolVersion;
@@ -171,6 +178,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
     // pool of client connections
     channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
     this.actorSchedulerName = actorSchedulerName;
+    messagingMetrics = new MessagingMetricsImpl(registry);
 
     initAddresses(config);
   }

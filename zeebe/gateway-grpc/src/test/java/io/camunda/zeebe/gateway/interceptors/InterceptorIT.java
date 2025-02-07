@@ -31,6 +31,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.grpc.StatusRuntimeException;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.util.NetUtil;
 import java.time.Duration;
@@ -38,6 +39,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -56,6 +58,7 @@ final class InterceptorIT {
   private JobStreamClient jobStreamClient;
   private Gateway gateway;
   private BrokerTopologyManagerImpl topologyManager;
+  @AutoClose private MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @BeforeEach
   void beforeEach() {
@@ -70,7 +73,7 @@ final class InterceptorIT {
     config.init();
 
     cluster =
-        AtomixCluster.builder()
+        AtomixCluster.builder(meterRegistry)
             .withAddress(Address.from(clusterAddress.getHostName(), clusterAddress.getPort()))
             .build();
     topologyManager =
