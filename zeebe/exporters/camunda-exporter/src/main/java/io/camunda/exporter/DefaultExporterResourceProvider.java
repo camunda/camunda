@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.cache.ExporterCacheMetrics;
 import io.camunda.exporter.cache.ExporterEntityCacheImpl;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
@@ -123,7 +124,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
       final ExporterConfiguration configuration,
       final ExporterEntityCacheProvider entityCacheProvider,
       final MeterRegistry meterRegistry,
-      final ExporterMetadata exporterMetadata) {
+      final ExporterMetadata exporterMetadata,
+      final ObjectMapper objectMapper) {
     final var globalPrefix = configuration.getIndex().getPrefix();
     final var isElasticsearch =
         ConnectionTypes.isElasticSearch(configuration.getConnect().getType());
@@ -145,7 +147,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new ExporterCacheMetrics("form", meterRegistry));
 
     final M2mTokenManager m2mTokenManager =
-        new M2mTokenManager(configuration.getNotifier(), HttpClient.newHttpClient());
+        new M2mTokenManager(configuration.getNotifier(), HttpClient.newHttpClient(), objectMapper);
     executor = Executors.newVirtualThreadPerTaskExecutor();
     final IncidentNotifier incidentNotifier =
         new IncidentNotifier(
@@ -153,7 +155,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             processCache,
             configuration.getNotifier(),
             HttpClient.newHttpClient(),
-            executor);
+            executor,
+            objectMapper);
     exportHandlers =
         Set.of(
             new RoleCreateUpdateHandler(
@@ -238,7 +241,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new UserTaskJobBasedHandler(
                 indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
                 formCache,
-                exporterMetadata),
+                exporterMetadata,
+                objectMapper),
             new UserTaskProcessInstanceHandler(
                 indexDescriptors.get(TaskTemplate.class).getFullQualifiedName()),
             new UserTaskVariableHandler(
@@ -246,7 +250,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 configuration.getIndex().getVariableSizeThreshold()),
             new UserTaskCompletionVariableHandler(
                 indexDescriptors.get(SnapshotTaskVariableTemplate.class).getFullQualifiedName(),
-                configuration.getIndex().getVariableSizeThreshold()),
+                configuration.getIndex().getVariableSizeThreshold(),
+                objectMapper),
             new OperationFromProcessInstanceHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
             new OperationFromVariableDocumentHandler(

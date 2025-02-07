@@ -136,8 +136,8 @@ public class CamundaExporterITTemplateExtension
   public void beforeAll(final ExtensionContext context) throws Exception {
     if (Optional.ofNullable(System.getProperty(IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY))
         .isEmpty()) {
-      elsClientAdapter = new SearchClientAdapter(extension.esClient());
+      elsClientAdapter = new SearchClientAdapter(extension.esClient(), extension.objectMapper());
     }
-    osClientAdapter = new SearchClientAdapter(extension.osClient());
+    osClientAdapter = new SearchClientAdapter(extension.osClient(), extension.objectMapper());
   }
 }

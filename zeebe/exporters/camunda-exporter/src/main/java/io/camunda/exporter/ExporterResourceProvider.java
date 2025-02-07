@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.errorhandling.Error;
@@ -24,7 +25,8 @@ public interface ExporterResourceProvider {
       final ExporterConfiguration configuration,
       final ExporterEntityCacheProvider entityCacheProvider,
       final MeterRegistry meterRegistry,
-      final ExporterMetadata exporterMetadata);
+      final ExporterMetadata exporterMetadata,
+      final ObjectMapper objectMapper);
 
   void close();
 

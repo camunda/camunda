@@ -89,6 +89,10 @@ public final class OpensearchConnector {
     return new OpenSearchAsyncClient(transport);
   }
 
+  public ObjectMapper objectMapper() {
+    return objectMapper;
+  }
+
   private OpenSearchTransport createTransport(final ConnectConfiguration configuration) {
     if (shouldCreateAWSBasedTransport()) {
       return createAWSBasedTransport(configuration);
