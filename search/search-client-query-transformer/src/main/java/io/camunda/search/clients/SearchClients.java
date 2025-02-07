@@ -7,7 +7,7 @@
  */
 package io.camunda.search.clients;
 
-import static io.camunda.search.entities.TenantMemberEntity.TenantMemberType.USER;
+import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
 import io.camunda.search.clients.auth.DocumentAuthorizationQueryStrategy;
 import io.camunda.search.clients.transformers.ServiceTransformers;
