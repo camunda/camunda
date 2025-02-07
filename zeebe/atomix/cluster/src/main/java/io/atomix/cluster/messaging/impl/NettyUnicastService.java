@@ -27,6 +27,7 @@ import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFutureListener;
@@ -79,6 +80,8 @@ public class NettyUnicastService implements ManagedUnicastService {
   private final AtomicBoolean started = new AtomicBoolean();
   private final Address bindAddress;
 
+  private final MeterRegistry registry;
+
   private EventLoopGroup group;
   private DatagramChannel channel;
 
@@ -87,18 +90,23 @@ public class NettyUnicastService implements ManagedUnicastService {
   private final String actorSchedulerName;
 
   public NettyUnicastService(
-      final String clusterId, final Address advertisedAddress, final MessagingConfig config) {
-    this(clusterId, advertisedAddress, config, "");
+      final String clusterId,
+      final Address advertisedAddress,
+      final MessagingConfig config,
+      final MeterRegistry registry) {
+    this(clusterId, advertisedAddress, config, "", registry);
   }
 
   public NettyUnicastService(
       final String clusterId,
       final Address advertisedAddress,
       final MessagingConfig config,
-      final String actorSchedulerName) {
+      final String actorSchedulerName,
+      final MeterRegistry registry) {
     this.advertisedAddress = advertisedAddress;
     this.config = config;
     preamble = clusterId.hashCode();
+    this.registry = registry;
 
     // as we use SO_BROADCAST, it's only possible to bind to wildcard without root privilege, so we
     // don't support binding to multiple interfaces here; wouldn't make sense anyway
@@ -225,7 +233,7 @@ public class NettyUnicastService implements ManagedUnicastService {
     return bootstrap()
         .thenRun(
             () -> {
-              final var metrics = new NettyDnsMetrics();
+              final var metrics = new NettyDnsMetrics(registry);
               started.set(true);
               dnsAddressResolverGroup =
                   new DnsAddressResolverGroup(

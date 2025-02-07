@@ -140,6 +140,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private SslContext clientSslContext;
   private DnsAddressResolverGroup dnsResolverGroup;
   private final MessagingMetrics messagingMetrics;
+  private final MeterRegistry registry;
   private final String actorSchedulerName;
 
   // flag for passing heartbeats down the pipeline
@@ -179,6 +180,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
     channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
     this.actorSchedulerName = actorSchedulerName;
     messagingMetrics = new MessagingMetricsImpl(registry);
+    this.registry = registry;
 
     initAddresses(config);
   }
@@ -418,7 +420,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
         .thenCompose(ok -> bootstrapServer())
         .thenRun(
             () -> {
-              final var metrics = new NettyDnsMetrics();
+              final var metrics = new NettyDnsMetrics(registry);
               dnsResolverGroup =
                   new DnsAddressResolverGroup(
                       new DnsNameResolverBuilder(clientGroup.next())

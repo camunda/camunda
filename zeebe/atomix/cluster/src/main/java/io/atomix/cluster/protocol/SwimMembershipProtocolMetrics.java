@@ -7,22 +7,50 @@
  */
 package io.atomix.cluster.protocol;
 
-import io.prometheus.client.Gauge;
+import io.atomix.cluster.protocol.SwimMembershipProtocolMetricsDoc.SwimKeyNames;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 final class SwimMembershipProtocolMetrics {
 
-  private static final Gauge MEMBERS_INCARNATION_NUMBER =
-      Gauge.build()
-          .namespace("zeebe")
-          .name("smp_members_incarnation_number")
-          .help(
-              "Member's Incarnation number. This metric shows the incarnation number of each "
-                  + "member in the several nodes. This is useful to observe state propagation of each"
-                  + "member information.")
-          .labelNames("memberId")
-          .register();
+  private final Map<String, AtomicLong> incarnationNumbers = new ConcurrentHashMap<>();
 
-  static void updateMemberIncarnationNumber(final String member, final long incarnationNumber) {
-    MEMBERS_INCARNATION_NUMBER.labels(member).set(incarnationNumber);
+  private final MeterRegistry registry;
+
+  public SwimMembershipProtocolMetrics(final MeterRegistry registry) {
+    this.registry = registry;
+  }
+
+  public void updateMemberIncarnationNumber(final String member, final long incarnationNumber) {
+    incarnationNumbers
+        .computeIfAbsent(member, this::registerIncarnationNumberGauge)
+        .set(incarnationNumber);
+  }
+
+  private AtomicLong registerIncarnationNumberGauge(final String member) {
+    // do a get first to see if we may have to allocate
+    var counter = incarnationNumbers.get(member);
+    if (counter == null) {
+      counter = new AtomicLong();
+      final AtomicLong finalCounter = counter;
+      // try setting the counter to the one just allocated
+      final var inside = incarnationNumbers.computeIfAbsent(member, unused -> finalCounter);
+      // we won the race: use reference equality to check if it's the same instance
+      if (inside == finalCounter) {
+        Gauge.builder(
+                SwimMembershipProtocolMetricsDoc.MEMBERS_INCARNATION_NUMBER.getName(), counter::get)
+            .description(
+                SwimMembershipProtocolMetricsDoc.MEMBERS_INCARNATION_NUMBER.getDescription())
+            .tags(SwimKeyNames.MEMBER_ID.asString(), member)
+            .register(registry);
+      }
+      // always return what is present in the map, not what was just allocated
+      return inside;
+    } else {
+      return counter;
+    }
   }
 }
