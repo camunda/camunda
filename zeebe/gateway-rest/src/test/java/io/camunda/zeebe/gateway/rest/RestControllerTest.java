@@ -82,7 +82,7 @@ public abstract class RestControllerTest {
         Mockito.mockStatic(RequestMapper.class, Mockito.CALLS_REAL_METHODS)) {
       mockRequestMapper
           .when(RequestMapper::getAuthentication)
-          .thenReturn(Authentication.of(a -> a.user(123L).group(456L).tenant(tenantId)));
+          .thenReturn(Authentication.of(a -> a.user("foo").group(456L).tenant(tenantId)));
       return function.apply(webClient);
     }
   }

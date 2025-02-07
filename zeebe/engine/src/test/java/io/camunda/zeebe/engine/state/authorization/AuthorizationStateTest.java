@@ -76,7 +76,7 @@ public class AuthorizationStateTest {
     assertThat(authorization.getOwnerType()).isEqualTo(ownerType);
     assertThat(authorization.getResourceId()).isEqualTo(resourceId);
     assertThat(authorization.getResourceType()).isEqualTo(resourceType);
-    assertThat(authorization.getPermissions()).containsExactlyInAnyOrderElementsOf(permissions);
+    assertThat(authorization.getPermissionTypes()).containsExactlyInAnyOrderElementsOf(permissions);
     final var resourceIdentifiers =
         authorizationState.getResourceIdentifiers(
             ownerType, ownerId, resourceType, PermissionType.CREATE);
@@ -273,6 +273,277 @@ public class AuthorizationStateTest {
             authorizationState.getResourceIdentifiers(
                 ownerType, ownerId, resourceType, permissionType))
         .isEmpty();
+  }
+
+  @Test
+  void shouldUpdateAuthorizationChangingPermissions() {
+    // given
+    final var authorizationKey = 1L;
+    final String ownerId = "ownerId";
+    final AuthorizationOwnerType ownerType = AuthorizationOwnerType.USER;
+    final String resourceId = "resourceId";
+    final AuthorizationResourceType resourceType = AuthorizationResourceType.RESOURCE;
+    final Set<PermissionType> permissions = Set.of(PermissionType.CREATE, PermissionType.DELETE);
+    final var authorizationRecord =
+        new AuthorizationRecord()
+            .setAuthorizationKey(authorizationKey)
+            .setOwnerId(ownerId)
+            .setOwnerType(ownerType)
+            .setResourceId(resourceId)
+            .setResourceType(resourceType)
+            .setAuthorizationPermissions(permissions);
+
+    authorizationState.create(authorizationKey, authorizationRecord);
+
+    // when
+    final var updatedAuthorizationRecord =
+        new AuthorizationRecord()
+            .setAuthorizationKey(authorizationKey)
+            .setOwnerId(ownerId)
+            .setOwnerType(ownerType)
+            .setResourceId("anotherResourceId")
+            .setResourceType(resourceType)
+            .setAuthorizationPermissions(Set.of(PermissionType.READ, PermissionType.ACCESS));
+    authorizationState.update(authorizationKey, updatedAuthorizationRecord);
+
+    // then
+    final var persistedAuthorization = authorizationState.get(authorizationKey);
+    assertThat(persistedAuthorization).isPresent();
+    final var authorization = persistedAuthorization.get();
+    assertThat(authorization.getAuthorizationKey()).isEqualTo(authorizationKey);
+    assertThat(authorization.getOwnerId()).isEqualTo(ownerId);
+    assertThat(authorization.getOwnerType()).isEqualTo(ownerType);
+    assertThat(authorization.getResourceId()).isEqualTo("anotherResourceId");
+    assertThat(authorization.getResourceType()).isEqualTo(resourceType);
+    assertThat(authorization.getPermissionTypes())
+        .containsExactlyInAnyOrderElementsOf(Set.of(PermissionType.READ, PermissionType.ACCESS));
+
+    final var resourceIdentifiers =
+        authorizationState.getResourceIdentifiers(
+            ownerType, ownerId, resourceType, PermissionType.READ);
+    assertThat(resourceIdentifiers).containsExactly("anotherResourceId");
+
+    final var anotherResourceIdentifiers =
+        authorizationState.getResourceIdentifiers(
+            ownerType, ownerId, resourceType, PermissionType.ACCESS);
+    assertThat(anotherResourceIdentifiers).containsExactly("anotherResourceId");
+
+    final var anotherResourceIdentifiers2 =
+        authorizationState.getResourceIdentifiers(
+            ownerType, ownerId, resourceType, PermissionType.CREATE);
+    assertThat(anotherResourceIdentifiers2).isEmpty();
+
+    final var anotherResourceIdentifiers3 =
+        authorizationState.getResourceIdentifiers(
+            ownerType, ownerId, resourceType, PermissionType.DELETE);
+    assertThat(anotherResourceIdentifiers3).isEmpty();
+  }
+
+  @Test
+  void shouldUpdateAuthorizationChangingOwnerIdAndResourceId() {
+    // given
+    final var authorizationKey = 1L;
+    final String ownerId = "ownerId";
+    final AuthorizationOwnerType ownerType = AuthorizationOwnerType.USER;
+    final String resourceId = "resourceId";
+    final AuthorizationResourceType resourceType = AuthorizationResourceType.RESOURCE;
+    final Set<PermissionType> permissions = Set.of(PermissionType.CREATE, PermissionType.DELETE);
+    final var authorizationRecord =
+        new AuthorizationRecord()
+            .setAuthorizationKey(authorizationKey)
+            .setOwnerId(ownerId)
+            .setOwnerType(ownerType)
+            .setResourceId(resourceId)
+            .setResourceType(resourceType)
+            .setAuthorizationPermissions(permissions);
+
+    authorizationState.create(authorizationKey, authorizationRecord);
+
+    // when
+    final var updatedAuthorizationRecord =
+        new AuthorizationRecord()
+            .setAuthorizationKey(authorizationKey)
+            .setOwnerId("anotherOwnerId")
+            .setOwnerType(ownerType)
+            .setResourceId("anotherResourceId")
+            .setResourceType(resourceType)
+            .setAuthorizationPermissions(permissions);
+    authorizationState.update(authorizationKey, updatedAuthorizationRecord);
+
+    // then
+    final var persistedAuthorization = authorizationState.get(authorizationKey);
+    assertThat(persistedAuthorization).isPresent();
+    final var authorization = persistedAuthorization.get();
+    assertThat(authorization.getAuthorizationKey()).isEqualTo(authorizationKey);
+    assertThat(authorization.getOwnerId()).isEqualTo("anotherOwnerId");
+    assertThat(authorization.getOwnerType()).isEqualTo(ownerType);
+    assertThat(authorization.getResourceId()).isEqualTo("anotherResourceId");
+    assertThat(authorization.getResourceType()).isEqualTo(resourceType);
+    assertThat(authorization.getPermissionTypes()).containsExactlyInAnyOrderElementsOf(permissions);
+
+    final var resourceIdentifiers =
+        authorizationState.getResourceIdentifiers(
+            ownerType, "anotherOwnerId", resourceType, PermissionType.CREATE);
+    assertThat(resourceIdentifiers).containsExactly("anotherResourceId");
+
+    final var anotherResourceIdentifiers =
+        authorizationState.getResourceIdentifiers(
+            ownerType, "anotherOwnerId", resourceType, PermissionType.DELETE);
+    assertThat(anotherResourceIdentifiers).containsExactly("anotherResourceId");
+
+    final var anotherResourceIdentifiers2 =
+        authorizationState.getResourceIdentifiers(
+            ownerType, ownerId, resourceType, PermissionType.CREATE);
+    assertThat(anotherResourceIdentifiers2).isEmpty();
+
+    final var anotherResourceIdentifiers3 =
+        authorizationState.getResourceIdentifiers(
+            ownerType, ownerId, resourceType, PermissionType.DELETE);
+    assertThat(anotherResourceIdentifiers3).isEmpty();
+  }
+
+  @Test
+  void shouldUpdateAuthorizationChangingResourceType() {
+    // given
+    final var authorizationKey = 1L;
+    final String ownerId = "ownerId";
+    final AuthorizationOwnerType ownerType = AuthorizationOwnerType.USER;
+    final String resourceId = "resourceId";
+    final AuthorizationResourceType resourceType = AuthorizationResourceType.RESOURCE;
+    final Set<PermissionType> permissions = Set.of(PermissionType.CREATE, PermissionType.DELETE);
+    final var authorizationRecord =
+        new AuthorizationRecord()
+            .setAuthorizationKey(authorizationKey)
+            .setOwnerId(ownerId)
+            .setOwnerType(ownerType)
+            .setResourceId(resourceId)
+            .setResourceType(resourceType)
+            .setAuthorizationPermissions(permissions);
+
+    authorizationState.create(authorizationKey, authorizationRecord);
+
+    // when
+    final var updatedAuthorizationRecord =
+        new AuthorizationRecord()
+            .setAuthorizationKey(authorizationKey)
+            .setOwnerId(ownerId)
+            .setOwnerType(ownerType)
+            .setResourceId(resourceId)
+            .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .setAuthorizationPermissions(permissions);
+    authorizationState.update(authorizationKey, updatedAuthorizationRecord);
+
+    // then
+    final var persistedAuthorization = authorizationState.get(authorizationKey);
+    assertThat(persistedAuthorization).isPresent();
+    final var authorization = persistedAuthorization.get();
+    assertThat(authorization.getAuthorizationKey()).isEqualTo(authorizationKey);
+    assertThat(authorization.getOwnerId()).isEqualTo(ownerId);
+    assertThat(authorization.getOwnerType()).isEqualTo(ownerType);
+    assertThat(authorization.getResourceId()).isEqualTo(resourceId);
+    assertThat(authorization.getResourceType())
+        .isEqualTo(AuthorizationResourceType.PROCESS_DEFINITION);
+    assertThat(authorization.getPermissionTypes()).containsExactlyInAnyOrderElementsOf(permissions);
+
+    final var resourceIdentifiers =
+        authorizationState.getResourceIdentifiers(
+            ownerType,
+            ownerId,
+            AuthorizationResourceType.PROCESS_DEFINITION,
+            PermissionType.CREATE);
+    assertThat(resourceIdentifiers).containsExactly("resourceId");
+
+    final var anotherResourceIdentifiers =
+        authorizationState.getResourceIdentifiers(
+            ownerType,
+            ownerId,
+            AuthorizationResourceType.PROCESS_DEFINITION,
+            PermissionType.DELETE);
+    assertThat(anotherResourceIdentifiers).containsExactly("resourceId");
+
+    final var anotherResourceIdentifiers2 =
+        authorizationState.getResourceIdentifiers(
+            ownerType, ownerId, AuthorizationResourceType.RESOURCE, PermissionType.CREATE);
+    assertThat(anotherResourceIdentifiers2).isEmpty();
+
+    final var anotherResourceIdentifiers3 =
+        authorizationState.getResourceIdentifiers(
+            ownerType, ownerId, AuthorizationResourceType.RESOURCE, PermissionType.DELETE);
+    assertThat(anotherResourceIdentifiers3).isEmpty();
+  }
+
+  @Test
+  void shouldUpdateAuthorizationChangingPermissionWithMultipleRecords() {
+    // given
+    final var authorizationKey = 1L;
+    final String ownerId = "ownerId";
+    final AuthorizationOwnerType ownerType = AuthorizationOwnerType.USER;
+    final String resourceId = "resourceId";
+    final AuthorizationResourceType resourceType = AuthorizationResourceType.RESOURCE;
+    final Set<PermissionType> permissions = Set.of(PermissionType.CREATE, PermissionType.DELETE);
+    final var authorizationRecord =
+        new AuthorizationRecord()
+            .setAuthorizationKey(authorizationKey)
+            .setOwnerId(ownerId)
+            .setOwnerType(ownerType)
+            .setResourceId(resourceId)
+            .setResourceType(resourceType)
+            .setAuthorizationPermissions(permissions);
+
+    authorizationState.create(authorizationKey, authorizationRecord);
+
+    final var anotherRecord =
+        new AuthorizationRecord()
+            .setAuthorizationKey(2L)
+            .setOwnerId(ownerId)
+            .setOwnerType(ownerType)
+            .setResourceId("resourceId2")
+            .setResourceType(resourceType)
+            .setAuthorizationPermissions(permissions);
+
+    authorizationState.create(2L, anotherRecord);
+
+    // when
+    final var updatedAuthorizationRecord =
+        new AuthorizationRecord()
+            .setAuthorizationKey(authorizationKey)
+            .setOwnerId(ownerId)
+            .setOwnerType(ownerType)
+            .setResourceId(resourceId)
+            .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .setAuthorizationPermissions(Set.of(PermissionType.READ_PROCESS_DEFINITION));
+    authorizationState.update(authorizationKey, updatedAuthorizationRecord);
+
+    // then
+    final var persistedAuthorization = authorizationState.get(authorizationKey);
+    assertThat(persistedAuthorization).isPresent();
+    final var authorization = persistedAuthorization.get();
+    assertThat(authorization.getAuthorizationKey()).isEqualTo(authorizationKey);
+    assertThat(authorization.getOwnerId()).isEqualTo(ownerId);
+    assertThat(authorization.getOwnerType()).isEqualTo(ownerType);
+    assertThat(authorization.getResourceId()).isEqualTo(resourceId);
+    assertThat(authorization.getResourceType())
+        .isEqualTo(AuthorizationResourceType.PROCESS_DEFINITION);
+    assertThat(authorization.getPermissionTypes())
+        .containsExactlyInAnyOrderElementsOf(Set.of(PermissionType.READ_PROCESS_DEFINITION));
+
+    final var resourceIdentifiers =
+        authorizationState.getResourceIdentifiers(
+            ownerType,
+            ownerId,
+            AuthorizationResourceType.PROCESS_DEFINITION,
+            PermissionType.READ_PROCESS_DEFINITION);
+    assertThat(resourceIdentifiers).containsExactly("resourceId");
+
+    final var anotherResourceIdentifiers =
+        authorizationState.getResourceIdentifiers(
+            ownerType, ownerId, AuthorizationResourceType.RESOURCE, PermissionType.CREATE);
+    assertThat(anotherResourceIdentifiers).containsExactly("resourceId2");
+
+    final var anotherResourceIdentifiers2 =
+        authorizationState.getResourceIdentifiers(
+            ownerType, ownerId, AuthorizationResourceType.RESOURCE, PermissionType.DELETE);
+    assertThat(anotherResourceIdentifiers2).containsExactly("resourceId2");
   }
 
   @Test

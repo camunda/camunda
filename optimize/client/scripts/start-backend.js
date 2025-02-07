@@ -114,6 +114,7 @@ function startBackend() {
           ...process.env,
           ...commonEnv,
           ...engineEnv[mode],
+          CLASSPATH_PREFIX: 'optimize/client/demo-data'
         },
       }
     );

@@ -66,18 +66,19 @@ public class CamundaExporter implements Exporter {
   private final ExporterResourceProvider provider;
   private CamundaExporterMetrics metrics;
   private BackgroundTaskManager taskManager;
-  private final ExporterMetadata metadata;
+  private ExporterMetadata metadata;
   private boolean importersCompleted = false;
   private SearchEngineClient searchEngineClient;
   private int partitionId;
 
   public CamundaExporter() {
-    this(new DefaultExporterResourceProvider());
+    // the metadata will be initialized on open
+    this(new DefaultExporterResourceProvider(), null);
   }
 
   @VisibleForTesting
   public CamundaExporter(final ExporterResourceProvider provider) {
-    this(provider, new ExporterMetadata());
+    this(provider, null);
   }
 
   @VisibleForTesting
@@ -93,12 +94,16 @@ public class CamundaExporter implements Exporter {
     context.setFilter(new CamundaExporterRecordFilter());
     metrics = new CamundaExporterMetrics(context.getMeterRegistry());
     clientAdapter = ClientAdapter.of(configuration);
+    if (metadata == null) {
+      metadata = new ExporterMetadata(clientAdapter.objectMapper());
+    }
     partitionId = context.getPartitionId();
     provider.init(
         configuration,
         clientAdapter.getExporterEntityCacheProvider(),
         context.getMeterRegistry(),
-        metadata);
+        metadata,
+        clientAdapter.objectMapper());
 
     taskManager =
         new BackgroundTaskManagerFactory(
@@ -122,7 +127,8 @@ public class CamundaExporter implements Exporter {
             searchEngineClient,
             provider.getIndexDescriptors(),
             provider.getIndexTemplateDescriptors(),
-            configuration);
+            configuration,
+            clientAdapter.objectMapper());
 
     schemaManager.startup();
 
@@ -206,6 +212,11 @@ public class CamundaExporter implements Exporter {
       // fails then the exporter will be invoked with the same record again.
       updateLastExportedPosition(lastPosition);
     }
+  }
+
+  @VisibleForTesting
+  ExporterMetadata getMetadata() {
+    return metadata;
   }
 
   private void ensureCachedRecordsLessThanBulkSize(final Record<?> record) {

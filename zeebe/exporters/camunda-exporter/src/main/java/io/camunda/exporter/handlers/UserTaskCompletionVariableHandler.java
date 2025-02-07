@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler.SnapshotTaskVariableBatch;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
@@ -32,14 +33,15 @@ public class UserTaskCompletionVariableHandler
       LoggerFactory.getLogger(UserTaskCompletionVariableHandler.class);
 
   private static final String ID_PATTERN = "%s-%s";
-  private static final ObjectMapper MAPPER = new ObjectMapper();
   protected final int variableSizeThreshold;
   private final String indexName;
+  private final ObjectWriter objectWriter;
 
   public UserTaskCompletionVariableHandler(
-      final String indexName, final int variableSizeThreshold) {
+      final String indexName, final int variableSizeThreshold, final ObjectMapper objectMapper) {
     this.indexName = indexName;
     this.variableSizeThreshold = variableSizeThreshold;
+    objectWriter = objectMapper.writerWithDefaultPrettyPrinter();
   }
 
   @Override
@@ -132,7 +134,7 @@ public class UserTaskCompletionVariableHandler
 
   private String toJsonString(final Object value) {
     try {
-      return MAPPER.writeValueAsString(value);
+      return objectWriter.writeValueAsString(value);
     } catch (final JsonProcessingException e) {
       LOGGER.error("Failed to parse variable value '{}'", value, e);
       return "";

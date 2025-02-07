@@ -52,9 +52,10 @@ public class ElasticsearchEngineClientIT {
     // Create the low-level client
     final var config = new ExporterConfiguration();
     config.getConnect().setUrl(CONTAINER.getHttpHostAddress());
-    elsClient = new ElasticsearchConnector(config.getConnect()).createClient();
+    final var esConnector = new ElasticsearchConnector(config.getConnect());
+    elsClient = esConnector.createClient();
 
-    elsEngineClient = new ElasticsearchEngineClient(elsClient);
+    elsEngineClient = new ElasticsearchEngineClient(elsClient, esConnector.objectMapper());
   }
 
   @BeforeEach

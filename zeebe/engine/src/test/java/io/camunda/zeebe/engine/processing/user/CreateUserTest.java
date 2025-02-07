@@ -111,7 +111,7 @@ public class CreateUserTest {
 
     // then
     assertThat(
-            RecordingExporter.authorizationRecords(AuthorizationIntent.PERMISSION_ADDED)
+            RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
                 .withOwnerKey(userKey)
                 .getFirst()
                 .getValue())

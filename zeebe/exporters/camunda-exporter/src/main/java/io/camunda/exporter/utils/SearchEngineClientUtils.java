@@ -23,15 +23,17 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 
-public final class SearchEngineClientUtils {
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+public class SearchEngineClientUtils {
+  private final ObjectMapper objectMapper;
 
-  private SearchEngineClientUtils() {}
+  public SearchEngineClientUtils(final ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
 
-  public static InputStream appendToFileSchemaSettings(
+  public InputStream appendToFileSchemaSettings(
       final InputStream file, final IndexSettings settingsToAppend) throws IOException {
 
-    final var map = MAPPER.readValue(file, new TypeReference<Map<String, Object>>() {});
+    final var map = objectMapper.readValue(file, new TypeReference<Map<String, Object>>() {});
 
     final var settingsBlock =
         (Map<String, Object>) map.computeIfAbsent("settings", k -> new HashMap<>());
@@ -41,19 +43,20 @@ public final class SearchEngineClientUtils {
     indexBlock.put("number_of_shards", settingsToAppend.getNumberOfShards());
     indexBlock.put("number_of_replicas", settingsToAppend.getNumberOfReplicas());
 
-    return new ByteArrayInputStream(MAPPER.writeValueAsBytes(map));
+    return new ByteArrayInputStream(objectMapper.writeValueAsBytes(map));
   }
 
-  public static String listIndices(final List<IndexDescriptor> indexDescriptors) {
+  public String listIndices(final List<IndexDescriptor> indexDescriptors) {
     return indexDescriptors.stream()
         .map(IndexDescriptor::getFullQualifiedName)
         .collect(Collectors.joining(","));
   }
 
-  public static <T> T mapToSettings(
+  public <T> T mapToSettings(
       final Map<String, String> settingsMap, final Function<InputStream, T> settingsDeserializer) {
     try (final var settingsStream =
-        IOUtils.toInputStream(MAPPER.writeValueAsString(settingsMap), StandardCharsets.UTF_8)) {
+        IOUtils.toInputStream(
+            objectMapper.writeValueAsString(settingsMap), StandardCharsets.UTF_8)) {
 
       return settingsDeserializer.apply(settingsStream);
     } catch (final IOException e) {
@@ -64,7 +67,7 @@ public final class SearchEngineClientUtils {
     }
   }
 
-  public static boolean allImportersCompleted(
+  public boolean allImportersCompleted(
       final List<ImportPositionEntity> recordReaderStatuses, final int totalValueTypesCount) {
     // For a fresh install where there are no import position documents
     if (recordReaderStatuses.isEmpty()) {

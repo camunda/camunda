@@ -11,11 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.OpensearchExporterException;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.exporter.utils.SearchDBExtension;
+import io.camunda.exporter.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.UpdateRequest;
@@ -40,7 +41,7 @@ import org.opensearch.client.opensearch.generic.Requests;
 
 public class OpensearchEngineClientIT {
 
-  @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
+  @RegisterExtension private static final SearchDBExtension SEARCH_DB = SearchDBExtension.create();
 
   private static final String TEST_CONTEXT_MARKER = RandomStringUtils.insecure().nextNumeric(10);
 
@@ -49,8 +50,10 @@ public class OpensearchEngineClientIT {
 
   @BeforeAll
   public static void init() {
-    openSearchClient = searchDB.osClient();
-    opensearchEngineClient = new OpensearchEngineClient(openSearchClient);
+    openSearchClient = SEARCH_DB.osClient();
+    final var objectMapper =
+        ((JacksonJsonpMapper) openSearchClient._transport().jsonpMapper()).objectMapper();
+    opensearchEngineClient = new OpensearchEngineClient(openSearchClient, objectMapper);
   }
 
   @Test
@@ -299,7 +302,7 @@ public class OpensearchEngineClientIT {
     try (final var response = openSearchClient.generic().execute(req)) {
       assertThat(response.getStatus()).isEqualTo(200);
       assertThat(
-              new ObjectMapper()
+              TestObjectMapper.objectMapper()
                   .readTree(response.getBody().get().body())
                   .get("policy")
                   .get("states")

@@ -48,4 +48,13 @@ public enum JobListenerEventType {
    * logic before the task is assigned, to correct user task data, and to deny the assignment.
    */
   ASSIGNING,
+
+  /**
+   * Represents the `updating` event for a task listener. This event type is used to indicate that
+   * the listener should be triggered when a user task is updating. Updates may include changes to
+   * attributes such as `candidateGroupsList`, `candidateUsersList`, `dueDate`, `followUpDate`, and
+   * `priority`. It allows executing custom logic before the task is updated, to correct user task
+   * data, and to deny the update.
+   */
+  UPDATING
 }
