@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.client.impl;
 
+import static io.camunda.client.impl.util.ClientPropertiesValidationUtils.validateGrpcAddress;
+import static io.camunda.client.impl.util.ClientPropertiesValidationUtils.validateRestAddress;
 import static io.camunda.zeebe.client.ClientProperties.APPLY_ENVIRONMENT_VARIABLES_OVERRIDES;
 import static io.camunda.zeebe.client.ClientProperties.CA_CERTIFICATE_PATH;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_POLL_INTERVAL;
@@ -370,36 +372,14 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   @Override
   public ZeebeClientBuilder restAddress(final URI restAddress) {
-    /*
-     * Validates that the provided rest address is an absolute URI.
-     *
-     * <p>We use {@code URI.getHost() == null} to check for absolute URIs because:
-     * <ul>
-     *   <li>For absolute URIs (with a scheme) (e.g., "https://example.com"), {@code URI.getHost()} returns the hostname (e.g., "example.com").</li>
-     *   <li>For relative URIs (without a scheme) (e.g., "example.com"), {@code URI.getHost()} returns {@code null}.</li>
-     * </ul>
-     */
-    if (restAddress != null && restAddress.getHost() == null) {
-      throw new IllegalArgumentException("restAddress must be an absolute URI");
-    }
+    validateRestAddress(restAddress);
     this.restAddress = restAddress;
     return this;
   }
 
   @Override
   public ZeebeClientBuilder grpcAddress(final URI grpcAddress) {
-    /*
-     * Validates that the provided gRPC address is an absolute URI.
-     *
-     * <p>We use {@code URI.getHost() == null} to check for absolute URIs because:
-     * <ul>
-     *   <li>For absolute URIs (with a scheme) (e.g., "https://example.com"), {@code URI.getHost()} returns the hostname (e.g., "example.com").</li>
-     *   <li>For relative URIs (without a scheme) (e.g., "example.com"), {@code URI.getHost()} returns {@code null}.</li>
-     * </ul>
-     */
-    if (grpcAddress != null && grpcAddress.getHost() == null) {
-      throw new IllegalArgumentException("grpcAddress must be an absolute URI");
-    }
+    validateGrpcAddress(grpcAddress);
     this.grpcAddress = grpcAddress;
     grpcAddressUsed = true;
     return this;

@@ -16,11 +16,14 @@
 package io.camunda.spring.client.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.CamundaObjectMapper;
+import java.net.URI;
 import java.time.Duration;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -80,6 +83,30 @@ public class JavaClientPropertiesTest {
     @ConditionalOnMissingBean(JsonMapper.class)
     public JsonMapper jsonMapper() {
       return new CamundaObjectMapper();
+    }
+  }
+
+  @Nested
+  class InvalidPropertiesTest {
+
+    @Test
+    void shouldThrowExceptionOnInvalidGrpcURI() {
+      assertThatThrownBy(
+              () -> {
+                new CamundaClientProperties().setGrpcAddress(new URI("invalid:26500"));
+              })
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("The gRPC address must be an absolute URI");
+    }
+
+    @Test
+    void shouldThrowExceptionOnInvalidRestURI() {
+      assertThatThrownBy(
+              () -> {
+                new CamundaClientProperties().setRestAddress(new URI("invalid:8080"));
+              })
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("The REST address must be an absolute URI");
     }
   }
 }

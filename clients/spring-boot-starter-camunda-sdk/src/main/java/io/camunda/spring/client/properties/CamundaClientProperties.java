@@ -15,6 +15,9 @@
  */
 package io.camunda.spring.client.properties;
 
+import static io.camunda.client.impl.util.ClientPropertiesValidationUtils.validateGrpcAddress;
+import static io.camunda.client.impl.util.ClientPropertiesValidationUtils.validateRestAddress;
+
 import io.camunda.spring.client.properties.common.IdentityProperties;
 import io.camunda.spring.client.properties.common.ZeebeClientProperties;
 import java.net.URI;
@@ -175,18 +178,7 @@ public class CamundaClientProperties {
   }
 
   public void setGrpcAddress(final URI grpcAddress) {
-    /*
-     * Validates that the provided gRPC address is an absolute URI.
-     *
-     * <p>We use {@code URI.getHost() == null} to check for absolute URIs because:
-     * <ul>
-     *   <li>For absolute URIs (with a scheme) (e.g., "https://example.com"), {@code URI.getHost()} returns the hostname (e.g., "example.com").</li>
-     *   <li>For relative URIs (without a scheme) (e.g., "example.com"), {@code URI.getHost()} returns {@code null}.</li>
-     * </ul>
-     */
-    if (grpcAddress != null && grpcAddress.getHost() == null) {
-      throw new IllegalArgumentException("The gRPC address must be an absolute URI");
-    }
+    validateGrpcAddress(grpcAddress);
     this.grpcAddress = grpcAddress;
   }
 
@@ -195,18 +187,7 @@ public class CamundaClientProperties {
   }
 
   public void setRestAddress(final URI restAddress) {
-    /*
-     * Validates that the provided rest address is an absolute URI.
-     *
-     * <p>We use {@code URI.getHost() == null} to check for absolute URIs because:
-     * <ul>
-     *   <li>For absolute URIs (with a scheme) (e.g., "https://example.com"), {@code URI.getHost()} returns the hostname (e.g., "example.com").</li>
-     *   <li>For relative URIs (without a scheme) (e.g., "example.com"), {@code URI.getHost()} returns {@code null}.</li>
-     * </ul>
-     */
-    if (restAddress != null && restAddress.getHost() == null) {
-      throw new IllegalArgumentException("The REST address must be an absolute URI");
-    }
+    validateRestAddress(restAddress);
     this.restAddress = restAddress;
   }
 
