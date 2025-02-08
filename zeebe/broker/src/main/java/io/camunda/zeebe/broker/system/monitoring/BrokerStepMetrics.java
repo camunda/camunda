@@ -32,14 +32,14 @@ public class BrokerStepMetrics {
         startup.computeIfAbsent(
             stepName, name -> registerMetric(BrokerStepMetricsDoc.STARTUP, name));
     return MicrometerUtil.timer(
-        timerTracker::addAndGet, TimeUnit.MILLISECONDS, registry.config().clock());
+        timerTracker::set, TimeUnit.MILLISECONDS, registry.config().clock());
   }
 
   public CloseableSilently createCloseTimer(final String stepName) {
     final var timerTracker =
         close.computeIfAbsent(stepName, name -> registerMetric(BrokerStepMetricsDoc.CLOSE, name));
     return MicrometerUtil.timer(
-        timerTracker::addAndGet, TimeUnit.MILLISECONDS, registry.config().clock());
+        timerTracker::set, TimeUnit.MILLISECONDS, registry.config().clock());
   }
 
   private AtomicLong registerMetric(final BrokerStepMetricsDoc meterDoc, final String stepName) {
