@@ -103,6 +103,8 @@ final class BoundedScheduledCommandCacheTest {
     cache.add(JobIntent.TIME_OUT, 1);
     cache.add(TimerIntent.TRIGGER, 1);
     cache.add(TimerIntent.TRIGGER, 2);
+    cache.add(TimerIntent.TRIGGER, 3);
+    cache.remove(TimerIntent.TRIGGER, 3);
 
     // then
     assertThat(metrics.get(TimerIntent.TRIGGER)).hasValue(2);
