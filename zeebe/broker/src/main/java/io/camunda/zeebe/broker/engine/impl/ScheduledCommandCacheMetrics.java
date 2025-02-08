@@ -46,7 +46,7 @@ public interface ScheduledCommandCacheMetrics {
           .tag("intent", intentLabelValue)
           .register(registry);
 
-      return sizeTracker::addAndGet;
+      return sizeTracker::set;
     }
   }
 
