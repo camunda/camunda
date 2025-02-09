@@ -28,6 +28,7 @@ import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -220,6 +221,7 @@ final class StandaloneGatewaySecurityTest {
         brokerClient,
         jobStreamClient,
         null,
-        null);
+        null,
+        new SimpleMeterRegistry());
   }
 }

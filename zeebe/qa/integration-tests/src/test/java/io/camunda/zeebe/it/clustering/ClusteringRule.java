@@ -508,7 +508,8 @@ public class ClusteringRule extends ExternalResource {
             actorScheduler,
             jobStreamClient.streamer(),
             null,
-            null);
+            null,
+            new SimpleMeterRegistry());
     gateway.start().join();
 
     return new GatewayResource(

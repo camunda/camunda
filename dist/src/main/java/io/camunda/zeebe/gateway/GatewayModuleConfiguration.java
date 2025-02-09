@@ -19,6 +19,7 @@ import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
@@ -62,6 +63,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
   private final JobStreamClient jobStreamClient;
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
+  private final MeterRegistry meterRegistry;
 
   private Gateway gateway;
 
@@ -76,7 +78,8 @@ public class GatewayModuleConfiguration implements CloseableSilently {
       final BrokerClient brokerClient,
       final JobStreamClient jobStreamClient,
       @Autowired(required = false) final UserServices userServices,
-      final PasswordEncoder passwordEncoder) {
+      final PasswordEncoder passwordEncoder,
+      final MeterRegistry meterRegistry) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.securityConfiguration = securityConfiguration;
@@ -87,6 +90,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     this.jobStreamClient = jobStreamClient;
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
+    this.meterRegistry = meterRegistry;
   }
 
   @Bean(destroyMethod = "close")
@@ -112,7 +116,8 @@ public class GatewayModuleConfiguration implements CloseableSilently {
             actorScheduler,
             jobStreamClient.streamer(),
             userServices,
-            passwordEncoder);
+            passwordEncoder,
+            meterRegistry);
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     springGatewayBridge.registerClusterStateSupplier(
         () ->
