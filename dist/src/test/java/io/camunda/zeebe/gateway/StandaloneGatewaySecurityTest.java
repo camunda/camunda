@@ -22,6 +22,7 @@ import io.camunda.zeebe.shared.ActorClockConfiguration;
 import io.camunda.zeebe.shared.IdleStrategyConfig.IdleStrategySupplier;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -159,6 +160,7 @@ final class StandaloneGatewaySecurityTest {
         actorScheduler,
         atomixCluster,
         brokerClient,
-        jobStreamClient);
+        jobStreamClient,
+        new SimpleMeterRegistry());
   }
 }

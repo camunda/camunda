@@ -18,6 +18,7 @@ import io.camunda.zeebe.shared.MainSupport;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
@@ -53,6 +54,7 @@ public class StandaloneGateway
   private final AtomixCluster atomixCluster;
   private final BrokerClient brokerClient;
   private final JobStreamClient jobStreamClient;
+  private final MeterRegistry meterRegistry;
 
   private Gateway gateway;
 
@@ -64,7 +66,8 @@ public class StandaloneGateway
       final ActorScheduler actorScheduler,
       final AtomixCluster atomixCluster,
       final BrokerClient brokerClient,
-      final JobStreamClient jobStreamClient) {
+      final JobStreamClient jobStreamClient,
+      final MeterRegistry meterRegistry) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.springGatewayBridge = springGatewayBridge;
@@ -72,6 +75,7 @@ public class StandaloneGateway
     this.atomixCluster = atomixCluster;
     this.brokerClient = brokerClient;
     this.jobStreamClient = jobStreamClient;
+    this.meterRegistry = meterRegistry;
   }
 
   public static void main(final String[] args) {
@@ -109,7 +113,8 @@ public class StandaloneGateway
             identityConfiguration,
             brokerClient,
             actorScheduler,
-            jobStreamClient.streamer());
+            jobStreamClient.streamer(),
+            meterRegistry);
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     springGatewayBridge.registerClusterStateSupplier(
         () ->
