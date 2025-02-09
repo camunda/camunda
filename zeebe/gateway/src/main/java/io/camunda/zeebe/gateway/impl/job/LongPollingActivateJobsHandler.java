@@ -21,6 +21,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.grpc.protobuf.StatusProto;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
@@ -57,13 +59,14 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
       final long maxMessageSize,
       final long longPollingTimeout,
       final long probeTimeoutMillis,
-      final int failedAttemptThreshold) {
+      final int failedAttemptThreshold,
+      final MeterRegistry meterRegistry) {
     this.brokerClient = brokerClient;
     activateJobsHandler = new RoundRobinActivateJobsHandler(brokerClient, maxMessageSize);
     this.longPollingTimeout = Duration.ofMillis(longPollingTimeout);
     this.probeTimeoutMillis = probeTimeoutMillis;
     this.failedAttemptThreshold = failedAttemptThreshold;
-    metrics = new LongPollingMetrics();
+    metrics = new LongPollingMetrics(meterRegistry);
   }
 
   @Override
@@ -380,6 +383,7 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
     private long longPollingTimeout = DEFAULT_LONG_POLLING_TIMEOUT;
     private long probeTimeoutMillis = DEFAULT_PROBE_TIMEOUT;
     private int minEmptyResponses = EMPTY_RESPONSE_THRESHOLD;
+    private MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
     public Builder setBrokerClient(final BrokerClient brokerClient) {
       this.brokerClient = brokerClient;
@@ -406,10 +410,20 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
       return this;
     }
 
+    public Builder setMeterRegistry(final MeterRegistry meterRegistry) {
+      this.meterRegistry = meterRegistry;
+      return this;
+    }
+
     public LongPollingActivateJobsHandler build() {
       Objects.requireNonNull(brokerClient, "brokerClient");
       return new LongPollingActivateJobsHandler(
-          brokerClient, maxMessageSize, longPollingTimeout, probeTimeoutMillis, minEmptyResponses);
+          brokerClient,
+          maxMessageSize,
+          longPollingTimeout,
+          probeTimeoutMillis,
+          minEmptyResponses,
+          meterRegistry);
     }
   }
 }
