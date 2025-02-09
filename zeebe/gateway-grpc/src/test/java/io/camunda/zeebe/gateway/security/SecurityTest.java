@@ -27,6 +27,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.File;
 import java.io.IOException;
@@ -190,6 +191,7 @@ final class SecurityTest {
         actorScheduler,
         jobStreamClient.streamer(),
         mock(UserServices.class),
-        mock(PasswordEncoder.class));
+        mock(PasswordEncoder.class),
+        new SimpleMeterRegistry());
   }
 }
