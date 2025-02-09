@@ -24,6 +24,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.File;
 import java.io.IOException;
@@ -179,6 +180,18 @@ final class SecurityTest {
     brokerClient.start().forEach(ActorFuture::join);
     topologyManager.addTopologyListener(jobStreamClient);
     atomix.getMembershipService().addListener(topologyManager);
+<<<<<<< HEAD
     return new Gateway(gatewayCfg, brokerClient, actorScheduler, jobStreamClient.streamer());
+=======
+    return new Gateway(
+        gatewayCfg,
+        new SecurityConfiguration(),
+        brokerClient,
+        actorScheduler,
+        jobStreamClient.streamer(),
+        mock(UserServices.class),
+        mock(PasswordEncoder.class),
+        new SimpleMeterRegistry());
+>>>>>>> 6935d3e3 (refactor: migrate gRPC gateway metrics to micrometer)
   }
 }

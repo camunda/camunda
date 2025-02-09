@@ -28,6 +28,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.asserts.grpc.ClientStatusExceptionAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.grpc.Status.Code;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.util.NetUtil;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -84,7 +85,20 @@ class UnavailableBrokersTest {
     brokerClient.start().forEach(ActorFuture::join);
     brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
 
+<<<<<<< HEAD
     gateway = new Gateway(config, brokerClient, actorScheduler, jobStreamClient.streamer());
+=======
+    gateway =
+        new Gateway(
+            config,
+            SecurityConfigurations.unauthenticated(),
+            brokerClient,
+            actorScheduler,
+            jobStreamClient.streamer(),
+            mock(UserServices.class),
+            mock(PasswordEncoder.class),
+            new SimpleMeterRegistry());
+>>>>>>> 6935d3e3 (refactor: migrate gRPC gateway metrics to micrometer)
     gateway.start().join();
 
     final String gatewayAddress = NetUtil.toSocketAddressString(networkCfg.toSocketAddress());
