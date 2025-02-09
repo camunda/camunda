@@ -8917,7 +8917,7 @@
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
-              "expr": "sum(label_replace(label_replace(rate(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval]), \"method\", \"$1\", \"grpc_method\", \"(.+)\"), \"statusCode\", \"$1\", \"code\", \"(.+)\") or on(method, statusCode) rate(grpc_server_processing_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])) by (method, statusCode)",
+              "expr": "sum(label_replace(label_replace(rate(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]), \"method\", \"$1\", \"grpc_method\", \"(.+)\"), \"statusCode\", \"$1\", \"code\", \"(.+)\") or on(method, statusCode) rate(grpc_server_processing_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (method, statusCode)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
@@ -9010,7 +9010,7 @@
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
-              "expr": "sum(label_replace(label_replace(rate(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval]), \"method\", \"$1\", \"grpc_method\", \"(.+)\"), \"statusCode\", \"$1\", \"code\", \"(.+)\") or on(method, statusCode) rate(grpc_server_processing_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])) by (method, statusCode)",
+              "expr": "sum(label_replace(label_replace(rate(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]), \"method\", \"$1\", \"grpc_method\", \"(.+)\"), \"statusCode\", \"$1\", \"code\", \"(.+)\") or on(method, statusCode) rate(grpc_server_processing_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (method, statusCode)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
@@ -9021,7 +9021,7 @@
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
-              "expr": "sum(label_replace(label_replace(rate(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval]), \"method\", \"$1\", \"grpc_method\", \"(.+)\"), \"statusCode\", \"$1\", \"code\", \"(.+)\") or on(method, statusCode) rate(grpc_server_processing_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval]))",
+              "expr": "sum(label_replace(label_replace(rate(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]), \"method\", \"$1\", \"grpc_method\", \"(.+)\"), \"statusCode\", \"$1\", \"code\", \"(.+)\") or on(method, statusCode) rate(grpc_server_processing_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]))",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Total requests completed",
@@ -9256,7 +9256,7 @@
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
-              "expr": "sum(increase(grpc_server_processing_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", method=\"CompleteJob\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(grpc_server_processing_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", method=\"CompleteJob\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
