@@ -30,6 +30,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.grpc.StatusRuntimeException;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.util.NetUtil;
 import java.time.Duration;
 import java.util.List;
@@ -84,7 +85,20 @@ final class InterceptorIT {
             topologyManager);
 
     jobStreamClient = new JobStreamClientImpl(scheduler, cluster.getCommunicationService());
+<<<<<<< HEAD
     gateway = new Gateway(config, brokerClient, scheduler, jobStreamClient.streamer());
+=======
+    gateway =
+        new Gateway(
+            config,
+            SecurityConfigurations.unauthenticated(),
+            brokerClient,
+            scheduler,
+            jobStreamClient.streamer(),
+            mock(UserServices.class),
+            mock(PasswordEncoder.class),
+            new SimpleMeterRegistry());
+>>>>>>> 6935d3e3 (refactor: migrate gRPC gateway metrics to micrometer)
 
     cluster.start().join();
     scheduler.start();

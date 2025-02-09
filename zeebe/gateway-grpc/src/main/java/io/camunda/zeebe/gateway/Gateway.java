@@ -40,6 +40,7 @@ import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.TlsConfigUtil;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -50,6 +51,13 @@ import io.grpc.StatusException;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.protobuf.StatusProto;
+<<<<<<< HEAD
+=======
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.binder.grpc.MetricCollectingServerInterceptor;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
+import io.netty.channel.ChannelOption;
+>>>>>>> 6935d3e3 (refactor: migrate gRPC gateway metrics to micrometer)
 import io.netty.handler.ssl.SslContextBuilder;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -66,9 +74,8 @@ import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
-import me.dinowernli.grpc.prometheus.Configuration;
-import me.dinowernli.grpc.prometheus.MonitoringServerInterceptor;
 import org.slf4j.Logger;
 
 public final class Gateway implements CloseableSilently {
@@ -79,8 +86,6 @@ public final class Gateway implements CloseableSilently {
       msg -> grpcStatusException(Code.CANCELLED_VALUE, msg);
 
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
-  private static final MonitoringServerInterceptor MONITORING_SERVER_INTERCEPTOR =
-      MonitoringServerInterceptor.create(Configuration.allMetrics());
   private static final Duration DEFAULT_SHUTDOWN_TIMEOUT = Duration.ofSeconds(30);
 
   private final GatewayCfg gatewayCfg;
@@ -93,19 +98,33 @@ public final class Gateway implements CloseableSilently {
   private Server server;
   private ExecutorService grpcExecutor;
   private final BrokerClient brokerClient;
+<<<<<<< HEAD
+=======
+  private final UserServices userServices;
+  private final PasswordEncoder passwordEncoder;
+  private final MeterRegistry meterRegistry;
+>>>>>>> 6935d3e3 (refactor: migrate gRPC gateway metrics to micrometer)
 
   public Gateway(
       final GatewayCfg gatewayCfg,
       final IdentityConfiguration identityCfg,
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
+<<<<<<< HEAD
       final ClientStreamer<JobActivationProperties> jobStreamer) {
+=======
+      final ClientStreamer<JobActivationProperties> jobStreamer,
+      final UserServices userServices,
+      final PasswordEncoder passwordEncoder,
+      final MeterRegistry meterRegistry) {
+>>>>>>> 6935d3e3 (refactor: migrate gRPC gateway metrics to micrometer)
     this(
         DEFAULT_SHUTDOWN_TIMEOUT,
         gatewayCfg,
         identityCfg,
         brokerClient,
         actorSchedulingService,
+<<<<<<< HEAD
         jobStreamer);
   }
 
@@ -115,6 +134,12 @@ public final class Gateway implements CloseableSilently {
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer) {
     this(gatewayCfg, null, brokerClient, actorSchedulingService, jobStreamer);
+=======
+        jobStreamer,
+        userServices,
+        passwordEncoder,
+        meterRegistry);
+>>>>>>> 6935d3e3 (refactor: migrate gRPC gateway metrics to micrometer)
   }
 
   public Gateway(
@@ -123,13 +148,26 @@ public final class Gateway implements CloseableSilently {
       final IdentityConfiguration identityCfg,
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
+<<<<<<< HEAD
       final ClientStreamer<JobActivationProperties> jobStreamer) {
+=======
+      final ClientStreamer<JobActivationProperties> jobStreamer,
+      final UserServices userServices,
+      final PasswordEncoder passwordEncoder,
+      final MeterRegistry meterRegistry) {
+>>>>>>> 6935d3e3 (refactor: migrate gRPC gateway metrics to micrometer)
     shutdownTimeout = shutdownDuration;
     this.gatewayCfg = gatewayCfg;
     this.identityCfg = identityCfg;
     this.brokerClient = brokerClient;
     this.actorSchedulingService = actorSchedulingService;
     this.jobStreamer = jobStreamer;
+<<<<<<< HEAD
+=======
+    this.userServices = userServices;
+    this.passwordEncoder = passwordEncoder;
+    this.meterRegistry = meterRegistry;
+>>>>>>> 6935d3e3 (refactor: migrate gRPC gateway metrics to micrometer)
 
     healthManager = new GatewayHealthManagerImpl();
   }
@@ -208,8 +246,6 @@ public final class Gateway implements CloseableSilently {
   }
 
   private void applyExecutorConfiguration(final NettyServerBuilder builder) {
-    final var config = gatewayCfg.getThreads();
-
     // the default boss and worker event loop groups defined by the library are good enough; they
     // will appropriately select epoll or nio based on availability, and the boss loop gets 1
     // thread, while the worker gets the number of cores
@@ -235,11 +271,17 @@ public final class Gateway implements CloseableSilently {
 
   private Server buildServer(
       final ServerBuilder<?> serverBuilder, final BindableService interceptorService) {
+    final var metricsInterceptor =
+        new MetricCollectingServerInterceptor(
+            meterRegistry,
+            UnaryOperator.identity(),
+            // for backwards compatibility, keep the old Prometheus buckets
+            b -> b.serviceLevelObjectives(MicrometerUtil.defaultPrometheusBuckets()));
     return serverBuilder
-        .addService(applyInterceptors(interceptorService))
         .addService(
-            ServerInterceptors.intercept(
-                healthManager.getHealthService(), MONITORING_SERVER_INTERCEPTOR))
+            ServerInterceptors.intercept(applyInterceptors(interceptorService), metricsInterceptor))
+        .addService(
+            ServerInterceptors.intercept(healthManager.getHealthService(), metricsInterceptor))
         .build();
   }
 
@@ -356,6 +398,10 @@ public final class Gateway implements CloseableSilently {
 
   private LongPollingActivateJobsHandler<ActivateJobsResponse> buildLongPollingHandler(
       final BrokerClient brokerClient) {
+    final var grpcRegistry = new CompositeMeterRegistry();
+    grpcRegistry.add(meterRegistry);
+    grpcRegistry.config().commonTags("gateway", "grpc");
+
     return LongPollingActivateJobsHandler.<ActivateJobsResponse>newBuilder()
         .setBrokerClient(brokerClient)
         .setMaxMessageSize(gatewayCfg.getNetwork().getMaxMessageSize().toBytes())
@@ -365,6 +411,7 @@ public final class Gateway implements CloseableSilently {
         .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
         .setNoJobsReceivedExceptionProvider(NO_JOBS_RECEIVED_EXCEPTION_PROVIDER)
         .setRequestCanceledExceptionProvider(REQUEST_CANCELED_EXCEPTION_PROVIDER)
+        .setMeterRegistry(grpcRegistry)
         .build();
   }
 
@@ -379,6 +426,7 @@ public final class Gateway implements CloseableSilently {
     // chain
     Collections.reverse(interceptors);
     interceptors.add(new ContextInjectingInterceptor(queryApi));
+<<<<<<< HEAD
     interceptors.add(MONITORING_SERVER_INTERCEPTOR);
     if (AuthMode.IDENTITY == gatewayCfg.getSecurity().getAuthentication().getMode()) {
       final var zeebeIdentityCfg = gatewayCfg.getSecurity().getAuthentication().getIdentity();
@@ -391,6 +439,11 @@ public final class Gateway implements CloseableSilently {
       } else {
         interceptors.add(new IdentityInterceptor(identityCfg, gatewayCfg));
       }
+=======
+
+    if (!securityConfiguration.isUnauthenticatedApiAccessAllowed()) {
+      interceptors.add(new AuthenticationInterceptor(userServices, passwordEncoder));
+>>>>>>> 6935d3e3 (refactor: migrate gRPC gateway metrics to micrometer)
     }
 
     return ServerInterceptors.intercept(service, interceptors);
