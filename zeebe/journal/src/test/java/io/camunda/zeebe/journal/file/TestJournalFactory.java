@@ -14,10 +14,13 @@ import io.camunda.zeebe.journal.util.MockJournalMetastore;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.AutoClose;
 
 /**
  * A small utility to create controllable {@link SegmentedJournal} with fixed size segments. Knowing
@@ -36,7 +39,9 @@ import org.agrona.concurrent.UnsafeBuffer;
  */
 final class TestJournalFactory {
   private final MockJournalMetastore metaStore = new MockJournalMetastore();
-  private final JournalMetrics metrics = new JournalMetrics("test");
+  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+
+  private final JournalMetrics metrics = new JournalMetrics(meterRegistry);
   private final JournalIndex index = new SparseJournalIndex(1);
 
   private final int maxEntryCount;

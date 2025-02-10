@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.camunda.zeebe.journal.JournalMetaStore;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 
 /** Raft log builder. */
@@ -46,8 +47,11 @@ public class SegmentedJournalBuilder {
   private int partitionId = DEFAULT_PARTITION_ID;
 
   private JournalMetaStore journalMetaStore;
+  private final MeterRegistry meterRegistry;
 
-  SegmentedJournalBuilder() {}
+  SegmentedJournalBuilder(final MeterRegistry meterRegistry) {
+    this.meterRegistry = meterRegistry;
+  }
 
   /**
    * Sets the storage name.
@@ -164,7 +168,7 @@ public class SegmentedJournalBuilder {
 
   public SegmentedJournal build() {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
-    final var journalMetrics = new JournalMetrics(String.valueOf(partitionId));
+    final var journalMetrics = new JournalMetrics(meterRegistry);
     final var segmentAllocator =
         preallocateSegmentFiles ? SegmentAllocator.fill() : SegmentAllocator.noop();
     final var segmentLoader = new SegmentLoader(freeDiskSpace, journalMetrics, segmentAllocator);
