@@ -89,11 +89,6 @@ public enum JournalMetricsDoc implements ExtendedMeterDocumentation {
     }
 
     @Override
-    public Duration[] getTimerSLOs() {
-      return super.getTimerSLOs();
-    }
-
-    @Override
     public KeyName[] getKeyNames() {
       return new KeyName[] {PartitionKeyNames.PARTITION};
     }
@@ -113,11 +108,6 @@ public enum JournalMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public String getDescription() {
       return "Time spend to flush all dirty segments to disk";
-    }
-
-    @Override
-    public Duration[] getTimerSLOs() {
-      return super.getTimerSLOs();
     }
 
     @Override
@@ -274,6 +264,25 @@ public enum JournalMetricsDoc implements ExtendedMeterDocumentation {
   },
   /** Distribution of time spent seeking to a specific index */
   SEEK_LATENCY {
+    private final Duration[] BUCKETS =
+        Stream.of(
+                100,
+                1_000,
+                5_000,
+                10_0000,
+                25_000,
+                50_000,
+                75_000,
+                100_0000,
+                250_000,
+                500_000,
+                75_000,
+                1_000 * 1000,
+                2_500 * 1000,
+                5_000 * 1000)
+            .map(micros -> Duration.of(micros, ChronoUnit.MICROS))
+            .toArray(Duration[]::new);
+
     @Override
     public String getName() {
       return "atomix.journal.seek.latency";
@@ -291,23 +300,7 @@ public enum JournalMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public Duration[] getTimerSLOs() {
-      return Stream.of(
-              100,
-              1_000,
-              5_000,
-              10_0000,
-              25_000,
-              50_000,
-              75_000,
-              100_0000,
-              250_000,
-              500_000,
-              75_000,
-              1_000 * 1000,
-              2_500 * 1000,
-              5_000 * 1000)
-          .map(micros -> Duration.of(micros, ChronoUnit.MICROS))
-          .toArray(Duration[]::new);
+      return BUCKETS;
     }
 
     @Override
