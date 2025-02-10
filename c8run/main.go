@@ -219,7 +219,6 @@ func main() {
 	}
 
 	elasticsearchVersion := os.Getenv("ELASTICSEARCH_VERSION")
-	camundaReleaseTag := os.Getenv("CAMUNDA_RELEASE_TAG")
 	camundaVersion := os.Getenv("CAMUNDA_VERSION")
 	connectorsVersion := os.Getenv("CONNECTORS_VERSION")
 
@@ -417,13 +416,13 @@ func main() {
 
 	if baseCommand == "package" {
 		if runtime.GOOS == "windows" {
-			err := PackageWindows(camundaVersion, elasticsearchVersion, connectorsVersion, camundaReleaseTag)
+			err := PackageWindows(camundaVersion, elasticsearchVersion, connectorsVersion)
 			if err != nil {
 				fmt.Printf("%+v", err)
 				os.Exit(1)
 			}
 		} else if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-			err := PackageUnix(camundaVersion, elasticsearchVersion, connectorsVersion, camundaReleaseTag)
+			err := PackageUnix(camundaVersion, elasticsearchVersion, connectorsVersion)
 			if err != nil {
 				fmt.Printf("%+v", err)
 				os.Exit(1)
