@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -20,11 +22,13 @@ import java.nio.file.StandardOpenOption;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 final class SegmentedJournalWriterTest {
+  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final TestJournalFactory journalFactory =
       new TestJournalFactory("data", 2, this::fillWithOnes);
   private final SegmentsFlusher flusher = new SegmentsFlusher(journalFactory.metaStore());
@@ -134,7 +138,8 @@ final class SegmentedJournalWriterTest {
   @Test
   void shouldInvalidateNextEntryAfterAppend() {
     try (final SegmentedJournalReader reader =
-        new SegmentedJournalReader(journalFactory.journal(segments), new JournalMetrics("1"))) {
+        new SegmentedJournalReader(
+            journalFactory.journal(segments), new JournalMetrics(meterRegistry))) {
       // when
       writer.append(-1, journalFactory.entry());
 
@@ -161,7 +166,7 @@ final class SegmentedJournalWriterTest {
 
     try (final SegmentedJournalReader reader =
         new SegmentedJournalReader(
-            followerJournalFactory.journal(followerSegments), new JournalMetrics("1"))) {
+            followerJournalFactory.journal(followerSegments), new JournalMetrics(meterRegistry))) {
       // when
       final byte[] serializedRecord = BufferUtil.bufferAsArray(writtenRecord.serializedRecord());
       followerWriter.append(writtenRecord.checksum(), serializedRecord);
