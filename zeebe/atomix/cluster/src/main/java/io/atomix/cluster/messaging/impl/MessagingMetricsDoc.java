@@ -68,9 +68,8 @@ public enum MessagingMetricsDoc implements ExtendedMeterDocumentation {
     }
 
     @Override
-    // FIXME
     public double[] getDistributionSLOs() {
-      return super.getDistributionSLOs();
+      return new double[] {.01, .1, .250, 1, 10, 100, 500, 1_000, 2_000, 4_000};
     }
   },
   /** Number of requests which has been sent to a certain address */
