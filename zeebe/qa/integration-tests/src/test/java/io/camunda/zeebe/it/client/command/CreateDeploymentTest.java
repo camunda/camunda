@@ -133,7 +133,7 @@ public final class CreateDeploymentTest {
     // then
     assertThatThrownBy(command::join)
         .isInstanceOf(ClientException.class)
-        .hasMessageContaining("Must have 'zeebe:taskDefinition' extension element");
+        .hasMessageContaining("Must have exactly one 'zeebe:taskDefinition' extension element");
   }
 
   @ParameterizedTest
