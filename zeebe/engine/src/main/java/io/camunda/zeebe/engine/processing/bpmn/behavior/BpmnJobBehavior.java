@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -317,10 +319,7 @@ public final class BpmnJobBehavior {
     final String dueDate = props.getDueDate();
     final String followUpDate = props.getFollowUpDate();
     final String formKey = props.getFormKey();
-    final String resourceId = props.getResourceId();
-    final String resourceKey = props.getResourceKey();
-    final String resourceType = props.getResourceType();
-    final String linkName = props.getLinkName();
+    final List<LinkedResource> linkedResources = props.getLinkedResources();
 
     if (assignee != null && !assignee.isEmpty()) {
       headers.put(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, assignee);
@@ -340,17 +339,13 @@ public final class BpmnJobBehavior {
     if (formKey != null && !formKey.isEmpty()) {
       headers.put(Protocol.USER_TASK_FORM_KEY_HEADER_NAME, formKey);
     }
-    if (resourceId != null && !resourceId.isEmpty()) {
-      headers.put(Protocol.LINKED_RESOURCES_RESOURCE_ID_NAME, resourceId);
-    }
-    if (resourceKey != null && !resourceKey.isEmpty()) {
-      headers.put(Protocol.LINKED_RESOURCES_RESOURCE_KEY, resourceKey);
-    }
-    if (resourceType != null && !resourceType.isEmpty()) {
-      headers.put(Protocol.LINKED_RESOURCES_RESOURCE_TYPE, resourceType);
-    }
-    if (linkName != null && !linkName.isEmpty()) {
-      headers.put(Protocol.LINKED_RESOURCES_LINK_NAME, linkName);
+    if (linkedResources != null && !linkedResources.isEmpty()) {
+      try {
+        final String linkedResourcesJson = new ObjectMapper().writeValueAsString(linkedResources);
+        headers.put(Protocol.LINKED_RESOURCES_HEADER_NAME, linkedResourcesJson);
+      } catch (final IOException e) {
+        throw new RuntimeException("Failed to convert linked resource headers to json object", e);
+      }
     }
     return headerEncoder.encode(headers);
   }
@@ -409,10 +404,7 @@ public final class BpmnJobBehavior {
     private String dueDate;
     private String followUpDate;
     private String formKey;
-    private String resourceId;
-    private String resourceKey;
-    private String resourceType;
-    private String linkName;
+    private List<LinkedResource> linkedResources;
 
     public JobProperties type(final String type) {
       this.type = type;
@@ -486,40 +478,43 @@ public final class BpmnJobBehavior {
       return formKey;
     }
 
-    public JobProperties resourceId(final String resourceId) {
-      this.resourceId = resourceId;
+    public JobProperties linkedResources(final List<LinkedResource> linkedResources) {
+      this.linkedResources = linkedResources;
       return this;
     }
 
-    public String getResourceId() {
-      return resourceId;
+    public List<LinkedResource> getLinkedResources() {
+      return linkedResources;
     }
+  }
 
-    public JobProperties resourceKey(final String resourceKey) {
-      this.resourceKey = resourceKey;
-      return this;
-    }
+  public static final class LinkedResource {
+    private String resourceKey;
+    private String resourceType;
+    private String linkName;
 
     public String getResourceKey() {
       return resourceKey;
     }
 
-    public JobProperties resourceType(final String resourceType) {
-      this.resourceType = resourceType;
-      return this;
+    public void setResourceKey(final String resourceKey) {
+      this.resourceKey = resourceKey;
     }
 
     public String getResourceType() {
       return resourceType;
     }
 
-    public JobProperties linkName(final String linkName) {
-      this.linkName = linkName;
-      return this;
+    public void setResourceType(final String resourceType) {
+      this.resourceType = resourceType;
     }
 
     public String getLinkName() {
       return linkName;
+    }
+
+    public void setLinkName(final String linkName) {
+      this.linkName = linkName;
     }
   }
 }
