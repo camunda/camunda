@@ -27,8 +27,12 @@ import io.camunda.zeebe.journal.record.PersistedJournalRecord;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.util.MockJournalMetastore;
 import io.camunda.zeebe.journal.util.PosixPathAssert;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -51,12 +55,14 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 @SuppressWarnings("resource")
+@AutoCloseResources
 class SegmentedJournalTest {
   private static final String JOURNAL_NAME = "journal";
 
   private TestJournalFactory journalFactory;
 
   private @TempDir Path directory;
+  @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private SegmentedJournal journal;
 
   private final List<AutoCloseable> closeables = new ArrayList<>();
@@ -681,7 +687,7 @@ class SegmentedJournalTest {
     // given
     final var segmentSize = 4 * 1024 * 1024;
     final var builder =
-        SegmentedJournal.builder()
+        SegmentedJournal.builder(meterRegistry)
             .withPreallocateSegmentFiles(true)
             .withMaxSegmentSize(segmentSize)
             .withDirectory(tmpDir.toFile())
@@ -704,7 +710,7 @@ class SegmentedJournalTest {
     // given
     final var segmentSize = 4 * 1024 * 1024;
     final var builder =
-        SegmentedJournal.builder()
+        SegmentedJournal.builder(meterRegistry)
             .withPreallocateSegmentFiles(false)
             .withMaxSegmentSize(segmentSize)
             .withDirectory(tmpDir.toFile())

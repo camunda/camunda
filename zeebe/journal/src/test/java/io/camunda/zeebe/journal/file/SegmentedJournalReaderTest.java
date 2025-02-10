@@ -21,8 +21,12 @@ import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
 import io.camunda.zeebe.journal.util.MockJournalMetastore;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -34,12 +38,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+@AutoCloseResources
 class SegmentedJournalReaderTest {
 
   private static final int ENTRIES_PER_SEGMENT = 4;
 
   @TempDir Path directory;
 
+  @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final UnsafeBuffer data = new UnsafeBuffer("test".getBytes(StandardCharsets.UTF_8));
   private final BufferWriter recordDataWriter = new DirectBufferWriter().wrap(data);
 
@@ -51,7 +57,7 @@ class SegmentedJournalReaderTest {
     final int entrySize = FrameUtil.getLength() + getSerializedSize(data);
 
     journal =
-        SegmentedJournal.builder()
+        SegmentedJournal.builder(meterRegistry)
             .withDirectory(directory.resolve("data").toFile())
             .withMaxSegmentSize(
                 entrySize * ENTRIES_PER_SEGMENT + SegmentDescriptor.getEncodingLength())
