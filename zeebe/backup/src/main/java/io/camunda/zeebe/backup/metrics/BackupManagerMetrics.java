@@ -50,7 +50,10 @@ public class BackupManagerMetrics {
 
   public void cancelInProgressOperations() {
     for (final var operation : OperationType.values()) {
-      operationInProgress.get(partitionId, operation).set(0L);
+      final var value = operationInProgress.get(partitionId, operation);
+      if (value != null) {
+        value.set(0L);
+      }
     }
   }
 
@@ -73,15 +76,20 @@ public class BackupManagerMetrics {
         .register(registry);
   }
 
-  private AtomicLong registerOperationInProgress(
+  private AtomicLong getOperationInProgress(
       final String partitionId, final OperationType operationType) {
-    var value = operationInProgress.get(partitionId, operationType);
+    final var value = operationInProgress.get(partitionId, operationType);
     if (value == null) {
-      value = new AtomicLong();
-      operationInProgress.put(partitionId, operationType, value);
-      Gauge.builder(BACKUP_OPERATIONS_IN_PROGRESS.getName(), value::get)
-          .description(BACKUP_OPERATIONS_IN_PROGRESS.getDescription())
-          .register(registry);
+      final var newValue = new AtomicLong();
+      final var inMap =
+          operationInProgress.computeIfAbsent(
+              partitionId, operationType, (unused, unused2) -> newValue);
+      if (inMap == newValue) {
+        Gauge.builder(BACKUP_OPERATIONS_IN_PROGRESS.getName(), inMap::get)
+            .description(BACKUP_OPERATIONS_IN_PROGRESS.getDescription())
+            .register(registry);
+      }
+      return inMap;
     }
     return value;
   }
@@ -90,9 +98,7 @@ public class BackupManagerMetrics {
     final var timer =
         backupOperationLatency.computeIfAbsent(partitionId, operation, this::registerBackupLatency);
     final var timerSample = MicrometerUtil.timer(timer, Timer.start(registry.config().clock()));
-    operationInProgress
-        .computeIfAbsent(partitionId, operation, this::registerOperationInProgress)
-        .incrementAndGet();
+    getOperationInProgress(partitionId, operation).incrementAndGet();
     return new OperationMetrics(partitionId, timerSample, operation);
   }
 
@@ -110,10 +116,7 @@ public class BackupManagerMetrics {
 
     public <T> void complete(final T ignored, final Throwable throwable) {
       timer.close();
-      operationInProgress
-          .computeIfAbsent(
-              partitionId, operation, BackupManagerMetrics.this::registerOperationInProgress)
-          .decrementAndGet();
+      getOperationInProgress(partitionId, operation).decrementAndGet();
       final var result = throwable != null ? OperationResult.FAILED : OperationResult.COMPLETED;
       totalOperations
           .computeIfAbsent(operation, result, BackupManagerMetrics.this::registerTotalOperation)
