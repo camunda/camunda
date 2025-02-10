@@ -139,12 +139,12 @@ final class MessagingMetricsImpl implements MessagingMetrics {
   }
 
   private Counter registerResponseCounter(
-      final String type, final String address, final String topic) {
+      final String address, final String topic, final String outcome) {
     return Counter.builder(RESPONSE_COUNT.getName())
         .description(RESPONSE_COUNT.getDescription())
         .tags(
             MessagingKeyNames.OUTCOME.asString(),
-            type,
+            outcome,
             MessagingKeyNames.ADDRESS.asString(),
             address,
             MessagingKeyNames.TOPIC.asString(),
