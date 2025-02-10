@@ -25,23 +25,20 @@ final class SwimMembershipProtocolMetrics {
   }
 
   public void updateMemberIncarnationNumber(final String member, final long incarnationNumber) {
-    incarnationNumbers
-        .computeIfAbsent(member, this::registerIncarnationNumberGauge)
-        .set(incarnationNumber);
+    registerIncarnationNumberGauge(member).set(incarnationNumber);
   }
 
   private AtomicLong registerIncarnationNumberGauge(final String member) {
     // do a get first to see if we may have to allocate
-    var counter = incarnationNumbers.get(member);
+    final var counter = incarnationNumbers.get(member);
     if (counter == null) {
-      counter = new AtomicLong();
-      final AtomicLong finalCounter = counter;
+      final AtomicLong finalCounter = new AtomicLong(0L);
       // try setting the counter to the one just allocated
       final var inside = incarnationNumbers.computeIfAbsent(member, unused -> finalCounter);
       // we won the race: use reference equality to check if it's the same instance
       if (inside == finalCounter) {
         Gauge.builder(
-                SwimMembershipProtocolMetricsDoc.MEMBERS_INCARNATION_NUMBER.getName(), counter::get)
+                SwimMembershipProtocolMetricsDoc.MEMBERS_INCARNATION_NUMBER.getName(), inside::get)
             .description(
                 SwimMembershipProtocolMetricsDoc.MEMBERS_INCARNATION_NUMBER.getDescription())
             .tags(SwimKeyNames.MEMBER_ID.asString(), member)
