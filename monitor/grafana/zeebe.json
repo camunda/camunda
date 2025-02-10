@@ -19184,7 +19184,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum(increase(zeebe_backup_operations_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", operation=\"status\"}[$__interval])) by (le)",
+              "expr": "sum(increase(zeebe_backup_operations_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", operation=\"status\"}[$__interval]) or increase(zeebe_backup_operations_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", operation=\"status\"}[$__interval])) by (le)",
               "format": "heatmap",
               "hide": false,
               "interval": "",
@@ -19253,7 +19253,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max by (partition) (rate(zeebe_backup_operations_latency_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\", operation=\"take\"}[1h]) / rate(zeebe_backup_operations_latency_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\", operation=\"take\"}[1h]))",
+              "expr": "max by (partition) ((rate(zeebe_backup_operations_latency_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\", operation=\"take\"}[1h]) / rate(zeebe_backup_operations_latency_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\", operation=\"take\"}[1h])) or (rate(zeebe_backup_operations_latency_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\", operation=\"take\"}[1h]) / rate(zeebe_backup_operations_latency_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\", operation=\"take\"}[1h])))",
               "hide": false,
               "interval": "",
               "legendFormat": "Partition {{partition}}",
