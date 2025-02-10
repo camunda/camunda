@@ -18,6 +18,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Optional;
@@ -44,13 +45,14 @@ public final class BackupService extends Actor implements BackupManager {
       final BackupStore backupStore,
       final PersistedSnapshotStore snapshotStore,
       final Path segmentsDirectory,
-      final JournalInfoProvider raftMetadataProvider) {
+      final JournalInfoProvider raftMetadataProvider,
+      final MeterRegistry brokerMeterRegistry) {
     this.nodeId = nodeId;
     this.partitionId = partitionId;
     this.numberOfPartitions = numberOfPartitions;
     this.snapshotStore = snapshotStore;
     this.segmentsDirectory = segmentsDirectory;
-    metrics = new BackupManagerMetrics(partitionId);
+    metrics = new BackupManagerMetrics(partitionId, brokerMeterRegistry);
     internalBackupManager = new BackupServiceImpl(backupStore);
     actorName = buildActorName("BackupService", partitionId);
     journalInfoProvider = raftMetadataProvider;
