@@ -13,6 +13,8 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.InstantSource;
 import java.util.Objects;
 
@@ -26,6 +28,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   private InstantSource clock;
   private Limit requestLimit;
   private RateLimit writeRateLimit;
+  private MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @Override
   public LogStreamBuilder withActorSchedulingService(
@@ -77,11 +80,23 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   }
 
   @Override
+  public LogStreamBuilder withMeterRegistry(final MeterRegistry meterRegistry) {
+    this.meterRegistry = meterRegistry;
+    return this;
+  }
+
+  @Override
   public LogStream build() {
     validate();
-
     return new LogStreamImpl(
-        logName, partitionId, maxFragmentSize, logStorage, clock, requestLimit, writeRateLimit);
+        logName,
+        partitionId,
+        maxFragmentSize,
+        logStorage,
+        clock,
+        requestLimit,
+        writeRateLimit,
+        meterRegistry);
   }
 
   private void validate() {

@@ -11,6 +11,7 @@ import com.netflix.concurrency.limits.Limit;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.RateLimit;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 
 /** Builder pattern for the {@link LogStream} */
@@ -64,6 +65,14 @@ public interface LogStreamBuilder {
   LogStreamBuilder withRequestLimit(Limit requestLimit);
 
   LogStreamBuilder withWriteRateLimit(RateLimit writeRateLimit);
+
+  /**
+   * Sets the meter registry to collect metrics on.
+   *
+   * @param meterRegistry the new meter registry to collect metrics on
+   * @return this builder
+   */
+  LogStreamBuilder withMeterRegistry(final MeterRegistry meterRegistry);
 
   /**
    * Returns a future which, when completed, contains a log stream that can be read from/written to.
