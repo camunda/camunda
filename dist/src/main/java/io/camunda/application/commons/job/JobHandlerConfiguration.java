@@ -19,6 +19,8 @@ import io.camunda.zeebe.gateway.rest.controller.JobActivationRequestResponseObse
 import io.camunda.zeebe.gateway.rest.controller.ResponseObserverProvider;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -32,15 +34,18 @@ public class JobHandlerConfiguration {
   private final ActivateJobHandlerConfiguration config;
   private final BrokerClient brokerClient;
   private final ActorScheduler scheduler;
+  private final MeterRegistry meterRegistry;
 
   @Autowired
   public JobHandlerConfiguration(
       final ActivateJobHandlerConfiguration config,
       final BrokerClient brokerClient,
-      final ActorScheduler scheduler) {
+      final ActorScheduler scheduler,
+      final MeterRegistry meterRegistry) {
     this.config = config;
     this.brokerClient = brokerClient;
     this.scheduler = scheduler;
+    this.meterRegistry = meterRegistry;
   }
 
   @Bean
@@ -76,6 +81,12 @@ public class JobHandlerConfiguration {
 
   private LongPollingActivateJobsHandler<JobActivationResult> buildLongPollingHandler(
       final BrokerClient brokerClient) {
+    // once long polling is removed from the gRPC gateway, we can remove the differentiation here
+    // with the extra "gateway" label
+    final var restRegistry = new CompositeMeterRegistry();
+    restRegistry.add(meterRegistry);
+    restRegistry.config().commonTags("gateway", "rest");
+
     return LongPollingActivateJobsHandler.<JobActivationResult>newBuilder()
         .setBrokerClient(brokerClient)
         .setMaxMessageSize(config.maxMessageSize().toBytes())
@@ -85,9 +96,10 @@ public class JobHandlerConfiguration {
         .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
         .setNoJobsReceivedExceptionProvider(RuntimeException::new)
         .setRequestCanceledExceptionProvider(RuntimeException::new)
+        .setMeterRegistry(restRegistry)
         .build();
   }
 
-  public static record ActivateJobHandlerConfiguration(
+  public record ActivateJobHandlerConfiguration(
       String actorName, LongPollingCfg longPolling, DataSize maxMessageSize) {}
 }
