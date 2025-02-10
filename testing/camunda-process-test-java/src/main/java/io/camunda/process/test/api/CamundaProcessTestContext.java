@@ -17,6 +17,8 @@ package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -40,6 +42,26 @@ public interface CamundaProcessTestContext {
    * @return a new Camunda client
    */
   CamundaClient createClient(final Consumer<CamundaClientBuilder> modifier);
+
+  /**
+   * Creates a new preconfigured Camunda client that is managed by the runtime.
+   *
+   * @return a new Camunda client
+   * @deprecated used to keep compatibility with the Zeebe client injection
+   */
+  @Deprecated
+  ZeebeClient createZeebeClient();
+
+  /**
+   * Creates a new preconfigured Zeebe client that is managed by the runtime. The given modifier can
+   * customize the client.
+   *
+   * @param modifier to customize the Zeebe client
+   * @return a new Zeebe client
+   * @deprecated used to keep compatibility with the Zeebe client injection
+   */
+  @Deprecated
+  ZeebeClient createZeebeClient(Consumer<ZeebeClientBuilder> modifier);
 
   /**
    * @return the URI of Camunda's gRPC API address

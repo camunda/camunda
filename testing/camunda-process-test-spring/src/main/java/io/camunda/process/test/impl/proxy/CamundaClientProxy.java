@@ -15,15 +15,16 @@
  */
 package io.camunda.process.test.impl.proxy;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 
 /**
- * Dynamic proxy to delegate to a {@link ZeebeClient} which allows to swap the ZeebeClient object
- * under the hood.
+ * Dynamic proxy to delegate to a {@link CamundaClient} which allows to swap the CamundaClient
+ * object under the hood.
  */
-public class ZeebeClientProxy extends AbstractClientProxy<ZeebeClient> {
+public class CamundaClientProxy extends AbstractClientProxy<CamundaClient> {
+
   @Override
-  protected Class<ZeebeClient> getDelegateClass() {
-    return ZeebeClient.class;
+  protected Class<CamundaClient> getDelegateClass() {
+    return CamundaClient.class;
   }
 }
