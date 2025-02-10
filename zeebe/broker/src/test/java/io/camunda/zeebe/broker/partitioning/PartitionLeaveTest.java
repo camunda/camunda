@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 final class PartitionLeaveTest {
-  private static final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private static final MeterRegistry METER_REGISTRY = new SimpleMeterRegistry();
 
   @Test
   void canStillProcessAfterLeaving(@TempDir final Path tmp) {
@@ -216,7 +216,7 @@ final class PartitionLeaveTest {
     brokerCfg.init(tmp.toAbsolutePath().toString());
     configure.accept(brokerCfg);
     final var actorScheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg);
-    final var atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg, meterRegistry);
+    final var atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg, METER_REGISTRY);
     final var brokerClient =
         TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
     final var systemContext =
