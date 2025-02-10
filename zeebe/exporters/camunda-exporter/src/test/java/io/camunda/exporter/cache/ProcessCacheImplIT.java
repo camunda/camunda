@@ -7,8 +7,8 @@
  */
 package io.camunda.exporter.cache;
 
-import static io.camunda.exporter.utils.SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY;
 import static io.camunda.exporter.utils.SearchDBExtension.PROCESS_INDEX;
+import static io.camunda.exporter.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
 import static io.camunda.zeebe.model.bpmn.Bpmn.convertToString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
@@ -90,7 +90,7 @@ class ProcessCacheImplIT {
   }
 
   static Stream<Arguments> provideProcessCache() {
-    if (System.getProperty(IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY) == null) {
+    if (System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL) == null) {
       return Stream.of(
           Arguments.of(
               Named.of(
@@ -110,7 +110,7 @@ class ProcessCacheImplIT {
   }
 
   static Stream<Arguments> provideFailingProcessCache() {
-    if (System.getProperty(IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY) == null) {
+    if (System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL) == null) {
       return Stream.of(
           Arguments.of(Named.of("ElasticSearch", getESProcessCache("invalid-index-name"))),
           Arguments.of(Named.of("OpenSearch", getOSProcessCache("invalid-index-name"))));
