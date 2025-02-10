@@ -67,7 +67,7 @@ public class CredentialsProviderSaasTest {
   @DynamicPropertySource
   static void registerPgProperties(final DynamicPropertyRegistry registry) {
     final String issuer = "http://localhost:" + wm.getPort() + "/auth-server";
-    registry.add("camunda.client.auth.token-endpoint", () -> issuer);
+    registry.add("camunda.client.auth.token-url", () -> issuer);
   }
 
   @BeforeEach

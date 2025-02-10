@@ -2,7 +2,7 @@ camunda:
   client:
     mode: self-managed
     auth:
-      token-endpoint: http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
+      token-url: http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
       audience: zeebe-api
     enabled: true
     grpc-address: http://localhost:26500
