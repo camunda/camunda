@@ -71,6 +71,10 @@ public class ExecutableFlowNode extends AbstractFlowElement {
     executionListeners.add(listener);
   }
 
+  public boolean hasExecutionListeners() {
+    return !executionListeners.isEmpty();
+  }
+
   public List<ExecutionListener> getStartExecutionListeners() {
     return executionListeners.stream()
         .filter(el -> el.getEventType() == ExecutionListenerEventType.START)
