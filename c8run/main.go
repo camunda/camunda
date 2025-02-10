@@ -559,20 +559,10 @@ func main() {
 	}
 
 	if baseCommand == "package" {
-		if runtime.GOOS == "windows" {
-			err := PackageWindows(camundaVersion, elasticsearchVersion, connectorsVersion, camundaReleaseTag, composeTag)
-			if err != nil {
-				fmt.Printf("%+v", err)
-				os.Exit(1)
-			}
-		} else if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-			err := PackageUnix(camundaVersion, elasticsearchVersion, connectorsVersion, camundaReleaseTag, composeTag)
-			if err != nil {
-				fmt.Printf("%+v", err)
-				os.Exit(1)
-			}
-		} else {
-			panic("Unsupported system")
+		err := Package(camundaVersion, elasticsearchVersion, connectorsVersion, camundaReleaseTag, composeTag)
+		if err != nil {
+			fmt.Printf("%+v", err)
+			os.Exit(1)
 		}
 	}
 
