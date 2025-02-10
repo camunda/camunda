@@ -12,7 +12,19 @@ import io.camunda.zeebe.logstreams.impl.flowcontrol.RateLimit;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
+<<<<<<< HEAD
 import java.time.InstantSource;
+||||||| parent of df85a699f31 (refactor: migrate sequencer metrics to micrometer)
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+=======
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+>>>>>>> df85a699f31 (refactor: migrate sequencer metrics to micrometer)
 import java.util.Objects;
 
 public final class LogStreamBuilderImpl implements LogStreamBuilder {
@@ -21,9 +33,30 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   private int partitionId = -1;
   private LogStorage logStorage;
   private String logName;
+<<<<<<< HEAD
   private InstantSource clock;
   private Limit requestLimit;
   private RateLimit writeRateLimit;
+||||||| parent of df85a699f31 (refactor: migrate sequencer metrics to micrometer)
+  private int nodeId = 0;
+
+  @Override
+  public LogStreamBuilder withActorSchedulingService(
+      final ActorSchedulingService actorSchedulingService) {
+    this.actorSchedulingService = actorSchedulingService;
+    return this;
+  }
+=======
+  private int nodeId = 0;
+  private MeterRegistry meterRegistry = new SimpleMeterRegistry();
+
+  @Override
+  public LogStreamBuilder withActorSchedulingService(
+      final ActorSchedulingService actorSchedulingService) {
+    this.actorSchedulingService = actorSchedulingService;
+    return this;
+  }
+>>>>>>> df85a699f31 (refactor: migrate sequencer metrics to micrometer)
 
   @Override
   public LogStreamBuilder withMaxFragmentSize(final int maxFragmentSize) {
@@ -50,6 +83,8 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   }
 
   @Override
+<<<<<<< HEAD
+  @Override
   public LogStreamBuilder withClock(final InstantSource clock) {
     this.clock = clock;
     return this;
@@ -69,10 +104,65 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
 
   @Override
   public LogStream build() {
+||||||| parent of df85a699f31 (refactor: migrate sequencer metrics to micrometer)
+  public ActorFuture<LogStream> buildAsync() {
+=======
+  public LogStreamBuilder withMeterRegistry(final MeterRegistry meterRegistry) {
+    this.meterRegistry = meterRegistry;
+    return this;
+  }
+
+  @Override
+  public ActorFuture<LogStream> buildAsync() {
+>>>>>>> df85a699f31 (refactor: migrate sequencer metrics to micrometer)
     validate();
 
+<<<<<<< HEAD
     return new LogStreamImpl(
         logName, partitionId, maxFragmentSize, logStorage, clock, requestLimit, writeRateLimit);
+||||||| parent of df85a699f31 (refactor: migrate sequencer metrics to micrometer)
+    final var logStreamService =
+        new LogStreamImpl(
+            actorSchedulingService, logName, partitionId, nodeId, maxFragmentSize, logStorage);
+
+    final var logstreamInstallFuture = new CompletableActorFuture<LogStream>();
+    actorSchedulingService
+        .submitActor(logStreamService)
+        .onComplete(
+            (v, t) -> {
+              if (t == null) {
+                logstreamInstallFuture.complete(logStreamService);
+              } else {
+                logstreamInstallFuture.completeExceptionally(t);
+              }
+            });
+
+    return logstreamInstallFuture;
+=======
+    final var logStreamService =
+        new LogStreamImpl(
+            actorSchedulingService,
+            logName,
+            partitionId,
+            nodeId,
+            maxFragmentSize,
+            logStorage,
+            meterRegistry);
+
+    final var logstreamInstallFuture = new CompletableActorFuture<LogStream>();
+    actorSchedulingService
+        .submitActor(logStreamService)
+        .onComplete(
+            (v, t) -> {
+              if (t == null) {
+                logstreamInstallFuture.complete(logStreamService);
+              } else {
+                logstreamInstallFuture.completeExceptionally(t);
+              }
+            });
+
+    return logstreamInstallFuture;
+>>>>>>> df85a699f31 (refactor: migrate sequencer metrics to micrometer)
   }
 
   private void validate() {

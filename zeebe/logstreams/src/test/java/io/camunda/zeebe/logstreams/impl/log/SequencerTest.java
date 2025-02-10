@@ -19,6 +19,7 @@ import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import io.camunda.zeebe.logstreams.util.TestEntry;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -46,7 +47,7 @@ final class SequencerTest {
             initialPosition,
             16,
             InstantSource.system(),
-            new SequencerMetrics(1),
+            new SequencerMetrics(new SimpleMeterRegistry()),
             new FlowControl(logStreamMetrics));
 
     // when
@@ -68,7 +69,7 @@ final class SequencerTest {
             initialPosition,
             16,
             InstantSource.system(),
-            new SequencerMetrics(1),
+            new SequencerMetrics(new SimpleMeterRegistry()),
             new FlowControl(logStreamMetrics));
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
@@ -93,7 +94,7 @@ final class SequencerTest {
             1,
             16,
             InstantSource.system(),
-            new SequencerMetrics(1),
+            new SequencerMetrics(new SimpleMeterRegistry()),
             new FlowControl(logStreamMetrics));
     final var entry = TestEntry.ofDefaults();
 
@@ -115,7 +116,7 @@ final class SequencerTest {
             1,
             16,
             InstantSource.system(),
-            new SequencerMetrics(1),
+            new SequencerMetrics(new SimpleMeterRegistry()),
             new FlowControl(logStreamMetrics));
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
@@ -138,7 +139,7 @@ final class SequencerTest {
             1,
             16,
             InstantSource.system(),
-            new SequencerMetrics(1),
+            new SequencerMetrics(new SimpleMeterRegistry()),
             new FlowControl(logStreamMetrics));
     final var entry = TestEntry.ofDefaults();
     final var testFailures = new ConcurrentLinkedQueue<Throwable>();
@@ -165,7 +166,7 @@ final class SequencerTest {
             1,
             16,
             InstantSource.system(),
-            new SequencerMetrics(1),
+            new SequencerMetrics(new SimpleMeterRegistry()),
             new FlowControl(logStreamMetrics));
     final var entry = TestEntry.ofDefaults();
     final var testFailures = new ConcurrentLinkedQueue<Throwable>();
@@ -197,7 +198,7 @@ final class SequencerTest {
             1,
             16,
             InstantSource.system(),
-            new SequencerMetrics(1),
+            new SequencerMetrics(new SimpleMeterRegistry()),
             new FlowControl(logStreamMetrics));
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
@@ -224,7 +225,7 @@ final class SequencerTest {
             1,
             16,
             InstantSource.system(),
-            new SequencerMetrics(1),
+            new SequencerMetrics(new SimpleMeterRegistry()),
             new FlowControl(logStreamMetrics));
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());

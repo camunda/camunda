@@ -18,6 +18,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorage.CommitListener;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -37,6 +38,7 @@ public final class LogStreamImpl implements LogStream, CommitListener {
   private final FlowControl flowControl;
   private final Sequencer sequencer;
   private volatile boolean closed;
+  private final MeterRegistry meterRegistry;
 
   LogStreamImpl(
       final String logName,
@@ -45,8 +47,11 @@ public final class LogStreamImpl implements LogStream, CommitListener {
       final LogStorage logStorage,
       final InstantSource clock,
       final Limit requestLimit,
-      final RateLimit writeRateLimit) {
+      final RateLimit writeRateLimit,
+      final MeterRegistry meterRegistry) {
     this.logName = logName;
+    this.meterRegistry = meterRegistry;
+
     this.partitionId = partitionId;
     this.logStorage = logStorage;
     logStreamMetrics = new LogStreamMetrics(partitionId);
@@ -57,7 +62,7 @@ public final class LogStreamImpl implements LogStream, CommitListener {
             getWriteBuffersInitialPosition(),
             maxFragmentSize,
             clock,
-            new SequencerMetrics(partitionId),
+            new SequencerMetrics(meterRegistry),
             flowControl);
     logStorage.addCommitListener(this);
   }
