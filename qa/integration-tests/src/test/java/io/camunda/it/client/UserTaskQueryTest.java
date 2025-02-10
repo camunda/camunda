@@ -1297,7 +1297,7 @@ class UserTaskQueryTest {
 
   private static void waitForTasksBeingExported() {
     Awaitility.await("should receive data from ES")
-        .atMost(Duration.ofMinutes(1))
+        .atMost(Duration.ofMinutes(2))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {

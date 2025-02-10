@@ -84,12 +84,14 @@ public class CamundaMultiDBExtension
     implements AfterAllCallback, BeforeAllCallback, ParameterResolver {
   public static final String PROP_CAMUNDA_IT_DATABASE_TYPE =
       "test.integration.camunda.database.type";
+  public static final String TEST_INTEGRATION_OPENSEARCH_AWS_URL =
+      "test.integration.opensearch.aws.url";
   public static final String DEFAULT_ES_URL = "http://localhost:9200";
   public static final String DEFAULT_OS_URL = "http://localhost:9200";
   public static final String DEFAULT_OS_ADMIN_USER = "admin";
   public static final String DEFAULT_OS_ADMIN_PW = "yourStrongPassword123!";
-  public static final Duration TIMEOUT_DATABASE_EXPORTER_READINESS = Duration.ofMinutes(1);
-  public static final Duration TIMEOUT_DATABASE_READINESS = Duration.ofMinutes(1);
+  public static final Duration TIMEOUT_DATABASE_EXPORTER_READINESS = Duration.ofMinutes(3);
+  public static final Duration TIMEOUT_DATABASE_READINESS = Duration.ofMinutes(3);
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaMultiDBExtension.class);
   private final DatabaseType databaseType;
   private final List<AutoCloseable> closeables = new ArrayList<>();
@@ -142,6 +144,12 @@ public class CamundaMultiDBExtension
         setupHelper = new ElasticOpenSearchSetupHelper(DEFAULT_OS_URL, expectedDescriptors);
       }
       case RDBMS -> multiDbConfigurator.configureRDBMSSupport();
+      case AWS_OS -> {
+        final var awsOSUrl = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL);
+        multiDbConfigurator.configureAWSOpenSearchSupport(awsOSUrl, testPrefix);
+        final var expectedDescriptors = new IndexDescriptors(testPrefix, false).all();
+        setupHelper = new AWSOpenSearchSetupHelper(awsOSUrl, expectedDescriptors);
+      }
       default -> throw new RuntimeException("Unknown exporter type");
     }
     // we need to close the test application before cleaning up
@@ -157,7 +165,7 @@ public class CamundaMultiDBExtension
 
     Awaitility.await("Await exporter readiness")
         .timeout(TIMEOUT_DATABASE_EXPORTER_READINESS)
-        .pollInterval(Duration.ofMillis(200))
+        .pollInterval(Duration.ofMillis(500))
         .until(() -> setupHelper.validateSchemaCreation(testPrefix));
 
     injectFields(testClass, null, ModifierSupport::isStatic);
@@ -233,6 +241,7 @@ public class CamundaMultiDBExtension
     LOCAL,
     ES,
     OS,
-    RDBMS
+    RDBMS,
+    AWS_OS
   }
 }

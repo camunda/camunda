@@ -111,7 +111,7 @@ public class QueryTest {
   public static void waitForProcessesToBeDeployed(
       final CamundaClient camundaClient, final int expectedProcessDefinitions) {
     Awaitility.await("should deploy processes and import in Operate")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(Duration.ofSeconds(120))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -123,7 +123,7 @@ public class QueryTest {
   public static void waitUntilProcessInstanceHasIncidents(
       final CamundaClient camundaClient, final int expectedIncidents) {
     Awaitility.await("should wait until incidents are exists")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(Duration.ofSeconds(120))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -140,7 +140,7 @@ public class QueryTest {
   public static void waitUntilProcessInstanceIsEnded(
       final CamundaClient camundaClient, final long processInstanceKey) {
     Awaitility.await("should wait until process is ended")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(Duration.ofSeconds(120))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {

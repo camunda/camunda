@@ -135,7 +135,7 @@ final class OpenSearchArchiverRepositoryIT {
   @ParameterizedTest
   @ValueSource(strings = {"", "test"})
   @DisabledIfSystemProperty(
-      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "Excluding from AWS OS IT CI - policy modification not allowed")
   void shouldSetIndexLifeCycleOnAllValidIndexes(final String prefix) throws IOException {
@@ -437,7 +437,7 @@ final class OpenSearchArchiverRepositoryIT {
 
   private OpenSearchClient createOpenSearchClient() {
     final var isAWSRun =
-        System.getProperty(SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY, "");
+        System.getProperty(SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL, "");
     if (isAWSRun.isEmpty()) {
       return new OpenSearchClient(transport);
     } else {
@@ -457,7 +457,7 @@ final class OpenSearchArchiverRepositoryIT {
 
   private OpenSearchAsyncClient createOpenSearchAsyncClient() {
     final var isAWSRun =
-        System.getProperty(SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY, "");
+        System.getProperty(SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL, "");
     if (isAWSRun.isEmpty()) {
       return new OpenSearchAsyncClient(transport);
     } else {

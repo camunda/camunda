@@ -341,7 +341,7 @@ class DecisionInstanceQueryTest {
   private static void waitForDecisionsToBeEvaluated(
       final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should deploy decision definitions and import in Operate")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(Duration.ofSeconds(120))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {

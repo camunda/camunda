@@ -26,6 +26,7 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.it.utils.MultiDbTest;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -312,6 +313,7 @@ public class ProcessMigrationIT {
       final Consumer<FlownodeInstanceFilter> filter,
       final Consumer<List<FlowNodeInstance>> asserter) {
     await()
+        .atMost(Duration.ofMinutes(2))
         .untilAsserted(
             () -> {
               final var result =
@@ -337,6 +339,7 @@ public class ProcessMigrationIT {
       final Consumer<ProcessDefinitionFilter> filter,
       final Consumer<List<ProcessDefinition>> asserter) {
     await()
+        .atMost(Duration.ofMinutes(1))
         .ignoreExceptions()
         .untilAsserted(
             () -> {
