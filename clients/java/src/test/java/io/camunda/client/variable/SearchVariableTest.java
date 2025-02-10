@@ -92,7 +92,7 @@ public class SearchVariableTest extends ClientRestTest {
     client
         .newVariableQuery()
         .sort(s -> s.processInstanceKey().asc().variableKey())
-        .filter(f -> f.processInstanceKey(b -> b.in("1", "10")))
+        .filter(f -> f.processInstanceKey(b -> b.in(1L, 10L)))
         .send()
         .join();
 

@@ -113,7 +113,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     // when
     client
         .newProcessInstanceQuery()
-        .filter(f -> f.processInstanceKey(b -> b.in("1", "10")))
+        .filter(f -> f.processInstanceKey(b -> b.in(1L, 10L)))
         .send()
         .join();
 
