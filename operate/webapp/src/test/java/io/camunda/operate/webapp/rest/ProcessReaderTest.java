@@ -16,10 +16,10 @@ import static org.mockito.Mockito.when;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.webapp.reader.ProcessReader;
 import io.camunda.operate.webapp.rest.dto.ProcessRequestDto;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.security.permission.PermissionsService.ResourcesAllowed;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.HashMap;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -83,7 +83,7 @@ public class ProcessReaderTest {
   public void testGetProcessesGroupedWithNoPermissions() {
 
     when(mockPermissionsService.permissionsEnabled()).thenReturn(true);
-    when(mockPermissionsService.getProcessesWithPermission(IdentityPermission.READ))
+    when(mockPermissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(ResourcesAllowed.withIds(Set.of()));
 
     final String tenantId = "tenantId";
@@ -96,7 +96,8 @@ public class ProcessReaderTest {
     final var response = underTest.getProcessesGrouped(requestDto);
 
     assertThat(response).isNotNull();
-    verify(mockPermissionsService, times(1)).getProcessesWithPermission(IdentityPermission.READ);
+    verify(mockPermissionsService, times(1))
+        .getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE);
     verify(mockProcessStore, times(1)).getProcessesGrouped(tenantId, Set.of());
   }
 
@@ -104,7 +105,7 @@ public class ProcessReaderTest {
   public void testGetProcessesGroupedWithAllPermissions() {
 
     when(mockPermissionsService.permissionsEnabled()).thenReturn(true);
-    when(mockPermissionsService.getProcessesWithPermission(IdentityPermission.READ))
+    when(mockPermissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(ResourcesAllowed.all());
 
     final String tenantId = "tenantId";
@@ -117,7 +118,8 @@ public class ProcessReaderTest {
     final var response = underTest.getProcessesGrouped(requestDto);
 
     assertThat(response).isNotNull();
-    verify(mockPermissionsService, times(1)).getProcessesWithPermission(IdentityPermission.READ);
+    verify(mockPermissionsService, times(1))
+        .getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE);
     verify(mockProcessStore, times(1)).getProcessesGrouped(tenantId, null);
   }
 
@@ -126,7 +128,7 @@ public class ProcessReaderTest {
 
     when(mockPermissionsService.permissionsEnabled()).thenReturn(true);
     final Set<String> allowedProcessIds = Set.of("p1, p2");
-    when(mockPermissionsService.getProcessesWithPermission(IdentityPermission.READ))
+    when(mockPermissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(ResourcesAllowed.withIds(allowedProcessIds));
 
     final String tenantId = "tenantId";
@@ -140,7 +142,8 @@ public class ProcessReaderTest {
     final var response = underTest.getProcessesGrouped(requestDto);
 
     assertThat(response).isNotNull();
-    verify(mockPermissionsService, times(1)).getProcessesWithPermission(IdentityPermission.READ);
+    verify(mockPermissionsService, times(1))
+        .getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE);
     verify(mockProcessStore, times(1)).getProcessesGrouped(tenantId, allowedProcessIds);
   }
 }
