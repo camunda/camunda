@@ -97,7 +97,6 @@ public class TasklistV1MultiTenancyIT {
       // user 1 cannot read process definition 2
       assertThat(tasklistClient1.getProcessDefinition(processDefinitionKey2).statusCode())
           .isEqualTo(NOT_FOUND.value());
-      ;
 
       // user 2 can read process definition 1
       assertThat(tasklistClient2.getProcessDefinition(processDefinitionKey1).statusCode())
@@ -106,7 +105,6 @@ public class TasklistV1MultiTenancyIT {
       // user 2 cannot read process definition 2
       assertThat(tasklistClient2.getProcessDefinition(processDefinitionKey2).statusCode())
           .isEqualTo(NOT_FOUND.value());
-      ;
     }
   }
 
