@@ -11,7 +11,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -74,18 +73,23 @@ public class IndexMapping {
    * properties when comparing the existing mappings with the ones defined in the schema.
    */
   private Object convertToOrderedStructures(final Object value) {
-    if (value instanceof LinkedHashMap<?, ?>) {
-      return ((LinkedHashMap<?, ?>) value)
+    if (value instanceof Map<?, ?>) {
+      return ((Map<?, ?>) value)
           .entrySet().stream()
               .collect(
                   Collectors.toMap(
                       Entry::getKey,
                       item -> {
-                        if (item.getValue() instanceof LinkedHashMap<?, ?>) {
+                        if (item.getValue() instanceof Map<?, ?>) {
                           return convertToOrderedStructures(item.getValue());
                         } else if (item.getValue() instanceof List<?>) {
                           return ((ArrayList<?>) item.getValue())
                               .stream().sorted().collect(Collectors.toList());
+                          // Elasticsearch parses true/false as boolean,
+                          // Opensearch parses them as strings.
+                          // The diff we do on the validation expects them to be Strings.
+                        } else if (item.getValue() instanceof Boolean) {
+                          return String.valueOf(item.getValue());
                         } else {
                           return item.getValue();
                         }
