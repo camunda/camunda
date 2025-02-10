@@ -42,6 +42,7 @@
       </when>
       <when test="operation.operator.name().equals('LIKE')">
         LIKE #{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler}
+          ESCAPE ${escapeChar}
       </when>
     </choose>
   </sql>
@@ -150,7 +151,9 @@
       </when>
       <when test="operation.operator.name().equals('LIKE')">
         VAR_VALUE LIKE #{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler}
+          ESCAPE ${escapeChar}
         OR VAR_FULL_VALUE LIKE #{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler}
+          ESCAPE ${escapeChar}
       </when>
     </choose>
   </sql>
