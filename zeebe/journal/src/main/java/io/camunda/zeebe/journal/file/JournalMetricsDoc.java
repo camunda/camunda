@@ -264,7 +264,7 @@ public enum JournalMetricsDoc implements ExtendedMeterDocumentation {
   },
   /** Distribution of time spent seeking to a specific index */
   SEEK_LATENCY {
-    private final Duration[] BUCKETS =
+    private final Duration[] buckets =
         Stream.of(
                 100,
                 1_000,
@@ -300,7 +300,7 @@ public enum JournalMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public Duration[] getTimerSLOs() {
-      return BUCKETS;
+      return buckets;
     }
 
     @Override
