@@ -26,6 +26,7 @@ import io.atomix.utils.Builder;
 import io.atomix.utils.Version;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.util.VersionUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.Collection;
 import java.util.Properties;
@@ -34,7 +35,7 @@ import java.util.Properties;
  * Builder for an {@link AtomixCluster} instance.
  *
  * <p>This builder is used to configure an {@link AtomixCluster} instance programmatically. To
- * create a new builder, use one of the {@link AtomixCluster#builder()} static methods.
+ * create a new builder, use one of the {@link AtomixCluster#builder(MeterRegistry)} static methods.
  *
  * <pre>{@code
  * AtomixClusterBuilder builder = AtomixCluster.builder();
@@ -53,15 +54,18 @@ import java.util.Properties;
  * }</pre>
  *
  * Backing the builder is an {@link ClusterConfig} which is loaded when the builder is initially
- * constructed. To load a configuration from a file, use {@link AtomixCluster#builder(String)}.
+ * constructed. To load a configuration from a file, use {@link
+ * AtomixCluster#builder(MeterRegistry)}.
  */
 public class AtomixClusterBuilder implements Builder<AtomixCluster> {
 
   protected final ClusterConfig config;
+  private final MeterRegistry meterRegistry;
   private String schedulerPrefix;
 
-  public AtomixClusterBuilder(final ClusterConfig config) {
-    this.config = checkNotNull(config);
+  public AtomixClusterBuilder(final ClusterConfig config, final MeterRegistry meterRegistry) {
+    this.config = checkNotNull(config, "config cannot be null");
+    this.meterRegistry = checkNotNull(meterRegistry, "meterRegistry cannot be null");
   }
 
   /**
@@ -256,6 +260,7 @@ public class AtomixClusterBuilder implements Builder<AtomixCluster> {
 
   @Override
   public AtomixCluster build() {
-    return new AtomixCluster(config, Version.from(VersionUtil.getVersion()), schedulerPrefix);
+    return new AtomixCluster(
+        config, Version.from(VersionUtil.getVersion()), schedulerPrefix, meterRegistry);
   }
 }
