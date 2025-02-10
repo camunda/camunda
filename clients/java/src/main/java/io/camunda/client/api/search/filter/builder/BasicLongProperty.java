@@ -17,5 +17,5 @@ package io.camunda.client.api.search.filter.builder;
 
 import io.camunda.client.protocol.rest.BasicStringFilterProperty;
 
-public interface BasicStringProperty
-    extends PropertyBase<String, BasicStringFilterProperty, BasicStringProperty> {}
+public interface BasicLongProperty
+    extends PropertyBase<Long, BasicStringFilterProperty, BasicLongProperty> {}

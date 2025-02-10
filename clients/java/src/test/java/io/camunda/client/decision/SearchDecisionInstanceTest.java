@@ -81,7 +81,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     // when
     client
         .newDecisionInstanceQuery()
-        .filter(f -> f.decisionDefinitionKey(b -> b.in("1", "10")))
+        .filter(f -> f.decisionDefinitionKey(b -> b.in(1L, 10L)))
         .send()
         .join();
 
