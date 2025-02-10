@@ -13,6 +13,8 @@ import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Objects;
 
 public final class LogStreamBuilderImpl implements LogStreamBuilder {
@@ -23,6 +25,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   private LogStorage logStorage;
   private String logName;
   private int nodeId = 0;
+  private MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @Override
   public LogStreamBuilder withActorSchedulingService(
@@ -62,12 +65,24 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   }
 
   @Override
+  public LogStreamBuilder withMeterRegistry(final MeterRegistry meterRegistry) {
+    this.meterRegistry = meterRegistry;
+    return this;
+  }
+
+  @Override
   public ActorFuture<LogStream> buildAsync() {
     validate();
 
     final var logStreamService =
         new LogStreamImpl(
-            actorSchedulingService, logName, partitionId, nodeId, maxFragmentSize, logStorage);
+            actorSchedulingService,
+            logName,
+            partitionId,
+            nodeId,
+            maxFragmentSize,
+            logStorage,
+            meterRegistry);
 
     final var logstreamInstallFuture = new CompletableActorFuture<LogStream>();
     actorSchedulingService

@@ -10,6 +10,7 @@ package io.camunda.zeebe.logstreams.log;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.micrometer.core.instrument.MeterRegistry;
 
 /** Builder pattern for the {@link LogStream} */
 public interface LogStreamBuilder {
@@ -63,6 +64,14 @@ public interface LogStreamBuilder {
    * @return this builder
    */
   LogStreamBuilder withLogName(String logName);
+
+  /**
+   * Sets the meter registry to collect metrics on.
+   *
+   * @param meterRegistry the new meter registry to collect metrics on
+   * @return this builder
+   */
+  LogStreamBuilder withMeterRegistry(final MeterRegistry meterRegistry);
 
   /**
    * Returns a future which, when completed, contains a log stream that can be read from/written to.

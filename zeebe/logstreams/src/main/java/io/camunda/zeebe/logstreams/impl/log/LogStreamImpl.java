@@ -22,6 +22,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthReport;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -51,6 +52,7 @@ public final class LogStreamImpl extends Actor
   private Throwable closeError; // set if any error occurred during closeAsync
   private final String actorName;
   private HealthReport healthReport = HealthReport.healthy(this);
+  private final MeterRegistry meterRegistry;
 
   LogStreamImpl(
       final ActorSchedulingService actorSchedulingService,
@@ -58,9 +60,11 @@ public final class LogStreamImpl extends Actor
       final int partitionId,
       final int nodeId,
       final int maxFragmentSize,
-      final LogStorage logStorage) {
+      final LogStorage logStorage,
+      final MeterRegistry meterRegistry) {
     this.actorSchedulingService = actorSchedulingService;
     this.logName = logName;
+    this.meterRegistry = meterRegistry;
 
     this.partitionId = partitionId;
     this.nodeId = nodeId;
@@ -300,7 +304,7 @@ public final class LogStreamImpl extends Actor
   }
 
   private Sequencer createAndScheduleWriteBuffer(final long initialPosition) {
-    return new Sequencer(initialPosition, maxFragmentSize, new SequencerMetrics(partitionId));
+    return new Sequencer(initialPosition, maxFragmentSize, new SequencerMetrics(meterRegistry));
   }
 
   private ActorFuture<Void> createAndScheduleLogStorageAppender(final Sequencer sequencer) {
