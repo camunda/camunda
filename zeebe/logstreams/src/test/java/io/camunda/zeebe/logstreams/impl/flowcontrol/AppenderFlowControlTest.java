@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.netflix.concurrency.limits.Limit;
 import com.netflix.concurrency.limits.Limiter.Listener;
 import com.netflix.concurrency.limits.limit.SettableLimit;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -34,7 +35,8 @@ final class AppenderFlowControlTest {
   void callsErrorHandlerOnWriteError() {
     // given
     final var errorHandler = Mockito.mock(AppendErrorHandler.class);
-    final var flow = new AppenderFlowControl(errorHandler, new AppenderMetrics(1));
+    final var flow =
+        new AppenderFlowControl(errorHandler, new AppenderMetrics(new SimpleMeterRegistry()));
     final var error = new RuntimeException();
     // when
     final var inFlight = flow.tryAcquire().orElseThrow();
@@ -47,7 +49,8 @@ final class AppenderFlowControlTest {
   void callsErrorHandlerOnCommitError() {
     // given
     final var errorHandler = Mockito.mock(AppendErrorHandler.class);
-    final var flow = new AppenderFlowControl(errorHandler, new AppenderMetrics(1));
+    final var flow =
+        new AppenderFlowControl(errorHandler, new AppenderMetrics(new SimpleMeterRegistry()));
     final var error = new RuntimeException();
     // when
     final var inFlight = flow.tryAcquire().orElseThrow();
@@ -60,7 +63,8 @@ final class AppenderFlowControlTest {
   void eventuallyRejects() {
     // given
     final var errorHandler = Mockito.mock(AppendErrorHandler.class);
-    final var flow = new AppenderFlowControl(errorHandler, new AppenderMetrics(1));
+    final var flow =
+        new AppenderFlowControl(errorHandler, new AppenderMetrics(new SimpleMeterRegistry()));
 
     // when - then
     Awaitility.await("Rejects new appends")
@@ -73,7 +77,8 @@ final class AppenderFlowControlTest {
   void recoversWhenCompletingAppends() {
     // given
     final var errorHandler = Mockito.mock(AppendErrorHandler.class);
-    final var flow = new AppenderFlowControl(errorHandler, new AppenderMetrics(1));
+    final var flow =
+        new AppenderFlowControl(errorHandler, new AppenderMetrics(new SimpleMeterRegistry()));
     // when
     boolean rejecting = false;
     final var inFlight = new LinkedList<InFlightAppend>();
@@ -98,7 +103,7 @@ final class AppenderFlowControlTest {
     final int poolSize = 300;
     final int limit = 100;
     final Limit myLimit = new SettableLimit(limit);
-    final AppenderMetrics appenderMetrics = new AppenderMetrics(1);
+    final AppenderMetrics appenderMetrics = new AppenderMetrics(new SimpleMeterRegistry());
     appenderMetrics.setInflightLimit(limit);
     final AppendLimiter myRateLimiter =
         AppendLimiter.builder().limit(myLimit).metrics(appenderMetrics).build();

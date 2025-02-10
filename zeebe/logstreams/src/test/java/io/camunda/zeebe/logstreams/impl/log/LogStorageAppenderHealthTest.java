@@ -37,10 +37,13 @@ public final class LogStorageAppenderHealthTest {
 
   @Before
   public void setUp() {
+    final var meterRegistry = new SimpleMeterRegistry();
     failingLogStorage = new ControllableLogStorage();
-    sequencer = new Sequencer(0, 4 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+    sequencer = new Sequencer(0, 4 * 1024 * 1024, new SequencerMetrics(meterRegistry));
 
-    appender = new LogStorageAppender("appender", PARTITION_ID, failingLogStorage, sequencer);
+    appender =
+        new LogStorageAppender(
+            "appender", PARTITION_ID, failingLogStorage, sequencer, meterRegistry);
   }
 
   @After

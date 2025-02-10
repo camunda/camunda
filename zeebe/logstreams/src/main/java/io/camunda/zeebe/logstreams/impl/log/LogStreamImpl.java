@@ -310,7 +310,11 @@ public final class LogStreamImpl extends Actor
   private ActorFuture<Void> createAndScheduleLogStorageAppender(final Sequencer sequencer) {
     appender =
         new LogStorageAppender(
-            buildActorName("LogAppender", partitionId), partitionId, logStorage, sequencer);
+            buildActorName("LogAppender", partitionId),
+            partitionId,
+            logStorage,
+            sequencer,
+            meterRegistry);
     return actorSchedulingService.submitActor(appender);
   }
 

@@ -55,11 +55,13 @@ final class LogStorageAppenderTest {
 
   @BeforeEach
   void beforeEach() {
+    final var meterRegistry = new SimpleMeterRegistry();
+
     scheduler.start();
     sequencer =
-        new Sequencer(
-            INITIAL_POSITION, 4 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
-    appender = new LogStorageAppender("appender", PARTITION_ID, logStorage, sequencer);
+        new Sequencer(INITIAL_POSITION, 4 * 1024 * 1024, new SequencerMetrics(meterRegistry));
+    appender =
+        new LogStorageAppender("appender", PARTITION_ID, logStorage, sequencer, meterRegistry);
     reader = new LogStreamReaderImpl(logStorage.newReader());
   }
 

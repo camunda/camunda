@@ -9,7 +9,8 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import com.netflix.concurrency.limits.Limiter;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
-import io.prometheus.client.Histogram;
+import io.camunda.zeebe.util.CloseableSilently;
+import org.agrona.CloseHelper;
 
 /**
  * Represents an in-flight append. Updates metrics and backpressure limits after being {@link
@@ -21,8 +22,8 @@ public final class InFlightAppend implements AppendListener {
   private final AppendErrorHandler errorHandler;
   private final Limiter.Listener limiter;
   private final AppenderMetrics metrics;
-  private Histogram.Timer writeTimer;
-  private Histogram.Timer commitTimer;
+  private CloseableSilently writeTimer;
+  private CloseableSilently commitTimer;
   private long position;
 
   public InFlightAppend(
@@ -44,12 +45,7 @@ public final class InFlightAppend implements AppendListener {
   public void onWriteError(final Throwable error) {
     errorHandler.onWriteError(error);
     metrics.decreaseInflight();
-    if (writeTimer != null) {
-      writeTimer.close();
-    }
-    if (commitTimer != null) {
-      commitTimer.close();
-    }
+    CloseHelper.quietCloseAll(commitTimer, writeTimer);
     limiter.onDropped();
   }
 
