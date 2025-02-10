@@ -105,7 +105,6 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     this.configurators = configurators;
   }
 
-
   private static void deleteSnapshots(final File parentDir) {
     final File snapshotDirectory = new File(parentDir, SNAPSHOTS_DIRECTORY);
 
