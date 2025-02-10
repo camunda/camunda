@@ -60,9 +60,15 @@ public class ZeebeClientConfigurationImplSaasTest {
   }
 
   @Test
-  void shouldHaveGatewayAddress() throws URISyntaxException {
+  void shouldHaveGrpcAddress() throws URISyntaxException {
     assertThat(zeebeClientConfiguration.getGrpcAddress())
         .isEqualTo(new URI("https://12345.bru-2.zeebe.camunda.io"));
+  }
+
+  @Test
+  void shouldHaveRestAddress() throws URISyntaxException {
+    assertThat(zeebeClientConfiguration.getRestAddress())
+        .isEqualTo(new URI("https://bru-2.zeebe.camunda.io/12345"));
   }
 
   @Test
