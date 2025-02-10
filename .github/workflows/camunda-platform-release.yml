@@ -142,7 +142,7 @@ jobs:
             -DreleaseVersion=${RELEASE_VERSION} \
             -DdevelopmentVersion=${DEVELOPMENT_VERSION} \
             -DpushChanges=${PUSH_CHANGES} \
-            -DremoteTagging=${PUSH_CHANGES} \
+            -DremoteTagging=false \
             -DcompletionGoals="spotless:apply" \
             -D skipOptimize \
             -P-autoFormat \
