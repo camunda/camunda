@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.search.filter;
 
-import io.camunda.client.api.search.filter.builder.BasicLongProperty;
+import io.camunda.client.api.search.filter.builder.BasicStringProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
@@ -33,8 +33,8 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   /** Filter by processInstanceKey */
   ProcessInstanceFilter processInstanceKey(final Long processInstanceKey);
 
-  /** Filter by processInstanceKey using {@link BasicLongProperty} consumer */
-  ProcessInstanceFilter processInstanceKey(final Consumer<BasicLongProperty> fn);
+  /** Filter by processInstanceKey using {@link BasicStringProperty} consumer */
+  ProcessInstanceFilter processInstanceKey(final Consumer<BasicStringProperty> fn);
 
   /** Filter by processDefinitionId */
   ProcessInstanceFilter processDefinitionId(final String processDefinitionId);
@@ -63,20 +63,20 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   /** Filter by processDefinitionKey */
   ProcessInstanceFilter processDefinitionKey(final Long processDefinitionKey);
 
-  /** Filter by processDefinitionKey using {@link BasicLongProperty} consumer */
-  ProcessInstanceFilter processDefinitionKey(final Consumer<BasicLongProperty> fn);
+  /** Filter by processDefinitionKey using {@link BasicStringProperty} consumer */
+  ProcessInstanceFilter processDefinitionKey(final Consumer<BasicStringProperty> fn);
 
   /** Filter by parentProcessInstanceKey */
   ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey);
 
-  /** Filter by parentProcessInstanceKey using {@link BasicLongProperty} consumer */
-  ProcessInstanceFilter parentProcessInstanceKey(final Consumer<BasicLongProperty> fn);
+  /** Filter by parentProcessInstanceKey using {@link BasicStringProperty} consumer */
+  ProcessInstanceFilter parentProcessInstanceKey(final Consumer<BasicStringProperty> fn);
 
   /** Filter by parentFlowNodeInstanceKey */
   ProcessInstanceFilter parentFlowNodeInstanceKey(final Long parentFlowNodeInstanceKey);
 
-  /** Filter by parentFlowNodeInstanceKey using {@link BasicLongProperty} consumer */
-  ProcessInstanceFilter parentFlowNodeInstanceKey(final Consumer<BasicLongProperty> fn);
+  /** Filter by parentFlowNodeInstanceKey using {@link BasicStringProperty} consumer */
+  ProcessInstanceFilter parentFlowNodeInstanceKey(final Consumer<BasicStringProperty> fn);
 
   /** Filter by startDate */
   ProcessInstanceFilter startDate(final OffsetDateTime startDate);

@@ -11,7 +11,7 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.VariableQuery;
 import io.camunda.service.VariableServices;
-import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQuery;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
@@ -35,7 +35,7 @@ public class VariableController {
 
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<Object> searchVariables(
-      @RequestBody(required = false) final VariableSearchQueryRequest query) {
+      @RequestBody(required = false) final VariableSearchQuery query) {
     return SearchQueryRequestMapper.toVariableQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }

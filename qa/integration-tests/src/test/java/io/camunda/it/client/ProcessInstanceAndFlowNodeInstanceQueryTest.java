@@ -190,9 +190,10 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   @Test
   void shouldQueryProcessInstancesByKeyFilterIn() {
     // given
-    final List<Long> processInstanceKeys =
+    final List<String> processInstanceKeys =
         PROCESS_INSTANCES.subList(0, 2).stream()
             .map(ProcessInstanceEvent::getProcessInstanceKey)
+            .map(String::valueOf)
             .toList();
 
     // when
@@ -207,6 +208,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     assertThat(result.items().size()).isEqualTo(2);
     assertThat(result.items())
         .extracting("processInstanceKey")
+        .map(String::valueOf)
         .containsExactlyInAnyOrderElementsOf(processInstanceKeys);
   }
 

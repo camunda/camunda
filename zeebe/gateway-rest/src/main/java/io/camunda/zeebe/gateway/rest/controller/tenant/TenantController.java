@@ -13,9 +13,9 @@ import io.camunda.search.query.TenantQuery;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.TenantItem;
+import io.camunda.zeebe.gateway.protocol.rest.TenantResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
@@ -50,7 +50,7 @@ public class TenantController {
   }
 
   @CamundaGetMapping(path = "/{tenantId}")
-  public ResponseEntity<TenantItem> getTenant(@PathVariable final String tenantId) {
+  public ResponseEntity<TenantResult> getTenant(@PathVariable final String tenantId) {
     try {
       return ResponseEntity.ok()
           .body(
@@ -64,7 +64,7 @@ public class TenantController {
   }
 
   @CamundaPostMapping(path = "/search")
-  public ResponseEntity<TenantSearchQueryResponse> searchTenants(
+  public ResponseEntity<TenantSearchQueryResult> searchTenants(
       @RequestBody(required = false) final TenantSearchQueryRequest query) {
     return SearchQueryRequestMapper.toTenantQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
@@ -157,7 +157,7 @@ public class TenantController {
         ResponseMapper::toTenantCreateResponse);
   }
 
-  private ResponseEntity<TenantSearchQueryResponse> search(final TenantQuery query) {
+  private ResponseEntity<TenantSearchQueryResult> search(final TenantQuery query) {
     try {
       final var result =
           tenantServices.withAuthentication(RequestMapper.getAuthentication()).search(query);

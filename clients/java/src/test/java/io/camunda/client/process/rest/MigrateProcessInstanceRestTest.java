@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1.MigrateProcessInstanceCommandFinalStep;
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.protocol.rest.MigrateProcessInstanceMappingInstruction;
-import io.camunda.client.protocol.rest.MigrateProcessInstanceRequest;
+import io.camunda.client.protocol.rest.ProcessInstanceMigrationInstruction;
 import io.camunda.client.util.ClientRestTest;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -47,8 +47,8 @@ public class MigrateProcessInstanceRestTest extends ClientRestTest {
     migrateProcessInstanceCommand.send().join();
 
     // then
-    final MigrateProcessInstanceRequest request =
-        gatewayService.getLastRequest(MigrateProcessInstanceRequest.class);
+    final ProcessInstanceMigrationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceMigrationInstruction.class);
     assertRequest(request, 1);
     final MigrateProcessInstanceMappingInstruction mappingInstruction1 =
         request.getMappingInstructions().get(0);
@@ -69,8 +69,8 @@ public class MigrateProcessInstanceRestTest extends ClientRestTest {
     migrateProcessInstanceCommand.send().join();
 
     // then
-    final MigrateProcessInstanceRequest request =
-        gatewayService.getLastRequest(MigrateProcessInstanceRequest.class);
+    final ProcessInstanceMigrationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceMigrationInstruction.class);
     assertRequest(request, 2);
     final MigrateProcessInstanceMappingInstruction mappingInstruction1 =
         request.getMappingInstructions().get(0);
@@ -97,8 +97,8 @@ public class MigrateProcessInstanceRestTest extends ClientRestTest {
     migrateProcessInstanceCommand.send().join();
 
     // then
-    final MigrateProcessInstanceRequest request =
-        gatewayService.getLastRequest(MigrateProcessInstanceRequest.class);
+    final ProcessInstanceMigrationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceMigrationInstruction.class);
     assertRequest(request, 2);
     final MigrateProcessInstanceMappingInstruction mappingInstruction1 =
         request.getMappingInstructions().get(0);
@@ -127,8 +127,8 @@ public class MigrateProcessInstanceRestTest extends ClientRestTest {
     migrateProcessInstanceCommand.send().join();
 
     // then
-    final MigrateProcessInstanceRequest request =
-        gatewayService.getLastRequest(MigrateProcessInstanceRequest.class);
+    final ProcessInstanceMigrationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceMigrationInstruction.class);
     assertRequest(request, 2);
     final MigrateProcessInstanceMappingInstruction mappingInstruction1 =
         request.getMappingInstructions().get(0);
@@ -174,8 +174,9 @@ public class MigrateProcessInstanceRestTest extends ClientRestTest {
   }
 
   private void assertRequest(
-      final MigrateProcessInstanceRequest request, final int expectedMappingInstructionsCount) {
-    assertThat(request.getTargetProcessDefinitionKey()).isEqualTo(PD_KEY);
+      final ProcessInstanceMigrationInstruction request,
+      final int expectedMappingInstructionsCount) {
+    assertThat(request.getTargetProcessDefinitionKey()).isEqualTo(String.valueOf(PD_KEY));
     assertThat(request.getMappingInstructions().size()).isEqualTo(expectedMappingInstructionsCount);
   }
 

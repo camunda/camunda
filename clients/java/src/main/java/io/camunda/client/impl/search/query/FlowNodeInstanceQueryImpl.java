@@ -35,8 +35,8 @@ import io.camunda.client.impl.search.SearchRequestPageImpl;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.search.sort.FlownodeInstanceSortImpl;
-import io.camunda.client.protocol.rest.FlowNodeInstanceFilterRequest;
-import io.camunda.client.protocol.rest.FlowNodeInstanceSearchQueryRequest;
+import io.camunda.client.protocol.rest.FlowNodeInstanceFilter;
+import io.camunda.client.protocol.rest.FlowNodeInstanceSearchQuery;
 import io.camunda.client.protocol.rest.FlowNodeInstanceSearchQueryResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -44,16 +44,16 @@ import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class FlowNodeInstanceQueryImpl
-    extends TypedSearchRequestPropertyProvider<FlowNodeInstanceSearchQueryRequest>
+    extends TypedSearchRequestPropertyProvider<FlowNodeInstanceSearchQuery>
     implements FlownodeInstanceQuery {
 
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
-  private final FlowNodeInstanceSearchQueryRequest request;
+  private final FlowNodeInstanceSearchQuery request;
   private final RequestConfig.Builder httpRequestConfig;
 
   public FlowNodeInstanceQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
-    request = new FlowNodeInstanceSearchQueryRequest();
+    request = new FlowNodeInstanceSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -81,7 +81,7 @@ public class FlowNodeInstanceQueryImpl
 
   @Override
   public FlownodeInstanceQuery filter(final FlownodeInstanceFilter value) {
-    final FlowNodeInstanceFilterRequest filter = provideSearchRequestProperty(value);
+    final FlowNodeInstanceFilter filter = provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
@@ -118,7 +118,7 @@ public class FlowNodeInstanceQueryImpl
   }
 
   @Override
-  protected FlowNodeInstanceSearchQueryRequest getSearchRequestProperty() {
+  protected FlowNodeInstanceSearchQuery getSearchRequestProperty() {
     return request;
   }
 }

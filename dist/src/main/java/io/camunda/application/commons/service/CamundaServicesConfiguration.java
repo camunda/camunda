@@ -55,7 +55,7 @@ import io.camunda.service.VariableServices;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -75,10 +75,10 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
-  public JobServices<JobActivationResponse> jobServices(
+  public JobServices<JobActivationResult> jobServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final ActivateJobsHandler<JobActivationResponse> activateJobsHandler) {
+      final ActivateJobsHandler<JobActivationResult> activateJobsHandler) {
     return new JobServices<>(brokerClient, securityContextProvider, activateJobsHandler, null);
   }
 

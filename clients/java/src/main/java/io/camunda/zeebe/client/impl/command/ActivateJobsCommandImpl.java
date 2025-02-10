@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.client.protocol.rest.JobActivationRequest;
-import io.camunda.client.protocol.rest.JobActivationResponse;
+import io.camunda.client.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
@@ -172,7 +172,7 @@ public final class ActivateJobsCommandImpl
         "/jobs/activation",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        JobActivationResponse.class,
+        JobActivationResult.class,
         response::addResponse,
         result);
     return result;

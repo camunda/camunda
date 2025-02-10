@@ -15,6 +15,9 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.client.impl.util.ParseUtil;
+import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
@@ -55,8 +58,8 @@ public final class CreateProcessInstanceCommandImpl
   private boolean useRest;
   private HttpClient httpClient;
   private RequestConfig.Builder httpRequestConfig;
-  private final io.camunda.client.protocol.rest.CreateProcessInstanceRequest httpRequestObject =
-      new io.camunda.client.protocol.rest.CreateProcessInstanceRequest();
+  private final ProcessInstanceCreationInstruction httpRequestObject =
+      new ProcessInstanceCreationInstruction();
 
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
@@ -86,8 +89,8 @@ public final class CreateProcessInstanceCommandImpl
    * backwards compatibility in tests.
    *
    * @deprecated since 8.3.0, use {@link
-   *     CreateProcessInstanceCommandImpl#CreateProcessInstanceCommandImpl(GatewayStub asyncStub,
-   *     JsonMapper jsonMapper, ZeebeClientConfiguration config, Predicate retryPredicate)}
+   *     CreateProcessInstanceCommandImpl#CreateProcessInstanceCommandImpl(GatewayStub, JsonMapper,
+   *     ZeebeClientConfiguration, Predicate, HttpClient, boolean)}
    */
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
@@ -152,7 +155,7 @@ public final class CreateProcessInstanceCommandImpl
   @Override
   public CreateProcessInstanceCommandStep3 processDefinitionKey(final long processDefinitionKey) {
     grpcRequestObjectBuilder.setProcessDefinitionKey(processDefinitionKey);
-    httpRequestObject.setProcessDefinitionKey(processDefinitionKey);
+    httpRequestObject.setProcessDefinitionKey(ParseUtil.keyToString(processDefinitionKey));
     return this;
   }
 
@@ -190,7 +193,7 @@ public final class CreateProcessInstanceCommandImpl
         "/process-instances",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        io.camunda.client.protocol.rest.CreateProcessInstanceResponse.class,
+        CreateProcessInstanceResult.class,
         CreateProcessInstanceResponseImpl::new,
         result);
     return result;

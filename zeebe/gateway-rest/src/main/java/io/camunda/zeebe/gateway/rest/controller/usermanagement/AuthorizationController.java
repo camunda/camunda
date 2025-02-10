@@ -14,8 +14,8 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResponse;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -66,13 +66,13 @@ public class AuthorizationController {
   }
 
   @CamundaPostMapping(path = "/authorizations/search")
-  public ResponseEntity<AuthorizationSearchResponse> searchAuthorizations(
-      @RequestBody(required = false) final AuthorizationSearchQueryRequest query) {
+  public ResponseEntity<AuthorizationSearchResult> searchAuthorizations(
+      @RequestBody(required = false) final AuthorizationSearchQuery query) {
     return SearchQueryRequestMapper.toAuthorizationQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  private ResponseEntity<AuthorizationSearchResponse> search(final AuthorizationQuery query) {
+  private ResponseEntity<AuthorizationSearchResult> search(final AuthorizationQuery query) {
     try {
       final var result =
           authorizationServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
