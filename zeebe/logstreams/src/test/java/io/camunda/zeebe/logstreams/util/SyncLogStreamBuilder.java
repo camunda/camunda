@@ -13,7 +13,14 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+<<<<<<< HEAD
 import java.time.InstantSource;
+=======
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Objects;
+>>>>>>> df85a699 (refactor: migrate sequencer metrics to micrometer)
 
 public final class SyncLogStreamBuilder implements LogStreamBuilder {
   private final LogStreamBuilder delegate;
@@ -58,9 +65,20 @@ public final class SyncLogStreamBuilder implements LogStreamBuilder {
   }
 
   @Override
+<<<<<<< HEAD
   public SyncLogStreamBuilder withClock(final InstantSource clock) {
     delegate.withClock(clock);
     return this;
+=======
+  public LogStreamBuilder withMeterRegistry(final MeterRegistry meterRegistry) {
+    delegate.withMeterRegistry(meterRegistry);
+    return null;
+  }
+
+  @Override
+  public ActorFuture<LogStream> buildAsync() {
+    return delegate.buildAsync();
+>>>>>>> df85a699 (refactor: migrate sequencer metrics to micrometer)
   }
 
   @Override

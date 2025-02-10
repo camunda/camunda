@@ -18,9 +18,27 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorage.CommitListener;
+<<<<<<< HEAD
 import java.time.InstantSource;
 import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArrayList;
+=======
+import io.camunda.zeebe.logstreams.storage.LogStorageReader;
+import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
+import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthReport;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.BiConsumer;
+>>>>>>> df85a699 (refactor: migrate sequencer metrics to micrometer)
 import org.slf4j.Logger;
 
 public final class LogStreamImpl implements LogStream, CommitListener {
@@ -33,20 +51,41 @@ public final class LogStreamImpl implements LogStream, CommitListener {
   private final String logName;
   private final int partitionId;
   private final LogStorage logStorage;
+<<<<<<< HEAD
   private final LogStreamMetrics logStreamMetrics;
   private final FlowControl flowControl;
   private final Sequencer sequencer;
   private volatile boolean closed;
+=======
+  private final CompletableActorFuture<Void> closeFuture;
+  private final int nodeId;
+  private final Set<FailureListener> failureListeners = new HashSet<>();
+  private ActorFuture<LogStorageAppender> appenderFuture;
+  private Sequencer sequencer;
+  private LogStorageAppender appender;
+  private Throwable closeError; // set if any error occurred during closeAsync
+  private final String actorName;
+  private HealthReport healthReport = HealthReport.healthy(this);
+  private final MeterRegistry meterRegistry;
+>>>>>>> df85a699 (refactor: migrate sequencer metrics to micrometer)
 
   LogStreamImpl(
       final String logName,
       final int partitionId,
       final int maxFragmentSize,
       final LogStorage logStorage,
+<<<<<<< HEAD
       final InstantSource clock,
       final Limit requestLimit,
       final RateLimit writeRateLimit) {
     this.logName = logName;
+=======
+      final MeterRegistry meterRegistry) {
+    this.actorSchedulingService = actorSchedulingService;
+    this.logName = logName;
+    this.meterRegistry = meterRegistry;
+
+>>>>>>> df85a699 (refactor: migrate sequencer metrics to micrometer)
     this.partitionId = partitionId;
     this.logStorage = logStorage;
     logStreamMetrics = new LogStreamMetrics(partitionId);
@@ -145,6 +184,20 @@ public final class LogStreamImpl implements LogStream, CommitListener {
     return initialPosition;
   }
 
+<<<<<<< HEAD
+=======
+  private Sequencer createAndScheduleWriteBuffer(final long initialPosition) {
+    return new Sequencer(initialPosition, maxFragmentSize, new SequencerMetrics(meterRegistry));
+  }
+
+  private ActorFuture<Void> createAndScheduleLogStorageAppender(final Sequencer sequencer) {
+    appender =
+        new LogStorageAppender(
+            buildActorName("LogAppender", partitionId), partitionId, logStorage, sequencer);
+    return actorSchedulingService.submitActor(appender);
+  }
+
+>>>>>>> df85a699 (refactor: migrate sequencer metrics to micrometer)
   private long getLastCommittedPosition() {
     try (final var storageReader = logStorage.newReader();
         final var logStreamReader = new LogStreamReaderImpl(storageReader)) {
