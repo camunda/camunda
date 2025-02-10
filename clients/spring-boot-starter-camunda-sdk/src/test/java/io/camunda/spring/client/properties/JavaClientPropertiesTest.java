@@ -96,7 +96,7 @@ public class JavaClientPropertiesTest {
                 new CamundaClientProperties().setGrpcAddress(new URI("invalid:26500"));
               })
           .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("The gRPC address must be an absolute URI");
+          .hasMessageContaining("'grpcAddress' must be an absolute URI");
     }
 
     @Test
@@ -106,7 +106,7 @@ public class JavaClientPropertiesTest {
                 new CamundaClientProperties().setRestAddress(new URI("invalid:8080"));
               })
           .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("The REST address must be an absolute URI");
+          .hasMessageContaining("'restAddress' must be an absolute URI");
     }
   }
 }

@@ -21,14 +21,6 @@ public final class ClientPropertiesValidationUtils {
 
   private ClientPropertiesValidationUtils() {}
 
-  public static void validateGrpcAddress(final URI grpcAddress) {
-    validateAddress(grpcAddress, "grpcAddress");
-  }
-
-  public static void validateRestAddress(final URI restAddress) {
-    validateAddress(restAddress, "restAddress");
-  }
-
   /**
    * Validates that the provided address is an absolute URI.
    *
@@ -43,7 +35,7 @@ public final class ClientPropertiesValidationUtils {
    *
    * throws IllegalArgumentException if the provided address is not an absolute URI
    */
-  private static void validateAddress(final URI address, final String propertyName) {
+  public static void checkIfUriIsAbsolute(final URI address, final String propertyName) {
     if (address != null && address.getHost() == null) {
       throw new IllegalArgumentException(
           String.format("'%s' must be an absolute URI", propertyName));

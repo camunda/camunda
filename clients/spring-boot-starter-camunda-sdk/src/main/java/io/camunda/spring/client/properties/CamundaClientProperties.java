@@ -15,8 +15,7 @@
  */
 package io.camunda.spring.client.properties;
 
-import static io.camunda.client.impl.util.ClientPropertiesValidationUtils.validateGrpcAddress;
-import static io.camunda.client.impl.util.ClientPropertiesValidationUtils.validateRestAddress;
+import static io.camunda.client.impl.util.ClientPropertiesValidationUtils.checkIfUriIsAbsolute;
 
 import io.camunda.spring.client.properties.common.IdentityProperties;
 import io.camunda.spring.client.properties.common.ZeebeClientProperties;
@@ -178,7 +177,7 @@ public class CamundaClientProperties {
   }
 
   public void setGrpcAddress(final URI grpcAddress) {
-    validateGrpcAddress(grpcAddress);
+    checkIfUriIsAbsolute(grpcAddress, "grpcAddress");
     this.grpcAddress = grpcAddress;
   }
 
@@ -187,7 +186,7 @@ public class CamundaClientProperties {
   }
 
   public void setRestAddress(final URI restAddress) {
-    validateRestAddress(restAddress);
+    checkIfUriIsAbsolute(restAddress, "restAddress");
     this.restAddress = restAddress;
   }
 

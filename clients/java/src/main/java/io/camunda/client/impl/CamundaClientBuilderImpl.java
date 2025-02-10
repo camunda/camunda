@@ -50,8 +50,7 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PLAINTEXT
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PREFER_REST_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.REST_ADDRESS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR;
-import static io.camunda.client.impl.util.ClientPropertiesValidationUtils.validateGrpcAddress;
-import static io.camunda.client.impl.util.ClientPropertiesValidationUtils.validateRestAddress;
+import static io.camunda.client.impl.util.ClientPropertiesValidationUtils.checkIfUriIsAbsolute;
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_KB;
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_MB;
 
@@ -409,14 +408,14 @@ public final class CamundaClientBuilderImpl
 
   @Override
   public CamundaClientBuilder restAddress(final URI restAddress) {
-    validateRestAddress(restAddress);
+    checkIfUriIsAbsolute(restAddress, "restAddress");
     this.restAddress = restAddress;
     return this;
   }
 
   @Override
   public CamundaClientBuilder grpcAddress(final URI grpcAddress) {
-    validateGrpcAddress(grpcAddress);
+    checkIfUriIsAbsolute(grpcAddress, "grpcAddress");
     this.grpcAddress = grpcAddress;
     grpcAddressUsed = true;
     return this;
