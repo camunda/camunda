@@ -12,9 +12,12 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.util.TestEntry;
 import io.camunda.zeebe.scheduler.ActorCondition;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
+<<<<<<< HEAD
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.micrometer.core.instrument.MeterRegistry;
+=======
+>>>>>>> df85a69 (refactor: migrate sequencer metrics to micrometer)
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
@@ -37,7 +40,11 @@ final class SequencerTest {
   @Test
   void notifiesConsumerOnWrite() {
     // given
+<<<<<<< HEAD
     final var sequencer = new Sequencer(0, 16, new SequencerMetrics(meterRegistry));
+=======
+    final var sequencer = new Sequencer(0, 16, new SequencerMetrics(new SimpleMeterRegistry()));
+>>>>>>> df85a69 (refactor: migrate sequencer metrics to micrometer)
     final var consumer = Mockito.mock(ActorCondition.class);
 
     // when
@@ -51,7 +58,11 @@ final class SequencerTest {
   @Test
   void notifiesConsumerOnBatchWrite() {
     // given
+<<<<<<< HEAD
     final var sequencer = new Sequencer(0, 16, new SequencerMetrics(meterRegistry));
+=======
+    final var sequencer = new Sequencer(0, 16, new SequencerMetrics(new SimpleMeterRegistry()));
+>>>>>>> df85a69 (refactor: migrate sequencer metrics to micrometer)
     final var consumer = Mockito.mock(ActorCondition.class);
 
     // when
@@ -65,7 +76,11 @@ final class SequencerTest {
   @Test
   void canReadAfterSingleWrite() {
     // given
+<<<<<<< HEAD
     final var sequencer = new Sequencer(1, 16, new SequencerMetrics(meterRegistry));
+=======
+    final var sequencer = new Sequencer(1, 16, new SequencerMetrics(new SimpleMeterRegistry()));
+>>>>>>> df85a69 (refactor: migrate sequencer metrics to micrometer)
     final var entry = TestEntry.ofDefaults();
 
     // when
@@ -79,7 +94,11 @@ final class SequencerTest {
   @Test
   void canReadAfterBatchWrite() {
     // given
+<<<<<<< HEAD
     final var sequencer = new Sequencer(1, 16, new SequencerMetrics(meterRegistry));
+=======
+    final var sequencer = new Sequencer(1, 16, new SequencerMetrics(new SimpleMeterRegistry()));
+>>>>>>> df85a69 (refactor: migrate sequencer metrics to micrometer)
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
 
@@ -94,7 +113,12 @@ final class SequencerTest {
   @Test
   void cannotReadEmpty() {
     // given
+<<<<<<< HEAD
     final var sequencer = new Sequencer(1, 16 * 1024 * 1024, new SequencerMetrics(meterRegistry));
+=======
+    final var sequencer =
+        new Sequencer(1, 16 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+>>>>>>> df85a69 (refactor: migrate sequencer metrics to micrometer)
 
     // then
     final var read = sequencer.tryRead();
@@ -104,7 +128,12 @@ final class SequencerTest {
   @Test
   void eventuallyRejectsWritesWithoutReader() {
     // given
+<<<<<<< HEAD
     final var sequencer = new Sequencer(1, 16 * 1024 * 1024, new SequencerMetrics(meterRegistry));
+=======
+    final var sequencer =
+        new Sequencer(1, 16 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+>>>>>>> df85a69 (refactor: migrate sequencer metrics to micrometer)
 
     // then
     Awaitility.await("sequencer rejects writes")
@@ -118,7 +147,12 @@ final class SequencerTest {
   @Test
   void eventuallyRejectsBatchWritesWithoutReader() {
     // given
+<<<<<<< HEAD
     final var sequencer = new Sequencer(1, 16 * 1024 * 1024, new SequencerMetrics(meterRegistry));
+=======
+    final var sequencer =
+        new Sequencer(1, 16 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+>>>>>>> df85a69 (refactor: migrate sequencer metrics to micrometer)
 
     // then
     Awaitility.await("sequencer rejects writes")
@@ -134,7 +168,12 @@ final class SequencerTest {
     // given
     final long initialPosition = 1L;
     final var sequencer =
+<<<<<<< HEAD
         new Sequencer(initialPosition, 16 * 1024 * 1024, new SequencerMetrics(meterRegistry));
+=======
+        new Sequencer(
+            initialPosition, 16 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+>>>>>>> df85a69 (refactor: migrate sequencer metrics to micrometer)
 
     // when
     final var result = sequencer.tryWrite(TestEntry.ofDefaults());
@@ -148,7 +187,12 @@ final class SequencerTest {
     // given
     final long initialPosition = 1L;
     final var sequencer =
+<<<<<<< HEAD
         new Sequencer(initialPosition, 16 * 1024 * 1024, new SequencerMetrics(meterRegistry));
+=======
+        new Sequencer(
+            initialPosition, 16 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+>>>>>>> df85a69 (refactor: migrate sequencer metrics to micrometer)
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
     // when
@@ -164,7 +208,12 @@ final class SequencerTest {
   @Test
   void notifiesReaderWhenRejectingWriteDueToFullQueue() {
     // given
+<<<<<<< HEAD
     final var sequencer = new Sequencer(1, 16 * 1024 * 1024, new SequencerMetrics(meterRegistry));
+=======
+    final var sequencer =
+        new Sequencer(1, 16 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+>>>>>>> df85a69 (refactor: migrate sequencer metrics to micrometer)
     Awaitility.await("sequencer rejects writes")
         .pollInSameThread()
         .pollInterval(Duration.ZERO)
@@ -185,7 +234,12 @@ final class SequencerTest {
   @Test
   void notifiesReaderWhenRejectingBatchWriteDueToFullQueue() {
     // given
+<<<<<<< HEAD
     final var sequencer = new Sequencer(1, 16 * 1024 * 1024, new SequencerMetrics(meterRegistry));
+=======
+    final var sequencer =
+        new Sequencer(1, 16 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+>>>>>>> df85a69 (refactor: migrate sequencer metrics to micrometer)
     Awaitility.await("sequencer rejects writes")
         .pollInSameThread()
         .pollInterval(Duration.ZERO)
@@ -209,7 +263,12 @@ final class SequencerTest {
     final var initialPosition = 1L;
     final var entriesToWrite = 10_000L;
     final var sequencer =
+<<<<<<< HEAD
         new Sequencer(initialPosition, 16 * 1024 * 1024, new SequencerMetrics(meterRegistry));
+=======
+        new Sequencer(
+            initialPosition, 16 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+>>>>>>> df85a69 (refactor: migrate sequencer metrics to micrometer)
     final var batch = List.of(TestEntry.ofKey(1));
     final var reader = newReaderThread(sequencer, initialPosition, entriesToWrite);
     final var writer = newWriterThread(sequencer, initialPosition, entriesToWrite, batch, true);
@@ -232,7 +291,12 @@ final class SequencerTest {
     final var entriesToWrite = 10_000L;
     final var entriesToRead = writers * entriesToWrite;
     final var sequencer =
+<<<<<<< HEAD
         new Sequencer(initialPosition, 16 * 1024 * 1024, new SequencerMetrics(meterRegistry));
+=======
+        new Sequencer(
+            initialPosition, 16 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+>>>>>>> df85a69 (refactor: migrate sequencer metrics to micrometer)
     final var reader = newReaderThread(sequencer, initialPosition, entriesToRead);
     final var batch = List.of(TestEntry.ofKey(1));
     final var writerThreads =
@@ -266,7 +330,12 @@ final class SequencerTest {
     final var batchesToWrite = 10_000L;
     final var batchesToRead = writers * batchesToWrite;
     final var sequencer =
+<<<<<<< HEAD
         new Sequencer(initialPosition, 16 * 1024 * 1024, new SequencerMetrics(meterRegistry));
+=======
+        new Sequencer(
+            initialPosition, 16 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+>>>>>>> df85a69 (refactor: migrate sequencer metrics to micrometer)
     final var reader = newReaderThread(sequencer, initialPosition, batchesToRead);
     final var batch =
         List.of(TestEntry.ofKey(1), TestEntry.ofKey(1), TestEntry.ofKey(1), TestEntry.ofKey(1));

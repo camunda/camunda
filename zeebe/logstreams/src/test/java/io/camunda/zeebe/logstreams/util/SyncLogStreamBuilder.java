@@ -70,7 +70,11 @@ public final class SyncLogStreamBuilder implements LogStreamBuilder {
   @Override
   public LogStreamBuilder withMeterRegistry(final MeterRegistry meterRegistry) {
     delegate.withMeterRegistry(meterRegistry);
+<<<<<<< HEAD
     return this;
+=======
+    return null;
+>>>>>>> df85a69 (refactor: migrate sequencer metrics to micrometer)
   }
 
   @Override

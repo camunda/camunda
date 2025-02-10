@@ -59,9 +59,15 @@ final class LogStorageAppenderTest {
 
     scheduler.start();
     sequencer =
+<<<<<<< HEAD
         new Sequencer(INITIAL_POSITION, 4 * 1024 * 1024, new SequencerMetrics(meterRegistry));
     appender =
         new LogStorageAppender("appender", PARTITION_ID, logStorage, sequencer, meterRegistry);
+=======
+        new Sequencer(
+            INITIAL_POSITION, 4 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+    appender = new LogStorageAppender("appender", PARTITION_ID, logStorage, sequencer);
+>>>>>>> df85a69 (refactor: migrate sequencer metrics to micrometer)
     reader = new LogStreamReaderImpl(logStorage.newReader());
   }
 

@@ -39,7 +39,11 @@ public final class LogStorageAppenderHealthTest {
   public void setUp() {
     final var meterRegistry = new SimpleMeterRegistry();
     failingLogStorage = new ControllableLogStorage();
+<<<<<<< HEAD
     sequencer = new Sequencer(0, 4 * 1024 * 1024, new SequencerMetrics(meterRegistry));
+=======
+    sequencer = new Sequencer(0, 4 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+>>>>>>> df85a69 (refactor: migrate sequencer metrics to micrometer)
 
     appender =
         new LogStorageAppender(

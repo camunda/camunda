@@ -117,7 +117,11 @@ final class SequencerMetrics {
 
       @Override
       public String getBaseUnit() {
+<<<<<<< HEAD
         return "KiB";
+=======
+        return "bytes";
+>>>>>>> df85a69 (refactor: migrate sequencer metrics to micrometer)
       }
 
       @Override
