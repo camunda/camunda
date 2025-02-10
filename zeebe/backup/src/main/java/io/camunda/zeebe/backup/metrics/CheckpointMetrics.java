@@ -7,57 +7,56 @@
  */
 package io.camunda.zeebe.backup.metrics;
 
-import io.prometheus.client.Counter;
-import io.prometheus.client.Gauge;
+import static io.camunda.zeebe.backup.metrics.CheckpointMetricsDoc.*;
+
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.util.EnumMap;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class CheckpointMetrics {
+  private final MeterRegistry registry;
+  private final EnumMap<CheckpointMetricsResultValue, Counter> checkpointRecords =
+      new EnumMap<>(CheckpointMetricsResultValue.class);
+  private final AtomicLong checkpointPosition = new AtomicLong(0L);
+  private final AtomicLong checkpointId = new AtomicLong(0L);
 
-  private static final String NAMESPACE = "zeebe";
-  private static final String LABEL_NAME_PARTITION = "partition";
-  private static final String LABEL_NAME_RESULT = "result";
+  public CheckpointMetrics(final MeterRegistry meterRegistry) {
+    registry = Objects.requireNonNull(meterRegistry, "registry cannot be null");
 
-  private static final Counter CHECKPOINT_RECORDS =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("checkpoint_records_total")
-          .help(
-              "Number of checkpoint records processed by stream processor. Processing can result in either creating a new checkpoint or ignoring the record. This can be observed by filtering for label 'result'.")
-          .labelNames(LABEL_NAME_RESULT, LABEL_NAME_PARTITION)
-          .register();
+    Gauge.builder(CHECKPOINT_POSITION.getName(), checkpointPosition::get)
+        .description(CHECKPOINT_POSITION.getDescription())
+        .register(meterRegistry);
 
-  private static final Gauge CHECKPOINT_POSITION =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .name("checkpoint_position")
-          .help("Position of the last checkpoint")
-          .labelNames(LABEL_NAME_PARTITION)
-          .register();
-
-  private static final Gauge CHECKPOINT_ID =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .name("checkpoint_id")
-          .help("Id of the last checkpoint")
-          .labelNames(LABEL_NAME_PARTITION)
-          .register();
-
-  final String partitionId;
-
-  public CheckpointMetrics(final int partitionId) {
-    this.partitionId = String.valueOf(partitionId);
+    Gauge.builder(CHECKPOINT_POSITION.getName(), checkpointPosition::get)
+        .description(CHECKPOINT_POSITION.getDescription())
+        .register(meterRegistry);
   }
 
   public void created(final long checkpointId, final long checkpointPosition) {
     setCheckpointId(checkpointId, checkpointPosition);
-    CHECKPOINT_RECORDS.labels("created", partitionId).inc();
+    checkpointRecords
+        .computeIfAbsent(CheckpointMetricsResultValue.CREATED, this::registerCheckpointRecords)
+        .increment();
   }
 
   public void setCheckpointId(final long checkpointId, final long checkpointPosition) {
-    CHECKPOINT_ID.labels(partitionId).set(checkpointId);
-    CHECKPOINT_POSITION.labels(partitionId).set(checkpointPosition);
+    this.checkpointId.set(checkpointId);
+    this.checkpointPosition.set(checkpointPosition);
   }
 
   public void ignored() {
-    CHECKPOINT_RECORDS.labels("ignored", partitionId).inc();
+    checkpointRecords
+        .computeIfAbsent(CheckpointMetricsResultValue.IGNORED, this::registerCheckpointRecords)
+        .increment();
+  }
+
+  private Counter registerCheckpointRecords(final CheckpointMetricsResultValue value) {
+    return Counter.builder(CHECKPOINTS_RECORDS.getName())
+        .description(CHECKPOINTS_RECORDS.getDescription())
+        .tags(CheckpointMetricsKeyName.RESULT.asString(), value.value())
+        .register(registry);
   }
 }
