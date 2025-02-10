@@ -276,7 +276,7 @@ public enum JournalMetricsDoc implements ExtendedMeterDocumentation {
   SEEK_LATENCY {
     @Override
     public String getName() {
-      return "journal.seek.latency";
+      return "atomix.journal.seek.latency";
     }
 
     @Override
