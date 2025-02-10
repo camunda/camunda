@@ -28,10 +28,10 @@ import static org.mockito.Mockito.withSettings;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfiguration;
+import io.camunda.exporter.utils.TestObjectMapper;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.http.HttpClient;
@@ -57,8 +57,7 @@ class M2mTokenManagerTest {
   protected static final String M2M_CLIENT_ID = "clientId";
   protected static final String M2M_CLIENT_SECRET = "clientSecret";
   protected static final String M2M_AUDIENCE = "audience";
-  private static final ObjectMapper MAPPER =
-      new ObjectMapper().registerModule(new JavaTimeModule());
+  private static final ObjectMapper MAPPER = TestObjectMapper.objectMapper();
   private final String mockJwtToken =
       JWT.create()
           .withExpiresAt(new Date(Instant.now().plus(10, ChronoUnit.MINUTES).toEpochMilli()))
@@ -74,7 +73,8 @@ class M2mTokenManagerTest {
     configuration.setM2mClientSecret(M2M_CLIENT_SECRET);
     configuration.setM2mAudience(M2M_AUDIENCE);
 
-    m2mTokenManager = new M2mTokenManager(configuration, httpClient);
+    m2mTokenManager =
+        new M2mTokenManager(configuration, httpClient, TestObjectMapper.objectMapper());
   }
 
   @AfterEach

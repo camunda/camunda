@@ -18,13 +18,11 @@ package io.camunda.client.authorization;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.client.protocol.rest.AuthorizationCreateRequest;
+import io.camunda.client.protocol.rest.AuthorizationRequest;
 import io.camunda.client.protocol.rest.OwnerTypeEnum;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.client.util.ClientRestTest;
-import java.util.ArrayList;
-import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 public class CreateAuthorizationTest extends ClientRestTest {
@@ -38,18 +36,17 @@ public class CreateAuthorizationTest extends ClientRestTest {
         .ownerType(OwnerTypeEnum.USER)
         .resourceId("resourceId")
         .resourceType(ResourceTypeEnum.RESOURCE)
-        .permissions(Arrays.asList(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ))
+        .permissionTypes(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ)
         .send()
         .join();
 
     // then
-    final AuthorizationCreateRequest request =
-        gatewayService.getLastRequest(AuthorizationCreateRequest.class);
+    final AuthorizationRequest request = gatewayService.getLastRequest(AuthorizationRequest.class);
     assertThat(request.getOwnerId()).isEqualTo("ownerId");
     assertThat(request.getOwnerType()).isEqualTo(OwnerTypeEnum.USER);
     assertThat(request.getResourceId()).isEqualTo("resourceId");
     assertThat(request.getResourceType()).isEqualTo(ResourceTypeEnum.RESOURCE);
-    assertThat(request.getPermissions())
+    assertThat(request.getPermissionTypes())
         .containsExactly(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ);
   }
 
@@ -64,7 +61,7 @@ public class CreateAuthorizationTest extends ClientRestTest {
                     .ownerType(OwnerTypeEnum.USER)
                     .resourceId("resourceId")
                     .resourceType(ResourceTypeEnum.RESOURCE)
-                    .permissions(Arrays.asList(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ))
+                    .permissionTypes(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
@@ -82,7 +79,7 @@ public class CreateAuthorizationTest extends ClientRestTest {
                     .ownerType(OwnerTypeEnum.USER)
                     .resourceId("resourceId")
                     .resourceType(ResourceTypeEnum.RESOURCE)
-                    .permissions(Arrays.asList(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ))
+                    .permissionTypes(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
@@ -100,7 +97,7 @@ public class CreateAuthorizationTest extends ClientRestTest {
                     .ownerType(null)
                     .resourceId("resourceId")
                     .resourceType(ResourceTypeEnum.RESOURCE)
-                    .permissions(Arrays.asList(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ))
+                    .permissionTypes(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
@@ -118,7 +115,7 @@ public class CreateAuthorizationTest extends ClientRestTest {
                     .ownerType(OwnerTypeEnum.USER)
                     .resourceId(null)
                     .resourceType(ResourceTypeEnum.RESOURCE)
-                    .permissions(Arrays.asList(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ))
+                    .permissionTypes(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
@@ -136,7 +133,7 @@ public class CreateAuthorizationTest extends ClientRestTest {
                     .ownerType(OwnerTypeEnum.USER)
                     .resourceId("")
                     .resourceType(ResourceTypeEnum.RESOURCE)
-                    .permissions(Arrays.asList(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ))
+                    .permissionTypes(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
@@ -154,7 +151,7 @@ public class CreateAuthorizationTest extends ClientRestTest {
                     .ownerType(OwnerTypeEnum.USER)
                     .resourceId("resourceId")
                     .resourceType(null)
-                    .permissions(Arrays.asList(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ))
+                    .permissionTypes(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
@@ -172,46 +169,10 @@ public class CreateAuthorizationTest extends ClientRestTest {
                     .ownerType(OwnerTypeEnum.USER)
                     .resourceId("resourceId")
                     .resourceType(ResourceTypeEnum.RESOURCE)
-                    .permissions(null)
+                    .permissionTypes(null)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("permissions must not be null");
-  }
-
-  @Test
-  void shouldRaiseExceptionOnEmptyPermissions() {
-    // when then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newCreateAuthorizationCommand()
-                    .ownerId("ownerId")
-                    .ownerType(OwnerTypeEnum.USER)
-                    .resourceId("resourceId")
-                    .resourceType(ResourceTypeEnum.RESOURCE)
-                    .permissions(new ArrayList<>())
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("permissions must not be empty");
-  }
-
-  @Test
-  void shouldRaiseExceptionOnNullPermission() {
-    // when then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newCreateAuthorizationCommand()
-                    .ownerId("ownerId")
-                    .ownerType(OwnerTypeEnum.USER)
-                    .resourceId("resourceId")
-                    .resourceType(ResourceTypeEnum.RESOURCE)
-                    .permission(null)
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("permission must not be null");
+        .hasMessageContaining("permissionTypes must not be null");
   }
 }

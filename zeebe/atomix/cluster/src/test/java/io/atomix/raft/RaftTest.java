@@ -31,7 +31,6 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Builder;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
-import io.atomix.raft.metrics.RaftRoleMetrics;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.primitive.TestMember;
 import io.atomix.raft.protocol.PollRequest;
@@ -50,6 +49,8 @@ import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthReport;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.net.ConnectException;
 import java.nio.ByteBuffer;
@@ -78,6 +79,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,6 +97,7 @@ public class RaftTest extends ConcurrentTestCase {
   private volatile long position = 0;
   private Path directory;
   private final Map<MemberId, TestRaftServerProtocol> serverProtocols = Maps.newConcurrentMap();
+  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @Before
   @After
@@ -183,7 +186,8 @@ public class RaftTest extends ConcurrentTestCase {
             .withPartitionConfig(
                 new RaftPartitionConfig()
                     .setElectionTimeout(Duration.ofSeconds(1))
-                    .setHeartbeatInterval(Duration.ofMillis(100)));
+                    .setHeartbeatInterval(Duration.ofMillis(100)))
+            .withMeterRegistry(meterRegistry);
 
     final RaftServer server = configurator.apply(defaults).build();
 
@@ -201,7 +205,7 @@ public class RaftTest extends ConcurrentTestCase {
       final Function<RaftStorage.Builder, RaftStorage.Builder> configurator) {
     final var directory = new File(this.directory.toFile(), memberId.toString());
     final RaftStorage.Builder defaults =
-        RaftStorage.builder()
+        RaftStorage.builder(meterRegistry)
             .withDirectory(directory)
             .withSnapshotStore(new TestSnapshotStore(new AtomicReference<>()))
             .withMaxSegmentSize(1024 * 10);
@@ -330,13 +334,14 @@ public class RaftTest extends ConcurrentTestCase {
 
     appendEntry(leader);
 
-    final double startMissedHeartBeats = RaftRoleMetrics.getHeartbeatMissCount("1");
+    final var roleMetrics = leader.getContext().getRaftRoleMetrics();
+    final double startMissedHeartBeats = roleMetrics.getHeartbeatMissCount();
 
     // when
     appendEntries(leader, 1000);
 
     // then
-    final double missedHeartBeats = RaftRoleMetrics.getHeartbeatMissCount("1");
+    final double missedHeartBeats = roleMetrics.getHeartbeatMissCount();
     assertThat(0.0, is(missedHeartBeats - startMissedHeartBeats));
   }
 

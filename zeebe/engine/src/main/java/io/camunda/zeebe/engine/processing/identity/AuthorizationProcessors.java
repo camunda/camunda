@@ -31,16 +31,6 @@ public final class AuthorizationProcessors {
             writers, keyGenerator, processingState, distributionBehavior, authCheckBehavior));
     typedRecordProcessors.onCommand(
         ValueType.AUTHORIZATION,
-        AuthorizationIntent.ADD_PERMISSION,
-        new AuthorizationAddPermissionProcessor(
-            writers, keyGenerator, processingState, distributionBehavior, authCheckBehavior));
-    typedRecordProcessors.onCommand(
-        ValueType.AUTHORIZATION,
-        AuthorizationIntent.REMOVE_PERMISSION,
-        new AuthorizationRemovePermissionProcessor(
-            writers, keyGenerator, processingState, distributionBehavior, authCheckBehavior));
-    typedRecordProcessors.onCommand(
-        ValueType.AUTHORIZATION,
         AuthorizationIntent.DELETE,
         new AuthorizationDeleteProcessor(
             writers, keyGenerator, processingState, distributionBehavior, authCheckBehavior));

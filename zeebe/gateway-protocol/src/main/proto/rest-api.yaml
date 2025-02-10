@@ -2419,7 +2419,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AuthorizationCreateRequest"
+              $ref: "#/components/schemas/AuthorizationRequest"
         required: true
       responses:
         "201":
@@ -2457,6 +2457,39 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
   /authorizations/{authorizationKey}:
+    put:
+      tags:
+        - Authorization
+      operationId: updateAuthorization
+      summary: Update authorization
+      description: Update the authorization with the given key.
+      parameters:
+        - name: authorizationKey
+          in: path
+          required: true
+          description: The key of the authorization to delete.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthorizationRequest"
+        required: true
+      responses:
+        "204":
+          description: The authorization was updated successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The authorization with the authorizationKey was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     delete:
       tags:
         - Authorization
@@ -5725,6 +5758,7 @@ components:
             - IO_MAPPING_ERROR
             - JOB_NO_RETRIES
             - EXECUTION_LISTENER_NO_RETRIES
+            - TASK_LISTENER_NO_RETRIES
             - CONDITION_ERROR
             - EXTRACT_VALUE_ERROR
             - CALLED_ELEMENT_ERROR
@@ -5839,6 +5873,7 @@ components:
             - IO_MAPPING_ERROR
             - JOB_NO_RETRIES
             - EXECUTION_LISTENER_NO_RETRIES
+            - TASK_LISTENER_NO_RETRIES
             - CONDITION_ERROR
             - EXTRACT_VALUE_ERROR
             - CALLED_ELEMENT_ERROR
@@ -6043,22 +6078,8 @@ components:
         - GROUP
         - MAPPING
         - UNSPECIFIED
-    PermissionDTO:
-      type: object
-      properties:
-        permissionType:
-          description: Specifies the type of permissions.
-          type: object
-          allOf:
-            - $ref: "#/components/schemas/PermissionTypeEnum"
-        resourceIds:
-          type: array
-          description: A list of resource IDs the permission relates to.
-          uniqueItems: true
-          items:
-            type: string
 
-    AuthorizationCreateRequest:
+    AuthorizationRequest:
       type: object
       properties:
         ownerId:
@@ -6077,9 +6098,9 @@ components:
           type: object
           allOf:
             - $ref: "#/components/schemas/ResourceTypeEnum"
-        permissions:
+        permissionTypes:
           type: array
-          description: The permissions to add.
+          description: The permission types to add.
           items:
             type: string
             allOf:
@@ -6089,7 +6110,7 @@ components:
         - ownerType
         - resourceId
         - resourceType
-        - permissions
+        - permissionTypes
     AuthorizationCreateResponse:
       deprecated: true
       type: object
@@ -6112,8 +6133,9 @@ components:
           description: The field to sort by.
           type: string
           enum:
+            - ownerId
             - ownerType
-            - ownerKey
+            - resourceId
             - resourceType
         order:
           $ref: "#/components/schemas/SortOrderEnum"
@@ -6153,11 +6175,24 @@ components:
       description: Base properties for AuthorizationFilterRequest
       type: object
       properties:
+        ownerId:
+          description: The ID of the owner of permissions.
+          type: string
         ownerType:
           description: The type of the owner of permissions.
           type: object
           allOf:
             - $ref: "#/components/schemas/OwnerTypeEnum"
+        resourceIds:
+          description: The IDs of the resource to search permissions for.
+          type: array
+          items:
+            type: string
+        resourceType:
+          description: The type of resource to search permissions for.
+          type: object
+          allOf:
+            - $ref: "#/components/schemas/ResourceTypeEnum"
     AuthorizationFilterRequest:
       description: Authorization search filter.
       deprecated: true
@@ -6165,22 +6200,24 @@ components:
       allOf:
         - $ref: "#/components/schemas/AuthorizationFilterRequestBase"
       properties:
-        ownerKey:
+        ownerId:
           description: The ID of the owner of permissions.
-          type: integer
-          format: int64
+          type: string
     AuthorizationFilter:
       description: Authorization search filter. Key attributes as string values.
       type: object
       allOf:
         - $ref: "#/components/schemas/AuthorizationFilterRequestBase"
       properties:
-        ownerKey:
+        ownerId:
           description: The ID of the owner of permissions.
           type: string
     AuthorizationResponseBase:
       type: "object"
       properties:
+        ownerId:
+          description: The ID of the owner of permissions.
+          type: string
         ownerType:
           description: The type of the owner of permissions.
           type: object
@@ -6191,18 +6228,21 @@ components:
           type: object
           allOf:
             - $ref: "#/components/schemas/ResourceTypeEnum"
-        permissions:
+        resourceId:
+          description: ID of the resource the permission relates to.
+          type: string
+        permissionTypes:
+          description: Specifies the types of the permissions.
           type: array
-          description: The permissions.
           items:
-            $ref: "#/components/schemas/PermissionDTO"
+            $ref: "#/components/schemas/PermissionTypeEnum"
     AuthorizationResponse:
       type: "object"
       allOf:
         - $ref: "#/components/schemas/AuthorizationResponseBase"
       properties:
-        ownerKey:
-          description: The ID of the owner of permissions.
+        authorizationKey:
+          description: The key of the authorization.
           type: integer
           format: int64
     AuthorizationResult:
@@ -6210,8 +6250,8 @@ components:
       allOf:
         - $ref: "#/components/schemas/AuthorizationResponseBase"
       properties:
-        ownerKey:
-          description: The ID of the owner of permissions.
+        authorizationKey:
+          description: The key of the authorization.
           type: string
     AuthorizationSearchResponse:
       deprecated: true

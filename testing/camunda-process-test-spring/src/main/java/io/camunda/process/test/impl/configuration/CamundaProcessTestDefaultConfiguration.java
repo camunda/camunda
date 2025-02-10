@@ -15,7 +15,7 @@
  */
 package io.camunda.process.test.impl.configuration;
 
-import static io.camunda.zeebe.spring.client.configuration.CamundaAutoConfiguration.DEFAULT_OBJECT_MAPPER;
+import static io.camunda.spring.client.configuration.CamundaAutoConfiguration.DEFAULT_OBJECT_MAPPER;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.api.JsonMapper;

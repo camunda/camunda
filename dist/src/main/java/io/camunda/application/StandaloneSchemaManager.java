@@ -96,10 +96,15 @@ public class StandaloneSchemaManager {
     final IndexDescriptors indexDescriptors =
         new IndexDescriptors(connectConfiguration.getIndexPrefix(), IS_ELASTICSEARCH);
 
-    final SearchEngineClient client = ClientAdapter.of(exporterConfig).getSearchEngineClient();
+    final ClientAdapter clientAdapter = ClientAdapter.of(exporterConfig);
+    final SearchEngineClient client = clientAdapter.getSearchEngineClient();
     final SchemaManager schemaManager =
         new SchemaManager(
-            client, indexDescriptors.indices(), indexDescriptors.templates(), exporterConfig);
+            client,
+            indexDescriptors.indices(),
+            indexDescriptors.templates(),
+            exporterConfig,
+            clientAdapter.objectMapper());
 
     schemaManager.startup();
 

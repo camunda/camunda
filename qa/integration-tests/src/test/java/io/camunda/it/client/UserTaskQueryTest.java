@@ -18,10 +18,8 @@ import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.UserTaskState;
 import io.camunda.client.protocol.rest.StringFilterProperty;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
+import io.camunda.it.utils.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -36,23 +34,14 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-@ZeebeIntegration
+@MultiDbTest
 class UserTaskQueryTest {
   private static Long userTaskKeyTaskAssigned;
 
-  @TestZeebe(initMethod = "initTestStandaloneCamunda")
-  private static TestStandaloneCamunda testStandaloneCamunda;
-
   private static CamundaClient camundaClient;
-
-  @SuppressWarnings("unused")
-  static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda();
-  }
 
   @BeforeAll
   static void beforeAll() {
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     deployProcess("process", "simple.bpmn", "test", "", "");
     deployProcess("process-2", "simple-2.bpmn", "test-2", "group", "user");
@@ -455,16 +444,19 @@ class UserTaskQueryTest {
         .isLessThan(result.items().get(2).getCreationDate());
 
     // Assert First and Last Sort Value matches the first and last item
-    assertThat(result.page().firstSortValues())
+    // We need to make use of toString, such the test work with ES/OS
+    assertThat(result.page().firstSortValues().stream().map(Object::toString).toList())
         .isEqualTo(
             List.of(
-                OffsetDateTime.parse(firstItem.getCreationDate()).toInstant().toEpochMilli(),
-                firstItem.getUserTaskKey()));
-    assertThat(result.page().lastSortValues())
+                Long.toString(
+                    OffsetDateTime.parse(firstItem.getCreationDate()).toInstant().toEpochMilli()),
+                Long.toString(firstItem.getUserTaskKey())));
+    assertThat(result.page().lastSortValues().stream().map(Object::toString).toList())
         .isEqualTo(
             List.of(
-                OffsetDateTime.parse(lastItem.getCreationDate()).toInstant().toEpochMilli(),
-                lastItem.getUserTaskKey()));
+                Long.toString(
+                    OffsetDateTime.parse(lastItem.getCreationDate()).toInstant().toEpochMilli()),
+                Long.toString(lastItem.getUserTaskKey())));
   }
 
   @Test

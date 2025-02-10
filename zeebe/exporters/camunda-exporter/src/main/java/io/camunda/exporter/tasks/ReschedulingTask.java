@@ -8,12 +8,18 @@
 package io.camunda.exporter.tasks;
 
 import io.camunda.zeebe.util.ExponentialBackoff;
+import java.net.ConnectException;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 
 public final class ReschedulingTask implements Runnable {
+  private static final Set<Class<? extends Exception>> BACKGROUND_SUPPRESSED_EXCEPTIONS =
+      Set.of(SocketTimeoutException.class, ConnectException.class, SocketException.class);
   private final BackgroundTask task;
   private final int minimumWorkCount;
   private final ScheduledExecutorService executor;
@@ -70,13 +76,16 @@ public final class ReschedulingTask implements Runnable {
   }
 
   private long onError(final Throwable error) {
+    final String logMessage =
+        "Error occurred while performing a background task; operation will be retried";
     errorDelayMs = errorStrategy.applyAsLong(errorDelayMs);
 
-    // TODO: it's likely in some cases, we do want to log things as errors, but we need to
-    //  distinguish this from "normal" cases (e.g. missing data in ES, or ES temporarily
-    //  unavailable, etc.)
-    logger.warn(
-        "Error occurred while performing a background task; operation will be retried", error);
+    if (BACKGROUND_SUPPRESSED_EXCEPTIONS.contains(error.getCause().getClass())) {
+      logger.warn("{}. `{}`", logMessage, error.getCause().getMessage());
+    } else {
+      logger.error(logMessage, error);
+    }
+
     return errorDelayMs;
   }
 
