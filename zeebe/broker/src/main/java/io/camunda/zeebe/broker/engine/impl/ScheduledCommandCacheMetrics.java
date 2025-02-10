@@ -9,11 +9,15 @@ package io.camunda.zeebe.broker.engine.impl;
 
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntConsumer;
 
 /** Defines metrics for scheduled command cache implementations. */
@@ -30,6 +34,7 @@ public interface ScheduledCommandCacheMetrics {
    * io.camunda.zeebe.broker.engine.impl.BoundedScheduledCommandCache}.
    */
   class BoundedCommandCacheMetrics implements ScheduledCommandCacheMetrics {
+    private final Map<Intent, AtomicInteger> sizes = new HashMap<>();
     private final MeterRegistry registry;
 
     public BoundedCommandCacheMetrics(final MeterRegistry registry) {
@@ -38,15 +43,19 @@ public interface ScheduledCommandCacheMetrics {
 
     @Override
     public IntConsumer forIntent(final Intent intent) {
+      return sizes.computeIfAbsent(intent, this::registerSizeReporter)::set;
+    }
+
+    private AtomicInteger registerSizeReporter(final Intent intent) {
       final var intentLabelValue = intent.getClass().getSimpleName() + "." + intent.name();
       final var meterDoc = BoundedCacheMetricsDoc.SIZE;
-      final var sizeTracker = new AtomicLong();
-      Gauge.builder(meterDoc.getName(), sizeTracker, Number::longValue)
+      final var sizeTracker = new AtomicInteger();
+      Gauge.builder(meterDoc.getName(), sizeTracker, AtomicInteger::intValue)
           .description(meterDoc.getDescription())
-          .tag("intent", intentLabelValue)
+          .tag(SizeKeys.INTENT.asString(), intentLabelValue)
           .register(registry);
 
-      return sizeTracker::addAndGet;
+      return sizeTracker;
     }
   }
 
@@ -72,6 +81,27 @@ public interface ScheduledCommandCacheMetrics {
       public String getDescription() {
         return "Reports the size of each bounded cache per partition and intent";
       }
+
+      @Override
+      public KeyName[] getKeyNames() {
+        return SizeKeys.values();
+      }
+
+      @Override
+      public KeyName[] getAdditionalKeyNames() {
+        return PartitionKeyNames.values();
+      }
     },
+  }
+
+  @SuppressWarnings("NullableProblems")
+  enum SizeKeys implements KeyName {
+    /** The specific command intent for this cached keyy */
+    INTENT {
+      @Override
+      public String asString() {
+        return "intent";
+      }
+    }
   }
 }
