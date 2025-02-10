@@ -17,6 +17,7 @@ jobs:
   smoke-tests:
     name: "[Smoke] ${{ matrix.os }} with ${{ matrix.arch }}"
     timeout-minutes: 20
+    permissions: {}  # GITHUB_TOKEN unused in this job
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -85,6 +86,7 @@ jobs:
     name: Property Tests
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 30
+    permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
@@ -131,6 +133,7 @@ jobs:
     name: Performance Tests
     runs-on: gcp-perf-core-16-default
     timeout-minutes: 30
+    permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       ZEEBE_PERFORMANCE_TEST_RESULTS_DIR: "/tmp/jmh"
     steps:
@@ -191,6 +194,7 @@ jobs:
     name: Strace Tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v4
       - name: Install and allow strace tests
@@ -239,8 +243,10 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   docker-checks:
     name: Docker checks
-    timeout-minutes: 20
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      security-events: write
     services:
       # local registry is used as this job needs to push as it builds multi-platform images
       registry:
@@ -308,6 +314,7 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 3
+    permissions: {}  # GITHUB_TOKEN unused in this job
     needs:
       - smoke-tests
       - property-tests
@@ -321,6 +328,7 @@ jobs:
   deploy-docker-snapshot:
     name: Deploy snapshot Docker image
     timeout-minutes: 15
+    permissions: {}  # GITHUB_TOKEN unused in this job
     needs: [ test-summary ]
     runs-on: ubuntu-latest
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/stable/8.7'

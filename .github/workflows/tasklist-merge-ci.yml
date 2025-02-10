@@ -23,6 +23,7 @@ jobs:
   run-fe-ci:
     name: run-frontend-tests
     uses: ./.github/workflows/tasklist-ci-fe-reusable.yml
+    secrets: inherit
 
   tasklist-ci-test-summary:
     # Used by the merge queue to check all jobs.
