@@ -80,7 +80,7 @@ public class ZeebeJobWorkerElementValidationTest {
     String message =
         "Must have either one 'zeebe:publishMessage' or one 'zeebe:taskDefinition' extension element";
     if ("serviceTask".equals(elementBuilder.getElementType())) {
-      message = "Must have 'zeebe:taskDefinition' extension element";
+      message = "Must have exactly one 'zeebe:taskDefinition' extension element";
     }
     final BpmnModelInstance process = processWithJobWorkerElement(elementBuilder, element -> {});
 
