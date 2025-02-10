@@ -20,7 +20,7 @@ package io.camunda.zeebe.client.api.worker;
  * open, the client continuously receives jobs from the broker and hands them to a registered {@link
  * JobHandler}.
  *
- * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
  *     io.camunda.client.api.worker.JobWorker}
  */
 @Deprecated
