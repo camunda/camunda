@@ -258,9 +258,14 @@ public class GcpDocumentStore implements DocumentStore {
     blobInfoBuilder.setContentDisposition("attachment; filename=" + fileName);
 
     final Map<String, String> blobMetadata = new HashMap<>();
-    final var valueAsString = objectMapper.writeValueAsString(metadata.customProperties());
+
     if (metadata.customProperties() != null && !metadata.customProperties().isEmpty()) {
-      metadata.customProperties().forEach((key, value) -> blobMetadata.put(key, valueAsString));
+      for (final var key : metadata.customProperties().keySet()) {
+        final var value = metadata.customProperties().get(key);
+        final var valueAsString = objectMapper.writeValueAsString(value);
+
+        blobMetadata.put(key, valueAsString);
+      }
     }
     if (metadata.processDefinitionId() != null) {
       blobMetadata.put(METADATA_PROCESS_DEFINITION_ID, metadata.processDefinitionId());
