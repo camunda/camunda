@@ -30,7 +30,7 @@ public class CamundaClientAuthProperties {
   private String clientSecret;
 
   @Deprecated private URI issuer;
-  private URI tokenEndpoint;
+  private URI tokenUrl;
   private String audience;
   private String scope;
 
@@ -44,12 +44,12 @@ public class CamundaClientAuthProperties {
   private Duration connectTimeout;
   private Duration readTimeout;
 
-  public URI getTokenEndpoint() {
-    return tokenEndpoint;
+  public URI getTokenUrl() {
+    return tokenUrl;
   }
 
-  public void setTokenEndpoint(final URI tokenEndpoint) {
-    this.tokenEndpoint = tokenEndpoint;
+  public void setTokenUrl(final URI tokenUrl) {
+    this.tokenUrl = tokenUrl;
   }
 
   public Duration getConnectTimeout() {
@@ -78,8 +78,8 @@ public class CamundaClientAuthProperties {
 
   @Deprecated
   @DeprecatedConfigurationProperty(
-      reason = "The expected property value if a token endpoint, renamed",
-      replacement = "camunda.client.auth.token-endpoint")
+      reason = "The expected property value if a token url, renamed",
+      replacement = "camunda.client.auth.token-url")
   public URI getIssuer() {
     return issuer;
   }
@@ -192,8 +192,8 @@ public class CamundaClientAuthProperties {
         + ", clientSecret='"
         + (clientSecret != null ? "***" : null)
         + '\''
-        + ", tokenEndpoint="
-        + tokenEndpoint
+        + ", tokenUrl="
+        + tokenUrl
         + ", audience='"
         + audience
         + '\''
