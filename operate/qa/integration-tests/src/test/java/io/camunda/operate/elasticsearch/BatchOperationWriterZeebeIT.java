@@ -29,6 +29,7 @@ import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -66,7 +67,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
 
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(UPDATE))
+    when(permissionsService.getProcessesWithPermission(PermissionType.UPDATE_PROCESS_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
     final MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
 
@@ -90,7 +91,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
 
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(UPDATE))
+    when(permissionsService.getProcessesWithPermission(PermissionType.UPDATE_PROCESS_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
     final MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
 
@@ -114,7 +115,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
 
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(UPDATE))
+    when(permissionsService.getProcessesWithPermission(PermissionType.UPDATE_PROCESS_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(bpmnProcessId1)));
 
     final MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
@@ -139,7 +140,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
 
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(DELETE))
+    when(permissionsService.getProcessesWithPermission(PermissionType.DELETE_PROCESS_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
 
     final MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
@@ -164,7 +165,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
 
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(DELETE))
+    when(permissionsService.getProcessesWithPermission(PermissionType.DELETE_PROCESS_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
     final MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
 
@@ -188,7 +189,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
 
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(DELETE))
+    when(permissionsService.getProcessesWithPermission(PermissionType.DELETE_PROCESS_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(bpmnProcessId1)));
     final MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
 

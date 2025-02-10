@@ -20,11 +20,11 @@ import io.camunda.operate.webapp.rest.DecisionRestService;
 import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequirementsEntity;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -73,7 +73,7 @@ public class DecisionIT extends OperateAbstractIT {
 
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
+    when(permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
     final MvcResult mvcResult = postRequest(QUERY_DECISION_GROUPED_URL, new DecisionRequestDto());
 
@@ -104,7 +104,7 @@ public class DecisionIT extends OperateAbstractIT {
 
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
+    when(permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
     final MvcResult mvcResult = postRequest(QUERY_DECISION_GROUPED_URL, new DecisionRequestDto());
 
@@ -137,7 +137,7 @@ public class DecisionIT extends OperateAbstractIT {
 
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
+    when(permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(decisionId2)));
     final MvcResult mvcResult = postRequest(QUERY_DECISION_GROUPED_URL, new DecisionRequestDto());
 
@@ -204,7 +204,7 @@ public class DecisionIT extends OperateAbstractIT {
     searchTestRule.persistNew(
         decision111, decision121, decision112, decision122, decision2, decision3);
 
-    when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
+    when(permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
 
     // when
@@ -318,7 +318,7 @@ public class DecisionIT extends OperateAbstractIT {
     searchTestRule.persistNew(
         decision111, decision121, decision112, decision122, decision2, decision3);
 
-    when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
+    when(permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
 
     // when
@@ -427,7 +427,8 @@ public class DecisionIT extends OperateAbstractIT {
     searchTestRule.persistNew(
         decision111, decisionReq1, decision112, decisionReq2, decision2, decision3);
 
-    when(permissionsService.hasPermissionForDecision(decisionId1, IdentityPermission.READ))
+    when(permissionsService.hasPermissionForDecision(
+            decisionId1, PermissionType.READ_DECISION_INSTANCE))
         .thenReturn(true);
 
     // when

@@ -27,11 +27,11 @@ import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceStateDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceForListDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseDto;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
@@ -571,14 +571,14 @@ public class DecisionListQueryIT extends OperateAbstractIT {
   }
 
   @Test
-  public void testQueryWithPermisssionForAllDecisions() throws Exception {
+  public void testQueryWithPermissionForAllDecisions() throws Exception {
 
     // given
     createData();
 
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
+    when(permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
 
     final DecisionInstanceListRequestDto query = createGetAllDecisionInstancesRequest();
@@ -593,14 +593,14 @@ public class DecisionListQueryIT extends OperateAbstractIT {
   }
 
   @Test
-  public void testQueryWithPermisssionForNoDecisions() throws Exception {
+  public void testQueryWithPermissionForNoDecisions() throws Exception {
 
     // given
     createData();
 
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
+    when(permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
 
     final DecisionInstanceListRequestDto query = createGetAllDecisionInstancesRequest();
@@ -624,7 +624,7 @@ public class DecisionListQueryIT extends OperateAbstractIT {
 
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
+    when(permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(decisionId)));
 
     final DecisionInstanceListRequestDto query = createGetAllDecisionInstancesRequest();
