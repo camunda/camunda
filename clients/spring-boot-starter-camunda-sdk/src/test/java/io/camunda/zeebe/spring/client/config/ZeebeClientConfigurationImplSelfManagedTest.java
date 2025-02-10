@@ -55,8 +55,15 @@ public class ZeebeClientConfigurationImplSelfManagedTest {
   }
 
   @Test
-  void shouldHaveGatewayAddress() {
-    assertThat(zeebeClientConfiguration.getGatewayAddress()).isEqualTo("localhost:26500");
+  void shouldHaveGrpcAddress() {
+    assertThat(zeebeClientConfiguration.getGrpcAddress().toString())
+        .isEqualTo("http://localhost:26500");
+  }
+
+  @Test
+  void shouldHaveRestAddress() {
+    assertThat(zeebeClientConfiguration.getRestAddress().toString())
+        .isEqualTo("http://localhost:8086");
   }
 
   @Test
