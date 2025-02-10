@@ -63,9 +63,9 @@ public final class ExecutionListenerTransformer {
                     expressionLanguage.parseExpression(listener.getRetries())),
             error ->
                 LOGGER.debug(
-                    """
-                    Failed to transform execution listener for flow node '%s', \
-                    because %s. Ignoring this listener definition."""
+                        """
+                        Failed to transform execution listener for flow node '%s', \
+                        because %s. Ignoring this listener definition."""
                         .formatted(BufferUtil.bufferAsString(flowNode.getId()), error.reason())));
   }
 
