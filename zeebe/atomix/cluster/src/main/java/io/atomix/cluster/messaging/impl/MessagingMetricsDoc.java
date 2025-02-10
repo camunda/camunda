@@ -144,27 +144,29 @@ public enum MessagingMetricsDoc implements ExtendedMeterDocumentation {
     }
   };
 
-  // FIXME add documentation to the names
   enum MessagingKeyNames implements KeyName {
+    /** the topic/subject the message was published to */
     TOPIC {
       @Override
       public String asString() {
         return "topic";
       }
     },
+    /** the address the message is sent to/received from */
     ADDRESS {
       @Override
       public String asString() {
         return "address";
       }
     },
-
+    /** if the request was unicast (MESSAGE) or request-response(REQ_RESP) */
     TYPE {
       @Override
       public String asString() {
         return "type";
       }
     },
+    /** The outcome of the request, if it was successful or in error */
     OUTCOME {
       @Override
       public String asString() {
