@@ -7,8 +7,6 @@
  */
 package io.camunda.tasklist.util;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,9 +20,9 @@ import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.tasklist.zeebe.PartitionHolder;
 import io.camunda.tasklist.zeebeimport.ImportPositionHolder;
 import io.camunda.webapps.zeebe.StandalonePartitionSupplier;
+import io.camunda.zeebe.broker.Broker;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.zeebe.containers.ZeebeContainer;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -56,7 +54,8 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
   @Order(2)
   public TasklistZeebeExtension zeebeExtension;
 
-  public ZeebeContainer zeebeContainer;
+  @Autowired protected Broker broker;
+  //  public ZeebeContainer zeebeContainer;
 
   @MockBean protected CamundaClient mockedCamundaClient;
   // we don't want to create CamundaClient, we will rather use the one from
@@ -83,8 +82,8 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
   public void before() {
     super.before();
 
-    zeebeContainer = zeebeExtension.getZeebeContainer();
-    assertThat(zeebeContainer).as("zeebeContainer is not null").isNotNull();
+    //    zeebeContainer = zeebeExtension.getZeebeContainer();
+    //    assertThat(zeebeContainer).as("zeebeContainer is not null").isNotNull();
 
     camundaClient = getClient();
     workerName = TestUtil.createRandomString(10);
@@ -157,9 +156,7 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
   private Instant zeebeRequest(
       final String method, final String endpoint, final HttpRequest.BodyPublisher bodyPublisher)
       throws IOException, InterruptedException {
-    final var fullEndpoint =
-        URI.create(
-            String.format("http://%s/%s", zeebeContainer.getExternalAddress(9600), endpoint));
+    final var fullEndpoint = URI.create(String.format("http://%s/%s", "localhost:9600", endpoint));
     final var httpRequest =
         HttpRequest.newBuilder(fullEndpoint)
             .method(method, bodyPublisher)

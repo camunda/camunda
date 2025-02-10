@@ -34,7 +34,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({"tasklist", "standalone", "test"})
+@ActiveProfiles({"tasklist", "standalone", "test", "broker"})
 public abstract class TasklistIntegrationTest {
 
   protected OffsetDateTime testStartTime;

@@ -7,11 +7,14 @@
  */
 package io.camunda.tasklist.util;
 
+import io.camunda.application.commons.CommonsModuleConfiguration;
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.es.DevDataGeneratorElasticSearch;
 import io.camunda.tasklist.data.os.DevDataGeneratorOpenSearch;
 import io.camunda.webapps.WebappsModuleConfiguration;
+import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -34,7 +37,13 @@ import org.springframework.context.annotation.Profile;
           value = TasklistModuleConfiguration.class),
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@Import({WebappsModuleConfiguration.class})
+@Import({
+  WebappsModuleConfiguration.class,
+  BrokerBasedConfiguration.class,
+  BrokerModuleConfiguration.class,
+  TasklistModuleConfiguration.class,
+  CommonsModuleConfiguration.class
+})
 public class TestApplication {
 
   public static void main(final String[] args) throws Exception {
