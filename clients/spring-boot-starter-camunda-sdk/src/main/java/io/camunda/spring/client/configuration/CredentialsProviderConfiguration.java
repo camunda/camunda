@@ -47,7 +47,7 @@ public class CredentialsProviderConfiguration {
             .audience(camundaClientProperties.getAuth().getAudience())
             .scope(camundaClientProperties.getAuth().getScope())
             .authorizationServerUrl(
-                ofNullable(camundaClientProperties.getAuth().getIssuer())
+                ofNullable(camundaClientProperties.getAuth().getTokenUrl())
                     .map(URI::toString)
                     .orElse(null))
             .credentialsCachePath(camundaClientProperties.getAuth().getCredentialsCachePath())
