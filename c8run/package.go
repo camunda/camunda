@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
@@ -38,24 +37,6 @@ func downloadAndExtract(filePath, url, extractDir string, authToken string, extr
 		if err != nil {
 			return fmt.Errorf("downloadAndExtract: failed to extract from archive at %s\n%w\n%s", filePath, err, debug.Stack())
 		}
-	}
-	return nil
-}
-
-func downloadGHArtifact(camundaVersion string, camundaFilePath string) error {
-	_, err := os.Stat(camundaFilePath)
-	if !errors.Is(err, os.ErrNotExist) {
-		return nil
-	}
-	_, err = exec.LookPath("gh")
-	if err != nil {
-		// This is not an error because there is another way to download camunda releases
-		return nil
-	}
-	cmd := exec.Command("gh", "release", "download", "--repo", "camunda/camunda", camundaVersion, "-p", camundaFilePath)
-	err = cmd.Run()
-	if err != nil {
-		return fmt.Errorf("downloadGHArtifact: failed to download artifact %w\n%s", err, debug.Stack())
 	}
 	return nil
 }
@@ -143,7 +124,7 @@ func createZipArchive(filesToArchive []string, outputPath string) error {
 	return nil
 }
 
-func Package(camundaVersion string, elasticsearchVersion string, connectorsVersion string, camundaReleaseTag string, composeTag string) error {
+func Package(camundaVersion string, elasticsearchVersion string, connectorsVersion string, composeTag string) error {
 	var osType, architecture, pkgName, extractFunc, err = setOsSpecificValues()
 	if err != nil {
 		fmt.Printf("%+v", err)
@@ -153,7 +134,7 @@ func Package(camundaVersion string, elasticsearchVersion string, connectorsVersi
 	elasticsearchUrl := "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-" + elasticsearchVersion + "-" + osType + "-" + architecture + pkgName
 	elasticsearchFilePath := "elasticsearch-" + elasticsearchVersion + pkgName
 	camundaFilePath := "camunda-zeebe-" + camundaVersion + pkgName
-	camundaUrl := "https://github.com/camunda/camunda/releases/download/" + camundaReleaseTag + "/" + camundaFilePath
+	camundaUrl := "https://repository.nexus.camunda.cloud/content/groups/internal/io/camunda/camunda-zeebe/" + camundaVersion + "/camunda-zeebe-" + camundaVersion + pkgName
 	connectorsFilePath := "connector-runtime-bundle-" + connectorsVersion + "-with-dependencies.jar"
 	connectorsUrl := "https://repository.nexus.camunda.cloud/content/groups/internal/io/camunda/connector/connector-runtime-bundle/" + connectorsVersion + "/" + connectorsFilePath
 	composeUrl := "https://github.com/camunda/camunda-platform/archive/refs/tags/" + composeTag + pkgName
@@ -174,7 +155,7 @@ func Package(camundaVersion string, elasticsearchVersion string, connectorsVersi
 		return fmt.Errorf("Package "+osType+": failed to fetch elasticsearch: %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadGHArtifact(camundaVersion, camundaFilePath)
+	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, javaArtifactsToken, archive.UnzipSource)
 	if err != nil {
 		return fmt.Errorf("Package "+osType+": failed to download camunda with gh: %w\n%s", err, debug.Stack())
 	}

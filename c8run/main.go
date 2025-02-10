@@ -312,7 +312,6 @@ func main() {
 	}
 
 	elasticsearchVersion := os.Getenv("ELASTICSEARCH_VERSION")
-	camundaReleaseTag := os.Getenv("CAMUNDA_RELEASE_TAG")
 	camundaVersion := os.Getenv("CAMUNDA_VERSION")
 	connectorsVersion := os.Getenv("CONNECTORS_VERSION")
 	composeTag := os.Getenv("COMPOSE_TAG")
@@ -561,7 +560,7 @@ func main() {
 	}
 
 	if baseCommand == "package" {
-		err := Package(camundaVersion, elasticsearchVersion, connectorsVersion, camundaReleaseTag, composeTag)
+		err := Package(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag)
 		if err != nil {
 			fmt.Printf("%+v", err)
 			os.Exit(1)
