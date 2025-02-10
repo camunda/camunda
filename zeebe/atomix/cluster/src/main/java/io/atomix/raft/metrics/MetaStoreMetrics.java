@@ -27,7 +27,7 @@ public final class MetaStoreMetrics extends RaftMetrics {
         Timer.builder(LAST_FLUSHED_INDEX.getName())
             .description(LAST_FLUSHED_INDEX.getDescription())
             .serviceLevelObjectives(LAST_FLUSHED_INDEX.getTimerSLOs())
-            .tag(RaftKeyNames.PARTITION_GROUP.asString(), partitionName)
+            .tag(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
             .register(registry);
     clock = registry.config().clock();
   }
