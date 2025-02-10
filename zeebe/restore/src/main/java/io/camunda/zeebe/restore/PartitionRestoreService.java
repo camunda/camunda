@@ -110,7 +110,7 @@ public class PartitionRestoreService {
       final long checkpointPosition, final Path dataDirectory) {
 
     try (final var journal =
-        SegmentedJournal.builder()
+        SegmentedJournal.builder(partition.getMeterRegistry())
             .withDirectory(dataDirectory.toFile())
             .withName(partition.name())
             .withMetaStore(new InMemory())

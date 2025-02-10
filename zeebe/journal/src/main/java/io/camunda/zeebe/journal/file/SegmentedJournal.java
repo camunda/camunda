@@ -24,6 +24,7 @@ import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
@@ -67,8 +68,8 @@ public final class SegmentedJournal implements Journal {
    *
    * @return A new Segmented journal builder.
    */
-  public static SegmentedJournalBuilder builder() {
-    return new SegmentedJournalBuilder();
+  public static SegmentedJournalBuilder builder(final MeterRegistry meterRegistry) {
+    return new SegmentedJournalBuilder(meterRegistry);
   }
 
   @Override
