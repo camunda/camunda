@@ -94,7 +94,7 @@
     "eslint-plugin-license-header": "^0.6.1",
     "eslint-plugin-prettier": "5.2.3",
     "eslint-plugin-react-hooks": "4.6.2",
-    "eslint-plugin-react-refresh": "0.4.18",
+    "eslint-plugin-react-refresh": "0.4.19",
     "eslint-plugin-testing-library": "6.3.0",
     "jsdom": "25.0.1",
     "monaco-editor": "0.52.2",
