@@ -24,9 +24,10 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
 
-public class ElasticsearchRepository {
+public class ElasticsearchRepository implements AutoCloseable {
 
   public static final Time SCROLL_KEEP_ALIVE = Time.of(t -> t.time("1m"));
   public static final int SCROLL_PAGE_SIZE = 100;
@@ -35,7 +36,9 @@ public class ElasticsearchRepository {
   protected final Logger logger;
 
   public ElasticsearchRepository(
-      final ElasticsearchAsyncClient client, final Executor executor, final Logger logger) {
+      @WillCloseWhenClosed final ElasticsearchAsyncClient client,
+      final Executor executor,
+      final Logger logger) {
     this.client = client;
     this.executor = executor;
     this.logger = logger;
@@ -146,5 +149,10 @@ public class ElasticsearchRepository {
                         errors.size(), type, errors.getFirst().reason())));
 
     return new ExporterException("Failed to flush bulk request: " + collectedErrors);
+  }
+
+  @Override
+  public void close() throws Exception {
+    client._transport().close();
   }
 }

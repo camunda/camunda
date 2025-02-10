@@ -168,7 +168,4 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
                     .params(parameters))
         .build();
   }
-
-  @Override
-  public void close() throws Exception {}
 }

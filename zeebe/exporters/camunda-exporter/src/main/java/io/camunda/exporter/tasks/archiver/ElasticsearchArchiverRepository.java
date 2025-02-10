@@ -200,11 +200,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             executor);
   }
 
-  @Override
-  public void close() throws Exception {
-    client._transport().close();
-  }
-
   private SearchRequest createFinishedInstancesSearchRequest(final Aggregation aggregation) {
     final var endDateQ =
         QueryBuilders.range(
