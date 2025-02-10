@@ -160,7 +160,6 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
         new IndexMapping()
             .setIndexName(indexName)
             .setDynamic("strict")
-            .setMetaProperties(Collections.emptyMap())
             .setProperties(
                 Set.of(
                     new IndexMappingProperty()
