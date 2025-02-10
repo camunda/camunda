@@ -26,7 +26,7 @@
     "react-router": "6.26.2",
     "react-router-dom": "6.26.2",
     "react-transition-group": "4.4.5",
-    "styled-components": "6.1.14"
+    "styled-components": "6.1.15"
   },
   "devDependencies": {
     "@types/event-source-polyfill": "1.0.5",
@@ -40,7 +40,7 @@
     "@vzeta/rollup-plugin-sbom": "2.0.0",
     "eslint": "8.57.1",
     "eslint-plugin-react-hooks": "4.6.2",
-    "eslint-plugin-react-refresh": "0.4.18",
+    "eslint-plugin-react-refresh": "0.4.19",
     "event-source-polyfill": "1.0.31",
     "license-checker": "25.0.1",
     "prettier": "3.3.3",
