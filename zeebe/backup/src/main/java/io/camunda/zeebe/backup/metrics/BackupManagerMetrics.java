@@ -24,8 +24,8 @@ public class BackupManagerMetrics {
   private final String partitionId;
   private final MeterRegistry registry;
   private final Table<OperationType, OperationResult, Counter> totalOperations = Table.simple();
-  private final Table<String, OperationType, AtomicLong> operationInProgress = Table.simple();
-  private final Table<String, OperationType, Timer> backupOperationLatency = Table.simple();
+  private final Table<String, OperationType, AtomicLong> operationInProgress = Table.concurrent();
+  private final Table<String, OperationType, Timer> backupOperationLatency = Table.concurrent();
 
   public BackupManagerMetrics(final int partitionId, final MeterRegistry meterRegistry) {
     this.partitionId = String.valueOf(partitionId);
