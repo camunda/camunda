@@ -79,7 +79,7 @@
 
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
-    <spring-boot.version>3.4.1</spring-boot.version>
+    <spring-boot.version>3.3.6</spring-boot.version>
   </properties>
 
   <modules>
