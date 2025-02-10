@@ -66,11 +66,8 @@ deny[msg] {
     jobs_that_should_fail_checkresults := { job_id |
         job := input.jobs[job_id]
 
-        # no Unified CI jobs that are part of change detection control flow structure
-        job_id != "detect-changes"
+        # no Unified CI jobs running after (and including) "check-results" job
         job_id != "check-results"
-
-        # no Unified CI jobs running after "check-results" job
         not startswith(job_id, "deploy-")
     }
 
