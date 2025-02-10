@@ -46,13 +46,13 @@ public final class BackupService extends Actor implements BackupManager {
       final PersistedSnapshotStore snapshotStore,
       final Path segmentsDirectory,
       final JournalInfoProvider raftMetadataProvider,
-      final MeterRegistry brokerMeterRegistry) {
+      final MeterRegistry partitionRegistry) {
     this.nodeId = nodeId;
     this.partitionId = partitionId;
     this.numberOfPartitions = numberOfPartitions;
     this.snapshotStore = snapshotStore;
     this.segmentsDirectory = segmentsDirectory;
-    metrics = new BackupManagerMetrics(partitionId, brokerMeterRegistry);
+    metrics = new BackupManagerMetrics(partitionRegistry);
     internalBackupManager = new BackupServiceImpl(backupStore);
     actorName = buildActorName("BackupService", partitionId);
     journalInfoProvider = raftMetadataProvider;

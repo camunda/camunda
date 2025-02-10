@@ -108,7 +108,7 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
             context.getPersistedSnapshotStore(),
             context.getRaftPartition().dataDirectory().toPath(),
             index -> context.getRaftPartition().getServer().getTailSegments(index),
-            context.getBrokerMeterRegistry());
+            context.getPartitionMeterRegistry());
 
     final ActorFuture<Void> installed = context.getConcurrencyControl().createFuture();
     context
