@@ -490,6 +490,59 @@ public class TaskListenerTest {
   }
 
   @Test
+  public void shouldUpdateTaskWhenTaskListenerAcceptsOperationAfterRejection() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.updating, listenerType));
+
+    // when: attempting to update the user task priority for the first time
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .update(new UserTaskRecord().setPriority(80).setPriorityChanged());
+
+    // and: task listener rejects the first update attempt
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    // when: retrying the update operation with a new priority value
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .update(new UserTaskRecord().setPriority(100).setPriorityChanged());
+
+    // and: completing the re-created task listener job
+    completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.UPDATED))
+        .extracting(Record::getIntent, r -> r.getValue().getPriority())
+        .describedAs(
+            "Verify intents sequence and state of the `priority` property through the user task transitions")
+        .containsSequence(
+            // Initial state of the user task
+            tuple(UserTaskIntent.CREATED, 50),
+            // First update attempt and rejection by the listener
+            tuple(UserTaskIntent.UPDATING, 80),
+            tuple(UserTaskIntent.DENY_TASK_LISTENER, 80),
+            // Priority reverts after rejection
+            tuple(UserTaskIntent.UPDATE_DENIED, 50),
+            // Second update attempt and successful completion
+            tuple(UserTaskIntent.UPDATING, 100),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, 100),
+            // Update was performed successfully
+            tuple(UserTaskIntent.UPDATED, 100));
+  }
+
+  @Test
   public void
       shouldRevertToPreviousAssigneeWhenRejectingAssignmentFromTaskListenerAfterPreviouslySuccessfulAssignment() {
     // given
@@ -1327,6 +1380,32 @@ public class TaskListenerTest {
             tuple(listenerType, false),
             tuple(listenerType + "_2", false),
             tuple(listenerType + "_3", false));
+  }
+
+  @Test
+  public void shouldRejectUserTaskUpdateWhenTaskListenerDeniesTheOperation() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.updating, listenerType));
+
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .update(new UserTaskRecord().setPriority(99).setPriorityChanged());
+
+    // when: complete `updating` a listener job with a denied result
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    // then: ensure that `DENY_TASK_LISTENER` and `UPDATE_DENIED`
+    // are written right after `UPDATING` event
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.UPDATING, UserTaskIntent.DENY_TASK_LISTENER, UserTaskIntent.UPDATE_DENIED);
   }
 
   @Test
@@ -2235,6 +2314,15 @@ public class TaskListenerTest {
         u -> u,
         userTask -> userTask.withAssignee("initial_assignee").claim(),
         UserTaskIntent.ASSIGNMENT_DENIED);
+  }
+
+  @Test
+  public void shouldRevertCorrectedUserTaskDataWhenUpdatingTaskListenerDenies() {
+    testRevertCorrectedUserTaskDataWhenTaskListenerDenies(
+        ZeebeTaskListenerEventType.updating,
+        u -> u,
+        userTask -> userTask.update(new UserTaskRecord()),
+        UserTaskIntent.UPDATE_DENIED);
   }
 
   @Test
