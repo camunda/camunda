@@ -100,6 +100,11 @@
       <artifactId>zeebe-atomix-utils</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+    </dependency>
+
     <!-- required for the protocol factory -->
     <dependency>
       <groupId>org.jeasy</groupId>
