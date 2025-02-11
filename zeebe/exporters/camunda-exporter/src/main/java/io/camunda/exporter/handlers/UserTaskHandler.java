@@ -227,7 +227,8 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
   }
 
   private boolean refersToPreviousVersionRecord(final long key) {
-    return key < exporterMetadata.getFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK);
+    return exporterMetadata.getFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK) == -1
+        || key < exporterMetadata.getFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK);
   }
 
   private static String getAssigneeOrNull(final Record<UserTaskRecordValue> record) {
