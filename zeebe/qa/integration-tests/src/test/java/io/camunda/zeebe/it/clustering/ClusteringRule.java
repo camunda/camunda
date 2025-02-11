@@ -37,7 +37,6 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.bootstrap.BrokerContext;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
@@ -362,9 +361,8 @@ public class ClusteringRule extends ExternalResource {
     final var brokerClientConfig = brokerSpringConfig.brokerClientConfig();
     final var brokerClientConfiguration =
         new BrokerClientConfiguration(
-            brokerClientConfig, atomixCluster, scheduler, topologyManager);
-    final var brokerClient =
-        brokerClientConfiguration.brokerClient(BrokerClientRequestMetrics.of(meterRegistry));
+            brokerClientConfig, atomixCluster, scheduler, topologyManager, meterRegistry);
+    final var brokerClient = brokerClientConfiguration.brokerClient();
 
     final var systemContext =
         new SystemContext(
@@ -492,9 +490,8 @@ public class ClusteringRule extends ExternalResource {
     final var brokerClientConfig = config.brokerClientConfig();
     final var brokerClientConfiguration =
         new BrokerClientConfiguration(
-            brokerClientConfig, atomixCluster, actorScheduler, topologyManager);
-    final var brokerClient =
-        brokerClientConfiguration.brokerClient(BrokerClientRequestMetrics.of(meterRegistry));
+            brokerClientConfig, atomixCluster, actorScheduler, topologyManager, meterRegistry);
+    final var brokerClient = brokerClientConfiguration.brokerClient();
     final var jobStreamClient =
         new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster);
     jobStreamClient.start().join();
