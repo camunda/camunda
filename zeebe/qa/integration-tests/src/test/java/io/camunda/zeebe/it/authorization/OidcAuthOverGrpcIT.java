@@ -32,6 +32,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.keycloak.representations.idm.ClientRepresentation;
@@ -42,6 +43,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 @ZeebeIntegration
+@Disabled("https://github.com/camunda/camunda/issues/26799")
 public class OidcAuthOverGrpcIT {
 
   private static final String DEFAULT_USER_ID = UUID.randomUUID().toString();
