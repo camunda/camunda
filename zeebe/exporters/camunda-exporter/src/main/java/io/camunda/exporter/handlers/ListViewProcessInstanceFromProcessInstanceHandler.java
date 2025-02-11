@@ -123,24 +123,14 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       }
     } else if (intent.equals(ELEMENT_ACTIVATING)) {
 
-      final ProcessInstanceRecordValue value = record.getValue();
-      final List<List<Long>> elementInstancePath = value.getElementInstancePath();
-      final List<Integer> callingElementPath = value.getCallingElementPath();
-      final List<Long> processDefinitionPath = value.getProcessDefinitionPath();
-      final Long processInstanceKey = value.getProcessInstanceKey();
-
-      final TreePath treePath =
-          createTreePath(
-              processCache,
-              record.getKey(),
-              processInstanceKey,
-              elementInstancePath,
-              processDefinitionPath,
-              callingElementPath);
+      final TreePath treePath = createTreePath(record);
       piEntity
           .setTreePath(treePath.toString())
           .setStartDate(timestamp)
           .setState(ProcessInstanceState.ACTIVE);
+    } else if (intent.equals(ELEMENT_MIGRATED)) {
+      final TreePath treePath = createTreePath(record);
+      piEntity.setTreePath(treePath.toString()).setState(ProcessInstanceState.ACTIVE);
     } else {
       piEntity.setState(ProcessInstanceState.ACTIVE);
     }
@@ -227,13 +217,12 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     return processCache.get(processDefinitionJey).map(CachedProcessEntity::versionTag).orElse(null);
   }
 
-  public static TreePath createTreePath(
-      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
-      final long key,
-      final Long processInstanceKey,
-      final List<List<Long>> elementInstancePath,
-      final List<Long> processDefinitionPath,
-      final List<Integer> callingElementPath) {
+  public TreePath createTreePath(final Record<ProcessInstanceRecordValue> record) {
+    final var value = record.getValue();
+    final var elementInstancePath = value.getElementInstancePath();
+    final var callingElementPath = value.getCallingElementPath();
+    final var processDefinitionPath = value.getProcessDefinitionPath();
+    final Long processInstanceKey = value.getProcessInstanceKey();
     if (elementInstancePath == null || elementInstancePath.isEmpty()) {
       LOGGER.warn(
           "No elementInstancePath is provided for process instance key: {}. TreePath will be set to default value (PI key).",
@@ -265,7 +254,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
             "Expected to find process in cache. TreePath won't contain proper callActivityId, will use the lexicographic index instead {}. [processInstanceKey: {}, processDefinitionKey: {}, incidentKey: {}]",
             processInstanceKey,
             processDefinitionPath.get(i),
-            key,
+            record.getKey(),
             index);
         treePath.appendFlowNode(String.valueOf(index));
       }

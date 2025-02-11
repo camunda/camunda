@@ -94,31 +94,8 @@ public class FlowNodeInstanceFromProcessInstanceHandler
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
     entity.setScopeKey(recordValue.getFlowScopeKey());
 
-    if (intent.equals(ELEMENT_ACTIVATING)) {
-      final ProcessInstanceRecordValue value = record.getValue();
-      if (value.getElementInstancePath() != null && !value.getElementInstancePath().isEmpty()) {
-        // Build the intra treePath in the format:
-        // <pre>
-        //   <processInstanceKey>/<flowNodeInstanceKey>/.../<flowNodeInstanceKey>
-        // </pre>
-        //
-        // Where upper level flowNodeInstanceKeys are normally subprocess(es) or multi-instance
-        // bodies.
-        // This is an intra tree path that shows position of flow node instance inside one process
-        // instance.
-        // We take last entry, as in intra path we're not interested in upper level process instance
-        // scope hierarchies.
-        final List<String> treePathEntries =
-            value.getElementInstancePath().getLast().stream().map(String::valueOf).toList();
-        entity.setTreePath(String.join("/", treePathEntries));
-        entity.setLevel(treePathEntries.size() - 1);
-      } else {
-        LOGGER.warn(
-            "No elementInstancePath is provided for flow node instance id: {}. TreePath will be set to default value.",
-            entity.getId());
-        entity.setTreePath(recordValue.getProcessInstanceKey() + "/" + record.getKey());
-        entity.setLevel(1);
-      }
+    if (intent.equals(ELEMENT_ACTIVATING) || intent.equals(ELEMENT_MIGRATED)) {
+      setTreePath(record, entity);
     }
 
     final OffsetDateTime recordTime =
@@ -175,6 +152,37 @@ public class FlowNodeInstanceFromProcessInstanceHandler
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  /**
+   * Sets the tree path and level of the flow node instance.
+   *
+   * <pre>
+   *   <processInstanceKey>/<flowNodeInstanceKey>/.../<flowNodeInstanceKey>
+   * </pre>
+   *
+   * Upper level flowNodeInstanceKeys are typically subprocesses or multi-instance bodies. This
+   * intra tree path shows the position of a flow node instance within a single process instance.
+   * The last entry is used, as we are not interested in upper-level process instance scope
+   * hierarchies.
+   */
+  private static void setTreePath(
+      final Record<ProcessInstanceRecordValue> record, final FlowNodeInstanceEntity entity) {
+    final var recordValue = record.getValue();
+    if (recordValue.getElementInstancePath() != null
+        && !recordValue.getElementInstancePath().isEmpty()) {
+
+      final List<String> treePathEntries =
+          recordValue.getElementInstancePath().getLast().stream().map(String::valueOf).toList();
+      entity.setTreePath(String.join("/", treePathEntries));
+      entity.setLevel(treePathEntries.size() - 1);
+    } else {
+      LOGGER.warn(
+          "No elementInstancePath is provided for flow node instance id: {}. TreePath will be set to default value.",
+          entity.getId());
+      entity.setTreePath(recordValue.getProcessInstanceKey() + "/" + record.getKey());
+      entity.setLevel(1);
+    }
   }
 
   private boolean isOfTypes(

@@ -17,6 +17,7 @@ import static org.mockito.Mockito.verify;
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.listview.ListViewJoinRelation;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
@@ -455,13 +456,20 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             ValueType.PROCESS_INSTANCE,
             r -> r.withIntent(ProcessInstanceIntent.ELEMENT_MIGRATED).withTimestamp(timestamp));
 
-    // when then
+    final String treePath =
+        new TreePath()
+            .startTreePath(processInstanceRecord.getValue().getProcessInstanceKey())
+            .toString();
+
+    // when
     final ProcessInstanceForListViewEntity processInstanceForListViewEntity =
         new ProcessInstanceForListViewEntity();
     underTest.updateEntity(processInstanceRecord, processInstanceForListViewEntity);
 
+    // then
     assertThat(processInstanceForListViewEntity.getEndDate()).isNull();
     assertThat(processInstanceForListViewEntity.getStartDate()).isNull();
     assertThat(processInstanceForListViewEntity.getState()).isEqualTo(ProcessInstanceState.ACTIVE);
+    assertThat(processInstanceForListViewEntity.getTreePath()).isEqualTo(treePath);
   }
 }

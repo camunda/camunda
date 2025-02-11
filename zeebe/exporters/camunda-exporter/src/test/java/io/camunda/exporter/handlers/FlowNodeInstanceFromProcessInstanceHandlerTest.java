@@ -399,6 +399,8 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
             r ->
                 r.withIntent(ProcessInstanceIntent.ELEMENT_MIGRATED)
                     .withValue(processInstanceRecordValue));
+    final String defaultTreePath =
+        processInstanceRecordValue.getProcessInstanceKey() + "/" + processInstanceRecord.getKey();
 
     // when
     final FlowNodeInstanceEntity flowNodeInstanceEntity = new FlowNodeInstanceEntity();
@@ -409,5 +411,6 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     assertThat(flowNodeInstanceEntity.getStartDate()).isNull();
     assertThat(flowNodeInstanceEntity.getEndDate()).isNull();
     assertThat(flowNodeInstanceEntity.getPosition()).isNull();
+    assertThat(flowNodeInstanceEntity.getTreePath()).isEqualTo(defaultTreePath);
   }
 }
