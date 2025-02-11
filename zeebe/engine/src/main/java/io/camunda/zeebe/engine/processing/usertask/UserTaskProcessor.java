@@ -150,7 +150,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
         .validateCommand(command)
         .ifRightOrLeft(
             persistedRecord ->
-                handleCommandProcessing(commandProcessor, command, persistedRecord, intent),
+                handleCommandProcessing(commandProcessor, command, persistedRecord.copy(), intent),
             rejection -> handleCommandRejection(command, rejection));
   }
 
