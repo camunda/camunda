@@ -32,11 +32,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 import java.util.stream.StreamSupport;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ThrowingRunnable;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -282,54 +284,83 @@ public class CamundaMultiDBExtension
     }
   }
 
+  private void withRetry(final Callable<Boolean> operation, final int maxAttempt) {
+    int attempt = 0;
+    boolean shouldRetry = true;
+    while (shouldRetry) {
+      try {
+        // if we succeed we don't want to retry
+        shouldRetry = !operation.call();
+      } catch (final Exception ex) {
+        LOGGER.debug(
+            "Failed to execute {}. Attempts: [{}/{}]", operation, attempt + 1, maxAttempt, ex);
+      } finally {
+        // if we reached the max attempt we stop
+        if (++attempt >= maxAttempt) {
+          shouldRetry = false;
+        }
+      }
+
+      if (shouldRetry) {
+        try {
+          // wait a little between retries
+          Thread.sleep(100);
+        } catch (final InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+      }
+    }
+  }
+
   @Override
   public void afterAll(final ExtensionContext context) {
     if (databaseType == DatabaseType.ES || databaseType == DatabaseType.OS) {
       try (final HttpClient httpClient = HttpClient.newHttpClient()) {
+
         // delete indices
         // https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-delete-index.html
-        final URI deleteIndicesEndpoint =
-            URI.create(String.format("%s/%s-*", DEFAULT_ES_URL, testPrefix));
-        HttpRequest httpRequest =
-            HttpRequest.newBuilder().DELETE().uri(deleteIndicesEndpoint).build();
-        HttpResponse<String> response = httpClient.send(httpRequest, BodyHandlers.ofString());
-        int statusCode = response.statusCode();
-        if (statusCode / 100 == 2) {
-          LOGGER.info("Test indices with prefix {} deleted.", testPrefix);
-        } else {
-          LOGGER.warn(
-              "Failure on deleting test indices with prefix {}. Status code: {} [{}]",
-              testPrefix,
-              statusCode,
-              response.body());
-        }
+        withRetry(
+            () -> {
+              final URI deleteIndicesEndpoint =
+                  URI.create(String.format("%s/%s-*", DEFAULT_ES_URL, testPrefix));
+              return sendHttpDeleteRequest(httpClient, deleteIndicesEndpoint);
+            },
+            5);
 
         // Deleting index templates are separate from deleting indices, and we need to make sure
         // that we also get rid of the template, so we can properly recreate them
         // https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-delete-template.html
         //
         // See related CI incident https://github.com/camunda/camunda/pull/27985
-        final URI deleteIndexTemplatesEndpoint =
-            URI.create(String.format("%s/_index_template/%s-*", DEFAULT_ES_URL, testPrefix));
-        httpRequest = HttpRequest.newBuilder().DELETE().uri(deleteIndexTemplatesEndpoint).build();
-        response = httpClient.send(httpRequest, BodyHandlers.ofString());
-        statusCode = response.statusCode();
-        if (statusCode / 100 == 2) {
-          LOGGER.info("Test index templates with prefix {} deleted.", testPrefix);
-        } else {
-          LOGGER.warn(
-              "Failure on deleting test index templates with prefix {}. Status code: {} [{}]",
-              testPrefix,
-              statusCode,
-              response.body());
-        }
-
-      } catch (final IOException | InterruptedException e) {
-        LOGGER.warn("Failure on deleting test data.", e);
+        withRetry(
+            () -> {
+              final URI deleteIndexTemplatesEndpoint =
+                  URI.create(String.format("%s/_index_template/%s-*", DEFAULT_ES_URL, testPrefix));
+              return sendHttpDeleteRequest(httpClient, deleteIndexTemplatesEndpoint);
+            },
+            5);
       }
     }
-
     CloseHelper.quietCloseAll(closeables);
+  }
+
+  @NotNull
+  private Boolean sendHttpDeleteRequest(final HttpClient httpClient, final URI deleteEndpoint)
+      throws IOException, InterruptedException {
+    final var httpRequest = HttpRequest.newBuilder().DELETE().uri(deleteEndpoint).build();
+    final var response = httpClient.send(httpRequest, BodyHandlers.ofString());
+    final var statusCode = response.statusCode();
+    if (statusCode / 100 == 2) {
+      LOGGER.info("Deletion on {} was successful", deleteEndpoint.toString());
+      return true;
+    } else {
+      LOGGER.warn(
+          "Failure on deletion at {}. Status code: {} [{}]",
+          deleteEndpoint.toString(),
+          statusCode,
+          response.body());
+    }
+    return false;
   }
 
   @Override
