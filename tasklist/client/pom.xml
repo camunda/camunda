@@ -57,6 +57,7 @@
             <configuration>
               <failOnError>false</failOnError>
               <skip>${skip.fe.build}</skip>
+              <arguments>install --mutex file:/tmp/.yarn-mutex</arguments>
             </configuration>
           </execution>
 
