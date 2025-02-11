@@ -9,6 +9,8 @@ package io.camunda.optimize.service.importing;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
+import static io.camunda.optimize.util.ZeebeBpmnModels.ACTIVATE_ELEMENTS;
+import static io.camunda.optimize.util.ZeebeBpmnModels.ADHOC_SUB_PROCESS;
 import static io.camunda.optimize.util.ZeebeBpmnModels.COMPENSATION_EVENT_TASK;
 import static io.camunda.optimize.util.ZeebeBpmnModels.CONVERGING_GATEWAY;
 import static io.camunda.optimize.util.ZeebeBpmnModels.DIVERGING_GATEWAY;
@@ -33,7 +35,9 @@ import static io.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_START_INT_SUB_PROC
 import static io.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_START_NON_INT_SUB_PROCESS;
 import static io.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_THROW;
 import static io.camunda.optimize.util.ZeebeBpmnModels.START_EVENT;
+import static io.camunda.optimize.util.ZeebeBpmnModels.TASK;
 import static io.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
+import static io.camunda.optimize.util.ZeebeBpmnModels.createAdHocSubProcess;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createCompensationEventProcess;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createInclusiveGatewayProcess;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createInclusiveGatewayProcessWithConverging;
@@ -760,6 +764,32 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
                   .extracting(FlowNodeInstanceDto::getFlowNodeId)
                   .contains(SERVICE_TASK_WITH_COMPENSATION_EVENT, COMPENSATION_EVENT_TASK);
             });
+  }
+
+  @Test
+  public void importZeebeProcessInstanceData_processContainsAdHocSubProcess() {
+    // given
+    final BpmnModelInstance adHocSubProcessModel =
+        createAdHocSubProcess(
+            "someProcess",
+            process ->
+                process.zeebeActiveElementsCollectionExpression(ACTIVATE_ELEMENTS).task(TASK));
+    final String processId = zeebeExtension.deployProcess(adHocSubProcessModel).getBpmnProcessId();
+    zeebeExtension.startProcessInstanceWithVariables(
+        processId, Map.of(ACTIVATE_ELEMENTS, List.of(TASK)));
+
+    // when
+    waitUntilInstanceRecordWithElementIdExported(END_EVENT);
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            instance ->
+                assertThat(instance.getFlowNodeInstances())
+                    .extracting(FlowNodeInstanceDto::getFlowNodeId)
+                    .contains(START_EVENT, ADHOC_SUB_PROCESS, TASK, END_EVENT));
   }
 
   // Test backwards compatibility for default tenantID applied when importing records pre multi

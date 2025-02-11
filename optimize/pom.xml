@@ -63,7 +63,7 @@
     <zeebe.version>8.6.0</zeebe.version>
     <identity.version>8.6.0</identity.version>
     <!-- We use this for the Zeebe test container version only -->
-    <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
+    <zeebe.docker.version>8.7.0-alpha3</zeebe.docker.version>
 
     <!-- maven plugins -->
     <surefire-plugin.version>3.5.2</surefire-plugin.version>
