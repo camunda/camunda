@@ -25,6 +25,7 @@ public class FlowNodeInstanceForListViewEntity
   private FlowNodeType activityType;
   @Deprecated @JsonIgnore private List<Long> incidentKeys = new ArrayList<>();
   private String errorMessage;
+  private Integer errorMessageHash;
   private boolean incident;
   private boolean jobFailedWithRetriesLeft = false;
 
@@ -98,6 +99,16 @@ public class FlowNodeInstanceForListViewEntity
 
   public FlowNodeInstanceForListViewEntity setErrorMessage(final String errorMessage) {
     this.errorMessage = errorMessage;
+    setErrorMessageHash((errorMessage == null) ? null : errorMessage.hashCode());
+    return this;
+  }
+
+  public Integer getErrorMessageHash() {
+    return (errorMessage == null) ? null : errorMessage.hashCode();
+  }
+
+  public FlowNodeInstanceForListViewEntity setErrorMessageHash(final Integer errorMessageHash) {
+    this.errorMessageHash = errorMessageHash;
     return this;
   }
 
@@ -190,6 +201,31 @@ public class FlowNodeInstanceForListViewEntity
   }
 
   @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
+    FlowNodeInstanceForListViewEntity that = (FlowNodeInstanceForListViewEntity) o;
+    return incident == that.incident
+        && jobFailedWithRetriesLeft == that.jobFailedWithRetriesLeft
+        && pendingIncident == that.pendingIncident
+        && Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(activityId, that.activityId)
+        && activityState == that.activityState
+        && activityType == that.activityType
+        && Objects.equals(incidentKeys, that.incidentKeys)
+        && Objects.equals(errorMessage, that.errorMessage)
+        && Objects.equals(errorMessageHash, that.errorMessageHash)
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(position, that.position)
+        && Objects.equals(positionIncident, that.positionIncident)
+        && Objects.equals(positionJob, that.positionJob)
+        && Objects.equals(joinRelation, that.joinRelation)
+        && Objects.equals(startTime, that.startTime)
+        && Objects.equals(endTime, that.endTime);
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(
         super.hashCode(),
@@ -199,6 +235,7 @@ public class FlowNodeInstanceForListViewEntity
         activityType,
         incidentKeys,
         errorMessage,
+        errorMessageHash,
         incident,
         jobFailedWithRetriesLeft,
         tenantId,
@@ -212,32 +249,45 @@ public class FlowNodeInstanceForListViewEntity
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final FlowNodeInstanceForListViewEntity that = (FlowNodeInstanceForListViewEntity) o;
-    return incident == that.incident
-        && jobFailedWithRetriesLeft == that.jobFailedWithRetriesLeft
-        && pendingIncident == that.pendingIncident
-        && Objects.equals(processInstanceKey, that.processInstanceKey)
-        && Objects.equals(activityId, that.activityId)
-        && activityState == that.activityState
-        && activityType == that.activityType
-        && Objects.equals(incidentKeys, that.incidentKeys)
-        && Objects.equals(errorMessage, that.errorMessage)
-        && Objects.equals(tenantId, that.tenantId)
-        && Objects.equals(position, that.position)
-        && Objects.equals(positionIncident, that.positionIncident)
-        && Objects.equals(positionJob, that.positionJob)
-        && Objects.equals(joinRelation, that.joinRelation)
-        && Objects.equals(startTime, that.startTime)
-        && Objects.equals(endTime, that.endTime);
+  public String toString() {
+    return "FlowNodeInstanceForListViewEntity{"
+        + "processInstanceKey="
+        + processInstanceKey
+        + ", activityId='"
+        + activityId
+        + '\''
+        + ", activityState="
+        + activityState
+        + ", activityType="
+        + activityType
+        + ", incidentKeys="
+        + incidentKeys
+        + ", errorMessage='"
+        + errorMessage
+        + '\''
+        + ", errorMessageHash="
+        + errorMessageHash
+        + ", incident="
+        + incident
+        + ", jobFailedWithRetriesLeft="
+        + jobFailedWithRetriesLeft
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + ", pendingIncident="
+        + pendingIncident
+        + ", position="
+        + position
+        + ", positionIncident="
+        + positionIncident
+        + ", positionJob="
+        + positionJob
+        + ", joinRelation="
+        + joinRelation
+        + ", startTime="
+        + startTime
+        + ", endTime="
+        + endTime
+        + '}';
   }
 }

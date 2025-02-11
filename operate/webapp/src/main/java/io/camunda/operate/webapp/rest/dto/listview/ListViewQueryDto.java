@@ -30,6 +30,8 @@ public class ListViewQueryDto {
 
   private String errorMessage;
 
+  private Integer errorMessageHash;
+
   private String activityId;
 
   @Schema(description = "Start date after (inclusive)", nullable = true)
@@ -143,6 +145,15 @@ public class ListViewQueryDto {
 
   public ListViewQueryDto setErrorMessage(final String errorMessage) {
     this.errorMessage = errorMessage;
+    return this;
+  }
+
+  public Integer getErrorMessageHash() {
+    return errorMessageHash;
+  }
+
+  public ListViewQueryDto setErrorMessageHash(final Integer errorMessageHash) {
+    this.errorMessageHash = errorMessageHash;
     return this;
   }
 

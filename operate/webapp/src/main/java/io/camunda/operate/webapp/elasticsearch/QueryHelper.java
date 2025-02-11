@@ -96,6 +96,7 @@ public class QueryHelper {
         createActivityIdQuery(query),
         createIdsQuery(query),
         createErrorMessageQuery(query),
+        createErrorMessageHashQuery(query),
         createStartDateQuery(query),
         createEndDateQuery(query),
         createProcessDefinitionKeysQuery(query),
@@ -254,6 +255,17 @@ public class QueryHelper {
       } else {
         return createErrorMessageAsAndMatchQuery(errorMessage);
       }
+    }
+    return null;
+  }
+
+  private QueryBuilder createErrorMessageHashQuery(ListViewQueryDto query) {
+    final Integer errorMessageHash = query.getErrorMessageHash();
+    if (errorMessageHash != null) {
+      return hasChildQuery(
+          ACTIVITIES_JOIN_RELATION,
+          QueryBuilders.termQuery(ERROR_MSG_HASH, errorMessageHash),
+          None);
     }
     return null;
   }

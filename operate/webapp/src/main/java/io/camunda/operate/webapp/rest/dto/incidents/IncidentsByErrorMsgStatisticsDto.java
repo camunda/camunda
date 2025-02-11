@@ -19,6 +19,8 @@ public class IncidentsByErrorMsgStatisticsDto {
 
   private String errorMessage;
 
+  private Integer errorMessageHash;
+
   private long instancesWithErrorCount;
 
   @JsonDeserialize(as = TreeSet.class) // for tests
@@ -26,8 +28,9 @@ public class IncidentsByErrorMsgStatisticsDto {
 
   public IncidentsByErrorMsgStatisticsDto() {}
 
-  public IncidentsByErrorMsgStatisticsDto(String errorMessage) {
+  public IncidentsByErrorMsgStatisticsDto(String errorMessage, Integer errorMessageHash) {
     this.errorMessage = errorMessage;
+    this.errorMessageHash = errorMessageHash;
   }
 
   public String getErrorMessage() {
@@ -36,6 +39,10 @@ public class IncidentsByErrorMsgStatisticsDto {
 
   public void setErrorMessage(String errorMessage) {
     this.errorMessage = errorMessage;
+  }
+
+  public Integer getErrorMessageHash() {
+    return errorMessageHash;
   }
 
   public long getInstancesWithErrorCount() {

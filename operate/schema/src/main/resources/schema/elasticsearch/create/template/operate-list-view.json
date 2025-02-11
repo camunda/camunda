@@ -40,6 +40,9 @@
 			"errorMessage": {
 				"type": "text"
 			},
+			"errorMessageHash": {
+				"type":"integer"
+			},
 			"processName": {
 				"normalizer": "case_insensitive",
 				"type": "keyword"

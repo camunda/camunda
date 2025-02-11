@@ -7,22 +7,7 @@
  */
 package io.camunda.operate.zeebeimport.v8_5.processors;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_ID;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_STATE;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_TYPE;
-import static io.camunda.operate.schema.templates.ListViewTemplate.BPMN_PROCESS_ID;
-import static io.camunda.operate.schema.templates.ListViewTemplate.END_DATE;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ERROR_MSG;
-import static io.camunda.operate.schema.templates.ListViewTemplate.INCIDENT_POSITION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT;
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOB_POSITION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_KEY;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_NAME;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_VERSION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.START_DATE;
-import static io.camunda.operate.schema.templates.ListViewTemplate.STATE;
-import static io.camunda.operate.schema.templates.ListViewTemplate.VAR_NAME;
-import static io.camunda.operate.schema.templates.ListViewTemplate.VAR_VALUE;
+import static io.camunda.operate.schema.templates.ListViewTemplate.*;
 import static io.camunda.operate.schema.templates.TemplateDescriptor.POSITION;
 import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
@@ -154,6 +139,7 @@ public class ListViewZeebeRecordProcessor {
     LOGGER.debug("Activity instance for list view: id {}", entity.getId());
     final var updateFields = new HashMap<String, Object>();
     updateFields.put(ERROR_MSG, entity.getErrorMessage());
+    updateFields.put(ERROR_MSG_HASH, entity.getErrorMessageHash());
     updateFields.put(INCIDENT_POSITION, entity.getPositionIncident());
 
     if (concurrencyMode) {

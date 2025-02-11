@@ -220,6 +220,15 @@ public class OpenSearchQueryHelper {
     return null;
   }
 
+  private Query errorMessageHashQuery(ListViewQueryDto query) {
+    final Integer errorMessageHash = query.getErrorMessageHash();
+    if (errorMessageHash != null) {
+      return QueryDSL.hasChildQuery(
+          ACTIVITIES_JOIN_RELATION, term(ERROR_MSG_HASH, errorMessageHash));
+    }
+    return null;
+  }
+
   private Query dateRangeQuery(String field, OffsetDateTime dateAfter, OffsetDateTime dateBefore) {
     if (dateAfter != null || dateBefore != null) {
       final RangeQuery.Builder rangeQueryBuilder = new RangeQuery.Builder().field(field);

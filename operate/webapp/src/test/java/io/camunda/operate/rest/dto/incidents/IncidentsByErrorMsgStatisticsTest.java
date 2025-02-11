@@ -16,10 +16,13 @@ public class IncidentsByErrorMsgStatisticsTest {
 
   @Test
   public void testCompareInstancesWithErrorCounts() {
-    final IncidentsByErrorMsgStatisticsDto first = new IncidentsByErrorMsgStatisticsDto("an error");
+    final String errorMessage = "an error";
+    final Integer errorMessageHash = errorMessage.hashCode();
+    final IncidentsByErrorMsgStatisticsDto first =
+        new IncidentsByErrorMsgStatisticsDto(errorMessage, errorMessageHash);
     first.setInstancesWithErrorCount(5);
     final IncidentsByErrorMsgStatisticsDto second =
-        new IncidentsByErrorMsgStatisticsDto("an error");
+        new IncidentsByErrorMsgStatisticsDto(errorMessage, errorMessageHash);
     first.setInstancesWithErrorCount(3);
     assertThat(IncidentsByErrorMsgStatisticsDto.COMPARATOR.compare(first, second)).isLessThan(0);
   }

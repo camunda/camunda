@@ -61,12 +61,12 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
 
   public IncidentEntity setErrorMessage(String errorMessage) {
     this.errorMessage = errorMessage;
-    setErrorMessageHash(errorMessage.hashCode());
+    setErrorMessageHash((errorMessage == null) ? null : errorMessage.hashCode());
     return this;
   }
 
   public Integer getErrorMessageHash() {
-    return errorMessage.hashCode();
+    return (errorMessage == null) ? null : errorMessage.hashCode();
   }
 
   public IncidentEntity setErrorMessageHash(Integer errorMessageHash) {

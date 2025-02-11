@@ -255,7 +255,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
 
   private IncidentsByErrorMsgStatisticsDto getIncidentsByErrorMsgStatistic(
       Map<Long, ProcessEntity> processes, LongTermsBucket errorMessageBucket) {
-    record ErrorMessage(String errorMessage) {}
+    record ErrorMessage(String errorMessage, Integer errorMessageHash) {}
 
     final ErrorMessage errorMessage =
         errorMessageBucket
@@ -269,7 +269,8 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
             .to(ErrorMessage.class);
 
     final IncidentsByErrorMsgStatisticsDto processStatistics =
-        new IncidentsByErrorMsgStatisticsDto(errorMessage.errorMessage());
+        new IncidentsByErrorMsgStatisticsDto(
+            errorMessage.errorMessage(), errorMessage.errorMessageHash());
 
     errorMessageBucket
         .aggregations()
