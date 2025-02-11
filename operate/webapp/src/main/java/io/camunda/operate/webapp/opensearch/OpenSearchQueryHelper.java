@@ -8,25 +8,16 @@
 package io.camunda.operate.webapp.opensearch;
 
 import static io.camunda.operate.schema.templates.ListViewTemplate.*;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.constantScore;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.exists;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.json;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.match;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchNone;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.not;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.or;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.stringTerms;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.wildcardQuery;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
+import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.store.IncidentStore;
 import io.camunda.operate.store.opensearch.dsl.QueryDSL;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
 import io.camunda.operate.util.CollectionUtil;
@@ -37,11 +28,11 @@ import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import org.apache.commons.lang3.ArrayUtils;
-import org.opensearch.client.opensearch._types.query_dsl.Operator;
-import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
+import org.opensearch.client.opensearch._types.query_dsl.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -59,6 +50,8 @@ public class OpenSearchQueryHelper {
   @Autowired(required = false)
   private PermissionsService permissionsService;
 
+  @Autowired private IncidentStore incidentStore;
+
   public Query createProcessInstancesQuery(ListViewQueryDto query) {
     return constantScore(
         and(term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION), createQueryFragment(query)));
@@ -75,6 +68,7 @@ public class OpenSearchQueryHelper {
         activityIdQuery(query, queryType),
         idsQuery(query),
         errorMessageQuery(query),
+        incidentErrorHashCodeQuery(query),
         dateRangeQuery(
             ListViewTemplate.START_DATE, query.getStartDateAfter(), query.getStartDateBefore()),
         dateRangeQuery(END_DATE, query.getEndDateAfter(), query.getEndDateBefore()),
@@ -218,6 +212,34 @@ public class OpenSearchQueryHelper {
       }
     }
     return null;
+  }
+
+  private Query incidentErrorHashCodeQuery(ListViewQueryDto query) {
+    final Integer incidentErrorHashCode = query.getIncidentErrorHashCode();
+    if (incidentErrorHashCode == null) {
+      return null;
+    }
+
+    final List<IncidentEntity> incidents =
+        incidentStore.getIncidentsByErrorHashCode(incidentErrorHashCode);
+    final List<String> errors =
+        (incidents == null)
+            ? null
+            : incidents.stream().map(IncidentEntity::getErrorMessage).toList();
+    if ((errors == null) || errors.isEmpty()) {
+      return matchNone();
+    }
+
+    final List<Query> shouldQueries = new ArrayList<>();
+    for (String error : errors) {
+      final Query matchPhraseQuery =
+          new MatchPhraseQuery.Builder().field(ERROR_MSG).query(error).build().toQuery();
+      shouldQueries.add(matchPhraseQuery);
+    }
+    final Query errorMessagesQuery =
+        new BoolQuery.Builder().should(shouldQueries).minimumShouldMatch("1").build().toQuery();
+
+    return QueryDSL.hasChildQuery(ACTIVITIES_JOIN_RELATION, errorMessagesQuery);
   }
 
   private Query dateRangeQuery(String field, OffsetDateTime dateAfter, OffsetDateTime dateBefore) {
