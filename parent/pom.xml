@@ -1882,6 +1882,13 @@
         <version>1.0.2</version>
       </dependency>
 
+      <!-- required to converge between com.microsoft.azure:msal4j and com.nimbusds:oauth2-oidc-sdk -->
+      <dependency>
+        <groupId>net.minidev</groupId>
+        <artifactId>json-smart</artifactId>
+        <version>2.5.1</version>
+      </dependency>
+
       <!-- needed for tests in elasticsearch-exporter -->
       <dependency>
         <groupId>jakarta.json</groupId>
