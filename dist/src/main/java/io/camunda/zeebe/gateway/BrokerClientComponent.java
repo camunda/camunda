@@ -9,12 +9,14 @@ package io.camunda.zeebe.gateway;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
@@ -22,21 +24,24 @@ import org.springframework.stereotype.Component;
 @Component
 @VisibleForTesting
 public final class BrokerClientComponent {
-  final GatewayCfg config;
-  final AtomixCluster atomixCluster;
-  final ActorScheduler actorScheduler;
+  private final GatewayCfg config;
+  private final AtomixCluster atomixCluster;
+  private final ActorScheduler actorScheduler;
   private final BrokerTopologyManager topologyManager;
+  private final BrokerClientRequestMetrics metrics;
 
   @Autowired
   public BrokerClientComponent(
       final GatewayConfiguration config,
       final AtomixCluster atomixCluster,
       final ActorScheduler actorScheduler,
-      final BrokerTopologyManager topologyManager) {
+      final BrokerTopologyManager topologyManager,
+      final MeterRegistry registry) {
     this.config = config.config();
     this.atomixCluster = atomixCluster;
     this.actorScheduler = actorScheduler;
     this.topologyManager = topologyManager;
+    metrics = BrokerClientRequestMetrics.of(registry);
   }
 
   @Bean(destroyMethod = "close")
@@ -47,7 +52,8 @@ public final class BrokerClientComponent {
             atomixCluster.getMessagingService(),
             atomixCluster.getEventService(),
             actorScheduler,
-            topologyManager);
+            topologyManager,
+            metrics);
     brokerClient.start().forEach(ActorFuture::join);
     return brokerClient;
   }

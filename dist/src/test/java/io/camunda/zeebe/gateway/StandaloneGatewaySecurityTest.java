@@ -137,6 +137,7 @@ final class StandaloneGatewaySecurityTest {
   }
 
   private StandaloneGateway buildGateway(final GatewayProperties gatewayCfg) {
+    final var meterRegistry = new SimpleMeterRegistry();
     final var config = new GatewayConfiguration(gatewayCfg, new LifecycleProperties());
     final var clusterConfig = new GatewayClusterConfiguration();
     atomixCluster =
@@ -144,12 +145,13 @@ final class StandaloneGatewaySecurityTest {
     final ActorSchedulerConfiguration actorSchedulerConfiguration =
         new ActorSchedulerConfiguration(gatewayCfg, new ActorClockConfiguration(false));
     actorScheduler = actorSchedulerConfiguration.actorScheduler(IdleStrategySupplier.ofDefault());
-    final var topologyServices = new TopologyServices(actorScheduler, atomixCluster);
+    final var topologyServices = new TopologyServices(actorScheduler, atomixCluster, meterRegistry);
     final var clusterTopologyService = topologyServices.gatewayClusterTopologyService();
     final var topologyManager = topologyServices.brokerTopologyManager(clusterTopologyService);
 
     final BrokerClientComponent brokerClientComponent =
-        new BrokerClientComponent(config, atomixCluster, actorScheduler, topologyManager);
+        new BrokerClientComponent(
+            config, atomixCluster, actorScheduler, topologyManager, meterRegistry);
     brokerClient = brokerClientComponent.brokerClient();
     jobStreamClient = new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster);
 
@@ -161,6 +163,6 @@ final class StandaloneGatewaySecurityTest {
         atomixCluster,
         brokerClient,
         jobStreamClient,
-        new SimpleMeterRegistry());
+        meterRegistry);
   }
 }
