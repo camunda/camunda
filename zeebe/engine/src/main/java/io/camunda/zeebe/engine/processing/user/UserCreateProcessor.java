@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Set;
 
 public class UserCreateProcessor implements DistributedTypedRecordProcessor<UserRecord> {
 
@@ -117,15 +118,14 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
   private void addUserPermissions(final long key, final String username) {
     final var authorizationRecord =
         new AuthorizationRecord()
+            .setAuthorizationKey(key)
             .setOwnerKey(key)
             .setOwnerId(username)
             .setOwnerType(AuthorizationOwnerType.USER)
             .setResourceType(AuthorizationResourceType.USER)
-            .addPermission(
-                new Permission().setPermissionType(PermissionType.READ).addResourceId(username))
-            .addPermission(
-                new Permission().setPermissionType(PermissionType.UPDATE).addResourceId(username));
+            .setResourceId(username)
+            .setAuthorizationPermissions(Set.of(PermissionType.READ, PermissionType.UPDATE));
 
-    stateWriter.appendFollowUpEvent(key, AuthorizationIntent.CREATED, authorizationRecord);
+    commandWriter.appendFollowUpCommand(key, AuthorizationIntent.CREATE, authorizationRecord);
   }
 }
