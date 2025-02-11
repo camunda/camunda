@@ -19,6 +19,7 @@ import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.SnapshotChunkWrapper;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -370,7 +371,9 @@ public class FileBasedReceivedSnapshotTest {
   }
 
   private FileBasedSnapshotStore createStore(final Path root) {
-    final var store = new FileBasedSnapshotStore(PARTITION_ID, root, snapshotPath -> Map.of());
+    final var store =
+        new FileBasedSnapshotStore(
+            PARTITION_ID, root, snapshotPath -> Map.of(), new SimpleMeterRegistry());
     scheduler.submitActor(store);
 
     return store;
