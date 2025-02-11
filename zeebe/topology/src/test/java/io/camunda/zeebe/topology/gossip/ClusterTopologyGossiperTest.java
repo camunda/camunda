@@ -14,6 +14,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
+import io.camunda.zeebe.topology.metrics.TopologyMetrics;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -22,6 +23,8 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
@@ -36,6 +39,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+
 final class ClusterTopologyGossiperTest {
 
   private final ActorScheduler actorScheduler = ActorScheduler.newActorScheduler().build();
@@ -44,6 +48,8 @@ final class ClusterTopologyGossiperTest {
   private TestGossiper node1;
   private TestGossiper node2;
   private TestGossiper node3;
+  private MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private final TopologyMetrics topologyMetrics = new TopologyMetrics(meterRegistry);
 
   @BeforeEach
   void setup() {
@@ -59,9 +65,15 @@ final class ClusterTopologyGossiperTest {
   @MethodSource("provideConfig")
   void shouldPropagateTopologyUpdate(final ClusterTopologyGossiperConfig config) {
     // given
-    node1 = new TestGossiper(createClusterNode(clusterNodes.get(0), clusterNodes), config);
-    node2 = new TestGossiper(createClusterNode(clusterNodes.get(1), clusterNodes), config);
-    node3 = new TestGossiper(createClusterNode(clusterNodes.get(2), clusterNodes), config);
+    node1 =
+        new TestGossiper(
+            createClusterNode(clusterNodes.get(0), clusterNodes), config, topologyMetrics);
+    node2 =
+        new TestGossiper(
+            createClusterNode(clusterNodes.get(1), clusterNodes), config, topologyMetrics);
+    node3 =
+        new TestGossiper(
+            createClusterNode(clusterNodes.get(2), clusterNodes), config, topologyMetrics);
 
     node1.start();
     node2.start();
@@ -113,7 +125,9 @@ final class ClusterTopologyGossiperTest {
     private ClusterTopology clusterTopology;
 
     private TestGossiper(
-        final AtomixCluster atomixCluster, final ClusterTopologyGossiperConfig config) {
+        final AtomixCluster atomixCluster,
+        final ClusterTopologyGossiperConfig config,
+        final TopologyMetrics topologyMetrics) {
 
       gossiper =
           new ClusterTopologyGossiper(
@@ -122,7 +136,8 @@ final class ClusterTopologyGossiperTest {
               atomixCluster.getMembershipService(),
               new ProtoBufSerializer(),
               config,
-              this::mergeTopology);
+              this::mergeTopology,
+              topologyMetrics);
       this.atomixCluster = atomixCluster;
     }
 

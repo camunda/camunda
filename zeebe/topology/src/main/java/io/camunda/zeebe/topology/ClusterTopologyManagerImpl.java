@@ -64,12 +64,20 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
   private boolean shouldRetry = false;
   private final ExponentialBackoffRetryDelay backoffRetry;
   private boolean initialized = false;
+  private final TopologyMetrics topologyMetrics;
 
   ClusterTopologyManagerImpl(
       final ConcurrencyControl executor,
       final MemberId localMemberId,
-      final PersistedClusterTopology persistedClusterTopology) {
-    this(executor, localMemberId, persistedClusterTopology, MIN_RETRY_DELAY, MAX_RETRY_DELAY);
+      final PersistedClusterTopology persistedClusterTopology,
+      final TopologyMetrics topologyMetrics) {
+    this(
+        executor,
+        localMemberId,
+        persistedClusterTopology,
+        topologyMetrics,
+        MIN_RETRY_DELAY,
+        MAX_RETRY_DELAY);
   }
 
   @VisibleForTesting
@@ -77,8 +85,10 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
       final ConcurrencyControl executor,
       final MemberId localMemberId,
       final PersistedClusterTopology persistedClusterTopology,
+      final TopologyMetrics topologyMetrics,
       final Duration minRetryDelay,
       final Duration maxRetryDelay) {
+    this.topologyMetrics = topologyMetrics;
     this.executor = executor;
     this.persistedClusterTopology = persistedClusterTopology;
     startFuture = executor.createFuture();
@@ -252,7 +262,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
     onGoingTopologyChangeOperation = true;
     shouldRetry = false;
     final var operation = mergedTopology.pendingChangesFor(localMemberId).orElseThrow();
-    final var observer = TopologyMetrics.observeOperation(operation);
+    final var observer = topologyMetrics.observeOperation(operation);
     LOG.info("Applying topology change operation {}", operation);
     final var operationApplier = changeAppliers.getApplier(operation);
     final var operationInitialized =
