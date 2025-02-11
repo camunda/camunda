@@ -10,6 +10,7 @@ package io.camunda.zeebe.scheduler.testing;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ActorMetrics;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorThreadFactory;
@@ -117,7 +118,7 @@ public final class ControlledActorSchedulerRule extends ExternalResource {
         final TaskScheduler taskScheduler,
         final ActorClock clock,
         final ActorTimerQueue timerQueue,
-        final boolean metricsEnabled,
+        final ActorMetrics actorMetrics,
         final IdleStrategy idleStrategy) {
       controlledThread =
           new ControlledActorThread(

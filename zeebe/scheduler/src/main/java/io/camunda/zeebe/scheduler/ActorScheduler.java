@@ -9,6 +9,7 @@ package io.camunda.zeebe.scheduler;
 
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -20,10 +21,12 @@ import org.agrona.concurrent.IdleStrategy;
 public final class ActorScheduler implements AutoCloseable, ActorSchedulingService {
   private final AtomicReference<SchedulerState> state = new AtomicReference<>();
   private final ActorExecutor actorTaskExecutor;
+  private final ActorMetrics metrics;
 
   public ActorScheduler(final ActorSchedulerBuilder builder) {
     state.set(SchedulerState.NEW);
     actorTaskExecutor = builder.getActorExecutor();
+    metrics = builder.getActorMetrics();
   }
 
   /**
@@ -33,6 +36,7 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
    */
   @Override
   public ActorFuture<Void> submitActor(final Actor actor) {
+    actor.setActorMetrics(metrics.scoped(actor.getName()));
     return submitActor(actor, SchedulingHints.cpuBound());
   }
 
@@ -130,9 +134,10 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     private ActorThreadFactory actorThreadFactory;
     private ActorExecutor actorExecutor;
     private ActorTimerQueue actorTimerQueue;
-    private boolean enableMetrics = false;
+    private final boolean enableMetrics = false;
     private Supplier<IdleStrategy> idleStrategySupplier =
         ActorSchedulerBuilder::defaultIdleStrategySupplier;
+    private ActorMetrics actorMetrics = ActorMetrics.disabled();
 
     public static IdleStrategy defaultIdleStrategySupplier() {
       return new BackoffIdleStrategy(
@@ -219,12 +224,12 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
       return ioBoundActorGroup;
     }
 
-    public boolean isMetricsEnabled() {
-      return enableMetrics;
+    ActorMetrics getActorMetrics() {
+      return actorMetrics;
     }
 
-    public ActorSchedulerBuilder setMetricsEnabled(final boolean enableMetrics) {
-      this.enableMetrics = enableMetrics;
+    public ActorSchedulerBuilder setMeterRegistry(final MeterRegistry meterRegistry) {
+      actorMetrics = new ActorMetrics(meterRegistry);
       return this;
     }
 
@@ -270,10 +275,10 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
         final TaskScheduler taskScheduler,
         final ActorClock clock,
         final ActorTimerQueue timerQueue,
-        final boolean metricsEnabled,
+        final ActorMetrics actorMetrics,
         final IdleStrategy idleStrategy) {
       return new ActorThread(
-          name, id, threadGroup, taskScheduler, clock, timerQueue, metricsEnabled, idleStrategy);
+          name, id, threadGroup, taskScheduler, clock, timerQueue, actorMetrics, idleStrategy);
     }
   }
 
@@ -285,7 +290,7 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
         final TaskScheduler taskScheduler,
         final ActorClock clock,
         final ActorTimerQueue timerQueue,
-        final boolean metricsEnabled,
+        final ActorMetrics actorMetrics,
         final IdleStrategy idleStrategy);
   }
 
