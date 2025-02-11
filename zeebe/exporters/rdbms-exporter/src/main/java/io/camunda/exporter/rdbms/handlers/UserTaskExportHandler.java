@@ -14,6 +14,7 @@ import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.MIGRATED;
 
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel.UserTaskState;
+import io.camunda.db.rdbms.write.domain.UserTaskMigrationDbModel;
 import io.camunda.db.rdbms.write.service.UserTaskWriter;
 import io.camunda.exporter.rdbms.DateUtil;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
@@ -24,9 +25,7 @@ import java.time.OffsetDateTime;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 
-/**
- * Based on UserTaskRecordToTaskEntityMapper
- */
+/** Based on UserTaskRecordToTaskEntityMapper */
 public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordValue> {
 
   private static final Set<UserTaskIntent> EXPORTABLE_INTENTS =
@@ -58,19 +57,24 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
     final UserTaskRecordValue value = record.getValue();
     switch (record.getIntent()) {
       case CREATED -> userTaskWriter.create(map(value, UserTaskState.CREATED, null));
-      case CANCELED -> userTaskWriter.update(
-          map(value, UserTaskState.CANCELED, DateUtil.toOffsetDateTime(record.getTimestamp())));
-      case COMPLETED -> userTaskWriter.update(
-          map(
-              value,
-              UserTaskState.COMPLETED,
-              DateUtil.toOffsetDateTime(record.getTimestamp())));
-      case MIGRATED -> userTaskWriter.migrateToProcess(
-          value.getUserTaskKey(),
-          value.getProcessDefinitionKey(),
-          value.getBpmnProcessId(),
-          value.getProcessDefinitionVersion(),
-          value.getElementId());
+      case CANCELED ->
+          userTaskWriter.update(
+              map(value, UserTaskState.CANCELED, DateUtil.toOffsetDateTime(record.getTimestamp())));
+      case COMPLETED ->
+          userTaskWriter.update(
+              map(
+                  value,
+                  UserTaskState.COMPLETED,
+                  DateUtil.toOffsetDateTime(record.getTimestamp())));
+      case MIGRATED ->
+          userTaskWriter.migrateToProcess(
+              new UserTaskMigrationDbModel.Builder()
+                  .userTaskKey(value.getUserTaskKey())
+                  .processDefinitionKey(value.getProcessDefinitionKey())
+                  .processDefinitionId(value.getBpmnProcessId())
+                  .elementId(value.getElementId())
+                  .processDefinitionVersion(value.getProcessDefinitionVersion())
+                  .build());
       default -> userTaskWriter.update(map(value, null, null));
     }
   }

@@ -7,8 +7,8 @@
  */
 package io.camunda.db.rdbms.write.service;
 
-import io.camunda.db.rdbms.sql.UserTaskMapper.MigrateToProcessDto;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
+import io.camunda.db.rdbms.write.domain.UserTaskMigrationDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
@@ -83,23 +83,12 @@ public class UserTaskWriter {
     }
   }
 
-  public void migrateToProcess(
-      final long userTaskKey,
-      final long processDefinitionKey,
-      final String processDefinitionId,
-      final int processDefinitionVersion,
-      final String elementId) {
+  public void migrateToProcess(final UserTaskMigrationDbModel model) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.USER_TASK,
-            userTaskKey,
+            model.userTaskKey(),
             "io.camunda.db.rdbms.sql.UserTaskMapper.migrateToProcess",
-            new MigrateToProcessDto.Builder()
-                .userTaskKey(userTaskKey)
-                .processDefinitionKey(processDefinitionKey)
-                .processDefinitionId(processDefinitionId)
-                .elementId(elementId)
-                .processDefinitionVersion(processDefinitionVersion)
-                .build()));
+            model));
   }
 }
