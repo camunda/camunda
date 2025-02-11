@@ -22643,7 +22643,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum by (le) (increase(zeebe_cluster_changes_operation_duration_bucket[$__rate_interval]))",
+              "expr": "sum by (le) (increase(zeebe_cluster_changes_operation_duration_bucket[$__rate_interval])) or sum by (le) (increase(zeebe_cluster_changes_operation_duration_seconds_bucket[$__rate_interval]))",
               "format": "heatmap",
               "instant": false,
               "legendFormat": "__auto",
