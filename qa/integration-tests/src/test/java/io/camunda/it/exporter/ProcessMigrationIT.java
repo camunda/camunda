@@ -35,12 +35,10 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.assertj.core.api.ThrowingConsumer;
 import org.junit.jupiter.api.TestTemplate;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(BrokerITInvocationProvider.class)
 public class ProcessMigrationIT {
-
-  @RegisterExtension
-  static final BrokerITInvocationProvider PROVIDER = new BrokerITInvocationProvider();
 
   @TestTemplate
   void shouldMigrateProcess(final TestStandaloneBroker testBroker) {

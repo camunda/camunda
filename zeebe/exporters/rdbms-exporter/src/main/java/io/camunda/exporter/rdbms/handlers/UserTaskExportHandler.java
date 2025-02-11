@@ -24,7 +24,9 @@ import java.time.OffsetDateTime;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 
-/** Based on UserTaskRecordToTaskEntityMapper */
+/**
+ * Based on UserTaskRecordToTaskEntityMapper
+ */
 public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordValue> {
 
   private static final Set<UserTaskIntent> EXPORTABLE_INTENTS =
@@ -56,22 +58,19 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
     final UserTaskRecordValue value = record.getValue();
     switch (record.getIntent()) {
       case CREATED -> userTaskWriter.create(map(value, UserTaskState.CREATED, null));
-      case CANCELED ->
-          userTaskWriter.update(
-              map(value, UserTaskState.CANCELED, DateUtil.toOffsetDateTime(record.getTimestamp())));
-      case COMPLETED ->
-          userTaskWriter.update(
-              map(
-                  value,
-                  UserTaskState.COMPLETED,
-                  DateUtil.toOffsetDateTime(record.getTimestamp())));
-      case MIGRATED ->
-          userTaskWriter.migrateToProcess(
-              value.getUserTaskKey(),
-              value.getProcessInstanceKey(),
-              value.getBpmnProcessId(),
-              value.getProcessDefinitionVersion(),
-              value.getElementId());
+      case CANCELED -> userTaskWriter.update(
+          map(value, UserTaskState.CANCELED, DateUtil.toOffsetDateTime(record.getTimestamp())));
+      case COMPLETED -> userTaskWriter.update(
+          map(
+              value,
+              UserTaskState.COMPLETED,
+              DateUtil.toOffsetDateTime(record.getTimestamp())));
+      case MIGRATED -> userTaskWriter.migrateToProcess(
+          value.getUserTaskKey(),
+          value.getProcessDefinitionKey(),
+          value.getBpmnProcessId(),
+          value.getProcessDefinitionVersion(),
+          value.getElementId());
       default -> userTaskWriter.update(map(value, null, null));
     }
   }
