@@ -51,6 +51,16 @@ public interface ProcessInstanceAssert {
   ProcessInstanceAssert isTerminated();
 
   /**
+   * Verifies that the process instance is created (i.e. active, completed, or terminated). The
+   * verification fails if the process instance is not created.
+   *
+   * <p>The assertion waits until the process instance is created.
+   *
+   * @return the assertion object
+   */
+  ProcessInstanceAssert isCreated();
+
+  /**
    * Verifies that the given BPMN elements are active. The verification fails if at least one
    * element is completed, terminated, or not entered.
    *
