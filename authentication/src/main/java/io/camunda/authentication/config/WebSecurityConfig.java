@@ -161,13 +161,13 @@ public class WebSecurityConfig {
                 request ->
                     isBasicAuthRequest(request)
                         // If authentication isn't disabled for the API, all API requests without a
-                        // session cookie are treated as basic auth requests to work around a
-                        // limitation of Java's HTTP client, which only sends an Authorization
-                        // header after the server sends a WWW-Authenticate header in a 401
-                        // response.
+                        // session cookie or Referer header are treated as basic auth requests to
+                        // work around a limitation of Java's HTTP client, which only sends an
+                        // Authorization header after the server sends a WWW-Authenticate header in
+                        // a 401 response.
                         || !securityConfiguration.isUnauthenticatedApiAccessAllowed()
                             && isApiRequest(request)
-                            && !hasSessionCookie(request)),
+                            && !isFrontendRequest(request)),
             authFailureHandler,
             UNAUTHENTICATED_PATHS)
         .httpBasic(Customizer.withDefaults())
@@ -235,6 +235,10 @@ public class WebSecurityConfig {
     final String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
     // If the client sends an `Authorization: Basic` header, treat this as a basic auth request.
     return authorizationHeader != null && authorizationHeader.startsWith("Basic ");
+  }
+
+  private static boolean isFrontendRequest(final HttpServletRequest request) {
+    return hasSessionCookie(request) || request.getHeader(HttpHeaders.REFERER) != null;
   }
 
   private static boolean hasSessionCookie(final HttpServletRequest request) {

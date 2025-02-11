@@ -21,6 +21,7 @@ import {
 } from '../mocks/decisions.mocks';
 import {open} from 'modules/mocks/diagrams';
 import {expect} from '@playwright/test';
+import {URL_PATTERN} from '../constants';
 
 test.describe('delete resource definitions', () => {
   test('delete process definitions', async ({
@@ -33,7 +34,7 @@ test.describe('delete resource definitions', () => {
     await commonPage.mockClientConfig(context);
 
     await page.route(
-      /^.*\/api.*$/i,
+      URL_PATTERN,
       mockProcessesResponses({
         groupedProcesses: mockGroupedProcesses,
         batchOperations: [],
@@ -121,7 +122,7 @@ test.describe('delete resource definitions', () => {
     await commonPage.mockClientConfig(context);
 
     await page.route(
-      /^.*\/api.*$/i,
+      URL_PATTERN,
       mockDecisionsResponses({
         groupedDecisions: mockGroupedDecisions,
         batchOperations: [],

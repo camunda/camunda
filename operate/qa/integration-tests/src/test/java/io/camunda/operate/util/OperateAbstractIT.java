@@ -47,7 +47,8 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
-      OperateProperties.PREFIX + ".multiTenancy.enabled = false"
+      OperateProperties.PREFIX + ".multiTenancy.enabled = false",
+      "spring.profiles.active=test,consolidated-auth"
     })
 @WebAppConfiguration
 @TestExecutionListeners(

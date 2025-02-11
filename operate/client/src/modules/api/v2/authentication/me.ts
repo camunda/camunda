@@ -8,7 +8,7 @@
 
 import {requestAndParse} from 'modules/request';
 
-type PermissionsDto = Array<'read' | 'write'>;
+type AuthorizedApplications = Array<string>;
 
 type SalesPlanType =
   | 'paid'
@@ -20,11 +20,11 @@ type SalesPlanType =
   | 'in-negotiation'
   | 'internal';
 
-type UserDto = {
+type MeDto = {
   userId: string;
   displayName: string | null;
   canLogout: boolean;
-  permissions?: PermissionsDto;
+  authorizedApplications?: AuthorizedApplications;
   roles: ReadonlyArray<string> | null;
   salesPlanType: SalesPlanType | null;
   c8Links: {
@@ -38,9 +38,9 @@ type UserDto = {
   tenants: {tenantId: string; name: string}[] | null;
 };
 
-const getUser = async (options: Parameters<typeof requestAndParse>[1]) => {
-  return requestAndParse<UserDto>({url: '/api/authentications/user'}, options);
+const getMe = async (options: Parameters<typeof requestAndParse>[1]) => {
+  return requestAndParse<MeDto>({url: '/v2/authentication/me'}, options);
 };
 
-export {getUser};
-export type {UserDto};
+export {getMe};
+export type {MeDto};

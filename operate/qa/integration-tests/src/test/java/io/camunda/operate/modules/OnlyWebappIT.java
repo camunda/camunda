@@ -17,10 +17,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.test.context.TestPropertySource;
 
-@TestPropertySource(
-    properties = {
-      OperateProperties.PREFIX + ".importerEnabled = false",
-    })
+@TestPropertySource(properties = {OperateProperties.PREFIX + ".importerEnabled = false"})
 public class OnlyWebappIT extends ModuleAbstractIT {
 
   @Test
