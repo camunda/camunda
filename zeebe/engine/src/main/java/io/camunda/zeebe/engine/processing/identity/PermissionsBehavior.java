@@ -22,7 +22,7 @@ import java.util.Set;
 
 public class PermissionsBehavior {
 
-  public static final String AUTHORIZATION_ALREADY_EXISTS_MESSAGE =
+  public static final String PERMISSIONS_ALREADY_EXISTS_MESSAGE =
       "Expected to create authorization for owner '%s' with permission type '%s' and resource type '%s', but this permission for resource identifiers '%s' already exist. Existing resource ids are: '%s'";
   public static final String AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_UPDATE =
       "Expected to update authorization with key %s, but an authorization with this key does not exist";
@@ -74,7 +74,7 @@ public class PermissionsBehavior {
         return Either.left(
             new Rejection(
                 RejectionType.ALREADY_EXISTS,
-                AUTHORIZATION_ALREADY_EXISTS_MESSAGE.formatted(
+                PERMISSIONS_ALREADY_EXISTS_MESSAGE.formatted(
                     record.getOwnerId(),
                     permission,
                     record.getResourceType(),
