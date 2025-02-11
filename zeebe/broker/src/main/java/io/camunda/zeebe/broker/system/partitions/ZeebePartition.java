@@ -92,12 +92,14 @@ public final class ZeebePartition extends Actor
             Optional.of(transitionContext.brokerHealthCheckService().componentName()),
             LOG));
     zeebePartitionHealth = new ZeebePartitionHealth(transitionContext.getPartitionId(), transition);
-    healthMetrics = new HealthMetrics(transitionContext.getBrokerMeterRegistry(), partitionId);
+    healthMetrics =
+        new HealthMetrics(transitionContext.getPartitionStartupMeterRegistry(), partitionId);
     healthMetrics.setUnhealthy();
     failureListeners = new ArrayList<>();
     roleMetrics =
         new RoleMetrics(
-            transitionContext.getBrokerMeterRegistry(), transitionContext.getPartitionId());
+            transitionContext.getPartitionStartupMeterRegistry(),
+            transitionContext.getPartitionId());
   }
 
   public static String componentName(final int partitionId) {
