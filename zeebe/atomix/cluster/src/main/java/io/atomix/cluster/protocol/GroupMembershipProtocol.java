@@ -75,7 +75,6 @@ public interface GroupMembershipProtocol
      * @param config the protocol configuration
      * @return the protocol instance
      */
-    GroupMembershipProtocol newProtocol(
-        C config, final MeterRegistry registry);
+    GroupMembershipProtocol newProtocol(C config, final MeterRegistry registry);
   }
 }

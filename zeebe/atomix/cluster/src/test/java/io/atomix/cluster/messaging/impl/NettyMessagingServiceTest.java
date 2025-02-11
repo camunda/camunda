@@ -64,7 +64,7 @@ import org.junit.jupiter.api.condition.OS;
 final class NettyMessagingServiceTest {
   private static final String CLUSTER_NAME = "zeebe";
   private static final int UID_COLUMN = 7;
-  @AutoCloseResource  private final MeterRegistry registry = new SimpleMeterRegistry();
+  @AutoCloseResource private final MeterRegistry registry = new SimpleMeterRegistry();
 
   private MessagingConfig defaultConfig() {
     return new MessagingConfig()
