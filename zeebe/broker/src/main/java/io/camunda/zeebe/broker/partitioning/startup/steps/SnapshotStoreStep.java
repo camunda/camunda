@@ -29,7 +29,8 @@ public final class SnapshotStoreStep implements StartupStep<PartitionStartupCont
         new FileBasedSnapshotStore(
             context.partitionMetadata().id().id(),
             context.partitionDirectory(),
-            new ChecksumProviderRocksDBImpl());
+            new ChecksumProviderRocksDBImpl(),
+            context.partitionMeterRegistry());
 
     final var submit =
         context.schedulingService().submitActor(snapshotStore, SchedulingHints.ioBound());
