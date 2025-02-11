@@ -158,8 +158,7 @@ public class ElasticOpenSearchSetupHelper implements MultiDbSetupHelper {
       // https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-delete-index.html
       withRetry(
           () -> {
-            final URI deleteIndicesEndpoint =
-                URI.create(String.format("%s/%s-*", endpoint, prefix));
+            final URI deleteIndicesEndpoint = URI.create(String.format("%s/%s*", endpoint, prefix));
             return sendHttpDeleteRequest(httpClient, deleteIndicesEndpoint);
           },
           5);
@@ -172,7 +171,7 @@ public class ElasticOpenSearchSetupHelper implements MultiDbSetupHelper {
       withRetry(
           () -> {
             final URI deleteIndexTemplatesEndpoint =
-                URI.create(String.format("%s/_index_template/%s-*", endpoint, prefix));
+                URI.create(String.format("%s/_index_template/%s*", endpoint, prefix));
             return sendHttpDeleteRequest(httpClient, deleteIndexTemplatesEndpoint);
           },
           5);
