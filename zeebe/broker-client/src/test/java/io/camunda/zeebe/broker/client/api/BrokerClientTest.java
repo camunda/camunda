@@ -76,6 +76,7 @@ public final class BrokerClientTest {
 
   @BeforeEach
   void beforeEach() {
+    final var meterRegistry = new SimpleMeterRegistry();
     final var brokerAddress =
         Address.from(broker.getCurrentStubHost(), broker.getCurrentStubPort());
     final var membership = BootstrapDiscoveryProvider.builder().withNodes(brokerAddress).build();
@@ -89,7 +90,9 @@ public final class BrokerClientTest {
     actorScheduler.start();
 
     final var topologyManager =
-        new BrokerTopologyManagerImpl(() -> atomixCluster.getMembershipService().getMembers());
+        new BrokerTopologyManagerImpl(
+            () -> atomixCluster.getMembershipService().getMembers(),
+            BrokerClientTopologyMetrics.of(meterRegistry));
     this.topologyManager = topologyManager;
     actorScheduler.submitActor(topologyManager).join();
     atomixCluster.getMembershipService().addListener(topologyManager);
@@ -105,7 +108,8 @@ public final class BrokerClientTest {
             atomixCluster.getMessagingService(),
             atomixCluster.getEventService(),
             actorScheduler,
-            topologyManager);
+            topologyManager,
+            BrokerClientRequestMetrics.of(meterRegistry));
     client.start().forEach(ActorFuture::join);
   }
 

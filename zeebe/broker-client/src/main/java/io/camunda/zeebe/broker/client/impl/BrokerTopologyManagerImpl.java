@@ -12,6 +12,8 @@ import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.PartitionRoleValues;
+import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -35,12 +37,15 @@ public final class BrokerTopologyManagerImpl extends Actor
   private volatile BrokerClusterStateImpl topology = new BrokerClusterStateImpl();
   private volatile ClusterConfiguration clusterConfiguration = ClusterConfiguration.uninitialized();
   private final Supplier<Set<Member>> membersSupplier;
-  private final BrokerClientTopologyMetrics topologyMetrics = new BrokerClientTopologyMetrics();
+  private final BrokerClientTopologyMetrics topologyMetrics;
 
   private final Set<BrokerTopologyListener> topologyListeners = new HashSet<>();
 
-  public BrokerTopologyManagerImpl(final Supplier<Set<Member>> membersSupplier) {
+  public BrokerTopologyManagerImpl(
+      final Supplier<Set<Member>> membersSupplier,
+      final BrokerClientTopologyMetrics topologyMetrics) {
     this.membersSupplier = membersSupplier;
+    this.topologyMetrics = topologyMetrics;
   }
 
   /**
@@ -197,12 +202,15 @@ public final class BrokerTopologyManagerImpl extends Actor
         partition -> {
           final var leader = topology.getLeaderForPartition(partition);
           if (leader != BrokerClusterState.NODE_ID_NULL) {
-            topologyMetrics.setLeaderForPartition(partition, leader);
+            topologyMetrics.setRoleForPartition(partition, leader, PartitionRoleValues.LEADER);
           }
 
           final var followers = topology.getFollowersForPartition(partition);
           if (followers != null) {
-            followers.forEach(broker -> topologyMetrics.setFollower(partition, broker));
+            followers.forEach(
+                broker ->
+                    topologyMetrics.setRoleForPartition(
+                        partition, broker, PartitionRoleValues.FOLLOWER));
           }
         });
   }
