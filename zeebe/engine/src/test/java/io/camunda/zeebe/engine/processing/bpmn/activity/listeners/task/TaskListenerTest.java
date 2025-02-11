@@ -1559,6 +1559,15 @@ public class TaskListenerTest {
   }
 
   @Test
+  public void shouldAppendUserTaskCorrectedWhenUpdatingTaskListenerCompletesWithCorrections() {
+    testAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections(
+        ZeebeTaskListenerEventType.updating,
+        u -> u,
+        userTask -> userTask.update(new UserTaskRecord()),
+        "update");
+  }
+
+  @Test
   public void shouldAppendUserTaskCorrectedWhenCompletingTaskListenerCompletesWithCorrections() {
     testAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections(
         ZeebeTaskListenerEventType.completing, u -> u, UserTaskClient::complete, "complete");
@@ -1739,6 +1748,29 @@ public class TaskListenerTest {
             UserTaskIntent.CORRECTED,
             UserTaskIntent.COMPLETE_TASK_LISTENER,
             UserTaskIntent.ASSIGNED));
+  }
+
+  @Test
+  public void shouldPropagateCorrectedDataToUpdatingListenerJobHeaders() {
+    verifyUserTaskDataPropagationAcrossListenerJobHeaders(
+        ZeebeTaskListenerEventType.updating,
+        false,
+        userTask ->
+            userTask.update(
+                new UserTaskRecord()
+                    .setCandidateUsersList(List.of("initial_candidate_user"))
+                    .setCandidateGroupsList(List.of("initial_candidate_group"))
+                    .setDueDate("2085-09-21T11:22:33+02:00")
+                    .setFollowUpDate("2095-09-21T11:22:33+02:00")),
+        List.of(
+            UserTaskIntent.UPDATE,
+            UserTaskIntent.UPDATING,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CORRECTED,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CORRECTED,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.UPDATED));
   }
 
   @Test
@@ -1931,6 +1963,15 @@ public class TaskListenerTest {
         false,
         userTask -> userTask.withAssignee("initial_assignee").claim(),
         UserTaskIntent.ASSIGNED);
+  }
+
+  @Test
+  public void shouldTrackChangedAttributesOnlyForActuallyCorrectedValuesOnTaskUpdate() {
+    verifyChangedAttributesAreTrackedOnlyForActuallyCorrectedValues(
+        ZeebeTaskListenerEventType.updating,
+        false,
+        userTask -> userTask.update(new UserTaskRecord()),
+        UserTaskIntent.UPDATED);
   }
 
   @Test
@@ -2204,6 +2245,15 @@ public class TaskListenerTest {
         u -> u,
         userTask -> userTask.withAssignee("initial_assignee").claim(),
         UserTaskIntent.ASSIGNED);
+  }
+
+  @Test
+  public void shouldPersistCorrectedUserTaskDataWhenUpdatingTaskListenerCompletes() {
+    testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
+        ZeebeTaskListenerEventType.updating,
+        u -> u,
+        userTask -> userTask.update(new UserTaskRecord()),
+        UserTaskIntent.UPDATED);
   }
 
   @Test
