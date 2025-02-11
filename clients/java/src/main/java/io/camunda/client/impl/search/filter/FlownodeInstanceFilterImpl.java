@@ -19,27 +19,28 @@ import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.client.api.search.response.FlowNodeInstanceType;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.client.protocol.rest.FlowNodeInstanceFilterRequest;
+import io.camunda.client.impl.util.ParseUtil;
 
 public class FlownodeInstanceFilterImpl
-    extends TypedSearchRequestPropertyProvider<FlowNodeInstanceFilterRequest>
+    extends TypedSearchRequestPropertyProvider<
+        io.camunda.client.protocol.rest.FlowNodeInstanceFilter>
     implements FlownodeInstanceFilter {
 
-  private final FlowNodeInstanceFilterRequest filter;
+  private final io.camunda.client.protocol.rest.FlowNodeInstanceFilter filter;
 
   public FlownodeInstanceFilterImpl() {
-    filter = new FlowNodeInstanceFilterRequest();
+    filter = new io.camunda.client.protocol.rest.FlowNodeInstanceFilter();
   }
 
   @Override
   public FlownodeInstanceFilter flowNodeInstanceKey(final long value) {
-    filter.flowNodeInstanceKey(value);
+    filter.flowNodeInstanceKey(ParseUtil.keyToString(value));
     return this;
   }
 
   @Override
   public FlownodeInstanceFilter processDefinitionKey(final long value) {
-    filter.setProcessDefinitionKey(value);
+    filter.setProcessDefinitionKey(ParseUtil.keyToString(value));
     return this;
   }
 
@@ -51,7 +52,7 @@ public class FlownodeInstanceFilterImpl
 
   @Override
   public FlownodeInstanceFilter processInstanceKey(final long value) {
-    filter.setProcessInstanceKey(value);
+    filter.setProcessInstanceKey(ParseUtil.keyToString(value));
     return this;
   }
 
@@ -81,7 +82,7 @@ public class FlownodeInstanceFilterImpl
 
   @Override
   public FlownodeInstanceFilter incidentKey(final long value) {
-    filter.setIncidentKey(value);
+    filter.setIncidentKey(ParseUtil.keyToString(value));
     return this;
   }
 
@@ -92,7 +93,7 @@ public class FlownodeInstanceFilterImpl
   }
 
   @Override
-  protected FlowNodeInstanceFilterRequest getSearchRequestProperty() {
+  protected io.camunda.client.protocol.rest.FlowNodeInstanceFilter getSearchRequestProperty() {
     return filter;
   }
 }

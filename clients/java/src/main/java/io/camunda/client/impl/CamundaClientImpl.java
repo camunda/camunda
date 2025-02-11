@@ -66,6 +66,7 @@ import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
+import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.command.UpdateJobCommandStep1;
 import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
@@ -144,6 +145,7 @@ import io.camunda.client.impl.command.TopologyRequestImpl;
 import io.camunda.client.impl.command.UnassignGroupFromTenantCommandImpl;
 import io.camunda.client.impl.command.UnassignUserFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignUserTaskCommandImpl;
+import io.camunda.client.impl.command.UpdateAuthorizationCommandImpl;
 import io.camunda.client.impl.command.UpdateGroupCommandImpl;
 import io.camunda.client.impl.command.UpdateTenantCommandImpl;
 import io.camunda.client.impl.command.UpdateUserTaskCommandImpl;
@@ -877,11 +879,6 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public RemoveUserFromTenantCommandStep1 newRemoveUserFromTenantCommand(final long tenantKey) {
-    return new RemoveUserFromTenantCommandImpl(httpClient, tenantKey);
-  }
-
-  @Override
   public AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(final long tenantKey) {
     return new AssignGroupToTenantCommandImpl(httpClient, tenantKey);
   }
@@ -901,6 +898,17 @@ public final class CamundaClientImpl implements CamundaClient {
   public DeleteAuthorizationCommandStep1 newDeleteAuthorizationCommand(
       final long authorizationKey) {
     return new DeleteAuthorizationCommandImpl(httpClient, authorizationKey);
+  }
+
+  @Override
+  public UpdateAuthorizationCommandStep1 newUpdateAuthorizationCommand(
+      final long authorizationKey) {
+    return new UpdateAuthorizationCommandImpl(httpClient, jsonMapper, authorizationKey);
+  }
+
+  @Override
+  public RemoveUserFromTenantCommandStep1 newRemoveUserFromTenantCommand(final String tenantId) {
+    return new RemoveUserFromTenantCommandImpl(httpClient, tenantId);
   }
 
   private JobClient newJobClient() {

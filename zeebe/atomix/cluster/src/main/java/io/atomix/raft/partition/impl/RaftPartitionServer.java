@@ -74,6 +74,7 @@ public class RaftPartitionServer implements HealthMonitorable {
 
   private final ReceivableSnapshotStore persistedSnapshotStore;
   private final RaftServer server;
+  private final MeterRegistry meterRegistry;
 
   public RaftPartitionServer(
       final RaftPartition partition,
@@ -89,6 +90,7 @@ public class RaftPartitionServer implements HealthMonitorable {
     this.localMemberId = localMemberId;
     this.membershipService = membershipService;
     this.clusterCommunicator = clusterCommunicator;
+    this.meterRegistry = meterRegistry;
     log =
         ContextualLoggerFactory.getLogger(
             getClass(),
@@ -102,7 +104,8 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   public CompletableFuture<RaftPartitionServer> bootstrap() {
-    final RaftStartupMetrics raftStartupMetrics = new RaftStartupMetrics(partition.name());
+    final RaftStartupMetrics raftStartupMetrics =
+        new RaftStartupMetrics(partition.name(), meterRegistry);
     log.info("Server bootstrapping partition {}", partition.id());
     final long bootstrapStartTime = System.currentTimeMillis();
     return server
@@ -124,7 +127,7 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   public CompletableFuture<RaftPartitionServer> join() {
-    final var metrics = new RaftStartupMetrics(partition.name());
+    final var metrics = new RaftStartupMetrics(partition.name(), meterRegistry);
     final long joinStartTime = System.currentTimeMillis();
     log.info("Server joining partition {}", partition.id());
     return server
@@ -303,7 +306,7 @@ public class RaftPartitionServer implements HealthMonitorable {
 
   private RaftStorage createRaftStorage() {
     final RaftStorageConfig storageConfig = config.getStorageConfig();
-    return RaftStorage.builder()
+    return RaftStorage.builder(meterRegistry)
         .withPrefix(partition.name())
         .withPartitionId(partition.id().id())
         .withDirectory(partition.dataDirectory())
@@ -323,7 +326,8 @@ public class RaftPartitionServer implements HealthMonitorable {
         clusterCommunicator,
         requestTimeout,
         snapshotRequestTimeout,
-        configurationChangeTimeout);
+        configurationChangeTimeout,
+        meterRegistry);
   }
 
   public CompletableFuture<Void> stepDown() {

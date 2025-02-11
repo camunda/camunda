@@ -53,8 +53,8 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     client.newProcessInstanceQuery().send().join();
 
     // then
-    final ProcessInstanceSearchQueryRequest request =
-        gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
+    final ProcessInstanceSearchQuery request =
+        gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
     assertThat(request.getFilter()).isNull();
   }
 
@@ -88,18 +88,18 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         .send()
         .join();
     // then
-    final ProcessInstanceSearchQueryRequest request =
-        gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
-    final ProcessInstanceFilterRequest filter = request.getFilter();
+    final ProcessInstanceSearchQuery request =
+        gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
+    final ProcessInstanceFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
-    assertThat(filter.getProcessInstanceKey().get$Eq()).isEqualTo(123L);
+    assertThat(filter.getProcessInstanceKey().get$Eq()).isEqualTo("123");
     assertThat(filter.getProcessDefinitionId().get$Eq()).isEqualTo("bpmnProcessId");
     assertThat(filter.getProcessDefinitionName().get$Eq()).isEqualTo("Demo process");
     assertThat(filter.getProcessDefinitionVersion().get$Eq()).isEqualTo(7);
     assertThat(filter.getProcessDefinitionVersionTag().get$Eq()).isEqualTo("v7");
-    assertThat(filter.getProcessDefinitionKey().get$Eq()).isEqualTo(15L);
-    assertThat(filter.getParentProcessInstanceKey().get$Eq()).isEqualTo(25L);
-    assertThat(filter.getParentFlowNodeInstanceKey().get$Eq()).isEqualTo(30L);
+    assertThat(filter.getProcessDefinitionKey().get$Eq()).isEqualTo("15");
+    assertThat(filter.getParentProcessInstanceKey().get$Eq()).isEqualTo("25");
+    assertThat(filter.getParentFlowNodeInstanceKey().get$Eq()).isEqualTo("30");
     assertThat(filter.getStartDate().get$Eq()).isEqualTo(startDate.toString());
     assertThat(filter.getEndDate().get$Eq()).isEqualTo(endDate.toString());
     assertThat(filter.getState().get$Eq()).isEqualTo(ProcessInstanceStateEnum.ACTIVE);
@@ -118,13 +118,13 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         .join();
 
     // then
-    final ProcessInstanceSearchQueryRequest request =
-        gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
-    final ProcessInstanceFilterRequest filter = request.getFilter();
+    final ProcessInstanceSearchQuery request =
+        gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
+    final ProcessInstanceFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
-    final BasicLongFilterProperty processInstanceKey = filter.getProcessInstanceKey();
+    final BasicStringFilterProperty processInstanceKey = filter.getProcessInstanceKey();
     assertThat(processInstanceKey).isNotNull();
-    assertThat(processInstanceKey.get$In()).isEqualTo(Arrays.asList(1L, 10L));
+    assertThat(processInstanceKey.get$In()).isEqualTo(Arrays.asList("1", "10"));
   }
 
   @Test
@@ -137,9 +137,9 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         .join();
 
     // then
-    final ProcessInstanceSearchQueryRequest request =
-        gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
-    final ProcessInstanceFilterRequest filter = request.getFilter();
+    final ProcessInstanceSearchQuery request =
+        gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
+    final ProcessInstanceFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     final StringFilterProperty processInstanceKey = filter.getProcessDefinitionId();
     assertThat(processInstanceKey).isNotNull();
@@ -153,9 +153,9 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     client.newProcessInstanceQuery().filter(f -> f.startDate(b -> b.gt(now))).send().join();
 
     // then
-    final ProcessInstanceSearchQueryRequest request =
-        gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
-    final ProcessInstanceFilterRequest filter = request.getFilter();
+    final ProcessInstanceSearchQuery request =
+        gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
+    final ProcessInstanceFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     final DateTimeFilterProperty startDate = filter.getStartDate();
     assertThat(startDate).isNotNull();
@@ -174,9 +174,9 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     client.newProcessInstanceQuery().filter(f -> f.variables(variables)).send().join();
 
     // then
-    final ProcessInstanceSearchQueryRequest request =
-        gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
-    final ProcessInstanceFilterRequest filter = request.getFilter();
+    final ProcessInstanceSearchQuery request =
+        gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
+    final ProcessInstanceFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     assertThat(filter.getVariables()).isEqualTo(variables);
   }
@@ -218,8 +218,8 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         .join();
 
     // then
-    final ProcessInstanceSearchQueryRequest request =
-        gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
+    final ProcessInstanceSearchQuery request =
+        gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
     final List<SearchQuerySortRequest> sorts =
         SearchQuerySortRequestMapper.fromProcessInstanceSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
@@ -254,8 +254,8 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         .join();
 
     // then
-    final ProcessInstanceSearchQueryRequest request =
-        gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
+    final ProcessInstanceSearchQuery request =
+        gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
     final SearchQueryPageRequest pageRequest = request.getPage();
     assertThat(pageRequest).isNotNull();
     assertThat(pageRequest.getFrom()).isEqualTo(23);

@@ -9,13 +9,6 @@ package io.camunda.it.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.ExpandWildcard;
-import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
-import co.elastic.clients.elasticsearch.snapshot.Repository;
-import co.elastic.clients.elasticsearch.snapshot.RestoreRequest;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.client.CamundaClient;
 import io.camunda.it.utils.MultiDbConfigurator;
 import io.camunda.management.backups.TakeBackupHistoryResponse;
@@ -27,51 +20,44 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
-import java.io.IOException;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 import org.agrona.CloseHelper;
-import org.apache.http.HttpHost;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
-import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 @ZeebeIntegration
 public class BackupRestoreIT {
   private static final String REPOSITORY_NAME = "test-repository";
   private static final String INDEX_PREFIX = "backup-restore";
-  @TempDir public Path repositoryDir;
+  private static final String PROCESS_ID = "backup-process";
+  private static final int PROCESS_INSTANCE_NUMBER = 10;
   protected CamundaClient camundaClient;
 
   @TestZeebe(autoStart = false)
-  protected TestStandaloneApplication<?> testStandaloneCamunda;
+  protected TestStandaloneApplication<?> testStandaloneApplication;
 
+  protected BackupDBClient backupDbClient;
+  private String dbUrl;
   private GenericContainer<?> searchContainer;
-
-  private RestClient restClient;
-  private ElasticsearchClient esClient;
+  private DataGenerator generator;
   private BackupRestoreTestConfig config;
   private HistoryBackupClient historyBackupClient;
 
   @AfterEach
   public void tearDown() {
-    CloseHelper.quietCloseAll(restClient, camundaClient, searchContainer);
+    CloseHelper.quietCloseAll(backupDbClient, camundaClient, generator, searchContainer);
   }
 
-  private void setup(final BackupRestoreTestConfig config) throws IOException {
-    final String dbUrl;
-    testStandaloneCamunda = new TestSimpleCamundaApplication();
-    final var configurator = new MultiDbConfigurator(testStandaloneCamunda);
+  private void setup(final BackupRestoreTestConfig config) throws Exception {
+    testStandaloneApplication = new TestSimpleCamundaApplication();
+    final var configurator = new MultiDbConfigurator(testStandaloneApplication);
     searchContainer =
         switch (config.databaseType) {
           case ELASTICSEARCH -> {
@@ -90,6 +76,18 @@ public class BackupRestoreIT {
             yield container;
           }
 
+          case OPENSEARCH -> {
+            final var container =
+                TestSearchContainers.createDefaultOpensearchContainer()
+                    .withStartupTimeout(Duration.ofMinutes(5))
+                    // location of the repository that will be used for snapshots
+                    .withEnv("path.repo", "~/");
+            container.start();
+            dbUrl = container.getHttpHostAddress();
+            configurator.configureOpenSearchSupport(dbUrl, INDEX_PREFIX, "admin", "admin");
+            yield container;
+          }
+
           default ->
               throw new IllegalArgumentException(
                   "Unsupported database type: " + config.databaseType);
@@ -98,15 +96,19 @@ public class BackupRestoreIT {
     configurator.getTasklistProperties().getBackup().setRepositoryName(REPOSITORY_NAME);
 
     this.config = config;
-    testStandaloneCamunda.start().awaitCompleteTopology();
-    historyBackupClient = HistoryBackupClient.of(testStandaloneCamunda);
-    createSearchClient();
-    createRepository();
+    testStandaloneApplication.start().awaitCompleteTopology();
+
+    camundaClient = testStandaloneApplication.newClientBuilder().build();
+
+    historyBackupClient = HistoryBackupClient.of(testStandaloneApplication);
+    backupDbClient = BackupDBClient.create(dbUrl, config.databaseType);
+    backupDbClient.createRepository(REPOSITORY_NAME);
+    generator = new DataGenerator(camundaClient, PROCESS_ID);
   }
 
   public static Stream<BackupRestoreTestConfig> sources() {
     final var backupRestoreConfigs = new ArrayList<BackupRestoreTestConfig>();
-    for (final var db : List.of(DatabaseType.ELASTICSEARCH)) {
+    for (final var db : List.of(DatabaseType.ELASTICSEARCH, DatabaseType.OPENSEARCH)) {
       backupRestoreConfigs.add(new BackupRestoreTestConfig(db, "bucket"));
     }
     return backupRestoreConfigs.stream();
@@ -115,9 +117,11 @@ public class BackupRestoreIT {
   @ParameterizedTest
   @MethodSource(value = {"sources"})
   public void shouldBackupAndRestoreToPreviousState(final BackupRestoreTestConfig config)
-      throws IOException, InterruptedException {
+      throws Exception {
     // given
     setup(config);
+    camundaClient.newTopologyRequest().send().join();
+    generator.generate(PROCESS_INSTANCE_NUMBER);
 
     final var takeResponse = historyBackupClient.takeBackup(1L);
     assertThat(takeResponse)
@@ -135,79 +139,20 @@ public class BackupRestoreIT {
               assertThat(backupResponse.getDetails()).allMatch(d -> d.getState().equals("SUCCESS"));
             });
 
-    // then
+    // when
     // if we stop all apps and restart elasticsearch
-    testStandaloneCamunda.stop();
+    testStandaloneApplication.stop();
 
-    // then
-    deleteAllIndices();
+    backupDbClient.deleteAllIndices(INDEX_PREFIX);
+    Awaitility.await().untilAsserted(() -> assertThat(backupDbClient.cat()).isEmpty());
 
     // restore with a new client is successful
-    restore(snapshots);
-  }
+    backupDbClient.restore(REPOSITORY_NAME, snapshots);
 
-  private void deleteAllIndices() throws IOException {
-    switch (config.databaseType) {
-      case ELASTICSEARCH -> {
-        esClient
-            .indices()
-            .delete(
-                DeleteIndexRequest.of(
-                    b -> b.index(INDEX_PREFIX + "*").expandWildcards(ExpandWildcard.All)));
-      }
-      default -> {
-        throw new UnsupportedOperationException("Opensearch is not yet supported");
-      }
-    }
-  }
+    testStandaloneApplication.start();
 
-  public void createSearchClient() {
-    switch (config.databaseType) {
-      case ELASTICSEARCH:
-        final var esContainer = (ElasticsearchContainer) searchContainer;
-        CloseHelper.quietClose(restClient);
-        restClient = RestClient.builder(HttpHost.create(esContainer.getHttpHostAddress())).build();
-
-        esClient =
-            new ElasticsearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper()));
-        break;
-      default:
-    }
-  }
-
-  private void createRepository() throws IOException {
-    switch (config.databaseType) {
-      case ELASTICSEARCH -> {
-        final var repository =
-            Repository.of(r -> r.fs(rb -> rb.settings(s -> s.location(REPOSITORY_NAME))));
-        final var response =
-            esClient
-                .snapshot()
-                .createRepository(b -> b.repository(repository).name(REPOSITORY_NAME));
-        assertThat(response.acknowledged()).isTrue();
-      }
-      default -> {}
-    }
-  }
-
-  private void restore(final Collection<String> snapshots) throws IOException {
-    for (final var snapshot : snapshots) {
-      switch (config.databaseType) {
-        case ELASTICSEARCH -> {
-          final var request =
-              RestoreRequest.of(
-                  rb ->
-                      rb.repository(REPOSITORY_NAME)
-                          .snapshot(snapshot)
-                          .indices("*")
-                          .ignoreUnavailable(true)
-                          .waitForCompletion(true));
-          final var response = esClient.snapshot().restore(request);
-          assertThat(response.snapshot().snapshot()).isEqualTo(snapshot);
-        }
-        default -> {}
-      }
-    }
+    // then
+    generator.verifyAllExported();
   }
 
   public record BackupRestoreTestConfig(DatabaseType databaseType, String bucket) {}

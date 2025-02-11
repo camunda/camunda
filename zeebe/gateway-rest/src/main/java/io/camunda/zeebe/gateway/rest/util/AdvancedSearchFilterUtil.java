@@ -29,11 +29,11 @@ public class AdvancedSearchFilterUtil {
   }
 
   protected static <T> T convertValue(final Class<T> tClass, final Object value) {
-    if (tClass.isInstance(value)) {
+    if (value == null) {
+      return null;
+    } else if (tClass.isInstance(value)) {
       return tClass.cast(value);
-    }
-
-    if (tClass == String.class) {
+    } else if (tClass == String.class) {
       return (T) value.toString();
     } else if (tClass == OffsetDateTime.class && value instanceof String) {
       try {
@@ -41,6 +41,8 @@ public class AdvancedSearchFilterUtil {
       } catch (final DateTimeParseException e) {
         throw new IllegalArgumentException("Failed to parse date-time: [%s]".formatted(value), e);
       }
+    } else if (tClass == Long.class && value instanceof String) {
+      return (T) Long.valueOf((String) value);
     }
 
     throw new IllegalArgumentException(

@@ -126,6 +126,6 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
             .addPermission(
                 new Permission().setPermissionType(PermissionType.UPDATE).addResourceId(username));
 
-    stateWriter.appendFollowUpEvent(key, AuthorizationIntent.PERMISSION_ADDED, authorizationRecord);
+    stateWriter.appendFollowUpEvent(key, AuthorizationIntent.CREATED, authorizationRecord);
   }
 }

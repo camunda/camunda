@@ -60,13 +60,14 @@ public final class JobUpdateRetriesTest {
 
     ENGINE
         .authorization()
-        .permission()
-        .withPermission(PermissionType.UPDATE_PROCESS_INSTANCE, PROCESS_ID)
+        .newAuthorization()
+        .withPermissions(PermissionType.UPDATE_PROCESS_INSTANCE)
+        .withResourceId(PROCESS_ID)
         .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
         .withOwnerKey(userKey)
         .withOwnerId(username)
         .withOwnerType(AuthorizationOwnerType.USER)
-        .add();
+        .create();
   }
 
   @Before

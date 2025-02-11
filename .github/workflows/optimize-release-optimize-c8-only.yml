@@ -200,7 +200,7 @@ jobs:
           fi
 
       - name: Create a GitHub release
-        if: ${{ env.IS_RC == 'false' && env.DRY_RUN == 'false' }}
+        if: ${{ env.IS_RC == 'false' && env.IS_DRY_RUN == 'false' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         uses: octokit/request-action@v2.4.0

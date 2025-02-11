@@ -15,7 +15,6 @@ import io.camunda.search.filter.Operator;
 import io.camunda.zeebe.gateway.protocol.rest.AdvancedDateTimeFilter;
 import io.camunda.zeebe.gateway.protocol.rest.AdvancedIntegerFilter;
 import io.camunda.zeebe.gateway.protocol.rest.AdvancedStringFilter;
-import io.camunda.zeebe.gateway.protocol.rest.BasicLongFilter;
 import io.camunda.zeebe.gateway.protocol.rest.BasicStringFilter;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
@@ -60,10 +59,6 @@ class AdvancedSearchFilterUtilTest {
 
   private static Stream<Arguments> provideAdvancedFilterParameters() {
     final var streamBuilder = Stream.<Arguments>builder();
-    // BasicLongFilter
-    RestControllerTest.BASIC_LONG_OPERATIONS.stream()
-        .map(ops -> Arguments.of(BasicLongFilter.class, Long.class, Long.class, ops))
-        .forEach(streamBuilder::add);
     // AdvancedIntegerFilter
     RestControllerTest.BASIC_LONG_OPERATIONS.stream()
         .map(ops -> ops.stream().map(RestControllerTest::toIntOperation).toList())
@@ -76,6 +71,10 @@ class AdvancedSearchFilterUtilTest {
     // BasicStringFilter
     RestControllerTest.BASIC_STRING_OPERATIONS.stream()
         .map(ops -> Arguments.of(BasicStringFilter.class, String.class, String.class, ops))
+        .forEach(streamBuilder::add);
+    // BasicStringFilter - String keys to long
+    RestControllerTest.BASIC_LONG_OPERATIONS.stream()
+        .map(ops -> Arguments.of(BasicStringFilter.class, String.class, Long.class, ops))
         .forEach(streamBuilder::add);
     // AdvancedStringFilter
     RestControllerTest.BASIC_STRING_OPERATIONS.stream()
@@ -113,8 +112,8 @@ class AdvancedSearchFilterUtilTest {
   @Test
   public void shouldMapToStringOperations() {
     // given
-    final var filter = new BasicLongFilter();
-    filter.set$Eq(10L);
+    final var filter = new AdvancedIntegerFilter();
+    filter.set$Eq(10);
     // when
     final var actual = AdvancedSearchFilterUtil.mapToOperations(filter, String.class);
     // then
@@ -123,10 +122,22 @@ class AdvancedSearchFilterUtilTest {
   }
 
   @Test
+  public void shouldMapToLongOperations() {
+    // given
+    final var filter = new BasicStringFilter();
+    filter.set$Eq("10");
+    // when
+    final var actual = AdvancedSearchFilterUtil.mapToOperations(filter, Long.class);
+    // then
+    assertThat(actual).hasSize(1);
+    assertThat(actual.getFirst()).isEqualTo(Operation.eq(10L));
+  }
+
+  @Test
   void shouldThrowExceptionWhenCannotConvert() {
     // given
-    final var filter = new BasicLongFilter();
-    filter.set$Eq(10L);
+    final var filter = new AdvancedIntegerFilter();
+    filter.set$Eq(10);
 
     // when/then
     final var ex =

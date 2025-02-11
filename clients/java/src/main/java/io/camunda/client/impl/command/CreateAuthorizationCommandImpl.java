@@ -27,12 +27,12 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CreateAuthorizationResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.protocol.rest.AuthorizationCreateRequest;
+import io.camunda.client.protocol.rest.AuthorizationRequest;
 import io.camunda.client.protocol.rest.OwnerTypeEnum;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import java.time.Duration;
-import java.util.List;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
@@ -47,13 +47,13 @@ public class CreateAuthorizationCommandImpl
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
   private final RequestConfig.Builder httpRequestConfig;
-  private final AuthorizationCreateRequest request;
+  private final AuthorizationRequest request;
 
   public CreateAuthorizationCommandImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     httpRequestConfig = httpClient.newRequestConfig();
-    request = new AuthorizationCreateRequest();
+    request = new AuthorizationRequest();
   }
 
   @Override
@@ -87,19 +87,10 @@ public class CreateAuthorizationCommandImpl
   }
 
   @Override
-  public CreateAuthorizationCommandStep6 permissions(final List<PermissionTypeEnum> permissions) {
-    ArgumentUtil.ensureNotNull("permissions", permissions);
-    ArgumentUtil.ensureNotEmpty("permissions", permissions);
-    request.setPermissions(permissions);
-    return this;
-  }
-
-  @Override
-  public CreateAuthorizationCommandStep6 permission(final PermissionTypeEnum permission) {
-    ArgumentUtil.ensureNotNull("permission", permission);
-    final List<PermissionTypeEnum> permissions = request.getPermissions();
-    permissions.add(permission);
-    request.setPermissions(permissions);
+  public CreateAuthorizationCommandStep6 permissionTypes(
+      final PermissionTypeEnum... permissionTypes) {
+    ArgumentUtil.ensureNotNull("permissionTypes", permissionTypes);
+    request.setPermissionTypes(Arrays.asList(permissionTypes));
     return this;
   }
 

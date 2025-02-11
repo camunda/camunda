@@ -38,13 +38,12 @@ import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
 abstract class BatchOperationUpdateRepositoryIT {
   @RegisterExtension protected static SearchDBExtension searchDB = SearchDBExtension.create();
   private static final Logger LOGGER =
@@ -144,6 +143,7 @@ abstract class BatchOperationUpdateRepositoryIT {
   }
 
   @Nested
+  @Order(1)
   final class GetNotFinishedBatchOperationsTest {
     @Test
     void shouldReturnEmptyList() {
@@ -188,6 +188,7 @@ abstract class BatchOperationUpdateRepositoryIT {
   }
 
   @Nested
+  @Order(2)
   final class GetFinishedOperationsCountTest {
     @Test
     void shouldReturnEmptyList() {
@@ -252,6 +253,7 @@ abstract class BatchOperationUpdateRepositoryIT {
   }
 
   @Nested
+  @Order(3)
   final class BulkUpdateTest {
 
     @Test

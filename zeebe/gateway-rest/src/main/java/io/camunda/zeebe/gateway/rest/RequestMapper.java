@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationCreateRequest;
+import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentMetadata;
@@ -40,6 +40,7 @@ import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authentication.Builder;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
+import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
@@ -58,15 +59,14 @@ import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.auth.ClaimTransformer;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
-import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
-import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
@@ -77,10 +77,10 @@ import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceActivateInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
@@ -93,6 +93,7 @@ import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
+import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.validator.DocumentValidator;
 import io.camunda.zeebe.gateway.rest.validator.GroupRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.RoleRequestValidator;
@@ -126,7 +127,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -137,10 +137,6 @@ public class RequestMapper {
 
   public static final String VND_CAMUNDA_API_KEYS_STRING_JSON = "vnd.camunda.api.keys.string+json";
   public static final String VND_CAMUNDA_API_KEYS_NUMBER_JSON = "vnd.camunda.api.keys.number+json";
-  public static final MediaType MEDIA_TYPE_KEYS_STRING =
-      new MediaType("application", VND_CAMUNDA_API_KEYS_STRING_JSON);
-  public static final MediaType MEDIA_TYPE_KEYS_NUMBER =
-      new MediaType("application", VND_CAMUNDA_API_KEYS_NUMBER_JSON);
   public static final String MEDIA_TYPE_KEYS_STRING_VALUE =
       "application/" + VND_CAMUNDA_API_KEYS_STRING_JSON;
   public static final String MEDIA_TYPE_KEYS_NUMBER_VALUE =
@@ -314,21 +310,35 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
-      final AuthorizationCreateRequest request) {
+      final AuthorizationRequest request) {
     return getResult(
-        validateAuthorizationCreateRequest(request),
+        validateAuthorizationRequest(request),
         () ->
             new CreateAuthorizationRequest(
                 request.getOwnerId(),
                 AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
                 request.getResourceId(),
                 AuthorizationResourceType.valueOf(request.getResourceType().name()),
-                transfomPermissions(request.getPermissions())));
+                transformPermissionTypes(request.getPermissionTypes())));
   }
 
-  private static Set<PermissionType> transfomPermissions(
-      final List<PermissionTypeEnum> permissions) {
-    return permissions.stream()
+  public static Either<ProblemDetail, UpdateAuthorizationRequest> toUpdateAuthorizationRequest(
+      final long authorizationKey, final AuthorizationRequest request) {
+    return getResult(
+        validateAuthorizationRequest(request),
+        () ->
+            new UpdateAuthorizationRequest(
+                authorizationKey,
+                request.getOwnerId(),
+                AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
+                request.getResourceId(),
+                AuthorizationResourceType.valueOf(request.getResourceType().name()),
+                transformPermissionTypes(request.getPermissionTypes())));
+  }
+
+  private static Set<PermissionType> transformPermissionTypes(
+      final List<PermissionTypeEnum> permissionTypes) {
+    return permissionTypes.stream()
         .map(permission -> PermissionType.valueOf(permission.name()))
         .collect(Collectors.toSet());
   }
@@ -650,7 +660,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
-      final CreateProcessInstanceRequest request, final boolean multiTenancyEnabled) {
+      final ProcessInstanceCreationInstruction request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
         validateTenantId(request.getTenantId(), multiTenancyEnabled, "Create Process Instance")
             .flatMap(
@@ -661,12 +671,13 @@ public class RequestMapper {
     return validationResponse.map(
         tenantId ->
             new ProcessInstanceCreateRequest(
-                getLongOrDefault(
-                    request, CreateProcessInstanceRequest::getProcessDefinitionKey, -1L),
-                getStringOrEmpty(request, CreateProcessInstanceRequest::getProcessDefinitionId),
+                getKeyOrDefault(
+                    request, ProcessInstanceCreationInstruction::getProcessDefinitionKey, -1L),
+                getStringOrEmpty(
+                    request, ProcessInstanceCreationInstruction::getProcessDefinitionId),
                 getIntOrDefault(
-                    request, CreateProcessInstanceRequest::getProcessDefinitionVersion, -1),
-                getMapOrEmpty(request, CreateProcessInstanceRequest::getVariables),
+                    request, ProcessInstanceCreationInstruction::getProcessDefinitionVersion, -1),
+                getMapOrEmpty(request, ProcessInstanceCreationInstruction::getVariables),
                 tenantId,
                 request.getAwaitCompletion(),
                 request.getRequestTimeout(),
@@ -690,13 +701,13 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, ProcessInstanceMigrateRequest> toMigrateProcessInstance(
-      final long processInstanceKey, final MigrateProcessInstanceRequest request) {
+      final long processInstanceKey, final ProcessInstanceMigrationInstruction request) {
     return getResult(
         validateMigrateProcessInstanceRequest(request),
         () ->
             new ProcessInstanceMigrateRequest(
                 processInstanceKey,
-                request.getTargetProcessDefinitionKey(),
+                KeyUtil.keyToLong(request.getTargetProcessDefinitionKey()),
                 request.getMappingInstructions().stream()
                     .map(
                         instruction ->
@@ -708,7 +719,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, ProcessInstanceModifyRequest> toModifyProcessInstance(
-      final long processInstanceKey, final ModifyProcessInstanceRequest request) {
+      final long processInstanceKey, final ProcessInstanceModificationInstruction request) {
     return getResult(
         validateModifyProcessInstanceRequest(request),
         () ->
@@ -721,13 +732,14 @@ public class RequestMapper {
                         terminateInstruction ->
                             new ProcessInstanceModificationTerminateInstruction()
                                 .setElementInstanceKey(
-                                    terminateInstruction.getElementInstanceKey()))
+                                    KeyUtil.keyToLong(
+                                        terminateInstruction.getElementInstanceKey())))
                     .toList(),
                 request.getOperationReference()));
   }
 
   public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
-      final EvaluateDecisionRequest request, final boolean multiTenancyEnabled) {
+      final DecisionEvaluationInstruction request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
         validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Decision")
             .flatMap(
@@ -738,9 +750,10 @@ public class RequestMapper {
     return validationResponse.map(
         tenantId ->
             new DecisionEvaluationRequest(
-                getStringOrEmpty(request, EvaluateDecisionRequest::getDecisionDefinitionId),
-                getLongOrDefault(request, EvaluateDecisionRequest::getDecisionDefinitionKey, -1L),
-                getMapOrEmpty(request, EvaluateDecisionRequest::getVariables),
+                getStringOrEmpty(request, DecisionEvaluationInstruction::getDecisionDefinitionId),
+                getKeyOrDefault(
+                    request, DecisionEvaluationInstruction::getDecisionDefinitionKey, -1L),
+                getMapOrEmpty(request, DecisionEvaluationInstruction::getVariables),
                 tenantId));
   }
 
@@ -770,14 +783,18 @@ public class RequestMapper {
 
   private static List<ProcessInstanceModificationActivateInstruction>
       mapProcessInstanceModificationActivateInstruction(
-          final List<ModifyProcessInstanceActivateInstruction> instructions) {
+          final List<
+                  io.camunda.zeebe.gateway.protocol.rest
+                      .ProcessInstanceModificationActivateInstruction>
+              instructions) {
     return instructions.stream()
         .map(
             instruction -> {
               final var mappedInstruction = new ProcessInstanceModificationActivateInstruction();
               mappedInstruction
                   .setElementId(instruction.getElementId())
-                  .setAncestorScopeKey(instruction.getAncestorElementInstanceKey());
+                  .setAncestorScopeKey(
+                      KeyUtil.keyToLong(instruction.getAncestorElementInstanceKey()));
               instruction.getVariableInstructions().stream()
                   .map(
                       variable ->
@@ -864,6 +881,12 @@ public class RequestMapper {
       final R request, final Function<R, Long> valueExtractor, final Long defaultValue) {
     final Long value = request == null ? null : valueExtractor.apply(request);
     return value == null ? defaultValue : value;
+  }
+
+  private static <R> long getKeyOrDefault(
+      final R request, final Function<R, String> valueExtractor, final Long defaultValue) {
+    final String value = request == null ? null : valueExtractor.apply(request);
+    return value == null ? defaultValue : Long.parseLong(value);
   }
 
   private static <R> List<String> getStringListOrEmpty(

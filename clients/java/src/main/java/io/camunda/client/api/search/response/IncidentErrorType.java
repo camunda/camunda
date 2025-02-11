@@ -16,7 +16,7 @@
 package io.camunda.client.api.search.response;
 
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.IncidentFilterRequest;
+import io.camunda.client.protocol.rest.IncidentFilter;
 import io.camunda.client.protocol.rest.IncidentResult;
 
 public enum IncidentErrorType {
@@ -25,6 +25,7 @@ public enum IncidentErrorType {
   IO_MAPPING_ERROR,
   JOB_NO_RETRIES,
   EXECUTION_LISTENER_NO_RETRIES,
+  TASK_LISTENER_NO_RETRIES,
   CONDITION_ERROR,
   EXTRACT_VALUE_ERROR,
   CALLED_ELEMENT_ERROR,
@@ -35,9 +36,8 @@ public enum IncidentErrorType {
   FORM_NOT_FOUND,
   UNKNOWN_ENUM_VALUE;
 
-  public static IncidentFilterRequest.ErrorTypeEnum toProtocolErrorType(
-      final IncidentErrorType value) {
-    return (value == null) ? null : IncidentFilterRequest.ErrorTypeEnum.fromValue(value.name());
+  public static IncidentFilter.ErrorTypeEnum toProtocolErrorType(final IncidentErrorType value) {
+    return (value == null) ? null : IncidentFilter.ErrorTypeEnum.fromValue(value.name());
   }
 
   public static IncidentErrorType fromProtocolErrorType(final IncidentResult.ErrorTypeEnum value) {

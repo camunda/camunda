@@ -19,26 +19,27 @@ import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.response.IncidentErrorType;
 import io.camunda.client.api.search.response.IncidentState;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.client.protocol.rest.IncidentFilterRequest;
+import io.camunda.client.impl.util.ParseUtil;
 
-public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<IncidentFilterRequest>
+public class IncidentFilterImpl
+    extends TypedSearchRequestPropertyProvider<io.camunda.client.protocol.rest.IncidentFilter>
     implements IncidentFilter {
 
-  private final IncidentFilterRequest filter;
+  private final io.camunda.client.protocol.rest.IncidentFilter filter;
 
   public IncidentFilterImpl() {
-    filter = new IncidentFilterRequest();
+    filter = new io.camunda.client.protocol.rest.IncidentFilter();
   }
 
   @Override
   public IncidentFilter incidentKey(final Long value) {
-    filter.setIncidentKey(value);
+    filter.setIncidentKey(ParseUtil.keyToString(value));
     return this;
   }
 
   @Override
   public IncidentFilter processDefinitionKey(final Long value) {
-    filter.setProcessDefinitionKey(value);
+    filter.setProcessDefinitionKey(ParseUtil.keyToString(value));
     return this;
   }
 
@@ -50,7 +51,7 @@ public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<Incid
 
   @Override
   public IncidentFilter processInstanceKey(final Long value) {
-    filter.setProcessInstanceKey(value);
+    filter.setProcessInstanceKey(ParseUtil.keyToString(value));
     return this;
   }
 
@@ -74,7 +75,7 @@ public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<Incid
 
   @Override
   public IncidentFilter flowNodeInstanceKey(final Long value) {
-    filter.setFlowNodeInstanceKey(value);
+    filter.setFlowNodeInstanceKey(ParseUtil.keyToString(value));
     return this;
   }
 
@@ -92,7 +93,7 @@ public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<Incid
 
   @Override
   public IncidentFilter jobKey(final Long value) {
-    filter.setJobKey(value);
+    filter.setJobKey(ParseUtil.keyToString(value));
     return this;
   }
 
@@ -103,7 +104,7 @@ public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<Incid
   }
 
   @Override
-  protected IncidentFilterRequest getSearchRequestProperty() {
+  protected io.camunda.client.protocol.rest.IncidentFilter getSearchRequestProperty() {
     return filter;
   }
 }

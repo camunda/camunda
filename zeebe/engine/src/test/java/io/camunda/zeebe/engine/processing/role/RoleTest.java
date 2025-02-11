@@ -11,8 +11,6 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
@@ -307,16 +305,6 @@ public class RoleTest {
     // given
     final var name = UUID.randomUUID().toString();
     final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    final var roleId = String.valueOf(roleKey);
-    engine
-        .authorization()
-        .permission()
-        .withOwnerKey(roleKey)
-        .withOwnerId(roleId)
-        .withOwnerType(AuthorizationOwnerType.ROLE)
-        .withResourceType(AuthorizationResourceType.ROLE)
-        .add();
-
     // when
     final var deletedRole = engine.role().deleteRole(roleKey).delete().getValue();
 

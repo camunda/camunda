@@ -22,7 +22,7 @@ import java.util.Objects;
  * Added to keep compatibility with the previous version of the client. Used in {@link
  * io.camunda.zeebe.client.api.command.ProblemException#details()}.
  *
- * @deprecated since 8.7 for removal in 8.8, replaced by #TODO
+ * @deprecated since 8.8 for removal in 8.9, replaced by #TODO
  *     https://github.com/camunda/camunda/issues/26851
  */
 @Deprecated

@@ -9,12 +9,34 @@ package io.atomix.raft.metrics;
 
 import io.micrometer.common.docs.KeyName;
 
+@SuppressWarnings("NullableProblems")
 public enum RaftKeyNames implements KeyName {
   /** partitionGroupName */
   PARTITION_GROUP {
     @Override
     public String asString() {
       return "partitionGroupName";
+    }
+  },
+  /** follower */
+  FOLLOWER {
+    @Override
+    public String asString() {
+      return "follower";
+    }
+  },
+  /** member of the cluster the message is sent */
+  TO {
+    @Override
+    public String asString() {
+      return "to";
+    }
+  },
+  /** type of the message received */
+  TYPE {
+    @Override
+    public String asString() {
+      return "type";
     }
   }
 }

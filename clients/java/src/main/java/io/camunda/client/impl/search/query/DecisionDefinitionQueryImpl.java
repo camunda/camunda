@@ -34,8 +34,6 @@ import io.camunda.client.impl.search.SearchQuerySortRequest;
 import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.client.protocol.rest.DecisionDefinitionFilterRequest;
-import io.camunda.client.protocol.rest.DecisionDefinitionSearchQueryRequest;
 import io.camunda.client.protocol.rest.DecisionDefinitionSearchQueryResult;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import java.time.Duration;
@@ -45,16 +43,17 @@ import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class DecisionDefinitionQueryImpl
-    extends TypedSearchRequestPropertyProvider<DecisionDefinitionSearchQueryRequest>
+    extends TypedSearchRequestPropertyProvider<
+        io.camunda.client.protocol.rest.DecisionDefinitionSearchQuery>
     implements DecisionDefinitionQuery {
 
-  private final DecisionDefinitionSearchQueryRequest request;
+  private final io.camunda.client.protocol.rest.DecisionDefinitionSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
   public DecisionDefinitionQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
-    request = new DecisionDefinitionSearchQueryRequest();
+    request = new io.camunda.client.protocol.rest.DecisionDefinitionSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -62,7 +61,8 @@ public class DecisionDefinitionQueryImpl
 
   @Override
   public DecisionDefinitionQuery filter(final DecisionDefinitionFilter value) {
-    final DecisionDefinitionFilterRequest filter = provideSearchRequestProperty(value);
+    final io.camunda.client.protocol.rest.DecisionDefinitionFilter filter =
+        provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
@@ -98,7 +98,8 @@ public class DecisionDefinitionQueryImpl
   }
 
   @Override
-  protected DecisionDefinitionSearchQueryRequest getSearchRequestProperty() {
+  protected io.camunda.client.protocol.rest.DecisionDefinitionSearchQuery
+      getSearchRequestProperty() {
     return request;
   }
 

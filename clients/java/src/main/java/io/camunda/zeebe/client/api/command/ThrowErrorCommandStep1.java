@@ -19,7 +19,7 @@ import java.io.InputStream;
 import java.util.Map;
 
 /**
- * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
  *     io.camunda.client.api.command.ThrowErrorCommandStep1}
  */
 @Deprecated
@@ -38,7 +38,7 @@ public interface ThrowErrorCommandStep1
   ThrowErrorCommandStep2 errorCode(String errorCode);
 
   /**
-   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
    *     io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2}
    */
   @Deprecated

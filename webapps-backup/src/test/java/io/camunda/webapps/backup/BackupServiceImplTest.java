@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -96,8 +97,6 @@ public class BackupServiceImplTest {
     // when
     final var backup = backupService.takeBackup(new TakeBackupRequestDto().setBackupId(1L));
 
-    waitForAllTasks();
-
     // then
     assertThat(backup.getScheduledSnapshots())
         .isEqualTo(
@@ -108,10 +107,18 @@ public class BackupServiceImplTest {
                 "test_snapshot_1_4_6",
                 "test_snapshot_1_5_6",
                 "test_snapshot_1_6_6"));
-    final var backupState = backupService.getBackupState(1L);
-    assertThat(backupState).isNotNull();
-    assertThat(backupState.getBackupId()).isEqualTo(1L);
-    assertThat(backupState.getState()).isEqualTo(BackupStateDto.COMPLETED);
+
+    Awaitility.await("All backups are done")
+        .untilAsserted(
+            () -> {
+              final var backupState = backupService.getBackupState(1L);
+              assertThat(backupState).isNotNull();
+              assertThat(backupState.getBackupId()).isEqualTo(1L);
+              assertThat(backupState.getState()).isEqualTo(BackupStateDto.COMPLETED);
+              assertThat(backupState.getDetails()).hasSize(6);
+              assertThat(backupState.getDetails())
+                  .allSatisfy(detail -> detail.getState().equals("COMPLETED"));
+            });
     final var snapshotRequests = backupRepository.snapshotRequests.get(1L);
     assertThat(snapshotRequests.stream().map(i -> i.indices().allIndices()))
         .containsExactly(
@@ -318,12 +325,14 @@ public class BackupServiceImplTest {
           .add(snapshotRequest);
       metadata.put(snapshotRequest.metadata().backupId(), snapshotRequest.metadata());
       final var startTime = OffsetDateTime.of(2024, 12, 12, 9, 11, 23, 0, ZoneOffset.UTC);
-      backup.setDetails(
-          List.of(
-              new GetBackupStateResponseDetailDto()
-                  .setState("SUCCESS")
-                  .setSnapshotName(snapshotRequest.snapshotName())
-                  .setStartTime(startTime)));
+      final ArrayList<GetBackupStateResponseDetailDto> details =
+          backup.getDetails() == null ? new ArrayList<>() : new ArrayList<>(backup.getDetails());
+      details.add(
+          new GetBackupStateResponseDetailDto()
+              .setState("SUCCESS")
+              .setSnapshotName(snapshotRequest.snapshotName())
+              .setStartTime(startTime));
+      backup.setDetails(details);
       backup.setState(BackupStateDto.COMPLETED);
       onSuccess.run();
       backups.put(id, backup);

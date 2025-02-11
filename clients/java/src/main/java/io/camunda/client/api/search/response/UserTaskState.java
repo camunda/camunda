@@ -16,7 +16,7 @@
 package io.camunda.client.api.search.response;
 
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.UserTaskFilterRequest;
+import io.camunda.client.protocol.rest.UserTaskFilter;
 import io.camunda.client.protocol.rest.UserTaskResult;
 
 public enum UserTaskState {
@@ -26,8 +26,8 @@ public enum UserTaskState {
   FAILED,
   UNKNOWN_ENUM_VALUE;
 
-  public static UserTaskFilterRequest.StateEnum toProtocolState(final UserTaskState value) {
-    return (value == null) ? null : UserTaskFilterRequest.StateEnum.fromValue(value.name());
+  public static UserTaskFilter.StateEnum toProtocolState(final UserTaskState value) {
+    return (value == null) ? null : UserTaskFilter.StateEnum.fromValue(value.name());
   }
 
   public static UserTaskState fromProtocolState(final UserTaskResult.StateEnum value) {

@@ -70,19 +70,33 @@ public class ProcessInstanceAssertj
 
   @Override
   public ProcessInstanceAssert isActive() {
-    hasProcessInstanceInState(ProcessInstanceState.ACTIVE, Objects::nonNull);
+    hasProcessInstanceInState("active", ProcessInstanceState.ACTIVE::equals, Objects::nonNull);
     return this;
   }
 
   @Override
   public ProcessInstanceAssert isCompleted() {
-    hasProcessInstanceInState(ProcessInstanceState.COMPLETED, ProcessInstanceAssertj::isEnded);
+    hasProcessInstanceInState(
+        "completed", ProcessInstanceState.COMPLETED::equals, ProcessInstanceAssertj::isEnded);
     return this;
   }
 
   @Override
   public ProcessInstanceAssert isTerminated() {
-    hasProcessInstanceInState(ProcessInstanceState.CANCELED, ProcessInstanceAssertj::isEnded);
+    hasProcessInstanceInState(
+        "terminated", ProcessInstanceState.CANCELED::equals, ProcessInstanceAssertj::isEnded);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert isCreated() {
+    hasProcessInstanceInState(
+        "created",
+        state ->
+            state == ProcessInstanceState.ACTIVE
+                || state == ProcessInstanceState.COMPLETED
+                || state == ProcessInstanceState.CANCELED,
+        Objects::nonNull);
     return this;
   }
 
@@ -141,7 +155,9 @@ public class ProcessInstanceAssertj
   }
 
   private void hasProcessInstanceInState(
-      final ProcessInstanceState expectedState, final Predicate<ProcessInstanceDto> waitCondition) {
+      final String expectedState,
+      final Predicate<ProcessInstanceState> expectedStateMatcher,
+      final Predicate<ProcessInstanceDto> waitCondition) {
     // reset cached process instance
     actualProcessInstance.set(null);
 
@@ -154,7 +170,7 @@ public class ProcessInstanceAssertj
                 final ProcessInstanceDto processInstance = findProcessInstance();
                 actualProcessInstance.set(processInstance);
 
-                assertThat(processInstance.getProcessInstanceState()).isEqualTo(expectedState);
+                assertThat(processInstance.getProcessInstanceState()).matches(expectedStateMatcher);
               });
 
     } catch (final ConditionTimeoutException | TerminalFailureException e) {
@@ -163,12 +179,11 @@ public class ProcessInstanceAssertj
           Optional.ofNullable(actualProcessInstance.get())
               .map(ProcessInstanceDto::getProcessInstanceState)
               .map(ProcessInstanceAssertj::formatState)
-              .orElse("not activated");
+              .orElse("not created");
 
       final String failureMessage =
           String.format(
-              "%s should be %s but was %s.",
-              failureMessagePrefix, formatState(expectedState), actualState);
+              "%s should be %s but was %s.", failureMessagePrefix, expectedState, actualState);
       fail(failureMessage);
     }
   }
@@ -211,7 +226,7 @@ public class ProcessInstanceAssertj
 
   private static String formatState(final ProcessInstanceState state) {
     if (state == null || state == ProcessInstanceState.UNKNOWN_ENUM_VALUE) {
-      return "not activated";
+      return "not created";
     } else if (state == ProcessInstanceState.CANCELED) {
       return "terminated";
     } else {

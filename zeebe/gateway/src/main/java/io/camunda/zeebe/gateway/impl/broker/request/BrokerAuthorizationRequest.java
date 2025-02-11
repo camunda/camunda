@@ -19,37 +19,40 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 
-public class BrokerAuthorizationCreateRequest extends BrokerExecuteCommand<AuthorizationRecord> {
+public class BrokerAuthorizationRequest extends BrokerExecuteCommand<AuthorizationRecord> {
   private final AuthorizationRecord requestDto = new AuthorizationRecord();
 
-  public BrokerAuthorizationCreateRequest() {
-    super(ValueType.AUTHORIZATION, AuthorizationIntent.CREATE);
+  public BrokerAuthorizationRequest(final AuthorizationIntent intent) {
+    super(ValueType.AUTHORIZATION, intent);
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
-  public BrokerAuthorizationCreateRequest setOwnerId(final String ownerId) {
+  public BrokerAuthorizationRequest setAuthorizationKey(final long authorizationKey) {
+    requestDto.setAuthorizationKey(authorizationKey);
+    return this;
+  }
+
+  public BrokerAuthorizationRequest setOwnerId(final String ownerId) {
     requestDto.setOwnerId(ownerId);
     return this;
   }
 
-  public BrokerAuthorizationCreateRequest setOwnerType(final AuthorizationOwnerType ownerType) {
+  public BrokerAuthorizationRequest setOwnerType(final AuthorizationOwnerType ownerType) {
     requestDto.setOwnerType(ownerType);
     return this;
   }
 
-  public BrokerAuthorizationCreateRequest setResourceId(final String resourceId) {
+  public BrokerAuthorizationRequest setResourceId(final String resourceId) {
     requestDto.setResourceId(resourceId);
     return this;
   }
 
-  public BrokerAuthorizationCreateRequest setResourceType(
-      final AuthorizationResourceType resourceType) {
+  public BrokerAuthorizationRequest setResourceType(final AuthorizationResourceType resourceType) {
     requestDto.setResourceType(resourceType);
     return this;
   }
 
-  public BrokerAuthorizationCreateRequest setPermissionTypes(
-      final Set<PermissionType> permissionTypes) {
+  public BrokerAuthorizationRequest setPermissionTypes(final Set<PermissionType> permissionTypes) {
     requestDto.setAuthorizationPermissions(permissionTypes);
     return this;
   }

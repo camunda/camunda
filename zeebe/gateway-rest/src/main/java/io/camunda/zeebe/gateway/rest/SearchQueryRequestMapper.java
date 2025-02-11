@@ -81,6 +81,7 @@ import io.camunda.search.sort.UserTaskSort;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.protocol.rest.*;
+import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
 import io.camunda.zeebe.util.Either;
 import jakarta.validation.constraints.NotNull;
@@ -119,7 +120,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQuery(
-      final ProcessDefinitionSearchQueryRequest request) {
+      final ProcessDefinitionSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.processDefinitionSearchQuery().build());
     }
@@ -135,7 +136,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, ProcessInstanceQuery> toProcessInstanceQuery(
-      final ProcessInstanceSearchQueryRequest request) {
+      final ProcessInstanceSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.processInstanceSearchQuery().build());
     }
@@ -208,7 +209,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, DecisionDefinitionQuery> toDecisionDefinitionQuery(
-      final DecisionDefinitionSearchQueryRequest request) {
+      final DecisionDefinitionSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.decisionDefinitionSearchQuery().build());
     }
@@ -224,7 +225,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, DecisionRequirementsQuery> toDecisionRequirementsQuery(
-      final DecisionRequirementsSearchQueryRequest request) {
+      final DecisionRequirementsSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.decisionRequirementsSearchQuery().build());
     }
@@ -241,7 +242,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, FlowNodeInstanceQuery> toFlownodeInstanceQuery(
-      final FlowNodeInstanceSearchQueryRequest request) {
+      final FlowNodeInstanceSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.flownodeInstanceSearchQuery().build());
     }
@@ -257,7 +258,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, DecisionInstanceQuery> toDecisionInstanceQuery(
-      final DecisionInstanceSearchQueryRequest request) {
+      final DecisionInstanceSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.decisionInstanceSearchQuery().build());
     }
@@ -273,11 +274,13 @@ public final class SearchQueryRequestMapper {
   }
 
   private static DecisionInstanceFilter toDecisionInstanceFilter(
-      final DecisionInstanceFilterRequest filter) {
+      final io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceFilter filter) {
     final var builder = FilterBuilders.decisionInstance();
 
     if (filter != null) {
-      ofNullable(filter.getDecisionInstanceKey()).ifPresent(builder::decisionInstanceKeys);
+      ofNullable(filter.getDecisionInstanceKey())
+          .map(KeyUtil::keyToLong)
+          .ifPresent(builder::decisionInstanceKeys);
       ofNullable(filter.getDecisionInstanceId()).ifPresent(builder::decisionInstanceIds);
       ofNullable(filter.getState())
           .map(s -> convertEnum(s, DecisionInstanceState.class))
@@ -286,7 +289,9 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getEvaluationDate())
           .map(mapToOperations(OffsetDateTime.class))
           .ifPresent(builder::evaluationDateOperations);
-      ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(KeyUtil::keyToLong)
+          .ifPresent(builder::processDefinitionKeys);
       ofNullable(filter.getDecisionDefinitionKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::decisionDefinitionKeyOperations);
@@ -335,7 +340,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
-      final UserTaskSearchQueryRequest request) {
+      final UserTaskSearchQuery request) {
 
     if (request == null) {
       return Either.right(SearchQueryBuilders.userTaskSearchQuery().build());
@@ -383,7 +388,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, VariableQuery> toVariableQuery(
-      final VariableSearchQueryRequest request) {
+      final VariableSearchQuery request) {
 
     if (request == null) {
       return Either.right(SearchQueryBuilders.variableSearchQuery().build());
@@ -398,7 +403,8 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
   }
 
-  private static VariableFilter toVariableFilter(final VariableFilterRequest filter) {
+  private static VariableFilter toVariableFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.VariableFilter filter) {
     if (filter == null) {
       return FilterBuilders.variable().build();
     }
@@ -442,7 +448,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, IncidentQuery> toIncidentQuery(
-      final IncidentSearchQueryRequest request) {
+      final IncidentSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.incidentSearchQuery().build());
     }
@@ -457,12 +463,13 @@ public final class SearchQueryRequestMapper {
   }
 
   private static ProcessDefinitionFilter toProcessDefinitionFilter(
-      final ProcessDefinitionFilterRequest filter) {
+      final io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionFilter filter) {
     final var builder = FilterBuilders.processDefinition();
     Optional.ofNullable(filter)
         .ifPresent(
             f -> {
               Optional.ofNullable(f.getProcessDefinitionKey())
+                  .map(KeyUtil::keyToLong)
                   .ifPresent(builder::processDefinitionKeys);
               Optional.ofNullable(f.getName()).ifPresent(builder::names);
               Optional.ofNullable(f.getResourceName()).ifPresent(builder::resourceNames);
@@ -480,7 +487,7 @@ public final class SearchQueryRequestMapper {
   }
 
   private static ProcessInstanceFilter toProcessInstanceFilter(
-      final ProcessInstanceFilterRequest filter) {
+      final io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter filter) {
     final var builder = FilterBuilders.processInstance();
 
     if (filter != null) {
@@ -548,16 +555,20 @@ public final class SearchQueryRequestMapper {
   }
 
   private static DecisionDefinitionFilter toDecisionDefinitionFilter(
-      final DecisionDefinitionFilterRequest filter) {
+      final io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionFilter filter) {
     final var builder = FilterBuilders.decisionDefinition();
 
     if (filter != null) {
-      ofNullable(filter.getDecisionDefinitionKey()).ifPresent(builder::decisionDefinitionKeys);
+      ofNullable(filter.getDecisionDefinitionKey())
+          .map(KeyUtil::keyToLong)
+          .ifPresent(builder::decisionDefinitionKeys);
       ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
       ofNullable(filter.getName()).ifPresent(builder::names);
       ofNullable(filter.getVersion()).ifPresent(builder::versions);
       ofNullable(filter.getDecisionRequirementsId()).ifPresent(builder::decisionRequirementsIds);
-      ofNullable(filter.getDecisionRequirementsKey()).ifPresent(builder::decisionRequirementsKeys);
+      ofNullable(filter.getDecisionRequirementsKey())
+          .map(KeyUtil::keyToLong)
+          .ifPresent(builder::decisionRequirementsKeys);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
 
@@ -565,13 +576,14 @@ public final class SearchQueryRequestMapper {
   }
 
   private static DecisionRequirementsFilter toDecisionRequirementsFilter(
-      final DecisionRequirementsFilterRequest filter) {
+      final io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsFilter filter) {
     final var builder = FilterBuilders.decisionRequirements();
 
     Optional.ofNullable(filter)
         .ifPresent(
             f -> {
               Optional.ofNullable(f.getDecisionRequirementsKey())
+                  .map(KeyUtil::keyToLong)
                   .ifPresent(builder::decisionRequirementsKeys);
               Optional.ofNullable(f.getDecisionRequirementsName()).ifPresent(builder::names);
               Optional.ofNullable(f.getVersion()).ifPresent(builder::versions);
@@ -584,16 +596,19 @@ public final class SearchQueryRequestMapper {
   }
 
   private static FlowNodeInstanceFilter toFlownodeInstanceFilter(
-      final FlowNodeInstanceFilterRequest filter) {
+      final io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceFilter filter) {
     final var builder = FilterBuilders.flowNodeInstance();
     Optional.ofNullable(filter)
         .ifPresent(
             f -> {
               Optional.ofNullable(f.getFlowNodeInstanceKey())
+                  .map(KeyUtil::keyToLong)
                   .ifPresent(builder::flowNodeInstanceKeys);
               Optional.ofNullable(f.getProcessInstanceKey())
+                  .map(KeyUtil::keyToLong)
                   .ifPresent(builder::processInstanceKeys);
               Optional.ofNullable(f.getProcessDefinitionKey())
+                  .map(KeyUtil::keyToLong)
                   .ifPresent(builder::processDefinitionKeys);
               Optional.ofNullable(f.getProcessDefinitionId())
                   .ifPresent(builder::processDefinitionIds);
@@ -604,19 +619,24 @@ public final class SearchQueryRequestMapper {
                       t -> builder.types(FlowNodeType.fromZeebeBpmnElementType(t.getValue())));
               Optional.ofNullable(f.getFlowNodeId()).ifPresent(builder::flowNodeIds);
               Optional.ofNullable(f.getHasIncident()).ifPresent(builder::hasIncident);
-              Optional.ofNullable(f.getIncidentKey()).ifPresent(builder::incidentKeys);
+              Optional.ofNullable(f.getIncidentKey())
+                  .map(KeyUtil::keyToLong)
+                  .ifPresent(builder::incidentKeys);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
             });
     return builder.build();
   }
 
-  private static UserTaskFilter toUserTaskFilter(final UserTaskFilterRequest filter) {
+  private static UserTaskFilter toUserTaskFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.UserTaskFilter filter) {
     final var builder = FilterBuilders.userTask();
 
     Optional.ofNullable(filter)
         .ifPresent(
             f -> {
-              Optional.ofNullable(f.getUserTaskKey()).ifPresent(builder::userTaskKeys);
+              Optional.ofNullable(f.getUserTaskKey())
+                  .map(KeyUtil::keyToLong)
+                  .ifPresent(builder::userTaskKeys);
               Optional.ofNullable(f.getState())
                   .map(s -> String.valueOf(UserTaskState.valueOf(s.getValue())))
                   .ifPresent(builder::states);
@@ -635,11 +655,14 @@ public final class SearchQueryRequestMapper {
                   .map(mapToOperations(String.class))
                   .ifPresent(builder::candidateUserOperations);
               Optional.ofNullable(f.getProcessDefinitionKey())
+                  .map(KeyUtil::keyToLong)
                   .ifPresent(builder::processDefinitionKeys);
               Optional.ofNullable(f.getProcessInstanceKey())
+                  .map(KeyUtil::keyToLong)
                   .ifPresent(builder::processInstanceKeys);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
               Optional.ofNullable(f.getElementInstanceKey())
+                  .map(KeyUtil::keyToLong)
                   .ifPresent(builder::elementInstanceKeys);
               Optional.ofNullable(f.getProcessInstanceVariables())
                   .filter(variables -> !variables.isEmpty())
@@ -677,24 +700,31 @@ public final class SearchQueryRequestMapper {
         .orElse(null);
   }
 
-  private static IncidentFilter toIncidentFilter(final IncidentFilterRequest filter) {
+  private static IncidentFilter toIncidentFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.IncidentFilter filter) {
     final var builder = FilterBuilders.incident();
 
     if (filter != null) {
-      ofNullable(filter.getIncidentKey()).ifPresent(builder::incidentKeys);
-      ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
+      ofNullable(filter.getIncidentKey()).map(KeyUtil::keyToLong).ifPresent(builder::incidentKeys);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(KeyUtil::keyToLong)
+          .ifPresent(builder::processDefinitionKeys);
       ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::processDefinitionIds);
-      ofNullable(filter.getProcessInstanceKey()).ifPresent(builder::processInstanceKeys);
+      ofNullable(filter.getProcessInstanceKey())
+          .map(KeyUtil::keyToLong)
+          .ifPresent(builder::processInstanceKeys);
       ofNullable(filter.getErrorType())
           .ifPresent(t -> builder.errorTypes(IncidentEntity.ErrorType.valueOf(t.getValue())));
       ofNullable(filter.getErrorMessage()).ifPresent(builder::errorMessages);
       ofNullable(filter.getFlowNodeId()).ifPresent(builder::flowNodeIds);
-      ofNullable(filter.getFlowNodeInstanceKey()).ifPresent(builder::flowNodeInstanceKeys);
+      ofNullable(filter.getFlowNodeInstanceKey())
+          .map(KeyUtil::keyToLong)
+          .ifPresent(builder::flowNodeInstanceKeys);
       ofNullable(filter.getCreationTime())
           .ifPresent(t -> builder.creationTime(toDateValueFilter(t)));
       ofNullable(filter.getState())
           .ifPresent(s -> builder.states(IncidentState.valueOf(s.getValue())));
-      ofNullable(filter.getJobKey()).ifPresent(builder::jobKeys);
+      ofNullable(filter.getJobKey()).map(KeyUtil::keyToLong).ifPresent(builder::jobKeys);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
     return builder.build();
@@ -1116,7 +1146,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, AuthorizationQuery> toAuthorizationQuery(
-      final AuthorizationSearchQueryRequest request) {
+      final AuthorizationSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.authorizationSearchQuery().build());
     }
@@ -1150,7 +1180,7 @@ public final class SearchQueryRequestMapper {
   }
 
   private static AuthorizationFilter toAuthorizationFilter(
-      final AuthorizationFilterRequest filter) {
+      final io.camunda.zeebe.gateway.protocol.rest.AuthorizationFilter filter) {
     return Optional.ofNullable(filter)
         .map(
             f ->

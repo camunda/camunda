@@ -8,7 +8,6 @@
 package io.camunda.search.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.domain.UserTaskDbQuery;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
@@ -213,8 +212,10 @@ public class RdbmsSearchClient
   }
 
   @Override
-  public SearchQueryResult<UserEntity> searchUsers(final UserQuery filter) {
-    return null;
+  public SearchQueryResult<UserEntity> searchUsers(final UserQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for users: {}", query);
+
+    return rdbmsService.getUserReader().search(query);
   }
 
   @Override
@@ -242,14 +243,10 @@ public class RdbmsSearchClient
 
   @Override
   public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery query) {
-    final var searchResult =
-        rdbmsService
-            .getUserTaskReader()
-            .search(
-                UserTaskDbQuery.of(
-                    b -> b.filter(query.filter()).sort(query.sort()).page(query.page())));
-
-    return new SearchQueryResult<>(searchResult.total(), searchResult.hits(), null, null);
+    return rdbmsService
+        .getUserTaskReader()
+        .search(
+            UserTaskQuery.of(b -> b.filter(query.filter()).sort(query.sort()).page(query.page())));
   }
 
   @Override

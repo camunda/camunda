@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
-import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -32,9 +31,16 @@ public class MappingTest {
   public void shouldCreateMapping() {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
+    final var id = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
     final var mappingRecord =
-        engine.mapping().newMapping(claimName).withClaimValue(claimValue).withName(name).create();
+        engine
+            .mapping()
+            .newMapping(claimName)
+            .withClaimValue(claimValue)
+            .withId(id)
+            .withName(name)
+            .create();
 
     final var createMapping = mappingRecord.getValue();
     Assertions.assertThat(createMapping)
@@ -42,11 +48,12 @@ public class MappingTest {
         .hasFieldOrProperty("mappingKey")
         .hasFieldOrPropertyWithValue("claimName", claimName)
         .hasFieldOrPropertyWithValue("claimValue", claimValue)
-        .hasFieldOrPropertyWithValue("name", name);
+        .hasFieldOrPropertyWithValue("name", name)
+        .hasFieldOrPropertyWithValue("id", id);
   }
 
   @Test
-  public void shouldNotDuplicate() {
+  public void shouldNotDuplicateWithSameClaim() {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
@@ -67,6 +74,32 @@ public class MappingTest {
             String.format(
                 "Expected to create mapping with claimName '%s' and claimValue '%s', but a mapping with this claim already exists.",
                 claimName, claimValue));
+  }
+
+  @Test
+  public void shouldNotDuplicateWithSameId() {
+    // given
+    final var claimName = UUID.randomUUID().toString();
+    final var claimValue = UUID.randomUUID().toString();
+    final var id = UUID.randomUUID().toString();
+    engine.mapping().newMapping(claimName).withClaimValue(claimValue).withId(id).create();
+
+    // when
+    final var duplicatedMappingRecord =
+        engine
+            .mapping()
+            .newMapping(UUID.randomUUID().toString())
+            .withClaimValue(UUID.randomUUID().toString())
+            .withId(id)
+            .expectRejection()
+            .create();
+
+    assertThat(duplicatedMappingRecord)
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            String.format(
+                "Expected to create mapping with id '%s', but a mapping with this id already exists.",
+                id));
   }
 
   @Test
@@ -94,14 +127,13 @@ public class MappingTest {
   }
 
   @Test
-  public void shouldCleanupMembership() {
+  public void shouldCleanupGroupAndRoleMembership() {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var mappingRecord =
         engine.mapping().newMapping(claimName).withClaimValue(claimValue).create();
     final var group = engine.group().newGroup("group").create();
     final var role = engine.role().newRole("role").create();
-    final var tenant = engine.tenant().newTenant().withTenantId("tenant").create();
     engine
         .group()
         .addEntity(group.getKey())
@@ -111,12 +143,6 @@ public class MappingTest {
     engine
         .role()
         .addEntity(role.getKey())
-        .withEntityKey(mappingRecord.getKey())
-        .withEntityType(EntityType.MAPPING)
-        .add();
-    engine
-        .tenant()
-        .addEntity(tenant.getKey())
         .withEntityKey(mappingRecord.getKey())
         .withEntityType(EntityType.MAPPING)
         .add();
@@ -134,12 +160,6 @@ public class MappingTest {
     Assertions.assertThat(
             RecordingExporter.roleRecords(RoleIntent.ENTITY_REMOVED)
                 .withRoleKey(role.getKey())
-                .withEntityKey(mappingRecord.getKey())
-                .exists())
-        .isTrue();
-    Assertions.assertThat(
-            RecordingExporter.tenantRecords(TenantIntent.ENTITY_REMOVED)
-                .withTenantKey(tenant.getKey())
                 .withEntityKey(mappingRecord.getKey())
                 .exists())
         .isTrue();

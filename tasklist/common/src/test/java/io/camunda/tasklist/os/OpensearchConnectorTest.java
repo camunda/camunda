@@ -23,7 +23,6 @@ import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.concurrent.FutureCallback;
-import org.apache.hc.core5.http.message.BasicHttpRequest;
 import org.apache.http.HttpHost;
 import org.apache.http.client.methods.HttpGet;
 import org.junit.jupiter.api.Test;
@@ -77,7 +76,7 @@ class OpensearchConnectorTest {
     }
 
     // then
-    final var reqWrapper = (BasicHttpRequest) context.getAttribute("http.request");
+    final var reqWrapper = context.getRequest();
 
     assertThat(reqWrapper.getFirstHeader("foo").getValue()).isEqualTo("bar");
   }
@@ -115,7 +114,7 @@ class OpensearchConnectorTest {
     }
 
     // then
-    final var reqWrapper = (BasicHttpRequest) context.getAttribute("http.request");
+    final var reqWrapper = context.getRequest();
 
     assertThat(reqWrapper.getFirstHeader("foo").getValue()).isEqualTo("bar");
   }
@@ -153,7 +152,7 @@ class OpensearchConnectorTest {
     }
 
     // then
-    final var reqWrapper = (BasicHttpRequest) context.getAttribute("http.request");
+    final var reqWrapper = context.getRequest();
 
     assertThat(reqWrapper.getFirstHeader("foo").getValue()).isEqualTo("bar");
   }

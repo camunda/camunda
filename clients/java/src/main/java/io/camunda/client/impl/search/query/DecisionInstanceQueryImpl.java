@@ -34,8 +34,6 @@ import io.camunda.client.impl.search.SearchQuerySortRequest;
 import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.client.protocol.rest.DecisionInstanceFilterRequest;
-import io.camunda.client.protocol.rest.DecisionInstanceSearchQueryRequest;
 import io.camunda.client.protocol.rest.DecisionInstanceSearchQueryResult;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import java.time.Duration;
@@ -45,16 +43,17 @@ import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class DecisionInstanceQueryImpl
-    extends TypedSearchRequestPropertyProvider<DecisionInstanceSearchQueryRequest>
+    extends TypedSearchRequestPropertyProvider<
+        io.camunda.client.protocol.rest.DecisionInstanceSearchQuery>
     implements DecisionInstanceQuery {
 
-  private final DecisionInstanceSearchQueryRequest request;
+  private final io.camunda.client.protocol.rest.DecisionInstanceSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
   public DecisionInstanceQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
-    request = new DecisionInstanceSearchQueryRequest();
+    request = new io.camunda.client.protocol.rest.DecisionInstanceSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -62,7 +61,8 @@ public class DecisionInstanceQueryImpl
 
   @Override
   public DecisionInstanceQuery filter(final DecisionInstanceFilter value) {
-    final DecisionInstanceFilterRequest filter = provideSearchRequestProperty(value);
+    final io.camunda.client.protocol.rest.DecisionInstanceFilter filter =
+        provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
@@ -97,7 +97,7 @@ public class DecisionInstanceQueryImpl
   }
 
   @Override
-  protected DecisionInstanceSearchQueryRequest getSearchRequestProperty() {
+  protected io.camunda.client.protocol.rest.DecisionInstanceSearchQuery getSearchRequestProperty() {
     return request;
   }
 

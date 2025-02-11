@@ -23,19 +23,22 @@ import io.atomix.cluster.messaging.ManagedUnicastService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import net.jodah.concurrentunit.ConcurrentTestCase;
 import org.agrona.CloseHelper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.jupiter.api.AutoClose;
 
 /** Netty unicast service test. */
 public class NettyUnicastServiceTest extends ConcurrentTestCase {
   ManagedUnicastService service1;
   ManagedUnicastService service2;
-
   Address address1;
   Address address2;
+  @AutoClose private final MeterRegistry registry = new SimpleMeterRegistry();
 
   @Test
   public void testUnicast() throws Exception {
@@ -67,10 +70,12 @@ public class NettyUnicastServiceTest extends ConcurrentTestCase {
     address2 = Address.from("127.0.0.1", SocketUtil.getNextAddress().getPort());
 
     final String clusterId = "testClusterId";
-    service1 = new NettyUnicastService(clusterId, address1, new MessagingConfig(), "Unicast-1");
+    service1 =
+        new NettyUnicastService(clusterId, address1, new MessagingConfig(), "Unicast-1", registry);
     service1.start().join();
 
-    service2 = new NettyUnicastService(clusterId, address2, new MessagingConfig(), "Unicast-2");
+    service2 =
+        new NettyUnicastService(clusterId, address2, new MessagingConfig(), "Unicast-2", registry);
     service2.start().join();
   }
 

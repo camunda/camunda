@@ -10,14 +10,14 @@ package io.camunda.zeebe.gateway.rest.validator;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
 public final class AuthorizationRequestValidator {
 
-  public static Optional<ProblemDetail> validateAuthorizationCreateRequest(
-      final AuthorizationCreateRequest request) {
+  public static Optional<ProblemDetail> validateAuthorizationRequest(
+      final AuthorizationRequest request) {
     return validate(
         violations -> {
           // owner validation
@@ -37,8 +37,8 @@ public final class AuthorizationRequestValidator {
           }
 
           // permissions validation
-          if (request.getPermissions() == null || request.getPermissions().isEmpty()) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("permissions"));
+          if (request.getPermissionTypes() == null || request.getPermissionTypes().isEmpty()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("permissionTypes"));
           }
         });
   }

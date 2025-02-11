@@ -172,6 +172,14 @@ public class RecordFixtures {
     final io.camunda.zeebe.protocol.record.Record<RecordValue> recordValueRecord =
         FACTORY.generateRecord(ValueType.PROCESS_INSTANCE);
 
+    return getFlowNodeActivatingRecord(position, FACTORY.generateObject(Long.class));
+  }
+
+  protected static ImmutableRecord<RecordValue> getFlowNodeActivatingRecord(
+      final Long position, final long processInstanceKey) {
+    final io.camunda.zeebe.protocol.record.Record<RecordValue> recordValueRecord =
+        FACTORY.generateRecord(ValueType.PROCESS_INSTANCE);
+
     return ImmutableRecord.builder()
         .from(recordValueRecord)
         .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
@@ -181,6 +189,8 @@ public class RecordFixtures {
         .withValue(
             ImmutableProcessInstanceRecordValue.builder()
                 .from((ProcessInstanceRecordValue) recordValueRecord.getValue())
+                .withProcessInstanceKey(processInstanceKey)
+                .withBpmnElementType(BpmnElementType.SERVICE_TASK)
                 .withVersion(1)
                 .build())
         .build();
@@ -201,6 +211,8 @@ public class RecordFixtures {
         .withValue(
             ImmutableProcessInstanceRecordValue.builder()
                 .from((ProcessInstanceRecordValue) recordValueRecord.getValue())
+                .withProcessInstanceKey(elementKey)
+                .withBpmnElementType(BpmnElementType.SERVICE_TASK)
                 .withVersion(1)
                 .build())
         .build();

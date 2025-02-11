@@ -12,12 +12,13 @@ import static io.camunda.operate.conditions.DatabaseCondition.DATABASE_PROPERTY;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
 @Component("databaseInfo")
-public class DatabaseInfo implements ApplicationContextAware {
+public class DatabaseInfo implements ApplicationContextAware, DisposableBean {
 
   static final DatabaseType DEFAULT_DATABASE = DatabaseType.Elasticsearch;
   private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseInfo.class);
@@ -59,6 +60,12 @@ public class DatabaseInfo implements ApplicationContextAware {
 
   public boolean isElasticsearchDb() {
     return isElasticsearch();
+  }
+
+  @Override
+  public void destroy() {
+    // unset current so it can be reinitialized
+    current = null;
   }
 
   @Override

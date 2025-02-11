@@ -24,7 +24,6 @@ import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.concurrent.FutureCallback;
-import org.apache.hc.core5.http.message.BasicHttpRequest;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -69,7 +68,7 @@ class OpensearchConnectorTest {
       // ignore as we don't really care about the outcome
     }
 
-    final var reqWrapper = (BasicHttpRequest) context.getAttribute("http.request");
+    final var reqWrapper = context.getRequest();
 
     Assertions.assertThat(reqWrapper.getFirstHeader(KEY_CUSTOM_HEADER).getValue())
         .isEqualTo(VALUE_CUSTOM_HEADER);
@@ -103,7 +102,7 @@ class OpensearchConnectorTest {
       // ignore as we don't really care about the outcome
     }
 
-    final var reqWrapper = (BasicHttpRequest) context.getAttribute("http.request");
+    final var reqWrapper = context.getRequest();
 
     Assertions.assertThat(reqWrapper.getFirstHeader(KEY_CUSTOM_HEADER).getValue())
         .isEqualTo(VALUE_CUSTOM_HEADER);
