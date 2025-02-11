@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
+import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.AdditionalErrorCodes;
+import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
@@ -41,16 +43,19 @@ final class BrokerRequestManager extends Actor {
   private final RequestDispatchStrategy dispatchStrategy;
   private final BrokerTopologyManager topologyManager;
   private final Duration requestTimeout;
+  private final BrokerClientRequestMetrics metrics;
 
   BrokerRequestManager(
       final ClientTransport clientTransport,
       final BrokerTopologyManager topologyManager,
       final RequestDispatchStrategy dispatchStrategy,
-      final Duration requestTimeout) {
+      final Duration requestTimeout,
+      final BrokerClientRequestMetrics metrics) {
     this.clientTransport = clientTransport;
     this.dispatchStrategy = dispatchStrategy;
     this.topologyManager = topologyManager;
     this.requestTimeout = requestTimeout;
+    this.metrics = metrics;
   }
 
   private static boolean responseValidation(final DirectBuffer responseContent) {
@@ -113,13 +118,13 @@ final class BrokerRequestManager extends Actor {
       nodeIdProvider = determineBrokerNodeIdProvider(request);
     } catch (final PartitionNotFoundException e) {
       returnFuture.completeExceptionally(e);
-      BrokerClientMetrics.registerFailedRequest(
-          request.getPartitionId(), request.getType(), "PARTITION_NOT_FOUND");
+      metrics.registerFailedRequest(
+          request.getPartitionId(), request.getType(), AdditionalErrorCodes.PARTITION_NOT_FOUND);
       return;
     } catch (final NoTopologyAvailableException e) {
       returnFuture.completeExceptionally(e);
-      BrokerClientMetrics.registerFailedRequest(
-          request.getPartitionId(), request.getType(), "NO_TOPOLOGY");
+      metrics.registerFailedRequest(
+          request.getPartitionId(), request.getType(), AdditionalErrorCodes.NO_TOPOLOGY);
       return;
     }
 
@@ -138,7 +143,7 @@ final class BrokerRequestManager extends Actor {
               result = handleResponse(response, returnFuture);
               if (result.wasProcessed()) {
                 final long elapsedTime = System.currentTimeMillis() - startTime;
-                BrokerClientMetrics.registerSuccessfulRequest(
+                metrics.registerSuccessfulRequest(
                     request.getPartitionId(), request.getType(), elapsedTime);
                 return;
               }
@@ -158,17 +163,17 @@ final class BrokerRequestManager extends Actor {
     if (result != null && result.getErrorCode() == ErrorCode.RESOURCE_EXHAUSTED) {
       return;
     }
-    final String code;
+    final Enum<?> code;
 
     if (result != null && result.getErrorCode() != ErrorCode.NULL_VAL) {
-      code = result.getErrorCode().toString();
+      code = result.getErrorCode();
     } else if (error != null && error.getClass().equals(TimeoutException.class)) {
-      code = "TIMEOUT";
+      code = AdditionalErrorCodes.TIMEOUT;
     } else {
-      code = "UNKNOWN";
+      code = AdditionalErrorCodes.UNKNOWN;
     }
 
-    BrokerClientMetrics.registerFailedRequest(request.getPartitionId(), request.getType(), code);
+    metrics.registerFailedRequest(request.getPartitionId(), request.getType(), code);
   }
 
   /**

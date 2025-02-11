@@ -27,6 +27,8 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.bootstrap.BrokerContext;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
+import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
@@ -71,6 +73,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.util.NetUtil;
 import java.io.File;
@@ -135,6 +138,7 @@ public class ClusteringRule extends ExternalResource {
   private final List<Integer> partitionIds;
   private final String clusterName;
   private final Map<Integer, LogStream> logstreams;
+  private final MeterRegistry meterRegistry;
 
   // cluster
   private ZeebeClient client;
@@ -215,6 +219,12 @@ public class ClusteringRule extends ExternalResource {
             .collect(Collectors.toList());
 
     clusterName = "zeebe-cluster-" + CLUSTER_COUNT.getAndIncrement();
+    meterRegistry = new SimpleMeterRegistry();
+    closeables.add(
+        () -> {
+          meterRegistry.clear();
+          meterRegistry.close();
+        });
   }
 
   public int getPartitionCount() {
@@ -349,14 +359,17 @@ public class ClusteringRule extends ExternalResource {
                 brokerSpringConfig, actorClockConfiguration)
             .scheduler(IdleStrategySupplier.ofDefault());
     final var topologyManager =
-        new BrokerTopologyManagerImpl(() -> atomixCluster.getMembershipService().getMembers());
+        new BrokerTopologyManagerImpl(
+            () -> atomixCluster.getMembershipService().getMembers(),
+            BrokerClientTopologyMetrics.of(meterRegistry));
     final var brokerClient =
         new BrokerClientImpl(
             brokerCfg.getGateway().getCluster().getRequestTimeout(),
             atomixCluster.getMessagingService(),
             atomixCluster.getEventService(),
             scheduler,
-            topologyManager);
+            topologyManager,
+            BrokerClientRequestMetrics.of(meterRegistry));
 
     final var systemContext =
         new SystemContext(
@@ -366,7 +379,7 @@ public class ClusteringRule extends ExternalResource {
             scheduler,
             atomixCluster,
             brokerClient,
-            new SimpleMeterRegistry());
+            meterRegistry);
     systemContexts.put(nodeId, systemContext);
     scheduler.submitActor(topologyManager).join();
 
@@ -475,7 +488,9 @@ public class ClusteringRule extends ExternalResource {
         new ActorSchedulerConfiguration(gatewayCfg, actorClockConfiguration)
             .actorScheduler(IdleStrategySupplier.ofDefault());
     final var topologyManager =
-        new BrokerTopologyManagerImpl(() -> atomixCluster.getMembershipService().getMembers());
+        new BrokerTopologyManagerImpl(
+            () -> atomixCluster.getMembershipService().getMembers(),
+            BrokerClientTopologyMetrics.of(meterRegistry));
     actorScheduler.submitActor(topologyManager).join();
     atomixCluster.getMembershipService().addListener(topologyManager);
 
@@ -485,7 +500,8 @@ public class ClusteringRule extends ExternalResource {
             atomixCluster.getMessagingService(),
             atomixCluster.getEventService(),
             actorScheduler,
-            topologyManager);
+            topologyManager,
+            BrokerClientRequestMetrics.of(meterRegistry));
     final var jobStreamClient =
         new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster);
     jobStreamClient.start().join();
@@ -686,6 +702,9 @@ public class ClusteringRule extends ExternalResource {
       } catch (final InterruptedException | ExecutionException e) {
         LangUtil.rethrowUnchecked(e);
       }
+
+      meterRegistry.clear();
+      meterRegistry.close();
     }
   }
 

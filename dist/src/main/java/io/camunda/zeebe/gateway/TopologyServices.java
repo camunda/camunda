@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.topology.api.TopologyCoordinatorSupplier.ClusterTopology
 import io.camunda.zeebe.topology.api.TopologyManagementRequestSender;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -28,12 +30,17 @@ public class TopologyServices {
   private final ActorScheduler scheduler;
   private final ClusterMembershipService clusterMembershipService;
   private final ClusterCommunicationService clusterCommunicationService;
+  private final BrokerClientTopologyMetrics brokerClientTopologyMetrics;
 
   @Autowired
-  public TopologyServices(final ActorScheduler scheduler, final AtomixCluster atomixCluster) {
+  public TopologyServices(
+      final ActorScheduler scheduler,
+      final AtomixCluster atomixCluster,
+      final MeterRegistry registry) {
     this.scheduler = scheduler;
     clusterMembershipService = atomixCluster.getMembershipService();
     clusterCommunicationService = atomixCluster.getCommunicationService();
+    brokerClientTopologyMetrics = BrokerClientTopologyMetrics.of(registry);
   }
 
   @Bean
@@ -52,7 +59,8 @@ public class TopologyServices {
   BrokerTopologyManager brokerTopologyManager(
       @Autowired final GatewayClusterTopologyService gatewayClusterTopologyService) {
     final var brokerTopologyManager =
-        new BrokerTopologyManagerImpl(clusterMembershipService::getMembers);
+        new BrokerTopologyManagerImpl(
+            clusterMembershipService::getMembers, brokerClientTopologyMetrics);
     scheduler.submitActor(brokerTopologyManager).join();
     clusterMembershipService.addListener(brokerTopologyManager);
     gatewayClusterTopologyService.addUpdateListener(brokerTopologyManager);
