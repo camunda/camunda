@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 public class DataGenerator implements AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(DataGenerator.class);
   // process id -> process instance key
-  public final ConcurrentSkipListSet<String> instancekeys = new ConcurrentSkipListSet<>();
+  public final ConcurrentSkipListSet<Long> instancekeys = new ConcurrentSkipListSet<>();
   final String assignee = "user";
   private CamundaClient camundaClient;
   private final OneTaskProcess process;
@@ -165,7 +165,7 @@ public class DataGenerator implements AutoCloseable {
               .send()
               .join();
       LOGGER.debug("Process instance started with key {}", evt.getProcessInstanceKey());
-      instancekeys.add(String.valueOf(evt.getProcessInstanceKey()));
+      instancekeys.add(evt.getProcessInstanceKey());
     }
 
     private void deploy() {

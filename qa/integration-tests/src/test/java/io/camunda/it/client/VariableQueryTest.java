@@ -199,10 +199,7 @@ class VariableQueryTest {
     final var result =
         camundaClient
             .newVariableQuery()
-            .filter(
-                f ->
-                    f.processInstanceKey(
-                        b -> b.in(String.valueOf(variable.getProcessInstanceKey()))))
+            .filter(f -> f.processInstanceKey(b -> b.in(variable.getProcessInstanceKey())))
             .send()
             .join();
 

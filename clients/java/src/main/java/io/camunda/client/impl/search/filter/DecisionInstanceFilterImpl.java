@@ -16,12 +16,12 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
-import io.camunda.client.api.search.filter.builder.BasicStringProperty;
+import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.client.api.search.response.DecisionInstanceState;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.client.impl.search.filter.builder.BasicStringPropertyImpl;
+import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.DecisionDefinitionTypeEnum;
@@ -109,13 +109,13 @@ public class DecisionInstanceFilterImpl
 
   @Override
   public DecisionInstanceFilter decisionDefinitionKey(final long decisionDefinitionKey) {
-    decisionDefinitionKey(b -> b.eq(ParseUtil.keyToString(decisionDefinitionKey)));
+    decisionDefinitionKey(b -> b.eq(decisionDefinitionKey));
     return this;
   }
 
   @Override
-  public DecisionInstanceFilter decisionDefinitionKey(final Consumer<BasicStringProperty> fn) {
-    final BasicStringPropertyImpl property = new BasicStringPropertyImpl();
+  public DecisionInstanceFilter decisionDefinitionKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongPropertyImpl property = new BasicLongPropertyImpl();
     fn.accept(property);
     filter.setDecisionDefinitionKey(property.build());
     return this;
