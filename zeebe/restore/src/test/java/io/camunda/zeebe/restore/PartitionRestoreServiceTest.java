@@ -98,7 +98,7 @@ class PartitionRestoreServiceTest {
         new PartitionRestoreService(backupStore, raftPartition, snapshotPath -> Map.of());
 
     journal =
-        SegmentedJournal.builder()
+        SegmentedJournal.builder(meterRegistry)
             .withDirectory(dataDirectory.toFile())
             .withName(raftPartition.name())
             .withMetaStore(mock(JournalMetaStore.class))

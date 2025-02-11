@@ -93,7 +93,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
 
     journal =
         manage(
-            SegmentedJournal.builder()
+            SegmentedJournal.builder(meterRegistry)
                 .withDirectory(dataDirectory.toFile())
                 .withName(raftPartition.name())
                 .withMetaStore(mock(JournalMetaStore.class))

@@ -17,8 +17,12 @@ import io.camunda.zeebe.journal.record.PersistedJournalRecord;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.RecordMetadata;
 import io.camunda.zeebe.journal.util.MockJournalMetastore;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -33,10 +37,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+@AutoCloseResources
 final class JournalTest {
 
   @TempDir Path directory;
   final JournalMetaStore metaStore = new MockJournalMetastore();
+  @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private byte[] entry;
   private final DirectBufferWriter recordDataWriter = new DirectBufferWriter();
   private final DirectBufferWriter otherRecordDataWriter = new DirectBufferWriter();
@@ -557,7 +563,7 @@ final class JournalTest {
     final RecordData data =
         new RecordData(record.index(), record.asqn(), BufferUtil.cloneBuffer(record.data()));
 
-    if (record instanceof PersistedJournalRecord p) {
+    if (record instanceof final PersistedJournalRecord p) {
       return new PersistedJournalRecord(
           p.metadata(), data, BufferUtil.cloneBuffer(p.serializedRecord()));
     }
@@ -574,7 +580,7 @@ final class JournalTest {
 
   private SegmentedJournal openJournal(final Consumer<SegmentedJournalBuilder> option) {
     final var builder =
-        SegmentedJournal.builder()
+        SegmentedJournal.builder(meterRegistry)
             .withDirectory(directory.resolve("data").toFile())
             .withMaxSegmentSize(1024 * 1024) // speeds up certain tests, e.g. shouldCompact
             .withMetaStore(metaStore)

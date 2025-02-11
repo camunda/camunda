@@ -16,6 +16,10 @@ import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.nio.ByteBuffer;
 import org.agrona.CloseHelper;
@@ -26,16 +30,19 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+@AutoCloseResources
 final class AtomixLogStorageReaderTest {
 
   private RaftLog log;
   private AtomixLogStorage logStorage;
   private AtomixLogStorageReader reader;
 
+  @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+
   @BeforeEach
   void beforeEach(@TempDir final File tempDir) {
     log =
-        RaftLog.builder()
+        RaftLog.builder(meterRegistry)
             .withDirectory(tempDir)
             .withMetaStore(mock(JournalMetaStore.class))
             .build();

@@ -20,6 +20,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -28,18 +32,19 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+@AutoCloseResources
 class RaftLogCommittedReaderTest {
 
+  @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private RaftLog raftlog;
   private RaftLogReader committedReader;
-
   private final ByteBuffer data =
       ByteBuffer.allocate(Integer.BYTES).order(ByteOrder.LITTLE_ENDIAN).putInt(123456);
 
   @BeforeEach
   void setup(@TempDir final File directory) {
     raftlog =
-        RaftLog.builder()
+        RaftLog.builder(meterRegistry)
             .withDirectory(directory)
             .withName("test")
             .withMetaStore(new InMemory())

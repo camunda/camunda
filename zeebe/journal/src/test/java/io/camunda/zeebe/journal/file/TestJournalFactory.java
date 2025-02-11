@@ -11,9 +11,13 @@ import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
 import io.camunda.zeebe.journal.util.MockJournalMetastore;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import org.agrona.DirectBuffer;
@@ -34,9 +38,12 @@ import org.agrona.concurrent.UnsafeBuffer;
  *
  * <p>By default, the string "test" is the entry data, and there is one entry per segment.
  */
+@AutoCloseResources
 final class TestJournalFactory {
   private final MockJournalMetastore metaStore = new MockJournalMetastore();
-  private final JournalMetrics metrics = new JournalMetrics("test");
+  @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+
+  private final JournalMetrics metrics = new JournalMetrics(meterRegistry);
   private final JournalIndex index = new SparseJournalIndex(1);
 
   private final int maxEntryCount;

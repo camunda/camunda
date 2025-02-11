@@ -37,6 +37,10 @@ import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -49,8 +53,10 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+@AutoCloseResources
 class RaftLogTest {
   private static final long DEFAULT_APPLICATION_ENTRY_LENGTH = 2L;
+  @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   private final InitialEntry initialEntry = new InitialEntry();
   private final ConfigurationEntry configurationEntry =
@@ -69,7 +75,7 @@ class RaftLogTest {
   void setup(@TempDir final File directory) {
     metaStore = new InMemory();
     raftlog =
-        RaftLog.builder()
+        RaftLog.builder(meterRegistry)
             .withDirectory(directory)
             .withName("test")
             .withMetaStore(metaStore)
@@ -152,7 +158,7 @@ class RaftLogTest {
     final RaftLogEntry entry = new RaftLogEntry(1, firstApplicationEntry);
     final var persistedRaftRecord = raftlog.append(entry).getReplicatableJournalRecord();
     final var raftlogFollower =
-        RaftLog.builder()
+        RaftLog.builder(meterRegistry)
             .withDirectory(directory)
             .withName("test-follower")
             .withMetaStore(new InMemory())
