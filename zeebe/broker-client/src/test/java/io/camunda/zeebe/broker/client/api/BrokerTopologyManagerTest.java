@@ -23,6 +23,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -45,7 +46,9 @@ final class BrokerTopologyManagerTest {
   @BeforeEach
   void setUp() {
     members = new HashSet<>();
-    topologyManager = new BrokerTopologyManagerImpl(() -> members);
+    topologyManager =
+        new BrokerTopologyManagerImpl(
+            () -> members, BrokerClientTopologyMetrics.of(new SimpleMeterRegistry()));
     actorSchedulerRule.submitActor(topologyManager);
     actorSchedulerRule.workUntilDone();
   }
