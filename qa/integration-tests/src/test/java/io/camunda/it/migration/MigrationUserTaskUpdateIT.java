@@ -9,360 +9,541 @@ package io.camunda.it.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.search.response.UserTaskState;
-import io.camunda.it.migration.util.MigrationITInvocationProvider;
-import io.camunda.it.migration.util.MigrationITInvocationProvider.DatabaseType;
-import io.camunda.it.migration.util.TasklistMigrationHelper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.it.migration.util.ExporterUpdateITProvider;
+import io.camunda.it.migration.util.ExporterUpdateITProvider.Component;
+import io.camunda.it.migration.util.TasklistComponentHelper;
+import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
-import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
-import io.camunda.webapps.schema.entities.tasklist.TaskState;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
+import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.UnaryOperator;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-@TestMethodOrder(OrderAnnotation.class)
+@TestInstance(Lifecycle.PER_CLASS)
 public class MigrationUserTaskUpdateIT {
 
   @RegisterExtension
-  static final MigrationITInvocationProvider PROVIDER =
-      new MigrationITInvocationProvider()
-          .withDatabaseTypes(DatabaseType.ELASTICSEARCH, DatabaseType.OPENSEARCH)
-          .withRunBefore(MigrationUserTaskUpdateIT::generateData)
-          .withRunAfter(MigrationUserTaskUpdateIT::generate87Data);
+  static final ExporterUpdateITProvider provider = new ExporterUpdateITProvider();
 
-  private static final String API_V2 = "V2";
+  private static final ObjectMapper objectMapper = new ObjectMapper();
 
-  @TestTemplate
-  @Order(1)
-  void shouldAssignZeebeTask(
-      final CamundaClient camundaClient,
-      final TasklistMigrationHelper tasklistMigrationHelper,
-      final TasklistMigrationHelper.UserTaskArg param)
+  private HttpResponse<Void> assignTask(
+      final TasklistComponentHelper tasklistComponentHelper,
+      final long userTaskKey,
+      final String assignee)
       throws IOException, InterruptedException {
-
-    if (API_V2.equals(param.apiVersion())) {
-      camundaClient.newUserTaskAssignCommand(param.key()).assignee("demo").send().join();
-    } else {
-      final var res = tasklistMigrationHelper.assign(param.key(), "demo");
-      assertThat(res.statusCode()).isEqualTo(200);
-    }
-
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(15))
-        .until(
-            () -> {
-              final var task =
-                  camundaClient
-                      .newUserTaskQuery()
-                      .filter(f -> f.userTaskKey(param.key()))
-                      .send()
-                      .join()
-                      .items()
-                      .getFirst();
-              return task != null
-                  && task.getAssignee() != null
-                  && task.getAssignee().equals("demo");
-            });
+    return tasklistComponentHelper.request(
+        b ->
+            b.method(
+                    "PATCH",
+                    HttpRequest.BodyPublishers.ofString("{\"assignee\":\"" + assignee + "\"}"))
+                .uri(
+                    URI.create(
+                        tasklistComponentHelper.getUrl() + "/tasks/" + userTaskKey + "/assign")),
+        HttpResponse.BodyHandlers.discarding());
   }
 
-  @Order(1)
-  @TestTemplate
-  void shouldAssignJobWorker(
-      final CamundaClient camundaClient,
-      final TasklistMigrationHelper tasklistMigrationHelper,
-      final TasklistMigrationHelper.UserTaskArg param)
+  private HttpResponse<Void> unassignTask(
+      final TasklistComponentHelper tasklistComponentHelper, final long userTaskKey)
       throws IOException, InterruptedException {
-
-    final var res = tasklistMigrationHelper.assign(param.key(), "demo");
-    assertThat(res.statusCode()).isEqualTo(200);
-
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(15))
-        .until(
-            () -> {
-              final var taskOpt = tasklistMigrationHelper.getUserTask(param.key());
-
-              return taskOpt.isPresent() && taskOpt.get().getAssignee().equals("demo");
-            });
+    return tasklistComponentHelper.request(
+        b ->
+            b.method("PATCH", HttpRequest.BodyPublishers.noBody())
+                .uri(
+                    URI.create(
+                        tasklistComponentHelper.getUrl() + "/tasks/" + userTaskKey + "/unassign")),
+        HttpResponse.BodyHandlers.discarding());
   }
 
-  @Order(2)
-  @TestTemplate
-  void shouldUnassignZeebeTask(
-      final CamundaClient camundaClient,
-      final TasklistMigrationHelper tasklistMigrationHelper,
-      final TasklistMigrationHelper.UserTaskArg param)
-      throws IOException, InterruptedException {
-
-    if (API_V2.equals(param.apiVersion())) {
-      camundaClient.newUserTaskUnassignCommand(param.key()).send().join();
-    } else {
-      final var res = tasklistMigrationHelper.unassignTask(param.key());
-      assertThat(res.statusCode()).isEqualTo(200);
-    }
-
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(15))
-        .until(
-            () -> {
-              final var task =
-                  camundaClient
-                      .newUserTaskQuery()
-                      .filter(f -> f.userTaskKey(param.key()))
-                      .send()
-                      .join()
-                      .items()
-                      .getFirst();
-              return task != null && task.getAssignee() == null;
-            });
+  private HttpResponse<Void> completeTask(
+      final TasklistComponentHelper tasklistComponentHelper, final long userTaskKey)
+      throws InterruptedException, IOException {
+    return tasklistComponentHelper.request(
+        b ->
+            b.method("PATCH", HttpRequest.BodyPublishers.noBody())
+                .uri(
+                    URI.create(
+                        tasklistComponentHelper.getUrl() + "/tasks/" + userTaskKey + "/complete")),
+        HttpResponse.BodyHandlers.discarding());
   }
 
-  @Order(2)
-  @TestTemplate
-  void shouldUnAssignJobWorker(
-      final CamundaClient camundaClient,
-      final TasklistMigrationHelper tasklistMigrationHelper,
-      final TasklistMigrationHelper.UserTaskArg param)
-      throws IOException, InterruptedException {
-    final var res = tasklistMigrationHelper.unassignTask(param.key());
-    assertThat(res.statusCode()).isEqualTo(200);
+  private long deployAndStartUserTask(
+      final DatabaseType databaseType, final UnaryOperator<UserTaskBuilder> builder) {
+    final var process =
+        Bpmn.createExecutableProcess("task-process")
+            .startEvent()
+            .name("start")
+            .userTask("user-task", builder::apply)
+            .endEvent()
+            .done();
 
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(15))
-        .until(
-            () -> {
-              final var taskOpt = tasklistMigrationHelper.getUserTask(param.key());
+    provider
+        .getCamundaClient(databaseType)
+        .newDeployResourceCommand()
+        .addProcessModel(process, "task-process.bpmn")
+        .send()
+        .join();
 
-              return taskOpt.isPresent() && taskOpt.get().getAssignee() == null;
-            });
+    return provider
+        .getCamundaClient(databaseType)
+        .newCreateInstanceCommand()
+        .bpmnProcessId("task-process")
+        .latestVersion()
+        .send()
+        .join()
+        .getProcessInstanceKey();
   }
 
-  @Order(3)
-  @TestTemplate
-  void shouldUpdateZeebeTask(
-      final CamundaClient camundaClient, final TasklistMigrationHelper.UserTaskArg param) {
-
-    if (API_V2.equals(param.apiVersion())) {
-      camundaClient.newUserTaskUpdateCommand(param.key()).priority(88).send().join();
-    }
-
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(15))
-        .until(
-            () -> {
-              final var task =
-                  camundaClient
-                      .newUserTaskQuery()
-                      .filter(f -> f.userTaskKey(param.key()))
-                      .send()
-                      .join()
-                      .items()
-                      .getFirst();
-              return task != null && task.getPriority() == 88;
-            });
-  }
-
-  @Order(4)
-  @TestTemplate
-  void shouldCompleteZeebeTask(
-      final CamundaClient camundaClient,
-      final TasklistMigrationHelper tasklistMigrationHelper,
-      final TasklistMigrationHelper.UserTaskArg param)
-      throws IOException, InterruptedException {
-
-    if (API_V2.equals(param.apiVersion())) {
-      camundaClient.newUserTaskAssignCommand(param.key()).assignee("demo").send().join();
-      camundaClient.newUserTaskCompleteCommand(param.key()).send().join();
-    } else {
-      final var assignRes = tasklistMigrationHelper.assign(param.key(), "demo");
-      assertThat(assignRes.statusCode()).isEqualTo(200);
-      final var res = tasklistMigrationHelper.completeTask(param.key());
-      assertThat(res.statusCode()).isEqualTo(200);
-    }
-
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(15))
-        .until(
-            () -> {
-              final var task =
-                  camundaClient
-                      .newUserTaskQuery()
-                      .filter(f -> f.userTaskKey(param.key()))
-                      .send()
-                      .join()
-                      .items()
-                      .getFirst();
-              return task != null && UserTaskState.COMPLETED.equals(task.getState());
-            });
-  }
-
-  @Order(2)
-  @TestTemplate
-  void shouldCompleteJobWorker(
-      final CamundaClient camundaClient,
-      final TasklistMigrationHelper tasklistMigrationHelper,
-      final TasklistMigrationHelper.UserTaskArg param)
-      throws IOException, InterruptedException {
-    tasklistMigrationHelper.assign(param.key(), "demo");
-    final var res = tasklistMigrationHelper.completeTask(param.key());
-    assertThat(res.statusCode()).isEqualTo(200);
-
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(15))
-        .until(
-            () -> {
-              final var taskOpt = tasklistMigrationHelper.getUserTask(param.key());
-
-              return taskOpt.isPresent()
-                  && taskOpt.get().getTaskState().equals(TaskState.COMPLETED);
-            });
-  }
-
-  private static void generate87Data(
-      final CamundaClient camundaClient, final TasklistMigrationHelper tasklistMigrationHelper) {
-
-    final List<String> instances = List.of("zeebeV187task", "zeebeV287task", "jobWorkerV187task");
-
-    instances.forEach(
-        i -> {
-          BpmnModelInstance process = null;
-          if (i.contains("zeebe")) {
-            process =
-                Bpmn.createExecutableProcess(i + "-process")
-                    .startEvent()
-                    .name("start")
-                    .userTask(i)
-                    .zeebeUserTask()
-                    .endEvent()
-                    .done();
-          } else {
-            process =
-                Bpmn.createExecutableProcess(i + "-process")
-                    .startEvent()
-                    .name("start")
-                    .userTask(i)
-                    .endEvent()
-                    .done();
-          }
-
-          camundaClient
-              .newDeployResourceCommand()
-              .addProcessModel(process, i + ".bpmn")
-              .send()
-              .join();
-
-          camundaClient
-              .newCreateInstanceCommand()
-              .bpmnProcessId(i + "-process")
-              .latestVersion()
-              .send()
-              .join()
-              .getProcessInstanceKey();
-        });
-
-    Awaitility.await()
+  private long waitForTaskToBeImportedReturningId(
+      final TasklistComponentHelper tasklist, final long piKey) throws JsonProcessingException {
+    final AtomicLong userTaskKey = new AtomicLong();
+    final String body =
+        objectMapper.writeValueAsString(
+            new TaskSearchRequest().setProcessInstanceKey(String.valueOf(piKey)));
+    Awaitility.await("Wait for tasks to be imported")
+        .ignoreExceptions()
+        .pollInterval(Duration.ofSeconds(1))
         .atMost(Duration.ofSeconds(30))
-        .pollInterval(Duration.ofSeconds(2))
         .until(
             () -> {
-              // Check if Zeebe User Tasks are present
-              final var tasks = camundaClient.newUserTaskQuery().send().join().items();
-              boolean zeebeTasksPresent = false;
-              if (tasks.size() == 4) {
-                zeebeTasksPresent = true;
-                tasks.forEach(
-                    t -> {
-                      final var apiVersion = t.getBpmnProcessId().contains("V1") ? "V1" : "V2";
-                      tasklistMigrationHelper.generatedTasks.putIfAbsent(
-                          TaskImplementation.ZEEBE_USER_TASK, new ArrayList<>());
-                      final var existsOpt =
-                          tasklistMigrationHelper.generatedTasks.values().stream()
-                              .flatMap(List::stream)
-                              .filter(f -> f.key() == t.getUserTaskKey())
-                              .findFirst();
-                      if (existsOpt.isEmpty()) {
-                        tasklistMigrationHelper
-                            .generatedTasks
-                            .get(TaskImplementation.ZEEBE_USER_TASK)
-                            .add(
-                                new TasklistMigrationHelper.UserTaskArg(
-                                    t.getUserTaskKey(), "8.7", apiVersion));
-                      }
-                    });
+              final var response =
+                  tasklist.request(
+                      b ->
+                          b.POST(HttpRequest.BodyPublishers.ofString(body))
+                              .uri(URI.create(tasklist.getUrl() + "/tasks/search")),
+                      HttpResponse.BodyHandlers.ofString());
+              try {
+                final var tasks =
+                    objectMapper.readValue(
+                        response.body(), new TypeReference<List<TaskSearchResponse>>() {});
+                if (!tasks.isEmpty()) {
+                  userTaskKey.set(Long.parseLong(tasks.getFirst().getId()));
+                  return true;
+                }
+              } catch (final JsonProcessingException ignore) {
+                // ignore
               }
-
-              // Check if Job Worker Task is present
-              final var tasklistV1Tasks =
-                  tasklistMigrationHelper.searchUserTasks(
-                      new TaskSearchRequest().setTaskDefinitionId("jobWorkerV187task"));
-              final boolean jobWorkerTaskPresent = tasklistV1Tasks.size() == 1;
-              tasklistV1Tasks.forEach(
-                  t -> {
-                    tasklistMigrationHelper.generatedTasks.putIfAbsent(
-                        TaskImplementation.JOB_WORKER, new ArrayList<>());
-                    tasklistMigrationHelper
-                        .generatedTasks
-                        .get(TaskImplementation.JOB_WORKER)
-                        .add(
-                            new TasklistMigrationHelper.UserTaskArg(
-                                Long.parseLong(t.getId()), "8.7", "V1"));
-                  });
-
-              return zeebeTasksPresent && jobWorkerTaskPresent;
+              return false;
             });
+
+    return userTaskKey.get();
   }
 
-  private static void generateData(
-      final CamundaClient camundaClient, final TasklistMigrationHelper tasklistMigrationHelper) {
+  @Nested
+  class AssignUserTaskTests {
 
-    final List<String> instances = List.of("zeebeV186task", "zeebeV286task", "jobWorkerV186task");
+    @TestTemplate
+    void shouldAssign87ZeebeTaskV1(
+        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+        throws IOException, InterruptedException {
+      long startTime = System.nanoTime();
+      final var piKey =
+          deployAndStartUserTask(databaseType, AbstractUserTaskBuilder::zeebeUserTask);
+      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+      long elapsedTime = (System.nanoTime() - startTime) / 1_000_000;
+      System.out.println("Pre condition time: " + elapsedTime + " ms");
 
-    instances.forEach(
-        i -> {
-          final BpmnModelInstance process;
-          if (i.contains("zeebe")) {
-            process =
-                Bpmn.createExecutableProcess(i + "-process")
-                    .startEvent()
-                    .name("start")
-                    .userTask(i)
-                    .zeebeUserTask()
-                    .endEvent()
-                    .done();
-          } else {
-            process =
-                Bpmn.createExecutableProcess(i + "-process")
-                    .startEvent()
-                    .name("start")
-                    .userTask(i)
-                    .endEvent()
-                    .done();
-          }
+      startTime = System.nanoTime();
+      provider.upgradeComponent(Component.ZEEBE, databaseType);
+      elapsedTime = (System.nanoTime() - startTime) / 1_000_000;
+      System.out.println("Upgrade time Zeebe: " + elapsedTime + " ms");
+      startTime = System.nanoTime();
+      provider.upgradeComponent(Component.TASKLIST, databaseType);
+      elapsedTime = (System.nanoTime() - startTime) / 1_000_000;
+      System.out.println("Upgrade time Zeebe: " + elapsedTime + " ms");
+      // Print the elapsed time
+      final var res = assignTask(tasklistComponentHelper, taskKey, "demo");
+      assertThat(res.statusCode()).isEqualTo(200);
 
-          camundaClient
-              .newDeployResourceCommand()
-              .addProcessModel(process, i + ".bpmn")
-              .send()
-              .join();
+      shouldBeAssigned(databaseType, taskKey);
+    }
 
-          camundaClient
-              .newCreateInstanceCommand()
-              .bpmnProcessId(i + "-process")
-              .latestVersion()
-              .send()
-              .join()
-              .getProcessInstanceKey();
-        });
-    tasklistMigrationHelper.waitForTasksToBeImported(3);
+    @TestTemplate
+    void shouldAssign87ZeebeTaskV2(
+        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+        throws IOException {
+
+      final var piKey =
+          deployAndStartUserTask(databaseType, AbstractUserTaskBuilder::zeebeUserTask);
+      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+
+      provider.upgradeComponent(Component.ZEEBE, databaseType);
+      provider.upgradeComponent(Component.TASKLIST, databaseType);
+
+      provider
+          .getCamundaClient(databaseType)
+          .newUserTaskAssignCommand(taskKey)
+          .assignee("demo")
+          .send()
+          .join();
+
+      shouldBeAssigned(databaseType, taskKey);
+    }
+
+    @TestTemplate
+    void shouldAssign88ZeebeTaskV1(
+        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+        throws IOException, InterruptedException {
+
+      provider.upgradeComponent(Component.ZEEBE, databaseType);
+      provider.upgradeComponent(Component.TASKLIST, databaseType);
+
+      final var piKey =
+          deployAndStartUserTask(databaseType, AbstractUserTaskBuilder::zeebeUserTask);
+      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+
+      final var res = assignTask(tasklistComponentHelper, taskKey, "demo");
+      assertThat(res.statusCode()).isEqualTo(200);
+
+      shouldBeAssigned(databaseType, taskKey);
+    }
+
+    @TestTemplate
+    void shouldAssign88ZeebeTaskV2(
+        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+        throws IOException, InterruptedException {
+
+      provider.upgradeComponent(Component.ZEEBE, databaseType);
+      provider.upgradeComponent(Component.TASKLIST, databaseType);
+
+      final var piKey =
+          deployAndStartUserTask(databaseType, AbstractUserTaskBuilder::zeebeUserTask);
+      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+
+      provider
+          .getCamundaClient(databaseType)
+          .newUserTaskAssignCommand(taskKey)
+          .assignee("demo")
+          .send()
+          .join();
+
+      shouldBeAssigned(databaseType, taskKey);
+    }
+
+    @TestTemplate
+    void shouldAssign87JobWorkerV1(
+        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+        throws IOException, InterruptedException {
+
+      final var piKey = deployAndStartUserTask(databaseType, t -> t);
+      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+
+      provider.upgradeComponent(Component.ZEEBE, databaseType);
+      provider.upgradeComponent(Component.TASKLIST, databaseType);
+
+      final var res = assignTask(tasklistComponentHelper, taskKey, "demo");
+      assertThat(res.statusCode()).isEqualTo(200);
+
+      shouldBeAssigned(databaseType, taskKey);
+    }
+
+    @TestTemplate
+    void shouldAssign88JobWorkerV1(
+        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+        throws IOException, InterruptedException {
+
+      provider.upgradeComponent(Component.ZEEBE, databaseType);
+      provider.upgradeComponent(Component.TASKLIST, databaseType);
+
+      final var piKey = deployAndStartUserTask(databaseType, t -> t);
+      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+
+      final var res = assignTask(tasklistComponentHelper, taskKey, "demo");
+      assertThat(res.statusCode()).isEqualTo(200);
+
+      shouldBeAssigned(databaseType, taskKey);
+    }
+
+    private void shouldBeAssigned(final DatabaseType databaseType, final long userTaskKey) {
+      Awaitility.await("User Task should be assigned")
+          .atMost(Duration.ofSeconds(15))
+          .pollInterval(Duration.ofSeconds(1))
+          .untilAsserted(
+              () -> {
+                final var tasks =
+                    provider
+                        .getCamundaClient(databaseType)
+                        .newUserTaskQuery()
+                        .filter(f -> f.userTaskKey(userTaskKey))
+                        .send()
+                        .join()
+                        .items();
+                if (!tasks.isEmpty()) {
+                  assertThat(tasks.getFirst().getAssignee()).isEqualTo("demo");
+                }
+              });
+    }
+  }
+
+  @Nested
+  class UnassignUserTaskTests {
+    @TestTemplate
+    void shouldUnassign87ZeebeTaskV1(
+        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+        throws IOException, InterruptedException {
+
+      final var piKey =
+          deployAndStartUserTask(databaseType, t -> t.zeebeUserTask().zeebeAssignee("test"));
+      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+
+      provider.upgradeComponent(Component.ZEEBE, databaseType);
+      provider.upgradeComponent(Component.TASKLIST, databaseType);
+
+      final var res = unassignTask(tasklistComponentHelper, taskKey);
+      assertThat(res.statusCode()).isEqualTo(200);
+
+      shouldBeUnassigned(databaseType, taskKey);
+    }
+
+    @TestTemplate
+    void shouldUnassign87ZeebeTaskV2(
+        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+        throws IOException {
+
+      final var piKey =
+          deployAndStartUserTask(databaseType, t -> t.zeebeUserTask().zeebeAssignee("test"));
+      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+
+      provider.upgradeComponent(Component.ZEEBE, databaseType);
+      provider.upgradeComponent(Component.TASKLIST, databaseType);
+
+      provider.getCamundaClient(databaseType).newUserTaskUnassignCommand(taskKey).send().join();
+
+      shouldBeUnassigned(databaseType, taskKey);
+    }
+
+    @TestTemplate
+    void shouldUnassign88ZeebeTaskV1(
+        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+        throws IOException, InterruptedException {
+
+      provider.upgradeComponent(Component.ZEEBE, databaseType);
+      provider.upgradeComponent(Component.TASKLIST, databaseType);
+
+      final var piKey =
+          deployAndStartUserTask(databaseType, t -> t.zeebeUserTask().zeebeAssignee("test"));
+      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+
+      final var res = unassignTask(tasklistComponentHelper, taskKey);
+      assertThat(res.statusCode()).isEqualTo(200);
+
+      shouldBeUnassigned(databaseType, taskKey);
+    }
+
+    @TestTemplate
+    void shouldUnassign88ZeebeTaskV2(
+        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+        throws IOException {
+
+      provider.upgradeComponent(Component.ZEEBE, databaseType);
+      provider.upgradeComponent(Component.TASKLIST, databaseType);
+
+      final var piKey =
+          deployAndStartUserTask(databaseType, t -> t.zeebeUserTask().zeebeAssignee("test"));
+      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+
+      provider.getCamundaClient(databaseType).newUserTaskUnassignCommand(taskKey).send().join();
+
+      shouldBeUnassigned(databaseType, taskKey);
+    }
+
+    @TestTemplate
+    void shouldUnAssign87JobWorkerV1(
+        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+        throws IOException, InterruptedException {
+
+      final var piKey = deployAndStartUserTask(databaseType, t -> t.zeebeAssignee("test"));
+      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+
+      provider.upgradeComponent(Component.ZEEBE, databaseType);
+      provider.upgradeComponent(Component.TASKLIST, databaseType);
+
+      final var res = unassignTask(tasklistComponentHelper, taskKey);
+      assertThat(res.statusCode()).isEqualTo(200);
+
+      shouldBeUnassigned(databaseType, taskKey);
+    }
+
+    @TestTemplate
+    void shouldUnAssign88JobWorkerV1(
+        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+        throws IOException, InterruptedException {
+
+      provider.upgradeComponent(Component.ZEEBE, databaseType);
+      provider.upgradeComponent(Component.TASKLIST, databaseType);
+
+      final var piKey = deployAndStartUserTask(databaseType, t -> t.zeebeAssignee("test"));
+      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+
+      final var res = unassignTask(tasklistComponentHelper, taskKey);
+      assertThat(res.statusCode()).isEqualTo(200);
+
+      shouldBeUnassigned(databaseType, taskKey);
+    }
+
+    private void shouldBeUnassigned(final DatabaseType databaseType, final long taskKey) {
+      Awaitility.await("User Task should be unassigned")
+          .atMost(Duration.ofSeconds(15))
+          .pollInterval(Duration.ofSeconds(1))
+          .untilAsserted(
+              () -> {
+                final var tasks =
+                    provider
+                        .getCamundaClient(databaseType)
+                        .newUserTaskQuery()
+                        .filter(f -> f.userTaskKey(taskKey))
+                        .send()
+                        .join()
+                        .items();
+                if (!tasks.isEmpty()) {
+                  assertThat(tasks.getFirst().getAssignee()).isNull();
+                }
+              });
+    }
+  }
+
+  @Nested
+  class CompleteUserTaskTests {
+    @TestTemplate
+    void shouldComplete87ZeebeTaskV1(
+        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+        throws IOException, InterruptedException {
+
+      final var piKey =
+          deployAndStartUserTask(databaseType, t -> t.zeebeUserTask().zeebeAssignee("demo"));
+      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+
+      provider.upgradeComponent(Component.ZEEBE, databaseType);
+      provider.upgradeComponent(Component.TASKLIST, databaseType);
+
+      final var res = completeTask(tasklistComponentHelper, taskKey);
+      assertThat(res.statusCode()).isEqualTo(200);
+
+      shouldBeCompleted(databaseType, taskKey);
+    }
+
+    @TestTemplate
+    void shouldComplete87ZeebeTaskV2(
+        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+        throws IOException {
+
+      final var piKey =
+          deployAndStartUserTask(databaseType, t -> t.zeebeUserTask().zeebeAssignee("demo"));
+      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+
+      provider.upgradeComponent(Component.ZEEBE, databaseType);
+      provider.upgradeComponent(Component.TASKLIST, databaseType);
+
+      final var res =
+          provider.getCamundaClient(databaseType).newUserTaskCompleteCommand(taskKey).send().join();
+
+      shouldBeCompleted(databaseType, taskKey);
+    }
+
+    @TestTemplate
+    void shouldComplete88ZeebeTaskV1(
+        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+        throws IOException, InterruptedException {
+
+      provider.upgradeComponent(Component.ZEEBE, databaseType);
+      provider.upgradeComponent(Component.TASKLIST, databaseType);
+
+      final var piKey =
+          deployAndStartUserTask(databaseType, t -> t.zeebeUserTask().zeebeAssignee("demo"));
+      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+
+      final var res = completeTask(tasklistComponentHelper, taskKey);
+      assertThat(res.statusCode()).isEqualTo(200);
+
+      shouldBeCompleted(databaseType, taskKey);
+    }
+
+    @TestTemplate
+    void shouldComplete88ZeebeTaskV2(
+        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+        throws IOException {
+
+      provider.upgradeComponent(Component.ZEEBE, databaseType);
+      provider.upgradeComponent(Component.TASKLIST, databaseType);
+
+      final var piKey =
+          deployAndStartUserTask(databaseType, t -> t.zeebeUserTask().zeebeAssignee("demo"));
+      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+
+      provider.getCamundaClient(databaseType).newUserTaskCompleteCommand(taskKey).send().join();
+
+      shouldBeCompleted(databaseType, taskKey);
+    }
+
+    @TestTemplate
+    void shouldComplete87JobWorkerV1(
+        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+        throws IOException, InterruptedException {
+
+      final var piKey = deployAndStartUserTask(databaseType, t -> t.zeebeAssignee("demo"));
+      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+
+      provider.upgradeComponent(Component.ZEEBE, databaseType);
+      provider.upgradeComponent(Component.TASKLIST, databaseType);
+
+      final var res = completeTask(tasklistComponentHelper, taskKey);
+      assertThat(res.statusCode()).isEqualTo(200);
+
+      shouldBeCompleted(databaseType, taskKey);
+    }
+
+    @TestTemplate
+    void shouldComplete88JobWorkerV1(
+        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+        throws IOException, InterruptedException {
+
+      provider.upgradeComponent(Component.ZEEBE, databaseType);
+      provider.upgradeComponent(Component.TASKLIST, databaseType);
+
+      final var piKey = deployAndStartUserTask(databaseType, t -> t.zeebeAssignee("demo"));
+      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+
+      final var res = completeTask(tasklistComponentHelper, taskKey);
+      assertThat(res.statusCode()).isEqualTo(200);
+
+      shouldBeCompleted(databaseType, taskKey);
+    }
+
+    private void shouldBeCompleted(final DatabaseType databaseType, final long taskKey) {
+      Awaitility.await("User Task should be completed")
+          .atMost(Duration.ofSeconds(15))
+          .pollInterval(Duration.ofSeconds(1))
+          .untilAsserted(
+              () -> {
+                final var tasks =
+                    provider
+                        .getCamundaClient(databaseType)
+                        .newUserTaskQuery()
+                        .filter(f -> f.userTaskKey(taskKey))
+                        .send()
+                        .join()
+                        .items();
+                if (!tasks.isEmpty()) {
+                  assertThat(tasks.getFirst().getState().name()).isEqualTo("COMPLETED");
+                }
+              });
+    }
   }
 }
