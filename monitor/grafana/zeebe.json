@@ -753,11 +753,11 @@
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
-              "expr": "sum(rate(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])) by (grpc_method)",
+              "expr": "sum(label_replace(rate(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval]), \"method\", \"$1\", \"grpc_method\", \"(.+)\") or on(method) rate(grpc_server_processing_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])) by (method)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "{{grpc_method}} Request",
+              "legendFormat": "{{method}} Request",
               "refId": "A"
             }
           ],
@@ -7539,7 +7539,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(increase(zeebe_messaging_request_response_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(zeebe_messaging_request_response_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]) or increase(zeebe_messaging_request_response_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -7748,7 +7748,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.50, sum(rate(zeebe_messaging_request_response_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (topic, le))",
+              "expr": "histogram_quantile(0.50, sum(rate(zeebe_messaging_request_response_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_messaging_request_response_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (topic, le))",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -7762,7 +7762,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.90, sum(rate(zeebe_messaging_request_response_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (topic, le))",
+              "expr": "histogram_quantile(0.90, sum(rate(zeebe_messaging_request_response_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_messaging_request_response_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (topic, le))",
               "hide": false,
               "legendFormat": "p90 {{topic}}",
               "range": true,
@@ -7774,7 +7774,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.99, sum(rate(zeebe_messaging_request_response_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (topic, le))",
+              "expr": "histogram_quantile(0.99, sum(rate(zeebe_messaging_request_response_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_messaging_request_response_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (topic, le))",
               "hide": false,
               "legendFormat": "p99 {{topic}}",
               "range": true,
@@ -9809,11 +9809,11 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (grpc_method, code)",
+              "expr": "sum(label_replace(label_replace(rate(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]), \"method\", \"$1\", \"grpc_method\", \"(.+)\"), \"statusCode\", \"$1\", \"code\", \"(.+)\") or on(method, statusCode) rate(grpc_server_processing_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (method, statusCode)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "{{grpc_method}} ({{code}})",
+              "legendFormat": "{{method}} ({{statusCode}})",
               "refId": "A"
             }
           ],
@@ -9905,18 +9905,18 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum(rate(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (grpc_method, code)",
+              "expr": "sum(label_replace(label_replace(rate(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]), \"method\", \"$1\", \"grpc_method\", \"(.+)\"), \"statusCode\", \"$1\", \"code\", \"(.+)\") or on(method, statusCode) rate(grpc_server_processing_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (method, statusCode)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "{{grpc_method}} ({{code}})",
+              "legendFormat": "{{method}} ({{statusCode}})",
               "refId": "A"
             },
             {
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
-              "expr": "sum(rate(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]))",
+              "expr": "sum(label_replace(label_replace(rate(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]), \"method\", \"$1\", \"grpc_method\", \"(.+)\"), \"statusCode\", \"$1\", \"code\", \"(.+)\") or on(method, statusCode) rate(grpc_server_processing_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]))",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Total requests completed",
@@ -10003,6 +10003,17 @@
               "intervalFactor": 1,
               "legendFormat": "{{le}}",
               "refId": "A"
+            },
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "expr": "sum(increase(grpc_server_processing_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", method=\"CreateProcessInstance\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "refId": "B"
             }
           ],
           "title": "Create Process Instance Latency (gRPC)",
@@ -10085,6 +10096,17 @@
               "intervalFactor": 1,
               "legendFormat": "{{le}}",
               "refId": "A"
+            },
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "expr": "sum(increase(grpc_server_processing_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", method=\"ActivateJobs\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "refId": "B"
             }
           ],
           "title": "Activate Jobs Latency (gRPC)",
@@ -10167,6 +10189,17 @@
               "intervalFactor": 1,
               "legendFormat": "{{le}}",
               "refId": "A"
+            },
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "expr": "sum(increase(grpc_server_processing_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", method=\"CompleteJob\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "refId": "B"
             }
           ],
           "title": "Complete Job Latency (gRPC)",
@@ -12690,7 +12723,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(atomix_journal_flush_time_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (pod) / sum(rate(atomix_journal_flush_time_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]))  by (pod)",
+              "expr": "sum(rate(atomix_journal_flush_time_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (pod) / sum(rate(atomix_journal_flush_time_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]))  by (pod) or sum(rate(atomix_journal_flush_time_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (pod) / sum(rate(atomix_journal_flush_time_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]))  by (pod)",
               "interval": "",
               "legendFormat": "Avg {{ pod }}",
               "range": true,
@@ -12702,7 +12735,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.50, sum(rate(atomix_journal_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.50, sum(rate(atomix_journal_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or rate(atomix_journal_flush_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "interval": "",
               "legendFormat": "Median",
@@ -12786,7 +12819,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(increase(atomix_journal_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(atomix_journal_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) or sum(increase(atomix_journal_flush_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "intervalFactor": 1,
               "legendFormat": "{{le}}",
@@ -12870,7 +12903,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(increase(atomix_journal_append_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(atomix_journal_append_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) or sum(increase(atomix_journal_append_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "intervalFactor": 1,
               "legendFormat": "{{le}}",
@@ -12968,7 +13001,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.90, rate(atomix_journal_append_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]))",
+              "expr": "histogram_quantile(0.90, rate(atomix_journal_append_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]) or rate(atomix_journal_append_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]))",
               "format": "time_series",
               "interval": "30s",
               "intervalFactor": 1,
@@ -12982,7 +13015,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.99, rate(atomix_journal_append_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]))",
+              "expr": "histogram_quantile(0.99, rate(atomix_journal_append_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]) or rate(atomix_journal_append_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]))",
               "hide": false,
               "interval": "",
               "legendFormat": "p99 partition {{partition}}",
@@ -12994,7 +13027,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.50, rate(atomix_journal_append_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]))",
+              "expr": "histogram_quantile(0.50, rate(atomix_journal_append_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]) or rate(atomix_journal_append_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]))",
               "hide": false,
               "interval": "",
               "legendFormat": "MEDIAN partition {{partition}} ",
@@ -13006,7 +13039,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum(rate(atomix_journal_append_latency_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition) / sum(rate(atomix_journal_append_latency_count{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition) ",
+              "expr": "sum(rate(atomix_journal_append_latency_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition) / sum(rate(atomix_journal_append_latency_count{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition) or sum(rate(atomix_journal_append_latency_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition) / sum(rate(atomix_journal_append_latency_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition) ",
               "hide": false,
               "interval": "",
               "legendFormat": "AVG partition {{partition}}",
@@ -13087,7 +13120,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum(increase(atomix_segment_creation_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(atomix_segment_creation_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or increase(atomix_segment_creation_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "intervalFactor": 1,
               "legendFormat": "{{le}}",
@@ -13172,7 +13205,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(increase(atomix_segment_allocation_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(atomix_segment_allocation_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) or sum(increase(atomix_segment_allocation_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "intervalFactor": 1,
               "legendFormat": "{{le}}",
@@ -13255,7 +13288,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum(increase(atomix_segment_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(atomix_segment_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or sum(increase(atomix_segment_flush_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "intervalFactor": 1,
               "legendFormat": "{{le}}",
@@ -13362,7 +13395,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "histogram_quantile(0.50, sum(rate(atomix_segment_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.50, sum(rate(atomix_segment_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or rate(atomix_segment_flush_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "interval": "",
               "legendFormat": "Median",
@@ -13526,7 +13559,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(increase(atomix_last_flushed_index_update_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or increase(atomix_last_flushed_index_update_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(atomix_last_flushed_index_update_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) or sum(increase(atomix_last_flushed_index_update_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "intervalFactor": 1,
               "legendFormat": "{{le}}",
@@ -13610,7 +13643,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(increase(atomix_journal_seek_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(atomix_journal_seek_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) or sum(increase(atomix_journal_seek_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "intervalFactor": 1,
               "legendFormat": "{{le}}",
@@ -13705,7 +13738,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(atomix_journal_seek_latency_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (pod, partition)",
+              "expr": "sum(rate(atomix_journal_seek_latency_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or rate(atomix_journal_seek_latency_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (pod, partition)",
               "interval": "",
               "legendFormat": "{{ pod }} - p{{ partition }}",
               "range": true,
@@ -20321,7 +20354,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(increase(zeebe_messaging_request_response_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", topic=~\"atomix-membership-probe-request\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(zeebe_messaging_request_response_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", topic=~\"atomix-membership-probe-request\"}[$__rate_interval]) or increase(zeebe_messaging_request_response_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", topic=~\"atomix-membership-probe-request\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,

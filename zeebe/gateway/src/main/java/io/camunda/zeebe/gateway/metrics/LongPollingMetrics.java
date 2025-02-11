@@ -7,24 +7,75 @@
  */
 package io.camunda.zeebe.gateway.metrics;
 
-import io.camunda.zeebe.util.VisibleForTesting;
-import io.prometheus.client.Gauge;
+import static io.camunda.zeebe.gateway.metrics.LongPollingMetrics.LongPollingMetricsDoc.REQUESTS_QUEUED_CURRENT;
+import static io.camunda.zeebe.gateway.metrics.LongPollingMetrics.RequestsQueuedKeyNames.TYPE;
+
+import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
+import io.micrometer.common.docs.KeyName;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.Meter.Type;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class LongPollingMetrics {
-  private static final Gauge REQUESTS_QUEUED_CURRENT =
-      Gauge.build()
-          .namespace("zeebe")
-          .name("long_polling_queued_current")
-          .help("Number of requests currently queued due to long polling")
-          .labelNames("type")
-          .register();
+  private final Map<String, AtomicLong> requestsQueued = new HashMap<>();
+  private final MeterRegistry registry;
 
-  public void setBlockedRequestsCount(final String type, final int count) {
-    REQUESTS_QUEUED_CURRENT.labels(type).set(count);
+  public LongPollingMetrics(final MeterRegistry registry) {
+    this.registry = Objects.requireNonNull(registry, "must specify a meter registry");
   }
 
-  @VisibleForTesting("Allows introspecting the long polling state in QA tests")
-  public double getBlockedRequestsCount(final String type) {
-    return REQUESTS_QUEUED_CURRENT.labels(type).get();
+  public void setBlockedRequestsCount(final String type, final int count) {
+    requestsQueued.computeIfAbsent(type, this::registerBlockedRequestsCount).set(count);
+  }
+
+  private AtomicLong registerBlockedRequestsCount(final String type) {
+    final var count = new AtomicLong();
+    Gauge.builder(REQUESTS_QUEUED_CURRENT.getName(), count, Number::longValue)
+        .description(REQUESTS_QUEUED_CURRENT.getDescription())
+        .tag(TYPE.asString(), type)
+        .register(registry);
+
+    return count;
+  }
+
+  /** Number of requests currently queued due to long polling */
+  @SuppressWarnings("NullableProblems")
+  public enum LongPollingMetricsDoc implements ExtendedMeterDocumentation {
+    REQUESTS_QUEUED_CURRENT {
+      @Override
+      public String getDescription() {
+        return "Number of requests currently queued due to long polling";
+      }
+
+      @Override
+      public String getName() {
+        return "zeebe.long.polling.queued.current";
+      }
+
+      @Override
+      public Type getType() {
+        return Type.GAUGE;
+      }
+
+      @Override
+      public KeyName[] getKeyNames() {
+        return RequestsQueuedKeyNames.values();
+      }
+    }
+  }
+
+  @SuppressWarnings("NullableProblems")
+  public enum RequestsQueuedKeyNames implements KeyName {
+    /** The job type associated with the blocked request */
+    TYPE {
+      @Override
+      public String asString() {
+        return "type";
+      }
+    }
   }
 }

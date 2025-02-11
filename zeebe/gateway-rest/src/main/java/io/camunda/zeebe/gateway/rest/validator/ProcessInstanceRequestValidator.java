@@ -15,12 +15,12 @@ import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateOperationReference;
 
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
-import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceMappingInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceActivateInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceTerminateInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationActivateInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateInstruction;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -29,7 +29,7 @@ import org.springframework.http.ProblemDetail;
 public class ProcessInstanceRequestValidator {
 
   public static Optional<ProblemDetail> validateCreateProcessInstanceRequest(
-      final CreateProcessInstanceRequest request) {
+      final ProcessInstanceCreationInstruction request) {
     return validate(
         violations -> {
           if (request.getProcessDefinitionId() == null
@@ -59,7 +59,7 @@ public class ProcessInstanceRequestValidator {
   }
 
   public static Optional<ProblemDetail> validateMigrateProcessInstanceRequest(
-      final MigrateProcessInstanceRequest request) {
+      final ProcessInstanceMigrationInstruction request) {
     return validate(
         violations -> {
           if (request.getTargetProcessDefinitionKey() == null) {
@@ -76,7 +76,7 @@ public class ProcessInstanceRequestValidator {
   }
 
   public static Optional<ProblemDetail> validateModifyProcessInstanceRequest(
-      final ModifyProcessInstanceRequest request) {
+      final ProcessInstanceModificationInstruction request) {
     return validate(
         violations -> {
           validateActivateInstructions(request.getActivateInstructions(), violations);
@@ -100,7 +100,7 @@ public class ProcessInstanceRequestValidator {
   }
 
   private static void validateActivateInstructions(
-      final List<ModifyProcessInstanceActivateInstruction> instructions,
+      final List<ProcessInstanceModificationActivateInstruction> instructions,
       final List<String> violations) {
     validateInstructions(
         instructions,
@@ -119,7 +119,7 @@ public class ProcessInstanceRequestValidator {
   }
 
   private static void validateTerminateInstructions(
-      final List<ModifyProcessInstanceTerminateInstruction> instructions,
+      final List<ProcessInstanceModificationTerminateInstruction> instructions,
       final List<String> violations) {
     validateInstructions(
         instructions,

@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.client.protocol.rest.SignalBroadcastRequest;
-import io.camunda.client.protocol.rest.SignalBroadcastResponse;
+import io.camunda.client.protocol.rest.SignalBroadcastResult;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
@@ -121,7 +121,7 @@ public final class BroadcastSignalCommandImpl
         "/signals/broadcast",
         objectMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        SignalBroadcastResponse.class,
+        SignalBroadcastResult.class,
         BroadcastSignalResponseImpl::new,
         result);
     return result;

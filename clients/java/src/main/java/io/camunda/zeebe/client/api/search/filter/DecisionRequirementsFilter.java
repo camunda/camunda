@@ -20,7 +20,7 @@ import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRe
 /**
  * Interface for defining Decision Requirmeent in search queries.
  *
- * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
  *     io.camunda.client.api.search.filter.DecisionRequirementsFilter}
  */
 @Deprecated

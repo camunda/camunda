@@ -34,8 +34,7 @@ import io.camunda.client.impl.search.SearchQuerySortRequest;
 import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.client.protocol.rest.ProcessInstanceFilterRequest;
-import io.camunda.client.protocol.rest.ProcessInstanceSearchQueryRequest;
+import io.camunda.client.protocol.rest.ProcessInstanceSearchQuery;
 import io.camunda.client.protocol.rest.ProcessInstanceSearchQueryResult;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import java.time.Duration;
@@ -45,16 +44,16 @@ import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class ProcessInstanceQueryImpl
-    extends TypedSearchRequestPropertyProvider<ProcessInstanceSearchQueryRequest>
+    extends TypedSearchRequestPropertyProvider<ProcessInstanceSearchQuery>
     implements ProcessInstanceQuery {
 
-  private final ProcessInstanceSearchQueryRequest request;
+  private final ProcessInstanceSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
   public ProcessInstanceQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
-    request = new ProcessInstanceSearchQueryRequest();
+    request = new ProcessInstanceSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -82,7 +81,8 @@ public class ProcessInstanceQueryImpl
 
   @Override
   public ProcessInstanceQuery filter(final ProcessInstanceFilter value) {
-    final ProcessInstanceFilterRequest filter = provideSearchRequestProperty(value);
+    final io.camunda.client.protocol.rest.ProcessInstanceFilter filter =
+        provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
@@ -117,7 +117,7 @@ public class ProcessInstanceQueryImpl
   }
 
   @Override
-  protected ProcessInstanceSearchQueryRequest getSearchRequestProperty() {
+  protected ProcessInstanceSearchQuery getSearchRequestProperty() {
     return request;
   }
 }

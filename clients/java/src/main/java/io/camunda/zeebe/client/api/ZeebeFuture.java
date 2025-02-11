@@ -22,7 +22,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @deprecated since 8.7 for removal in 8.8, replaced by {@link io.camunda.client.api.CamundaFuture}
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link io.camunda.client.api.CamundaFuture}
  */
 @Deprecated
 public interface ZeebeFuture<T> extends Future<T>, CompletionStage<T> {

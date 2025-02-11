@@ -11,7 +11,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
-import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationInstruction;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
@@ -19,7 +19,7 @@ import org.springframework.http.ProblemDetail;
 public class EvaluateDecisionRequestValidator {
 
   public static Optional<ProblemDetail> validateEvaluateDecisionRequest(
-      final EvaluateDecisionRequest request) {
+      final DecisionEvaluationInstruction request) {
     return validate(
         violations -> {
           if (request.getDecisionDefinitionId() == null

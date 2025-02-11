@@ -17,7 +17,7 @@ package io.camunda.client.decision;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.protocol.rest.DecisionRequirementsSearchQueryRequest;
+import io.camunda.client.protocol.rest.DecisionRequirementsSearchQuery;
 import io.camunda.client.protocol.rest.DecisionRequirementsSearchQuerySortRequest;
 import io.camunda.client.protocol.rest.DecisionRequirementsSearchQuerySortRequest.FieldEnum;
 import io.camunda.client.protocol.rest.SortOrderEnum;
@@ -32,8 +32,8 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
     client.newDecisionRequirementsQuery().send().join();
 
     // then
-    final DecisionRequirementsSearchQueryRequest request =
-        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
+    final DecisionRequirementsSearchQuery request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQuery.class);
     assertThat(request.getFilter()).isNull();
   }
 
@@ -43,8 +43,8 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
     client.newDecisionRequirementsQuery().filter(f -> f.version(1)).send().join();
 
     // then
-    final DecisionRequirementsSearchQueryRequest request =
-        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
+    final DecisionRequirementsSearchQuery request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQuery.class);
     assertThat(request.getFilter().getVersion()).isEqualTo(1);
   }
 
@@ -54,9 +54,9 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
     client.newDecisionRequirementsQuery().filter(f -> f.decisionRequirementsKey(0L)).send().join();
 
     // then
-    final DecisionRequirementsSearchQueryRequest request =
-        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
-    assertThat(request.getFilter().getDecisionRequirementsKey()).isEqualTo(0L);
+    final DecisionRequirementsSearchQuery request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQuery.class);
+    assertThat(request.getFilter().getDecisionRequirementsKey()).isEqualTo("0");
   }
 
   @Test
@@ -69,8 +69,8 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
         .join();
 
     // then
-    final DecisionRequirementsSearchQueryRequest request =
-        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
+    final DecisionRequirementsSearchQuery request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQuery.class);
     assertThat(request.getFilter().getDecisionRequirementsName()).isEqualTo("name");
   }
 
@@ -84,8 +84,8 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
         .join();
 
     // then
-    final DecisionRequirementsSearchQueryRequest request =
-        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
+    final DecisionRequirementsSearchQuery request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQuery.class);
     assertThat(request.getFilter().getDecisionRequirementsName()).isEqualTo("name");
     assertThat(request.getFilter().getVersion()).isEqualTo(1);
   }
@@ -112,8 +112,8 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
         .join();
 
     // then
-    final DecisionRequirementsSearchQueryRequest request =
-        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
+    final DecisionRequirementsSearchQuery request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQuery.class);
     assertThat(request.getSort()).hasSize(5);
 
     assertThat(request.getSort().get(0).getField())

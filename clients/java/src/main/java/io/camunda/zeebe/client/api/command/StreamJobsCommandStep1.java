@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 
 @ExperimentalApi("https://github.com/camunda/camunda/issues/11231")
 /**
- * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
  *     io.camunda.client.api.command.StreamJobsCommandStep1}
  */
 @Deprecated
@@ -39,7 +39,7 @@ public interface StreamJobsCommandStep1 {
   StreamJobsCommandStep2 jobType(String jobType);
 
   /**
-   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
    *     io.camunda.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep2}
    */
   @Deprecated
@@ -57,7 +57,7 @@ public interface StreamJobsCommandStep1 {
   }
 
   /**
-   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
    *     io.camunda.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3}
    */
   @Deprecated

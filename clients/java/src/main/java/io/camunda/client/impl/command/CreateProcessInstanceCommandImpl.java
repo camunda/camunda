@@ -29,7 +29,9 @@ import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateProcessInstanceResponseImpl;
+import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
@@ -56,8 +58,8 @@ public final class CreateProcessInstanceCommandImpl
   private boolean useRest;
   private HttpClient httpClient;
   private RequestConfig.Builder httpRequestConfig;
-  private final io.camunda.client.protocol.rest.CreateProcessInstanceRequest httpRequestObject =
-      new io.camunda.client.protocol.rest.CreateProcessInstanceRequest();
+  private final ProcessInstanceCreationInstruction httpRequestObject =
+      new ProcessInstanceCreationInstruction();
 
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
@@ -153,7 +155,7 @@ public final class CreateProcessInstanceCommandImpl
   @Override
   public CreateProcessInstanceCommandStep3 processDefinitionKey(final long processDefinitionKey) {
     grpcRequestObjectBuilder.setProcessDefinitionKey(processDefinitionKey);
-    httpRequestObject.setProcessDefinitionKey(processDefinitionKey);
+    httpRequestObject.setProcessDefinitionKey(ParseUtil.keyToString(processDefinitionKey));
     return this;
   }
 

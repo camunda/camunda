@@ -19,7 +19,7 @@ import io.camunda.zeebe.client.api.response.UpdateTimeoutJobResponse;
 import java.time.Duration;
 
 /**
- * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
  *     io.camunda.client.api.command.UpdateTimeoutJobCommandStep1}
  */
 @Deprecated
@@ -51,7 +51,7 @@ public interface UpdateTimeoutJobCommandStep1
   UpdateTimeoutJobCommandStep2 timeout(Duration timeout);
 
   /**
-   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
    *     io.camunda.client.api.command.UpdateTimeoutJobCommandStep1.UpdateTimeoutJobCommandStep2}
    */
   @Deprecated

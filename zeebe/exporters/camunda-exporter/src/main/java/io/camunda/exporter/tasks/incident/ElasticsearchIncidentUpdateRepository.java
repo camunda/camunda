@@ -82,11 +82,6 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
   }
 
   @Override
-  public void close() throws Exception {
-    client._transport().close();
-  }
-
-  @Override
   public CompletionStage<PendingIncidentUpdateBatch> getPendingIncidentsBatch(
       final long fromPosition, final int size) {
     final var query = createPendingIncidentsBatchQuery(fromPosition);

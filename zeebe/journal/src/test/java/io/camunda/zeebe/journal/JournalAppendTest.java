@@ -21,11 +21,14 @@ import io.camunda.zeebe.journal.util.MockJournalMetastore;
 import io.camunda.zeebe.journal.util.TestJournalRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -33,6 +36,7 @@ import org.junit.jupiter.api.io.TempDir;
 final class JournalAppendTest {
   @TempDir Path directory;
   final JournalMetaStore metaStore = new MockJournalMetastore();
+  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   private final DirectBufferWriter recordDataWriter = new DirectBufferWriter();
   private final DirectBufferWriter otherRecordDataWriter = new DirectBufferWriter();
@@ -60,7 +64,7 @@ final class JournalAppendTest {
 
   private SegmentedJournal openJournal(final Consumer<SegmentedJournalBuilder> option) {
     final var builder =
-        SegmentedJournal.builder()
+        SegmentedJournal.builder(meterRegistry)
             .withDirectory(directory.resolve("data").toFile())
             .withMaxSegmentSize(1024 * 1024) // speeds up certain tests, e.g. shouldCompact
             .withMetaStore(metaStore)
@@ -84,7 +88,7 @@ final class JournalAppendTest {
   void shouldAppendJournalRecord() {
     // given
     try (final var receiverJournal =
-        SegmentedJournal.builder()
+        SegmentedJournal.builder(meterRegistry)
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())
@@ -136,7 +140,7 @@ final class JournalAppendTest {
   void shouldNotAppendRecordWithGapInIndex() {
     // given
     try (final var receiverJournal =
-        SegmentedJournal.builder()
+        SegmentedJournal.builder(meterRegistry)
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())
@@ -184,7 +188,7 @@ final class JournalAppendTest {
   void shouldNotAppendRecordWithInvalidChecksum() {
     // given
     try (final var receiverJournal =
-        SegmentedJournal.builder()
+        SegmentedJournal.builder(meterRegistry)
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())
@@ -229,7 +233,7 @@ final class JournalAppendTest {
   void shouldAppendSerializedJournalRecord() {
     // given
     try (final var receiverJournal =
-        SegmentedJournal.builder()
+        SegmentedJournal.builder(meterRegistry)
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())
@@ -252,7 +256,7 @@ final class JournalAppendTest {
   void shouldAppendSerializedJournalRecordReturnedByReader() {
     // given
     try (final var receiverJournal =
-        SegmentedJournal.builder()
+        SegmentedJournal.builder(meterRegistry)
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())
@@ -291,7 +295,7 @@ final class JournalAppendTest {
   void shouldNotAppendSerializedRecordWithGapInIndex() {
     // given
     try (final var receiverJournal =
-        SegmentedJournal.builder()
+        SegmentedJournal.builder(meterRegistry)
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())
@@ -325,7 +329,7 @@ final class JournalAppendTest {
   void shouldNotAppendSerializedRecordWithInvalidChecksum() {
     // given
     try (final var receiverJournal =
-        SegmentedJournal.builder()
+        SegmentedJournal.builder(meterRegistry)
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())

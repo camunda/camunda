@@ -21,8 +21,8 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.impl.search.SearchQuerySortRequest;
 import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
-import io.camunda.client.protocol.rest.ProcessDefinitionFilterRequest;
-import io.camunda.client.protocol.rest.ProcessDefinitionSearchQueryRequest;
+import io.camunda.client.protocol.rest.ProcessDefinitionFilter;
+import io.camunda.client.protocol.rest.ProcessDefinitionSearchQuery;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
@@ -78,8 +78,8 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
     client.newProcessDefinitionQuery().send().join();
 
     // then
-    final ProcessDefinitionSearchQueryRequest request =
-        gatewayService.getLastRequest(ProcessDefinitionSearchQueryRequest.class);
+    final ProcessDefinitionSearchQuery request =
+        gatewayService.getLastRequest(ProcessDefinitionSearchQuery.class);
     assertThat(request.getFilter()).isNull();
   }
 
@@ -100,11 +100,11 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
         .send()
         .join();
     // then
-    final ProcessDefinitionSearchQueryRequest request =
-        gatewayService.getLastRequest(ProcessDefinitionSearchQueryRequest.class);
-    final ProcessDefinitionFilterRequest filter = request.getFilter();
+    final ProcessDefinitionSearchQuery request =
+        gatewayService.getLastRequest(ProcessDefinitionSearchQuery.class);
+    final ProcessDefinitionFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
-    assertThat(filter.getProcessDefinitionKey()).isEqualTo(5L);
+    assertThat(filter.getProcessDefinitionKey()).isEqualTo("5");
     assertThat(filter.getName()).isEqualTo("Order process");
     assertThat(filter.getResourceName()).isEqualTo("usertest/complex-process.bpmn");
     assertThat(filter.getVersion()).isEqualTo(2);
@@ -138,8 +138,8 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
         .join();
 
     // then
-    final ProcessDefinitionSearchQueryRequest request =
-        gatewayService.getLastRequest(ProcessDefinitionSearchQueryRequest.class);
+    final ProcessDefinitionSearchQuery request =
+        gatewayService.getLastRequest(ProcessDefinitionSearchQuery.class);
     final List<SearchQuerySortRequest> sorts =
         SearchQuerySortRequestMapper.fromProcessDefinitionSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
@@ -168,8 +168,8 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
         .join();
 
     // then
-    final ProcessDefinitionSearchQueryRequest request =
-        gatewayService.getLastRequest(ProcessDefinitionSearchQueryRequest.class);
+    final ProcessDefinitionSearchQuery request =
+        gatewayService.getLastRequest(ProcessDefinitionSearchQuery.class);
     final SearchQueryPageRequest pageRequest = request.getPage();
     assertThat(pageRequest).isNotNull();
     assertThat(pageRequest.getFrom()).isEqualTo(23);
