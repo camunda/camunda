@@ -21,6 +21,7 @@ import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.TestEntry;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -54,9 +55,13 @@ final class LogStorageAppenderTest {
 
   @BeforeEach
   void beforeEach() {
+    final var meterRegistry = new SimpleMeterRegistry();
+
     scheduler.start();
-    sequencer = new Sequencer(INITIAL_POSITION, 4 * 1024 * 1024, new SequencerMetrics(1));
-    appender = new LogStorageAppender("appender", PARTITION_ID, logStorage, sequencer);
+    sequencer =
+        new Sequencer(INITIAL_POSITION, 4 * 1024 * 1024, new SequencerMetrics(meterRegistry));
+    appender =
+        new LogStorageAppender("appender", PARTITION_ID, logStorage, sequencer, meterRegistry);
     reader = new LogStreamReaderImpl(logStorage.newReader());
   }
 

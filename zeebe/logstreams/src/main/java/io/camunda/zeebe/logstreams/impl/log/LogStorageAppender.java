@@ -24,6 +24,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -47,12 +48,13 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
       final String name,
       final int partitionId,
       final LogStorage logStorage,
-      final Sequencer sequencer) {
+      final Sequencer sequencer,
+      final MeterRegistry registry) {
     this.name = name;
     this.partitionId = partitionId;
     this.logStorage = logStorage;
     this.sequencer = sequencer;
-    metrics = new AppenderMetrics(partitionId);
+    metrics = new AppenderMetrics(registry);
     flowControl = new AppenderFlowControl(this, metrics);
     closeFuture = new CompletableActorFuture<>();
   }

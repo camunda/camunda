@@ -14,6 +14,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
 
 public final class SyncLogStreamBuilder implements LogStreamBuilder {
@@ -63,6 +64,12 @@ public final class SyncLogStreamBuilder implements LogStreamBuilder {
   @Override
   public SyncLogStreamBuilder withLogName(final String logName) {
     delegate.withLogName(logName);
+    return this;
+  }
+
+  @Override
+  public LogStreamBuilder withMeterRegistry(final MeterRegistry meterRegistry) {
+    delegate.withMeterRegistry(meterRegistry);
     return this;
   }
 

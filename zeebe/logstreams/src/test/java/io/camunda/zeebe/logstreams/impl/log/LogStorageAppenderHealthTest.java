@@ -17,6 +17,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.health.HealthStatus;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.BiConsumer;
 import org.junit.After;
@@ -36,10 +37,13 @@ public final class LogStorageAppenderHealthTest {
 
   @Before
   public void setUp() {
+    final var meterRegistry = new SimpleMeterRegistry();
     failingLogStorage = new ControllableLogStorage();
-    sequencer = new Sequencer(0, 4 * 1024 * 1024, new SequencerMetrics(1));
+    sequencer = new Sequencer(0, 4 * 1024 * 1024, new SequencerMetrics(meterRegistry));
 
-    appender = new LogStorageAppender("appender", PARTITION_ID, failingLogStorage, sequencer);
+    appender =
+        new LogStorageAppender(
+            "appender", PARTITION_ID, failingLogStorage, sequencer, meterRegistry);
   }
 
   @After

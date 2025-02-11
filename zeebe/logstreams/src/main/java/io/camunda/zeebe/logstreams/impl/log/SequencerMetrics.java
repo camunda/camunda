@@ -7,46 +7,38 @@
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
-import io.prometheus.client.Gauge;
-import io.prometheus.client.Histogram;
+import static io.camunda.zeebe.logstreams.impl.log.SequencerMetrics.SequencerMetricsDoc.BATCH_LENGTH_BYTES;
+import static io.camunda.zeebe.logstreams.impl.log.SequencerMetrics.SequencerMetricsDoc.BATCH_SIZE;
+import static io.camunda.zeebe.logstreams.impl.log.SequencerMetrics.SequencerMetricsDoc.QUEUE_SIZE;
+
+import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
+import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.Meter.Type;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.util.concurrent.atomic.AtomicLong;
 
 final class SequencerMetrics {
-  private static final Gauge QUEUE_SIZE =
-      Gauge.build()
-          .namespace("zeebe")
-          .name("sequencer_queue_size")
-          .help(
-              "Current length of queue, i.e. how many entry batches are available to the appender")
-          .labelNames("partition")
-          .register();
 
-  private static final Histogram BATCH_SIZE =
-      Histogram.build()
-          .namespace("zeebe")
-          .name("sequencer_batch_size")
-          .help("Histogram over the number of entries in each batch that is appended")
-          .buckets(1, 2, 3, 5, 10, 25, 50, 100, 500, 1000)
-          .labelNames("partition")
-          .register();
+  private final AtomicLong queueSize = new AtomicLong();
+  private final DistributionSummary batchSize;
+  private final DistributionSummary batchLengthBytes;
 
-  private static final Histogram BATCH_LENGTH_BYTES =
-      Histogram.build()
-          .namespace("zeebe")
-          .name("sequencer_batch_length_bytes")
-          .help("Histogram over the size, in Kilobytes, of the sequenced batches")
-          .buckets(0.256, 0.512, 1, 4, 8, 32, 128, 512, 1024, 4096)
-          .labelNames("partition")
-          .register();
+  SequencerMetrics(final MeterRegistry meterRegistry) {
+    Gauge.builder(QUEUE_SIZE.getName(), queueSize, Number::longValue)
+        .description(QUEUE_SIZE.getDescription())
+        .register(meterRegistry);
 
-  private final Gauge.Child queueSize;
-  private final Histogram.Child batchSize;
-  private final Histogram.Child batchLengthBytes;
-
-  SequencerMetrics(final int partitionId) {
-    final var partitionLabel = String.valueOf(partitionId);
-    queueSize = QUEUE_SIZE.labels(partitionLabel);
-    batchSize = BATCH_SIZE.labels(partitionLabel);
-    batchLengthBytes = BATCH_LENGTH_BYTES.labels(partitionLabel);
+    batchSize =
+        DistributionSummary.builder(BATCH_SIZE.getName())
+            .description(BATCH_SIZE.getDescription())
+            .serviceLevelObjectives(BATCH_SIZE.getDistributionSLOs())
+            .register(meterRegistry);
+    batchLengthBytes =
+        DistributionSummary.builder(BATCH_LENGTH_BYTES.getName())
+            .description(BATCH_LENGTH_BYTES.getDescription())
+            .serviceLevelObjectives(BATCH_LENGTH_BYTES.getDistributionSLOs())
+            .register(meterRegistry);
   }
 
   void setQueueSize(final int length) {
@@ -54,11 +46,89 @@ final class SequencerMetrics {
   }
 
   void observeBatchSize(final int size) {
-    batchSize.observe(size);
+    batchSize.record(size);
   }
 
   void observeBatchLengthBytes(final int lengthBytes) {
     final int batchLengthKiloBytes = Math.floorDiv(lengthBytes, 1024);
-    batchLengthBytes.observe(batchLengthKiloBytes);
+    batchLengthBytes.record(batchLengthKiloBytes);
+  }
+
+  @SuppressWarnings("NullableProblems")
+  public enum SequencerMetricsDoc implements ExtendedMeterDocumentation {
+    /** Current length of queue, i.e. how many entry batches are available to the appender */
+    QUEUE_SIZE {
+      @Override
+      public String getDescription() {
+        return "Current length of queue, i.e. how many entry batches are available to the appender";
+      }
+
+      @Override
+      public String getName() {
+        return "zeebe.sequencer.queue.size";
+      }
+
+      @Override
+      public Type getType() {
+        return Type.GAUGE;
+      }
+    },
+
+    /** Histogram over the number of entries in each batch that is appended */
+    BATCH_SIZE {
+
+      public static final double[] BUCKETS = {1, 2, 3, 5, 10, 25, 50, 100, 500, 1000};
+
+      @Override
+      public String getDescription() {
+        return "Histogram over the number of entries in each batch that is appended";
+      }
+
+      @Override
+      public String getName() {
+        return "zeebe.sequencer.batch.size";
+      }
+
+      @Override
+      public Type getType() {
+        return Type.DISTRIBUTION_SUMMARY;
+      }
+
+      @Override
+      public double[] getDistributionSLOs() {
+        return BUCKETS;
+      }
+    },
+
+    /** Histogram over the size, in Kilobytes, of the sequenced batches */
+    BATCH_LENGTH_BYTES {
+
+      public static final double[] BUCKETS = {0.256, 0.512, 1, 4, 8, 32, 128, 512, 1024, 4096};
+
+      @Override
+      public String getDescription() {
+        return "Histogram over the size, in Kilobytes, of the sequenced batches";
+      }
+
+      @Override
+      public String getName() {
+        return "zeebe.sequencer.batch.length.bytes";
+      }
+
+      @Override
+      public String getBaseUnit() {
+        return "KiB";
+      }
+
+      @Override
+      public Type getType() {
+        return Type.DISTRIBUTION_SUMMARY;
+      }
+
+      @Override
+      public double[] getDistributionSLOs() {
+        return BUCKETS;
+      }
+    }
   }
 }
