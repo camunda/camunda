@@ -107,6 +107,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @BeforeEach
   void setup() {
     when(tenantServices.withAuthentication(any(Authentication.class))).thenReturn(tenantServices);
+    when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
   }
 
   @Test

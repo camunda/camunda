@@ -20,7 +20,7 @@ import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -95,7 +95,7 @@ public class TenantController {
   }
 
   @CamundaPostMapping(path = "/{tenantId}/users/search")
-  public ResponseEntity<UserSearchResponse> searchUsersInTenant(
+  public ResponseEntity<UserSearchResult> searchUsersInTenant(
       @PathVariable final String tenantId,
       @RequestBody(required = false) final UserSearchQueryRequest query) {
     return SearchQueryRequestMapper.toUserQuery(query)
@@ -183,7 +183,7 @@ public class TenantController {
     }
   }
 
-  private ResponseEntity<UserSearchResponse> searchUsersInTenant(
+  private ResponseEntity<UserSearchResult> searchUsersInTenant(
       final String tenantId, final UserQuery userQuery) {
     try {
       final var composedUserQuery = buildUserQuery(tenantId, userQuery);
