@@ -209,7 +209,7 @@ services:
     ports:
       - 8080:8080
     environment:
-      - SPRING_PROFILES_ACTIVE=dev,dev-data,auth
+      - SPRING_PROFILES_ACTIVE=dev,auth
     depends_on:
       - ${DATABASE}
       - zeebe
@@ -288,10 +288,10 @@ services:
     container_name: operate-${DATABASE}
     image: camunda/operate:8.7.0-SNAPSHOT
     ports:
-      - 8088:8080
+      - 8081:8081
     environment:
       - SERVER_PORT=8081
-      - SPRING_PROFILES_ACTIVE=dev,dev-data,auth
+      - SPRING_PROFILES_ACTIVE=dev,auth
     depends_on:
       - ${DATABASE}
       - zeebe
