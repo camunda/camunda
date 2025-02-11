@@ -54,6 +54,7 @@ public final class ClusterConfigurationGossiper
 
   // The handler which can merge configuration updates and reacts to the changes.
   private final Consumer<ClusterConfiguration> clusterConfigurationUpdateHandler;
+  private final TopologyMetrics topologyMetrics;
 
   public ClusterConfigurationGossiper(
       final ConcurrencyControl executor,
@@ -61,13 +62,15 @@ public final class ClusterConfigurationGossiper
       final ClusterMembershipService membershipService,
       final ClusterConfigurationSerializer serializer,
       final ClusterConfigurationGossiperConfig config,
-      final Consumer<ClusterConfiguration> clusterConfigurationUpdateHandler) {
+      final Consumer<ClusterConfiguration> clusterConfigurationUpdateHandler,
+      final TopologyMetrics topologyMetrics) {
     this.executor = executor;
     this.communicationService = communicationService;
     this.membershipService = membershipService;
     this.config = config;
     this.serializer = serializer;
     this.clusterConfigurationUpdateHandler = clusterConfigurationUpdateHandler;
+    this.topologyMetrics = topologyMetrics;
   }
 
   public CompletableActorFuture<Void> start() {
@@ -179,7 +182,7 @@ public final class ClusterConfigurationGossiper
     LOGGER.trace("Updated local gossipState to {}", updatedConfiguration);
     gossip();
     notifyListeners(updatedConfiguration);
-    TopologyMetrics.updateFromTopology(updatedConfiguration);
+    topologyMetrics.updateFromTopology(updatedConfiguration);
   }
 
   private void notifyListeners(final ClusterConfiguration updatedTopology) {

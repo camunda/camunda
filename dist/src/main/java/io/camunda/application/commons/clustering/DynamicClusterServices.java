@@ -18,6 +18,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -30,12 +31,17 @@ public class DynamicClusterServices {
   private final ActorScheduler scheduler;
   private final ClusterMembershipService clusterMembershipService;
   private final ClusterCommunicationService clusterCommunicationService;
+  private final MeterRegistry meterRegistry;
 
   @Autowired
-  public DynamicClusterServices(final ActorScheduler scheduler, final AtomixCluster atomixCluster) {
+  public DynamicClusterServices(
+      final ActorScheduler scheduler,
+      final AtomixCluster atomixCluster,
+      final MeterRegistry meterRegistry) {
     this.scheduler = scheduler;
     clusterMembershipService = atomixCluster.getMembershipService();
     clusterCommunicationService = atomixCluster.getCommunicationService();
+    this.meterRegistry = meterRegistry;
   }
 
   @Bean
@@ -47,7 +53,8 @@ public class DynamicClusterServices {
             clusterCommunicationService,
             clusterMembershipService,
             new ClusterConfigurationGossiperConfig(
-                false, Duration.ofSeconds(10), Duration.ofSeconds(1), 2));
+                false, Duration.ofSeconds(10), Duration.ofSeconds(1), 2),
+            meterRegistry);
     scheduler.submitActor(service).join();
     service.addUpdateListener(brokerTopologyManager);
     return service;
