@@ -70,7 +70,7 @@ public final class SyncLogStreamBuilder implements LogStreamBuilder {
   @Override
   public LogStreamBuilder withMeterRegistry(final MeterRegistry meterRegistry) {
     delegate.withMeterRegistry(meterRegistry);
-    return null;
+    return this;
   }
 
   @Override

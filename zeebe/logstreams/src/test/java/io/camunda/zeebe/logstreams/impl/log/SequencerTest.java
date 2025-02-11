@@ -12,6 +12,9 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.util.TestEntry;
 import io.camunda.zeebe.scheduler.ActorCondition;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
@@ -26,12 +29,15 @@ import org.mockito.Mockito;
 
 @SuppressWarnings("resource")
 @Execution(ExecutionMode.CONCURRENT)
+@AutoCloseResources
 final class SequencerTest {
+
+  @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @Test
   void notifiesConsumerOnWrite() {
     // given
-    final var sequencer = new Sequencer(0, 16, new SequencerMetrics(new SimpleMeterRegistry()));
+    final var sequencer = new Sequencer(0, 16, new SequencerMetrics(meterRegistry));
     final var consumer = Mockito.mock(ActorCondition.class);
 
     // when
@@ -45,7 +51,7 @@ final class SequencerTest {
   @Test
   void notifiesConsumerOnBatchWrite() {
     // given
-    final var sequencer = new Sequencer(0, 16, new SequencerMetrics(new SimpleMeterRegistry()));
+    final var sequencer = new Sequencer(0, 16, new SequencerMetrics(meterRegistry));
     final var consumer = Mockito.mock(ActorCondition.class);
 
     // when
@@ -59,7 +65,7 @@ final class SequencerTest {
   @Test
   void canReadAfterSingleWrite() {
     // given
-    final var sequencer = new Sequencer(1, 16, new SequencerMetrics(new SimpleMeterRegistry()));
+    final var sequencer = new Sequencer(1, 16, new SequencerMetrics(meterRegistry));
     final var entry = TestEntry.ofDefaults();
 
     // when
@@ -73,7 +79,7 @@ final class SequencerTest {
   @Test
   void canReadAfterBatchWrite() {
     // given
-    final var sequencer = new Sequencer(1, 16, new SequencerMetrics(new SimpleMeterRegistry()));
+    final var sequencer = new Sequencer(1, 16, new SequencerMetrics(meterRegistry));
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
 
@@ -88,8 +94,7 @@ final class SequencerTest {
   @Test
   void cannotReadEmpty() {
     // given
-    final var sequencer =
-        new Sequencer(1, 16 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+    final var sequencer = new Sequencer(1, 16 * 1024 * 1024, new SequencerMetrics(meterRegistry));
 
     // then
     final var read = sequencer.tryRead();
@@ -99,8 +104,7 @@ final class SequencerTest {
   @Test
   void eventuallyRejectsWritesWithoutReader() {
     // given
-    final var sequencer =
-        new Sequencer(1, 16 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+    final var sequencer = new Sequencer(1, 16 * 1024 * 1024, new SequencerMetrics(meterRegistry));
 
     // then
     Awaitility.await("sequencer rejects writes")
@@ -114,8 +118,7 @@ final class SequencerTest {
   @Test
   void eventuallyRejectsBatchWritesWithoutReader() {
     // given
-    final var sequencer =
-        new Sequencer(1, 16 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+    final var sequencer = new Sequencer(1, 16 * 1024 * 1024, new SequencerMetrics(meterRegistry));
 
     // then
     Awaitility.await("sequencer rejects writes")
@@ -131,8 +134,7 @@ final class SequencerTest {
     // given
     final long initialPosition = 1L;
     final var sequencer =
-        new Sequencer(
-            initialPosition, 16 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+        new Sequencer(initialPosition, 16 * 1024 * 1024, new SequencerMetrics(meterRegistry));
 
     // when
     final var result = sequencer.tryWrite(TestEntry.ofDefaults());
@@ -146,8 +148,7 @@ final class SequencerTest {
     // given
     final long initialPosition = 1L;
     final var sequencer =
-        new Sequencer(
-            initialPosition, 16 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+        new Sequencer(initialPosition, 16 * 1024 * 1024, new SequencerMetrics(meterRegistry));
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
     // when
@@ -163,8 +164,7 @@ final class SequencerTest {
   @Test
   void notifiesReaderWhenRejectingWriteDueToFullQueue() {
     // given
-    final var sequencer =
-        new Sequencer(1, 16 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+    final var sequencer = new Sequencer(1, 16 * 1024 * 1024, new SequencerMetrics(meterRegistry));
     Awaitility.await("sequencer rejects writes")
         .pollInSameThread()
         .pollInterval(Duration.ZERO)
@@ -185,8 +185,7 @@ final class SequencerTest {
   @Test
   void notifiesReaderWhenRejectingBatchWriteDueToFullQueue() {
     // given
-    final var sequencer =
-        new Sequencer(1, 16 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+    final var sequencer = new Sequencer(1, 16 * 1024 * 1024, new SequencerMetrics(meterRegistry));
     Awaitility.await("sequencer rejects writes")
         .pollInSameThread()
         .pollInterval(Duration.ZERO)
@@ -210,8 +209,7 @@ final class SequencerTest {
     final var initialPosition = 1L;
     final var entriesToWrite = 10_000L;
     final var sequencer =
-        new Sequencer(
-            initialPosition, 16 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+        new Sequencer(initialPosition, 16 * 1024 * 1024, new SequencerMetrics(meterRegistry));
     final var batch = List.of(TestEntry.ofKey(1));
     final var reader = newReaderThread(sequencer, initialPosition, entriesToWrite);
     final var writer = newWriterThread(sequencer, initialPosition, entriesToWrite, batch, true);
@@ -234,8 +232,7 @@ final class SequencerTest {
     final var entriesToWrite = 10_000L;
     final var entriesToRead = writers * entriesToWrite;
     final var sequencer =
-        new Sequencer(
-            initialPosition, 16 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+        new Sequencer(initialPosition, 16 * 1024 * 1024, new SequencerMetrics(meterRegistry));
     final var reader = newReaderThread(sequencer, initialPosition, entriesToRead);
     final var batch = List.of(TestEntry.ofKey(1));
     final var writerThreads =
@@ -269,8 +266,7 @@ final class SequencerTest {
     final var batchesToWrite = 10_000L;
     final var batchesToRead = writers * batchesToWrite;
     final var sequencer =
-        new Sequencer(
-            initialPosition, 16 * 1024 * 1024, new SequencerMetrics(new SimpleMeterRegistry()));
+        new Sequencer(initialPosition, 16 * 1024 * 1024, new SequencerMetrics(meterRegistry));
     final var reader = newReaderThread(sequencer, initialPosition, batchesToRead);
     final var batch =
         List.of(TestEntry.ofKey(1), TestEntry.ofKey(1), TestEntry.ofKey(1), TestEntry.ofKey(1));

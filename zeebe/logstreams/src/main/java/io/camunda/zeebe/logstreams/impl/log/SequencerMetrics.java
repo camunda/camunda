@@ -117,7 +117,7 @@ final class SequencerMetrics {
 
       @Override
       public String getBaseUnit() {
-        return "bytes";
+        return "KiB";
       }
 
       @Override
