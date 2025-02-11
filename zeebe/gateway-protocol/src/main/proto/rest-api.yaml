@@ -578,13 +578,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserSearchResponse"
+                $ref: "#/components/schemas/UserSearchResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/UserSearchResponse"
+                $ref: "#/components/schemas/UserSearchResult"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/UserSearchResponse"
+                $ref: "#/components/schemas/UserSearchResult"
 
   /tenants/{tenantKey}/users/{userKey}:
     delete:
