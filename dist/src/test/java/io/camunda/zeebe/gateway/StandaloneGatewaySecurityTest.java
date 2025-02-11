@@ -20,6 +20,7 @@ import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration.GatewayBasedProperties;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
@@ -216,7 +217,7 @@ final class StandaloneGatewaySecurityTest {
     final var brokerClientConfiguration =
         new BrokerClientConfiguration(
             brokerClientConfig, atomixCluster, actorScheduler, topologyManager);
-    brokerClient = brokerClientConfiguration.brokerClient();
+    brokerClient = brokerClientConfiguration.brokerClient(BrokerClientRequestMetrics.NOOP);
     jobStreamClient = new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster);
 
     return new GatewayModuleConfiguration(
