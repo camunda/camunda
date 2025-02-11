@@ -10,11 +10,14 @@ package io.camunda.zeebe.util.micrometer;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.Builder;
 import io.micrometer.core.instrument.Timer.Sample;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
 
@@ -87,13 +90,27 @@ public final class MicrometerUtil {
   }
 
   /**
-   * Closes the registry after clearing it. In this way all metrics registered are removed.
-   *
-   * @param registry the registry to clear and close.
+   * Returns a {@link CompositeMeterRegistry} using the same config as the given registry, which
+   * will forward all metrics to that registry. This means if the forwardee has some common tags,
+   * they will be applied to the metrics you create on the returned registry.
    */
-  public static void closeRegistry(final MeterRegistry registry) {
-    registry.clear();
-    registry.close();
+  public static CompositeMeterRegistry wrap(final MeterRegistry registry) {
+    return new CompositeMeterRegistry(registry.config().clock(), Collections.singleton(registry));
+  }
+
+  /** Returns a timer builder pre-configured based on the given documentation. */
+  public static Timer.Builder timer(final ExtendedMeterDocumentation documentation) {
+    return Timer.builder(documentation.getName())
+        .description(documentation.getDescription())
+        .serviceLevelObjectives(documentation.getTimerSLOs());
+  }
+
+  /** Returns a timer builder pre-configured based on the given documentation. */
+  public static DistributionSummary.Builder summary(
+      final ExtendedMeterDocumentation documentation) {
+    return DistributionSummary.builder(documentation.getName())
+        .description(documentation.getDescription())
+        .serviceLevelObjectives(documentation.getDistributionSLOs());
   }
 
   private record CloseableTimer(Timer timer, Timer.Sample sample) implements CloseableSilently {
