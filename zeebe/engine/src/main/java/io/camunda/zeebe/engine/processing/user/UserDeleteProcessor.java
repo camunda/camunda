@@ -124,8 +124,8 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
           tenantKey,
           TenantIntent.ENTITY_REMOVED,
           new TenantRecord()
-              .setTenantKey(tenantKey)
-              .setEntityKey(userKey)
+              .setTenantId(tenantId)
+              .setEntityId(user.getUsername())
               .setEntityType(EntityType.USER));
     }
 

@@ -23,6 +23,7 @@ import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
@@ -47,9 +48,10 @@ public final class CheckpointRecordsProcessor
   private DbCheckpointState checkpointState;
   private ProcessingScheduleService executor;
 
-  public CheckpointRecordsProcessor(final BackupManager backupManager, final int partitionId) {
+  public CheckpointRecordsProcessor(
+      final BackupManager backupManager, final int partitionId, final MeterRegistry registry) {
     this.backupManager = backupManager;
-    metrics = new CheckpointMetrics(partitionId);
+    metrics = new CheckpointMetrics(registry);
   }
 
   @Override
