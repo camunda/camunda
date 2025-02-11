@@ -7,8 +7,10 @@
  */
 package io.camunda.it.migration.util;
 
+import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
-import io.camunda.it.migration.util.MigrationITInvocationProvider.DatabaseType;
+import io.camunda.exporter.CamundaExporter;
+import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
@@ -24,20 +26,49 @@ import java.util.function.Consumer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
 
-public class ZeebeMigrationHelper {
+public class ZeebeComponentHelper extends AbstractComponentHelper<ZeebeComponentHelper> {
 
-  private static final String CAMUNDA_OLD_VERSION = "8.6.6";
+  private static final String CAMUNDA_OLD_VERSION = "8.7.0-alpha4";
   private final ZeebeVolume volume;
-  private final Network network;
   private ZeebeContainer zeebeContainer;
   private CamundaClient camundaClient;
   private TestStandaloneBroker broker;
   private final Path zeebeDataPath;
 
-  public ZeebeMigrationHelper(final Network network) {
+  public ZeebeComponentHelper(final Network network, final String indexPrefix) {
+    super(network, indexPrefix);
     volume = ZeebeVolume.newVolume();
     zeebeDataPath = Path.of(System.getProperty("user.dir") + "/zeebe-data" + volume.getName());
-    this.network = network;
+    zeebeComponentHelper = this;
+  }
+
+  @Override
+  public ZeebeComponentHelper initial(
+      final DatabaseType type, final Map<String, String> envOverrides) {
+    start87Broker(envOverrides, type);
+    return this;
+  }
+
+  @Override
+  public ZeebeComponentHelper update(
+      final DatabaseType type, final Map<String, String> envOverrides) {
+    camundaClient.close();
+    zeebeContainer.close();
+    start88Broker(envOverrides, type);
+    return this;
+  }
+
+  @Override
+  public void close() {
+    if (camundaClient != null) {
+      camundaClient.close();
+    }
+    if (zeebeContainer != null) {
+      zeebeContainer.stop();
+    }
+    if (broker != null) {
+      broker.close();
+    }
   }
 
   public String getZeebeGatewayAddress() {
@@ -54,7 +85,31 @@ public class ZeebeMigrationHelper {
     return "http://host.testcontainers.internal:" + broker.mappedPort(TestZeebePort.REST);
   }
 
-  public ZeebeContainer start86Broker(
+  public CamundaClient getCamundaClient() {
+    return camundaClient;
+  }
+
+  public void cleanup() {
+    if (!Files.exists(zeebeDataPath)) {
+      return;
+    }
+    try {
+      Files.walk(zeebeDataPath)
+          .sorted(java.util.Comparator.reverseOrder())
+          .forEach(
+              p -> {
+                try {
+                  Files.delete(p);
+                } catch (final IOException ignored) {
+                  // ignore
+                }
+              });
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private ZeebeContainer start87Broker(
       final Map<String, String> envOverrides, final DatabaseType databaseType) {
     zeebeContainer =
         new ZeebeContainer(DockerImageName.parse("camunda/zeebe:" + CAMUNDA_OLD_VERSION))
@@ -64,8 +119,8 @@ public class ZeebeMigrationHelper {
 
     final Map<String, String> env =
         databaseType.equals(DatabaseType.ELASTICSEARCH)
-            ? zeebe86ElasticsearchDefaultConfig()
-            : zeebe86OpensearchDefaultConfig();
+            ? zeebe87ElasticsearchDefaultConfig()
+            : zeebe87OpensearchDefaultConfig();
     if (envOverrides != null) {
       env.putAll(envOverrides);
     }
@@ -80,71 +135,36 @@ public class ZeebeMigrationHelper {
             "sh", "-c", "chmod -R 777 /usr/local/zeebe/data && /usr/local/bin/start-zeebe");
 
     zeebeContainer.start();
-
+    final var url =
+        "http://" + zeebeContainer.getExternalHost() + ":" + zeebeContainer.getMappedPort(8080);
     camundaClient =
         CamundaClient.newClientBuilder()
             .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
-            .restAddress(
-                URI.create(
-                    "http://"
-                        + zeebeContainer.getExternalHost()
-                        + ":"
-                        + zeebeContainer.getMappedPort(8080)))
+            .restAddress(URI.create(url))
             .usePlaintext()
             .build();
 
     return zeebeContainer;
   }
 
-  public CamundaClient getCamundaClient() {
-    return camundaClient;
-  }
-
-  public void stop() {
-    if (camundaClient != null) {
-      camundaClient.close();
-    }
-    if (zeebeContainer != null) {
-      zeebeContainer.stop();
-    }
-    if (broker != null) {
-      broker.close();
-      try {
-        Files.walk(zeebeDataPath)
-            .sorted(java.util.Comparator.reverseOrder())
-            .forEach(
-                p -> {
-                  try {
-                    Files.delete(p);
-                  } catch (final IOException ignored) {
-                    System.out.println("ignored");
-                  }
-                });
-      } catch (final IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
-  }
-
-  public TestStandaloneBroker start87Broker(
-      final Consumer<ExporterCfg> exporterConfig,
-      final Map<String, String> envOverrides,
-      final DatabaseType databaseType) {
+  private TestStandaloneBroker start88Broker(
+      final Map<String, String> envOverrides, final DatabaseType databaseType) {
     extractVolume();
 
     broker =
         new TestStandaloneBroker()
+            .withAdditionalProfile(Profile.PROCESS_MIGRATION)
             .withRecordingExporter(true)
             .withBrokerConfig(cfg -> cfg.getGateway().setEnable(true))
-            .withExporter("CamundaExporter", exporterConfig)
+            .withExporter(
+                "CamundaExporter",
+                camundaExporterConfig(databaseType, envOverrides.get("camunda.database.url")))
             .withWorkingDirectory(zeebeDataPath.resolve("usr/local/zeebe"));
     final Map<String, String> env =
         databaseType.equals(DatabaseType.ELASTICSEARCH)
-            ? zeebe87ElasticsearchDefaultConfig()
-            : zeebe87OpensearchDefaultConfig();
-    if (envOverrides != null) {
-      env.putAll(envOverrides);
-    }
+            ? zeebe88ElasticsearchDefaultConfig()
+            : zeebe88OpensearchDefaultConfig();
+    env.putAll(envOverrides);
     env.forEach(broker::withProperty);
     broker.start();
     broker.awaitCompleteTopology();
@@ -155,40 +175,28 @@ public class ZeebeMigrationHelper {
     return broker;
   }
 
-  private Map<String, String> zeebe86ElasticsearchDefaultConfig() {
+  private Map<String, String> zeebe87ElasticsearchDefaultConfig() {
     return new HashMap<>() {
       {
         put(
             "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
             "io.camunda.zeebe.exporter.ElasticsearchExporter");
         put("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", "http://elasticsearch:9200");
+        put("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX", indexPrefix);
         put("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1");
         put("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
         put("CAMUNDA_DATABASE_URL", "http://elasticsearch:9200");
         put("CAMUNDA_REST_QUERY_ENABLED", "true");
+        put("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix);
       }
     };
   }
 
-  private Map<String, String> zeebe87ElasticsearchDefaultConfig() {
+  private Map<String, String> zeebe88ElasticsearchDefaultConfig() {
     return new HashMap<>() {
       {
         put("camunda.rest.query.enabled", "true");
-      }
-    };
-  }
-
-  private Map<String, String> zeebe86OpensearchDefaultConfig() {
-    return new HashMap<>() {
-      {
-        put(
-            "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME",
-            "io.camunda.zeebe.exporter.opensearch.OpensearchExporter");
-        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL", "http://opensearch:9200");
-        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULK_SIZE", "1");
-        put("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
-        put("CAMUNDA_DATABASE_URL", "http://opensearch:9200");
-        put("CAMUNDA_REST_QUERY_ENABLED", "true");
+        put("camunda.database.indexPrefix", indexPrefix);
       }
     };
   }
@@ -196,8 +204,26 @@ public class ZeebeMigrationHelper {
   private Map<String, String> zeebe87OpensearchDefaultConfig() {
     return new HashMap<>() {
       {
+        put(
+            "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME",
+            "io.camunda.zeebe.exporter.opensearch.OpensearchExporter");
+        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL", "http://opensearch:9200");
+        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULK_SIZE", "1");
+        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX", indexPrefix);
+        put("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
+        put("CAMUNDA_DATABASE_URL", "http://opensearch:9200");
+        put("CAMUNDA_REST_QUERY_ENABLED", "true");
+        put("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix);
+      }
+    };
+  }
+
+  private Map<String, String> zeebe88OpensearchDefaultConfig() {
+    return new HashMap<>() {
+      {
         put("camunda.rest.query.enabled", "true");
         put("camunda.database.type", "opensearch");
+        put("camunda.database.indexPrefix", indexPrefix);
       }
     };
   }
@@ -210,5 +236,24 @@ public class ZeebeMigrationHelper {
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  private Consumer<ExporterCfg> camundaExporterConfig(
+      final DatabaseType databaseType, final String databaseUrl) {
+    final Map<String, String> connect =
+        databaseType.equals(DatabaseType.ELASTICSEARCH)
+            ? Map.of("url", databaseUrl, "indexPrefix", indexPrefix)
+            : Map.of("url", databaseUrl, "type", "opensearch", "indexPrefix", indexPrefix);
+    return cfg -> {
+      cfg.setClassName(CamundaExporter.class.getName());
+      cfg.setArgs(
+          Map.of(
+              "connect",
+              connect,
+              "bulk",
+              Map.of("size", 1, "delay", 1),
+              "index",
+              Map.of("shouldWaitForImporters", false, "prefix", indexPrefix)));
+    };
   }
 }
