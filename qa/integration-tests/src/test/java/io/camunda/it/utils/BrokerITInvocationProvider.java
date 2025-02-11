@@ -123,6 +123,12 @@ public class BrokerITInvocationProvider
     return this;
   }
 
+  public BrokerITInvocationProvider withJustBasicAuth() {
+    withAdditionalProperty(AuthenticationProperties.METHOD, AuthenticationMethod.BASIC.name());
+    withAdditionalProfiles(Profile.CONSOLIDATED_AUTH);
+    return this;
+  }
+
   public BrokerITInvocationProvider withAuthorizationsEnabled() {
     return withAdditionalSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
   }

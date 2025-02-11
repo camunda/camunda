@@ -15,6 +15,7 @@ import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.search.clients.query.SearchQueryBuilders;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
@@ -55,7 +56,8 @@ public class CompatibilityTasklistCompleteUserTaskAuthorizationIT {
       new TestStandaloneCamunda()
           .withCamundaExporter()
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
-          .withProperty("camunda.tasklist.zeebe.compatibility.enabled", true);
+          .withProperty("camunda.tasklist.zeebe.compatibility.enabled", true)
+          .withAuthenticationMethod(AuthenticationMethod.BASIC);
 
   @BeforeEach
   public void beforeAll() {

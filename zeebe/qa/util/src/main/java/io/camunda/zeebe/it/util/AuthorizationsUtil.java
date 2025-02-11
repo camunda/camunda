@@ -93,7 +93,7 @@ public class AuthorizationsUtil implements CloseableSilently {
             .join();
       }
     }
-    if (permissions != null && permissions.length > 0) {
+    if (permissions.length > 0) {
       awaitPermissionExistsInElasticsearch(username, Arrays.asList(permissions).getLast());
     }
   }

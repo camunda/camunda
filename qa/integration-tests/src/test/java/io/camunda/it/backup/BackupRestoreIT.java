@@ -15,6 +15,7 @@ import io.camunda.management.backups.TakeBackupHistoryResponse;
 import io.camunda.qa.util.cluster.HistoryBackupClient;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.search.connect.configuration.DatabaseType;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -56,7 +57,8 @@ public class BackupRestoreIT {
   }
 
   private void setup(final BackupRestoreTestConfig config) throws Exception {
-    testStandaloneApplication = new TestSimpleCamundaApplication();
+    testStandaloneApplication =
+        new TestSimpleCamundaApplication().withAuthenticationMethod(AuthenticationMethod.BASIC);
     final var configurator = new MultiDbConfigurator(testStandaloneApplication);
     searchContainer =
         switch (config.databaseType) {
