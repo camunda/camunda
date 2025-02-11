@@ -9,19 +9,25 @@ import { ApiDefinition, apiDelete, apiGet, apiPost } from "../request";
 import { User } from "src/utility/api/users";
 import { GROUPS_ENDPOINT } from "src/utility/api/groups";
 import { SearchResponse } from "src/utility/api";
+import { TENANTS_ENDPOINT } from "src/utility/api/tenants";
 
 export type GetGroupMembersParams = {
   groupId: string;
 };
 
-export const getGroupMembers: ApiDefinition<User[], GetGroupMembersParams> = ({
-  groupId,
-}) => apiGet(`${GROUPS_ENDPOINT}/${groupId}/users`);
+export type GetTenantMembersParams = {
+  tenantId: string;
+};
 
 export const getMembersByGroup: ApiDefinition<
   SearchResponse<User>,
   GetGroupMembersParams
 > = ({ groupId }) => apiGet(`${GROUPS_ENDPOINT}/${groupId}/users`);
+
+export const getMembersByTenantId: ApiDefinition<
+  SearchResponse<User>,
+  GetTenantMembersParams
+> = ({ tenantId }) => apiPost(`${TENANTS_ENDPOINT}/${tenantId}/users/search`);
 
 type AssignGroupMemberParams = GetGroupMembersParams & { userId: string };
 

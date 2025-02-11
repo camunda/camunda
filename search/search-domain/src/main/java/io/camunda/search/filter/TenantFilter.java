@@ -7,7 +7,6 @@
  */
 package io.camunda.search.filter;
 
-import io.camunda.search.entities.TenantMemberEntity.MemberType;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Set;
@@ -55,23 +54,14 @@ public record TenantFilter(
       return this;
     }
 
-    public Builder memberType(final MemberType value) {
-      memberType = value;
-      return this;
-    }
-
-    public Builder joinParentId(final String value) {
-      joinParentId = value;
+    public Builder entityType(final EntityType value) {
+      entityType = value;
       return this;
     }
 
     public Builder memberType(final EntityType value) {
       entityType = value;
       return this;
-    }
-
-    public Builder memberKey(final Long value) {
-      return memberKeys(Set.of(value));
     }
 
     public Builder memberKeys(final Set<Long> value) {

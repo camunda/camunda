@@ -9,7 +9,6 @@ package io.camunda.search.clients.transformers.entity;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.entities.TenantMemberEntity;
-import io.camunda.search.entities.TenantMemberEntity.MemberType;
 
 public class TenantMemberEntityTransformer
     implements ServiceTransformer<
