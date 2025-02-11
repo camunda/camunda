@@ -11,6 +11,7 @@ import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.cluster.messaging.Subscription;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerResponseConsumer;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
@@ -43,7 +44,8 @@ public final class BrokerClientImpl implements BrokerClient {
       final MessagingService messagingService,
       final ClusterEventService eventService,
       final ActorSchedulingService schedulingService,
-      final BrokerTopologyManager topologyManager) {
+      final BrokerTopologyManager topologyManager,
+      final BrokerClientRequestMetrics metrics) {
     this.eventService = eventService;
     this.schedulingService = schedulingService;
 
@@ -54,7 +56,8 @@ public final class BrokerClientImpl implements BrokerClient {
             atomixTransportAdapter,
             topologyManager,
             new RoundRobinDispatchStrategy(),
-            requestTimeout);
+            requestTimeout,
+            metrics);
   }
 
   @Override
@@ -84,25 +87,6 @@ public final class BrokerClientImpl implements BrokerClient {
     }
 
     LOG.debug("Gateway broker client closed.");
-  }
-
-  @Override
-  public BrokerTopologyManager getTopologyManager() {
-    return topologyManager;
-  }
-
-  @Override
-  public void subscribeJobAvailableNotification(
-      final String topic, final Consumer<String> handler) {
-    jobAvailableSubscription =
-        eventService
-            .subscribe(
-                topic,
-                msg -> {
-                  handler.accept((String) msg);
-                  return CompletableFuture.completedFuture(null);
-                })
-            .join();
   }
 
   @Override
@@ -143,6 +127,25 @@ public final class BrokerClientImpl implements BrokerClient {
                 throwableConsumer.accept(error);
               }
             });
+  }
+
+  @Override
+  public BrokerTopologyManager getTopologyManager() {
+    return topologyManager;
+  }
+
+  @Override
+  public void subscribeJobAvailableNotification(
+      final String topic, final Consumer<String> handler) {
+    jobAvailableSubscription =
+        eventService
+            .subscribe(
+                topic,
+                msg -> {
+                  handler.accept((String) msg);
+                  return CompletableFuture.completedFuture(null);
+                })
+            .join();
   }
 
   private void doAndLogException(final Runnable r) {

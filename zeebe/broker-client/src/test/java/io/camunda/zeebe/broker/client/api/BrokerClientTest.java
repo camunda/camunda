@@ -36,6 +36,7 @@ import io.camunda.zeebe.test.broker.protocol.brokerapi.StubBroker;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.Future;
@@ -65,6 +66,7 @@ public final class BrokerClientTest {
 
   @BeforeEach
   void beforeEach() {
+    final var meterRegistry = new SimpleMeterRegistry();
     final var brokerAddress =
         Address.from(broker.getCurrentStubHost(), broker.getCurrentStubPort());
     final var membership = BootstrapDiscoveryProvider.builder().withNodes(brokerAddress).build();
@@ -78,7 +80,9 @@ public final class BrokerClientTest {
     actorScheduler.start();
 
     final var topologyManager =
-        new BrokerTopologyManagerImpl(() -> atomixCluster.getMembershipService().getMembers());
+        new BrokerTopologyManagerImpl(
+            () -> atomixCluster.getMembershipService().getMembers(),
+            BrokerClientTopologyMetrics.of(meterRegistry));
     this.topologyManager = topologyManager;
     actorScheduler.submitActor(topologyManager).join();
     atomixCluster.getMembershipService().addListener(topologyManager);
@@ -94,7 +98,8 @@ public final class BrokerClientTest {
             atomixCluster.getMessagingService(),
             atomixCluster.getEventService(),
             actorScheduler,
-            topologyManager);
+            topologyManager,
+            BrokerClientRequestMetrics.of(meterRegistry));
     client.start().forEach(ActorFuture::join);
   }
 
