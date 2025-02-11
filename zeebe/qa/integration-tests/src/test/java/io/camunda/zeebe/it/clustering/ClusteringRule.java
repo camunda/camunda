@@ -37,7 +37,9 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.bootstrap.BrokerContext;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.SystemContext;
@@ -104,7 +106,6 @@ import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
 import org.junit.Assert;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.Description;
@@ -137,6 +138,7 @@ public class ClusteringRule extends ExternalResource {
   private final List<Integer> partitionIds;
   private final String clusterName;
   private final Map<Integer, LogStream> logstreams;
+  private final MeterRegistry meterRegistry;
 
   // cluster
   private ZeebeClient client;
@@ -146,7 +148,6 @@ public class ClusteringRule extends ExternalResource {
   private final Map<Integer, SpringBrokerBridge> springBrokerBridge;
   private final Map<Integer, SystemContext> systemContexts;
   private final ActorClockConfiguration actorClockConfiguration;
-  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   public ClusteringRule() {
     this(3);
@@ -218,6 +219,12 @@ public class ClusteringRule extends ExternalResource {
             .collect(Collectors.toList());
 
     clusterName = "zeebe-cluster-" + CLUSTER_COUNT.getAndIncrement();
+    meterRegistry = new SimpleMeterRegistry();
+    closeables.add(
+        () -> {
+          meterRegistry.clear();
+          meterRegistry.close();
+        });
   }
 
   public int getPartitionCount() {
@@ -364,6 +371,13 @@ public class ClusteringRule extends ExternalResource {
         new BrokerClientConfiguration(
             brokerClientConfig, atomixCluster, scheduler, topologyManager);
     final var brokerClient = brokerClientConfiguration.brokerClient();
+    new BrokerClientImpl(
+        brokerCfg.getGateway().getCluster().getRequestTimeout(),
+        atomixCluster.getMessagingService(),
+        atomixCluster.getEventService(),
+        scheduler,
+        topologyManager,
+        BrokerClientRequestMetrics.of(meterRegistry));
 
     final var systemContext =
         new SystemContext(
@@ -373,7 +387,7 @@ public class ClusteringRule extends ExternalResource {
             scheduler,
             atomixCluster,
             brokerClient,
-            new SimpleMeterRegistry());
+            meterRegistry);
     systemContexts.put(nodeId, systemContext);
 
     final Broker broker =
@@ -495,7 +509,6 @@ public class ClusteringRule extends ExternalResource {
         new BrokerClientConfiguration(
             brokerClientConfig, atomixCluster, actorScheduler, topologyManager);
     final var brokerClient = brokerClientConfiguration.brokerClient();
-
     final var jobStreamClient =
         new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster);
     jobStreamClient.start().join();
@@ -670,6 +683,9 @@ public class ClusteringRule extends ExternalResource {
       } catch (final InterruptedException | ExecutionException e) {
         LangUtil.rethrowUnchecked(e);
       }
+
+      meterRegistry.clear();
+      meterRegistry.close();
     }
   }
 
