@@ -20,6 +20,8 @@ import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
+import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
 import io.camunda.process.test.impl.client.IncidentDto;
@@ -193,6 +195,46 @@ public class CamundaProcessResultCollectorTest {
         .contains(tuple("UNHANDLED_ERROR_EVENT", "No error catch event found.", "task-c"));
   }
 
+  @Test
+  void shouldReturnActiveFlowNodeInstances() throws IOException {
+    // given
+    final ProcessInstanceDto processInstance1 = newProcessInstance(1L, "process-a");
+    final ProcessInstanceDto processInstance2 = newProcessInstance(2L, "process-b");
+    when(camundaDataSource.findProcessInstances())
+        .thenReturn(Arrays.asList(processInstance1, processInstance2));
+
+    final FlowNodeInstanceDto flowNodeInstance1 = newFlowNodeInstance("task-a", "A");
+    final FlowNodeInstanceDto flowNodeInstance2 = newFlowNodeInstance("task-b", "B");
+
+    when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(
+            processInstance1.getProcessInstanceKey()))
+        .thenReturn(Arrays.asList(flowNodeInstance1, flowNodeInstance2));
+
+    final FlowNodeInstanceDto flowNodeInstance3 = newFlowNodeInstance("task-c", "C");
+    final FlowNodeInstanceDto flowNodeInstance4 = newFlowNodeInstance("task-d", "D");
+    flowNodeInstance4.setState(FlowNodeInstanceState.COMPLETED);
+
+    when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(
+            processInstance2.getProcessInstanceKey()))
+        .thenReturn(Arrays.asList(flowNodeInstance3, flowNodeInstance4));
+
+    // when
+    final ProcessTestResult result = resultCollector.collect();
+
+    // then
+    assertThat(result.getProcessInstanceTestResults()).hasSize(2);
+
+    assertThat(result.getProcessInstanceTestResults().get(0).getActiveFlowNodeInstances())
+        .hasSize(2)
+        .extracting(FlowNodeInstance::getFlowNodeId, FlowNodeInstance::getFlowNodeName)
+        .contains(tuple("task-a", "A"), tuple("task-b", "B"));
+
+    assertThat(result.getProcessInstanceTestResults().get(1).getActiveFlowNodeInstances())
+        .hasSize(1)
+        .extracting(FlowNodeInstance::getFlowNodeId, FlowNodeInstance::getFlowNodeName)
+        .contains(tuple("task-c", "C"));
+  }
+
   private static ProcessInstanceDto newProcessInstance(
       final long processInstanceKey, final String processId) {
     final ProcessInstanceDto processInstance = new ProcessInstanceDto();
@@ -213,6 +255,7 @@ public class CamundaProcessResultCollectorTest {
     final FlowNodeInstanceDto flowNodeInstance = new FlowNodeInstanceDto();
     flowNodeInstance.setFlowNodeId(nodeId);
     flowNodeInstance.setFlowNodeName(nodeName);
+    flowNodeInstance.setState(FlowNodeInstanceState.ACTIVE);
     return flowNodeInstance;
   }
 
