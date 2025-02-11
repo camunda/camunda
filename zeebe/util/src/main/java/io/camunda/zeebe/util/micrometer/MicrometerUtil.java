@@ -14,9 +14,11 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.Builder;
 import io.micrometer.core.instrument.Timer.Sample;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.time.Duration;
 import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
 
@@ -96,6 +98,15 @@ public final class MicrometerUtil {
   public static void closeRegistry(final MeterRegistry registry) {
     registry.clear();
     registry.close();
+  }
+
+  /**
+   * Returns a {@link CompositeMeterRegistry} using the same config as the given registry, which
+   * will forward all metrics to that registry. This means if the forwardee has some common tags,
+   * they will be applied to the metrics you create on the returned registry.
+   */
+  public static CompositeMeterRegistry wrap(final MeterRegistry registry) {
+    return new CompositeMeterRegistry(registry.config().clock(), Collections.singleton(registry));
   }
 
   /** Returns a timer builder pre-configured based on the given documentation. */
