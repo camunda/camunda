@@ -132,6 +132,17 @@ public class ElasticOpenSearchSetupHelper implements MultiDbSetupHelper {
             testPrefix);
         return false;
       }
+
+      final int templateCount = getCountOfIndexTemplatesWithPrefix(endpoint, testPrefix);
+      if (templateCount <= 0) {
+        LOGGER.debug("{} templates found for prefix {}, retry...", templateCount, testPrefix);
+        return false;
+      }
+
+      LOGGER.debug(
+          "Found {} indices and {} index templates. Schema creation validated.",
+          count,
+          templateCount);
       return true;
     } catch (final IOException | InterruptedException e) {
       LOGGER.debug("Exception on retrieving schema with prefix {}", testPrefix, e);
