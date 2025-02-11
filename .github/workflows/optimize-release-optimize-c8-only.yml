@@ -116,6 +116,15 @@ jobs:
         id: define-values
         uses: ./.github/actions/git-environment
 
+      - name: Should Push Changes
+        id: should-push
+        run: |
+          should_push="false"
+          if [ "${{ steps.release-type.outputs.IS_DRY_RUN }}" = "false" ]; then
+            should_push="true"
+          fi
+          echo "should_push=should_push" >> "$GITHUB_OUTPUT"
+
       - name: Expose common variables as Env
         run: |
           {
@@ -129,7 +138,11 @@ jobs:
             echo "IS_ALPHA=${{ steps.release-type.outputs.is_alpha }}"
             echo "IS_RC=${{ steps.release-type.outputs.is_rc }}"
             echo "IS_DRY_RUN=${{ github.event.inputs.IS_DRY_RUN || 'true' }}"
+<<<<<<< HEAD
             echo "PUSH_CHANGES=${{ !github.event.inputs.IS_DRY_RUN || 'false' }}"
+=======
+            echo "SHOULD_PUSH=${{ steps.release-type.outputs.should_push }}"
+>>>>>>> 5a80133b (ci: properly push tags and version updates on optimize release)
             echo "TAG=${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}-optimize"
           } >> "$GITHUB_ENV"
 
@@ -182,8 +195,13 @@ jobs:
       - name: Prepare release
         run: |
           mvn -f optimize \
+<<<<<<< HEAD
             -DpushChanges="${PUSH_CHANGES}" \
             -DremoteTagging="${PUSH_CHANGES}" \
+=======
+            -DpushChanges="${{ env.SHOULD_PUSH }}" \
+            -DremoteTagging="${{ env.SHOULD_PUSH }}" \
+>>>>>>> 5a80133b (ci: properly push tags and version updates on optimize release)
             -DskipTests=true \
             -DignoreSnapshots=true \
             -Prelease,runAssembly \
