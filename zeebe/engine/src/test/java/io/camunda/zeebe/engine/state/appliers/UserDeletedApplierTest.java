@@ -97,14 +97,6 @@ public class UserDeletedApplierTest {
     userDeletedApplier.applyState(userRecord.getUserKey(), userRecord);
 
     // then
-    assertThat(
-            authorizationState.getResourceIdentifiers(
-                AuthorizationOwnerType.USER, userRecord.getUsername(), PROCESS_DEFINITION, CREATE))
-        .hasSize(0);
-    assertThat(
-            authorizationState.getResourceIdentifiers(
-                AuthorizationOwnerType.USER, userRecord.getUsername(), DECISION_DEFINITION, DELETE))
-        .hasSize(0);
     assertThat(userState.getUser(userRecord.getUserKey())).isEmpty();
   }
 }

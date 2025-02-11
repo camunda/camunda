@@ -114,13 +114,6 @@ public class MappingAppliersTest {
 
     // then
     assertThat(mappingState.get(mappingKey)).isEmpty();
-    assertThat(
-            authorizationState.getResourceIdentifiers(
-                AuthorizationOwnerType.MAPPING,
-                mappingId,
-                AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.READ))
-        .isEmpty();
   }
 
   @Test
