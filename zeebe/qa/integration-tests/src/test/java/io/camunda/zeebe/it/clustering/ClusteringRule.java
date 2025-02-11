@@ -39,7 +39,6 @@ import io.camunda.zeebe.broker.bootstrap.BrokerContext;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
-import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.SystemContext;
@@ -138,7 +137,6 @@ public class ClusteringRule extends ExternalResource {
   private final List<Integer> partitionIds;
   private final String clusterName;
   private final Map<Integer, LogStream> logstreams;
-  private final MeterRegistry meterRegistry;
 
   // cluster
   private ZeebeClient client;
@@ -219,12 +217,6 @@ public class ClusteringRule extends ExternalResource {
             .collect(Collectors.toList());
 
     clusterName = "zeebe-cluster-" + CLUSTER_COUNT.getAndIncrement();
-    meterRegistry = new SimpleMeterRegistry();
-    closeables.add(
-        () -> {
-          meterRegistry.clear();
-          meterRegistry.close();
-        });
   }
 
   public int getPartitionCount() {
@@ -348,6 +340,7 @@ public class ClusteringRule extends ExternalResource {
     final var brokerBase = getBrokerBase(nodeId);
     final var brokerCfg = getBrokerCfg(nodeId);
     final var brokerSpringConfig = getBrokerConfiguration(brokerBase, brokerCfg);
+    final var meterRegistry = new SimpleMeterRegistry();
     brokerCfg.init(brokerBase.getAbsolutePath());
 
     final var atomixCluster =
@@ -370,14 +363,8 @@ public class ClusteringRule extends ExternalResource {
     final var brokerClientConfiguration =
         new BrokerClientConfiguration(
             brokerClientConfig, atomixCluster, scheduler, topologyManager);
-    final var brokerClient = brokerClientConfiguration.brokerClient();
-    new BrokerClientImpl(
-        brokerCfg.getGateway().getCluster().getRequestTimeout(),
-        atomixCluster.getMessagingService(),
-        atomixCluster.getEventService(),
-        scheduler,
-        topologyManager,
-        BrokerClientRequestMetrics.of(meterRegistry));
+    final var brokerClient =
+        brokerClientConfiguration.brokerClient(BrokerClientRequestMetrics.of(meterRegistry));
 
     final var systemContext =
         new SystemContext(
@@ -487,6 +474,7 @@ public class ClusteringRule extends ExternalResource {
     final var config = new GatewayBasedConfiguration(gatewayCfg, new LifecycleProperties());
     final var clusterConfig = config.clusterConfig();
     final var actorConfig = config.schedulerConfiguration();
+    final var meterRegistry = new SimpleMeterRegistry();
 
     final ActorScheduler actorScheduler =
         new ActorSchedulerConfiguration(
@@ -505,7 +493,8 @@ public class ClusteringRule extends ExternalResource {
     final var brokerClientConfiguration =
         new BrokerClientConfiguration(
             brokerClientConfig, atomixCluster, actorScheduler, topologyManager);
-    final var brokerClient = brokerClientConfiguration.brokerClient();
+    final var brokerClient =
+        brokerClientConfiguration.brokerClient(BrokerClientRequestMetrics.of(meterRegistry));
     final var jobStreamClient =
         new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster);
     jobStreamClient.start().join();
@@ -519,7 +508,13 @@ public class ClusteringRule extends ExternalResource {
     gateway.start().join();
 
     return new GatewayResource(
-        gatewayCfg, actorScheduler, atomixCluster, brokerClient, jobStreamClient, gateway);
+        gatewayCfg,
+        actorScheduler,
+        atomixCluster,
+        brokerClient,
+        jobStreamClient,
+        gateway,
+        meterRegistry);
   }
 
   private ZeebeClient createClient() {
@@ -681,8 +676,8 @@ public class ClusteringRule extends ExternalResource {
         LangUtil.rethrowUnchecked(e);
       }
 
-      meterRegistry.clear();
-      meterRegistry.close();
+      broker.getSystemContext().getMeterRegistry().clear();
+      broker.getSystemContext().getMeterRegistry().close();
     }
   }
 
@@ -975,13 +970,20 @@ public class ClusteringRule extends ExternalResource {
       AtomixCluster cluster,
       BrokerClient brokerClient,
       JobStreamClient jobStreamClient,
-      Gateway gateway)
+      Gateway gateway,
+      MeterRegistry meterRegistry)
       implements AutoCloseable {
 
     @Override
     public void close() {
       CloseHelper.quietCloseAll(
-          gateway, jobStreamClient, brokerClient, scheduler, () -> cluster.stop().join());
+          gateway,
+          jobStreamClient,
+          brokerClient,
+          scheduler,
+          () -> cluster.stop().join(),
+          meterRegistry::clear,
+          meterRegistry::close);
     }
   }
 
