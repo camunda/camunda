@@ -30,13 +30,14 @@ public class TaskVariableTemplate extends AbstractTemplateDescriptor implements 
   public static final String FULL_VALUE = "fullValue";
   public static final String IS_PREVIEW = "isPreview";
   public static final String TENANT_ID = "tenantId";
+  public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
 
   @Override
   public String getIndexName() {
     return INDEX_NAME;
   }
 
-  private static Optional<String> getElsFieldByGraphqlField(String fieldName) {
+  private static Optional<String> getElsFieldByGraphqlField(final String fieldName) {
     switch (fieldName) {
       case ("id"):
         return of(ID);
@@ -53,7 +54,7 @@ public class TaskVariableTemplate extends AbstractTemplateDescriptor implements 
     }
   }
 
-  public static Set<String> getElsFieldsByGraphqlFields(Set<String> fieldNames) {
+  public static Set<String> getElsFieldsByGraphqlFields(final Set<String> fieldNames) {
     return fieldNames.stream()
         .map((fn) -> getElsFieldByGraphqlField(fn))
         .flatMap(Optional::stream)

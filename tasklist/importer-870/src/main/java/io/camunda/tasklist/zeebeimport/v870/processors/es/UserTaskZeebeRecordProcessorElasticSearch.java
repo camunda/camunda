@@ -66,7 +66,7 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
         final List<TaskVariableEntity> variables =
             userTaskRecordToVariableEntityMapper.mapVariables(record);
         for (final TaskVariableEntity variable : variables) {
-          bulkRequest.add(getVariableQuery(variable));
+          bulkRequest.add(getVariableQuery(variable, record.getValue().getProcessInstanceKey()));
         }
       }
     }
@@ -97,7 +97,8 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     }
   }
 
-  private UpdateRequest getVariableQuery(final TaskVariableEntity variable)
+  private UpdateRequest getVariableQuery(
+      final TaskVariableEntity variable, final Long processInstanceKey)
       throws PersistenceException {
     try {
       LOGGER.debug("Variable instance for list view: id {}", variable.getId());
@@ -105,6 +106,7 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
       updateFields.put(TaskVariableTemplate.VALUE, variable.getValue());
       updateFields.put(TaskVariableTemplate.FULL_VALUE, variable.getFullValue());
       updateFields.put(TaskVariableTemplate.IS_PREVIEW, variable.getIsPreview());
+      updateFields.put(TaskVariableTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
 
       return new UpdateRequest()
           .index(variableIndex.getFullQualifiedName())
