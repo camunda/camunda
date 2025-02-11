@@ -43,7 +43,9 @@ outputs:
       ${{
         github.event_name == 'push' ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
-        steps.filter-optimize.outputs.optimize-backend-change == 'true'
+        steps.filter-optimize.outputs.optimize-backend-change == 'true' ||
+        steps.filter-common.outputs.webapps-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true'
       }}
   camunda-docker-tests:
     description: Output whether Camunda Docker tests should be run based on GitHub event and files changed
@@ -71,6 +73,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-common.outputs.webapps-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-zeebe.outputs.zeebe-change == 'true'
       }}
@@ -120,6 +123,11 @@ runs:
 
         markdown-change:
           - '**/*.md'
+
+        webapps-change:
+          - 'webapps-backup/**'
+          - 'webapps-common/**'
+          - 'webapps-schema/**'
 
         frontend-change:
           - 'operate/client/**'
