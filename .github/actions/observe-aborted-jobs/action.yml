@@ -38,7 +38,7 @@ runs:
         secrets: |
           secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
 
-    - uses: camunda/infra-global-github-actions/submit-aborted-gha-status@main
+    - uses: camunda/infra-global-github-actions/submit-aborted-gha-status@generic-submit-aborted-gha-status
       if: ${{ always() && steps.secrets.outputs.gcloud_sa_key != '' }}
       with:
         gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
