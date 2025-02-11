@@ -47,9 +47,7 @@ public class RoleAppliersTest {
     userState = processingState.getUserState();
     authorizationState = processingState.getAuthorizationState();
     mappingState = processingState.getMappingState();
-    roleDeletedApplier =
-        new RoleDeletedApplier(
-            processingState.getRoleState(), processingState.getAuthorizationState());
+    roleDeletedApplier = new RoleDeletedApplier(processingState.getRoleState());
     roleEntityAddedApplier = new RoleEntityAddedApplier(processingState);
     roleEntityRemovedApplier = new RoleEntityRemovedApplier(processingState);
   }
@@ -136,13 +134,6 @@ public class RoleAppliersTest {
 
     // then
     assertThat(roleState.getRole(roleKey)).isEmpty();
-    final var resourceIdentifiers =
-        authorizationState.getResourceIdentifiers(
-            AuthorizationOwnerType.ROLE,
-            roleId,
-            AuthorizationResourceType.ROLE,
-            PermissionType.DELETE);
-    assertThat(resourceIdentifiers).isEmpty();
   }
 
   @Test
