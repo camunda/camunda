@@ -16,12 +16,11 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.VariableFilter;
-import io.camunda.client.api.search.filter.builder.BasicStringProperty;
+import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.client.impl.search.filter.builder.BasicStringPropertyImpl;
+import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
-import io.camunda.client.impl.util.ParseUtil;
 import java.util.function.Consumer;
 
 public class VariableFilterImpl
@@ -36,13 +35,13 @@ public class VariableFilterImpl
 
   @Override
   public VariableFilter variableKey(final Long key) {
-    variableKey(b -> b.eq(ParseUtil.keyToString(key)));
+    variableKey(b -> b.eq(key));
     return this;
   }
 
   @Override
-  public VariableFilter variableKey(final Consumer<BasicStringProperty> fn) {
-    final BasicStringProperty property = new BasicStringPropertyImpl();
+  public VariableFilter variableKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
     filter.setVariableKey(property.build());
     return this;
@@ -78,13 +77,13 @@ public class VariableFilterImpl
 
   @Override
   public VariableFilter scopeKey(final Long scopeKey) {
-    scopeKey(b -> b.eq(ParseUtil.keyToString(scopeKey)));
+    scopeKey(b -> b.eq(scopeKey));
     return this;
   }
 
   @Override
-  public VariableFilter scopeKey(final Consumer<BasicStringProperty> fn) {
-    final BasicStringProperty property = new BasicStringPropertyImpl();
+  public VariableFilter scopeKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
     filter.setScopeKey(property.build());
     return this;
@@ -92,13 +91,13 @@ public class VariableFilterImpl
 
   @Override
   public VariableFilter processInstanceKey(final Long processInstanceKey) {
-    processInstanceKey(b -> b.eq(ParseUtil.keyToString(processInstanceKey)));
+    processInstanceKey(b -> b.eq(processInstanceKey));
     return this;
   }
 
   @Override
-  public VariableFilter processInstanceKey(final Consumer<BasicStringProperty> fn) {
-    final BasicStringProperty property = new BasicStringPropertyImpl();
+  public VariableFilter processInstanceKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
     filter.setProcessInstanceKey(property.build());
     return this;
