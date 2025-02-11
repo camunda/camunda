@@ -96,7 +96,7 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
         .withPartitionId(context.getPartitionId())
         .withMaxFragmentSize(context.getMaxFragmentSize())
         .withActorSchedulingService(context.getActorSchedulingService())
-        .withMeterRegistry(context.getPartitionMeterRegistry())
+        .withMeterRegistry(context.getPartitionTransitionMeterRegistry())
         .buildAsync();
   }
 

@@ -106,8 +106,8 @@ public class PartitionStartupAndTransitionContextImpl
   private BackupStore backupStore;
   private AdminApiRequestHandler adminApiService;
   private PartitionAdminAccess adminAccess;
-  private final MeterRegistry brokerMeterRegistry;
-  private MeterRegistry partitionMeterRegistry;
+  private final MeterRegistry startupMeterRegistry;
+  private MeterRegistry transitionMeterRegistry;
 
   public PartitionStartupAndTransitionContextImpl(
       final int nodeId,
@@ -129,7 +129,7 @@ public class PartitionStartupAndTransitionContextImpl
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
       final AtomixServerTransport gatewayBrokerTransport,
       final TopologyManager topologyManager,
-      final MeterRegistry brokerMeterRegistry) {
+      final MeterRegistry startupMeterRegistry) {
     this.nodeId = nodeId;
     this.clusterCommunicationService = clusterCommunicationService;
     this.raftPartition = raftPartition;
@@ -151,8 +151,10 @@ public class PartitionStartupAndTransitionContextImpl
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
     this.topologyManager = topologyManager;
-    this.brokerMeterRegistry = new CompositeMeterRegistry().add(brokerMeterRegistry);
-    this.brokerMeterRegistry.config().commonTags(Tags.of("partition", String.valueOf(partitionId)));
+    this.startupMeterRegistry = new CompositeMeterRegistry().add(startupMeterRegistry);
+    this.startupMeterRegistry
+        .config()
+        .commonTags(Tags.of("partition", String.valueOf(partitionId)));
   }
 
   public PartitionAdminControl getPartitionAdminControl() {
@@ -369,18 +371,18 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public MeterRegistry getBrokerMeterRegistry() {
-    return brokerMeterRegistry;
+  public MeterRegistry getPartitionStartupMeterRegistry() {
+    return startupMeterRegistry;
   }
 
   @Override
-  public MeterRegistry getPartitionMeterRegistry() {
-    return partitionMeterRegistry;
+  public MeterRegistry getPartitionTransitionMeterRegistry() {
+    return transitionMeterRegistry;
   }
 
   @Override
-  public void setPartitionMeterRegistry(final MeterRegistry partitionMeterRegistry) {
-    this.partitionMeterRegistry = partitionMeterRegistry;
+  public void setPartitionTransitionMeterRegistry(final MeterRegistry transitionMeterRegistry) {
+    this.transitionMeterRegistry = transitionMeterRegistry;
   }
 
   @Override

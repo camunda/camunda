@@ -53,7 +53,7 @@ import java.util.function.Consumer;
 
 public class TestPartitionTransitionContext implements PartitionTransitionContext {
 
-  private final CompositeMeterRegistry brokerMeterRegistry = new CompositeMeterRegistry();
+  private final CompositeMeterRegistry startupMeterRegistry = new CompositeMeterRegistry();
 
   private RaftPartition raftPartition;
   private Role currentRole;
@@ -79,13 +79,13 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private BackupManager backupManager;
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private BackupStore backupStore;
-  private MeterRegistry partitionMeterRegistry;
+  private MeterRegistry transitionMeterRegistry;
 
   public TestPartitionTransitionContext() {
-    partitionMeterRegistry = new SimpleMeterRegistry();
-    partitionMeterRegistry.config().commonTags("partitionId", "1");
+    transitionMeterRegistry = new SimpleMeterRegistry();
+    transitionMeterRegistry.config().commonTags("partitionId", "1");
 
-    brokerMeterRegistry.add(partitionMeterRegistry);
+    startupMeterRegistry.add(transitionMeterRegistry);
   }
 
   @Override
@@ -300,18 +300,18 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public MeterRegistry getBrokerMeterRegistry() {
-    return brokerMeterRegistry;
+  public MeterRegistry getPartitionStartupMeterRegistry() {
+    return startupMeterRegistry;
   }
 
   @Override
-  public MeterRegistry getPartitionMeterRegistry() {
-    return partitionMeterRegistry;
+  public MeterRegistry getPartitionTransitionMeterRegistry() {
+    return transitionMeterRegistry;
   }
 
   @Override
-  public void setPartitionMeterRegistry(final MeterRegistry partitionMeterRegistry) {
-    this.partitionMeterRegistry = partitionMeterRegistry;
+  public void setPartitionTransitionMeterRegistry(final MeterRegistry transitionMeterRegistry) {
+    this.transitionMeterRegistry = transitionMeterRegistry;
   }
 
   public void setGatewayBrokerTransport(final AtomixServerTransport gatewayBrokerTransport) {

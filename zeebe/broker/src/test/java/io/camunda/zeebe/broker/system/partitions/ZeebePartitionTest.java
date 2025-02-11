@@ -78,7 +78,7 @@ public class ZeebePartitionTest {
     when(ctx.getPartitionContext()).thenReturn(ctx);
     when(ctx.getComponentHealthMonitor()).thenReturn(healthMonitor);
     when(ctx.createTransitionContext()).thenReturn(ctx);
-    when(ctx.getBrokerMeterRegistry()).thenReturn(new SimpleMeterRegistry());
+    when(ctx.getPartitionStartupMeterRegistry()).thenReturn(new SimpleMeterRegistry());
 
     partition = new ZeebePartition(ctx, transition, List.of(new NoopStartupStep()));
   }
