@@ -19,6 +19,11 @@ import io.camunda.zeebe.snapshots.RestorableSnapshotStore;
 import io.camunda.zeebe.snapshots.SnapshotException;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.Either;
+<<<<<<< HEAD
+=======
+import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+>>>>>>> 70cbf3fc (refactor: migrate snapshot metrics to micrometer)
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
@@ -33,10 +38,31 @@ public final class FileBasedSnapshotStore extends Actor
   private final FileBasedSnapshotStoreImpl snapshotStore;
 
   public FileBasedSnapshotStore(
+<<<<<<< HEAD
       final int brokerId,
       final int partitionId,
       final Path root,
       final CRC32CChecksumProvider checksumProvider) {
+=======
+      final int partitionId,
+      final Path root,
+      final ChecksumProvider checksumProvider,
+      final MeterRegistry meterRegistry) {
+    snapshotsDirectory = root.resolve(SNAPSHOTS_DIRECTORY);
+    pendingDirectory = root.resolve(PENDING_DIRECTORY);
+
+    try {
+      FileUtil.ensureDirectoryExists(snapshotsDirectory);
+      FileUtil.ensureDirectoryExists(pendingDirectory);
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to create snapshot directories", e);
+    }
+
+    snapshotMetrics = new SnapshotMetrics(meterRegistry);
+    receivingSnapshotStartCount = new AtomicLong();
+
+    listeners = new CopyOnWriteArraySet<>();
+>>>>>>> 70cbf3fc (refactor: migrate snapshot metrics to micrometer)
     actorName = buildActorName("SnapshotStore", partitionId);
     this.partitionId = partitionId;
     snapshotStore =
