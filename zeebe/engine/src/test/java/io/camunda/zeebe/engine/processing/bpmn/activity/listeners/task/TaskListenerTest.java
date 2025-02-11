@@ -417,7 +417,7 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldRejectUserTaskAssignmentWhenTaskListenerRejectsTheOperation() {
+  public void shouldRejectUserTaskAssignmentWhenTaskListenerDeniesTheTransition() {
     // given
     final long processInstanceKey =
         createProcessInstance(createProcessWithAssigningTaskListeners(listenerType));
@@ -430,7 +430,7 @@ public class TaskListenerTest {
         .withResult(new JobResult().setDenied(true))
         .complete();
 
-    // then: ensure that `REJECT_TASK_LISTENER` and `ASSIGNMENT_DENIED`
+    // then: ensure that `DENY_TASK_LISTENER` and `ASSIGNMENT_DENIED`
     // are written after `ASSIGNING` event
     assertUserTaskIntentsSequence(
         UserTaskIntent.ASSIGNING,
@@ -449,7 +449,7 @@ public class TaskListenerTest {
 
   @Test
   public void
-      shouldCompleteAllAssignmentTaskListenersWhenFirstTaskListenerAcceptOperationAfterRejection() {
+      shouldCompleteAllAssignmentTaskListenersWhenFirstTaskListenerAcceptTransitionAfterDenial() {
     // given
     final long processInstanceKey =
         createProcessInstance(
@@ -490,7 +490,7 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldUpdateTaskWhenTaskListenerAcceptsOperationAfterRejection() {
+  public void shouldUpdateTaskWhenUpdatingTaskListenerAcceptsTransitionAfterDenial() {
     // given
     final long processInstanceKey =
         createProcessInstance(
@@ -502,7 +502,7 @@ public class TaskListenerTest {
         .ofInstance(processInstanceKey)
         .update(new UserTaskRecord().setPriority(80).setPriorityChanged());
 
-    // and: task listener rejects the first update attempt
+    // and: task listener denies the first update attempt
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
@@ -1383,7 +1383,7 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldRejectUserTaskUpdateWhenTaskListenerDeniesTheOperation() {
+  public void shouldRejectUserTaskUpdateWhenUpdatingTaskListenerDeniesTheTransition() {
     // given
     final long processInstanceKey =
         createProcessInstance(
@@ -1409,7 +1409,7 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldRejectUserTaskCompletionWhenTaskListenerRejectsTheOperation() {
+  public void shouldRejectUserTaskCompletionWhenCompletingTaskListenerDeniesTheTransition() {
     // given
     final long processInstanceKey =
         createProcessInstance(createProcessWithCompletingTaskListeners(listenerType));
@@ -1422,7 +1422,7 @@ public class TaskListenerTest {
         .withResult(new JobResult().setDenied(true))
         .complete();
 
-    // then: ensure that `REJECT_TASK_LISTENER` and `COMPLETION_DENIED`
+    // then: ensure that `DENY_TASK_LISTENER` and `COMPLETION_DENIED`
     // are written after `COMPLETING` event
     assertUserTaskIntentsSequence(
         UserTaskIntent.COMPLETING,
@@ -1431,7 +1431,7 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldCompleteTaskWhenTaskListenerAcceptsOperationAfterRejection() {
+  public void shouldCompleteTaskWhenCompletingTaskListenerAcceptsTransitionAfterDenial() {
     // given
     final long processInstanceKey =
         createProcessInstance(createProcessWithCompletingTaskListeners(listenerType));
@@ -1449,7 +1449,7 @@ public class TaskListenerTest {
     completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
 
     // then: ensure that `COMPLETING` `COMPLETE_TASK_LISTENER` and `COMPLETED events
-    // are present after `REJECT_TASK_LISTENER` and `COMPLETION_DENIED` events
+    // are present after `DENY_TASK_LISTENER` and `COMPLETION_DENIED` events
     assertUserTaskIntentsSequence(
         UserTaskIntent.COMPLETING,
         UserTaskIntent.DENY_TASK_LISTENER,
@@ -1461,7 +1461,7 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldCompleteAllTaskListenersWhenFirstTaskListenerAcceptOperationAfterRejection() {
+  public void shouldCompleteAllTaskListenersWhenFirstTaskListenerAcceptTransitionAfterDenial() {
     // given
     final long processInstanceKey =
         createProcessInstance(
@@ -1495,7 +1495,7 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldAssignAndCompleteTaskAfterTaskListenerRejectsTheCompletion() {
+  public void shouldAssignAndCompleteTaskAfterTaskListenerDeniesTheCompletion() {
     // given
     final long processInstanceKey =
         createProcessInstance(createProcessWithCompletingTaskListeners(listenerType));
