@@ -10296,6 +10296,16 @@
               "interval": "30s",
               "legendFormat": "{{le}}",
               "refId": "A"
+            },
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "expr": "sum(increase(zeebe_gateway_request_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
+              "interval": "30s",
+              "legendFormat": "{{le}}",
+              "refId": "B"
             }
           ],
           "title": "Gateway Request Latency",
