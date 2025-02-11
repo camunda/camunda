@@ -13,12 +13,13 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.EnumMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class CheckpointMetrics {
   private final MeterRegistry registry;
-  private final EnumMap<CheckpointMetricsResultValue, Counter> checkpointRecords =
+  private final Map<CheckpointMetricsResultValue, Counter> checkpointRecords =
       new EnumMap<>(CheckpointMetricsResultValue.class);
   private final AtomicLong checkpointPosition = new AtomicLong(0L);
   private final AtomicLong checkpointId = new AtomicLong(0L);
