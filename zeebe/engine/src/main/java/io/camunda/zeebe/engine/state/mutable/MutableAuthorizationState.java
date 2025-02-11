@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 
 public interface MutableAuthorizationState extends AuthorizationState {
 
@@ -20,15 +19,6 @@ public interface MutableAuthorizationState extends AuthorizationState {
    * @param authorization the authorization record to store
    */
   void create(final long authorizationKey, final AuthorizationRecord authorization);
-
-  /**
-   * Removes all permissions for the provided ownerKey.
-   *
-   * @param ownerType the type of the owner of the authorizations
-   * @param ownerId the ID of the owner of the authorizations
-   */
-  void deleteAuthorizationsByOwnerTypeAndIdPrefix(
-      final AuthorizationOwnerType ownerType, final String ownerId);
 
   /**
    * Updates the provided authorization in the state.

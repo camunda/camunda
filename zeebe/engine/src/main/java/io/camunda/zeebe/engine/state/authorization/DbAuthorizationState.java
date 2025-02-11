@@ -43,6 +43,10 @@ public class DbAuthorizationState implements MutableAuthorizationState {
   private final ColumnFamily<DbLong, PersistedAuthorization>
       authorizationByAuthorizationKeyColumnFamily;
 
+  // ownerType + ownerId -> authorizationKeys
+  private final ColumnFamily<DbCompositeKey<DbString, DbString>, AuthorizationKeys>
+      authorizationKeysByOwnerColumnFamily;
+
   public DbAuthorizationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     ownerType = new DbString();
@@ -64,6 +68,13 @@ public class DbAuthorizationState implements MutableAuthorizationState {
             transactionContext,
             authorizationKey,
             new PersistedAuthorization());
+
+    authorizationKeysByOwnerColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.AUTHORIZATION_KEYS_BY_OWNER,
+            transactionContext,
+            ownerTypeAndOwnerId,
+            new AuthorizationKeys());
   }
 
   @Override
@@ -88,21 +99,13 @@ public class DbAuthorizationState implements MutableAuthorizationState {
               permissions.addResourceIdentifier(permissionType, authorization.getResourceId());
             });
     permissionsColumnFamily.upsert(ownerTypeOwnerIdAndResourceType, permissions);
-  }
 
-  @Override
-  public void deleteAuthorizationsByOwnerTypeAndIdPrefix(
-      final AuthorizationOwnerType ownerType, final String ownerId) {
-    this.ownerType.wrapString(ownerType.name());
-    this.ownerId.wrapString(ownerId);
-
-    authorizationByAuthorizationKeyColumnFamily.forEach(
-        (authorizationKey, authorization) -> {
-          if (authorization.getOwnerType().equals(ownerType)
-              && authorization.getOwnerId().equals(ownerId)) {
-            delete(authorizationKey.getValue());
-          }
-        });
+    // add authorization key to owner
+    final var keys =
+        Optional.ofNullable(authorizationKeysByOwnerColumnFamily.get(ownerTypeAndOwnerId))
+            .orElse(new AuthorizationKeys());
+    keys.addAuthorizationKey(authorizationKey);
+    authorizationKeysByOwnerColumnFamily.upsert(ownerTypeAndOwnerId, keys);
   }
 
   @Override
@@ -135,6 +138,13 @@ public class DbAuthorizationState implements MutableAuthorizationState {
 
     // delete the old authorization record
     authorizationByAuthorizationKeyColumnFamily.deleteExisting(this.authorizationKey);
+
+    // remove authorization key from owner
+    ownerId.wrapString(persistedAuthorization.getOwnerId());
+    ownerType.wrapString(persistedAuthorization.getOwnerType().name());
+    final var keys = authorizationKeysByOwnerColumnFamily.get(ownerTypeAndOwnerId);
+    keys.removeAuthorizationKey(authorizationKey);
+    authorizationKeysByOwnerColumnFamily.update(ownerTypeAndOwnerId, keys);
   }
 
   @Override
@@ -162,6 +172,15 @@ public class DbAuthorizationState implements MutableAuthorizationState {
         : persistedPermissions
             .getPermissions()
             .getOrDefault(permissionType, Collections.emptySet());
+  }
+
+  @Override
+  public Set<Long> getAuthorizationKeysForOwner(
+      final AuthorizationOwnerType ownerType, final String ownerId) {
+    this.ownerType.wrapString(ownerType.name());
+    this.ownerId.wrapString(ownerId);
+    final var keys = authorizationKeysByOwnerColumnFamily.get(ownerTypeAndOwnerId);
+    return keys == null ? Collections.emptySet() : keys.getAuthorizationKeys();
   }
 
   private void removePermission(

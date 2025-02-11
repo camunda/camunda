@@ -81,51 +81,9 @@ public class AuthorizationStateTest {
         authorizationState.getResourceIdentifiers(
             ownerType, ownerId, resourceType, PermissionType.CREATE);
     assertThat(resourceIdentifiers).containsExactly("resourceId");
-  }
 
-  @Test
-  void shouldDeleteAuthorizationsByOwnerTypeAndIdPrefix() {
-    // given
-    final var ownerType1 = AuthorizationOwnerType.USER;
-    final var ownerId1 = "test1";
-    final var ownerType2 = AuthorizationOwnerType.USER;
-    final var ownerId2 = "test2";
-    final var resourceType = AuthorizationResourceType.RESOURCE;
-    final var permissionType = PermissionType.CREATE;
-    final var resourceId1 = "foo";
-    final var resourceId2 = "bar";
-    authorizationState.create(
-        1L,
-        new AuthorizationRecord()
-            .setAuthorizationKey(1L)
-            .setOwnerId(ownerId1)
-            .setOwnerType(ownerType1)
-            .setResourceId(resourceId1)
-            .setResourceType(resourceType)
-            .setAuthorizationPermissions(Set.of(permissionType)));
-
-    authorizationState.create(
-        2L,
-        new AuthorizationRecord()
-            .setAuthorizationKey(2L)
-            .setOwnerId(ownerId2)
-            .setOwnerType(ownerType2)
-            .setResourceId(resourceId2)
-            .setResourceType(resourceType)
-            .setAuthorizationPermissions(Set.of(permissionType)));
-
-    // when
-    authorizationState.deleteAuthorizationsByOwnerTypeAndIdPrefix(ownerType1, ownerId1);
-
-    // then
-    assertThat(
-            authorizationState.getResourceIdentifiers(
-                ownerType1, ownerId1, resourceType, permissionType))
-        .isEmpty();
-    assertThat(
-            authorizationState.getResourceIdentifiers(
-                ownerType2, ownerId2, resourceType, permissionType))
-        .containsExactly(resourceId2);
+    final var keys = authorizationState.getAuthorizationKeysForOwner(ownerType, ownerId);
+    assertThat(keys).containsExactly(authorizationKey);
   }
 
   @Test
@@ -190,6 +148,9 @@ public class AuthorizationStateTest {
         authorizationState.getResourceIdentifiers(
             ownerType, ownerId, resourceType, PermissionType.DELETE);
     assertThat(anotherResourceIdentifiers3).isEmpty();
+
+    final var keys = authorizationState.getAuthorizationKeysForOwner(ownerType, ownerId);
+    assertThat(keys).containsExactly(authorizationKey);
   }
 
   @Test
@@ -253,6 +214,12 @@ public class AuthorizationStateTest {
         authorizationState.getResourceIdentifiers(
             ownerType, ownerId, resourceType, PermissionType.DELETE);
     assertThat(anotherResourceIdentifiers3).isEmpty();
+
+    final var keysByOwner = authorizationState.getAuthorizationKeysForOwner(ownerType, ownerId);
+    assertThat(keysByOwner).isEmpty();
+    final var keysByAnotherOwner =
+        authorizationState.getAuthorizationKeysForOwner(ownerType, "anotherOwnerId");
+    assertThat(keysByAnotherOwner).containsExactly(authorizationKey);
   }
 
   @Test
@@ -323,6 +290,9 @@ public class AuthorizationStateTest {
         authorizationState.getResourceIdentifiers(
             ownerType, ownerId, AuthorizationResourceType.RESOURCE, PermissionType.DELETE);
     assertThat(anotherResourceIdentifiers3).isEmpty();
+
+    final var keys = authorizationState.getAuthorizationKeysForOwner(ownerType, ownerId);
+    assertThat(keys).containsExactly(authorizationKey);
   }
 
   @Test
@@ -397,6 +367,9 @@ public class AuthorizationStateTest {
         authorizationState.getResourceIdentifiers(
             ownerType, ownerId, AuthorizationResourceType.RESOURCE, PermissionType.DELETE);
     assertThat(anotherResourceIdentifiers2).containsExactly("resourceId2");
+
+    final var keys = authorizationState.getAuthorizationKeysForOwner(ownerType, ownerId);
+    assertThat(keys).containsExactly(1L, 2L);
   }
 
   @Test
@@ -434,6 +407,9 @@ public class AuthorizationStateTest {
         authorizationState.getResourceIdentifiers(
             ownerType, ownerId, resourceType, PermissionType.DELETE);
     assertThat(resourceIdentifiers2).isEmpty();
+
+    final var keys = authorizationState.getAuthorizationKeysForOwner(ownerType, ownerId);
+    assertThat(keys).isEmpty();
   }
 
   @Test
@@ -497,5 +473,10 @@ public class AuthorizationStateTest {
         authorizationState.getResourceIdentifiers(
             ownerType2, ownerId2, resourceType2, PermissionType.DELETE);
     assertThat(resourceIdentifiers4).containsExactly(resourceId2);
+
+    final var keys1 = authorizationState.getAuthorizationKeysForOwner(ownerType1, ownerId1);
+    assertThat(keys1).isEmpty();
+    final var keys2 = authorizationState.getAuthorizationKeysForOwner(ownerType2, ownerId2);
+    assertThat(keys2).containsExactly(authorizationKey2);
   }
 }
