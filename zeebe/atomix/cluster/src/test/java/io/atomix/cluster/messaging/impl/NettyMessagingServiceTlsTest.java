@@ -33,8 +33,7 @@ import org.junit.jupiter.api.Test;
 
 final class NettyMessagingServiceTlsTest {
 
-  @AutoCloseResource
-  private final MeterRegistry registry = new SimpleMeterRegistry();
+  @AutoCloseResource private final MeterRegistry registry = new SimpleMeterRegistry();
 
   @Test
   void shouldCommunicateOverTls() throws CertificateException {

@@ -79,8 +79,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   private Collection<Member> members;
   private Collection<Node> nodes;
   private Map<MemberId, TestGroupMembershipEventListener> listeners = Maps.newConcurrentMap();
-  @AutoCloseResource
-  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   private Member member(final String id, final String host, final int port, final Version version) {
     return new SwimMembershipProtocol.SwimMember(

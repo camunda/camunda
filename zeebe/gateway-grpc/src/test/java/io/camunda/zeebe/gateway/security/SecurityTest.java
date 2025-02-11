@@ -47,8 +47,7 @@ final class SecurityTest {
   private BrokerClient brokerClient;
   private JobStreamClient jobStreamClient;
   private BrokerTopologyManagerImpl topologyManager;
-  @AutoCloseResource
-  private MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  @AutoCloseResource private MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @BeforeEach
   void beforeEach() throws Exception {
