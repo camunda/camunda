@@ -35,8 +35,8 @@ public final class AuthorizationRecord extends UnifiedRecordValue
   private final EnumProperty<AuthorizationResourceType> resourceTypeProp =
       new EnumProperty<>(
           "resourceType", AuthorizationResourceType.class, AuthorizationResourceType.UNSPECIFIED);
-  private final ArrayProperty<StringValue> permissionTypes =
-      new ArrayProperty<>("authorizationPermissions", StringValue::new);
+  private final ArrayProperty<StringValue> permissionTypesProp =
+      new ArrayProperty<>("permissionTypes", StringValue::new);
 
   public AuthorizationRecord() {
     super(6);
@@ -45,7 +45,7 @@ public final class AuthorizationRecord extends UnifiedRecordValue
         .declareProperty(ownerTypeProp)
         .declareProperty(resourceIdProp)
         .declareProperty(resourceTypeProp)
-        .declareProperty(permissionTypes);
+        .declareProperty(permissionTypesProp);
   }
 
   @Override
@@ -89,18 +89,18 @@ public final class AuthorizationRecord extends UnifiedRecordValue
   }
 
   @Override
-  public Set<PermissionType> getAuthorizationPermissions() {
-    return permissionTypes.stream()
+  public Set<PermissionType> getPermissionTypes() {
+    return permissionTypesProp.stream()
         .map(StringValue::getValue)
         .map(BufferUtil::bufferAsString)
         .map(PermissionType::valueOf)
         .collect(Collectors.toSet());
   }
 
-  public AuthorizationRecord setAuthorizationPermissions(final Set<PermissionType> permissions) {
-    permissionTypes.reset();
+  public AuthorizationRecord setPermissionTypes(final Set<PermissionType> permissions) {
+    permissionTypesProp.reset();
     permissions.forEach(
-        permission -> permissionTypes.add().wrap(BufferUtil.wrapString(permission.name())));
+        permission -> permissionTypesProp.add().wrap(BufferUtil.wrapString(permission.name())));
     return this;
   }
 

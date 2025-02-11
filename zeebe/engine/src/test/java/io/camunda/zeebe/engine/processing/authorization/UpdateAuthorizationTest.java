@@ -65,7 +65,7 @@ public class UpdateAuthorizationTest {
             AuthorizationRecordValue::getOwnerType,
             AuthorizationRecordValue::getResourceId,
             AuthorizationRecordValue::getResourceType,
-            AuthorizationRecordValue::getAuthorizationPermissions)
+            AuthorizationRecordValue::getPermissionTypes)
         .containsExactly(
             authorizationKey,
             "ownerId",

@@ -50,7 +50,7 @@ public class CreateAuthorizationTest {
             AuthorizationRecordValue::getOwnerType,
             AuthorizationRecordValue::getResourceId,
             AuthorizationRecordValue::getResourceType,
-            AuthorizationRecordValue::getAuthorizationPermissions)
+            AuthorizationRecordValue::getPermissionTypes)
         .containsExactly(
             "ownerId",
             AuthorizationOwnerType.USER,

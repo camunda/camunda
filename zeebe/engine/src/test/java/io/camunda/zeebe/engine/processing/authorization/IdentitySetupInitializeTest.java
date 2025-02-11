@@ -383,7 +383,7 @@ public class IdentitySetupInitializeTest {
       Assertions.assertThat(addedPermissions)
           .filteredOn(record -> record.getResourceType() == resourceType)
           .describedAs("Added supported permission types for resource type %s", resourceType)
-          .flatMap(AuthorizationRecordValue::getAuthorizationPermissions)
+          .flatMap(AuthorizationRecordValue::getPermissionTypes)
           .containsOnly(expectedPermissions.get(resourceType).toArray(new PermissionType[0]));
     }
   }

@@ -120,7 +120,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
             .setOwnerType(AuthorizationOwnerType.USER)
             .setResourceType(AuthorizationResourceType.USER)
             .setResourceId(username)
-            .setAuthorizationPermissions(Set.of(PermissionType.READ, PermissionType.UPDATE));
+            .setPermissionTypes(Set.of(PermissionType.READ, PermissionType.UPDATE));
 
     commandWriter.appendFollowUpCommand(key, AuthorizationIntent.CREATE, authorizationRecord);
   }

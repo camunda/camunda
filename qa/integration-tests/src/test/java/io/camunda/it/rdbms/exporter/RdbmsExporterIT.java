@@ -661,7 +661,7 @@ class RdbmsExporterIT {
             recordValue.getOwnerType(),
             recordValue.getResourceType(),
             recordValue.getResourceId(),
-            recordValue.getAuthorizationPermissions());
+            recordValue.getPermissionTypes());
 
     // when
     exporter.export(authorizationDeletedRecord);

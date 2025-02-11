@@ -2705,7 +2705,7 @@ final class JsonSerializableToJsonTest {
                     .setOwnerType(AuthorizationOwnerType.USER)
                     .setResourceId("resourceId")
                     .setResourceType(AuthorizationResourceType.RESOURCE)
-                    .setAuthorizationPermissions(Set.of(PermissionType.CREATE)),
+                    .setPermissionTypes(Set.of(PermissionType.CREATE)),
         """
         {
           "authorizationKey": 1,
@@ -2713,7 +2713,7 @@ final class JsonSerializableToJsonTest {
           "ownerType": "USER",
           "resourceId": "resourceId",
           "resourceType": "RESOURCE",
-          "authorizationPermissions": [
+          "permissionTypes": [
             "CREATE"
           ]
         }
@@ -2724,16 +2724,15 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty AuthorizationRecord",
-        (Supplier<AuthorizationRecord>)
-            () -> new AuthorizationRecord().setResourceType(AuthorizationResourceType.RESOURCE),
+        (Supplier<AuthorizationRecord>) AuthorizationRecord::new,
         """
         {
           "authorizationKey": -1,
           "ownerId": "",
           "ownerType": "UNSPECIFIED",
           "resourceId": "",
-          "resourceType": "RESOURCE",
-          "authorizationPermissions": []
+          "resourceType": "UNSPECIFIED",
+          "permissionTypes": []
         }
         """
       },

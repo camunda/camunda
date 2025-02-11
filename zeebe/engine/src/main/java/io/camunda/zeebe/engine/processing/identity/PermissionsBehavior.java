@@ -86,9 +86,7 @@ public class PermissionsBehavior {
       final Set<PermissionType> permissionTypes,
       final AuthorizationResourceType resourceType,
       final String rejectionMessage) {
-    if (resourceType
-        .getSupportedPermissionTypes()
-        .containsAll(record.getAuthorizationPermissions())) {
+    if (resourceType.getSupportedPermissionTypes().containsAll(record.getPermissionTypes())) {
       return Either.right(record);
     }
 

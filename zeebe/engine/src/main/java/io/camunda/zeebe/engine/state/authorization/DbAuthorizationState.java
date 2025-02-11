@@ -93,7 +93,7 @@ public class DbAuthorizationState implements MutableAuthorizationState {
             .orElse(new Permissions());
 
     authorization
-        .getAuthorizationPermissions()
+        .getPermissionTypes()
         .forEach(
             permissionType -> {
               permissions.addResourceIdentifier(permissionType, authorization.getResourceId());

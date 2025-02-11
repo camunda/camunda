@@ -86,7 +86,7 @@ public final class AuthorizationClient {
     }
 
     public AuthorizationCreateClient withPermissions(final PermissionType... permissions) {
-      authorizationCreationRecord.setAuthorizationPermissions(Set.of(permissions));
+      authorizationCreationRecord.setPermissionTypes(Set.of(permissions));
       return this;
     }
 
@@ -204,7 +204,7 @@ public final class AuthorizationClient {
     }
 
     public AuthorizationUpdateClient withPermissions(final PermissionType... permissions) {
-      authorizationUpdateRecord.setAuthorizationPermissions(Set.of(permissions));
+      authorizationUpdateRecord.setPermissionTypes(Set.of(permissions));
       return this;
     }
 
