@@ -17,16 +17,18 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.EnumMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class BackupManagerMetrics {
 
   private final MeterRegistry registry;
-  private final Table<OperationType, OperationResult, Counter> totalOperations = Table.simple();
-  private final EnumMap<OperationType, AtomicLong> operationInProgress =
+  private final Table<OperationType, OperationResult, Counter> totalOperations =
+      Table.ofEnum(OperationType.class, OperationResult.class, Counter[]::new);
+  private final Map<OperationType, AtomicLong> operationInProgress =
       new EnumMap<>(OperationType.class);
-  private final EnumMap<OperationType, Timer> backupOperationLatency =
+  private final Map<OperationType, Timer> backupOperationLatency =
       new EnumMap<>(OperationType.class);
 
   public BackupManagerMetrics(final MeterRegistry meterRegistry) {
