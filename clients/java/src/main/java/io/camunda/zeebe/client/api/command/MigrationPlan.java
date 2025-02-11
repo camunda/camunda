@@ -19,7 +19,7 @@ import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl.MappingInstr
 import java.util.List;
 
 /**
- * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
  *     io.camunda.client.api.command.MigrationPlan}
  */
 @Deprecated
@@ -47,7 +47,7 @@ public interface MigrationPlan {
   public List<MappingInstruction> getMappingInstructions();
 
   /**
-   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
    *     io.camunda.client.api.command.MigrationPlan.MigrationPlanBuilderStep1}
    */
   @Deprecated
@@ -63,7 +63,7 @@ public interface MigrationPlan {
   }
 
   /**
-   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
    *     io.camunda.client.api.command.MigrationPlan.MigrationPlanBuilderStep2}
    */
   @Deprecated
@@ -96,7 +96,7 @@ public interface MigrationPlan {
   }
 
   /**
-   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
    *     io.camunda.client.api.command.MigrationPlan.MigrationPlanBuilderFinalStep}
    */
   @Deprecated

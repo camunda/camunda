@@ -21,7 +21,7 @@ import io.camunda.zeebe.client.api.response.AddPermissionsResponse;
 import java.util.List;
 
 /**
- * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
  *     io.camunda.client.api.command.AddPermissionsCommandStep1}
  */
 @Deprecated
@@ -36,7 +36,7 @@ public interface AddPermissionsCommandStep1 {
   AddPermissionsCommandStep2 resourceType(ResourceTypeEnum resourceType);
 
   /**
-   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
    *     io.camunda.client.api.command.AddPermissionsCommandStep1.AddPermissionsCommandStep2}
    */
   @Deprecated
@@ -52,7 +52,7 @@ public interface AddPermissionsCommandStep1 {
   }
 
   /**
-   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
    *     io.camunda.client.api.command.AddPermissionsCommandStep1.AddPermissionsCommandStep3}
    */
   interface AddPermissionsCommandStep3 {
@@ -75,7 +75,7 @@ public interface AddPermissionsCommandStep1 {
   }
 
   /**
-   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
    *     io.camunda.client.api.command.AddPermissionsCommandStep1.AddPermissionsCommandStep4}
    */
   interface AddPermissionsCommandStep4
