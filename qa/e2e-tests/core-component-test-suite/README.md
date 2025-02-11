@@ -50,7 +50,7 @@ npm run test:local
 
 ### Interactive Mode (UI)
 
-To run the tests interactively (with the UI), use the following command. **Note:** The test 'Create Cluster' must be run first.
+To run the tests interactively (with the UI), use the following command:
 
 ```bash
 npx playwright test --ui
