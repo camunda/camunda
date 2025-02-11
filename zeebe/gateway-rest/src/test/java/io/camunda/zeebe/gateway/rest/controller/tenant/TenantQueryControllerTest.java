@@ -20,6 +20,7 @@ import io.camunda.search.query.TenantQuery;
 import io.camunda.search.sort.TenantSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.TenantServices;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Set;
@@ -92,6 +93,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
           TENANT_ENTITIES.size());
 
   @MockBean private TenantServices tenantServices;
+  @MockBean private UserServices userServices;
 
   private static String formatSet(final Set<Long> set, final boolean asString) {
     return set.isEmpty()
@@ -105,6 +107,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @BeforeEach
   void setup() {
     when(tenantServices.withAuthentication(any(Authentication.class))).thenReturn(tenantServices);
+    when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
   }
 
   @Test
