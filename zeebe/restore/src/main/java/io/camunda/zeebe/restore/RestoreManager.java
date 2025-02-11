@@ -110,7 +110,7 @@ public class RestoreManager {
 
     final var registry = partition.registry();
     return new PartitionRestoreService(
-            backupStore, raftPartition, new ChecksumProviderRocksDBImpl())
+            backupStore, raftPartition, new ChecksumProviderRocksDBImpl(), partition.registry())
         .restore(backupId, validator)
         .thenAccept(backup -> logSuccessfulRestore(backup, raftPartition.id().id(), backupId))
         .whenComplete(

@@ -27,6 +27,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
@@ -62,7 +63,8 @@ public final class AsyncSnapshottingTest {
     final var rootDirectory = tempFolderRule.getRoot().toPath();
     final int partitionId = 1;
     persistedSnapshotStore =
-        new FileBasedSnapshotStore(partitionId, rootDirectory, snapshotPath -> Map.of());
+        new FileBasedSnapshotStore(
+            partitionId, rootDirectory, snapshotPath -> Map.of(), new SimpleMeterRegistry());
     actorSchedulerRule.submitActor(persistedSnapshotStore).join();
 
     snapshotController =

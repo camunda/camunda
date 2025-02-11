@@ -22,6 +22,7 @@ import io.camunda.zeebe.snapshots.ChecksumProvider;
 import io.camunda.zeebe.snapshots.RestorableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.DirectoryNotEmptyException;
@@ -43,16 +44,19 @@ public class PartitionRestoreService {
   final Path rootDirectory;
   private final RaftPartition partition;
   private final ChecksumProvider checksumProvider;
+  private final MeterRegistry meterRegistry;
 
   public PartitionRestoreService(
       final BackupStore backupStore,
       final RaftPartition partition,
-      final ChecksumProvider checksumProvider) {
+      final ChecksumProvider checksumProvider,
+      final MeterRegistry meterRegistry) {
     this.backupStore = backupStore;
     partitionId = partition.id().id();
     rootDirectory = partition.dataDirectory().toPath();
     this.partition = partition;
     this.checksumProvider = Objects.requireNonNull(checksumProvider);
+    this.meterRegistry = meterRegistry;
   }
 
   /**
@@ -184,7 +188,10 @@ public class PartitionRestoreService {
     @SuppressWarnings("resource")
     final RestorableSnapshotStore snapshotStore =
         new FileBasedSnapshotStore(
-            partition.id().id(), partition.dataDirectory().toPath(), checksumProvider);
+            partition.id().id(),
+            partition.dataDirectory().toPath(),
+            checksumProvider,
+            meterRegistry);
 
     try {
       snapshotStore.restore(
