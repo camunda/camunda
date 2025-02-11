@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
@@ -101,7 +102,7 @@ public class MappingAppliersTest {
     // create authorization
     authorizationState.create(
         5L,
-        new io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord()
+        new AuthorizationRecord()
             .setAuthorizationPermissions(Set.of(PermissionType.READ))
             .setResourceId("process")
             .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)

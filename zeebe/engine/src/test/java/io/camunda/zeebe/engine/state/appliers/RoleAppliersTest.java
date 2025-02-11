@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -113,7 +114,7 @@ public class RoleAppliersTest {
     roleState.create(roleRecord);
     authorizationState.create(
         1L,
-        new io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord()
+        new AuthorizationRecord()
             .setAuthorizationKey(1L)
             .setResourceId("role1")
             .setResourceType(AuthorizationResourceType.ROLE)
@@ -122,7 +123,7 @@ public class RoleAppliersTest {
             .setOwnerId(roleId));
     authorizationState.create(
         2L,
-        new io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord()
+        new AuthorizationRecord()
             .setAuthorizationKey(2L)
             .setResourceId("role2")
             .setResourceType(AuthorizationResourceType.ROLE)
