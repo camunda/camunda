@@ -26,7 +26,11 @@ public final class ZeebePartitionStep implements StartupStep<PartitionStartupCon
         context
             .zeebePartitionFactory()
             .constructPartition(
+<<<<<<< HEAD
                 context.raftPartition(), context.snapshotStore(), context.initialPartitionConfig());
+=======
+                context.raftPartition(), context.snapshotStore(), context.partitionMeterRegistry());
+>>>>>>> 65da3585 (refactor: distinguish partition startup and transition meter registries)
     final var submit = context.schedulingService().submitActor(zeebePartition);
     context
         .concurrencyControl()

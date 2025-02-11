@@ -19,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
 
 public final class PartitionStartupContext {
@@ -32,10 +33,15 @@ public final class PartitionStartupContext {
   private final RaftPartitionFactory raftPartitionFactory;
   private final ZeebePartitionFactory zeebePartitionFactory;
   private final BrokerCfg brokerConfig;
+<<<<<<< HEAD
   private final DynamicPartitionConfig initialPartitionConfig;
+=======
+  private final MeterRegistry brokerMeterRegistry;
+>>>>>>> 65da3585 (refactor: distinguish partition startup and transition meter registries)
 
   private Path partitionDirectory;
 
+  private MeterRegistry partitionMeterRegistry;
   private FileBasedSnapshotStore snapshotStore;
   private RaftPartition raftPartition;
   private ZeebePartition zeebePartition;
@@ -51,7 +57,11 @@ public final class PartitionStartupContext {
       final RaftPartitionFactory raftPartitionFactory,
       final ZeebePartitionFactory zeebePartitionFactory,
       final BrokerCfg brokerConfig,
+<<<<<<< HEAD
       final DynamicPartitionConfig initialPartitionConfig) {
+=======
+      final MeterRegistry brokerMeterRegistry) {
+>>>>>>> 65da3585 (refactor: distinguish partition startup and transition meter registries)
     this.schedulingService = schedulingService;
     this.topologyManager = topologyManager;
     this.concurrencyControl = concurrencyControl;
@@ -62,7 +72,11 @@ public final class PartitionStartupContext {
     this.raftPartitionFactory = raftPartitionFactory;
     this.zeebePartitionFactory = zeebePartitionFactory;
     this.brokerConfig = brokerConfig;
+<<<<<<< HEAD
     this.initialPartitionConfig = initialPartitionConfig;
+=======
+    this.brokerMeterRegistry = brokerMeterRegistry;
+>>>>>>> 65da3585 (refactor: distinguish partition startup and transition meter registries)
   }
 
   @Override
@@ -146,7 +160,22 @@ public final class PartitionStartupContext {
     return this;
   }
 
+<<<<<<< HEAD
   public DynamicPartitionConfig initialPartitionConfig() {
     return initialPartitionConfig;
+=======
+  public PartitionStartupContext partitionMeterRegistry(
+      final MeterRegistry partitionMeterRegistry) {
+    this.partitionMeterRegistry = partitionMeterRegistry;
+    return this;
+  }
+
+  public MeterRegistry partitionMeterRegistry() {
+    return partitionMeterRegistry;
+  }
+
+  public MeterRegistry brokerMeterRegistry() {
+    return brokerMeterRegistry;
+>>>>>>> 65da3585 (refactor: distinguish partition startup and transition meter registries)
   }
 }
