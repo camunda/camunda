@@ -23,7 +23,7 @@ import java.time.Duration;
 import java.util.List;
 
 /**
- * @deprecated since 8.7 for removal in 8.8, replaced by {@link io.camunda.client.ClientProperties}
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link io.camunda.client.ClientProperties}
  */
 @Deprecated
 public final class ClientProperties {

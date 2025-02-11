@@ -19,7 +19,7 @@ import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.response.MigrateProcessInstanceResponse;
 
 /**
- * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
  *     io.camunda.client.api.command.MigrateProcessInstanceCommandStep1}
  */
 @Deprecated
@@ -72,7 +72,7 @@ public interface MigrateProcessInstanceCommandStep1
   }
 
   /**
-   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
    *     io.camunda.client.api.command.MigrateProcessInstanceCommandStep1.MigrateProcessInstanceCommandStep2}
    */
   @Deprecated

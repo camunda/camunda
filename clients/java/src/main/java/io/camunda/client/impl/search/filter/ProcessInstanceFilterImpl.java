@@ -16,19 +16,18 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
-import io.camunda.client.api.search.filter.builder.BasicStringProperty;
+import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.client.impl.search.filter.builder.BasicStringPropertyImpl;
+import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.ProcessInstanceStatePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
-import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -49,13 +48,13 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter processInstanceKey(final Long processInstanceKey) {
-    processInstanceKey(b -> b.eq(ParseUtil.keyToString(processInstanceKey)));
+    processInstanceKey(b -> b.eq(processInstanceKey));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter processInstanceKey(final Consumer<BasicStringProperty> fn) {
-    final BasicStringProperty property = new BasicStringPropertyImpl();
+  public ProcessInstanceFilter processInstanceKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
     filter.setProcessInstanceKey(property.build());
     return this;
@@ -120,13 +119,13 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter processDefinitionKey(final Long processDefinitionKey) {
-    processDefinitionKey(b -> b.eq(ParseUtil.keyToString(processDefinitionKey)));
+    processDefinitionKey(b -> b.eq(processDefinitionKey));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter processDefinitionKey(final Consumer<BasicStringProperty> fn) {
-    final BasicStringProperty property = new BasicStringPropertyImpl();
+  public ProcessInstanceFilter processDefinitionKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
     filter.setProcessDefinitionKey(property.build());
     return this;
@@ -134,13 +133,13 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey) {
-    parentProcessInstanceKey(b -> b.eq(ParseUtil.keyToString(parentProcessInstanceKey)));
+    parentProcessInstanceKey(b -> b.eq(parentProcessInstanceKey));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter parentProcessInstanceKey(final Consumer<BasicStringProperty> fn) {
-    final BasicStringProperty property = new BasicStringPropertyImpl();
+  public ProcessInstanceFilter parentProcessInstanceKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
     filter.setParentProcessInstanceKey(property.build());
     return this;
@@ -148,13 +147,13 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter parentFlowNodeInstanceKey(final Long parentFlowNodeInstanceKey) {
-    parentFlowNodeInstanceKey(b -> b.eq(ParseUtil.keyToString(parentFlowNodeInstanceKey)));
+    parentFlowNodeInstanceKey(b -> b.eq(parentFlowNodeInstanceKey));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter parentFlowNodeInstanceKey(final Consumer<BasicStringProperty> fn) {
-    final BasicStringProperty property = new BasicStringPropertyImpl();
+  public ProcessInstanceFilter parentFlowNodeInstanceKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
     filter.setParentFlowNodeInstanceKey(property.build());
     return this;

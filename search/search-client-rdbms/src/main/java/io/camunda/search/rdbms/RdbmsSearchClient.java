@@ -212,8 +212,10 @@ public class RdbmsSearchClient
   }
 
   @Override
-  public SearchQueryResult<UserEntity> searchUsers(final UserQuery filter) {
-    return null;
+  public SearchQueryResult<UserEntity> searchUsers(final UserQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for users: {}", query);
+
+    return rdbmsService.getUserReader().search(query);
   }
 
   @Override
