@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
+import io.camunda.service.UserServices;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
@@ -42,6 +43,8 @@ public class TenantControllerTest extends RestControllerTest {
   private static final String TENANT_BASE_URL = "/v2/tenants";
 
   @MockBean private TenantServices tenantServices;
+
+  @MockBean private UserServices userServices;
 
   @BeforeEach
   void setup() {

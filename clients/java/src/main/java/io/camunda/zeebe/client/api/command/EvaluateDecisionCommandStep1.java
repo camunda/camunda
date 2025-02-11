@@ -20,7 +20,7 @@ import java.io.InputStream;
 import java.util.Map;
 
 /**
- * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
  *     io.camunda.client.api.command.EvaluateDecisionCommandStep1}
  */
 @Deprecated
@@ -46,7 +46,7 @@ public interface EvaluateDecisionCommandStep1
   EvaluateDecisionCommandStep2 decisionKey(long decisionKey);
 
   /**
-   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
    *     io.camunda.client.api.command.EvaluateDecisionCommandStep1.EvaluateDecisionCommandStep2}
    */
   interface EvaluateDecisionCommandStep2
