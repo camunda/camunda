@@ -12,6 +12,7 @@ import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCI
 
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
@@ -305,14 +306,10 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNoConcurrentCommand(
         eventScopeInstanceState, elementInstanceState, elementInstance, processInstanceKey);
 
+    updateElementInstanceRecord(elementInstance, targetProcessDefinition, targetElementId);
+
     stateWriter.appendFollowUpEvent(
-        elementInstance.getKey(),
-        ProcessInstanceIntent.ELEMENT_MIGRATED,
-        elementInstanceRecord
-            .setProcessDefinitionKey(targetProcessDefinition.getKey())
-            .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
-            .setVersion(targetProcessDefinition.getVersion())
-            .setElementId(targetElementId));
+        elementInstance.getKey(), ProcessInstanceIntent.ELEMENT_MIGRATED, elementInstanceRecord);
 
     final Set<ExecutableSequenceFlow> sequenceFlows =
         getSequenceFlowsToMigrate(
@@ -423,6 +420,42 @@ public class ProcessInstanceMigrationMigrateProcessor
           processInstanceKey,
           elementId);
     }
+  }
+
+  /**
+   * Updates the element instance record with the new process definition key, bpmn process id,
+   * version and recalculates the tree path.
+   *
+   * @param elementInstance the element instance to be updated
+   * @param targetProcessDefinition the new process definition
+   * @param targetElementId the new element id
+   */
+  private void updateElementInstanceRecord(
+      final ElementInstance elementInstance,
+      final DeployedProcess targetProcessDefinition,
+      final String targetElementId) {
+    final var elementInstanceRecord = elementInstance.getValue();
+
+    elementInstanceRecord
+        .setProcessDefinitionKey(targetProcessDefinition.getKey())
+        .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+        .setVersion(targetProcessDefinition.getVersion())
+        .setElementId(targetElementId);
+
+    // recalculating the tree path is necessary because the element id changed
+    final var elementTreePath =
+        new ElementTreePathBuilder()
+            .withElementInstanceProvider(elementInstanceState::getInstance)
+            .withCallActivityIndexProvider(processState::getFlowElement)
+            .withElementInstanceKey(elementInstance.getKey())
+            .withFlowScopeKey(elementInstance.getParentKey())
+            .withRecordValue(elementInstanceRecord)
+            .build();
+
+    elementInstanceRecord
+        .setElementInstancePath(elementTreePath.elementInstancePath())
+        .setProcessDefinitionPath(elementTreePath.processDefinitionPath())
+        .setCallingElementPath(elementTreePath.callingElementPath());
   }
 
   private void appendIncidentMigratedEvent(
