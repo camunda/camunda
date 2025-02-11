@@ -127,9 +127,24 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   void setBackupStore(BackupStore backupStore);
 
-  MeterRegistry getBrokerMeterRegistry();
+  /**
+   * Returns a meter registry which already has some common tags for the partition (so you can omit
+   * adding it manually to your metrics), and which is created when the partition is bootstrapped or
+   * joined, and closed when the partition is left or stopped.
+   *
+   * <p>Only use this if the state represented by the metrics is independent of the transition/role
+   * of the partition.
+   */
+  MeterRegistry getPartitionStartupMeterRegistry();
 
-  MeterRegistry getPartitionMeterRegistry();
+  /**
+   * Returns a meter registry which wraps around the {@link #getPartitionStartupMeterRegistry()},
+   * and is created/closed along with partition transitions.
+   *
+   * <p>This is very useful to add metrics which depend on objects/state recreated during a
+   * transition, and is typically the registry you want to use.
+   */
+  MeterRegistry getPartitionTransitionMeterRegistry();
 
-  void setPartitionMeterRegistry(MeterRegistry partitionMeterRegistry);
+  void setPartitionTransitionMeterRegistry(MeterRegistry transitionMeterRegistry);
 }

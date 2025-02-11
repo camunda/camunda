@@ -104,7 +104,6 @@ public final class ZeebePartitionFactory {
   private final TopologyManagerImpl topologyManager;
   private final FeatureFlags featureFlags;
   private final List<PartitionRaftListener> partitionRaftListeners;
-  private final MeterRegistry meterRegistry;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -119,8 +118,7 @@ public final class ZeebePartitionFactory {
       final List<PartitionListener> partitionListeners,
       final List<PartitionRaftListener> partitionRaftListeners,
       final TopologyManagerImpl topologyManager,
-      final FeatureFlags featureFlags,
-      final MeterRegistry meterRegistry) {
+      final FeatureFlags featureFlags) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -134,13 +132,16 @@ public final class ZeebePartitionFactory {
     this.partitionRaftListeners = partitionRaftListeners;
     this.topologyManager = topologyManager;
     this.featureFlags = featureFlags;
-    this.meterRegistry = meterRegistry;
   }
 
   public ZeebePartition constructPartition(
       final RaftPartition raftPartition,
       final FileBasedSnapshotStore snapshotStore,
+<<<<<<< HEAD
       final DynamicPartitionConfig initialPartitionConfig) {
+=======
+      final MeterRegistry partitionMeterRegistry) {
+>>>>>>> 65da3585 (refactor: distinguish partition startup and transition meter registries)
     final var communicationService = clusterServices.getCommunicationService();
     final var membershipService = clusterServices.getMembershipService();
     final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
@@ -169,8 +170,12 @@ public final class ZeebePartitionFactory {
             diskSpaceUsageMonitor,
             gatewayBrokerTransport,
             topologyManager,
+<<<<<<< HEAD
             meterRegistry);
     context.setDynamicPartitionConfig(initialPartitionConfig);
+=======
+            partitionMeterRegistry);
+>>>>>>> 65da3585 (refactor: distinguish partition startup and transition meter registries)
 
     final PartitionTransition newTransitionBehavior = new PartitionTransitionImpl(TRANSITION_STEPS);
 
