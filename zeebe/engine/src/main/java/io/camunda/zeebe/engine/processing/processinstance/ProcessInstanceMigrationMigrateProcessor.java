@@ -420,6 +420,10 @@ public class ProcessInstanceMigrationMigrateProcessor
           processInstanceKey,
           elementId);
     }
+
+    if (elementInstanceRecord.getBpmnElementType() == BpmnElementType.CALL_ACTIVITY) {
+      migrateCalledSubProcessElements(elementInstance.getCalledChildInstanceKey());
+    }
   }
 
   /**
@@ -456,6 +460,63 @@ public class ProcessInstanceMigrationMigrateProcessor
         .setElementInstancePath(elementTreePath.elementInstancePath())
         .setProcessDefinitionPath(elementTreePath.processDefinitionPath())
         .setCallingElementPath(elementTreePath.callingElementPath());
+  }
+
+  /**
+   * Migrates the elements of a called subprocess.
+   *
+   * <p>When migrating the parent process instance, new call activities might be included.
+   * Therefore, we need to adjust the tree path of the called subprocess elements accordingly.
+   *
+   * @param calledChildInstanceKey the key of the called subprocess instance
+   */
+  private void migrateCalledSubProcessElements(final long calledChildInstanceKey) {
+    final var calledInstance = elementInstanceState.getInstance(calledChildInstanceKey);
+    final var elementInstances = new ArrayDeque<>(List.of(calledInstance));
+    while (!elementInstances.isEmpty()) {
+      final var instance = elementInstances.poll();
+      adjustCalledInstancesTreePath(elementInstances, instance);
+      final List<ElementInstance> children = elementInstanceState.getChildren(instance.getKey());
+      elementInstances.addAll(children);
+    }
+  }
+
+  /**
+   * Adjusts the tree path of the called instances for a given element instance. This method
+   * recalculates the tree path for the element instance and updates the element instance record
+   * with the new paths. If the element instance is a call activity, it also processes the called
+   * child instance.
+   *
+   * @param elementInstances the queue of element instances to process
+   * @param instance the current element instance to adjust
+   */
+  private void adjustCalledInstancesTreePath(
+      final ArrayDeque<ElementInstance> elementInstances, final ElementInstance instance) {
+    final var elementInstanceRecord = instance.getValue();
+    final var elementTreePath =
+        new ElementTreePathBuilder()
+            .withElementInstanceProvider(elementInstanceState::getInstance)
+            .withCallActivityIndexProvider(processState::getFlowElement)
+            .withElementInstanceKey(instance.getKey())
+            .withFlowScopeKey(instance.getParentKey())
+            .withRecordValue(elementInstanceRecord)
+            .build();
+
+    elementInstanceRecord
+        .setElementInstancePath(elementTreePath.elementInstancePath())
+        .setProcessDefinitionPath(elementTreePath.processDefinitionPath())
+        .setCallingElementPath(elementTreePath.callingElementPath());
+
+    stateWriter.appendFollowUpEvent(
+        instance.getKey(), ProcessInstanceIntent.ELEMENT_MIGRATED, elementInstanceRecord);
+
+    if (elementInstanceRecord.getBpmnElementType() == BpmnElementType.CALL_ACTIVITY) {
+      // found more call activities? add the called child instance to the queue to continue going
+      // deeper the tree
+      final ElementInstance calledInstance =
+          elementInstanceState.getInstance(instance.getCalledChildInstanceKey());
+      elementInstances.add(calledInstance);
+    }
   }
 
   private void appendIncidentMigratedEvent(

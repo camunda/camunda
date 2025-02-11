@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -67,11 +68,14 @@ public class MigrateCallActivityTest {
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .withElementId("A")
-        .withElementType(BpmnElementType.CALL_ACTIVITY)
-        .withProcessInstanceKey(processInstanceKey)
-        .await();
+    final var callActivity =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementId("A")
+            .withElementType(BpmnElementType.CALL_ACTIVITY)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final var callActivityElementInstanceKey = callActivity.getKey();
 
     // when
     ENGINE
@@ -95,7 +99,10 @@ public class MigrateCallActivityTest {
         .hasBpmnProcessId(targetProcessId)
         .hasElementId("B")
         .describedAs("Expect that version number did not change")
-        .hasVersion(1);
+        .hasVersion(1)
+        .hasElementInstancePath(List.of(processInstanceKey, callActivityElementInstanceKey))
+        .hasProcessDefinitionPath(List.of(targetProcessDefinitionKey))
+        .hasCallingElementPath(List.of());
   }
 
   @Test
@@ -266,6 +273,15 @@ public class MigrateCallActivityTest {
             .deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
+    final var callActivity =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementId("callActivity")
+            .withElementType(BpmnElementType.CALL_ACTIVITY)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final var callActivityElementInstanceKey = callActivity.getKey();
+
     final var childUserTask =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withParentProcessInstanceKey(processInstanceKey)
@@ -313,7 +329,13 @@ public class MigrateCallActivityTest {
         .hasBpmnProcessId(targetChildProcessId)
         .hasElementId(targetChildProcessId)
         .describedAs("Expect that version number did not change for child process")
-        .hasVersion(1);
+        .hasVersion(1)
+        .hasElementInstancePath(
+            List.of(
+                List.of(processInstanceKey, callActivityElementInstanceKey),
+                List.of(childProcessInstanceKey)))
+        .hasProcessDefinitionPath(List.of(targetProcessDefinitionKey))
+        .hasCallingElementPath(List.of(0));
   }
 
   @Test
@@ -448,5 +470,136 @@ public class MigrateCallActivityTest {
                 .map(ProcessInstanceRecordValue::getProcessInstanceKey))
         .describedAs("Expect that both the parent and child process instance terminated")
         .contains(childProcessInstanceKey, parentProcessInstanceKey);
+  }
+
+  @Test
+  public void shouldReflectChangesInCallingElementPath() {
+    // given
+    final String processId = helper.getBpmnProcessId() + "_source";
+    final String targetProcessId = helper.getBpmnProcessId() + "_target";
+    final String level1ChildProcessId = helper.getBpmnProcessId() + "_child1";
+    final String level2ChildProcessId = helper.getBpmnProcessId() + "_child2";
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent("start")
+                    .callActivity("call1", c -> c.zeebeProcessId(level1ChildProcessId))
+                    .endEvent("end")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(level1ChildProcessId)
+                    .startEvent("start")
+                    .callActivity("callActivity", c -> c.zeebeProcessId(level2ChildProcessId))
+                    .endEvent("end")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent("start")
+                    .callActivity("callActivity1", c -> c.zeebeProcessId(level2ChildProcessId))
+                    .callActivity("callActivity0", c -> c.zeebeProcessIdExpression("processIdExpr"))
+                    .endEvent("end")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(level2ChildProcessId)
+                    .startEvent("start")
+                    .userTask("A", AbstractUserTaskBuilder::zeebeUserTask)
+                    .endEvent("end")
+                    .done())
+            .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    final long parentProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, processId);
+    final long level1ChildProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, level1ChildProcessId);
+    final long level2ChildProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, level2ChildProcessId);
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var call1 =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementId("call1")
+            .withElementType(BpmnElementType.CALL_ACTIVITY)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    final var call1ElementInstanceKey = call1.getKey();
+
+    final var callActivity =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementId("callActivity")
+            .withElementType(BpmnElementType.CALL_ACTIVITY)
+            .withParentProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final var callActivityElementInstanceKey = callActivity.getKey();
+    final long level1ChildProcessInstanceKey = callActivity.getValue().getProcessInstanceKey();
+
+    final var childUserTask =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withParentProcessInstanceKey(level1ChildProcessInstanceKey)
+            .withElementType(BpmnElementType.USER_TASK)
+            .withElementId("A")
+            .getFirst();
+    final var level2ChildProcessInstanceKey = childUserTask.getValue().getProcessInstanceKey();
+
+    assertThat(childUserTask.getValue())
+        .describedAs("Expect that the user task instance is activated with the correct paths")
+        .hasOnlyProcessDefinitionPath(
+            parentProcessDefinitionKey,
+            level1ChildProcessDefinitionKey,
+            level2ChildProcessDefinitionKey)
+        .describedAs("Expect both call activities to have id 0 initially")
+        .hasOnlyCallingElementPath(0, 0);
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(level1ChildProcessInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("callActivity", "callActivity1")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(level2ChildProcessInstanceKey)
+                .withElementType(BpmnElementType.USER_TASK)
+                .withElementId("A")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that element instance path has not changed during migration")
+        .hasOnlyElementInstancePath(
+            List.of(processInstanceKey, call1ElementInstanceKey),
+            List.of(level1ChildProcessInstanceKey, callActivityElementInstanceKey),
+            List.of(level2ChildProcessInstanceKey, childUserTask.getKey()))
+        .describedAs(
+            "Expect that the process definition path is updated to the target process definition key")
+        .hasOnlyProcessDefinitionPath(
+            parentProcessDefinitionKey, targetProcessDefinitionKey, level2ChildProcessDefinitionKey)
+        .describedAs(
+            "Expect that the calling element path is updated to the new call activity lexicographical id")
+        .hasOnlyCallingElementPath(0, 1);
+
+    ENGINE.userTask().ofInstance(level2ChildProcessInstanceKey).complete();
+
+    final var endEventInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(level2ChildProcessInstanceKey)
+            .withElementType(BpmnElementType.END_EVENT)
+            .getFirst();
+    assertThat(endEventInstance.getValue())
+        .describedAs(
+            "Expect that the end event instance is activated with the correct paths after migration")
+        .hasOnlyElementInstancePath(
+            List.of(processInstanceKey, call1ElementInstanceKey),
+            List.of(level1ChildProcessInstanceKey, callActivityElementInstanceKey),
+            List.of(level2ChildProcessInstanceKey, endEventInstance.getKey()))
+        .hasOnlyProcessDefinitionPath(
+            parentProcessDefinitionKey, targetProcessDefinitionKey, level2ChildProcessDefinitionKey)
+        .hasOnlyCallingElementPath(0, 1);
   }
 }
