@@ -19,6 +19,8 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
+import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.gateway.Gateway;
@@ -73,7 +75,8 @@ class UnavailableBrokersTest {
     actorScheduler.start();
 
     topologyManager =
-        new BrokerTopologyManagerImpl(() -> cluster.getMembershipService().getMembers());
+        new BrokerTopologyManagerImpl(
+            () -> cluster.getMembershipService().getMembers(), BrokerClientTopologyMetrics.NOOP);
     actorScheduler.submitActor(topologyManager).join();
     cluster.getMembershipService().addListener(topologyManager);
 
@@ -83,7 +86,8 @@ class UnavailableBrokersTest {
             cluster.getMessagingService(),
             cluster.getEventService(),
             actorScheduler,
-            topologyManager);
+            topologyManager,
+            BrokerClientRequestMetrics.NOOP);
     jobStreamClient = new JobStreamClientImpl(actorScheduler, cluster.getCommunicationService());
     jobStreamClient.start().join();
 

@@ -18,6 +18,8 @@ import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
+import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.gateway.Gateway;
@@ -77,7 +79,8 @@ final class InterceptorIT {
             .withAddress(Address.from(clusterAddress.getHostName(), clusterAddress.getPort()))
             .build();
     topologyManager =
-        new BrokerTopologyManagerImpl(() -> cluster.getMembershipService().getMembers());
+        new BrokerTopologyManagerImpl(
+            () -> cluster.getMembershipService().getMembers(), BrokerClientTopologyMetrics.NOOP);
     cluster.getMembershipService().addListener(topologyManager);
 
     brokerClient =
@@ -86,7 +89,8 @@ final class InterceptorIT {
             cluster.getMessagingService(),
             cluster.getEventService(),
             scheduler,
-            topologyManager);
+            topologyManager,
+            BrokerClientRequestMetrics.NOOP);
 
     jobStreamClient = new JobStreamClientImpl(scheduler, cluster.getCommunicationService());
     gateway =
