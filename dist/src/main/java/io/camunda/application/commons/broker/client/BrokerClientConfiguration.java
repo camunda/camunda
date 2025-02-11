@@ -17,10 +17,8 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Scope;
 
 @Configuration(proxyBeanMethods = false)
 public final class BrokerClientConfiguration {
@@ -29,21 +27,24 @@ public final class BrokerClientConfiguration {
   private final AtomixCluster cluster;
   private final ActorScheduler scheduler;
   private final BrokerTopologyManager topologyManager;
+  private final BrokerClientRequestMetrics metrics;
 
   @Autowired
   public BrokerClientConfiguration(
       final BrokerClientTimeoutConfiguration config,
       final AtomixCluster cluster,
       final ActorScheduler scheduler,
-      final BrokerTopologyManager topologyManager) {
+      final BrokerTopologyManager topologyManager,
+      final MeterRegistry meterRegistry) {
     this.config = config;
     this.cluster = cluster;
     this.scheduler = scheduler;
     this.topologyManager = topologyManager;
+    metrics = BrokerClientRequestMetrics.of(meterRegistry);
   }
 
   @Bean(destroyMethod = "close")
-  public BrokerClient brokerClient(final BrokerClientRequestMetrics metrics) {
+  public BrokerClient brokerClient() {
     final var brokerClient =
         new BrokerClientImpl(
             config.requestTimeout(),
@@ -54,12 +55,6 @@ public final class BrokerClientConfiguration {
             metrics);
     brokerClient.start().forEach(ActorFuture::join);
     return brokerClient;
-  }
-
-  @Bean
-  @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
-  public BrokerClientRequestMetrics requestMetrics(final MeterRegistry meterRegistry) {
-    return BrokerClientRequestMetrics.of(meterRegistry);
   }
 
   public record BrokerClientTimeoutConfiguration(Duration requestTimeout) {}
