@@ -356,7 +356,7 @@ public class ClusteringRule extends ExternalResource {
             Version.from(VersionUtil.getVersion()));
     final var scheduler =
         new io.camunda.zeebe.broker.ActorSchedulerConfiguration(
-                brokerSpringConfig, actorClockConfiguration)
+                brokerSpringConfig, actorClockConfiguration, null)
             .scheduler(IdleStrategySupplier.ofDefault());
     final var topologyManager =
         new BrokerTopologyManagerImpl(
