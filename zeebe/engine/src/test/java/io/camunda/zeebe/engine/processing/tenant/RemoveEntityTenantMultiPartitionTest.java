@@ -38,28 +38,26 @@ public class RemoveEntityTenantMultiPartitionTest {
 
   public void setupTenantWithUserAndRemoveEntity() {
     final var username = "foo";
-    final var userKey =
-        engine
-            .user()
-            .newUser(username)
-            .withEmail("foo@bar")
-            .withName("Foo Bar")
-            .withPassword("zabraboof")
-            .create()
-            .getKey();
+    engine
+        .user()
+        .newUser(username)
+        .withEmail("foo@bar")
+        .withName("Foo Bar")
+        .withPassword("zabraboof")
+        .create()
+        .getKey();
     final var tenantId = UUID.randomUUID().toString();
-    final var tenantKey =
-        engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
+    engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     engine
         .tenant()
-        .addEntity(tenantKey)
+        .addEntity(tenantId)
         .withEntityId(username)
         .withEntityType(EntityType.USER)
         .add();
     engine
         .tenant()
-        .removeEntity(tenantKey)
-        .withEntityKey(userKey)
+        .removeEntity(tenantId)
+        .withEntityId(username)
         .withEntityType(EntityType.USER)
         .remove();
   }

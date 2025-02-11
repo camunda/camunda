@@ -494,8 +494,8 @@ public class CommandDistributionIdempotencyTest {
                       .add();
                   ENGINE
                       .tenant()
-                      .removeEntity(tenant.getKey())
-                      .withEntityKey(user.getKey())
+                      .removeEntity(tenant.getValue().getTenantId())
+                      .withEntityId(user.getValue().getUsername())
                       .withEntityType(EntityType.USER)
                       .remove();
                 },
