@@ -9,62 +9,82 @@
 import {useMutation} from '@tanstack/react-query';
 import {api} from 'modules/api';
 import {type RequestError, request} from 'modules/request';
-
+import {PICKER_KEY} from 'modules/utils/buildDocumentMultipart';
 type Payload = {
   files: Map<string, File[]>;
 };
 
 type FileUploadMetadata = {
-  documentType: string;
+  contentType: string;
+  fileName: string;
+  expiresAt?: string;
+  size: number;
+  processDefinitionId?: string;
+  processInstanceKey?: number;
+  customProperties?: Record<string, unknown>;
+};
+
+type SuccessDocument = {
+  'camunda.document.type': 'camunda';
   storeId: string;
   documentId: string;
-  metadata: {
-    contentType: string;
-    fileName: string;
-    size: string;
-  };
+  contentHash: string;
+  metadata: FileUploadMetadata;
 };
+
+type FailedDocument = {
+  filename: string;
+  detail: string;
+};
+
+type BatchUploadResponse = {
+  createdDocuments: SuccessDocument[];
+  failedDocuments: FailedDocument[];
+};
+
+const MIXED_SUCCESS_AND_FAILED_DOCUMENTS_STATUS_CODE = 207;
 
 function useUploadDocuments() {
   return useMutation<
-    Map<string, FileUploadMetadata[]>,
+    Map<string, SuccessDocument[]>,
     RequestError | Error,
     Payload
   >({
     mutationFn: async ({files}) => {
-      const requests: ReturnType<typeof request>[] = [];
-      const fileRequestMapping = Array.from(files.entries()).map<
-        [string, Promise<Awaited<ReturnType<typeof request>>[]>]
-      >(([key, files]) => {
-        const itemRequests = files.map((file) =>
-          request(api.v2.uploadDocuments({file})),
-        );
+      const {response, error} = await request(api.v2.uploadDocuments({files}));
 
-        requests.push(...itemRequests);
-
-        return [key, Promise.all(itemRequests)];
-      });
-      const responses = await Promise.all(requests);
-
-      if (responses.every(({response}) => response !== null && response.ok)) {
-        const metadataMapping: [string, FileUploadMetadata[]][] = [];
-
-        for (const [key, responses] of fileRequestMapping) {
-          const metadata = await responses;
-
-          metadataMapping.push([
-            key,
-            await Promise.all(metadata.map(({response}) => response!.json())),
-          ]);
-        }
-
-        return new Map(metadataMapping);
+      if (error !== null) {
+        throw error;
       }
 
-      throw new Error('Failed to upload all files');
+      if (response.status === MIXED_SUCCESS_AND_FAILED_DOCUMENTS_STATUS_CODE) {
+        throw new Error('Failed to upload some documents');
+      }
+
+      const payload: BatchUploadResponse = await response.json();
+
+      const result = new Map<string, BatchUploadResponse['createdDocuments']>();
+
+      payload.createdDocuments.forEach((document) => {
+        const pickerKey = document.metadata.customProperties?.[PICKER_KEY];
+
+        if (typeof pickerKey !== 'string' || pickerKey.length === 0) {
+          return;
+        }
+
+        const documentResult = result.get(pickerKey);
+
+        if (Array.isArray(documentResult)) {
+          result.set(pickerKey, [...documentResult, document]);
+        } else {
+          result.set(pickerKey, [document]);
+        }
+      });
+
+      return result;
     },
   });
 }
 
 export {useUploadDocuments};
-export type {FileUploadMetadata};
+export type {SuccessDocument};
