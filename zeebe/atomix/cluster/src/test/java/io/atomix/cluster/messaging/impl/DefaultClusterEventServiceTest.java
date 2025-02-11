@@ -40,6 +40,8 @@ import io.atomix.utils.Version;
 import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collection;
@@ -56,7 +58,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.After;
 import org.junit.Test;
-import org.junit.jupiter.api.AutoClose;
 
 /** Cluster event service test. */
 @AutoCloseResources
@@ -71,8 +72,7 @@ public class DefaultClusterEventServiceTest {
   private final Map<Integer, Managed> managedMemberShipServices = new HashMap<>();
   private final Map<Integer, Managed> managedEventService = new HashMap<>();
   private CountDownLatch membersDiscovered;
-  @AutoCloseResource
-  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   private Member buildNode(final int memberId) {
     return Member.builder(String.valueOf(memberId))

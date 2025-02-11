@@ -124,11 +124,9 @@ public class SwimMembershipProtocol
   private ScheduledFuture<?> probeFuture;
   private ScheduledFuture<?> syncFuture;
 
-  private final SwimMembershipProtocolMetrics swimMembershipProtocolMetrics ;
+  private final SwimMembershipProtocolMetrics swimMembershipProtocolMetrics;
 
-  SwimMembershipProtocol(
-      final SwimMembershipProtocolConfig config,
-      final MeterRegistry registry) {
+  SwimMembershipProtocol(final SwimMembershipProtocolConfig config, final MeterRegistry registry) {
     this.config = config;
     swimMembershipProtocolMetrics = new SwimMembershipProtocolMetrics(registry);
   }
@@ -888,8 +886,7 @@ public class SwimMembershipProtocol
 
     @Override
     public GroupMembershipProtocol newProtocol(
-        final SwimMembershipProtocolConfig config,
-        final MeterRegistry registry) {
+        final SwimMembershipProtocolConfig config, final MeterRegistry registry) {
       return new SwimMembershipProtocol(config, registry);
     }
   }
