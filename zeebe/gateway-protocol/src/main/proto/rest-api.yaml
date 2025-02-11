@@ -24,6 +24,7 @@ servers:
         description: The schema of the Camunda 8 REST API server.
 
 tags:
+  - name: Ad-hoc subprocess
   - name: Authentication
   - name: Authorization
   - name: Clock
@@ -1819,6 +1820,43 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /ad-hoc-activities/search:
+    post:
+      tags:
+        - Ad-hoc subprocess
+      operationId: findAdHocSubprocessActivities
+      summary: Query activities within an ad-hoc subprocess
+      description: |
+        Search for activities which can be activated within an ad-hoc subprocess instances based on given criteria.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdHocSubprocessActivitySearchQuery"
+      responses:
+        "200":
+          description: >
+            The ad-hoc subprocess activities search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdHocSubprocessActivitySearchQueryResult"
+        "400":
+          description: >
+            The ad-hoc subprocess activities search query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -4795,6 +4833,124 @@ components:
           type: string
         incidentKey:
           description: Incident key associated with this flow node instance.
+          type: string
+    AdHocSubprocessActivitySearchQuery:
+      description: Ad-hoc subprocess activities search request.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/AdHocSubprocessActivitySearchQuerySortRequest"
+        filter:
+          description: The ad-hoc subprocess activity search filters.
+          allOf:
+            - $ref: "#/components/schemas/AdHocSubprocessActivityFilter"
+    AdHocSubprocessActivitySearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - adhocSubprocessInstanceKey
+            - adhocSubprocessId
+            - processInstanceKey
+            - processDefinitionKey
+            - processDefinitionId
+            - treePath
+            - flowNodeId
+            - flowNodeName
+            - type
+            - description
+            - tenantId
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
+    AdHocSubprocessActivityFilter:
+      description: Ad-hoc subprocess activity filter.
+      type: object
+      # TODO check which one of these is required
+      properties:
+        adhocSubprocessInstanceKey:
+          description: The ad-hoc subprocess process instance key.
+          type: string
+        adhocSubprocessId:
+          description: The ad-hoc subprocess process definition ID.
+          type: string
+        processInstanceKey:
+          description: The process instance key associated to this ad-hoc subprocess.
+          type: string
+        processDefinitionKey:
+          description: The process definition key associated to this ad-hoc subprocess.
+          type: string
+        processDefinitionId:
+          description: The process definition ID associated to this ad-hoc subprocess.
+          type: string
+        tenantId:
+          description: The tenant ID.
+          type: string
+    AdHocSubprocessActivitySearchQueryResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The matching ad-hoc subprocess activities.
+          type: array
+          items:
+            $ref: "#/components/schemas/AdHocSubprocessActivityResult"
+    AdHocSubprocessActivityResult:
+      type: object
+      properties:
+        adhocSubprocessInstanceKey:
+          description: The ad-hoc subprocess process instance key.
+          type: string
+        adhocSubprocessId:
+          description: The ad-hoc subprocess process definition ID.
+          type: string
+        processInstanceKey:
+          description: The process instance key associated to this activity within the ad-hoc subprocess.
+          type: string
+        processDefinitionKey:
+          description: The process definition key associated to this activity within the ad-hoc subprocess.
+          type: string
+        processDefinitionId:
+          description: The process definition ID associated to this activity within the ad-hoc subprocess.
+          type: string
+        treePath:
+          description: The path of keys from process instance to this activity instance separated by '/'
+          type: string
+        flowNodeId:
+          description: The flow node ID for this activity within the ad-hoc subprocess.
+          type: string
+        flowNodeName:
+          description: The flow node name for this activity within the ad-hoc subprocess.
+          type: string
+        # TODO which types do we need to support here? e.g. (sub-)process?
+        type:
+          description: Type of activity as defined set of values.
+          type: string
+          enum:
+            - UNSPECIFIED
+            - SERVICE_TASK
+            - RECEIVE_TASK
+            - USER_TASK
+            - MANUAL_TASK
+            - TASK
+            - BUSINESS_RULE_TASK
+            - SCRIPT_TASK
+            - SEND_TASK
+            - UNKNOWN
+        description:
+          description: The description for this activity within the ad-hoc subprocess.
+          type: string
+        tenantId:
+          description: The tenant ID.
           type: string
     DecisionDefinitionSearchQuerySortRequest:
       type: object
