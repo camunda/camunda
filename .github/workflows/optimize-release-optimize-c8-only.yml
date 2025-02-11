@@ -184,12 +184,6 @@ jobs:
             --fail-at-end \
             -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
 
-      - name: Push changes
-        if: env.IS_DRY_RUN == 'false'
-        run: |
-          git push --tags
-          git push --all
-
       - name: Perform release
         run: |
           ./mvnw -f optimize \
