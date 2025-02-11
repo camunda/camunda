@@ -12,6 +12,7 @@ import io.camunda.zeebe.logstreams.impl.flowcontrol.RateLimit;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 
 public final class TestLogStreamBuilder implements LogStreamBuilder {
@@ -64,6 +65,12 @@ public final class TestLogStreamBuilder implements LogStreamBuilder {
   @Override
   public LogStreamBuilder withWriteRateLimit(final RateLimit writeRateLimiter) {
     delegate.withWriteRateLimit(writeRateLimiter);
+    return this;
+  }
+
+  @Override
+  public LogStreamBuilder withMeterRegistry(final MeterRegistry meterRegistry) {
+    delegate.withMeterRegistry(meterRegistry);
     return this;
   }
 
