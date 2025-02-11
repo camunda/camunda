@@ -496,7 +496,12 @@ public class ClusteringRule extends ExternalResource {
     topologyManager.addTopologyListener(jobStreamClient);
 
     final var gateway =
-        new Gateway(gatewayCfg, brokerClient, actorScheduler, jobStreamClient.streamer());
+        new Gateway(
+            gatewayCfg,
+            brokerClient,
+            actorScheduler,
+            jobStreamClient.streamer(),
+            new SimpleMeterRegistry());
     gateway.start().join();
 
     return new GatewayResource(
