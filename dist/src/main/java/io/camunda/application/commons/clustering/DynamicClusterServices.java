@@ -18,6 +18,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
@@ -29,12 +30,17 @@ public class DynamicClusterServices {
   private final ActorScheduler scheduler;
   private final ClusterMembershipService clusterMembershipService;
   private final ClusterCommunicationService clusterCommunicationService;
+  private final MeterRegistry meterRegistry;
 
   @Autowired
-  public DynamicClusterServices(final ActorScheduler scheduler, final AtomixCluster atomixCluster) {
+  public DynamicClusterServices(
+      final ActorScheduler scheduler,
+      final AtomixCluster atomixCluster,
+      final MeterRegistry meterRegistry) {
     this.scheduler = scheduler;
     clusterMembershipService = atomixCluster.getMembershipService();
     clusterCommunicationService = atomixCluster.getCommunicationService();
+    this.meterRegistry = meterRegistry;
   }
 
   @Bean
@@ -45,7 +51,8 @@ public class DynamicClusterServices {
         new GatewayClusterConfigurationService(
             clusterCommunicationService,
             clusterMembershipService,
-            gatewayCfg.getCluster().getConfigManager().gossip());
+            gatewayCfg.getCluster().getConfigManager().gossip(),
+            meterRegistry);
     scheduler.submitActor(service).join();
     service.addUpdateListener(brokerTopologyManager);
     return service;

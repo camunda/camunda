@@ -65,12 +65,20 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private boolean shouldRetry = false;
   private final ExponentialBackoffRetryDelay backoffRetry;
   private boolean initialized = false;
+  private final TopologyMetrics topologyMetrics;
 
   ClusterConfigurationManagerImpl(
       final ConcurrencyControl executor,
       final MemberId localMemberId,
-      final PersistedClusterConfiguration persistedClusterConfiguration) {
-    this(executor, localMemberId, persistedClusterConfiguration, MIN_RETRY_DELAY, MAX_RETRY_DELAY);
+      final PersistedClusterConfiguration persistedClusterConfiguration,
+      final TopologyMetrics topologyMetrics) {
+    this(
+        executor,
+        localMemberId,
+        persistedClusterConfiguration,
+        topologyMetrics,
+        MIN_RETRY_DELAY,
+        MAX_RETRY_DELAY);
   }
 
   @VisibleForTesting
@@ -78,12 +86,14 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
       final ConcurrencyControl executor,
       final MemberId localMemberId,
       final PersistedClusterConfiguration persistedClusterConfiguration,
+      final TopologyMetrics topologyMetrics,
       final Duration minRetryDelay,
       final Duration maxRetryDelay) {
     this.executor = executor;
     this.persistedClusterConfiguration = persistedClusterConfiguration;
     startFuture = executor.createFuture();
     this.localMemberId = localMemberId;
+    this.topologyMetrics = topologyMetrics;
     backoffRetry = new ExponentialBackoffRetryDelay(maxRetryDelay, minRetryDelay);
   }
 
@@ -258,7 +268,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     onGoingConfigurationChangeOperation = true;
     shouldRetry = false;
     final var operation = mergedConfiguration.pendingChangesFor(localMemberId).orElseThrow();
-    final var observer = TopologyMetrics.observeOperation(operation);
+    final var observer = topologyMetrics.observeOperation(operation);
     LOG.info("Applying configuration change operation {}", operation);
     final var operationApplier = changeAppliers.getApplier(operation);
     final var operationInitialized =

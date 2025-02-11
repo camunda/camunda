@@ -257,7 +257,8 @@ class ClusterConfigurationManagementIntegrationTest {
             new ClusterConfigurationGossiperConfig(
                 Duration.ofSeconds(1), Duration.ofMillis(100), 2),
             true,
-            new NoopClusterChangeExecutor());
+            new NoopClusterChangeExecutor(),
+            meterRegistry);
     return new TestNode(cluster, service);
   }
 

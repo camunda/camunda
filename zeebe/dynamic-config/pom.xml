@@ -106,7 +106,6 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <dependency>
