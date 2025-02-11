@@ -285,20 +285,45 @@ public class CamundaMultiDBExtension
   @Override
   public void afterAll(final ExtensionContext context) {
     if (databaseType == DatabaseType.ES || databaseType == DatabaseType.OS) {
-      final URI deleteEndpoint = URI.create(String.format("%s/%s-*", DEFAULT_ES_URL, testPrefix));
-      final HttpRequest httpRequest = HttpRequest.newBuilder().DELETE().uri(deleteEndpoint).build();
       try (final HttpClient httpClient = HttpClient.newHttpClient()) {
-        final HttpResponse<String> response = httpClient.send(httpRequest, BodyHandlers.ofString());
-        final int statusCode = response.statusCode();
+        // delete indices
+        // https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-delete-index.html
+        final URI deleteIndicesEndpoint =
+            URI.create(String.format("%s/%s-*", DEFAULT_ES_URL, testPrefix));
+        HttpRequest httpRequest =
+            HttpRequest.newBuilder().DELETE().uri(deleteIndicesEndpoint).build();
+        HttpResponse<String> response = httpClient.send(httpRequest, BodyHandlers.ofString());
+        int statusCode = response.statusCode();
         if (statusCode / 100 == 2) {
-          LOGGER.info("Test data for prefix {} deleted.", testPrefix);
+          LOGGER.info("Test indices with prefix {} deleted.", testPrefix);
         } else {
           LOGGER.warn(
-              "Failure on deleting test data for prefix {}. Status code: {} [{}]",
+              "Failure on deleting test indices with prefix {}. Status code: {} [{}]",
               testPrefix,
               statusCode,
               response.body());
         }
+
+        // Deleting index templates are separate from deleting indices, and we need to make sure
+        // that we also get rid of the template, so we can properly recreate them
+        // https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-delete-template.html
+        //
+        // See related CI incident https://github.com/camunda/camunda/pull/27985
+        final URI deleteIndexTemplatesEndpoint =
+            URI.create(String.format("%s/_index_template/%s-*", DEFAULT_ES_URL, testPrefix));
+        httpRequest = HttpRequest.newBuilder().DELETE().uri(deleteIndexTemplatesEndpoint).build();
+        response = httpClient.send(httpRequest, BodyHandlers.ofString());
+        statusCode = response.statusCode();
+        if (statusCode / 100 == 2) {
+          LOGGER.info("Test index templates with prefix {} deleted.", testPrefix);
+        } else {
+          LOGGER.warn(
+              "Failure on deleting test index templates with prefix {}. Status code: {} [{}]",
+              testPrefix,
+              statusCode,
+              response.body());
+        }
+
       } catch (final IOException | InterruptedException e) {
         LOGGER.warn("Failure on deleting test data.", e);
       }
