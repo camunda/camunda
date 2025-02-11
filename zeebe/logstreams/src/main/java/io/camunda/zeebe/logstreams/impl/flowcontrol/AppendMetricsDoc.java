@@ -8,6 +8,7 @@
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 
@@ -30,6 +31,11 @@ public enum AppendMetricsDoc implements ExtendedMeterDocumentation {
     public Type getType() {
       return Type.COUNTER;
     }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {PartitionKeyNames.PARTITION};
+    }
   },
   /** Number of tries to append */
   TOTAL_APPEND_TRY_COUNT {
@@ -46,6 +52,11 @@ public enum AppendMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public Type getType() {
       return Type.COUNTER;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {PartitionKeyNames.PARTITION};
     }
   },
   /** Current number of append inflight */
@@ -64,6 +75,11 @@ public enum AppendMetricsDoc implements ExtendedMeterDocumentation {
     public Type getType() {
       return Type.GAUGE;
     }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {PartitionKeyNames.PARTITION};
+    }
   },
   /** Current limit for number of inflight appends */
   CURRENT_LIMIT {
@@ -80,6 +96,11 @@ public enum AppendMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public Type getType() {
       return Type.GAUGE;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {PartitionKeyNames.PARTITION};
     }
   },
   /** The last committed position */
@@ -98,6 +119,11 @@ public enum AppendMetricsDoc implements ExtendedMeterDocumentation {
     public Type getType() {
       return Type.GAUGE;
     }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {PartitionKeyNames.PARTITION};
+    }
   },
   /** The last appended position by the appender */
   LAST_WRITTEN_POSITION {
@@ -114,6 +140,11 @@ public enum AppendMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public Type getType() {
       return Type.GAUGE;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {PartitionKeyNames.PARTITION};
     }
   },
   /** Latency to append an event to the log in seconds */
@@ -132,6 +163,11 @@ public enum AppendMetricsDoc implements ExtendedMeterDocumentation {
     public Type getType() {
       return Type.TIMER;
     }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {PartitionKeyNames.PARTITION};
+    }
   },
   /** Latency to commit an event to the log in seconds */
   COMMIT_LATENCY {
@@ -148,6 +184,11 @@ public enum AppendMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public Type getType() {
       return Type.TIMER;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {PartitionKeyNames.PARTITION};
     }
   },
   /** Count of records appended per partition, record type, value type, and intent */
@@ -169,7 +210,8 @@ public enum AppendMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public KeyName[] getKeyNames() {
-      return RecordAppendedKeyNames.values();
+      return KeyName.merge(
+          RecordAppendedKeyNames.values(), new KeyName[] {PartitionKeyNames.PARTITION});
     }
   };
 
