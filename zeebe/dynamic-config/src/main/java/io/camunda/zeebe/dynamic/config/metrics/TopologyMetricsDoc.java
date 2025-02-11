@@ -124,7 +124,7 @@ public enum TopologyMetricsDoc implements ExtendedMeterDocumentation {
   },
   /** Duration it takes to apply an operation */
   OPERATION_DURATION {
-    private static final Duration[] timerSLOs =
+    private static final Duration[] TIMER_SLOS =
         Stream.of(
                 100, 1_000, 2_000, 5_000, 10_000, 30_000, 60_000, 120_000, 180_000, 300_000,
                 600_000)
@@ -148,7 +148,7 @@ public enum TopologyMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public Duration[] getTimerSLOs() {
-      return timerSLOs;
+      return TIMER_SLOS;
     }
 
     @Override
