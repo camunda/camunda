@@ -114,7 +114,8 @@ public class RestoreManager {
             backupStore,
             partition.partition(),
             configuration.getCluster().getNodeId(),
-            new ChecksumProviderRocksDBImpl())
+            new ChecksumProviderRocksDBImpl(),
+            partition.registry())
         .restore(backupId, validator)
         .thenAccept(backup -> logSuccessfulRestore(backup, raftPartition.id().id(), backupId))
         .whenComplete((ok, error) -> MicrometerUtil.close(registry));
