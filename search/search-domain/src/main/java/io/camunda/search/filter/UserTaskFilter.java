@@ -11,7 +11,6 @@ import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
-import io.camunda.search.filter.ProcessInstanceFilter.Builder;
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
@@ -42,6 +41,7 @@ public record UserTaskFilter(
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<UserTaskFilter> {
+
     private List<Long> userTaskKeys;
     private List<String> elementIds;
     private List<String> bpmnProcessIds;
@@ -216,7 +216,7 @@ public record UserTaskFilter(
     }
 
     public Builder completionDateOperations(final List<Operation<OffsetDateTime>> operations) {
-      completionDateOperations = addValuesToList(creationDateOperations, operations);
+      completionDateOperations = addValuesToList(completionDateOperations, operations);
       return this;
     }
 
