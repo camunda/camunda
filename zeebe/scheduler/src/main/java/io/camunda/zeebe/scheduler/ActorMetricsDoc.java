@@ -8,6 +8,7 @@
 package io.camunda.zeebe.scheduler;
 
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 import java.time.Duration;
@@ -18,7 +19,7 @@ public enum ActorMetricsDoc implements ExtendedMeterDocumentation {
   /** Execution time of a certain actor task */
   EXECUTION_LATENCY {
     private static final Duration[] TIMER_SLOS =
-        ExtendedMeterDocumentation.exponentialBucketDuration(100, 4, 10, ChronoUnit.MICROS);
+        MicrometerUtil.exponentialBucketDuration(100, 4, 10, ChronoUnit.MICROS);
 
     @Override
     public String getName() {
@@ -48,7 +49,7 @@ public enum ActorMetricsDoc implements ExtendedMeterDocumentation {
   /** Time between scheduling and executing a job */
   SCHEDULING_LATENCY {
     private static final Duration[] TIMER_SLOS =
-        ExtendedMeterDocumentation.exponentialBucketDuration(1, 4, 12, ChronoUnit.MICROS);
+        MicrometerUtil.exponentialBucketDuration(1, 4, 12, ChronoUnit.MICROS);
 
     @Override
     public String getName() {
@@ -121,12 +122,17 @@ public enum ActorMetricsDoc implements ExtendedMeterDocumentation {
   };
 
   public enum ActorMetricsKeyName implements KeyName {
+    /**
+     * The type of the subscription, see {@link
+     * io.camunda.zeebe.scheduler.ActorMetrics.SubscriptionType}
+     */
     SUBSCRIPTION_TYPE {
       @Override
       public String asString() {
         return "subscriptionType";
       }
     },
+    /** The name of the actor */
     ACTOR_NAME {
       @Override
       public String asString() {
