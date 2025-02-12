@@ -102,9 +102,6 @@ public abstract class Actor implements AutoCloseable, AsyncClosable, Concurrency
 
   @Override
   public ActorFuture<Void> closeAsync() {
-    if (metrics != null) {
-      metrics.close();
-    }
     return actor.close();
   }
 
