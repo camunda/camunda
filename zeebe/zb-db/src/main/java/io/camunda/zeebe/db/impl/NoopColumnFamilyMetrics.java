@@ -8,27 +8,27 @@
 package io.camunda.zeebe.db.impl;
 
 import io.camunda.zeebe.db.ColumnFamilyMetrics;
-import io.prometheus.client.Histogram.Timer;
+import io.camunda.zeebe.util.CloseableSilently;
 
 public class NoopColumnFamilyMetrics implements ColumnFamilyMetrics {
 
   @Override
-  public Timer measureGetLatency() {
-    return null;
+  public CloseableSilently measureGetLatency() {
+    return () -> {};
   }
 
   @Override
-  public Timer measurePutLatency() {
-    return null;
+  public CloseableSilently measurePutLatency() {
+    return () -> {};
   }
 
   @Override
-  public Timer measureDeleteLatency() {
-    return null;
+  public CloseableSilently measureDeleteLatency() {
+    return () -> {};
   }
 
   @Override
-  public Timer measureIterateLatency() {
-    return null;
+  public CloseableSilently measureIterateLatency() {
+    return () -> {};
   }
 }
