@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.scheduler;
 
-import io.camunda.zeebe.scheduler.ActorMetrics.ActorMetricsScoped;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Loggers;
 import java.time.Duration;
@@ -26,7 +25,6 @@ public abstract class Actor implements AutoCloseable, AsyncClosable, Concurrency
 
   private static final int MAX_CLOSE_TIMEOUT = 300;
   protected final ActorControl actor = new ActorControl(this);
-  ActorMetricsScoped metrics;
   private Map<String, String> context;
 
   /**
@@ -140,10 +138,6 @@ public abstract class Actor implements AutoCloseable, AsyncClosable, Concurrency
   @Override
   public ScheduledTimer schedule(final Duration delay, final Runnable runnable) {
     return actor.schedule(delay, runnable);
-  }
-
-  void setActorMetrics(final ActorMetricsScoped metrics) {
-    this.metrics = metrics;
   }
 
   public static ActorBuilder newActor() {

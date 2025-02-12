@@ -59,6 +59,8 @@ public class ActorTask {
    */
   private volatile Queue<ActorJob> submittedJobs = new ClosedQueue();
 
+  private ActorMetricsScoped metrics;
+
   public ActorTask(final Actor actor) {
     this.actor = actor;
   }
@@ -257,7 +259,7 @@ public class ActorTask {
       // cancel and discard jobs
       failJob(j);
     }
-    actor.metrics.close();
+    metrics.close();
   }
 
   private void failJob(final ActorJob job) {
@@ -533,6 +535,14 @@ public class ActorTask {
     }
     // In theory this could overflow. In practice, both queue sizes are very low.
     return fastLaneJobs.size() + submittedJobs.size();
+  }
+
+  ActorMetricsScoped getActorMetrics() {
+    return metrics;
+  }
+
+  void setActorMetrics(final ActorMetricsScoped scoped) {
+    metrics = scoped;
   }
 
   /** Describes an actor's scheduling state */

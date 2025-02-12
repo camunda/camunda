@@ -36,7 +36,6 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
    */
   @Override
   public ActorFuture<Void> submitActor(final Actor actor) {
-    actor.setActorMetrics(metrics.scoped(actor.getName()));
     return submitActor(actor, SchedulingHints.cpuBound());
   }
 
@@ -62,6 +61,7 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     checkRunningState();
 
     final ActorTask task = actor.actor.task;
+    task.setActorMetrics(metrics.scoped(actor.getName()));
 
     return switch (schedulingHints) {
       case CPU_BOUND -> actorTaskExecutor.submitCpuBound(task);
