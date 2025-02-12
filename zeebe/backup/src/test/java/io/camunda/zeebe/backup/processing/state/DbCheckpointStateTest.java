@@ -16,6 +16,7 @@ import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +40,8 @@ final class DbCheckpointStateTest {
         new ZeebeRocksDbFactory<>(
                 new RocksDbConfiguration(),
                 new ConsistencyChecksSettings(true, true),
-                new AccessMetricsConfiguration(Kind.NONE, 1))
+                new AccessMetricsConfiguration(Kind.NONE, 1),
+                new SimpleMeterRegistry())
             .createDb(database.toFile());
     state = new DbCheckpointState(zeebedb, zeebedb.createContext());
   }
