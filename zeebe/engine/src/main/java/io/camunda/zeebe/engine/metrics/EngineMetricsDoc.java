@@ -139,6 +139,29 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getAdditionalKeyNames() {
       return PartitionKeyNames.values();
     }
+  },
+
+  /** Number of banned instances */
+  BANNED_INSTANCES {
+    @Override
+    public String getDescription() {
+      return "Number of banned instances";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.banned.instances.total";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
   };
 
   /** Tags/label values possibly used by the engine metrics. */
