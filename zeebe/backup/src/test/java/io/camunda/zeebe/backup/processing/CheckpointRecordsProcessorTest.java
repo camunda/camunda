@@ -64,7 +64,7 @@ final class CheckpointRecordsProcessorTest {
     final RecordProcessorContextImpl context = createContext(executor, zeebedb);
 
     resultBuilder = new MockProcessingResultBuilder();
-    processor = new CheckpointRecordsProcessor(backupManager, 1);
+    processor = new CheckpointRecordsProcessor(backupManager, 1, context.getMeterRegistry());
     processor.init(context);
 
     state = new DbCheckpointState(zeebedb, zeebedb.createContext());
@@ -286,7 +286,7 @@ final class CheckpointRecordsProcessorTest {
   void shouldNotifyListenerOnInit() {
     // given
     final RecordProcessorContextImpl context = createContext(null, zeebedb);
-    processor = new CheckpointRecordsProcessor(backupManager, 1);
+    processor = new CheckpointRecordsProcessor(backupManager, 1, context.getMeterRegistry());
     final long checkpointId = 3;
     final long checkpointPosition = 30;
     state.setCheckpointInfo(checkpointId, checkpointPosition);

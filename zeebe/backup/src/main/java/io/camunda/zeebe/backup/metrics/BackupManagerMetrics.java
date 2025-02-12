@@ -7,102 +7,114 @@
  */
 package io.camunda.zeebe.backup.metrics;
 
-import io.prometheus.client.Counter;
-import io.prometheus.client.Gauge;
-import io.prometheus.client.Histogram;
-import io.prometheus.client.Histogram.Timer;
+import static io.camunda.zeebe.backup.metrics.BackupManagerMetricsDoc.*;
+
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.collection.Table;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class BackupManagerMetrics {
-  private static final String NAMESPACE = "zeebe";
-  private static final String LABEL_NAME_PARTITION = "partition";
-  private static final String LABEL_NAME_OPERATION = "operation";
-  private static final String LABEL_NAME_RESULT = "result";
 
-  private static final String FAILED = "failed";
-  private static final String COMPLETED = "completed";
-  private static final String TAKE_OPERATION = "take";
-  private static final String STATUS_OPERATION = "status";
-  private static final String LIST_OPERATION = "list";
-  private static final String DELETE_OPERATION = "delete";
+  private final MeterRegistry registry;
+  private final Table<OperationType, OperationResult, Counter> totalOperations =
+      Table.ofEnum(OperationType.class, OperationResult.class, Counter[]::new);
+  private final Map<OperationType, AtomicLong> operationInProgress =
+      new EnumMap<>(OperationType.class);
+  private final Map<OperationType, Timer> backupOperationLatency =
+      new EnumMap<>(OperationType.class);
 
-  private static final Counter TOTAL_OPERATIONS =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("backup_operations_total")
-          .help("Total number of backup operations")
-          .labelNames(LABEL_NAME_PARTITION, LABEL_NAME_OPERATION, LABEL_NAME_RESULT)
-          .register();
-  private static final Gauge OPERATIONS_IN_PROGRESS =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .name("backup_operations_in_progress")
-          .help("Number of backup operations that are in progress")
-          .labelNames(LABEL_NAME_PARTITION, LABEL_NAME_OPERATION)
-          .register();
-
-  private static final Histogram BACKUP_OPERATION_LATENCY =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("backup_operations_latency")
-          .help("Latency of backup operations")
-          .labelNames(LABEL_NAME_PARTITION, LABEL_NAME_OPERATION)
-          .buckets(0.01, 0.1, 1, 10, 60, 5 * 60)
-          .register();
-
-  private final String partitionId;
-
-  public BackupManagerMetrics(final int partitionId) {
-    this.partitionId = String.valueOf(partitionId);
+  public BackupManagerMetrics(final MeterRegistry meterRegistry) {
+    registry = Objects.requireNonNull(meterRegistry, "meterRegistry cannot be null");
   }
 
   public OperationMetrics startTakingBackup() {
-    return OperationMetrics.start(partitionId, TAKE_OPERATION);
+    return start(OperationType.TAKE);
   }
 
   public OperationMetrics startQueryingStatus() {
-    return OperationMetrics.start(partitionId, STATUS_OPERATION);
+    return start(OperationType.STATUS);
   }
 
   public OperationMetrics startListingBackups() {
-    return OperationMetrics.start(partitionId, LIST_OPERATION);
+    return start(OperationType.LIST);
   }
 
   public OperationMetrics startDeleting() {
-    return OperationMetrics.start(partitionId, DELETE_OPERATION);
+    return start(OperationType.DELETE);
   }
 
   public void cancelInProgressOperations() {
-    OPERATIONS_IN_PROGRESS.labels(partitionId, TAKE_OPERATION).set(0);
-    OPERATIONS_IN_PROGRESS.labels(partitionId, DELETE_OPERATION).set(0);
-    OPERATIONS_IN_PROGRESS.labels(partitionId, STATUS_OPERATION).set(0);
-    OPERATIONS_IN_PROGRESS.labels(partitionId, LIST_OPERATION).set(0);
+    for (final var operation : OperationType.values()) {
+      final var value = operationInProgress.get(operation);
+      if (value != null) {
+        value.set(0L);
+      }
+    }
   }
 
-  public static final class OperationMetrics {
-    final String partitionId;
-    final Histogram.Timer timer;
-    final String operation;
+  private Counter registerTotalOperation(
+      final OperationType operation, final OperationResult result) {
+    return Counter.builder(BACKUP_OPERATIONS_TOTAL.getName())
+        .description(BACKUP_OPERATIONS_TOTAL.getDescription())
+        .tags(
+            MetricKeyName.OPERATION.asString(),
+            operation.getValue(),
+            MetricKeyName.RESULT.asString(),
+            result.getValue())
+        .register(registry);
+  }
 
-    private OperationMetrics(final String partitionId, final Timer timer, final String operation) {
-      this.partitionId = partitionId;
+  private Timer registerBackupLatency(final OperationType operationType) {
+    return Timer.builder(BACKUP_OPERATIONS_LATENCY.getName())
+        .description(BACKUP_OPERATIONS_LATENCY.getDescription())
+        .tags(MetricKeyName.OPERATION.asString(), operationType.name())
+        .register(registry);
+  }
+
+  private AtomicLong getOperationInProgress(final OperationType operationType) {
+    var value = operationInProgress.get(operationType);
+    if (value == null) {
+      value = new AtomicLong();
+      operationInProgress.put(operationType, value);
+      Gauge.builder(BACKUP_OPERATIONS_IN_PROGRESS.getName(), value::get)
+          .description(BACKUP_OPERATIONS_IN_PROGRESS.getDescription())
+          .register(registry);
+    }
+    return value;
+  }
+
+  private OperationMetrics start(final OperationType operation) {
+    final var timer =
+        backupOperationLatency.computeIfAbsent(operation, this::registerBackupLatency);
+    final var timerSample = MicrometerUtil.timer(timer, Timer.start(registry.config().clock()));
+    getOperationInProgress(operation).incrementAndGet();
+    return new OperationMetrics(timerSample, operation);
+  }
+
+  public final class OperationMetrics {
+    final CloseableSilently timer;
+    final OperationType operation;
+
+    private OperationMetrics(final CloseableSilently timer, final OperationType operation) {
       this.timer = timer;
       this.operation = operation;
     }
 
-    private static OperationMetrics start(final String partitionId, final String operation) {
-      final var timer = BACKUP_OPERATION_LATENCY.labels(partitionId, operation).startTimer();
-      OPERATIONS_IN_PROGRESS.labels(partitionId, operation).inc();
-      return new OperationMetrics(partitionId, timer, operation);
-    }
-
     public <T> void complete(final T ignored, final Throwable throwable) {
       timer.close();
-      OPERATIONS_IN_PROGRESS.labels(partitionId, operation).dec();
-      if (throwable != null) {
-        TOTAL_OPERATIONS.labels(partitionId, operation, FAILED).inc();
-      } else {
-        TOTAL_OPERATIONS.labels(partitionId, operation, COMPLETED).inc();
-      }
+      getOperationInProgress(operation).decrementAndGet();
+      final var result = throwable != null ? OperationResult.FAILED : OperationResult.COMPLETED;
+      totalOperations
+          .computeIfAbsent(operation, result, BackupManagerMetrics.this::registerTotalOperation)
+          .increment();
     }
   }
 }

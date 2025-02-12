@@ -107,7 +107,8 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
             context.getBackupStore(),
             context.getPersistedSnapshotStore(),
             context.getRaftPartition().dataDirectory().toPath(),
-            index -> context.getRaftPartition().getServer().getTailSegments(index));
+            index -> context.getRaftPartition().getServer().getTailSegments(index),
+            context.getPartitionMeterRegistry());
 
     final ActorFuture<Void> installed = context.getConcurrencyControl().createFuture();
     context
@@ -128,7 +129,8 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
   private static void installCheckpointProcessor(
       final PartitionTransitionContext context, final BackupManager backupManager) {
     final CheckpointRecordsProcessor checkpointRecordsProcessor =
-        new CheckpointRecordsProcessor(backupManager, context.getPartitionId());
+        new CheckpointRecordsProcessor(
+            backupManager, context.getPartitionId(), context.getPartitionMeterRegistry());
     context.setCheckpointProcessor(checkpointRecordsProcessor);
   }
 
