@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -45,21 +46,7 @@ final class ProcessInstanceElementMigratedApplier
     }
 
     if (value.getBpmnElementType() == BpmnElementType.PROCESS) {
-      final DirectBuffer correlationKey =
-          messageState.getProcessInstanceCorrelationKey(value.getProcessInstanceKey());
-
-      if (correlationKey != null && correlationKey.capacity() > 0) {
-        // unlock old process instance
-        final var previousBpmnProcessId =
-            elementInstanceState
-                .getInstance(elementInstanceKey)
-                .getValue()
-                .getBpmnProcessIdBuffer();
-        messageState.removeActiveProcessInstance(previousBpmnProcessId, correlationKey);
-
-        // lock the target process for the correlation key
-        messageState.putActiveProcessInstance(value.getBpmnProcessIdBuffer(), correlationKey);
-      }
+      migrateCorrelatedMessageStartEvent(elementInstanceKey, value);
     }
 
     final var previousProcessDefinitionKey = new AtomicLong();
@@ -113,5 +100,49 @@ final class ProcessInstanceElementMigratedApplier
                     });
           }
         });
+  }
+
+  private void migrateCorrelatedMessageStartEvent(
+      final long elementInstanceKey, final ProcessInstanceRecord value) {
+
+    final var instance = elementInstanceState.getInstance(elementInstanceKey).getValue();
+    final DirectBuffer previousBpmnProcessId = instance.getBpmnProcessIdBuffer();
+    final DirectBuffer currentBpmnProcessId = value.getBpmnProcessIdBuffer();
+    final DirectBuffer correlationKey =
+        messageState.getProcessInstanceCorrelationKey(value.getProcessInstanceKey());
+
+    if (isCorrelationKeyAbsent(correlationKey)) {
+      // no need to update correlation key relations since there isn't one
+      return;
+    }
+
+    final boolean targetHasMessageStartEvent =
+        processState
+            .getFlowElement(
+                value.getProcessDefinitionKey(),
+                value.getTenantId(),
+                value.getElementIdBuffer(),
+                ExecutableFlowElementContainer.class)
+            .hasMessageStartEvent();
+    final boolean bpmnProcessIdChanged =
+        !BufferUtil.equals(previousBpmnProcessId, currentBpmnProcessId);
+
+    if (targetHasMessageStartEvent && bpmnProcessIdChanged) {
+      // unlock the previous process instance's process id
+      messageState.removeActiveProcessInstance(previousBpmnProcessId, correlationKey);
+      // lock the new process instance's process id
+      messageState.putActiveProcessInstance(currentBpmnProcessId, correlationKey);
+    }
+
+    // clean up the correlation key relation if the target process doesn't have a message start
+    // event at all
+    if (!targetHasMessageStartEvent) {
+      messageState.removeActiveProcessInstance(previousBpmnProcessId, correlationKey);
+      messageState.removeProcessInstanceCorrelationKey(value.getProcessInstanceKey());
+    }
+  }
+
+  private boolean isCorrelationKeyAbsent(final DirectBuffer correlationKey) {
+    return correlationKey == null || correlationKey.capacity() == 0;
   }
 }
