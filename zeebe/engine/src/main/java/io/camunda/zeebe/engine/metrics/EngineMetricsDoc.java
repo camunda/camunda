@@ -180,6 +180,62 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     public Type getType() {
       return Type.GAUGE;
     }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
+  /** Number of incident events */
+  INCIDENT_EVENTS {
+    @Override
+    public String getDescription() {
+      return "Number of incident events";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.incidents.events.total";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {EngineKeyNames.INCIDENT_ACTION};
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
+  /** Number of pending incidents */
+  PENDING_INCIDENTS {
+    @Override
+    public String getDescription() {
+      return "Number of pending incidents";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.pending.incidents.total";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
   };
 
   /** Tags/label values possibly used by the engine metrics. */
@@ -202,6 +258,14 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
      * values.
      */
     ACTION {
+      @Override
+      public String asString() {
+        return "action";
+      }
+    },
+
+    /** The possible actions performed on an incident; see {@link IncidentAction} for more. */
+    INCIDENT_ACTION {
       @Override
       public String asString() {
         return "action";
@@ -265,6 +329,16 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     TERMINATED,
     EVALUATED_SUCCESSFULLY,
     EVALUATED_FAILED;
+
+    @Override
+    public String toString() {
+      return name().toLowerCase();
+    }
+  }
+
+  public enum IncidentAction {
+    CREATED,
+    RESOLVED;
 
     @Override
     public String toString() {
