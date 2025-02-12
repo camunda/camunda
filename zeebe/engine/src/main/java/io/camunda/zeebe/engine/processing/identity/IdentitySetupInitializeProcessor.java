@@ -243,15 +243,16 @@ public final class IdentitySetupInitializeProcessor
       }
 
       // TODO: refactor when Roles use String IDs as unique identifiers
+      final var authorizationKey = keyGenerator.nextKey();
       final var record =
           new AuthorizationRecord()
+              .setAuthorizationKey(authorizationKey)
               .setOwnerId(String.valueOf(roleKey))
               .setOwnerType(AuthorizationOwnerType.ROLE)
               .setResourceType(resourceType)
               .setResourceId(WILDCARD_PERMISSION)
               .setAuthorizationPermissions(resourceType.getSupportedPermissionTypes());
-
-      stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), AuthorizationIntent.CREATED, record);
+      stateWriter.appendFollowUpEvent(authorizationKey, AuthorizationIntent.CREATED, record);
     }
   }
 }
