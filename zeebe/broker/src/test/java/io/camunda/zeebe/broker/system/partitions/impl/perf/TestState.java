@@ -85,7 +85,8 @@ final class TestState {
     return new ZeebeRocksDbFactory<>(
         new RocksDbConfiguration(),
         new ConsistencyChecksSettings(false, false),
-        new AccessMetricsConfiguration(Kind.NONE, 1));
+        new AccessMetricsConfiguration(Kind.NONE, 1),
+        new SimpleMeterRegistry());
   }
 
   private void insertData(final List<ColumnFamily<DbString, DbString>> columns) {
