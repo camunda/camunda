@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
-import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -193,10 +192,13 @@ public class JobProcessingMetricsTest {
   }
 
   private static Double jobMetric(final String action, final String type) {
-    return MetricsTestHelper.readMetricValue(
-        "zeebe_job_events_total",
-        entry("action", action),
-        entry("partition", "1"),
-        entry("type", type));
+    return ENGINE
+        .getMeterRegistry()
+        .get("zeebe.job.events.total")
+        .tag("action", action)
+        .tag("partition", "1")
+        .tag("type", type)
+        .counter()
+        .count();
   }
 }
