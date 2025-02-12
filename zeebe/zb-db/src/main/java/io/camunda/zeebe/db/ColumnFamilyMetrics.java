@@ -7,14 +7,14 @@
  */
 package io.camunda.zeebe.db;
 
-import io.prometheus.client.Histogram.Timer;
+import io.camunda.zeebe.util.CloseableSilently;
 
 public interface ColumnFamilyMetrics {
-  Timer measureGetLatency();
+  CloseableSilently measureGetLatency();
 
-  Timer measurePutLatency();
+  CloseableSilently measurePutLatency();
 
-  Timer measureDeleteLatency();
+  CloseableSilently measureDeleteLatency();
 
-  Timer measureIterateLatency();
+  CloseableSilently measureIterateLatency();
 }
