@@ -118,8 +118,7 @@ public class CreateUserTest {
         .hasOwnerKey(userKey)
         .hasOwnerType(AuthorizationOwnerType.USER)
         .hasResourceType(AuthorizationResourceType.USER)
-        .hasOnlyPermissions(
-            new Permission().setPermissionType(PermissionType.READ).addResourceId(username),
-            new Permission().setPermissionType(PermissionType.UPDATE).addResourceId(username));
+        .hasResourceId(username)
+        .hasAuthorizationPermissions(PermissionType.READ, PermissionType.UPDATE);
   }
 }

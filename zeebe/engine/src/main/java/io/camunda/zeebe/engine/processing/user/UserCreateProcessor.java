@@ -118,7 +118,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
   private void addUserPermissions(final long key, final String username) {
     final var authorizationRecord =
         new AuthorizationRecord()
-            .setAuthorizationKey(key)
+            .setAuthorizationKey(keyGenerator.nextKey())
             .setOwnerKey(key)
             .setOwnerId(username)
             .setOwnerType(AuthorizationOwnerType.USER)
@@ -126,6 +126,6 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
             .setResourceId(username)
             .setAuthorizationPermissions(Set.of(PermissionType.READ, PermissionType.UPDATE));
 
-    commandWriter.appendFollowUpCommand(key, AuthorizationIntent.CREATE, authorizationRecord);
+    commandWriter.appendFollowUpCommand(key, AuthorizationIntent.CREATED, authorizationRecord);
   }
 }
