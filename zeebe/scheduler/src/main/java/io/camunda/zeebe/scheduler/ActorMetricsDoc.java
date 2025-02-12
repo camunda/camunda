@@ -80,7 +80,7 @@ public enum ActorMetricsDoc implements ExtendedMeterDocumentation {
   EXECUTION_COUNT {
     @Override
     public String getName() {
-      return "actor_task_execution_count";
+      return "zeebe.actor_task_execution_count";
     }
 
     @Override
