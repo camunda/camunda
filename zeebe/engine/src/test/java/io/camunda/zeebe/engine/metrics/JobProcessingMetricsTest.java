@@ -34,8 +34,14 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+<<<<<<< HEAD:zeebe/engine/src/test/java/io/camunda/zeebe/engine/metrics/JobMetricsTest.java
 @RunWith(Parameterized.class)
 public class JobMetricsTest {
+||||||| parent of cce1a9b6f0d (refactor: migrate job metrics to micrometer):zeebe/engine/src/test/java/io/camunda/zeebe/engine/metrics/JobMetricsTest.java
+public class JobMetricsTest {
+=======
+public class JobProcessingMetricsTest {
+>>>>>>> cce1a9b6f0d (refactor: migrate job metrics to micrometer):zeebe/engine/src/test/java/io/camunda/zeebe/engine/metrics/JobProcessingMetricsTest.java
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
@@ -85,7 +91,7 @@ public class JobMetricsTest {
 
   @Before
   public void resetMetrics() {
-    JobMetrics.clear();
+    ENGINE.getMeterRegistry().clear();
   }
 
   @Test

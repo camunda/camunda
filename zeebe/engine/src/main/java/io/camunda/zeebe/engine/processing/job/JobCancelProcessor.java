@@ -7,7 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
+import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -21,9 +22,9 @@ public final class JobCancelProcessor implements CommandProcessor<JobRecord> {
   public static final String NO_JOB_FOUND_MESSAGE =
       "Expected to cancel job with key '%d', but no such job was found";
   private final JobState jobState;
-  private final JobMetrics jobMetrics;
+  private final JobProcessingMetrics jobMetrics;
 
-  public JobCancelProcessor(final ProcessingState state, final JobMetrics jobMetrics) {
+  public JobCancelProcessor(final ProcessingState state, final JobProcessingMetrics jobMetrics) {
     jobState = state.getJobState();
     this.jobMetrics = jobMetrics;
   }
@@ -37,7 +38,7 @@ public final class JobCancelProcessor implements CommandProcessor<JobRecord> {
       // Note that this logic is duplicated in BpmnJobBehavior, if you change this please change
       // it there as well.
       commandControl.accept(JobIntent.CANCELED, job);
-      jobMetrics.jobCanceled(job.getType(), job.getJobKind());
+      jobMetrics.countJobEvent(JobAction.CANCELED, job.getJobKind(), job.getType());
     } else {
       commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, jobKey));
     }
