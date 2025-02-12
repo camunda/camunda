@@ -12,11 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.temporal.ChronoUnit;
 import org.junit.Test;
 
-public class MicrometrUtilTest {
+public class MicrometerUtilTest {
   @Test
   public void shouldThrowExceptionWhenBucketsExceedLongMax() {
-    final var buckets =
-        MicrometerUtil.exponentialBucketDuration(7, 6, 1023, ChronoUnit.MICROS);
+    final var buckets = MicrometerUtil.exponentialBucketDuration(7, 6, 1023, ChronoUnit.MICROS);
     assertThat(buckets).hasSizeLessThan(1023);
     assertThat(buckets).allMatch(d -> d.toMillis() > 0L);
   }
