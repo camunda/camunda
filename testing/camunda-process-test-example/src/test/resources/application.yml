@@ -1,3 +1,10 @@
+io:
+  camunda:
+    process:
+      test:
+        camunda-version: 8.7.0-SNAPSHOT
+        connectors-docker-image-version: 8.7.0-SNAPSHOT
+
 logging:
   level:
     root: info
@@ -8,4 +15,4 @@ logging:
     # Hide default logging from Testcontainers
     org:
       testcontainers: warn
-    tc: warn
+    tc: error

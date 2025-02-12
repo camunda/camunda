@@ -18,211 +18,256 @@ package io.camunda.process.test.impl.assertions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
+import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
+import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
+import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.impl.client.CamundaClientNotFoundException;
-import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
-import io.camunda.process.test.impl.client.FlowNodeInstanceState;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
 import io.camunda.process.test.impl.client.ProcessInstanceState;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 import org.awaitility.core.TerminalFailureException;
 
-public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssertj, Long>
+public class ProcessInstanceAssertj
+    extends AbstractAssert<ProcessInstanceAssertj, ProcessInstanceSelector>
     implements ProcessInstanceAssert {
 
   private final CamundaDataSource dataSource;
-  private final VariableAssertj variableAssertj;
 
-  public ProcessInstanceAssertj(final CamundaDataSource dataSource, final long processInstanceKey) {
-    super(processInstanceKey, ProcessInstanceAssertj.class);
+  private final ElementAssertj elementAssertj;
+  private final VariableAssertj variableAssertj;
+  private final String failureMessagePrefix;
+
+  private final AtomicReference<ProcessInstanceDto> actualProcessInstance = new AtomicReference<>();
+
+  public ProcessInstanceAssertj(
+      final CamundaDataSource dataSource,
+      final long processInstanceKey,
+      final Function<String, ElementSelector> elementSelector) {
+    this(dataSource, ProcessInstanceSelectors.byKey(processInstanceKey), elementSelector);
+  }
+
+  public ProcessInstanceAssertj(
+      final CamundaDataSource dataSource,
+      final ProcessInstanceSelector processInstanceSelector,
+      final Function<String, ElementSelector> elementSelector) {
+    super(processInstanceSelector, ProcessInstanceAssertj.class);
     this.dataSource = dataSource;
-    variableAssertj = new VariableAssertj(dataSource, processInstanceKey);
+    failureMessagePrefix =
+        String.format("Process instance [%s]", processInstanceSelector.describe());
+    elementAssertj = new ElementAssertj(dataSource, failureMessagePrefix, elementSelector);
+    variableAssertj = new VariableAssertj(dataSource, failureMessagePrefix);
   }
 
   @Override
   public ProcessInstanceAssert isActive() {
-    hasProcessInstanceInState(ProcessInstanceState.ACTIVE, Objects::nonNull);
+    hasProcessInstanceInState("active", ProcessInstanceState.ACTIVE::equals, Objects::nonNull);
     return this;
   }
 
   @Override
   public ProcessInstanceAssert isCompleted() {
-    hasProcessInstanceInState(ProcessInstanceState.COMPLETED, ProcessInstanceAssertj::isEnded);
+    hasProcessInstanceInState(
+        "completed", ProcessInstanceState.COMPLETED::equals, ProcessInstanceAssertj::isEnded);
     return this;
   }
 
   @Override
   public ProcessInstanceAssert isTerminated() {
-    hasProcessInstanceInState(ProcessInstanceState.TERMINATED, ProcessInstanceAssertj::isEnded);
+    hasProcessInstanceInState(
+        "terminated", ProcessInstanceState.TERMINATED::equals, ProcessInstanceAssertj::isEnded);
     return this;
   }
 
   @Override
-  public ProcessInstanceAssert hasActiveElements(final String... elementNames) {
-    hasElementsInState(elementNames, FlowNodeInstanceState.ACTIVE, Objects::nonNull);
+  public ProcessInstanceAssert isCreated() {
+    hasProcessInstanceInState(
+        "created",
+        state ->
+            state == ProcessInstanceState.ACTIVE
+                || state == ProcessInstanceState.COMPLETED
+                || state == ProcessInstanceState.TERMINATED,
+        Objects::nonNull);
     return this;
   }
 
   @Override
-  public ProcessInstanceAssert hasCompletedElements(final String... elementNames) {
-    hasElementsInState(
-        elementNames, FlowNodeInstanceState.COMPLETED, ProcessInstanceAssertj::isEnded);
+  public ProcessInstanceAssert hasActiveElements(final String... elementIds) {
+    elementAssertj.hasActiveElements(getProcessInstanceKey(), elementIds);
     return this;
   }
 
   @Override
-  public ProcessInstanceAssert hasTerminatedElements(final String... elementNames) {
-    hasElementsInState(
-        elementNames, FlowNodeInstanceState.TERMINATED, ProcessInstanceAssertj::isEnded);
+  public ProcessInstanceAssert hasActiveElements(final ElementSelector... elementSelectors) {
+    elementAssertj.hasActiveElements(getProcessInstanceKey(), elementSelectors);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasCompletedElements(final String... elementIds) {
+    elementAssertj.hasCompletedElements(getProcessInstanceKey(), elementIds);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasCompletedElements(final ElementSelector... elementSelectors) {
+    elementAssertj.hasCompletedElements(getProcessInstanceKey(), elementSelectors);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasTerminatedElements(final String... elementIds) {
+    elementAssertj.hasTerminatedElements(getProcessInstanceKey(), elementIds);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasTerminatedElements(final ElementSelector... elementSelectors) {
+    elementAssertj.hasTerminatedElements(getProcessInstanceKey(), elementSelectors);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasActiveElement(final String elementId, final int times) {
+    elementAssertj.hasActiveElement(getProcessInstanceKey(), elementId, times);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasActiveElement(
+      final ElementSelector elementSelector, final int times) {
+    elementAssertj.hasActiveElement(getProcessInstanceKey(), elementSelector, times);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasCompletedElement(final String elementId, final int times) {
+    elementAssertj.hasCompletedElement(getProcessInstanceKey(), elementId, times);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasCompletedElement(
+      final ElementSelector elementSelector, final int times) {
+    elementAssertj.hasCompletedElement(getProcessInstanceKey(), elementSelector, times);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasTerminatedElement(final String elementId, final int times) {
+    elementAssertj.hasTerminatedElement(getProcessInstanceKey(), elementId, times);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasTerminatedElement(
+      final ElementSelector elementSelector, final int times) {
+    elementAssertj.hasTerminatedElement(getProcessInstanceKey(), elementSelector, times);
     return this;
   }
 
   @Override
   public ProcessInstanceAssert hasVariableNames(final String... variableNames) {
-    variableAssertj.hasVariableNames(variableNames);
+    variableAssertj.hasVariableNames(getProcessInstanceKey(), variableNames);
     return this;
   }
 
   @Override
   public ProcessInstanceAssert hasVariable(final String variableName, final Object variableValue) {
-    variableAssertj.hasVariable(variableName, variableValue);
+    variableAssertj.hasVariable(getProcessInstanceKey(), variableName, variableValue);
     return this;
   }
 
   @Override
   public ProcessInstanceAssert hasVariables(final Map<String, Object> variables) {
-    variableAssertj.hasVariables(variables);
+    variableAssertj.hasVariables(getProcessInstanceKey(), variables);
     return this;
   }
 
   private void hasProcessInstanceInState(
-      final ProcessInstanceState expectedState, final Predicate<ProcessInstanceDto> waitCondition) {
-
-    final AtomicReference<ProcessInstanceDto> reference = new AtomicReference<>();
+      final String expectedState,
+      final Predicate<ProcessInstanceState> expectedStateMatcher,
+      final Predicate<ProcessInstanceDto> waitCondition) {
+    // reset cached process instance
+    actualProcessInstance.set(null);
 
     try {
       Awaitility.await()
           .ignoreException(CamundaClientNotFoundException.class)
-          .failFast(() -> waitCondition.test(reference.get()))
+          .failFast(() -> waitCondition.test(actualProcessInstance.get()))
           .untilAsserted(
               () -> {
-                final ProcessInstanceDto processInstance = dataSource.getProcessInstance(actual);
-                reference.set(processInstance);
+                final ProcessInstanceDto processInstance = findProcessInstance();
+                actualProcessInstance.set(processInstance);
 
-                assertThat(processInstance.getState()).isEqualTo(expectedState);
+                assertThat(processInstance.getProcessInstanceState()).matches(expectedStateMatcher);
               });
 
     } catch (final ConditionTimeoutException | TerminalFailureException e) {
 
       final String actualState =
-          Optional.ofNullable(reference.get())
-              .map(ProcessInstanceDto::getState)
+          Optional.ofNullable(actualProcessInstance.get())
+              .map(ProcessInstanceDto::getProcessInstanceState)
               .map(ProcessInstanceAssertj::formatState)
-              .orElse("not activated");
+              .orElse("not created");
 
       final String failureMessage =
           String.format(
-              "%s should be %s but was %s.",
-              AssertFormatUtil.formatProcessInstance(actual),
-              formatState(expectedState),
-              actualState);
+              "%s should be %s but was %s.", failureMessagePrefix, expectedState, actualState);
       fail(failureMessage);
     }
   }
 
-  private void hasElementsInState(
-      final String[] elementNames,
-      final FlowNodeInstanceState expectedState,
-      final Predicate<FlowNodeInstanceDto> waitCondition) {
+  private ProcessInstanceDto findProcessInstance() throws IOException {
+    return (ProcessInstanceDto)
+        dataSource.findProcessInstances().stream()
+            .filter(actual::test)
+            .findFirst()
+            .orElseThrow(CamundaClientNotFoundException::new);
+  }
 
-    final AtomicReference<List<FlowNodeInstanceDto>> reference =
-        new AtomicReference<>(Collections.emptyList());
-
-    final List<String> elementNamesList = Arrays.asList(elementNames);
-
+  private void awaitProcessInstance() {
     try {
       Awaitility.await()
           .ignoreException(CamundaClientNotFoundException.class)
-          .failFast(
-              () ->
-                  reference.get().stream()
-                      .filter(waitCondition)
-                      .map(FlowNodeInstanceDto::getFlowNodeName)
-                      .collect(Collectors.toSet())
-                      .containsAll(elementNamesList))
           .untilAsserted(
               () -> {
-                final List<FlowNodeInstanceDto> flowNodeInstances =
-                    dataSource.getFlowNodeInstancesByProcessInstanceKey(actual);
-                reference.set(flowNodeInstances);
-
-                assertThat(flowNodeInstances)
-                    .filteredOn(FlowNodeInstanceDto::getState, expectedState)
-                    .extracting(FlowNodeInstanceDto::getFlowNodeName)
-                    .contains(elementNames);
+                final ProcessInstanceDto processInstance = findProcessInstance();
+                actualProcessInstance.set(processInstance);
               });
 
     } catch (final ConditionTimeoutException | TerminalFailureException e) {
-
-      final Map<String, FlowNodeInstanceState> elementStateByName =
-          reference.get().stream()
-              .filter(flowNode -> elementNamesList.contains(flowNode.getFlowNodeName()))
-              .collect(
-                  Collectors.toMap(
-                      FlowNodeInstanceDto::getFlowNodeName, FlowNodeInstanceDto::getState));
-
-      final String elementsNotInState =
-          Arrays.stream(elementNames)
-              .filter(elementName -> !expectedState.equals(elementStateByName.get(elementName)))
-              .map(
-                  elementName ->
-                      String.format(
-                          "\t- '%s': %s",
-                          elementName, formatState(elementStateByName.get(elementName))))
-              .collect(Collectors.joining("\n"));
-
       final String failureMessage =
-          String.format(
-              "%s should have %s elements %s but the following elements were not %s:\n%s",
-              AssertFormatUtil.formatProcessInstance(actual),
-              formatState(expectedState),
-              AssertFormatUtil.formatNames(elementNames),
-              formatState(expectedState),
-              elementsNotInState);
+          String.format("No process instance [%s] found.", actual.describe());
       fail(failureMessage);
     }
+  }
+
+  private long getProcessInstanceKey() {
+    if (actualProcessInstance.get() == null) {
+      awaitProcessInstance();
+    }
+    return actualProcessInstance.get().getKey();
   }
 
   private static boolean isEnded(final ProcessInstanceDto processInstance) {
     return processInstance != null && processInstance.getEndDate() != null;
   }
 
-  private static boolean isEnded(final FlowNodeInstanceDto flowNodeInstance) {
-    return flowNodeInstance.getEndDate() != null;
-  }
-
   private static String formatState(final ProcessInstanceState state) {
     if (state == null) {
-      return "not activated";
-    } else {
-      return state.name().toLowerCase();
-    }
-  }
-
-  private static String formatState(final FlowNodeInstanceState state) {
-    if (state == null) {
-      return "not activated";
+      return "not created";
+    } else if (state == ProcessInstanceState.TERMINATED) {
+      return "terminated";
     } else {
       return state.name().toLowerCase();
     }

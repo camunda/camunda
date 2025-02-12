@@ -18,10 +18,18 @@ package io.camunda.process.test.impl.runtime;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
+import io.camunda.process.test.impl.runtime.logging.CamundaLogEntry;
+import io.camunda.process.test.impl.runtime.logging.ConnectorsLogEntry;
+import io.camunda.process.test.impl.runtime.logging.LogEntry;
+import io.camunda.process.test.impl.runtime.logging.Slf4jJsonLogConsumer;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -86,7 +94,8 @@ public class CamundaContainerRuntime implements AutoCloseable {
         containerFactory
             .createCamundaContainer(
                 builder.getCamundaDockerImageName(), builder.getCamundaDockerImageVersion())
-            .withLogConsumer(createContainerLogger(builder.getCamundaLoggerName()))
+            .withLogConsumer(
+                createContainerJsonLogger(builder.getCamundaLoggerName(), CamundaLogEntry.class))
             .withNetwork(network)
             .withNetworkAliases(NETWORK_ALIAS_CAMUNDA)
             .withElasticsearchUrl(ELASTICSEARCH_URL)
@@ -103,7 +112,9 @@ public class CamundaContainerRuntime implements AutoCloseable {
         containerFactory
             .createConnectorsContainer(
                 builder.getConnectorsDockerImageName(), builder.getConnectorsDockerImageVersion())
-            .withLogConsumer(createContainerLogger(builder.getConnectorsLoggerName()))
+            .withLogConsumer(
+                createContainerJsonLogger(
+                    builder.getConnectorsLoggerName(), ConnectorsLogEntry.class))
             .withNetwork(network)
             .withNetworkAliases(NETWORK_ALIAS_CONNECTORS)
             .withZeebeGrpcApi(CAMUNDA_GRPC_API)
@@ -117,15 +128,21 @@ public class CamundaContainerRuntime implements AutoCloseable {
   }
 
   public void start() {
-    LOGGER.info("Starting Camunda container runtime");
+    final List<GenericContainer<?>> containers = new ArrayList<>();
+    containers.add(elasticsearchContainer);
+    containers.add(camundaContainer);
+    if (connectorsEnabled) {
+      containers.add(connectorsContainer);
+    }
+
+    LOGGER.info(
+        "Starting Camunda container runtime [{}]",
+        containers.stream()
+            .map(GenericContainer::getDockerImageName)
+            .collect(Collectors.joining(", ")));
     final Instant startTime = Instant.now();
 
-    elasticsearchContainer.start();
-    camundaContainer.start();
-
-    if (connectorsEnabled) {
-      connectorsContainer.start();
-    }
+    containers.forEach(GenericContainer::start);
 
     final Instant endTime = Instant.now();
     final Duration startupTime = Duration.between(startTime, endTime);
@@ -164,7 +181,13 @@ public class CamundaContainerRuntime implements AutoCloseable {
 
   private static Slf4jLogConsumer createContainerLogger(final String name) {
     final Logger logger = LoggerFactory.getLogger(name);
-    return new Slf4jLogConsumer(logger);
+    return new Slf4jLogConsumer(logger, true);
+  }
+
+  private static <T extends LogEntry> Slf4jJsonLogConsumer createContainerJsonLogger(
+      final String name, final Class<T> logEntryType) {
+    final Logger logger = LoggerFactory.getLogger(name);
+    return new Slf4jJsonLogConsumer(logger, logEntryType);
   }
 
   public static CamundaContainerRuntimeBuilder newBuilder() {

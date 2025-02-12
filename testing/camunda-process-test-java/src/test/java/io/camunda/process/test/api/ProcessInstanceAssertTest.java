@@ -16,17 +16,17 @@
 package io.camunda.process.test.api;
 
 import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
-import io.camunda.process.test.impl.client.CamundaClientNotFoundException;
 import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
 import io.camunda.process.test.impl.client.FlowNodeInstanceState;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
 import io.camunda.process.test.impl.client.ProcessInstanceState;
+import io.camunda.process.test.impl.client.VariableDto;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
 import java.io.IOException;
@@ -89,62 +89,133 @@ public class ProcessInstanceAssertTest {
     return processInstance;
   }
 
-  private static FlowNodeInstanceDto newActiveFlowNodeInstance(final String elementName) {
-    final FlowNodeInstanceDto flowNodeInstance = new FlowNodeInstanceDto();
-    flowNodeInstance.setFlowNodeName(elementName);
-    flowNodeInstance.setProcessInstanceKey(PROCESS_INSTANCE_KEY);
-    flowNodeInstance.setState(FlowNodeInstanceState.ACTIVE);
-    flowNodeInstance.setStartDate(START_DATE);
-    return flowNodeInstance;
-  }
-
-  private static FlowNodeInstanceDto newCompletedFlowNodeInstance(final String elementName) {
-    final FlowNodeInstanceDto flowNodeInstance = newActiveFlowNodeInstance(elementName);
-    flowNodeInstance.setState(FlowNodeInstanceState.COMPLETED);
-    flowNodeInstance.setEndDate(END_DATE);
-    return flowNodeInstance;
-  }
-
-  private static FlowNodeInstanceDto newTerminatedFlowNodeInstance(final String elementName) {
-    final FlowNodeInstanceDto flowNodeInstance = newActiveFlowNodeInstance(elementName);
-    flowNodeInstance.setState(FlowNodeInstanceState.TERMINATED);
-    flowNodeInstance.setEndDate(END_DATE);
-    return flowNodeInstance;
-  }
-
   @Nested
   class ProcessInstanceSource {
+
+    private static final long ACTIVE_PROCESS_INSTANCE_KEY = 1L;
+    private static final long COMPLETED_PROCESS_INSTANCE_KEY = 2L;
 
     @Mock private ProcessInstanceResult processInstanceResult;
 
     @BeforeEach
     void configureMocks() throws IOException {
-      final ProcessInstanceDto processInstance = newActiveProcessInstance(PROCESS_INSTANCE_KEY);
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY)).thenReturn(processInstance);
+      final ProcessInstanceDto activeProcessInstance =
+          newActiveProcessInstance(ACTIVE_PROCESS_INSTANCE_KEY);
+      activeProcessInstance.setBpmnProcessId("active-process");
+
+      final ProcessInstanceDto completedProcessInstance =
+          newCompletedProcessInstance(COMPLETED_PROCESS_INSTANCE_KEY);
+      completedProcessInstance.setBpmnProcessId("completed-process");
+
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Arrays.asList(activeProcessInstance, completedProcessInstance));
     }
 
     @Test
     void shouldUseProcessInstanceEvent() throws IOException {
       // given
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(ACTIVE_PROCESS_INSTANCE_KEY);
 
       // when
       CamundaAssert.assertThat(processInstanceEvent).isActive();
 
       // then
-      verify(camundaDataSource).getProcessInstance(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource).findProcessInstances();
+    }
+
+    @Test
+    void shouldFailWithProcessInstanceEvent() throws IOException {
+      // given
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(COMPLETED_PROCESS_INSTANCE_KEY);
+
+      // when
+      Assertions.assertThatThrownBy(() -> CamundaAssert.assertThat(processInstanceEvent).isActive())
+          .hasMessage(
+              "Process instance [key: %d] should be active but was completed.",
+              COMPLETED_PROCESS_INSTANCE_KEY);
+
+      // then
+      verify(camundaDataSource).findProcessInstances();
     }
 
     @Test
     void shouldUseProcessInstanceResult() throws IOException {
       // given
-      when(processInstanceResult.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+      when(processInstanceResult.getProcessInstanceKey()).thenReturn(ACTIVE_PROCESS_INSTANCE_KEY);
 
       // when
       CamundaAssert.assertThat(processInstanceResult).isActive();
 
       // then
-      verify(camundaDataSource).getProcessInstance(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource).findProcessInstances();
+    }
+
+    @Test
+    void shouldFailWithProcessInstanceResult() throws IOException {
+      // given
+      when(processInstanceResult.getProcessInstanceKey())
+          .thenReturn(COMPLETED_PROCESS_INSTANCE_KEY);
+
+      // when
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceResult).isActive())
+          .hasMessage(
+              "Process instance [key: %d] should be active but was completed.",
+              COMPLETED_PROCESS_INSTANCE_KEY);
+
+      // then
+      verify(camundaDataSource).findProcessInstances();
+    }
+
+    @Test
+    void shouldUseByKeySelector() throws IOException {
+      // when
+      CamundaAssert.assertThat(ProcessInstanceSelectors.byKey(ACTIVE_PROCESS_INSTANCE_KEY))
+          .isActive();
+
+      // then
+      verify(camundaDataSource).findProcessInstances();
+    }
+
+    @Test
+    void shouldFailWithByKeySelector() throws IOException {
+      // when
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(
+                          ProcessInstanceSelectors.byKey(COMPLETED_PROCESS_INSTANCE_KEY))
+                      .isActive())
+          .hasMessage(
+              "Process instance [key: %d] should be active but was completed.",
+              COMPLETED_PROCESS_INSTANCE_KEY);
+
+      // then
+      verify(camundaDataSource).findProcessInstances();
+    }
+
+    @Test
+    void shouldUseByProcessIdSelector() throws IOException {
+      // when
+      CamundaAssert.assertThat(ProcessInstanceSelectors.byProcessId("active-process")).isActive();
+
+      // then
+      verify(camundaDataSource).findProcessInstances();
+    }
+
+    @Test
+    void shouldFailWithByProcessIdSelector() throws IOException {
+      // when
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(
+                          ProcessInstanceSelectors.byProcessId("completed-process"))
+                      .isActive())
+          .hasMessage(
+              "Process instance [process-id: '%s'] should be active but was completed.",
+              "completed-process");
+
+      // then
+      verify(camundaDataSource).findProcessInstances();
     }
   }
 
@@ -155,7 +226,8 @@ public class ProcessInstanceAssertTest {
     void shouldBeActive() throws IOException {
       // given
       final ProcessInstanceDto processInstance = newActiveProcessInstance(PROCESS_INSTANCE_KEY);
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY)).thenReturn(processInstance);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -168,7 +240,8 @@ public class ProcessInstanceAssertTest {
     void shouldFailIfCompleted() throws IOException {
       // given
       final ProcessInstanceDto processInstance = newCompletedProcessInstance(PROCESS_INSTANCE_KEY);
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY)).thenReturn(processInstance);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -184,7 +257,8 @@ public class ProcessInstanceAssertTest {
     void shouldFailIfTerminated() throws IOException {
       // given
       final ProcessInstanceDto processInstance = newTerminatedProcessInstance(PROCESS_INSTANCE_KEY);
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY)).thenReturn(processInstance);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -199,9 +273,7 @@ public class ProcessInstanceAssertTest {
     @Test
     void shouldFailIfNotFound() throws IOException {
       // given
-      doThrow(new CamundaClientNotFoundException())
-          .when(camundaDataSource)
-          .getProcessInstance(PROCESS_INSTANCE_KEY);
+      when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -209,7 +281,7 @@ public class ProcessInstanceAssertTest {
       // then
       Assertions.assertThatThrownBy(() -> CamundaAssert.assertThat(processInstanceEvent).isActive())
           .hasMessage(
-              "Process instance [key: %d] should be active but was not activated.",
+              "Process instance [key: %d] should be active but was not created.",
               PROCESS_INSTANCE_KEY);
     }
   }
@@ -221,7 +293,8 @@ public class ProcessInstanceAssertTest {
     void shouldBeCompleted() throws IOException {
       // given
       final ProcessInstanceDto processInstance = newCompletedProcessInstance(PROCESS_INSTANCE_KEY);
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY)).thenReturn(processInstance);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -234,7 +307,8 @@ public class ProcessInstanceAssertTest {
     void shouldFailIfTerminated() throws IOException {
       // given
       final ProcessInstanceDto processInstance = newTerminatedProcessInstance(PROCESS_INSTANCE_KEY);
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY)).thenReturn(processInstance);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -255,8 +329,9 @@ public class ProcessInstanceAssertTest {
       final ProcessInstanceDto processInstanceCompleted =
           newCompletedProcessInstance(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY))
-          .thenReturn(processInstanceActive, processInstanceCompleted);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstanceActive))
+          .thenReturn(Collections.singletonList(processInstanceCompleted));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -264,7 +339,7 @@ public class ProcessInstanceAssertTest {
       // then
       CamundaAssert.assertThat(processInstanceEvent).isCompleted();
 
-      verify(camundaDataSource, times(2)).getProcessInstance(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource, times(2)).findProcessInstances();
     }
 
     @Test
@@ -272,7 +347,8 @@ public class ProcessInstanceAssertTest {
       // given
       final ProcessInstanceDto processInstance = newActiveProcessInstance(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY)).thenReturn(processInstance);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -284,15 +360,13 @@ public class ProcessInstanceAssertTest {
               "Process instance [key: %d] should be completed but was active.",
               PROCESS_INSTANCE_KEY);
 
-      verify(camundaDataSource, atLeast(2)).getProcessInstance(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource, atLeast(2)).findProcessInstances();
     }
 
     @Test
     void shouldFailIfNotFound() throws IOException {
       // given
-      doThrow(new CamundaClientNotFoundException())
-          .when(camundaDataSource)
-          .getProcessInstance(PROCESS_INSTANCE_KEY);
+      when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -301,7 +375,7 @@ public class ProcessInstanceAssertTest {
       Assertions.assertThatThrownBy(
               () -> CamundaAssert.assertThat(processInstanceEvent).isCompleted())
           .hasMessage(
-              "Process instance [key: %d] should be completed but was not activated.",
+              "Process instance [key: %d] should be completed but was not created.",
               PROCESS_INSTANCE_KEY);
     }
   }
@@ -313,7 +387,8 @@ public class ProcessInstanceAssertTest {
     void shouldBeTerminated() throws IOException {
       // given
       final ProcessInstanceDto processInstance = newTerminatedProcessInstance(PROCESS_INSTANCE_KEY);
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY)).thenReturn(processInstance);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -326,7 +401,8 @@ public class ProcessInstanceAssertTest {
     void shouldFailIfCompleted() throws IOException {
       // given
       final ProcessInstanceDto processInstance = newCompletedProcessInstance(PROCESS_INSTANCE_KEY);
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY)).thenReturn(processInstance);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -347,8 +423,9 @@ public class ProcessInstanceAssertTest {
       final ProcessInstanceDto processInstanceTerminated =
           newTerminatedProcessInstance(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY))
-          .thenReturn(processInstanceActive, processInstanceTerminated);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstanceActive))
+          .thenReturn(Collections.singletonList(processInstanceTerminated));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -356,7 +433,7 @@ public class ProcessInstanceAssertTest {
       // then
       CamundaAssert.assertThat(processInstanceEvent).isTerminated();
 
-      verify(camundaDataSource, times(2)).getProcessInstance(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource, times(2)).findProcessInstances();
     }
 
     @Test
@@ -364,7 +441,8 @@ public class ProcessInstanceAssertTest {
       // given
       final ProcessInstanceDto processInstance = newActiveProcessInstance(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY)).thenReturn(processInstance);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -376,15 +454,13 @@ public class ProcessInstanceAssertTest {
               "Process instance [key: %d] should be terminated but was active.",
               PROCESS_INSTANCE_KEY);
 
-      verify(camundaDataSource, atLeast(2)).getProcessInstance(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource, atLeast(2)).findProcessInstances();
     }
 
     @Test
     void shouldFailIfNotFound() throws IOException {
       // given
-      doThrow(new CamundaClientNotFoundException())
-          .when(camundaDataSource)
-          .getProcessInstance(PROCESS_INSTANCE_KEY);
+      when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -393,382 +469,173 @@ public class ProcessInstanceAssertTest {
       Assertions.assertThatThrownBy(
               () -> CamundaAssert.assertThat(processInstanceEvent).isTerminated())
           .hasMessage(
-              "Process instance [key: %d] should be terminated but was not activated.",
+              "Process instance [key: %d] should be terminated but was not created.",
               PROCESS_INSTANCE_KEY);
     }
   }
 
   @Nested
-  class HasActiveElements {
+  class IsCreated {
 
     @Test
-    void shouldHasActiveElements() throws IOException {
+    void shouldBeCreatedIfActive() throws IOException {
       // given
-      final FlowNodeInstanceDto flowNodeInstanceA = newActiveFlowNodeInstance("A");
-      final FlowNodeInstanceDto flowNodeInstanceB = newActiveFlowNodeInstance("B");
-
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
+      final ProcessInstanceDto processInstance = newActiveProcessInstance(PROCESS_INSTANCE_KEY);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A", "B");
+      CamundaAssert.assertThat(processInstanceEvent).isCreated();
     }
 
     @Test
-    void shouldHasTwoActiveElements() throws IOException {
+    void shouldBeCreatedIfCompleted() throws IOException {
       // given
-      final FlowNodeInstanceDto flowNodeInstanceActive = newActiveFlowNodeInstance("A");
-      final FlowNodeInstanceDto flowNodeInstanceCompleted = newCompletedFlowNodeInstance("A");
-
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Arrays.asList(flowNodeInstanceCompleted, flowNodeInstanceActive));
+      final ProcessInstanceDto processInstance = newCompletedProcessInstance(PROCESS_INSTANCE_KEY);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A", "A");
+      CamundaAssert.assertThat(processInstanceEvent).isCreated();
     }
 
     @Test
-    void shouldWaitUntilHasActiveElements() throws IOException {
+    void shouldBeCreatedIfTerminated() throws IOException {
       // given
-      final FlowNodeInstanceDto flowNodeInstanceA = newActiveFlowNodeInstance("A");
-      final FlowNodeInstanceDto flowNodeInstanceB = newActiveFlowNodeInstance("B");
-
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(flowNodeInstanceA))
-          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
+      final ProcessInstanceDto processInstance = newTerminatedProcessInstance(PROCESS_INSTANCE_KEY);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A", "B");
-
-      verify(camundaDataSource, times(2))
-          .getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+      CamundaAssert.assertThat(processInstanceEvent).isCreated();
     }
 
     @Test
-    void shouldFailIfElementsNotFound() throws IOException {
+    void shouldFailIfNotCreated() throws IOException {
       // given
-      final FlowNodeInstanceDto flowNodeInstanceA = newActiveFlowNodeInstance("A");
-      final FlowNodeInstanceDto flowNodeInstanceB = newActiveFlowNodeInstance("B");
-
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
+      when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A", "C", "D"))
+              () -> CamundaAssert.assertThat(processInstanceEvent).isCreated())
           .hasMessage(
-              "Process instance [key: %d] should have active elements ['A', 'C', 'D'] but the following elements were not active:\n"
-                  + "\t- 'C': not activated\n"
-                  + "\t- 'D': not activated",
-              PROCESS_INSTANCE_KEY);
-    }
-
-    @Test
-    void shouldFailIfElementsNotActive() throws IOException {
-      // given
-      final FlowNodeInstanceDto flowNodeInstanceA = newActiveFlowNodeInstance("A");
-      final FlowNodeInstanceDto flowNodeInstanceB = newCompletedFlowNodeInstance("B");
-      final FlowNodeInstanceDto flowNodeInstanceC = newTerminatedFlowNodeInstance("C");
-
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB, flowNodeInstanceC));
-
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
-      Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A", "B", "C"))
-          .hasMessage(
-              "Process instance [key: %d] should have active elements ['A', 'B', 'C'] but the following elements were not active:\n"
-                  + "\t- 'B': completed\n"
-                  + "\t- 'C': terminated",
-              PROCESS_INSTANCE_KEY);
-
-      verify(camundaDataSource).getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
-    }
-
-    @Test
-    void shouldFailWithSameElementName() throws IOException {
-      // given
-      final FlowNodeInstanceDto flowNodeInstanceA = newActiveFlowNodeInstance("A");
-      final FlowNodeInstanceDto flowNodeInstanceA2 = newActiveFlowNodeInstance("A");
-
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceA2));
-
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
-      Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("B"))
-          .hasMessage(
-              "Process instance [key: %d] should have active elements ['B'] but the following elements were not active:\n"
-                  + "\t- 'B': not activated",
+              "Process instance [key: %d] should be created but was not created.",
               PROCESS_INSTANCE_KEY);
     }
   }
 
   @Nested
-  class HasCompletedElements {
+  class FluentAssertions {
 
-    @Test
-    void shouldHasCompletedElements() throws IOException {
-      // given
-      final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
-      final FlowNodeInstanceDto flowNodeInstanceB = newCompletedFlowNodeInstance("B");
+    private final FlowNodeInstanceDto activeFlowNodeInstance = new FlowNodeInstanceDto();
+    private final VariableDto variable = new VariableDto();
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
+    @BeforeEach
+    void configureMocks() throws IOException {
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY)));
 
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+      activeFlowNodeInstance.setFlowNodeId("A");
+      activeFlowNodeInstance.setState(FlowNodeInstanceState.ACTIVE);
 
-      // then
-      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("A", "B");
+      variable.setName("x");
+      variable.setValue("1");
     }
 
     @Test
-    void shouldHasTwoCompletedElements() throws IOException {
+    void shouldAssertStateAndElements() throws IOException {
       // given
-      final FlowNodeInstanceDto flowNodeInstanceActive = newCompletedFlowNodeInstance("A");
-      final FlowNodeInstanceDto flowNodeInstanceCompleted = newActiveFlowNodeInstance("A");
-
       when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Arrays.asList(flowNodeInstanceCompleted, flowNodeInstanceActive));
+          .thenReturn(Collections.singletonList(activeFlowNodeInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("A", "A");
+      CamundaAssert.assertThat(processInstanceEvent).isActive().hasActiveElements("A");
     }
 
     @Test
-    void shouldWaitUntilHasCompletedElements() throws IOException {
+    void shouldAssertStateAndVariables() throws IOException {
       // given
-      final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
-      final FlowNodeInstanceDto activeFlowNodeInstanceB = newActiveFlowNodeInstance("B");
-      final FlowNodeInstanceDto completedFlowNodeInstanceB = newCompletedFlowNodeInstance("B");
-
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Arrays.asList(flowNodeInstanceA, activeFlowNodeInstanceB))
-          .thenReturn(Arrays.asList(flowNodeInstanceA, completedFlowNodeInstanceB));
+      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("A", "B");
-
-      verify(camundaDataSource, times(2))
-          .getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+      CamundaAssert.assertThat(processInstanceEvent).isActive().hasVariable("x", 1);
     }
 
     @Test
-    void shouldFailIfElementsNotFound() throws IOException {
+    void shouldAssertElementsAndState() throws IOException {
       // given
-      final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
-      final FlowNodeInstanceDto flowNodeInstanceB = newCompletedFlowNodeInstance("B");
-
       when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
+          .thenReturn(Collections.singletonList(activeFlowNodeInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      Assertions.assertThatThrownBy(
-              () ->
-                  CamundaAssert.assertThat(processInstanceEvent)
-                      .hasCompletedElements("A", "C", "D"))
-          .hasMessage(
-              "Process instance [key: %d] should have completed elements ['A', 'C', 'D'] but the following elements were not completed:\n"
-                  + "\t- 'C': not activated\n"
-                  + "\t- 'D': not activated",
-              PROCESS_INSTANCE_KEY);
+      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A").isActive();
     }
 
     @Test
-    void shouldFailIfElementsNotCompleted() throws IOException {
+    void shouldAssertVariablesAndState() throws IOException {
       // given
-      final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
-      final FlowNodeInstanceDto flowNodeInstanceB = newTerminatedFlowNodeInstance("B");
-
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
+      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("A", "B"))
-          .hasMessage(
-              "Process instance [key: %d] should have completed elements ['A', 'B'] but the following elements were not completed:\n"
-                  + "\t- 'B': terminated",
-              PROCESS_INSTANCE_KEY);
-
-      verify(camundaDataSource).getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+      CamundaAssert.assertThat(processInstanceEvent).hasVariable("x", 1).isActive();
     }
 
     @Test
-    void shouldFailWithSameElementName() throws IOException {
+    void shouldAssertElementsAndVariables() throws IOException {
       // given
-      final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
-      final FlowNodeInstanceDto flowNodeInstanceA2 = newCompletedFlowNodeInstance("A");
-
       when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceA2));
+          .thenReturn(Collections.singletonList(activeFlowNodeInstance));
+
+      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("B"))
-          .hasMessage(
-              "Process instance [key: %d] should have completed elements ['B'] but the following elements were not completed:\n"
-                  + "\t- 'B': not activated",
-              PROCESS_INSTANCE_KEY);
-    }
-  }
-
-  @Nested
-  class HasTerminatedElements {
-
-    @Test
-    void shouldHasTerminatedElements() throws IOException {
-      // given
-      final FlowNodeInstanceDto flowNodeInstanceA = newTerminatedFlowNodeInstance("A");
-      final FlowNodeInstanceDto flowNodeInstanceB = newTerminatedFlowNodeInstance("B");
-
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
-
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
-      CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElements("A", "B");
+      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A").hasVariable("x", 1);
     }
 
     @Test
-    void shouldHasTwoTerminatedElements() throws IOException {
+    void shouldAssertVariablesAndElements() throws IOException {
       // given
-      final FlowNodeInstanceDto flowNodeInstanceActive = newTerminatedFlowNodeInstance("A");
-      final FlowNodeInstanceDto flowNodeInstanceCompleted = newActiveFlowNodeInstance("A");
-
       when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Arrays.asList(flowNodeInstanceCompleted, flowNodeInstanceActive));
+          .thenReturn(Collections.singletonList(activeFlowNodeInstance));
+
+      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElements("A", "A");
-    }
-
-    @Test
-    void shouldWaitUntilHasTerminatedElements() throws IOException {
-      // given
-      final FlowNodeInstanceDto flowNodeInstanceA = newTerminatedFlowNodeInstance("A");
-      final FlowNodeInstanceDto activeFlowNodeInstanceB = newActiveFlowNodeInstance("B");
-      final FlowNodeInstanceDto terminatedFlowNodeInstanceB = newTerminatedFlowNodeInstance("B");
-
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Arrays.asList(flowNodeInstanceA, activeFlowNodeInstanceB))
-          .thenReturn(Arrays.asList(flowNodeInstanceA, terminatedFlowNodeInstanceB));
-
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
-      CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElements("A", "B");
-
-      verify(camundaDataSource, times(2))
-          .getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
-    }
-
-    @Test
-    void shouldFailIfElementsNotFound() throws IOException {
-      // given
-      final FlowNodeInstanceDto flowNodeInstanceA = newTerminatedFlowNodeInstance("A");
-      final FlowNodeInstanceDto flowNodeInstanceB = newTerminatedFlowNodeInstance("B");
-
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
-
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
-      Assertions.assertThatThrownBy(
-              () ->
-                  CamundaAssert.assertThat(processInstanceEvent)
-                      .hasTerminatedElements("A", "C", "D"))
-          .hasMessage(
-              "Process instance [key: %d] should have terminated elements ['A', 'C', 'D'] but the following elements were not terminated:\n"
-                  + "\t- 'C': not activated\n"
-                  + "\t- 'D': not activated",
-              PROCESS_INSTANCE_KEY);
-    }
-
-    @Test
-    void shouldFailIfElementsNotTerminated() throws IOException {
-      // given
-      final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
-      final FlowNodeInstanceDto flowNodeInstanceB = newTerminatedFlowNodeInstance("B");
-
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
-
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
-      Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElements("A", "B"))
-          .hasMessage(
-              "Process instance [key: %d] should have terminated elements ['A', 'B'] but the following elements were not terminated:\n"
-                  + "\t- 'A': completed",
-              PROCESS_INSTANCE_KEY);
-
-      verify(camundaDataSource).getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
-    }
-
-    @Test
-    void shouldFailWithSameElementName() throws IOException {
-      // given
-      final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
-      final FlowNodeInstanceDto flowNodeInstanceA2 = newCompletedFlowNodeInstance("A");
-
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceA2));
-
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
-      Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElements("B"))
-          .hasMessage(
-              "Process instance [key: %d] should have terminated elements ['B'] but the following elements were not terminated:\n"
-                  + "\t- 'B': not activated",
-              PROCESS_INSTANCE_KEY);
+      CamundaAssert.assertThat(processInstanceEvent).hasVariable("x", 1).hasActiveElements("A");
     }
   }
 }

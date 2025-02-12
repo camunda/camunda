@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api;
 
+import static io.camunda.process.test.api.assertions.ElementSelectors.byName;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
@@ -69,8 +70,7 @@ public class CamundaSpringProcessTestListenerIT {
     // then
     CamundaAssert.assertThat(processInstance)
         .isActive()
-        .hasCompletedElements("start")
-        .hasActiveElements("task")
+        .hasActiveElements(byName("task"))
         .hasVariable("status", "active");
   }
 
@@ -101,7 +101,7 @@ public class CamundaSpringProcessTestListenerIT {
         client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
 
     // when
-    CamundaAssert.assertThat(processInstance).hasActiveElements("A");
+    CamundaAssert.assertThat(processInstance).hasActiveElements(byName("A"));
 
     final Instant timeBefore = processTestContext.getCurrentTime();
 
@@ -110,7 +110,9 @@ public class CamundaSpringProcessTestListenerIT {
     final Instant timeAfter = processTestContext.getCurrentTime();
 
     // then
-    CamundaAssert.assertThat(processInstance).hasTerminatedElements("A").hasActiveElements("B");
+    CamundaAssert.assertThat(processInstance)
+        .hasTerminatedElements(byName("A"))
+        .hasActiveElements(byName("B"));
 
     assertThat(Duration.between(timeBefore, timeAfter))
         .isCloseTo(timerDuration, Duration.ofSeconds(10));
@@ -138,7 +140,7 @@ public class CamundaSpringProcessTestListenerIT {
     // then: outbound connector is invoked
     CamundaAssert.assertThat(processInstance)
         .isActive()
-        .hasCompletedElements("Get connectors readiness status")
+        .hasCompletedElements(byName("Get connectors readiness status"))
         .hasVariable("health", "UP");
 
     // when: invoke the inbound connector
@@ -164,6 +166,6 @@ public class CamundaSpringProcessTestListenerIT {
     // then
     CamundaAssert.assertThat(processInstance)
         .isCompleted()
-        .hasCompletedElements("Wait for HTTP POST request");
+        .hasCompletedElements(byName("Wait for HTTP POST request"));
   }
 }

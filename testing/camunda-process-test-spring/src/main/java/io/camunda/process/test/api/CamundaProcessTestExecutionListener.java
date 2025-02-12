@@ -23,12 +23,16 @@ import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
+import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
+import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
+import io.camunda.process.test.impl.testresult.ProcessTestResult;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.spring.client.event.ZeebeClientClosingEvent;
 import io.camunda.zeebe.spring.client.event.ZeebeClientCreatedEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import org.springframework.core.Ordered;
 import org.springframework.test.context.TestContext;
 import org.springframework.test.context.TestExecutionListener;
@@ -56,18 +60,22 @@ import org.springframework.test.context.TestExecutionListener;
 public class CamundaProcessTestExecutionListener implements TestExecutionListener, Ordered {
 
   private final CamundaContainerRuntimeBuilder containerRuntimeBuilder;
+  private final CamundaProcessTestResultPrinter processTestResultPrinter;
   private final List<ZeebeClient> createdClients = new ArrayList<>();
 
   private CamundaContainerRuntime containerRuntime;
+  private CamundaProcessTestResultCollector processTestResultCollector;
   private ZeebeClient client;
 
   public CamundaProcessTestExecutionListener() {
-    this(CamundaContainerRuntime.newBuilder());
+    this(CamundaContainerRuntime.newBuilder(), System.err::println);
   }
 
   CamundaProcessTestExecutionListener(
-      final CamundaContainerRuntimeBuilder containerRuntimeBuilder) {
+      final CamundaContainerRuntimeBuilder containerRuntimeBuilder,
+      final Consumer<String> testResultPrintStream) {
     this.containerRuntimeBuilder = containerRuntimeBuilder;
+    processTestResultPrinter = new CamundaProcessTestResultPrinter(testResultPrintStream);
   }
 
   @Override
@@ -97,10 +105,16 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     // initialize assertions
     final CamundaDataSource dataSource = createDataSource(containerRuntime);
     CamundaAssert.initialize(dataSource);
+
+    // initialize result collector
+    processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
   }
 
   @Override
   public void afterTestMethod(final TestContext testContext) throws Exception {
+    // collect test results
+    final ProcessTestResult testResult = processTestResultCollector.collect();
+
     // reset assertions
     CamundaAssert.reset();
 
@@ -118,6 +132,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     // close runtime
     containerRuntime.close();
+
+    // print test results
+    if (isTestFailed(testContext)) {
+      processTestResultPrinter.print(testResult);
+    }
   }
 
   private CamundaContainerRuntime buildRuntime(final TestContext testContext) {
@@ -162,6 +181,10 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private CamundaDataSource createDataSource(final CamundaContainerRuntime containerRuntime) {
     final CamundaContainer camundaContainer = containerRuntime.getCamundaContainer();
     return new CamundaDataSource(camundaContainer.getRestApiAddress().toString());
+  }
+
+  private static boolean isTestFailed(final TestContext testContext) {
+    return testContext.getTestException() != null;
   }
 
   @Override

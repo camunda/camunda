@@ -37,19 +37,18 @@ import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 import org.awaitility.core.TerminalFailureException;
 
-public class VariableAssertj extends AbstractAssert<VariableAssertj, Long> {
+public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
 
   private final ObjectMapper jsonMapper = new ObjectMapper();
 
   private final CamundaDataSource dataSource;
 
-  public VariableAssertj(final CamundaDataSource dataSource, final long processInstanceKey) {
-    super(processInstanceKey, VariableAssertj.class);
+  public VariableAssertj(final CamundaDataSource dataSource, final String failureMessagePrefix) {
+    super(failureMessagePrefix, VariableAssertj.class);
     this.dataSource = dataSource;
   }
 
-  public VariableAssertj hasVariableNames(final String... variableNames) {
-
+  public void hasVariableNames(final long processInstanceKey, final String... variableNames) {
     final AtomicReference<Map<String, String>> reference =
         new AtomicReference<>(Collections.emptyMap());
 
@@ -57,7 +56,8 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, Long> {
       Awaitility.await()
           .untilAsserted(
               () -> {
-                final Map<String, String> variables = getProcessInstanceVariables();
+                final Map<String, String> variables =
+                    getProcessInstanceVariables(processInstanceKey);
                 reference.set(variables);
 
                 assertThat(variables).containsKeys(variableNames);
@@ -74,19 +74,16 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, Long> {
 
       final String failureMessage =
           String.format(
-              "%s should have the variables %s but %s don't exist. All process instance variables:\n%s",
-              AssertFormatUtil.formatProcessInstance(actual),
+              "%s should have the variables %s but %s don't exist.",
+              actual,
               AssertFormatUtil.formatNames(variableNames),
-              AssertFormatUtil.formatNames(missingVariableNames),
-              formatVariables(actualVariables));
+              AssertFormatUtil.formatNames(missingVariableNames));
       fail(failureMessage);
     }
-
-    return this;
   }
 
-  public VariableAssertj hasVariable(final String variableName, final Object variableValue) {
-
+  public void hasVariable(
+      final long processInstanceKey, final String variableName, final Object variableValue) {
     final JsonNode expectedValue = toJson(variableValue);
 
     final AtomicReference<Map<String, String>> reference =
@@ -96,7 +93,8 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, Long> {
       Awaitility.await()
           .untilAsserted(
               () -> {
-                final Map<String, String> variables = getProcessInstanceVariables();
+                final Map<String, String> variables =
+                    getProcessInstanceVariables(processInstanceKey);
                 reference.set(variables);
 
                 assertThat(variables).containsKey(variableName);
@@ -116,82 +114,68 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, Long> {
 
       final String failureMessage =
           String.format(
-              "%s should have a variable '%s' with value '%s' but %s. All process instance variables:\n%s",
-              AssertFormatUtil.formatProcessInstance(actual),
-              variableName,
-              expectedValue,
-              failureReason,
-              formatVariables(actualVariables));
+              "%s should have a variable '%s' with value '%s' but %s.",
+              actual, variableName, expectedValue, failureReason);
       fail(failureMessage);
     }
-
-    return this;
   }
 
-  public VariableAssertj hasVariables(final Map<String, Object> expectedVariables) {
-
+  public void hasVariables(
+      final long processInstanceKey, final Map<String, Object> expectedVariables) {
     final Map<String, JsonNode> expectedValues =
         expectedVariables.entrySet().stream()
             .collect(Collectors.toMap(Entry::getKey, entry -> toJson(entry.getValue())));
 
     final Set<String> expectedVariableNames = expectedVariables.keySet();
 
-    final AtomicReference<Map<String, String>> reference =
+    final AtomicReference<Map<String, JsonNode>> reference =
         new AtomicReference<>(Collections.emptyMap());
 
     try {
       Awaitility.await()
           .untilAsserted(
               () -> {
-                final Map<String, String> actualVariables = getProcessInstanceVariables();
-                reference.set(actualVariables);
-
-                assertThat(actualVariables.keySet()).containsAll(expectedValues.keySet());
-
                 final Map<String, JsonNode> actualValues =
-                    actualVariables.entrySet().stream()
+                    getProcessInstanceVariables(processInstanceKey).entrySet().stream()
                         .filter(entry -> expectedVariableNames.contains(entry.getKey()))
                         .collect(
                             Collectors.toMap(Entry::getKey, entry -> readJson(entry.getValue())));
+                reference.set(actualValues);
 
                 assertThat(actualValues).containsAllEntriesOf(expectedValues);
               });
 
     } catch (final ConditionTimeoutException | TerminalFailureException e) {
 
-      final Map<String, String> actualVariables = reference.get();
+      final Map<String, JsonNode> actualVariables = reference.get();
 
-      final List<String> notMatchingVariableNames =
+      final List<String> missingVariables =
           expectedVariableNames.stream()
-              .filter(
-                  variableName ->
-                      !actualVariables.containsKey(variableName)
-                          || !readJson(actualVariables.get(variableName))
-                              .equals(expectedValues.get(variableName)))
+              .filter(variableName -> !actualVariables.containsKey(variableName))
               .collect(Collectors.toList());
+
+      String formattedMissingVariables = "";
+      if (!missingVariables.isEmpty()) {
+        formattedMissingVariables =
+            String.format(
+                " The variables %s don't exist.", AssertFormatUtil.formatNames(missingVariables));
+      }
 
       final String failureMessage =
           String.format(
-              "%s should have the variables %s but %s don't match. All process instance variables:\n%s",
-              AssertFormatUtil.formatProcessInstance(actual),
+              "%s should have the variables %s but was %s.%s",
+              actual,
               toJson(expectedVariables),
-              AssertFormatUtil.formatNames(notMatchingVariableNames),
-              formatVariables(actualVariables));
+              toJson(actualVariables),
+              formattedMissingVariables);
       fail(failureMessage);
     }
-
-    return this;
   }
 
-  private Map<String, String> getProcessInstanceVariables() throws IOException {
-    return dataSource.getVariablesByProcessInstanceKey(actual).stream()
+  private Map<String, String> getProcessInstanceVariables(final long processInstanceKey)
+      throws IOException {
+    return dataSource.getVariablesByProcessInstanceKey(processInstanceKey).stream()
         .collect(Collectors.toMap(VariableDto::getName, VariableDto::getValue));
-  }
-
-  private static String formatVariables(final Map<String, String> variables) {
-    return variables.entrySet().stream()
-        .map(variable -> String.format("\t- '%s': %s", variable.getKey(), variable.getValue()))
-        .collect(Collectors.joining("\n"));
   }
 
   private JsonNode readJson(final String value) {

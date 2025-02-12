@@ -13,21 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.impl.assertions;
+package io.camunda.process.test.impl.testresult;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
+public class OpenIncident {
+  private String type;
+  private String message;
 
-public class AssertFormatUtil {
+  private String flowNodeId;
 
-  public static String formatNames(final String[] names) {
-    return formatNames(Arrays.asList(names));
+  public String getType() {
+    return type;
   }
 
-  public static String formatNames(final List<String> names) {
-    return names.stream()
-        .map(elementName -> String.format("'%s'", elementName))
-        .collect(Collectors.joining(", ", "[", "]"));
+  public void setType(final String type) {
+    this.type = type;
+  }
+
+  public String getMessage() {
+    return message;
+  }
+
+  public void setMessage(final String message) {
+    this.message = message;
+  }
+
+  public String getFlowNodeId() {
+    return flowNodeId;
+  }
+
+  public void setFlowNodeId(final String flowNodeId) {
+    this.flowNodeId = flowNodeId;
   }
 }

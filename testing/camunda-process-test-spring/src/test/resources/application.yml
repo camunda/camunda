@@ -2,6 +2,8 @@ io:
   camunda:
     process:
       test:
+        camunda-version: 8.7.0-SNAPSHOT
+        connectors-docker-image-version: 8.7.0-SNAPSHOT
         connectors-enabled: true
         connectors-secrets:
           CONNECTORS_URL: http://connectors:8080/actuator/health/readiness
@@ -16,4 +18,4 @@ logging:
     # Hide default logging from Testcontainers
     org:
       testcontainers: warn
-    tc: warn
+    tc: error
