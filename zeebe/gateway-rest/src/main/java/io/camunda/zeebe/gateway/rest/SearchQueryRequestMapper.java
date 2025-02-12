@@ -24,6 +24,7 @@ import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
+import io.camunda.search.filter.AdHocSubprocessActivityFilter;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.DateValueFilter;
 import io.camunda.search.filter.DecisionDefinitionFilter;
@@ -44,6 +45,7 @@ import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.AdHocSubprocessActivityQuery;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
@@ -62,6 +64,7 @@ import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
+import io.camunda.search.sort.AdHocSubprocessActivitySort;
 import io.camunda.search.sort.AuthorizationSort;
 import io.camunda.search.sort.DecisionDefinitionSort;
 import io.camunda.search.sort.DecisionInstanceSort;
@@ -92,6 +95,7 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 
 public final class SearchQueryRequestMapper {
@@ -255,6 +259,23 @@ public final class SearchQueryRequestMapper {
             SearchQueryRequestMapper::applyFlownodeInstanceSortField);
     final var filter = toFlownodeInstanceFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::flownodeInstanceSearchQuery);
+  }
+
+  public static Either<ProblemDetail, AdHocSubprocessActivityQuery> toAdHocSubprocessActivityQuery(
+      final AdHocSubprocessActivitySearchQuery request) {
+    if (request == null) {
+      return Either.left(ProblemDetail.forStatus(HttpStatus.BAD_REQUEST.value()));
+    }
+
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromAdHocSubprocessActivitySearchQuerySortRequest(
+                request.getSort()),
+            SortOptionBuilders::adHocSubprocessActivity,
+            SearchQueryRequestMapper::applyAdHocSubprocessActivitySortField);
+    final var filter = toAdHocSubprocessActivityFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::adHocSubprocessActivityQuery);
   }
 
   public static Either<ProblemDetail, DecisionInstanceQuery> toDecisionInstanceQuery(
@@ -627,6 +648,26 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
+  private static AdHocSubprocessActivityFilter toAdHocSubprocessActivityFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivityFilter filter) {
+    final var builder = FilterBuilders.adHocSubprocessActivity();
+    Optional.ofNullable(filter)
+        .ifPresent(
+            f -> {
+              Optional.ofNullable(f.getAdHocSubprocessInstanceKey())
+                  .ifPresent(builder::adHocSubprocessInstanceKeys);
+              Optional.ofNullable(f.getAdHocSubprocessId()).ifPresent(builder::adHocSubprocessIds);
+              Optional.ofNullable(f.getProcessInstanceKey())
+                  .ifPresent(builder::processInstanceKeys);
+              Optional.ofNullable(f.getProcessDefinitionKey())
+                  .ifPresent(builder::processDefinitionKeys);
+              Optional.ofNullable(f.getProcessDefinitionId())
+                  .ifPresent(builder::processDefinitionIds);
+              Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
+            });
+    return builder.build();
+  }
+
   private static UserTaskFilter toUserTaskFilter(
       final io.camunda.zeebe.gateway.protocol.rest.UserTaskFilter filter) {
     final var builder = FilterBuilders.userTask();
@@ -900,6 +941,24 @@ public final class SearchQueryRequestMapper {
         case STATE -> builder.state();
         case INCIDENT_KEY -> builder.incidentKey();
         case TENANT_ID -> builder.tenantId();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  private static List<String> applyAdHocSubprocessActivitySortField(
+      final AdHocSubprocessActivitySearchQuerySortRequest.FieldEnum field,
+      final AdHocSubprocessActivitySort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case FLOW_NODE_ID -> builder.flowNodeId();
+        case FLOW_NODE_NAME -> builder.flowNodeName();
+        case TYPE -> builder.type();
+        case TREE_PATH -> builder.treePath();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

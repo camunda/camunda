@@ -105,6 +105,17 @@ public final class SearchQueryBuilders {
     return fn.apply(flownodeInstanceSearchQuery()).build();
   }
 
+  public static AdHocSubprocessActivityQuery.Builder adHocSubprocessActivityQuery() {
+    return new AdHocSubprocessActivityQuery.Builder();
+  }
+
+  public static AdHocSubprocessActivityQuery adHocSubprocessActivityQuery(
+      final Function<
+              AdHocSubprocessActivityQuery.Builder, ObjectBuilder<AdHocSubprocessActivityQuery>>
+          fn) {
+    return fn.apply(adHocSubprocessActivityQuery()).build();
+  }
+
   public static UserQuery.Builder userSearchQuery() {
     return new UserQuery.Builder();
   }

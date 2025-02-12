@@ -4856,17 +4856,10 @@ components:
           description: The field to sort by.
           type: string
           enum:
-            - adhocSubprocessInstanceKey
-            - adhocSubprocessId
-            - processInstanceKey
-            - processDefinitionKey
-            - processDefinitionId
             - treePath
             - flowNodeId
             - flowNodeName
             - type
-            - description
-            - tenantId
         order:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
@@ -4876,10 +4869,10 @@ components:
       type: object
       # TODO check which one of these is required
       properties:
-        adhocSubprocessInstanceKey:
+        adHocSubprocessInstanceKey:
           description: The ad-hoc subprocess process instance key.
           type: string
-        adhocSubprocessId:
+        adHocSubprocessId:
           description: The ad-hoc subprocess process definition ID.
           type: string
         processInstanceKey:
@@ -4907,10 +4900,10 @@ components:
     AdHocSubprocessActivityResult:
       type: object
       properties:
-        adhocSubprocessInstanceKey:
+        adHocSubprocessInstanceKey:
           description: The ad-hoc subprocess process instance key.
           type: string
-        adhocSubprocessId:
+        adHocSubprocessId:
           description: The ad-hoc subprocess process definition ID.
           type: string
         processInstanceKey:

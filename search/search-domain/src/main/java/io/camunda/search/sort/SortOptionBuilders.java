@@ -65,6 +65,17 @@ public final class SortOptionBuilders {
     return fn.apply(flowNodeInstance()).build();
   }
 
+  public static AdHocSubprocessActivitySort.Builder adHocSubprocessActivity() {
+    return new AdHocSubprocessActivitySort.Builder();
+  }
+
+  public static AdHocSubprocessActivitySort adHocSubprocessActivity(
+      final Function<
+              AdHocSubprocessActivitySort.Builder, ObjectBuilder<AdHocSubprocessActivitySort>>
+          fn) {
+    return fn.apply(adHocSubprocessActivity()).build();
+  }
+
   public static UserSort.Builder user() {
     return new UserSort.Builder();
   }

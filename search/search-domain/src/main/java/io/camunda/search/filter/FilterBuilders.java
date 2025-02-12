@@ -61,6 +61,17 @@ public final class FilterBuilders {
     return fn.apply(flowNodeInstance()).build();
   }
 
+  public static AdHocSubprocessActivityFilter.Builder adHocSubprocessActivity() {
+    return new AdHocSubprocessActivityFilter.Builder();
+  }
+
+  public static AdHocSubprocessActivityFilter adHocSubprocessActivity(
+      final Function<
+              AdHocSubprocessActivityFilter.Builder, ObjectBuilder<AdHocSubprocessActivityFilter>>
+          fn) {
+    return fn.apply(adHocSubprocessActivity()).build();
+  }
+
   public static UserFilter.Builder user() {
     return new UserFilter.Builder();
   }

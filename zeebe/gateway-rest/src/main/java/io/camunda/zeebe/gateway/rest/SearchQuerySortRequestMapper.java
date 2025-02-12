@@ -62,6 +62,13 @@ public class SearchQuerySortRequestMapper {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
+  public static List<
+          SearchQuerySortRequest<AdHocSubprocessActivitySearchQuerySortRequest.FieldEnum>>
+      fromAdHocSubprocessActivitySearchQuerySortRequest(
+          final List<AdHocSubprocessActivitySearchQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
   public static List<SearchQuerySortRequest<DecisionInstanceSearchQuerySortRequest.FieldEnum>>
       fromDecisionInstanceSearchQuerySortRequest(
           final List<DecisionInstanceSearchQuerySortRequest> requests) {

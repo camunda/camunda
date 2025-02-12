@@ -33,6 +33,8 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivityResult;
+import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivitySearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionResult;
@@ -192,6 +194,19 @@ public final class SearchQueryResponseMapper {
         .items(
             ofNullable(result.items())
                 .map(instances -> toFlowNodeInstance(instances, processCacheItems))
+                .orElseGet(Collections::emptyList));
+  }
+
+  public static AdHocSubprocessActivitySearchQueryResult
+      toAdHocSubprocessActivitySearchQueryResponse(
+          final SearchQueryResult<FlowNodeInstanceEntity> result,
+          final Map<Long, ProcessCacheItem> processCacheItems) {
+    final var page = toSearchQueryPageResponse(result);
+    return new AdHocSubprocessActivitySearchQueryResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(instances -> toAdHocSubprocessActivityResults(instances, processCacheItems))
                 .orElseGet(Collections::emptyList));
   }
 
@@ -373,6 +388,37 @@ public final class SearchQueryResponseMapper {
         .endDate(formatDate(instance.endDate()))
         .state(FlowNodeInstanceResult.StateEnum.fromValue(instance.state().name()))
         .type(FlowNodeInstanceResult.TypeEnum.fromValue(instance.type().name()))
+        .tenantId(instance.tenantId());
+  }
+
+  private static List<AdHocSubprocessActivityResult> toAdHocSubprocessActivityResults(
+      final List<FlowNodeInstanceEntity> instances,
+      final Map<Long, ProcessCacheItem> processCacheItems) {
+    return instances.stream()
+        .map(
+            instance -> {
+              final var flowNodeName =
+                  processCacheItems
+                      .getOrDefault(instance.processDefinitionKey(), ProcessCacheItem.EMPTY)
+                      .getFlowNodeName(instance.flowNodeId());
+              return toAdHocSubprocessActivityResult(instance, flowNodeName);
+            })
+        .toList();
+  }
+
+  private static AdHocSubprocessActivityResult toAdHocSubprocessActivityResult(
+      final FlowNodeInstanceEntity instance, final String name) {
+    return new AdHocSubprocessActivityResult()
+        .adHocSubprocessId("TODO")
+        .adHocSubprocessInstanceKey("TODO")
+        .processInstanceKey(KeyUtil.keyToString(instance.processInstanceKey()))
+        .processDefinitionKey(KeyUtil.keyToString(instance.processDefinitionKey()))
+        .processDefinitionId(instance.processDefinitionId())
+        .treePath(instance.treePath())
+        .flowNodeId(instance.flowNodeId())
+        .flowNodeName(name)
+        .type(AdHocSubprocessActivityResult.TypeEnum.fromValue(instance.type().name()))
+        .description("TODO description")
         .tenantId(instance.tenantId());
   }
 

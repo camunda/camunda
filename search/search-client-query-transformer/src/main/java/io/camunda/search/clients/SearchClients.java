@@ -30,6 +30,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.UsageMetricsFilter;
+import io.camunda.search.query.AdHocSubprocessActivityQuery;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
@@ -60,6 +61,7 @@ public class SearchClients
         DecisionInstanceSearchClient,
         DecisionRequirementSearchClient,
         FlowNodeInstanceSearchClient,
+        AdHocSubprocessActivitySearchClient,
         FormSearchClient,
         IncidentSearchClient,
         ProcessDefinitionSearchClient,
@@ -158,6 +160,13 @@ public class SearchClients
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
       final FlowNodeInstanceQuery filter) {
+    return getSearchExecutor()
+        .search(filter, io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity.class);
+  }
+
+  @Override
+  public SearchQueryResult<FlowNodeInstanceEntity> searchAdHocSubprocessActivities(
+      final AdHocSubprocessActivityQuery filter) {
     return getSearchExecutor()
         .search(filter, io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity.class);
   }
