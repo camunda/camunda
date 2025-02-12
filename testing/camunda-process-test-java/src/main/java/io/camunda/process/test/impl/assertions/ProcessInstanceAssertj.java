@@ -137,6 +137,45 @@ public class ProcessInstanceAssertj
   }
 
   @Override
+  public ProcessInstanceAssert hasActiveElement(final String elementId, final int times) {
+    elementAssertj.hasActiveElement(getProcessInstanceKey(), elementId, times);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasActiveElement(
+      final ElementSelector elementSelector, final int times) {
+    elementAssertj.hasActiveElement(getProcessInstanceKey(), elementSelector, times);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasCompletedElement(final String elementId, final int times) {
+    elementAssertj.hasCompletedElement(getProcessInstanceKey(), elementId, times);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasCompletedElement(
+      final ElementSelector elementSelector, final int times) {
+    elementAssertj.hasCompletedElement(getProcessInstanceKey(), elementSelector, times);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasTerminatedElement(final String elementId, final int times) {
+    elementAssertj.hasTerminatedElement(getProcessInstanceKey(), elementId, times);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasTerminatedElement(
+      final ElementSelector elementSelector, final int times) {
+    elementAssertj.hasTerminatedElement(getProcessInstanceKey(), elementSelector, times);
+    return this;
+  }
+
+  @Override
   public ProcessInstanceAssert hasVariableNames(final String... variableNames) {
     variableAssertj.hasVariableNames(getProcessInstanceKey(), variableNames);
     return this;
