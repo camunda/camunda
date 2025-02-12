@@ -17,8 +17,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
-import io.camunda.zeebe.engine.state.immutable.GroupState;
-import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
@@ -26,19 +24,14 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class TenantRemoveEntityProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
 
-  private static final String ENTITY_NOT_ASSIGNED_ERROR_MESSAGE =
-      "Expected to remove entity with key '%s' from tenant with key '%s', but the entity is not assigned to this tenant.";
   private final TenantState tenantState;
   private final UserState userState;
-  private final MappingState mappingState;
-  private final GroupState groupState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -54,8 +47,6 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final CommandDistributionBehavior commandDistributionBehavior) {
     tenantState = state.getTenantState();
     userState = state.getUserState();
-    mappingState = state.getMappingState();
-    groupState = state.getGroupState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -67,44 +58,32 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
   @Override
   public void processNewCommand(final TypedRecord<TenantRecord> command) {
     final var record = command.getValue();
-    final var tenantKey = record.getTenantKey();
-    final var persistedTenant = tenantState.getTenantByKey(tenantKey);
+    final var tenantId = record.getTenantId();
+    final var persistedTenant = tenantState.getTenantById(tenantId);
 
     if (persistedTenant.isEmpty()) {
       rejectCommand(
           command,
           RejectionType.NOT_FOUND,
-          "Expected to remove entity from tenant with key '%s', but no tenant with this key exists."
-              .formatted(tenantKey));
+          "Expected to remove entity from tenant '%s', but no tenant with this id exists."
+              .formatted(tenantId));
       return;
     }
 
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
-            .addResourceId(persistedTenant.get().getTenantId());
+            .addResourceId(tenantId);
     final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
     if (isAuthorized.isLeft()) {
       rejectCommandWithUnauthorizedError(command, isAuthorized.getLeft());
       return;
     }
 
-    if (!isEntityPresent(record.getEntityKey(), record.getEntityType())) {
-      rejectCommand(
-          command,
-          RejectionType.NOT_FOUND,
-          "Expected to remove entity with key '%s' from tenant with key '%s', but the entity does not exist."
-              .formatted(record.getEntityKey(), tenantKey));
+    if (!validateEntityAssignment(command)) {
       return;
     }
 
-    if (!tenantState.isEntityAssignedToTenant(record.getEntityKey(), tenantKey)) {
-      rejectCommand(
-          command,
-          RejectionType.NOT_FOUND,
-          ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityKey(), tenantKey));
-      return;
-    }
-
+    final var tenantKey = persistedTenant.get().getTenantKey();
     stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.ENTITY_REMOVED, record);
     responseWriter.writeEventOnCommand(tenantKey, TenantIntent.ENTITY_REMOVED, record, command);
     distributeCommand(command);
@@ -112,30 +91,45 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
 
   @Override
   public void processDistributedCommand(final TypedRecord<TenantRecord> command) {
-    final var record = command.getValue();
-    tenantState
-        .getEntityType(record.getTenantKey(), record.getEntityKey())
-        .ifPresentOrElse(
-            entityType ->
-                stateWriter.appendFollowUpEvent(
-                    command.getKey(), TenantIntent.ENTITY_REMOVED, record),
-            () -> {
-              final var message =
-                  ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(
-                      record.getEntityKey(), record.getTenantKey());
-              rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, message);
-            });
+    if (validateEntityAssignment(command)) {
+      stateWriter.appendFollowUpEvent(
+          command.getKey(), TenantIntent.ENTITY_REMOVED, command.getValue());
+    }
 
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private boolean isEntityPresent(final long entityKey, final EntityType entityType) {
-    return switch (entityType) {
-      case USER -> userState.getUser(entityKey).isPresent();
-      case MAPPING -> mappingState.get(entityKey).isPresent();
-      case GROUP -> groupState.get(entityKey).isPresent();
-      default -> false;
+  private boolean validateEntityAssignment(final TypedRecord<TenantRecord> command) {
+    return switch (command.getValue().getEntityType()) {
+      case USER -> validateUserAssignment(command);
+      default ->
+          throw new UnsupportedOperationException(
+              "Removing entities of type '%s' is not supported."
+                  .formatted(command.getValue().getEntityType()));
     };
+  }
+
+  private boolean validateUserAssignment(final TypedRecord<TenantRecord> command) {
+    final var tenantId = command.getValue().getTenantId();
+    final var entityId = command.getValue().getEntityId();
+    final var user = userState.getUser(entityId);
+    if (user.isEmpty()) {
+      rejectCommand(
+          command,
+          RejectionType.NOT_FOUND,
+          "Expected to remove user '%s' from tenant, but no user with this id exists."
+              .formatted(entityId));
+      return false;
+    }
+    if (!user.get().getTenantIdsList().contains(tenantId)) {
+      rejectCommand(
+          command,
+          RejectionType.NOT_FOUND,
+          "Expected to remove user '%s' from tenant '%s', but the user is not assigned to this tenant."
+              .formatted(entityId, tenantId));
+      return false;
+    }
+    return true;
   }
 
   private void rejectCommandWithUnauthorizedError(
@@ -148,7 +142,9 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final RejectionType type,
       final String errorMessage) {
     rejectionWriter.appendRejection(command, type, errorMessage);
-    responseWriter.writeRejectionOnCommand(command, type, errorMessage);
+    if (command.hasRequestMetadata()) {
+      responseWriter.writeRejectionOnCommand(command, type, errorMessage);
+    }
   }
 
   private void distributeCommand(final TypedRecord<TenantRecord> command) {

@@ -374,7 +374,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
   private static Stream<Arguments> provideAdvancedSearchParameters() {
     final var streamBuilder = Stream.<Arguments>builder();
 
-    basicLongOperationTestCases(
+    keyOperationTestCases(
         streamBuilder,
         "decisionDefinitionKey",
         ops -> new DecisionInstanceFilter.Builder().decisionDefinitionKeyOperations(ops).build());

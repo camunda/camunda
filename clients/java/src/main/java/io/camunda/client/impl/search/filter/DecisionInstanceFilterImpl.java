@@ -23,25 +23,26 @@ import io.camunda.client.api.search.response.DecisionInstanceState;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
+import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.DecisionDefinitionTypeEnum;
-import io.camunda.client.protocol.rest.DecisionInstanceFilterRequest;
 import io.camunda.client.protocol.rest.DecisionInstanceStateEnum;
 import java.time.OffsetDateTime;
 import java.util.function.Consumer;
 
 public class DecisionInstanceFilterImpl
-    extends TypedSearchRequestPropertyProvider<DecisionInstanceFilterRequest>
+    extends TypedSearchRequestPropertyProvider<
+        io.camunda.client.protocol.rest.DecisionInstanceFilter>
     implements DecisionInstanceFilter {
 
-  private final DecisionInstanceFilterRequest filter;
+  private final io.camunda.client.protocol.rest.DecisionInstanceFilter filter;
 
   public DecisionInstanceFilterImpl() {
-    filter = new DecisionInstanceFilterRequest();
+    filter = new io.camunda.client.protocol.rest.DecisionInstanceFilter();
   }
 
   @Override
   public DecisionInstanceFilter decisionInstanceKey(final long decisionInstanceKey) {
-    filter.setDecisionInstanceKey(decisionInstanceKey);
+    filter.setDecisionInstanceKey(ParseUtil.keyToString(decisionInstanceKey));
     return this;
   }
 
@@ -96,13 +97,13 @@ public class DecisionInstanceFilterImpl
 
   @Override
   public DecisionInstanceFilter processDefinitionKey(final long processDefinitionKey) {
-    filter.setProcessDefinitionKey(processDefinitionKey);
+    filter.setProcessDefinitionKey(ParseUtil.keyToString(processDefinitionKey));
     return this;
   }
 
   @Override
   public DecisionInstanceFilter processInstanceKey(final long processInstanceKey) {
-    filter.setProcessInstanceKey(processInstanceKey);
+    filter.setProcessInstanceKey(ParseUtil.keyToString(processInstanceKey));
     return this;
   }
 
@@ -170,7 +171,7 @@ public class DecisionInstanceFilterImpl
   }
 
   @Override
-  protected DecisionInstanceFilterRequest getSearchRequestProperty() {
+  protected io.camunda.client.protocol.rest.DecisionInstanceFilter getSearchRequestProperty() {
     return filter;
   }
 }

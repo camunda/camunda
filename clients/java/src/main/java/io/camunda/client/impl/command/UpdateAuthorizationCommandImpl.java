@@ -91,7 +91,7 @@ public class UpdateAuthorizationCommandImpl
   public UpdateAuthorizationCommandStep6 permissionTypes(
       final PermissionTypeEnum... permissionTypes) {
     ArgumentUtil.ensureNotNull("permissionTypes", permissionTypes);
-    request.setPermissions(Arrays.asList(permissionTypes));
+    request.setPermissionTypes(Arrays.asList(permissionTypes));
     return this;
   }
 

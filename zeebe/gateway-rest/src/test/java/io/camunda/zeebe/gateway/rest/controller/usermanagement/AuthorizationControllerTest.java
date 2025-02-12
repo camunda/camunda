@@ -67,7 +67,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
             .ownerType(OwnerTypeEnum.USER)
             .resourceId(resourceId)
             .resourceType(ResourceTypeEnum.PROCESS_DEFINITION)
-            .permissions(List.of(PermissionTypeEnum.CREATE));
+            .permissionTypes(List.of(PermissionTypeEnum.CREATE));
 
     final var authorizationRecord =
         new AuthorizationRecord()
@@ -105,9 +105,9 @@ public class AuthorizationControllerTest extends RestControllerTest {
     assertEquals(authorizationRecord.getOwnerType(), capturedRequest.ownerType());
     assertEquals(resourceId, capturedRequest.resourceId());
     assertEquals(authorizationRecord.getResourceType(), capturedRequest.resourceType());
-    assertEquals(1, capturedRequest.permissionType().size());
+    assertEquals(1, capturedRequest.permissionTypes().size());
     assertEquals(
-        authorizationRecord.getAuthorizationPermissions(), capturedRequest.permissionType());
+        authorizationRecord.getAuthorizationPermissions(), capturedRequest.permissionTypes());
   }
 
   @ParameterizedTest
@@ -168,7 +168,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
             .ownerType(OwnerTypeEnum.USER)
             .resourceId(resourceId)
             .resourceType(ResourceTypeEnum.PROCESS_DEFINITION)
-            .permissions(List.of(PermissionTypeEnum.CREATE));
+            .permissionTypes(List.of(PermissionTypeEnum.CREATE));
 
     final var authorizationRecord =
         new AuthorizationRecord()
@@ -202,8 +202,9 @@ public class AuthorizationControllerTest extends RestControllerTest {
     assertEquals(authorizationRecord.getOwnerType(), capturedRequest.ownerType());
     assertEquals(resourceId, capturedRequest.resourceId());
     assertEquals(authorizationRecord.getResourceType(), capturedRequest.resourceType());
-    assertEquals(1, capturedRequest.permissions().size());
-    assertEquals(authorizationRecord.getAuthorizationPermissions(), capturedRequest.permissions());
+    assertEquals(1, capturedRequest.permissionTypes().size());
+    assertEquals(
+        authorizationRecord.getAuthorizationPermissions(), capturedRequest.permissionTypes());
   }
 
   @ParameterizedTest
@@ -237,7 +238,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("resourceId")
                 .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissions(permissions),
+                .permissionTypes(permissions),
             "No ownerId provided."),
         Arguments.of(
             new AuthorizationRequest()
@@ -245,21 +246,21 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("resourceId")
                 .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissions(permissions),
+                .permissionTypes(permissions),
             "No ownerId provided."),
         Arguments.of(
             new AuthorizationRequest()
                 .ownerId("ownerId")
                 .resourceId("resourceId")
                 .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissions(permissions),
+                .permissionTypes(permissions),
             "No ownerType provided."),
         Arguments.of(
             new AuthorizationRequest()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissions(permissions),
+                .permissionTypes(permissions),
             "No resourceId provided."),
         Arguments.of(
             new AuthorizationRequest()
@@ -267,14 +268,14 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("")
                 .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissions(permissions),
+                .permissionTypes(permissions),
             "No resourceId provided."),
         Arguments.of(
             new AuthorizationRequest()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("resourceId")
-                .permissions(permissions),
+                .permissionTypes(permissions),
             "No resourceType provided."),
         Arguments.of(
             new AuthorizationRequest()
@@ -282,14 +283,14 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("resourceId")
                 .resourceType(ResourceTypeEnum.RESOURCE),
-            "No permissions provided."),
+            "No permissionTypes provided."),
         Arguments.of(
             new AuthorizationRequest()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("resourceId")
                 .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissions(List.of()),
-            "No permissions provided."));
+                .permissionTypes(List.of()),
+            "No permissionTypes provided."));
   }
 }

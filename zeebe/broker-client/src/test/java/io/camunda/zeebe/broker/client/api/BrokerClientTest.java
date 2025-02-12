@@ -35,6 +35,8 @@ import io.camunda.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.camunda.zeebe.test.broker.protocol.brokerapi.StubBroker;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
@@ -46,6 +48,7 @@ import org.agrona.DirectBuffer;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -58,6 +61,7 @@ public final class BrokerClientTest {
   private final StubBroker broker = new StubBroker().start();
   private BrokerClient client;
   private AtomixCluster atomixCluster;
+  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   // keep as field to ensure it gets closed at the end
   @SuppressWarnings({"FieldCanBeLocal", "Unused"})
@@ -76,7 +80,7 @@ public final class BrokerClientTest {
         Address.from(broker.getCurrentStubHost(), broker.getCurrentStubPort());
     final var membership = BootstrapDiscoveryProvider.builder().withNodes(brokerAddress).build();
     atomixCluster =
-        AtomixCluster.builder()
+        AtomixCluster.builder(meterRegistry)
             .withPort(SocketUtil.getNextAddress().getPort())
             .withMembershipProvider(membership)
             .withClusterId(broker.clusterId())

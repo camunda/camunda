@@ -17,7 +17,6 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -52,22 +51,6 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
              "decisionInstanceKey":"123",
              "evaluatedDecisions":[]
           }""";
-  private static final String EXPECTED_EVALUATION_RESPONSE_NUMBER_KEYS =
-      """
-      {
-         "decisionDefinitionKey":123456,
-         "decisionDefinitionId":"decisionId",
-         "decisionDefinitionName":"decisionName",
-         "decisionDefinitionVersion":1,
-         "decisionRequirementsId":"decisionRequirementsId",
-         "decisionRequirementsKey":123456,
-         "output":"null",
-         "failedDecisionDefinitionId":"",
-         "failureMessage":"",
-         "tenantId":"tenantId",
-         "decisionInstanceKey":123,
-         "evaluatedDecisions":[]
-      }""";
 
   @MockBean MultiTenancyConfiguration multiTenancyCfg;
   @MockBean private DecisionDefinitionServices decisionServices;
@@ -111,43 +94,6 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
                     .isOk());
 
     response.expectBody().json(EXPECTED_EVALUATION_RESPONSE);
-    Mockito.verify(decisionServices)
-        .evaluateDecision("", 123456L, Map.of("key", "value"), "tenantId");
-  }
-
-  @Test
-  void shouldEvaluateDecisionWithDecisionNumberKeys() {
-    // given
-    when(multiTenancyCfg.isEnabled()).thenReturn(true);
-    when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString()))
-        .thenReturn((buildResponse("tenantId")));
-
-    final var request =
-        """
-            {
-              "decisionDefinitionKey": 123456,
-              "variables": {
-                "key": "value"
-              },
-              "tenantId": "tenantId"
-            }""";
-
-    // when/then
-    final ResponseSpec response =
-        withMultiTenancy(
-            "tenantId",
-            client ->
-                client
-                    .post()
-                    .uri(EVALUATION_URL)
-                    .accept(RequestMapper.MEDIA_TYPE_KEYS_NUMBER)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
-                    .exchange()
-                    .expectStatus()
-                    .isOk());
-
-    response.expectBody().json(EXPECTED_EVALUATION_RESPONSE_NUMBER_KEYS);
     Mockito.verify(decisionServices)
         .evaluateDecision("", 123456L, Map.of("key", "value"), "tenantId");
   }

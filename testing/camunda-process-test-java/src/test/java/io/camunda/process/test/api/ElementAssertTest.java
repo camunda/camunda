@@ -629,4 +629,496 @@ public class ElementAssertTest {
           .hasMessage("No process instance [key: %d] found.", PROCESS_INSTANCE_KEY);
     }
   }
+
+  @Nested
+  class HasActiveElement {
+
+    @Test
+    void shouldHasActiveElement() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceA = newActiveFlowNodeInstance("A");
+
+      final FlowNodeInstanceDto flowNodeInstanceB1 = newActiveFlowNodeInstance("B");
+      final FlowNodeInstanceDto flowNodeInstanceB2 = newActiveFlowNodeInstance("B");
+
+      final FlowNodeInstanceDto flowNodeInstanceC1 = newActiveFlowNodeInstance("C");
+      final FlowNodeInstanceDto flowNodeInstanceC2 = newActiveFlowNodeInstance("C");
+      final FlowNodeInstanceDto flowNodeInstanceC3 = newActiveFlowNodeInstance("C");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(
+              Arrays.asList(
+                  flowNodeInstanceA,
+                  flowNodeInstanceB1,
+                  flowNodeInstanceB2,
+                  flowNodeInstanceC1,
+                  flowNodeInstanceC2,
+                  flowNodeInstanceC3));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent)
+          .hasActiveElement("A", 1)
+          .hasActiveElement("B", 2)
+          .hasActiveElement(ElementSelectors.byId("C"), 3);
+    }
+
+    @Test
+    void shouldFailIfNumberIsGreater() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstance1 = newActiveFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstance2 = newActiveFlowNodeInstance("A");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstance1, flowNodeInstance2));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElement("A", 1))
+          .hasMessage(
+              "Process instance [key: %d] should have active element 'A' 1 times but was 2. Element instances:\n"
+                  + "\t- 'A': active\n"
+                  + "\t- 'A': active",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfNumberIsLess() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceA = newActiveFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceB = newActiveFlowNodeInstance("B");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElement("A", 2))
+          .hasMessage(
+              "Process instance [key: %d] should have active element 'A' 2 times but was 1. Element instances:\n"
+                  + "\t- 'A': active",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfNotActive() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceA1 = newCompletedFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceA2 = newTerminatedFlowNodeInstance("A");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstanceA1, flowNodeInstanceA2));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElement("A", 2))
+          .hasMessage(
+              "Process instance [key: %d] should have active element 'A' 2 times but was 0. Element instances:\n"
+                  + "\t- 'A': completed\n"
+                  + "\t- 'A': terminated",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfNotCreated() throws IOException {
+      // given
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.emptyList());
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElement("A", 2))
+          .hasMessage(
+              "Process instance [key: %d] should have active element 'A' 2 times but was 0. Element instances:\n"
+                  + "<None>",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfNumberIsZero() {
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElement("A", 0))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("The amount must be greater than zero.");
+    }
+
+    @Test
+    void shouldFailIfNumberIsNegative() {
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElement("A", -1))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("The amount must be greater than zero.");
+    }
+
+    @Test
+    void shouldWaitUntilHasActiveElement() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceA1 = newActiveFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceB = newActiveFlowNodeInstance("B");
+      final FlowNodeInstanceDto flowNodeInstanceA2 = newActiveFlowNodeInstance("A");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstanceA1, flowNodeInstanceB))
+          .thenReturn(Arrays.asList(flowNodeInstanceA1, flowNodeInstanceB, flowNodeInstanceA2));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).hasActiveElement("A", 2);
+
+      verify(camundaDataSource, times(2))
+          .getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+    }
+  }
+
+  @Nested
+  class HasCompletedElement {
+
+    @Test
+    void shouldHasCompletedElement() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
+
+      final FlowNodeInstanceDto flowNodeInstanceB1 = newCompletedFlowNodeInstance("B");
+      final FlowNodeInstanceDto flowNodeInstanceB2 = newCompletedFlowNodeInstance("B");
+
+      final FlowNodeInstanceDto flowNodeInstanceC1 = newCompletedFlowNodeInstance("C");
+      final FlowNodeInstanceDto flowNodeInstanceC2 = newCompletedFlowNodeInstance("C");
+      final FlowNodeInstanceDto flowNodeInstanceC3 = newCompletedFlowNodeInstance("C");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(
+              Arrays.asList(
+                  flowNodeInstanceA,
+                  flowNodeInstanceB1,
+                  flowNodeInstanceB2,
+                  flowNodeInstanceC1,
+                  flowNodeInstanceC2,
+                  flowNodeInstanceC3));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent)
+          .hasCompletedElement("A", 1)
+          .hasCompletedElement("B", 2)
+          .hasCompletedElement(ElementSelectors.byId("C"), 3);
+    }
+
+    @Test
+    void shouldFailIfNumberIsGreater() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstance1 = newCompletedFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstance2 = newCompletedFlowNodeInstance("A");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstance1, flowNodeInstance2));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasCompletedElement("A", 1))
+          .hasMessage(
+              "Process instance [key: %d] should have completed element 'A' 1 times but was 2. Element instances:\n"
+                  + "\t- 'A': completed\n"
+                  + "\t- 'A': completed",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfNumberIsLess() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceB = newCompletedFlowNodeInstance("B");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasCompletedElement("A", 2))
+          .hasMessage(
+              "Process instance [key: %d] should have completed element 'A' 2 times but was 1. Element instances:\n"
+                  + "\t- 'A': completed",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfNotCompleted() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceA1 = newTerminatedFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceA2 = newActiveFlowNodeInstance("A");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstanceA1, flowNodeInstanceA2));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasCompletedElement("A", 2))
+          .hasMessage(
+              "Process instance [key: %d] should have completed element 'A' 2 times but was 0. Element instances:\n"
+                  + "\t- 'A': terminated\n"
+                  + "\t- 'A': active",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfNotCreated() throws IOException {
+      // given
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.emptyList());
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasCompletedElement("A", 2))
+          .hasMessage(
+              "Process instance [key: %d] should have completed element 'A' 2 times but was 0. Element instances:\n"
+                  + "<None>",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfNumberIsZero() {
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasCompletedElement("A", 0))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("The amount must be greater than zero.");
+    }
+
+    @Test
+    void shouldFailIfNumberIsNegative() {
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasCompletedElement("A", -1))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("The amount must be greater than zero.");
+    }
+
+    @Test
+    void shouldWaitUntilHasCompletedElement() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceA1 = newCompletedFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceA2 = newActiveFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceA3 = newCompletedFlowNodeInstance("A");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstanceA1, flowNodeInstanceA2))
+          .thenReturn(Arrays.asList(flowNodeInstanceA1, flowNodeInstanceA3));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElement("A", 2);
+
+      verify(camundaDataSource, times(2))
+          .getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+    }
+  }
+
+  @Nested
+  class HasTerminatedElement {
+
+    @Test
+    void shouldHasTerminatedElement() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceA = newTerminatedFlowNodeInstance("A");
+
+      final FlowNodeInstanceDto flowNodeInstanceB1 = newTerminatedFlowNodeInstance("B");
+      final FlowNodeInstanceDto flowNodeInstanceB2 = newTerminatedFlowNodeInstance("B");
+
+      final FlowNodeInstanceDto flowNodeInstanceC1 = newTerminatedFlowNodeInstance("C");
+      final FlowNodeInstanceDto flowNodeInstanceC2 = newTerminatedFlowNodeInstance("C");
+      final FlowNodeInstanceDto flowNodeInstanceC3 = newTerminatedFlowNodeInstance("C");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(
+              Arrays.asList(
+                  flowNodeInstanceA,
+                  flowNodeInstanceB1,
+                  flowNodeInstanceB2,
+                  flowNodeInstanceC1,
+                  flowNodeInstanceC2,
+                  flowNodeInstanceC3));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent)
+          .hasTerminatedElement("A", 1)
+          .hasTerminatedElement("B", 2)
+          .hasTerminatedElement(ElementSelectors.byId("C"), 3);
+    }
+
+    @Test
+    void shouldFailIfNumberIsGreater() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstance1 = newTerminatedFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstance2 = newTerminatedFlowNodeInstance("A");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstance1, flowNodeInstance2));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElement("A", 1))
+          .hasMessage(
+              "Process instance [key: %d] should have terminated element 'A' 1 times but was 2. Element instances:\n"
+                  + "\t- 'A': terminated\n"
+                  + "\t- 'A': terminated",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfNumberIsLess() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceA = newTerminatedFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceB = newTerminatedFlowNodeInstance("B");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElement("A", 2))
+          .hasMessage(
+              "Process instance [key: %d] should have terminated element 'A' 2 times but was 1. Element instances:\n"
+                  + "\t- 'A': terminated",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfNotTerminated() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceA1 = newCompletedFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceA2 = newActiveFlowNodeInstance("A");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstanceA1, flowNodeInstanceA2));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElement("A", 2))
+          .hasMessage(
+              "Process instance [key: %d] should have terminated element 'A' 2 times but was 0. Element instances:\n"
+                  + "\t- 'A': completed\n"
+                  + "\t- 'A': active",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfNotCreated() throws IOException {
+      // given
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.emptyList());
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElement("A", 2))
+          .hasMessage(
+              "Process instance [key: %d] should have terminated element 'A' 2 times but was 0. Element instances:\n"
+                  + "<None>",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfNumberIsZero() {
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElement("A", 0))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("The amount must be greater than zero.");
+    }
+
+    @Test
+    void shouldFailIfNumberIsNegative() {
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElement("A", -1))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("The amount must be greater than zero.");
+    }
+
+    @Test
+    void shouldWaitUntilHasTerminatedElement() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceA1 = newTerminatedFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceA2 = newActiveFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceA3 = newTerminatedFlowNodeInstance("A");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstanceA1, flowNodeInstanceA2))
+          .thenReturn(Arrays.asList(flowNodeInstanceA1, flowNodeInstanceA3));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElement("A", 2);
+
+      verify(camundaDataSource, times(2))
+          .getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+    }
+  }
 }

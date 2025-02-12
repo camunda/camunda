@@ -229,7 +229,7 @@ public class OidcAuthOverGrpcIT {
         .ownerType(OwnerTypeEnum.MAPPING)
         .resourceId("*")
         .resourceType(ResourceTypeEnum.RESOURCE)
-        .permission(PermissionTypeEnum.CREATE)
+        .permissionTypes(PermissionTypeEnum.CREATE)
         .send()
         .join();
 

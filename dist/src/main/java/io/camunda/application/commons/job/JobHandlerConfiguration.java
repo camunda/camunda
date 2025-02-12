@@ -12,13 +12,15 @@ import io.camunda.zeebe.gateway.impl.configuration.LongPollingCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.controller.JobActivationRequestResponseObserver;
 import io.camunda.zeebe.gateway.rest.controller.ResponseObserverProvider;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -32,15 +34,18 @@ public class JobHandlerConfiguration {
   private final ActivateJobHandlerConfiguration config;
   private final BrokerClient brokerClient;
   private final ActorScheduler scheduler;
+  private final MeterRegistry meterRegistry;
 
   @Autowired
   public JobHandlerConfiguration(
       final ActivateJobHandlerConfiguration config,
       final BrokerClient brokerClient,
-      final ActorScheduler scheduler) {
+      final ActorScheduler scheduler,
+      final MeterRegistry meterRegistry) {
     this.config = config;
     this.brokerClient = brokerClient;
     this.scheduler = scheduler;
+    this.meterRegistry = meterRegistry;
   }
 
   @Bean
@@ -49,9 +54,9 @@ public class JobHandlerConfiguration {
   }
 
   @Bean
-  public ActivateJobsHandler<JobActivationResponse> activateJobsHandler() {
+  public ActivateJobsHandler<JobActivationResult> activateJobsHandler() {
     final var handler = buildActivateJobsHandler(brokerClient);
-    final var future = new CompletableFuture<ActivateJobsHandler<JobActivationResponse>>();
+    final var future = new CompletableFuture<ActivateJobsHandler<JobActivationResult>>();
     final var actor =
         Actor.newActor()
             .name(config.actorName())
@@ -61,7 +66,7 @@ public class JobHandlerConfiguration {
     return handler;
   }
 
-  private ActivateJobsHandler<JobActivationResponse> buildActivateJobsHandler(
+  private ActivateJobsHandler<JobActivationResult> buildActivateJobsHandler(
       final BrokerClient brokerClient) {
     if (config.longPolling().isEnabled()) {
       return buildLongPollingHandler(brokerClient);
@@ -74,9 +79,15 @@ public class JobHandlerConfiguration {
     }
   }
 
-  private LongPollingActivateJobsHandler<JobActivationResponse> buildLongPollingHandler(
+  private LongPollingActivateJobsHandler<JobActivationResult> buildLongPollingHandler(
       final BrokerClient brokerClient) {
-    return LongPollingActivateJobsHandler.<JobActivationResponse>newBuilder()
+    // once long polling is removed from the gRPC gateway, we can remove the differentiation here
+    // with the extra "gateway" label
+    final var restRegistry = new CompositeMeterRegistry();
+    restRegistry.add(meterRegistry);
+    restRegistry.config().commonTags("gateway", "rest");
+
+    return LongPollingActivateJobsHandler.<JobActivationResult>newBuilder()
         .setBrokerClient(brokerClient)
         .setMaxMessageSize(config.maxMessageSize().toBytes())
         .setLongPollingTimeout(config.longPolling().getTimeout())
@@ -85,9 +96,10 @@ public class JobHandlerConfiguration {
         .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
         .setNoJobsReceivedExceptionProvider(RuntimeException::new)
         .setRequestCanceledExceptionProvider(RuntimeException::new)
+        .setMeterRegistry(restRegistry)
         .build();
   }
 
-  public static record ActivateJobHandlerConfiguration(
+  public record ActivateJobHandlerConfiguration(
       String actorName, LongPollingCfg longPolling, DataSize maxMessageSize) {}
 }

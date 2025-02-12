@@ -78,28 +78,26 @@ public class ExporterTestUtil {
     return String.valueOf(deploymentEvent.getProcesses().getFirst().getProcessDefinitionKey());
   }
 
-  public static String startProcessInstance(final CamundaClient client, final String processId) {
-    return String.valueOf(
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .send()
-            .join()
-            .getProcessInstanceKey());
+  public static Long startProcessInstance(final CamundaClient client, final String processId) {
+    return client
+        .newCreateInstanceCommand()
+        .bpmnProcessId(processId)
+        .latestVersion()
+        .send()
+        .join()
+        .getProcessInstanceKey();
   }
 
-  public static String startProcessInstance(
+  public static Long startProcessInstance(
       final CamundaClient client, final String processId, final String tenantId) {
-    return String.valueOf(
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .tenantId(tenantId)
-            .send()
-            .join()
-            .getProcessInstanceKey());
+    return client
+        .newCreateInstanceCommand()
+        .bpmnProcessId(processId)
+        .latestVersion()
+        .tenantId(tenantId)
+        .send()
+        .join()
+        .getProcessInstanceKey();
   }
 
   public static String startProcessInstance(
@@ -119,21 +117,20 @@ public class ExporterTestUtil {
             .getProcessInstanceKey());
   }
 
-  public static String startProcessInstance(
+  public static Long startProcessInstance(
       final CamundaClient client, final String processId, final Map<String, Object> variables) {
-    return String.valueOf(
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .variables(variables)
-            .send()
-            .join()
-            .getProcessInstanceKey());
+    return client
+        .newCreateInstanceCommand()
+        .bpmnProcessId(processId)
+        .latestVersion()
+        .variables(variables)
+        .send()
+        .join()
+        .getProcessInstanceKey();
   }
 
   public static void waitForProcessTasks(
-      final CamundaClient client, final String processInstanceKey) {
+      final CamundaClient client, final Long processInstanceKey) {
 
     Awaitility.await()
         .ignoreExceptions()
@@ -142,7 +139,7 @@ public class ExporterTestUtil {
             () ->
                 !client
                     .newUserTaskQuery()
-                    .filter(f -> f.processInstanceKey(Long.valueOf(processInstanceKey)))
+                    .filter(f -> f.processInstanceKey(processInstanceKey))
                     .send()
                     .join()
                     .items()

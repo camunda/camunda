@@ -494,8 +494,8 @@ public class CommandDistributionIdempotencyTest {
                       .add();
                   ENGINE
                       .tenant()
-                      .removeEntity(tenant.getKey())
-                      .withEntityKey(user.getKey())
+                      .removeEntity(tenant.getValue().getTenantId())
+                      .withEntityId(user.getValue().getUsername())
                       .withEntityType(EntityType.USER)
                       .remove();
                 },
@@ -574,6 +574,7 @@ public class CommandDistributionIdempotencyTest {
                         .withMapping(
                             new MappingRecord()
                                 .setMappingKey(4)
+                                .setId("id")
                                 .setClaimName("claimName")
                                 .setClaimValue("claimValue"))
                         .initialize(),
@@ -675,6 +676,7 @@ public class CommandDistributionIdempotencyTest {
         .mapping()
         .newMapping(UUID.randomUUID().toString())
         .withClaimValue(UUID.randomUUID().toString())
+        .withId(UUID.randomUUID().toString())
         .create();
   }
 

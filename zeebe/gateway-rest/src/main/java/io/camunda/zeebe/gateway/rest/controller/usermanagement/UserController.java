@@ -15,7 +15,7 @@ import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
@@ -104,13 +104,13 @@ public class UserController {
   }
 
   @CamundaPostMapping(path = "/search")
-  public ResponseEntity<UserSearchResponse> searchUsers(
+  public ResponseEntity<UserSearchResult> searchUsers(
       @RequestBody(required = false) final UserSearchQueryRequest query) {
     return SearchQueryRequestMapper.toUserQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  private ResponseEntity<UserSearchResponse> search(final UserQuery query) {
+  private ResponseEntity<UserSearchResult> search(final UserQuery query) {
     try {
       final var result =
           userServices.withAuthentication(RequestMapper.getAuthentication()).search(query);

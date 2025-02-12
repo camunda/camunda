@@ -83,11 +83,6 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
   }
 
   @Override
-  public void close() throws Exception {
-    client._transport().close();
-  }
-
-  @Override
   public CompletionStage<PendingIncidentUpdateBatch> getPendingIncidentsBatch(
       final long fromPosition, final int size) {
     final var query = createPendingIncidentsBatchQuery(fromPosition);

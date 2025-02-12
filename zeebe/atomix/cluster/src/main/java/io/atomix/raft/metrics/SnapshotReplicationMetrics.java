@@ -15,39 +15,41 @@
  */
 package io.atomix.raft.metrics;
 
-import io.prometheus.client.Gauge;
+import static io.atomix.raft.metrics.SnapshotReplicationMetricsDoc.*;
+
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class SnapshotReplicationMetrics extends RaftMetrics {
-  private static final Gauge COUNT =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
-          .help("Count of ongoing snapshot replication")
-          .name("snapshot_replication_count")
-          .register();
-  private static final Gauge DURATION =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
-          .help("Approximate duration of replication in milliseconds")
-          .name("snapshot_replication_duration_milliseconds")
-          .register();
 
-  private final Gauge.Child count;
-  private final Gauge.Child duration;
+  private final AtomicLong count;
+  private final AtomicLong duration;
 
-  public SnapshotReplicationMetrics(final String partitionName) {
+  public SnapshotReplicationMetrics(final String partitionName, final MeterRegistry meterRegistry) {
     super(partitionName);
-    count = COUNT.labels(partitionGroupName, partition);
-    duration = DURATION.labels(partitionGroupName, partition);
+    Objects.requireNonNull(meterRegistry, "meterRegistry cannot be null");
+
+    count = new AtomicLong(0L);
+    Gauge.builder(COUNT.getName(), count::get)
+        .description(COUNT.getDescription())
+        .tags(PARTITION_GROUP_NAME_LABEL, partitionGroupName)
+        .register(meterRegistry);
+
+    duration = new AtomicLong(0L);
+    Gauge.builder(DURATION.getName(), duration::get)
+        .description(DURATION.getDescription())
+        .tags(PARTITION_GROUP_NAME_LABEL, partitionGroupName)
+        .register(meterRegistry);
   }
 
   public void incrementCount() {
-    count.inc();
+    count.incrementAndGet();
   }
 
   public void decrementCount() {
-    count.dec();
+    count.decrementAndGet();
   }
 
   public void setCount(final int value) {

@@ -18,7 +18,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.UpdateJobChangeset;
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
@@ -41,7 +41,7 @@ public class JobControllerTest extends RestControllerTest {
 
   static final String JOBS_BASE_URL = "/v2/jobs";
 
-  @MockBean JobServices<JobActivationResponse> jobServices;
+  @MockBean JobServices<JobActivationResult> jobServices;
   @MockBean ResponseObserverProvider responseObserverProvider;
 
   @BeforeEach

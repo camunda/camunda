@@ -27,6 +27,7 @@ import io.atomix.raft.storage.serializer.RaftEntrySerializer;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalRecord;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.Closeable;
 import java.nio.file.Path;
 import java.util.SortedMap;
@@ -54,8 +55,8 @@ public final class RaftLog implements Closeable {
    *
    * @return A new Raft log builder.
    */
-  public static RaftLogBuilder builder() {
-    return new RaftLogBuilder();
+  public static RaftLogBuilder builder(final MeterRegistry meterRegistry) {
+    return new RaftLogBuilder(meterRegistry);
   }
 
   /**

@@ -100,8 +100,8 @@ public class DeleteUserTest {
         .isTrue();
     Assertions.assertThat(
             RecordingExporter.tenantRecords(TenantIntent.ENTITY_REMOVED)
-                .withTenantKey(tenant.getKey())
-                .withEntityKey(userRecord.getKey())
+                .withTenantId(tenantId)
+                .withEntityId(username)
                 .exists())
         .isTrue();
   }

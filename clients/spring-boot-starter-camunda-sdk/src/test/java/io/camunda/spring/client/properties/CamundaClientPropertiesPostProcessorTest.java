@@ -137,7 +137,7 @@ public class CamundaClientPropertiesPostProcessorTest {
 
         @Test
         void shouldConfigureIssuer() {
-          assertThat(camundaClientProperties.getAuth().getIssuer())
+          assertThat(camundaClientProperties.getAuth().getTokenUrl())
               .isEqualTo(URI.create("https://login.cloud.camunda.io/oauth/token"));
         }
       }
@@ -180,7 +180,7 @@ public class CamundaClientPropertiesPostProcessorTest {
 
         @Test
         void shouldReadIssuer() {
-          assertThat(camundaClientProperties.getAuth().getIssuer())
+          assertThat(camundaClientProperties.getAuth().getTokenUrl())
               .isEqualTo(
                   URI.create(
                       "http://localhost:18081/auth/realms/your-realm/protocol/openid-connect/token"));
@@ -247,7 +247,7 @@ public class CamundaClientPropertiesPostProcessorTest {
 
         @Test
         void shouldReadIssuer() {
-          assertThat(camundaClientProperties.getAuth().getIssuer())
+          assertThat(camundaClientProperties.getAuth().getTokenUrl())
               .isEqualTo(URI.create("https://login.cloud.camundatest.io/oauth/token"));
         }
       }
@@ -425,7 +425,7 @@ public class CamundaClientPropertiesPostProcessorTest {
 
         @Test
         void shouldConfigureIssuer() {
-          assertThat(camundaClientProperties.getAuth().getIssuer())
+          assertThat(camundaClientProperties.getAuth().getTokenUrl())
               .isEqualTo(URI.create("https://login.cloud.camunda.io/oauth/token"));
         }
       }
@@ -454,7 +454,7 @@ public class CamundaClientPropertiesPostProcessorTest {
 
         @Test
         void shouldReadIssuer() {
-          assertThat(camundaClientProperties.getAuth().getIssuer())
+          assertThat(camundaClientProperties.getAuth().getTokenUrl())
               .isEqualTo(
                   URI.create(
                       "http://localhost:18081/auth/realms/camunda-platform/protocol/openid-connect/token"));
@@ -497,7 +497,7 @@ public class CamundaClientPropertiesPostProcessorTest {
 
         @Test
         void shouldReadIssuer() {
-          assertThat(camundaClientProperties.getAuth().getIssuer())
+          assertThat(camundaClientProperties.getAuth().getTokenUrl())
               .isEqualTo(
                   URI.create(
                       "http://localhost:18081/auth/realms/camunda-platform/protocol/openid-connect/token"));
