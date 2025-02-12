@@ -52,16 +52,11 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
           description={t(
             "Members of this Tenant will be given access to the data within the Tenant.",
           )}
-          // button={{
-          //   label: t("Assign members"),
-          //   onClick: openAssignModal,
-          // }}
           link={{
             label: t("Learn more about groups"),
             href: `/identity/concepts/access-control/groups`,
           }}
         />
-        {/*{assignUsersModal}*/}
       </>
     );
 
@@ -78,6 +73,7 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
         loading={loading}
         addEntityLabel={t("Assign user")}
         searchPlaceholder={t("Search by username")}
+        isInsideModal={false}
       />
       {success && !areNoUsersAssigned && (
         <DocumentationDescription>
@@ -88,10 +84,7 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
           .
         </DocumentationDescription>
       )}
-      <>
-        {/*{assignUsersModal}*/}
-        {/*{unassignMemberModal}*/}
-      </>
+      <></>
     </>
   );
 };
