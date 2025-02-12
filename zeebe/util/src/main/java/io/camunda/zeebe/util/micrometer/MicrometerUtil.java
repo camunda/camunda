@@ -99,6 +99,16 @@ public final class MicrometerUtil {
     registry.close();
   }
 
+  /**
+   * Produce an array with exponentially spaced values by a factor. Used to create similar buckets
+   * to the prometheus function on Histograms "exponentialBuckets"
+   *
+   * @param start the initial value of the array
+   * @param factor the factor by which it's multiplied
+   * @param count the length of the array (if no overflow happen)
+   * @param unit the unit of start
+   * @return an array of duration exponentially spaced by factor
+   */
   public static Duration[] exponentialBucketDuration(
       final long start, final long factor, final int count, final TemporalUnit unit) {
     if (count < 1) {
