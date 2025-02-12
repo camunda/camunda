@@ -15,7 +15,7 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentC
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.dynamic.config.changes.NoopConfigurationChangeAppliers;
-import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
+import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -61,7 +61,7 @@ final class ClusterConfigurationManagerTest {
 
   private PersistedClusterConfiguration persistedClusterConfiguration;
   @AutoClose private MeterRegistry meterRegistry = new SimpleMeterRegistry();
-  private final TopologyMetrics topologyMetrics = new TopologyMetrics(meterRegistry);
+  private final TopologyManagerMetrics topologyMetrics = new TopologyManagerMetrics(meterRegistry);
 
   @BeforeEach
   void init() {
