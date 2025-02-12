@@ -50,7 +50,7 @@ public class ArchitectureTest {
           }
 
           final JavaClass declaringClass = javaMethod.getOwner();
-          
+
           return declaringClass.getMethodCallsFromSelf().stream()
               .anyMatch(call -> call.getTarget().equals(declaringClass));
         }
