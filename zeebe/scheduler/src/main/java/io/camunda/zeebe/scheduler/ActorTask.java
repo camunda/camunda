@@ -257,6 +257,7 @@ public class ActorTask {
       // cancel and discard jobs
       failJob(j);
     }
+    actor.metrics.close();
   }
 
   private void failJob(final ActorJob job) {
