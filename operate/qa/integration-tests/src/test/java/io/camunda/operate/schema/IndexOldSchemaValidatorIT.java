@@ -256,7 +256,16 @@ public class IndexOldSchemaValidatorIT {
   }
 
   private Set<String> versionsOf(final IndexDescriptor index, final Set<String> versions) {
-    return new HashSet<>(map(versions, version -> getFullQualifiedIndexName(index, version)));
+    return map(
+            versions,
+            version ->
+                Set.of(
+                    getFullQualifiedIndexName(index, version),
+                    // also test archived indices with underscore in suffix
+                    getFullQualifiedIndexName(index, version) + "2025-02-11_20"))
+        .stream()
+        .flatMap(set -> set.stream())
+        .collect(Collectors.toSet());
   }
 
   // See AbstractIndexDescriptor::getFullQualifiedIndexName

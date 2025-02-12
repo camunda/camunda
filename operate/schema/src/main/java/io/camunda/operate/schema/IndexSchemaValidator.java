@@ -31,7 +31,7 @@ public class IndexSchemaValidator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IndexSchemaValidator.class);
 
-  private static final Pattern VERSION_PATTERN = Pattern.compile(".*-(\\d+\\.\\d+\\.\\d+.*)_.*");
+  private static final Pattern VERSION_PATTERN = Pattern.compile(".*-(\\d+\\.\\d+\\.\\d+[^_]*)_.*");
 
   @Autowired Set<IndexDescriptor> indexDescriptors;
 
