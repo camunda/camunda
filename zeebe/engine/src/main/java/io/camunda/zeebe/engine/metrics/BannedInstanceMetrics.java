@@ -22,6 +22,11 @@ public final class BannedInstanceMetrics {
     bannedInstanceCounter.incrementAndGet();
   }
 
+  /**
+   * Since this is setting an absolute value, be very careful about calling this from outside the
+   * stream processor actor. You could get incorrect values due to race conditions. If you need to
+   * update it from outside, use increment/decrement only.
+   */
   public void setBannedInstanceCounter(final int counter) {
     bannedInstanceCounter.set(counter);
   }
