@@ -7,19 +7,24 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
-import io.camunda.zeebe.util.micrometer.StatefulMeterRegistry;
-import java.util.concurrent.atomic.AtomicLong;
+import static io.camunda.zeebe.engine.metrics.EngineMetricsDoc.BANNED_INSTANCES;
+
+import io.camunda.zeebe.util.micrometer.StatefulGauge;
+import io.micrometer.core.instrument.MeterRegistry;
 
 public final class BannedInstanceMetrics {
 
-  private final AtomicLong bannedInstanceCounter;
+  private final StatefulGauge bannedInstanceCounter;
 
-  public BannedInstanceMetrics(final StatefulMeterRegistry meterRegistry) {
-    bannedInstanceCounter = meterRegistry.newLongGauge(EngineMetricsDoc.BANNED_INSTANCES).state();
+  public BannedInstanceMetrics(final MeterRegistry meterRegistry) {
+    bannedInstanceCounter =
+        StatefulGauge.builder(BANNED_INSTANCES.getName())
+            .description(BANNED_INSTANCES.getDescription())
+            .register(meterRegistry);
   }
 
   public void countBannedInstance() {
-    bannedInstanceCounter.incrementAndGet();
+    bannedInstanceCounter.increment();
   }
 
   /**

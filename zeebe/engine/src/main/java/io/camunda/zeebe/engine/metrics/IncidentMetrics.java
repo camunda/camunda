@@ -7,35 +7,39 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
+import static io.camunda.zeebe.engine.metrics.EngineMetricsDoc.PENDING_INCIDENTS;
+
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.EngineKeyNames;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.IncidentAction;
-import io.camunda.zeebe.util.micrometer.StatefulMeterRegistry;
+import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.Counter;
-import java.util.concurrent.atomic.AtomicLong;
+import io.micrometer.core.instrument.MeterRegistry;
 
 public final class IncidentMetrics {
   private final Counter incidentCreated;
   private final Counter incidentResolved;
-  private final AtomicLong pendingIncidents;
+  private final StatefulGauge pendingIncidents;
 
-  public IncidentMetrics(final StatefulMeterRegistry meterRegistry) {
-    pendingIncidents = meterRegistry.newLongGauge(EngineMetricsDoc.PENDING_INCIDENTS).state();
+  public IncidentMetrics(final MeterRegistry meterRegistry) {
+    pendingIncidents =
+        StatefulGauge.builder(PENDING_INCIDENTS.getName())
+            .description(PENDING_INCIDENTS.getDescription())
+            .register(meterRegistry);
     incidentCreated = registerCounter(meterRegistry, IncidentAction.CREATED);
     incidentResolved = registerCounter(meterRegistry, IncidentAction.RESOLVED);
   }
 
   public void incidentCreated() {
     incidentCreated.increment();
-    pendingIncidents.incrementAndGet();
+    pendingIncidents.increment();
   }
 
   public void incidentResolved() {
     incidentResolved.increment();
-    pendingIncidents.decrementAndGet();
+    pendingIncidents.decrement();
   }
 
-  private Counter registerCounter(
-      final StatefulMeterRegistry meterRegistry, final IncidentAction action) {
+  private Counter registerCounter(final MeterRegistry meterRegistry, final IncidentAction action) {
     return Counter.builder(EngineMetricsDoc.INCIDENT_EVENTS.getName())
         .description(EngineMetricsDoc.INCIDENT_EVENTS.getDescription())
         .tag(EngineKeyNames.INCIDENT_ACTION.asString(), action.name())
