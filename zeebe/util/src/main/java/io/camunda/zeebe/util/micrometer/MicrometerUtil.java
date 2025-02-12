@@ -17,9 +17,9 @@ import io.micrometer.core.instrument.Timer.Builder;
 import io.micrometer.core.instrument.Timer.Sample;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.time.Duration;
-import java.util.Collections;
 import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
 
@@ -142,6 +142,11 @@ public final class MicrometerUtil {
       value *= factor;
     }
     return buckets.toArray(Duration[]::new);
+  }
+
+  public static void closeRegistry(final MeterRegistry registry) {
+    registry.clear();
+    registry.close();
   }
 
   private record CloseableTimer(Timer timer, Timer.Sample sample) implements CloseableSilently {
