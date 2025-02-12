@@ -88,7 +88,7 @@ Extend the Camunda Client with the new command you added to the REST API.
 Create integration tests (ITs) for your new command. This is optional given not every use case requires this. The following types of ITs exist:
 
 - If you write new endpoints that either create new Zeebe broker functionality or make existing functionality available via a new protocol (REST, for example),
-consider adding [engine integration test cases](../zeebe/qa/integration-tests) using the Camunda Client.
+  consider adding [engine integration test cases](../zeebe/qa/integration-tests) using the Camunda Client. 
 - [End-to-end integration tests](../qa/integration-tests) are a great way to test your feature works on all supported data layers alike.
 
 Refer to existing integration tests for setup.
