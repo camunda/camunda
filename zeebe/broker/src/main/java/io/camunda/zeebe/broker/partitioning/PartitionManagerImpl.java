@@ -64,6 +64,7 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
   private final BrokerCfg brokerCfg;
   private final ZeebePartitionFactory zeebePartitionFactory;
   private final RaftPartitionFactory raftPartitionFactory;
+  private final MeterRegistry brokerMeterRegistry;
 
   public PartitionManagerImpl(
       final ConcurrencyControl concurrencyControl,
@@ -80,7 +81,7 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
       final AtomixServerTransport gatewayBrokerTransport,
       final JobStreamer jobStreamer,
       final PartitionDistribution partitionDistribution,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry brokerMeterRegistry) {
     this.brokerCfg = brokerCfg;
     this.concurrencyControl = concurrencyControl;
     this.actorSchedulingService = actorSchedulingService;
@@ -88,6 +89,7 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     final var featureFlags = brokerCfg.getExperimental().getFeatures().toFeatureFlags();
     this.partitionDistribution = partitionDistribution;
+    this.brokerMeterRegistry = brokerMeterRegistry;
     // TODO: Do this as a separate step before starting the partition manager
     topologyManager = new TopologyManagerImpl(clusterServices.getMembershipService(), localBroker);
 
@@ -108,12 +110,11 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
             listeners,
             partitionRaftListeners,
             topologyManager,
-            featureFlags,
-            meterRegistry);
+            featureFlags);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
-    raftPartitionFactory = new RaftPartitionFactory(brokerCfg, meterRegistry);
+    raftPartitionFactory = new RaftPartitionFactory(brokerCfg);
   }
 
   public void start() {
@@ -144,7 +145,8 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
             partitionMetadata,
             raftPartitionFactory,
             zeebePartitionFactory,
-            brokerCfg);
+            brokerCfg,
+            brokerMeterRegistry);
     final var partition = Partition.bootstrapping(context);
     partitions.put(id, partition);
 
@@ -167,7 +169,8 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
             partitionMetadata,
             raftPartitionFactory,
             zeebePartitionFactory,
-            brokerCfg);
+            brokerCfg,
+            brokerMeterRegistry);
     final var partition = Partition.joining(context);
     final var previousPartition = partitions.putIfAbsent(id, partition);
     if (previousPartition != null) {

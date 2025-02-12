@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
 
 public final class PartitionStartupContext {
@@ -31,9 +32,11 @@ public final class PartitionStartupContext {
   private final RaftPartitionFactory raftPartitionFactory;
   private final ZeebePartitionFactory zeebePartitionFactory;
   private final BrokerCfg brokerConfig;
+  private final MeterRegistry brokerMeterRegistry;
 
   private Path partitionDirectory;
 
+  private MeterRegistry partitionMeterRegistry;
   private FileBasedSnapshotStore snapshotStore;
   private RaftPartition raftPartition;
   private ZeebePartition zeebePartition;
@@ -48,7 +51,8 @@ public final class PartitionStartupContext {
       final PartitionMetadata partitionMetadata,
       final RaftPartitionFactory raftPartitionFactory,
       final ZeebePartitionFactory zeebePartitionFactory,
-      final BrokerCfg brokerConfig) {
+      final BrokerCfg brokerConfig,
+      final MeterRegistry brokerMeterRegistry) {
     this.schedulingService = schedulingService;
     this.topologyManager = topologyManager;
     this.concurrencyControl = concurrencyControl;
@@ -59,6 +63,7 @@ public final class PartitionStartupContext {
     this.raftPartitionFactory = raftPartitionFactory;
     this.zeebePartitionFactory = zeebePartitionFactory;
     this.brokerConfig = brokerConfig;
+    this.brokerMeterRegistry = brokerMeterRegistry;
   }
 
   @Override
@@ -140,5 +145,19 @@ public final class PartitionStartupContext {
   public PartitionStartupContext partitionDirectory(final Path partitionDirectory) {
     this.partitionDirectory = partitionDirectory;
     return this;
+  }
+
+  public PartitionStartupContext partitionMeterRegistry(
+      final MeterRegistry partitionMeterRegistry) {
+    this.partitionMeterRegistry = partitionMeterRegistry;
+    return this;
+  }
+
+  public MeterRegistry partitionMeterRegistry() {
+    return partitionMeterRegistry;
+  }
+
+  public MeterRegistry brokerMeterRegistry() {
+    return brokerMeterRegistry;
   }
 }

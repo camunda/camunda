@@ -100,7 +100,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             .descriptors(exporterDescriptors)
             .exporterMode(exporterMode)
             .positionsToSkipFilter(exporterFilter)
-            .meterRegistry(context.getPartitionMeterRegistry());
+            .meterRegistry(context.getPartitionTransitionMeterRegistry());
 
     final ExporterDirector director = new ExporterDirector(exporterCtx, !context.shouldExport());
 
