@@ -70,6 +70,16 @@ public sealed class StatefulGauge extends AbstractMeter {
     state.set(value ? 1 : 0);
   }
 
+  /** Atomically increments and returns the new value. */
+  public long increment() {
+    return state.incrementAndGet();
+  }
+
+  /** Atomically decrements and returns the new value. */
+  public long decrement() {
+    return state.decrementAndGet();
+  }
+
   @VisibleForTesting("convenience method to assert value in tests")
   public double value() {
     return delegate.value();
