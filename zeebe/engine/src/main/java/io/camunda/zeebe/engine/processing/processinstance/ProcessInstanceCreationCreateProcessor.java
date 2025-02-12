@@ -350,7 +350,8 @@ public final class ProcessInstanceCreationCreateProcessor
         processInstanceKey,
         bpmnProcessId,
         tenantId,
-        record.getVariablesBuffer());
+        record.getVariablesBuffer(),
+        false);
   }
 
   private ProcessInstanceRecord initProcessInstanceRecord(

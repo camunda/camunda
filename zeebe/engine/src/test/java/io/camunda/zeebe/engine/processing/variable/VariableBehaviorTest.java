@@ -72,7 +72,8 @@ final class VariableBehaviorTest {
         parentScopeKey,
         bpmnProcessId,
         tenantId,
-        MsgPackUtil.asMsgPack(document));
+        MsgPackUtil.asMsgPack(document),
+        false);
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -120,7 +121,8 @@ final class VariableBehaviorTest {
         scopeKey,
         bpmnProcessId,
         tenantId,
-        MsgPackUtil.asMsgPack(document));
+        MsgPackUtil.asMsgPack(document),
+        false);
 
     // then
     assertThat(getFollowUpEvents()).isEmpty();
@@ -150,7 +152,8 @@ final class VariableBehaviorTest {
         rootScopeKey,
         bpmnProcessId,
         tenantId,
-        MsgPackUtil.asMsgPack(document));
+        MsgPackUtil.asMsgPack(document),
+        false);
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -191,7 +194,8 @@ final class VariableBehaviorTest {
         rootScopeKey,
         bpmnProcessId,
         tenantId,
-        MsgPackUtil.asMsgPack(document));
+        MsgPackUtil.asMsgPack(document),
+        false);
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -243,7 +247,8 @@ final class VariableBehaviorTest {
         rootScopeKey,
         bpmnProcessId,
         tenantId,
-        MsgPackUtil.asMsgPack(document));
+        MsgPackUtil.asMsgPack(document),
+        false);
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -284,7 +289,8 @@ final class VariableBehaviorTest {
         parentScopeKey,
         bpmnProcessId,
         tenantId,
-        MsgPackUtil.asMsgPack(document));
+        MsgPackUtil.asMsgPack(document),
+        false);
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -325,7 +331,8 @@ final class VariableBehaviorTest {
         parentScopeKey,
         bpmnProcessId,
         tenantId,
-        MsgPackUtil.asMsgPack(document));
+        MsgPackUtil.asMsgPack(document),
+        false);
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -570,7 +577,8 @@ final class VariableBehaviorTest {
         parentScopeKey,
         bpmnProcessId,
         tenantId,
-        MsgPackUtil.asMsgPack(document));
+        MsgPackUtil.asMsgPack(document),
+        false);
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -627,7 +635,8 @@ final class VariableBehaviorTest {
         rootScopeKey,
         bpmnProcessId,
         tenantId,
-        MsgPackUtil.asMsgPack(document));
+        MsgPackUtil.asMsgPack(document),
+        false);
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();

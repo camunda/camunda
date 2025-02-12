@@ -49,6 +49,9 @@ public class DbVariableState implements MutableVariableState {
   private final DbLong scopeKey;
   private final DbString variableName;
 
+  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, VariableInstance>
+      variableAdjustmentsColumnFamily;
+
   private final VariableInstance newVariable = new VariableInstance();
   private final DirectBuffer variableNameView = new UnsafeBuffer(0, 0);
 
@@ -72,6 +75,12 @@ public class DbVariableState implements MutableVariableState {
     variablesColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.VARIABLES,
+            transactionContext,
+            scopeKeyVariableNameKey,
+            new VariableInstance());
+    variableAdjustmentsColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.VARIABLE_ADJUSTMENTS,
             transactionContext,
             scopeKeyVariableNameKey,
             new VariableInstance());
@@ -109,6 +118,29 @@ public class DbVariableState implements MutableVariableState {
     variableName.wrapBuffer(variableNameView);
 
     variablesColumnFamily.upsert(scopeKeyVariableNameKey, newVariable);
+  }
+
+  @Override
+  public void setVariableAdjustmentLocal(
+      final long key,
+      final long scopeKey,
+      final long processDefinitionKey,
+      final DirectBuffer name,
+      final DirectBuffer value) {
+    final int valueOffset = 0;
+    final int valueLength = value.capacity();
+    final int nameOffset = 0;
+    final int nameLength = name.capacity();
+
+    newVariable.reset();
+    newVariable.setValue(value, valueOffset, valueLength);
+    newVariable.setKey(key);
+
+    this.scopeKey.wrapLong(scopeKey);
+    variableNameView.wrap(name, nameOffset, nameLength);
+    variableName.wrapBuffer(variableNameView);
+
+    variableAdjustmentsColumnFamily.upsert(scopeKeyVariableNameKey, newVariable);
   }
 
   @Override

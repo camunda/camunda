@@ -249,7 +249,8 @@ public class EventTriggerBehavior {
           elementRecord.getProcessInstanceKey(),
           elementRecord.getBpmnProcessIdBuffer(),
           elementRecord.getTenantId(),
-          variables);
+          variables,
+          false);
     }
 
     commandWriter.appendFollowUpCommand(

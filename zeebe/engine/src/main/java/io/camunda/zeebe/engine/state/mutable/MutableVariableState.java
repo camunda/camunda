@@ -56,6 +56,9 @@ public interface MutableVariableState extends VariableState {
       int valueOffset,
       int valueLength);
 
+  void setVariableAdjustmentLocal(
+      long key, long scopeKey, long processDefinitionKey, DirectBuffer name, DirectBuffer value);
+
   void createScope(long childKey, long parentKey);
 
   void removeScope(long scopeKey);

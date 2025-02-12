@@ -7,17 +7,26 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.spec.MsgpackReaderException;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -35,18 +44,27 @@ public final class VariableDocumentUpdateProcessor
   private final VariableBehavior variableBehavior;
   private final Writers writers;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final ProcessState processState;
+  private final UserTaskState userTaskState;
+  private final BpmnJobBehavior jobBehavior;
 
   public VariableDocumentUpdateProcessor(
       final ElementInstanceState elementInstanceState,
       final KeyGenerator keyGenerator,
       final VariableBehavior variableBehavior,
       final Writers writers,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final ProcessState processState,
+      final UserTaskState userTaskState,
+      final BpmnJobBehavior jobBehavior) {
     this.elementInstanceState = elementInstanceState;
     this.keyGenerator = keyGenerator;
     this.variableBehavior = variableBehavior;
     this.writers = writers;
     this.authCheckBehavior = authCheckBehavior;
+    this.processState = processState;
+    this.userTaskState = userTaskState;
+    this.jobBehavior = jobBehavior;
   }
 
   @Override
@@ -61,6 +79,7 @@ public final class VariableDocumentUpdateProcessor
       return;
     }
 
+    final String tenantId = scope.getValue().getTenantId();
     final var authRequest =
         new AuthorizationRequest(
                 record,
@@ -83,27 +102,47 @@ public final class VariableDocumentUpdateProcessor
       return;
     }
 
+    var shouldDryRun = false;
+    if (scope.getValue().getBpmnElementType() == BpmnElementType.USER_TASK
+        && scope.getUserTaskKey() > -1L) {
+      final var userTaskElement =
+          processState.getFlowElement(
+              scope.getValue().getProcessDefinitionKey(),
+              tenantId,
+              scope.getValue().getElementIdBuffer(),
+              ExecutableUserTask.class);
+      if (userTaskElement != null
+          && userTaskElement.hasTaskListeners(ZeebeTaskListenerEventType.updating)) {
+        // set variables as intermediate state
+        shouldDryRun = true;
+      }
+    }
+
+    var hasChangedVariables = false;
     final long processDefinitionKey = scope.getValue().getProcessDefinitionKey();
     final long processInstanceKey = scope.getValue().getProcessInstanceKey();
     final DirectBuffer bpmnProcessId = scope.getValue().getBpmnProcessIdBuffer();
-    final String tenantId = scope.getValue().getTenantId();
     try {
       if (value.getUpdateSemantics() == VariableDocumentUpdateSemantic.LOCAL) {
-        variableBehavior.mergeLocalDocument(
-            scope.getKey(),
-            processDefinitionKey,
-            processInstanceKey,
-            bpmnProcessId,
-            tenantId,
-            value.getVariablesBuffer());
+        hasChangedVariables =
+            variableBehavior.mergeLocalDocument(
+                scope.getKey(),
+                processDefinitionKey,
+                processInstanceKey,
+                bpmnProcessId,
+                tenantId,
+                value.getVariablesBuffer(),
+                shouldDryRun);
       } else {
-        variableBehavior.mergeDocument(
-            scope.getKey(),
-            processDefinitionKey,
-            processInstanceKey,
-            bpmnProcessId,
-            tenantId,
-            value.getVariablesBuffer());
+        hasChangedVariables =
+            variableBehavior.mergeDocument(
+                scope.getKey(),
+                processDefinitionKey,
+                processInstanceKey,
+                bpmnProcessId,
+                tenantId,
+                value.getVariablesBuffer(),
+                shouldDryRun);
       }
     } catch (final MsgpackReaderException e) {
       final String reason =
@@ -117,7 +156,35 @@ public final class VariableDocumentUpdateProcessor
 
     final long key = keyGenerator.nextKey();
 
-    writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
-    writers.response().writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
+    if (hasChangedVariables
+        && scope.getValue().getBpmnElementType() == BpmnElementType.USER_TASK
+        && scope.getUserTaskKey() > -1L) {
+      writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATING, value);
+
+      final var userTaskElement =
+          processState.getFlowElement(
+              scope.getValue().getProcessDefinitionKey(),
+              tenantId,
+              scope.getValue().getElementIdBuffer(),
+              ExecutableUserTask.class);
+      if (userTaskElement != null
+          && userTaskElement.hasTaskListeners(ZeebeTaskListenerEventType.updating)) {
+        // trigger the `updating` listener
+        final var listener =
+            userTaskElement.getTaskListeners(ZeebeTaskListenerEventType.updating).getFirst();
+        final var context = buildContext(scope);
+        final UserTaskRecord persistedRecord = userTaskState.getUserTask(scope.getUserTaskKey());
+        jobBehavior.createNewTaskListenerJob(context, persistedRecord, listener);
+      }
+    } else {
+      writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
+      writers.response().writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
+    }
+  }
+
+  private BpmnElementContext buildContext(final ElementInstance elementInstance) {
+    final var context = new BpmnElementContextImpl();
+    context.init(elementInstance.getKey(), elementInstance.getValue(), elementInstance.getState());
+    return context;
   }
 }

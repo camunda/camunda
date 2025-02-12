@@ -698,7 +698,8 @@ public final class ProcessInstanceModificationModifyProcessor
                     processInstance.getKey(),
                     process.getBpmnProcessId(),
                     process.getTenantId(),
-                    variableDocument));
+                    variableDocument,
+                    false));
   }
 
   private void terminateElement(final ElementInstance elementInstance) {

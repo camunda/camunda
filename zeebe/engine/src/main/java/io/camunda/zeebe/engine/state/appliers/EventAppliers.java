@@ -175,9 +175,12 @@ public final class EventAppliers implements EventApplier {
 
   private void registerVariableEventAppliers(final MutableProcessingState state) {
     final VariableApplier variableApplier = new VariableApplier(state.getVariableState());
+    register(VariableIntent.CREATING, new VariableCreatingApplier(state.getVariableState()));
     register(VariableIntent.CREATED, variableApplier);
+    register(VariableIntent.UPDATING, new VariableUpdatingApplier(state.getVariableState()));
     register(VariableIntent.UPDATED, variableApplier);
     register(VariableIntent.MIGRATED, new VariableMigratedApplier());
+    register(VariableDocumentIntent.UPDATING, NOOP_EVENT_APPLIER);
     register(VariableDocumentIntent.UPDATED, NOOP_EVENT_APPLIER);
   }
 

@@ -238,7 +238,8 @@ public final class BpmnStateBehavior {
         context.getProcessInstanceKey(),
         context.getBpmnProcessId(),
         context.getTenantId(),
-        variablesAsDocument);
+        variablesAsDocument,
+        false);
   }
 
   public void copyAllVariablesToProcessInstance(
@@ -267,7 +268,8 @@ public final class BpmnStateBehavior {
         targetProcessInstanceKey,
         targetProcess.getBpmnProcessId(),
         targetProcess.getTenantId(),
-        variables);
+        variables,
+        false);
   }
 
   public boolean isInterrupted(final BpmnElementContext flowScopeContext) {

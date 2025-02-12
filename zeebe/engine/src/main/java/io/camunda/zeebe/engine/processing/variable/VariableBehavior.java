@@ -57,16 +57,17 @@ public final class VariableBehavior {
    * @param processInstanceKey the process instance key to be associated with each variable
    * @param document the document to merge
    */
-  public void mergeLocalDocument(
+  public boolean mergeLocalDocument(
       final long scopeKey,
       final long processDefinitionKey,
       final long processInstanceKey,
       final DirectBuffer bpmnProcessId,
       final String tenantId,
-      final DirectBuffer document) {
+      final DirectBuffer document,
+      final boolean shouldDryRun) {
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
-      return;
+      return false;
     }
 
     variableRecord
@@ -75,10 +76,14 @@ public final class VariableBehavior {
         .setProcessInstanceKey(processInstanceKey)
         .setBpmnProcessId(bpmnProcessId)
         .setTenantId(tenantId);
+    boolean hasChangedVariables = false;
     for (final DocumentEntry entry : indexedDocument) {
       applyEntryToRecord(entry);
-      setLocalVariable(variableRecord);
+      if (setLocalVariable(variableRecord, shouldDryRun)) {
+        hasChangedVariables = true;
+      }
     }
+    return hasChangedVariables;
   }
 
   /**
@@ -102,16 +107,19 @@ public final class VariableBehavior {
    * @param processInstanceKey the process instance key to be associated with each variable
    * @param document the document to merge
    */
-  public void mergeDocument(
+  public boolean mergeDocument(
       final long scopeKey,
       final long processDefinitionKey,
       final long processInstanceKey,
       final DirectBuffer bpmnProcessId,
       final String tenantId,
-      final DirectBuffer document) {
+      final DirectBuffer document,
+      final boolean shouldDryRun) {
+    boolean hasChangedVariables = false;
+
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
-      return;
+      return hasChangedVariables;
     }
 
     long currentScope = scopeKey;
@@ -135,6 +143,7 @@ public final class VariableBehavior {
           applyEntryToRecord(entry);
           stateWriter.appendFollowUpEvent(
               variableInstance.getKey(), VariableIntent.UPDATED, variableRecord);
+          hasChangedVariables = true;
           entryIterator.remove();
         }
       }
@@ -145,8 +154,11 @@ public final class VariableBehavior {
     variableRecord.setScopeKey(currentScope);
     for (final DocumentEntry entry : indexedDocument) {
       applyEntryToRecord(entry);
-      setLocalVariable(variableRecord);
+      if (setLocalVariable(variableRecord, shouldDryRun)) {
+        hasChangedVariables = true;
+      }
     }
+    return hasChangedVariables;
   }
 
   /**
@@ -185,18 +197,26 @@ public final class VariableBehavior {
         .setName(name)
         .setValue(value, valueOffset, valueLength);
 
-    setLocalVariable(variableRecord);
+    setLocalVariable(variableRecord, false);
   }
 
-  private void setLocalVariable(final VariableRecord record) {
+  /**
+   * @return True if it changed a variable (created or updated), false otherwise
+   */
+  private boolean setLocalVariable(final VariableRecord record, final boolean shouldDryRun) {
     final VariableInstance variableInstance =
         variableState.getVariableInstanceLocal(record.getScopeKey(), record.getNameBuffer());
     if (variableInstance == null) {
       final long key = keyGenerator.nextKey();
-      stateWriter.appendFollowUpEvent(key, VariableIntent.CREATED, record);
+      final var intent = shouldDryRun ? VariableIntent.CREATING : VariableIntent.CREATED;
+      stateWriter.appendFollowUpEvent(key, intent, record);
+      return true;
     } else if (!variableInstance.getValue().equals(record.getValueBuffer())) {
-      stateWriter.appendFollowUpEvent(variableInstance.getKey(), VariableIntent.UPDATED, record);
+      final var intent = shouldDryRun ? VariableIntent.UPDATING : VariableIntent.UPDATED;
+      stateWriter.appendFollowUpEvent(variableInstance.getKey(), intent, record);
+      return true;
     }
+    return false;
   }
 
   private void applyEntryToRecord(final DocumentEntry entry) {

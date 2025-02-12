@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.message.PendingProcessMessageSubscriptionChecker;
@@ -33,8 +34,10 @@ import io.camunda.zeebe.engine.processing.timer.TimerCancelProcessor;
 import io.camunda.zeebe.engine.processing.timer.TimerTriggerProcessor;
 import io.camunda.zeebe.engine.processing.variable.VariableDocumentUpdateProcessor;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
@@ -102,7 +105,10 @@ public final class BpmnProcessors {
         processingState.getElementInstanceState(),
         keyGenerator,
         writers,
-        authCheckBehavior);
+        authCheckBehavior,
+        processingState.getProcessState(),
+        processingState.getUserTaskState(),
+        bpmnBehaviors.jobBehavior());
     addProcessInstanceCreationStreamProcessors(
         typedRecordProcessors,
         processingState,
@@ -216,7 +222,10 @@ public final class BpmnProcessors {
       final ElementInstanceState elementInstanceState,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final ProcessState processState,
+      final UserTaskState userTaskState,
+      final BpmnJobBehavior jobBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.VARIABLE_DOCUMENT,
         VariableDocumentIntent.UPDATE,
@@ -225,7 +234,10 @@ public final class BpmnProcessors {
             keyGenerator,
             bpmnBehaviors.variableBehavior(),
             writers,
-            authCheckBehavior));
+            authCheckBehavior,
+            processState,
+            userTaskState,
+            jobBehavior));
   }
 
   private static void addProcessInstanceCreationStreamProcessors(
