@@ -73,7 +73,11 @@ public class MultiDbConfigurator {
         "ElasticsearchExporter",
         cfg -> {
           cfg.setClassName(ElasticsearchExporter.class.getName());
-          cfg.setArgs(Map.of("url", elasticsearchUrl, "index", Map.of("prefix", indexPrefix)));
+          cfg.setArgs(
+              Map.of(
+                  "url", elasticsearchUrl,
+                  "index", Map.of("prefix", indexPrefix),
+                  "bulk", Map.of("size", 1)));
         });
 
     testApplication.withProperty(
