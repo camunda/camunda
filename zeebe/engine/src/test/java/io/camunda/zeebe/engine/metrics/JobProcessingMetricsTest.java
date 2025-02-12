@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
-import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -34,14 +33,8 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-<<<<<<< HEAD:zeebe/engine/src/test/java/io/camunda/zeebe/engine/metrics/JobMetricsTest.java
 @RunWith(Parameterized.class)
-public class JobMetricsTest {
-||||||| parent of cce1a9b6f0d (refactor: migrate job metrics to micrometer):zeebe/engine/src/test/java/io/camunda/zeebe/engine/metrics/JobMetricsTest.java
-public class JobMetricsTest {
-=======
 public class JobProcessingMetricsTest {
->>>>>>> cce1a9b6f0d (refactor: migrate job metrics to micrometer):zeebe/engine/src/test/java/io/camunda/zeebe/engine/metrics/JobProcessingMetricsTest.java
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
@@ -101,7 +94,7 @@ public class JobProcessingMetricsTest {
     createProcessInstanceWithJob(JOB_TYPE);
 
     // then
-    assertThat(jobMetric("created", JOB_TYPE, scenario.jobKind)).isEqualTo(1);
+    assertThat(jobMetric("created", JOB_TYPE, scenario.jobKind)).isOne();
   }
 
   @Test
@@ -118,7 +111,7 @@ public class JobProcessingMetricsTest {
     ENGINE.jobs().withType(jobType).activate();
 
     // then
-    assertThat(jobMetric("activated", jobType, scenario.jobKind)).isEqualTo(1);
+    assertThat(jobMetric("activated", jobType, scenario.jobKind)).isOne();
   }
 
   @Test
@@ -152,7 +145,7 @@ public class JobProcessingMetricsTest {
         .await();
 
     // then
-    assertThat(jobMetric("timed out", JOB_TYPE, scenario.jobKind)).isEqualTo(1);
+    assertThat(jobMetric("timed out", JOB_TYPE, scenario.jobKind)).isOne();
   }
 
   @Test
@@ -165,7 +158,7 @@ public class JobProcessingMetricsTest {
     ENGINE.job().ofInstance(processInstanceKey).withType(JOB_TYPE).complete();
 
     // then
-    assertThat(jobMetric("completed", JOB_TYPE, scenario.jobKind)).isEqualTo(1);
+    assertThat(jobMetric("completed", JOB_TYPE, scenario.jobKind)).isOne();
   }
 
   @Test
@@ -178,7 +171,7 @@ public class JobProcessingMetricsTest {
     ENGINE.job().ofInstance(processInstanceKey).withType(JOB_TYPE).fail();
 
     // then
-    assertThat(jobMetric("failed", JOB_TYPE, scenario.jobKind)).isEqualTo(1);
+    assertThat(jobMetric("failed", JOB_TYPE, scenario.jobKind)).isOne();
   }
 
   @Test
@@ -194,7 +187,7 @@ public class JobProcessingMetricsTest {
         .await();
 
     // then
-    assertThat(jobMetric("canceled", JOB_TYPE, scenario.jobKind)).isEqualTo(1);
+    assertThat(jobMetric("canceled", JOB_TYPE, scenario.jobKind)).isOne();
   }
 
   @Test
@@ -211,7 +204,7 @@ public class JobProcessingMetricsTest {
     ENGINE.job().ofInstance(processInstanceKey).withType(JOB_TYPE).throwError();
 
     // then
-    assertThat(jobMetric("error thrown", JOB_TYPE, scenario.jobKind)).isEqualTo(1);
+    assertThat(jobMetric("error thrown", JOB_TYPE, scenario.jobKind)).isOne();
   }
 
   /**
@@ -235,13 +228,16 @@ public class JobProcessingMetricsTest {
     return processInstanceKey;
   }
 
-  private static Double jobMetric(final String action, final String type, final JobKind jobKind) {
-    return MetricsTestHelper.readMetricValue(
-        "zeebe_job_events_total",
-        entry("action", action),
-        entry("partition", "1"),
-        entry("type", type),
-        entry("job_kind", jobKind.name()));
+  private static Double jobMetric(final String action, final String type, final JobKind kind) {
+    return ENGINE
+        .getMeterRegistry()
+        .get("zeebe.job.events.total")
+        .tag("action", action)
+        .tag("partition", "1")
+        .tag("type", type)
+        .tag("job_kind", kind.name())
+        .counter()
+        .count();
   }
 
   record JobMetricsTestScenario(JobKind jobKind, BpmnModelInstance process) {
