@@ -85,6 +85,26 @@ public final class ControlledActorSchedulerRule extends ExternalResource {
     return clock;
   }
 
+  static final class ControlledActorThreadFactory implements ActorThreadFactory {
+    private ControlledActorThread controlledThread;
+
+    @Override
+    public ActorThread newThread(
+        final String name,
+        final int id,
+        final ActorThreadGroup threadGroup,
+        final TaskScheduler taskScheduler,
+        final ActorClock clock,
+        final ActorTimerQueue timerQueue,
+        final ActorMetrics actorMetrics,
+        final IdleStrategy idleStrategy) {
+      controlledThread =
+          new ControlledActorThread(
+              name, id, threadGroup, taskScheduler, clock, timerQueue, idleStrategy);
+      return controlledThread;
+    }
+  }
+
   static class CallingActor<T> extends Actor {
     private final ActorFuture<T> future;
     private final Callable<T> callable;
@@ -104,26 +124,6 @@ public final class ControlledActorSchedulerRule extends ExternalResource {
               future.completeExceptionally(e);
             }
           });
-    }
-  }
-
-  static final class ControlledActorThreadFactory implements ActorThreadFactory {
-    private ControlledActorThread controlledThread;
-
-    @Override
-    public ActorThread newThread(
-        final String name,
-        final int id,
-        final ActorThreadGroup threadGroup,
-        final TaskScheduler taskScheduler,
-        final ActorClock clock,
-        final ActorTimerQueue timerQueue,
-        final ActorMetrics actorMetrics,
-        final IdleStrategy idleStrategy) {
-      controlledThread =
-          new ControlledActorThread(
-              name, id, threadGroup, taskScheduler, clock, timerQueue, idleStrategy);
-      return controlledThread;
     }
   }
 }

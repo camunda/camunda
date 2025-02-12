@@ -229,7 +229,7 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     }
 
     public ActorSchedulerBuilder setMeterRegistry(final MeterRegistry meterRegistry) {
-      actorMetrics = new ActorMetrics(meterRegistry);
+      actorMetrics = ActorMetrics.ofNullable(meterRegistry);
       return this;
     }
 
