@@ -145,7 +145,8 @@ public class VariableService {
   public void persistTaskVariables(
       final String taskId,
       final List<VariableInputDTO> changedVariables,
-      final boolean withDraftVariableValues) {
+      final boolean withDraftVariableValues,
+      final String processInstanceKey) {
     // take current runtime variables values and
     final TaskEntity task = taskStore.getTask(taskId);
     final String taskFlowNodeInstanceId = task.getFlowNodeInstanceId();
@@ -157,7 +158,8 @@ public class VariableService {
     taskVariables.forEach(
         variable ->
             finalVariablesMap.put(
-                variable.getName(), TaskVariableEntity.createFrom(taskId, variable)));
+                variable.getName(),
+                TaskVariableEntity.createFrom(taskId, variable, processInstanceKey)));
 
     if (withDraftVariableValues) {
       // update/append with draft variables
@@ -167,7 +169,8 @@ public class VariableService {
               draftTaskVariable ->
                   finalVariablesMap.put(
                       draftTaskVariable.getName(),
-                      TaskVariableEntity.createFrom(taskId, draftTaskVariable)));
+                      TaskVariableEntity.createFrom(
+                          taskId, draftTaskVariable, task.getProcessInstanceId())));
     }
 
     // update/append with variables passed for task completion
@@ -179,7 +182,8 @@ public class VariableService {
               taskId,
               var.getName(),
               var.getValue(),
-              tasklistProperties.getImporter().getVariableSizeThreshold()));
+              tasklistProperties.getImporter().getVariableSizeThreshold(),
+              task.getProcessInstanceId()));
     }
     variableStore.persistTaskVariables(finalVariablesMap.values());
   }

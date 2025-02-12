@@ -406,10 +406,12 @@ class TaskServiceTest {
     when(userReader.getCurrentUser()).thenReturn(mockedUser);
     final var taskBefore = mock(TaskEntity.class);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
+    taskBefore.setProcessInstanceId("1234567");
     final var completedTask =
         new TaskEntity()
             .setId(taskId)
             .setState(TaskState.COMPLETED)
+            .setProcessInstanceId("1234567")
             .setAssignee("demo")
             .setCompletionTime(OffsetDateTime.now());
     when(taskStore.persistTaskCompletion(taskBefore)).thenReturn(completedTask);
@@ -420,7 +422,8 @@ class TaskServiceTest {
     // Then
     verify(taskValidator).validateCanComplete(taskBefore);
     verify(tasklistServicesAdapter).completeUserTask(eq(taskBefore), any());
-    verify(variableService).persistTaskVariables(taskId, variables, true);
+    verify(variableService)
+        .persistTaskVariables(taskId, variables, true, taskBefore.getProcessInstanceId());
     verify(variableService).deleteDraftTaskVariables(taskId);
     assertThat(result).isEqualTo(TaskDTO.createFrom(completedTask, objectMapper));
   }
@@ -436,11 +439,13 @@ class TaskServiceTest {
     when(userReader.getCurrentUser()).thenReturn(mockedUser);
     final var taskBefore = mock(TaskEntity.class);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
+    taskBefore.setProcessDefinitionId("1234");
     final var completedTask =
         new TaskEntity()
             .setId(taskId)
             .setState(TaskState.COMPLETED)
             .setAssignee("demo")
+            .setProcessInstanceId("1234")
             .setCompletionTime(OffsetDateTime.now());
     when(taskStore.persistTaskCompletion(taskBefore)).thenReturn(completedTask);
 
@@ -450,7 +455,8 @@ class TaskServiceTest {
     // Then
     verify(taskValidator).validateCanComplete(taskBefore);
     verify(tasklistServicesAdapter).completeUserTask(eq(taskBefore), any());
-    verify(variableService).persistTaskVariables(taskId, variables, true);
+    verify(variableService)
+        .persistTaskVariables(taskId, variables, true, taskBefore.getProcessInstanceId());
     verify(variableService).deleteDraftTaskVariables(taskId);
     assertThat(result).isEqualTo(TaskDTO.createFrom(completedTask, objectMapper));
   }
