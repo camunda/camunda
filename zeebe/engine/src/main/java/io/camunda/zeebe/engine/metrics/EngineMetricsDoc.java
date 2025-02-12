@@ -162,6 +162,24 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getAdditionalKeyNames() {
       return PartitionKeyNames.values();
     }
+  },
+
+  /** Current number of buffered messages */
+  BUFFERED_MESSAGES {
+    @Override
+    public String getDescription() {
+      return "Current number of buffered messages";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.buffered.messages.count";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
   };
 
   /** Tags/label values possibly used by the engine metrics. */
