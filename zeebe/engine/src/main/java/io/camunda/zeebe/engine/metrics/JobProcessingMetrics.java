@@ -41,7 +41,7 @@ public final class JobProcessingMetrics {
   private Counter registerJobEventCounter(final JobAction jobAction, final String jobType) {
     return Counter.builder(EngineMetricsDoc.JOB_EVENTS.getName())
         .description(EngineMetricsDoc.JOB_EVENTS.getDescription())
-        .tag(EngineKeyNames.JOB_ACTION.asString(), jobAction.toString())
+        .tag(EngineKeyNames.JOB_ACTION.asString(), jobAction.getLabel())
         .tags(EngineKeyNames.JOB_TYPE.asString(), jobType)
         .register(registry);
   }

@@ -390,19 +390,24 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
   }
 
   public enum JobAction {
-    CREATED,
-    ACTIVATED,
-    TIMED_OUT,
-    COMPLETED,
-    FAILED,
-    CANCELED,
-    ERROR_THROWN,
-    WORKERS_NOTIFIED,
-    PUSHED;
+    CREATED("created"),
+    ACTIVATED("activated"),
+    TIMED_OUT("timed out"),
+    COMPLETED("completed"),
+    FAILED("failed"),
+    CANCELED("canceled"),
+    ERROR_THROWN("error thrown"),
+    WORKERS_NOTIFIED("workers notified"),
+    PUSHED("pushed");
 
-    @Override
-    public String toString() {
-      return name().toLowerCase();
+    private final String label;
+
+    JobAction(final String label) {
+      this.label = label;
+    }
+
+    public String getLabel() {
+      return label;
     }
   }
 }
