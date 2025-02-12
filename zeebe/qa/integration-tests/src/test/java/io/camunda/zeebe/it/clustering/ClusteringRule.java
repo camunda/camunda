@@ -69,7 +69,6 @@ import io.camunda.zeebe.shared.management.ActorClockService.MutableClock;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.VersionUtil;
@@ -149,7 +148,6 @@ public class ClusteringRule extends ExternalResource {
   private final Map<Integer, SpringBrokerBridge> springBrokerBridge;
   private final Map<Integer, SystemContext> systemContexts;
   private final ActorClockConfiguration actorClockConfiguration;
-  @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   public ClusteringRule() {
     this(3);
