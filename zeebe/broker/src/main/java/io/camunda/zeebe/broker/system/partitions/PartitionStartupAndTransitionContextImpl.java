@@ -375,6 +375,21 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
+  public MeterRegistry getPartitionStartupMeterRegistry() {
+    return startupMeterRegistry;
+  }
+
+  @Override
+  public MeterRegistry getPartitionTransitionMeterRegistry() {
+    return transitionMeterRegistry;
+  }
+
+  @Override
+  public void setPartitionTransitionMeterRegistry(final MeterRegistry transitionMeterRegistry) {
+    this.transitionMeterRegistry = transitionMeterRegistry;
+  }
+
+  @Override
   public boolean shouldProcess() {
     return partitionProcessingState.shouldProcess();
   }
@@ -442,21 +457,6 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setCurrentRole(final Role currentRole) {
     this.currentRole = currentRole;
-  }
-
-  @Override
-  public MeterRegistry getPartitionStartupMeterRegistry() {
-    return startupMeterRegistry;
-  }
-
-  @Override
-  public MeterRegistry getPartitionTransitionMeterRegistry() {
-    return transitionMeterRegistry;
-  }
-
-  @Override
-  public void setPartitionTransitionMeterRegistry(final MeterRegistry transitionMeterRegistry) {
-    this.transitionMeterRegistry = transitionMeterRegistry;
   }
 
   public ComponentTreeListener getComponentTreeListener() {
