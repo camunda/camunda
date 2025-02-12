@@ -21,6 +21,8 @@ import io.camunda.zeebe.db.impl.NoopColumnFamilyMetrics;
 import io.camunda.zeebe.db.impl.rocksdb.Loggers;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.protocol.EnumValue;
+import io.camunda.zeebe.util.micrometer.StatefulMeterRegistry;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,6 +56,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
   private final long defaultNativeHandle;
   private final ConsistencyChecksSettings consistencyChecksSettings;
   private final AccessMetricsConfiguration accessMetricsConfiguration;
+  private final StatefulMeterRegistry meterRegistry;
 
   protected ZeebeTransactionDb(
       final ColumnFamilyHandle defaultHandle,
@@ -61,13 +64,15 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
       final List<AutoCloseable> closables,
       final RocksDbConfiguration rocksDbConfiguration,
       final ConsistencyChecksSettings consistencyChecksSettings,
-      final AccessMetricsConfiguration accessMetricsConfiguration) {
+      final AccessMetricsConfiguration accessMetricsConfiguration,
+      final StatefulMeterRegistry meterRegistry) {
     this.defaultHandle = defaultHandle;
     defaultNativeHandle = getNativeHandle(defaultHandle);
     this.optimisticTransactionDB = optimisticTransactionDB;
     this.closables = closables;
     this.consistencyChecksSettings = consistencyChecksSettings;
     this.accessMetricsConfiguration = accessMetricsConfiguration;
+    this.meterRegistry = meterRegistry;
 
     prefixReadOptions =
         new ReadOptions()
@@ -91,7 +96,8 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
           final List<AutoCloseable> closables,
           final RocksDbConfiguration rocksDbConfiguration,
           final ConsistencyChecksSettings consistencyChecksSettings,
-          final AccessMetricsConfiguration metrics)
+          final AccessMetricsConfiguration metrics,
+          final MeterRegistry wrappedRegistry)
           throws RocksDBException {
     final var cfDescriptors =
         Arrays.asList( // todo: could consider using List.of
@@ -110,13 +116,22 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
     final ColumnFamilyHandle defaultColumnFamilyHandle = cfHandles.getFirst();
     closables.add(defaultColumnFamilyHandle);
 
+    final var statefulMeterRegistry = new StatefulMeterRegistry(wrappedRegistry);
+    closables.add(
+        () -> {
+          statefulMeterRegistry.clear();
+          statefulMeterRegistry.close();
+          statefulMeterRegistry.remove(wrappedRegistry);
+        });
+
     return new ZeebeTransactionDb<>(
         defaultColumnFamilyHandle,
         optimisticTransactionDB,
         closables,
         rocksDbConfiguration,
         consistencyChecksSettings,
-        metrics);
+        metrics,
+        statefulMeterRegistry);
   }
 
   static long getNativeHandle(final RocksObject object) {
@@ -204,6 +219,11 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
       final ColumnFamilyNames columnFamilyName, final TransactionContext context) {
     return createColumnFamily(columnFamilyName, context, DbNullKey.INSTANCE, DbNil.INSTANCE)
         .isEmpty();
+  }
+
+  @Override
+  public StatefulMeterRegistry getMeterRegistry() {
+    return meterRegistry;
   }
 
   @Override

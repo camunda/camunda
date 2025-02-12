@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.protocol.EnumValue;
+import io.camunda.zeebe.util.micrometer.StatefulMeterRegistry;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
@@ -70,6 +71,12 @@ final class SnapshotOnlyDb<ColumnFamilyType extends Enum<? extends EnumValue> & 
   @Override
   public boolean isEmpty(final ColumnFamilyType column, final TransactionContext context) {
     throw unsupported("isEmpty");
+  }
+
+  @Override
+  public StatefulMeterRegistry getMeterRegistry() {
+    throw new UnsupportedOperationException(
+        "No meter registry is available for a snapshot only DB, as no metrics are collected.");
   }
 
   @Override

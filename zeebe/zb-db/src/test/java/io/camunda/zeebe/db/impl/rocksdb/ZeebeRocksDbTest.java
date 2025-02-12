@@ -15,6 +15,11 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
+import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
+import io.camunda.zeebe.util.micrometer.StatefulMeterRegistry.StatefulGauge;
+import io.micrometer.core.instrument.Meter.Type;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -104,5 +109,62 @@ final class ZeebeRocksDbTest {
     // then
     final DbString dbString = columnFamily.get(key);
     assertThat(dbString).hasToString("bar");
+  }
+
+  @Test
+  void shouldRemoveMetricsOnClose(final @TempDir Path tempDir) throws Exception {
+    // given
+    final var meterRegistry = new SimpleMeterRegistry();
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
+        DefaultZeebeDbFactory.getDefaultFactory(meterRegistry);
+    final StatefulGauge gauge;
+
+    // when
+    try (final ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(tempDir.toFile())) {
+      gauge = db.getMeterRegistry().newLongGauge(TestDoc.FOO);
+      gauge.state().set(1);
+    }
+
+    // then, the gauge is still accessible directly, but not registered to the underlying registries
+    assertThat(gauge).isNotNull();
+    assertThat(gauge.gauge().value()).isOne();
+    assertThat(meterRegistry.find(TestDoc.FOO.getName()).gauge()).isNull();
+  }
+
+  @Test
+  void shouldCloseRegistryOnClose(final @TempDir Path tempDir) throws Exception {
+    // given
+    final var meterRegistry = new SimpleMeterRegistry();
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
+        DefaultZeebeDbFactory.getDefaultFactory(meterRegistry);
+    final MeterRegistry dbRegistry;
+
+    // when
+    try (final ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(tempDir.toFile())) {
+      dbRegistry = db.getMeterRegistry();
+    }
+
+    // then
+    assertThat(dbRegistry).returns(true, MeterRegistry::isClosed);
+  }
+
+  @SuppressWarnings("NullableProblems")
+  private enum TestDoc implements ExtendedMeterDocumentation {
+    FOO {
+      @Override
+      public String getDescription() {
+        return "foo description";
+      }
+
+      @Override
+      public String getName() {
+        return "foo";
+      }
+
+      @Override
+      public Type getType() {
+        return Type.GAUGE;
+      }
+    }
   }
 }

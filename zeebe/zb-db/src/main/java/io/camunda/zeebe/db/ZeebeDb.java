@@ -8,6 +8,7 @@
 package io.camunda.zeebe.db;
 
 import io.camunda.zeebe.protocol.EnumValue;
+import io.camunda.zeebe.util.micrometer.StatefulMeterRegistry;
 import java.io.File;
 import java.util.Optional;
 
@@ -63,4 +64,6 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<? extends EnumValue> & En
    * @return {@code true} if the column is empty, otherwise {@code false}
    */
   boolean isEmpty(ColumnFamilyType column, TransactionContext context);
+
+  StatefulMeterRegistry getMeterRegistry();
 }
