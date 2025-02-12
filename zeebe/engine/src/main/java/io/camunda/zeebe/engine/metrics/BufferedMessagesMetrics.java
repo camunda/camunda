@@ -7,15 +7,20 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
-import io.camunda.zeebe.util.micrometer.StatefulMeterRegistry;
-import java.util.concurrent.atomic.AtomicLong;
+import static io.camunda.zeebe.engine.metrics.EngineMetricsDoc.BUFFERED_MESSAGES;
+
+import io.camunda.zeebe.util.micrometer.StatefulGauge;
+import io.micrometer.core.instrument.MeterRegistry;
 
 public class BufferedMessagesMetrics {
 
-  private final AtomicLong bufferedMessageCount;
+  private final StatefulGauge bufferedMessageCount;
 
-  public BufferedMessagesMetrics(final StatefulMeterRegistry meterRegistry) {
-    bufferedMessageCount = meterRegistry.newLongGauge(EngineMetricsDoc.BUFFERED_MESSAGES).state();
+  public BufferedMessagesMetrics(final MeterRegistry meterRegistry) {
+    bufferedMessageCount =
+        StatefulGauge.builder(BUFFERED_MESSAGES.getName())
+            .description(BUFFERED_MESSAGES.getDescription())
+            .register(meterRegistry);
   }
 
   /**
