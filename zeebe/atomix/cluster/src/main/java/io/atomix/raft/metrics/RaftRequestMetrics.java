@@ -21,8 +21,8 @@ import static io.atomix.raft.metrics.RaftRequestMetricsDoc.*;
 import io.camunda.zeebe.util.collection.Table;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RaftRequestMetrics extends RaftMetrics {
 
@@ -32,8 +32,8 @@ public class RaftRequestMetrics extends RaftMetrics {
 
   public RaftRequestMetrics(final String partitionName, final MeterRegistry registry) {
     super(partitionName);
-    raftMessagesReceived = new HashMap<>(32);
-    raftMessagesSend = Table.simple();
+    raftMessagesReceived = new ConcurrentHashMap<>(32);
+    raftMessagesSend = Table.concurrent();
     this.registry = registry;
   }
 
