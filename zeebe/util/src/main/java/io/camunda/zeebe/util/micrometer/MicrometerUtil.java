@@ -2,19 +2,24 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.camunda.zeebe.util.micrometer;
 
 import io.camunda.zeebe.util.CloseableSilently;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.Builder;
 import io.micrometer.core.instrument.Timer.Sample;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.time.Duration;
+import java.util.Collections;
+import java.time.temporal.TemporalUnit;
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
 
@@ -85,7 +90,6 @@ public final class MicrometerUtil {
       final LongConsumer setter, final TimeUnit unit, final Clock clock) {
     return new CloseableGaugeTimer(setter, unit, clock, clock.monotonicTime());
   }
-
   /**
    * Closes the registry after clearing it. In this way all metrics registered are removed.
    *
@@ -94,6 +98,48 @@ public final class MicrometerUtil {
   public static void closeRegistry(final MeterRegistry registry) {
     registry.clear();
     registry.close();
+  }
+  /**
+   * Returns a {@link CompositeMeterRegistry} using the same config as the given registry, which
+   * will forward all metrics to that registry. This means if the forwardee has some common tags,
+   * they will be applied to the metrics you create on the returned registry.
+   */
+  public static CompositeMeterRegistry wrap(final MeterRegistry registry) {
+    return new CompositeMeterRegistry(registry.config().clock(), Collections.singleton(registry));
+  }
+
+  /** Returns a timer builder pre-configured based on the given documentation. */
+  public static Timer.Builder timer(final ExtendedMeterDocumentation documentation) {
+    return Timer.builder(documentation.getName())
+        .description(documentation.getDescription())
+        .serviceLevelObjectives(documentation.getTimerSLOs());
+  }
+
+  /** Returns a timer builder pre-configured based on the given documentation. */
+  public static DistributionSummary.Builder summary(
+      final ExtendedMeterDocumentation documentation) {
+    return DistributionSummary.builder(documentation.getName())
+        .description(documentation.getDescription())
+        .serviceLevelObjectives(documentation.getDistributionSLOs());
+  }
+
+  public static Duration[] exponentialBucketDuration(
+      final long start, final long factor, final int count, final TemporalUnit unit) {
+    if (count < 1) {
+      throw new IllegalArgumentException("count must be greater than 0");
+    }
+    final var buckets = new ArrayList<Duration>(count);
+    var value = start;
+    for (int i = 0; i < count; i++) {
+      final var duration = Duration.of(value, unit);
+      buckets.add(duration);
+      if (Long.MAX_VALUE / factor < value) {
+        // stop here, we are already close to LONG.MAX_VALUE for unit
+        break;
+      }
+      value *= factor;
+    }
+    return buckets.toArray(Duration[]::new);
   }
 
   private record CloseableTimer(Timer timer, Timer.Sample sample) implements CloseableSilently {

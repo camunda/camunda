@@ -15,25 +15,23 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import java.util.EnumMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class ActorMetrics {
-  private static final Logger LOG = LoggerFactory.getLogger(ActorMetrics.class);
-
-  // Map subscriptionType -> Timer
-  private final Map<String, Timer> schedulingLatency = new ConcurrentHashMap<>();
-  // Lock to be held when modifying schedulingLatency
-  private final ReentrantLock schedulingLatencyLock = new ReentrantLock();
+  private final Map<SubscriptionType, Timer> schedulingLatency =
+      new EnumMap<>(SubscriptionType.class);
   private final MeterRegistry registry;
 
   public ActorMetrics(final MeterRegistry registry) {
     this.registry = registry;
+    if (isEnabled()) {
+      for (final SubscriptionType type : SubscriptionType.values()) {
+        schedulingLatency.put(type, createSchedulingTimer(type));
+      }
+    }
   }
 
   public static ActorMetrics disabled() {
@@ -46,7 +44,6 @@ public final class ActorMetrics {
       return new ActorMetricsScopedEnabled(
           registry,
           createExecutionTimer(actorName),
-          createSchedulingTimer(actorName),
           createJobQueueLength(actorName, jobQueueLength),
           jobQueueLength,
           createExecutionCount(actorName));
@@ -55,11 +52,18 @@ public final class ActorMetrics {
     }
   }
 
-  private Timer createSchedulingTimer(final String subscriptionType) {
+  public void observeJobSchedulingLatency(
+      final long waitTimeNs, final SubscriptionType subscriptionType) {
+    if (isEnabled()) {
+      schedulingLatency.get(subscriptionType).record(waitTimeNs, TimeUnit.NANOSECONDS);
+    }
+  }
+
+  private Timer createSchedulingTimer(final SubscriptionType subscriptionType) {
     return Timer.builder(SCHEDULING_LATENCY.getName())
         .description(SCHEDULING_LATENCY.getDescription())
-        .tags(ActorMetricsKeyName.SUBSCRIPTION_TYPE.asString(), subscriptionType)
-        // FIXME exponential buckets
+        .tags(ActorMetricsKeyName.SUBSCRIPTION_TYPE.asString(), subscriptionType.getName())
+        .serviceLevelObjectives(SCHEDULING_LATENCY.getTimerSLOs())
         .register(registry);
   }
 
@@ -67,9 +71,7 @@ public final class ActorMetrics {
     return Timer.builder(EXECUTION_LATENCY.getName())
         .description(EXECUTION_LATENCY.getDescription())
         .tags(ActorMetricsKeyName.ACTOR_NAME.asString(), actorName)
-        // FIXME
         .serviceLevelObjectives(EXECUTION_LATENCY.getTimerSLOs())
-        // exponential buckets
         .register(registry);
   }
 
@@ -87,40 +89,6 @@ public final class ActorMetrics {
         .register(registry);
   }
 
-  public void observeJobSchedulingLatency(final long waitTimeNs, final String subscriptionType) {
-    if (isEnabled()) {
-      final var timer = getSchedulingLatency(subscriptionType);
-      if (timer != null) {
-        timer.record(waitTimeNs, TimeUnit.NANOSECONDS);
-      }
-    }
-  }
-
-  private Timer getSchedulingLatency(final String subscriptionType) {
-    var timer = schedulingLatency.get(subscriptionType);
-    if (timer == null) {
-      try {
-        final var acquired = schedulingLatencyLock.tryLock(100, TimeUnit.MILLISECONDS);
-        if (!acquired) {
-          LOG.warn(
-              "Unable to acquire log to register scheduling latency within 100 milliseconds for subscriptionType {}",
-              subscriptionType);
-          return null;
-        }
-        // check if it's not already registered while we were taking the lock
-        if (!schedulingLatency.containsKey(subscriptionType)) {
-          timer = createSchedulingTimer(subscriptionType);
-          schedulingLatency.put(subscriptionType, timer);
-        }
-      } catch (final InterruptedException ex) {
-        LOG.warn("Unable to acquire log to register scheduling latency, interrupted", ex);
-      } finally {
-        schedulingLatencyLock.unlock();
-      }
-    }
-    return timer;
-  }
-
   public boolean isEnabled() {
     return registry != null;
   }
@@ -128,7 +96,6 @@ public final class ActorMetrics {
   public record ActorMetricsScopedEnabled(
       MeterRegistry registry,
       Timer executionLatency,
-      Timer schedulingLatency,
       Gauge jobQueueLengthGauge,
       AtomicLong jobQueueLength,
       Counter executionCount)
@@ -138,7 +105,6 @@ public final class ActorMetrics {
     public void close() {
       jobQueueLength.set(0);
       registry.remove(executionLatency);
-      registry.remove(schedulingLatency);
       registry.remove(jobQueueLengthGauge);
       registry.remove(executionCount);
     }
@@ -186,6 +152,22 @@ public final class ActorMetrics {
 
     static ActorMetricsScoped noop() {
       return NOOP;
+    }
+  }
+
+  public enum SubscriptionType {
+    FUTURE("Future"),
+    TIMER("Timer"),
+    NONE("None");
+
+    private final String name;
+
+    SubscriptionType(final String name) {
+      this.name = name;
+    }
+
+    public String getName() {
+      return name;
     }
   }
 }
