@@ -9,8 +9,8 @@ package io.camunda.zeebe.dynamic.config;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers;
-import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
-import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics.OperationObserver;
+import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
+import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics.OperationObserver;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
@@ -65,13 +65,13 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private boolean shouldRetry = false;
   private final ExponentialBackoffRetryDelay backoffRetry;
   private boolean initialized = false;
-  private final TopologyMetrics topologyMetrics;
+  private final TopologyManagerMetrics topologyMetrics;
 
   ClusterConfigurationManagerImpl(
       final ConcurrencyControl executor,
       final MemberId localMemberId,
       final PersistedClusterConfiguration persistedClusterConfiguration,
-      final TopologyMetrics topologyMetrics) {
+      final TopologyManagerMetrics topologyMetrics) {
     this(
         executor,
         localMemberId,
@@ -86,7 +86,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
       final ConcurrencyControl executor,
       final MemberId localMemberId,
       final PersistedClusterConfiguration persistedClusterConfiguration,
-      final TopologyMetrics topologyMetrics,
+      final TopologyManagerMetrics topologyMetrics,
       final Duration minRetryDelay,
       final Duration maxRetryDelay) {
     this.executor = executor;

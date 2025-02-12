@@ -25,6 +25,7 @@ import io.camunda.zeebe.dynamic.config.changes.NoopClusterMembershipChangeExecut
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiper;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
+import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -68,6 +69,7 @@ public final class ClusterConfigurationManagerService
       final MeterRegistry meterRegistry) {
     this.memberShipService = memberShipService;
     topologyMetrics = new TopologyMetrics(meterRegistry);
+    topologyManagerMetrics = new TopologyManagerMetrics(meterRegistry);
     try {
       FileUtil.ensureDirectoryExists(dataRootDirectory);
     } catch (final IOException e) {
@@ -82,7 +84,7 @@ public final class ClusterConfigurationManagerService
     managerActor = new Actor() {};
     clusterConfigurationManager =
         new ClusterConfigurationManagerImpl(
-            managerActor, localMemberId, persistedClusterConfiguration, topologyMetrics);
+            managerActor, localMemberId, persistedClusterConfiguration, topologyManagerMetrics);
     clusterConfigurationGossiper =
         new ClusterConfigurationGossiper(
             gossipActor,
