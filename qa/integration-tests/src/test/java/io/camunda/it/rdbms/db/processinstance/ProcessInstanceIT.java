@@ -36,7 +36,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class ProcessInstanceIT {
 
-  public static final Long PARTITION_ID = 0L;
+  public static final int PARTITION_ID = 0;
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
   @TestTemplate
@@ -304,15 +304,59 @@ public class ProcessInstanceIT {
                             p ->
                                 p.size(5)
                                     .searchAfter(
-                                        new Object[] {
-                                          instanceAfter.processDefinitionName(),
-                                          instanceAfter.processDefinitionVersion(),
-                                          instanceAfter.startDate(),
-                                          instanceAfter.processInstanceKey()
+                                        new Object[]{
+                                            instanceAfter.processDefinitionName(),
+                                            instanceAfter.processDefinitionVersion(),
+                                            instanceAfter.startDate(),
+                                            instanceAfter.processInstanceKey()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 15));
+  }
+
+  @TestTemplate
+  public void shouldCleanup(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+
+    final var cleanupDate = NOW.minusDays(1);
+
+    final var processDefinition =
+        ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriter, b -> b);
+    final var pi1 =
+        createAndSaveRandomProcessInstance(
+            rdbmsWriter, b -> b.processDefinitionKey(processDefinition.processDefinitionKey()));
+    final var pi2 =
+        createAndSaveRandomProcessInstance(
+            rdbmsWriter, b -> b.processDefinitionKey(processDefinition.processDefinitionKey()));
+    final var pi3 =
+        createAndSaveRandomProcessInstance(
+            rdbmsWriter, b -> b.processDefinitionKey(processDefinition.processDefinitionKey()));
+
+    // set cleanup dates
+    rdbmsWriter.getProcessInstanceWriter().scheduleForHistoryCleanup(pi1.processInstanceKey(), NOW);
+    rdbmsWriter
+        .getProcessInstanceWriter()
+        .scheduleForHistoryCleanup(pi2.processInstanceKey(), NOW.minusDays(2));
+    rdbmsWriter.flush();
+
+    // cleanup
+    rdbmsWriter.getProcessInstanceWriter().cleanupHistory(PARTITION_ID, cleanupDate, 10);
+
+    final var searchResult =
+        processInstanceReader.search(
+            ProcessInstanceQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(processDefinition.processDefinitionKey()))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(20))));
+
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items().stream().map(ProcessInstanceEntity::processInstanceKey))
+        .containsExactlyInAnyOrder(pi1.processInstanceKey(), pi3.processInstanceKey());
   }
 }

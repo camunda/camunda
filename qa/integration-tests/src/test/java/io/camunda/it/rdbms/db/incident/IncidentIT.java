@@ -17,6 +17,7 @@ import io.camunda.db.rdbms.read.service.IncidentReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.IncidentDbModel;
 import io.camunda.it.rdbms.db.fixtures.IncidentFixtures;
+import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.IncidentEntity;
@@ -34,7 +35,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class IncidentIT {
 
-  public static final Long PARTITION_ID = 0L;
+  public static final int PARTITION_ID = 0;
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
   @TestTemplate
@@ -196,11 +197,11 @@ public class IncidentIT {
                             p ->
                                 p.size(5)
                                     .searchAfter(
-                                        new Object[] {
-                                          instanceAfter.state(),
-                                          instanceAfter.creationTime(),
-                                          instanceAfter.flowNodeId(),
-                                          instanceAfter.processInstanceKey()
+                                        new Object[]{
+                                            instanceAfter.state(),
+                                            instanceAfter.creationTime(),
+                                            instanceAfter.flowNodeId(),
+                                            instanceAfter.processInstanceKey()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);
@@ -218,5 +219,49 @@ public class IncidentIT {
     assertThat(instance.processDefinitionId()).isEqualTo(original.processDefinitionId());
     assertThat(instance.creationTime())
         .isCloseTo(original.creationDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+  }
+
+  @TestTemplate
+  public void shouldCleanup(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final IncidentReader reader = rdbmsService.getIncidentReader();
+
+    final var cleanupDate = NOW.minusDays(1);
+
+    final var definition =
+        ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriter, b -> b);
+    final var item1 =
+        createAndSaveIncident(
+            rdbmsWriter, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+    final var item2 =
+        createAndSaveIncident(
+            rdbmsWriter, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+    final var item3 =
+        createAndSaveIncident(
+            rdbmsWriter, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+
+    // set cleanup dates
+    rdbmsWriter.getIncidentWriter().scheduleForHistoryCleanup(item1.processInstanceKey(), NOW);
+    rdbmsWriter
+        .getIncidentWriter()
+        .scheduleForHistoryCleanup(item2.processInstanceKey(), NOW.minusDays(2));
+    rdbmsWriter.flush();
+
+    // cleanup
+    rdbmsWriter.getIncidentWriter().cleanupHistory(PARTITION_ID, cleanupDate, 10);
+
+    final var searchResult =
+        reader.search(
+            IncidentQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(definition.processDefinitionKey()))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(20))));
+
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items().stream().map(IncidentEntity::incidentKey))
+        .containsExactlyInAnyOrder(item1.incidentKey(), item3.incidentKey());
   }
 }

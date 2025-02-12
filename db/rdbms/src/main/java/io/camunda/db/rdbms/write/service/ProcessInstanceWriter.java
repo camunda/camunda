@@ -7,6 +7,9 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.sql.HistoryCleanupMapper;
+import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
+import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper.EndProcessInstanceDto;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
@@ -21,9 +24,12 @@ import java.util.function.Function;
 
 public class ProcessInstanceWriter {
 
+  private final ProcessInstanceMapper mapper;
   private final ExecutionQueue executionQueue;
 
-  public ProcessInstanceWriter(final ExecutionQueue executionQueue) {
+  public ProcessInstanceWriter(final ProcessInstanceMapper mapper,
+      final ExecutionQueue executionQueue) {
+    this.mapper = mapper;
     this.executionQueue = executionQueue;
   }
 
@@ -97,5 +103,33 @@ public class ProcessInstanceWriter {
     return executionQueue.tryMergeWithExistingQueueItem(
         new UpsertMerger<>(
             ContextType.PROCESS_INSTANCE, key, ProcessInstanceDbModel.class, mergeFunction));
+  }
+
+  public void scheduleForHistoryCleanup(
+      final Long processInstanceKey, final OffsetDateTime historyCleanupDate) {
+    final boolean wasMerged =
+        mergeToQueue(processInstanceKey, b -> b.historyCleanupDate(historyCleanupDate));
+
+    if (!wasMerged) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.PROCESS_INSTANCE,
+              WriteStatementType.UPDATE,
+              processInstanceKey,
+              "io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateHistoryCleanupDate",
+              new HistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
+                  .processInstanceKey(processInstanceKey)
+                  .historyCleanupDate(historyCleanupDate)
+                  .build()));
+    }
+  }
+
+  public void cleanupHistory(final int partitionId, final OffsetDateTime cleanupDate,
+      final int rowsToRemove) {
+    mapper.cleanupHistory(new CleanupHistoryDto.Builder()
+        .partitionId(partitionId)
+        .cleanupDate(cleanupDate)
+        .limit(rowsToRemove)
+        .build());
   }
 }

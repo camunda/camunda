@@ -20,6 +20,7 @@ public record QueueItem(
     return builderFunction
         .apply(
             new QueueItemBuilder()
+                .statementType(statementType)
                 .contextType(contextType)
                 .statementType(statementType)
                 .id(id)

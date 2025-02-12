@@ -7,19 +7,25 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.sql.HistoryCleanupMapper;
+import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
+import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.domain.UserTaskMigrationDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import java.time.OffsetDateTime;
 
 public class UserTaskWriter {
 
   private final ExecutionQueue executionQueue;
+  private final UserTaskMapper mapper;
 
-  public UserTaskWriter(final ExecutionQueue executionQueue) {
+  public UserTaskWriter(final ExecutionQueue executionQueue, final UserTaskMapper mapper) {
     this.executionQueue = executionQueue;
+    this.mapper = mapper;
   }
 
   public void create(final UserTaskDbModel userTaskDbModel) {
@@ -92,6 +98,20 @@ public class UserTaskWriter {
     }
   }
 
+  public void scheduleForHistoryCleanup(
+      final Long processInstanceKey, final OffsetDateTime historyCleanupDate) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.USER_TASK,
+            WriteStatementType.UPDATE,
+            processInstanceKey,
+            "io.camunda.db.rdbms.sql.UserTaskMapper.updateHistoryCleanupDate",
+            new HistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
+                .processInstanceKey(processInstanceKey)
+                .historyCleanupDate(historyCleanupDate)
+                .build()));
+  }
+
   public void migrateToProcess(final UserTaskMigrationDbModel model) {
     executionQueue.executeInQueue(
         new QueueItem(
@@ -100,5 +120,14 @@ public class UserTaskWriter {
             model.userTaskKey(),
             "io.camunda.db.rdbms.sql.UserTaskMapper.migrateToProcess",
             model));
+  }
+
+  public void cleanupHistory(final int partitionId, final OffsetDateTime cleanupDate,
+      final int rowsToRemove) {
+    mapper.cleanupHistory(new CleanupHistoryDto.Builder()
+        .partitionId(partitionId)
+        .cleanupDate(cleanupDate)
+        .limit(rowsToRemove)
+        .build());
   }
 }

@@ -8,6 +8,7 @@
 package io.camunda.it.rdbms.db.variables;
 
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.generateRandomString;
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
 import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.createAndSaveVariable;
 import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.prepareRandomVariablesAndReturnOne;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,6 +26,7 @@ import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.VariableSort;
+import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +34,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class VariableIT {
+
+  public static final int PARTITION_ID = 0;
+  public static final OffsetDateTime NOW = OffsetDateTime.now();
 
   @TestTemplate
   public void shouldSaveAndFindVariableByKey(final CamundaRdbmsTestApplication testApplication) {
@@ -213,16 +218,53 @@ public class VariableIT {
                             p ->
                                 p.size(5)
                                     .searchAfter(
-                                        new Object[] {
-                                          instanceAfter.scopeKey(),
-                                          instanceAfter.value(),
-                                          instanceAfter.processInstanceKey(),
-                                          instanceAfter.variableKey()
+                                        new Object[]{
+                                            instanceAfter.scopeKey(),
+                                            instanceAfter.value(),
+                                            instanceAfter.processInstanceKey(),
+                                            instanceAfter.variableKey()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 15));
+  }
+
+  @TestTemplate
+  public void shouldCleanup(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final VariableReader reader = rdbmsService.getVariableReader();
+
+    final var cleanupDate = NOW.minusDays(1);
+
+    final var tenantId = nextStringId();
+    final var item1 = createAndSaveVariable(rdbmsService, b -> b.tenantId(tenantId));
+    final var item2 = createAndSaveVariable(rdbmsService, b -> b.tenantId(tenantId));
+    final var item3 = createAndSaveVariable(rdbmsService, b -> b.tenantId(tenantId));
+
+    // set cleanup dates
+    rdbmsWriter.getVariableWriter().scheduleForHistoryCleanup(item1.processInstanceKey(), NOW);
+    rdbmsWriter
+        .getVariableWriter()
+        .scheduleForHistoryCleanup(item2.processInstanceKey(), NOW.minusDays(2));
+    rdbmsWriter.flush();
+
+    // cleanup
+    rdbmsWriter.getVariableWriter().cleanupHistory(PARTITION_ID, cleanupDate, 10);
+
+    final var searchResult =
+        reader.search(
+            VariableQuery.of(
+                b ->
+                    b.filter(f -> f.tenantIds(tenantId))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(20))));
+
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items().stream().map(VariableEntity::variableKey))
+        .containsExactlyInAnyOrder(item1.variableKey(), item3.variableKey());
   }
 
   private void assertVariableDbModelEqualToEntity(

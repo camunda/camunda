@@ -17,8 +17,10 @@ import io.camunda.db.rdbms.read.service.DecisionInstanceReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.DecisionDefinitionFixtures;
 import io.camunda.it.rdbms.db.fixtures.DecisionInstanceFixtures;
+import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.sort.DecisionInstanceSort;
@@ -34,7 +36,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class DecisionInstanceIT {
 
-  public static final Long PARTITION_ID = 0L;
+  public static final int PARTITION_ID = 0;
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
   @TestTemplate
@@ -194,15 +196,61 @@ public class DecisionInstanceIT {
                             p ->
                                 p.size(5)
                                     .searchAfter(
-                                        new Object[] {
-                                          instanceAfter.decisionDefinitionName(),
-                                          instanceAfter.decisionDefinitionVersion(),
-                                          instanceAfter.evaluationDate(),
-                                          instanceAfter.decisionInstanceId()
+                                        new Object[]{
+                                            instanceAfter.decisionDefinitionName(),
+                                            instanceAfter.decisionDefinitionVersion(),
+                                            instanceAfter.evaluationDate(),
+                                            instanceAfter.decisionInstanceId()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 15));
+  }
+
+  @TestTemplate
+  public void shouldCleanup(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final DecisionInstanceReader reader = rdbmsService.getDecisionInstanceReader();
+
+    final var cleanupDate = NOW.minusDays(1);
+
+    final var definition =
+        ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriter, b -> b);
+    final var item1 =
+        createAndSaveRandomDecisionInstance(
+            rdbmsWriter, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+    final var item2 =
+        createAndSaveRandomDecisionInstance(
+            rdbmsWriter, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+    final var item3 =
+        createAndSaveRandomDecisionInstance(
+            rdbmsWriter, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+
+    // set cleanup dates
+    rdbmsWriter
+        .getDecisionInstanceWriter()
+        .scheduleForHistoryCleanup(item1.processInstanceKey(), NOW);
+    rdbmsWriter
+        .getDecisionInstanceWriter()
+        .scheduleForHistoryCleanup(item2.processInstanceKey(), NOW.minusDays(2));
+    rdbmsWriter.flush();
+
+    // cleanup
+    rdbmsWriter.getDecisionInstanceWriter().cleanupHistory(PARTITION_ID, cleanupDate, 10);
+
+    final var searchResult =
+        reader.search(
+            DecisionInstanceQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(definition.processDefinitionKey()))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(20))));
+
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items().stream().map(DecisionInstanceEntity::decisionInstanceKey))
+        .containsExactlyInAnyOrder(item1.decisionInstanceKey(), item3.decisionInstanceKey());
   }
 }

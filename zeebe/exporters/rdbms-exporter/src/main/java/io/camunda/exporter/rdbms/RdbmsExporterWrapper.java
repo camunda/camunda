@@ -135,7 +135,8 @@ public class RdbmsExporterWrapper implements Exporter {
         new FlowNodeInstanceIncidentExportHandler(rdbmsWriter.getFlowNodeInstanceWriter()));
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
-        new ProcessInstanceExportHandler(rdbmsWriter.getProcessInstanceWriter()));
+        new ProcessInstanceExportHandler(
+            rdbmsWriter.getProcessInstanceWriter(), rdbmsWriter.getHistoryCleanupService()));
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
         new FlowNodeExportHandler(rdbmsWriter.getFlowNodeInstanceWriter()));
