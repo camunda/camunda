@@ -57,7 +57,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
       final TaskScheduler taskScheduler,
       final ActorClock clock,
       final ActorTimerQueue timerQueue,
-      final boolean metricsEnabled) {
+      final ActorMetrics actorMetrics) {
     this(
         name,
         id,
@@ -65,7 +65,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
         taskScheduler,
         clock,
         timerQueue,
-        metricsEnabled,
+        actorMetrics,
         ActorSchedulerBuilder.defaultIdleStrategySupplier());
   }
 
@@ -76,8 +76,9 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
       final TaskScheduler taskScheduler,
       final ActorClock clock,
       final ActorTimerQueue timerQueue,
-      final boolean metricsEnabled,
+      final ActorMetrics actorMetrics,
       final IdleStrategy idleStrategy) {
+    this.actorMetrics = actorMetrics;
     setName(name);
     state = ActorThreadState.NEW;
     threadId = id;
@@ -85,12 +86,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     timerJobQueue = timerQueue != null ? timerQueue : new ActorTimerQueue(this.clock);
     actorThreadGroup = threadGroup;
     this.taskScheduler = taskScheduler;
-    actorMetrics = new ActorMetrics(metricsEnabled);
     this.idleStrategy = new ActorTaskRunnerIdleStrategy(idleStrategy);
-  }
-
-  ActorMetrics getActorMetrics() {
-    return actorMetrics;
   }
 
   private void doWork() {
@@ -103,13 +99,14 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     currentTask = taskScheduler.getNextTask();
 
     if (currentTask != null) {
-      final var actorName = currentTask.actor.getName();
-      try (final var timer = actorMetrics.startExecutionTimer(actorName)) {
+      final var metrics = currentTask.getActorMetrics();
+      try (final var timer = metrics.startExecutionTimer()) {
         executeCurrentTask();
-      }
-      if (actorMetrics.isEnabled()) {
-        actorMetrics.updateJobQueueLength(actorName, currentTask.estimateQueueLength());
-        actorMetrics.countExecution(actorName);
+      } finally {
+        if (metrics.isEnabled()) {
+          metrics.updateJobQueueLength(currentTask.estimateQueueLength());
+          metrics.countExecution();
+        }
       }
     } else {
       idleStrategy.onIdle();
@@ -268,6 +265,10 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   @Override
   public void accept(final Runnable t) {
     t.run();
+  }
+
+  public ActorMetrics getActorMetrics() {
+    return actorMetrics;
   }
 
   public enum ActorThreadState {

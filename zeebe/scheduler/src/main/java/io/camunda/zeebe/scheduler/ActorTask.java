@@ -9,6 +9,7 @@ package io.camunda.zeebe.scheduler;
 
 import static io.camunda.zeebe.scheduler.ActorThread.ensureCalledFromActorThread;
 
+import io.camunda.zeebe.scheduler.ActorMetrics.ActorMetricsScoped;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Loggers;
@@ -58,6 +59,8 @@ public class ActorTask {
    * submitted from a job within the same actor while the task is in RUNNING state.
    */
   private volatile Queue<ActorJob> submittedJobs = new ClosedQueue();
+
+  private ActorMetricsScoped metrics = ActorMetricsScoped.NOOP;
 
   public ActorTask(final Actor actor) {
     this.actor = actor;
@@ -257,6 +260,7 @@ public class ActorTask {
       // cancel and discard jobs
       failJob(j);
     }
+    metrics.close();
   }
 
   private void failJob(final ActorJob job) {
@@ -532,6 +536,14 @@ public class ActorTask {
     }
     // In theory this could overflow. In practice, both queue sizes are very low.
     return fastLaneJobs.size() + submittedJobs.size();
+  }
+
+  ActorMetricsScoped getActorMetrics() {
+    return metrics;
+  }
+
+  void setActorMetrics(final ActorMetricsScoped scoped) {
+    metrics = scoped;
   }
 
   /** Describes an actor's scheduling state */

@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.shared.ActorClockConfiguration;
 import io.camunda.zeebe.shared.IdleStrategyConfig.IdleStrategySupplier;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,12 +22,16 @@ import org.springframework.context.annotation.Configuration;
 public final class ActorSchedulerConfiguration {
   private final BrokerCfg brokerCfg;
   private final ActorClockConfiguration actorClockConfiguration;
+  private final MeterRegistry meterRegistry;
 
   @Autowired
   public ActorSchedulerConfiguration(
-      final BrokerConfiguration config, final ActorClockConfiguration actorClockConfiguration) {
+      final BrokerConfiguration config,
+      final ActorClockConfiguration actorClockConfiguration,
+      final MeterRegistry meterRegistry) {
     brokerCfg = config.config();
     this.actorClockConfiguration = actorClockConfiguration;
+    this.meterRegistry = meterRegistry;
   }
 
   @Bean(destroyMethod = "close")
@@ -42,7 +47,7 @@ public final class ActorSchedulerConfiguration {
             .setActorClock(actorClockConfiguration.getClock().orElse(null))
             .setCpuBoundActorThreadCount(cpuThreads)
             .setIoBoundActorThreadCount(ioThreads)
-            .setMetricsEnabled(metricsEnabled)
+            .setMeterRegistry(metricsEnabled ? meterRegistry : null)
             .setSchedulerName(String.format("Broker-%d", brokerCfg.getCluster().getNodeId()))
             .setIdleStrategySupplier(idleStrategySupplier)
             .build();
