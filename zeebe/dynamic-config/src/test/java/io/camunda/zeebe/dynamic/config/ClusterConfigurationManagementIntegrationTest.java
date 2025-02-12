@@ -28,6 +28,8 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -39,6 +41,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -53,6 +56,7 @@ class ClusterConfigurationManagementIntegrationTest {
       List.of(createNode("0"), createNode("1"), createNode("2"));
   private final Map<Integer, TestNode> nodes = new HashMap<>();
   private Set<MemberId> clusterMemberIds;
+  @AutoClose private MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @BeforeEach
   void setup() {
@@ -235,7 +239,7 @@ class ClusterConfigurationManagementIntegrationTest {
   }
 
   private AtomixCluster createClusterNode(final Node localNode, final Collection<Node> nodes) {
-    return AtomixCluster.builder()
+    return AtomixCluster.builder(meterRegistry)
         .withAddress(localNode.address())
         .withMemberId(localNode.id().id())
         .withMembershipProvider(new BootstrapDiscoveryProvider(nodes))
@@ -253,7 +257,8 @@ class ClusterConfigurationManagementIntegrationTest {
             new ClusterConfigurationGossiperConfig(
                 Duration.ofSeconds(1), Duration.ofMillis(100), 2),
             true,
-            new NoopClusterChangeExecutor());
+            new NoopClusterChangeExecutor(),
+            meterRegistry);
     return new TestNode(cluster, service);
   }
 

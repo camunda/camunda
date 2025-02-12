@@ -27,6 +27,8 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiper;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
+import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
+import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.Actor;
@@ -35,6 +37,7 @@ import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -57,6 +60,8 @@ public final class ClusterConfigurationManagerService
   private final Actor gossipActor;
   private final Actor managerActor;
   private final ClusterChangeExecutor clusterChangeExecutor;
+  private final TopologyMetrics topologyMetrics;
+  private final TopologyManagerMetrics topologyManagerMetrics;
 
   public ClusterConfigurationManagerService(
       final Path dataRootDirectory,
@@ -64,9 +69,12 @@ public final class ClusterConfigurationManagerService
       final ClusterMembershipService memberShipService,
       final ClusterConfigurationGossiperConfig config,
       final boolean enablePartitionScaling,
-      final ClusterChangeExecutor clusterChangeExecutor) {
+      final ClusterChangeExecutor clusterChangeExecutor,
+      final MeterRegistry meterRegistry) {
     this.clusterChangeExecutor = clusterChangeExecutor;
     this.memberShipService = memberShipService;
+    topologyMetrics = new TopologyMetrics(meterRegistry);
+    topologyManagerMetrics = new TopologyManagerMetrics(meterRegistry);
     try {
       FileUtil.ensureDirectoryExists(dataRootDirectory);
     } catch (final IOException e) {
@@ -81,7 +89,7 @@ public final class ClusterConfigurationManagerService
     managerActor = new Actor() {};
     clusterConfigurationManager =
         new ClusterConfigurationManagerImpl(
-            managerActor, localMemberId, persistedClusterConfiguration);
+            managerActor, localMemberId, persistedClusterConfiguration, topologyManagerMetrics);
     clusterConfigurationGossiper =
         new ClusterConfigurationGossiper(
             gossipActor,
@@ -89,7 +97,8 @@ public final class ClusterConfigurationManagerService
             memberShipService,
             new ProtoBufSerializer(),
             config,
-            clusterConfigurationManager::onGossipReceived);
+            clusterConfigurationManager::onGossipReceived,
+            topologyMetrics);
     isCoordinator = localMemberId.id().equals(COORDINATOR_ID);
     configurationChangeCoordinator =
         new ConfigurationChangeCoordinatorImpl(

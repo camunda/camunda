@@ -72,7 +72,6 @@ jobs:
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ needs.benchmark-data.outputs.full-ref }}
-      measure: false
       operate-tag: ${{ needs.benchmark-data.outputs.operate }}
       benchmark-load: >
         -f https://raw.githubusercontent.com/camunda/zeebe-benchmark-helm/refs/heads/main/charts/zeebe-benchmark/values-realistic-benchmark.yaml
@@ -90,7 +89,6 @@ jobs:
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ needs.benchmark-data.outputs.full-ref }}
-      measure: false
       benchmark-load: >
         --set starter.rate=1
         --set workers.benchmark.replicas=1

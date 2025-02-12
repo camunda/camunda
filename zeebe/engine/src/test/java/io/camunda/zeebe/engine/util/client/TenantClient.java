@@ -71,14 +71,14 @@ public class TenantClient {
    * uses the internal command writer to submit the remove entity commands.
    *
    * <p>This operation is used when a specific entity (e.g., a user) needs to be disassociated from
-   * a tenant. The entity type and entity key must be provided through the {@link
+   * a tenant. The entity type and entity id must be provided through the {@link
    * TenantRemoveEntityClient}.
    *
-   * @param tenantKey the key of the tenant from which the entity will be removed
+   * @param tenantId the id of the tenant from which the entity will be removed
    * @return a new instance of {@link TenantRemoveEntityClient}
    */
-  public TenantRemoveEntityClient removeEntity(final long tenantKey) {
-    return new TenantRemoveEntityClient(writer, tenantKey);
+  public TenantRemoveEntityClient removeEntity(final String tenantId) {
+    return new TenantRemoveEntityClient(writer, tenantId);
   }
 
   /**
@@ -333,14 +333,14 @@ public class TenantClient {
     private final TenantRecord tenantRecord;
     private Function<Long, Record<TenantRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public TenantRemoveEntityClient(final CommandWriter writer, final long tenantKey) {
+    public TenantRemoveEntityClient(final CommandWriter writer, final String tenantId) {
       this.writer = writer;
       tenantRecord = new TenantRecord();
-      tenantRecord.setTenantKey(tenantKey);
+      tenantRecord.setTenantId(tenantId);
     }
 
-    public TenantRemoveEntityClient withEntityKey(final long entityKey) {
-      tenantRecord.setEntityKey(entityKey);
+    public TenantRemoveEntityClient withEntityId(final String entityId) {
+      tenantRecord.setEntityId(entityId);
       return this;
     }
 

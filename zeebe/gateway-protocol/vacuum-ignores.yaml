@@ -1,5 +1,1 @@
 # https://quobix.com/vacuum/ignoring/
-no-ambiguous-paths:
-  - $.paths['/tenants/{tenantKey}/users/{userKey}'] # Temporarily ambiguous until unassign is id-based too
-path-params:
-  - $.paths.['/tenants/{tenantKey}/users/{userKey}'] # Temporarily ambiguous until unassign is id-based too

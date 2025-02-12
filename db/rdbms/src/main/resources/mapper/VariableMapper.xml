@@ -146,4 +146,14 @@
           IS_PREVIEW     = #{isPreview}
       WHERE VAR_KEY = #{variableKey}
   </update>
+
+  <update
+    id="migrateToProcess"
+    statementType="PREPARED"
+    parameterType="java.util.Map"
+    flushCache="true">
+      UPDATE VARIABLE
+      SET PROCESS_DEFINITION_ID = #{processDefinitionId}
+      WHERE VAR_KEY = #{variableKey}
+  </update>
 </mapper>

@@ -10,6 +10,13 @@ package io.camunda.tasklist.schema.manager;
 import static io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor.formatIndexPrefix;
 import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.mapping.Property;
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import co.elastic.clients.json.jackson.JacksonJsonpGenerator;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
@@ -25,11 +32,17 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.client.indices.CreateIndexRequest;
@@ -68,6 +81,8 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   private static final String NUMBER_OF_REPLICAS = "index.number_of_replicas";
 
   @Autowired protected RetryElasticsearchClient retryElasticsearchClient;
+
+  @Autowired protected ElasticsearchClient tasklistElasticsearchClient;
 
   @Autowired protected TasklistProperties tasklistProperties;
 
@@ -115,8 +130,48 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   }
 
   @Override
-  public Map<String, IndexMapping> getIndexMappings(final String indexName) {
-    return retryElasticsearchClient.getIndexMappings(indexName);
+  public Map<String, IndexMapping> getIndexMappings(final String namePattern) throws IOException {
+    final Map<String, IndexMapping> mappingsMap = new HashMap<>();
+    final Map<String, TypeMapping> mappings =
+        tasklistElasticsearchClient
+            .indices()
+            .getMapping(req -> req.index(namePattern).ignoreUnavailable(true))
+            .result()
+            .entrySet()
+            .stream()
+            .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().mappings()));
+
+    for (final Map.Entry<String, TypeMapping> indexEntry : mappings.entrySet()) {
+
+      final String indexName = indexEntry.getKey();
+      final Map<String, Property> indexMappingData = indexEntry.getValue().properties();
+      final String dynamic =
+          indexEntry.getValue().dynamic() == null
+              ? "strict"
+              : indexEntry.getValue().dynamic().toString().toLowerCase();
+
+      final Set<IndexMapping.IndexMappingProperty> propertiesSet = new HashSet<>();
+
+      for (final Map.Entry<String, Property> propertyEntry : indexMappingData.entrySet()) {
+        final IndexMapping.IndexMappingProperty property =
+            new IndexMapping.IndexMappingProperty()
+                .setName(propertyEntry.getKey())
+                .setTypeDefinition(propertyToMap(propertyEntry.getValue()));
+        propertiesSet.add(property);
+      }
+
+      // Create IndexMapping object
+      final IndexMapping indexMapping =
+          new IndexMapping()
+              .setIndexName(indexName)
+              .setDynamic(dynamic)
+              .setProperties(propertiesSet);
+
+      // Add to mappings map
+      mappingsMap.put(indexName, indexMapping);
+    }
+
+    return mappingsMap;
   }
 
   @Override
@@ -329,6 +384,36 @@ public class ElasticsearchSchemaManager implements SchemaManager {
       throw new TasklistRuntimeException(
           String.format("Error in reading mappings for %s ", templateDescriptor.getTemplateName()),
           e);
+    }
+  }
+
+  // Ported from CamundaExporter
+  private Map<String, Object> serialize(
+      final Function<JsonGenerator, jakarta.json.stream.JsonGenerator> jacksonGenerator,
+      final Consumer<jakarta.json.stream.JsonGenerator> serialize)
+      throws IOException {
+    try (final var out = new StringWriter();
+        final var jsonGenerator = new JsonFactory().createGenerator(out);
+        final jakarta.json.stream.JsonGenerator jacksonJsonpGenerator =
+            jacksonGenerator.apply(jsonGenerator)) {
+      serialize.accept(jacksonJsonpGenerator);
+      jacksonJsonpGenerator.flush();
+
+      return objectMapper.readValue(
+          out.toString(), new TypeReference<TreeMap<String, Object>>() {});
+    }
+  }
+
+  // Ported from CamundaExporter
+  private Map<String, Object> propertyToMap(final Property property) {
+    try {
+      return serialize(
+          (JacksonJsonpGenerator::new),
+          (jacksonJsonpGenerator) ->
+              property.serialize(jacksonJsonpGenerator, new JacksonJsonpMapper(objectMapper)));
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(
+          String.format("Failed to serialize property [%s]", property.toString()), e);
     }
   }
 }

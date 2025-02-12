@@ -39,9 +39,11 @@ public class IncidentExportHandler implements RdbmsExportHandler<IncidentRecordV
     final var value = record.getValue();
 
     if (record.getIntent().equals(IncidentIntent.CREATED)) {
-      incidentWriter.create(mapCreate(record));
+      incidentWriter.create(map(record));
     } else if (record.getIntent().equals(IncidentIntent.RESOLVED)) {
       incidentWriter.resolve(record.getKey());
+    } else if (record.getIntent().equals(IncidentIntent.MIGRATED)) {
+      incidentWriter.update(map(record));
     } else {
       LOGGER.warn(
           "Unexpected incident intent {} for record {}/{}",
@@ -51,7 +53,7 @@ public class IncidentExportHandler implements RdbmsExportHandler<IncidentRecordV
     }
   }
 
-  private IncidentDbModel mapCreate(final Record<IncidentRecordValue> record) {
+  private IncidentDbModel map(final Record<IncidentRecordValue> record) {
     final var value = record.getValue();
     return new IncidentDbModel.Builder()
         .incidentKey(record.getKey())

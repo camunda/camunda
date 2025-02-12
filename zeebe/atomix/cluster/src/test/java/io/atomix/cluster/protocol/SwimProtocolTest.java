@@ -40,6 +40,8 @@ import io.atomix.cluster.messaging.impl.TestMessagingServiceFactory;
 import io.atomix.cluster.messaging.impl.TestUnicastServiceFactory;
 import io.atomix.utils.Version;
 import io.atomix.utils.net.Address;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
@@ -54,6 +56,7 @@ import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.jupiter.api.AutoClose;
 
 /** SWIM membership protocol test. */
 public class SwimProtocolTest extends ConcurrentTestCase {
@@ -74,6 +77,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   private Collection<Member> members;
   private Collection<Node> nodes;
   private Map<MemberId, TestGroupMembershipEventListener> listeners = Maps.newConcurrentMap();
+  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   private Member member(final String id, final String host, final int port, final Version version) {
     return new SwimMembershipProtocol.SwimMember(
@@ -357,7 +361,8 @@ public class SwimProtocolTest extends ConcurrentTestCase {
                     .setProbeTimeout(PROBE_TIMEOUT)
                     .setFailureTimeout(FAILURE_INTERVAL)
                     .setSyncInterval(SYNC_INTERVAL)),
-            "testingActorSchedulerName");
+            "testingActorSchedulerName",
+            meterRegistry);
     final TestGroupMembershipEventListener listener = new TestGroupMembershipEventListener();
     listeners.put(member.id(), listener);
     protocol.addListener(listener);

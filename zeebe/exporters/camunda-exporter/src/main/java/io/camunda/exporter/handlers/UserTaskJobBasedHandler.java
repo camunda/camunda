@@ -246,6 +246,7 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
   }
 
   private boolean refersToPreviousVersionRecord(final long key) {
-    return key < exporterMetadata.getFirstUserTaskKey(TaskImplementation.JOB_WORKER);
+    return exporterMetadata.getFirstUserTaskKey(TaskImplementation.JOB_WORKER) == -1
+        || key < exporterMetadata.getFirstUserTaskKey(TaskImplementation.JOB_WORKER);
   }
 }
