@@ -15,7 +15,7 @@ import org.junit.Test;
 public class MicrometerUtilTest {
   @Test
   public void shouldThrowExceptionWhenBucketsExceedLongMax() {
-    final var buckets = MicrometerUtil.exponentialBucketDuration(7, 6, 1023, ChronoUnit.MICROS);
+    final var buckets = MicrometerUtil.exponentialBucketDuration(7, 6, 1023, ChronoUnit.MILLIS);
     assertThat(buckets).hasSizeLessThan(1023);
     assertThat(buckets).allMatch(d -> d.toMillis() > 0L);
   }
