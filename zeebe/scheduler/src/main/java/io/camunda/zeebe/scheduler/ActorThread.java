@@ -99,7 +99,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     currentTask = taskScheduler.getNextTask();
 
     if (currentTask != null) {
-      final var metrics = currentTask.actor.metrics;
+      final var metrics = currentTask.getActorMetrics();
       try (final var timer = metrics != null ? metrics.startExecutionTimer() : null) {
         executeCurrentTask();
       } finally {

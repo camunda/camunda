@@ -122,10 +122,7 @@ public enum ActorMetricsDoc implements ExtendedMeterDocumentation {
   };
 
   public enum ActorMetricsKeyName implements KeyName {
-    /**
-     * The type of the subscription, see {@link
-     * io.camunda.zeebe.scheduler.ActorMetrics.SubscriptionType}
-     */
+    /** The type of the subscription, see {@link ActorMetrics.SubscriptionType} */
     SUBSCRIPTION_TYPE {
       @Override
       public String asString() {
