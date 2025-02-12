@@ -48,7 +48,7 @@ public class IndexDescriptorTest {
 
   @ParameterizedTest
   @MethodSource("indicesAndTemplates")
-  void testIndexAndTemplateersions(final IndexDescriptor index) {
+  void testIndexAndTemplateVersions(final IndexDescriptor index) {
     assertNotNull(index);
     assertThat(index.getVersion())
         .as("Testing version for %s", index.getFullQualifiedName())
