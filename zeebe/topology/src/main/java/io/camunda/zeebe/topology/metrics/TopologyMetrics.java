@@ -13,8 +13,6 @@ import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.CompletedChange;
-import io.camunda.zeebe.util.CloseableSilently;
-import io.camunda.zeebe.util.collection.Table;
 import io.camunda.zeebe.util.micrometer.EnumMeter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;

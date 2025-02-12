@@ -19,7 +19,6 @@ import io.camunda.zeebe.topology.ClusterTopologyManager.InconsistentTopologyList
 import io.camunda.zeebe.topology.changes.NoopTopologyChangeAppliers;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliers;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.MemberOperationApplier;
-import io.camunda.zeebe.topology.metrics.TopologyMetrics;
 import io.camunda.zeebe.topology.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.topology.serializer.ClusterTopologySerializer;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
