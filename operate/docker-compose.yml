@@ -8,7 +8,6 @@ services:
       - bootstrap.memory_lock=true
       - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
-      - path.repo=/usr/local/els-snapshots
       - action.destructive_requires_name=false
     ulimits:
       memlock:
@@ -18,8 +17,6 @@ services:
       - 9200:9200
       - 9300:9300
     restart: always
-    volumes:
-      - ./els-snapshots:/usr/local/els-snapshots
 
   kibana:
     image: docker.elastic.co/kibana/kibana:8.17.0

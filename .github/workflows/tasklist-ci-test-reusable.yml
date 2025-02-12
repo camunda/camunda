@@ -106,7 +106,7 @@ jobs:
             -Dcamunda.tasklist.database=${{ matrix.database }} \
             -Dcamunda.database.url=${{ matrix.url }} \
             -Dzeebe.currentVersion.docker.tag=${{ env.ZEEBE_TEST_DOCKER_IMAGE_TAG }} \
-            -Dzeebe.currentVersion.docker.repo=${{ env.ZEEBE_TEST_DOCKER_IMAGE }}
+            -Dzeebe.currentVersion.docker.repo=MOEP
 
       # Sanitize the branch name to replace non alphanumeric characters with `-`
       - id: sanitize
