@@ -425,4 +425,212 @@ public class MigrateProcessInstanceTest {
         .describedAs("Expect that the target process is activated for the message with TTL")
         .isTrue();
   }
+
+  @Test
+  public void shouldMigrateWhenSourceProcessInstanceIsCreatedWithoutCorrelationKey() {
+    // given
+    final String processId1 = helper.getBpmnProcessId();
+    final String processId2 = helper.getBpmnProcessId() + "2";
+    final String correlationKey = helper.getCorrelationValue();
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId1)
+                    .startEvent("msg_start")
+                    .message("msg1")
+                    .serviceTask("task1", t -> t.zeebeJobType("task"))
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId2)
+                    .startEvent("msg_start")
+                    .message("msg2")
+                    .serviceTask("task2", t -> t.zeebeJobType("task"))
+                    .done())
+            .deploy();
+    ENGINE.message().withName("msg1").withCorrelationKey("").publish();
+    ENGINE.message().withName("msg2").withCorrelationKey(correlationKey).publish();
+    final var processInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.START_EVENT)
+            .withElementId("msg_start")
+            .withBpmnProcessId(processId1)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withElementType(BpmnElementType.START_EVENT)
+        .withElementId("msg_start")
+        .withBpmnProcessId(processId2)
+        .getFirst()
+        .getValue()
+        .getProcessInstanceKey();
+
+    final long targetProcessDefinitionKey =
+        MigrationTestUtil.extractProcessDefinitionKeyByProcessId(deployment, processId2);
+
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("task1", "task2")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition key changed")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that bpmn process id and element id changed")
+        .hasBpmnProcessId(processId2)
+        .hasElementId(processId2)
+        .describedAs("Expect that version number did not change")
+        .hasVersion(1);
+  }
+
+  @Test
+  public void shouldMigrateWhenTargetProcessInstanceIsCreatedWithoutCorrelationKey() {
+    // given
+    final String processId1 = helper.getBpmnProcessId();
+    final String processId2 = helper.getBpmnProcessId() + "2";
+    final String correlationKey = helper.getCorrelationValue();
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId1)
+                    .startEvent("msg_start")
+                    .message("msg1")
+                    .serviceTask("task1", t -> t.zeebeJobType("task"))
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId2)
+                    .startEvent("msg_start")
+                    .message("msg2")
+                    .serviceTask("task2", t -> t.zeebeJobType("task"))
+                    .done())
+            .deploy();
+    ENGINE.message().withName("msg1").withCorrelationKey(correlationKey).publish();
+    ENGINE.message().withName("msg2").withCorrelationKey("").publish();
+    final var processInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.START_EVENT)
+            .withElementId("msg_start")
+            .withBpmnProcessId(processId1)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withElementType(BpmnElementType.START_EVENT)
+        .withElementId("msg_start")
+        .withBpmnProcessId(processId2)
+        .getFirst()
+        .getValue()
+        .getProcessInstanceKey();
+
+    final long targetProcessDefinitionKey =
+        MigrationTestUtil.extractProcessDefinitionKeyByProcessId(deployment, processId2);
+
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("task1", "task2")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition key changed")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that bpmn process id and element id changed")
+        .hasBpmnProcessId(processId2)
+        .hasElementId(processId2)
+        .describedAs("Expect that version number did not change")
+        .hasVersion(1);
+  }
+
+  @Test
+  public void shouldMigrateWhenTargetProcessInstanceIsCreatedWithDifferentCorrelationKey() {
+    // given
+    final String processId1 = helper.getBpmnProcessId();
+    final String processId2 = helper.getBpmnProcessId() + "2";
+    final String correlationKey1 = helper.getCorrelationValue() + "1";
+    final String correlationKey2 = helper.getCorrelationValue() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId1)
+                    .startEvent("msg_start")
+                    .message("msg1")
+                    .serviceTask("task1", t -> t.zeebeJobType("task"))
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId2)
+                    .startEvent("msg_start")
+                    .message("msg2")
+                    .serviceTask("task2", t -> t.zeebeJobType("task"))
+                    .done())
+            .deploy();
+    ENGINE.message().withName("msg1").withCorrelationKey(correlationKey1).publish();
+    ENGINE.message().withName("msg2").withCorrelationKey(correlationKey2).publish();
+    final var processInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.START_EVENT)
+            .withElementId("msg_start")
+            .withBpmnProcessId(processId1)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withElementType(BpmnElementType.START_EVENT)
+        .withElementId("msg_start")
+        .withBpmnProcessId(processId2)
+        .getFirst()
+        .getValue()
+        .getProcessInstanceKey();
+
+    final long targetProcessDefinitionKey =
+        MigrationTestUtil.extractProcessDefinitionKeyByProcessId(deployment, processId2);
+
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("task1", "task2")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition key changed")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that bpmn process id and element id changed")
+        .hasBpmnProcessId(processId2)
+        .hasElementId(processId2)
+        .describedAs("Expect that version number did not change")
+        .hasVersion(1);
+  }
 }
