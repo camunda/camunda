@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import io.camunda.zeebe.el.Expression;
@@ -36,7 +37,6 @@ import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -56,6 +56,7 @@ public final class BpmnJobBehavior {
       LoggerFactory.getLogger(BpmnJobBehavior.class.getPackageName());
   private static final Set<State> CANCELABLE_STATES =
       EnumSet.of(State.ACTIVATABLE, State.ACTIVATED, State.FAILED, State.ERROR_THROWN);
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final JobRecord jobRecord = new JobRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);
   private final HeaderEncoder headerEncoder = new HeaderEncoder(LOGGER);
@@ -341,10 +342,11 @@ public final class BpmnJobBehavior {
     }
     if (linkedResources != null && !linkedResources.isEmpty()) {
       try {
-        final String linkedResourcesJson = new ObjectMapper().writeValueAsString(linkedResources);
+        final String linkedResourcesJson = OBJECT_MAPPER.writeValueAsString(linkedResources);
         headers.put(Protocol.LINKED_RESOURCES_HEADER_NAME, linkedResourcesJson);
-      } catch (final IOException e) {
-        throw new RuntimeException("Failed to convert linked resource headers to json object", e);
+      } catch (final JsonProcessingException e) {
+        throw new IllegalArgumentException(
+            "Failed to convert linked resource headers to json object", e);
       }
     }
     return headerEncoder.encode(headers);
