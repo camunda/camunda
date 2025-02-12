@@ -7,127 +7,72 @@
  */
 package io.camunda.zeebe.topology.metrics;
 
+import static io.camunda.zeebe.topology.metrics.TopologyMetricsDoc.*;
+
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.CompletedChange;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation;
-import io.prometheus.client.Counter;
-import io.prometheus.client.Enumeration;
-import io.prometheus.client.Gauge;
-import io.prometheus.client.Histogram;
-import io.prometheus.client.Histogram.Timer;
+import io.camunda.zeebe.util.micrometer.EnumMeter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class TopologyMetrics {
-  private static final String NAMESPACE = "zeebe";
-  private static final String LABEL_OPERATION = "operation";
-  private static final String LABEL_OUTCOME = "outcome";
 
-  private static final Gauge TOPOLOGY_VERSION =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .name("cluster_topology_version")
-          .help("The version of the cluster topology")
-          .register();
-  private static final Gauge CHANGE_ID =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .name("cluster_changes_id")
-          .help("The id of the cluster topology change plan")
-          .register();
-  private static final Enumeration CHANGE_STATUS =
-      Enumeration.build()
-          .namespace(NAMESPACE)
-          .name("cluster_changes_status")
-          .help("The state of the current cluster topology")
-          .states(ClusterChangePlan.Status.class)
-          .register();
-  private static final Gauge CHANGE_VERSION =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .name("cluster_changes_version")
-          .help("The version of the cluster topology change plan")
-          .register();
+  private final MeterRegistry registry;
+  private final AtomicLong topologyVersion;
+  private final AtomicLong changeId;
+  private final AtomicLong changeVersion;
+  private final AtomicLong pendingOperations;
+  private final AtomicLong completedOperations;
+  private final EnumMeter<Status> changeStatus;
 
-  private static final Gauge PENDING_OPERATIONS =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .name("cluster_changes_operations_pending")
-          .help("Number of pending changes in the current change plan")
-          .register();
-  private static final Gauge COMPLETED_OPERATIONS =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .name("cluster_changes_operations_completed")
-          .help("Number of completed changes in the current change plan")
-          .register();
-  private static final Histogram OPERATION_DURATION =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("cluster_changes_operation_duration")
-          .help("Duration it takes to apply an operation")
-          .labelNames(LABEL_OPERATION)
-          .buckets(0.1, 1, 2, 5, 10, 30, 60, 120, 180, 300, 600)
-          .register();
-  private static final Counter OPERATION_ATTEMPTS =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("cluster_changes_operation_attempts")
-          .help("Number of attempts per operation type")
-          .labelNames(LABEL_OPERATION, LABEL_OUTCOME)
-          .register();
+  public TopologyMetrics(final MeterRegistry registry) {
+    this.registry = registry;
+    topologyVersion = makeGauge(TOPOLOGY_VERSION);
+    changeId = makeGauge(CHANGE_ID);
+    changeStatus =
+        EnumMeter.register(
+            ClusterChangePlan.Status.class,
+            CHANGE_STATUS,
+            TopologyMetricsKeyName.CLUSTER_CHANGE_STATUS,
+            registry);
+    changeVersion = makeGauge(CHANGE_VERSION);
+    pendingOperations = makeGauge(PENDING_OPERATIONS);
+    completedOperations = makeGauge(COMPLETED_OPERATIONS);
+  }
 
-  public static void updateFromTopology(final ClusterTopology topology) {
-    TOPOLOGY_VERSION.set(topology.version());
-    CHANGE_STATUS.state(
+  private AtomicLong makeGauge(final TopologyMetricsDoc meter) {
+    final var value = new AtomicLong();
+    Gauge.builder(meter.getName(), value::get)
+        .description(meter.getDescription())
+        .register(registry);
+    return value;
+  }
+
+  public void updateFromTopology(final ClusterTopology topology) {
+    topologyVersion.set(topology.version());
+    changeStatus.state(
         topology
             .pendingChanges()
             .map(ClusterChangePlan::status)
             .or(() -> topology.lastChange().map(CompletedChange::status))
             .orElse(Status.COMPLETED));
-    CHANGE_ID.set(topology.pendingChanges().map(ClusterChangePlan::id).orElse(0L));
-    CHANGE_VERSION.set(topology.pendingChanges().map(ClusterChangePlan::version).orElse(0));
-    PENDING_OPERATIONS.set(
+    changeId.set(topology.pendingChanges().map(ClusterChangePlan::id).orElse(0L));
+    changeVersion.set(topology.pendingChanges().map(ClusterChangePlan::version).orElse(0));
+    pendingOperations.set(
         topology
             .pendingChanges()
             .map(ClusterChangePlan::pendingOperations)
             .map(List::size)
             .orElse(0));
-    COMPLETED_OPERATIONS.set(
+    completedOperations.set(
         topology
             .pendingChanges()
             .map(ClusterChangePlan::completedOperations)
             .map(List::size)
             .orElse(0));
-  }
-
-  public static OperationObserver observeOperation(final TopologyChangeOperation operation) {
-    return OperationObserver.startOperation(operation);
-  }
-
-  public static final class OperationObserver {
-    private final TopologyChangeOperation operation;
-    private final Timer timer;
-
-    private OperationObserver(final TopologyChangeOperation operation, final Timer timer) {
-      this.operation = operation;
-      this.timer = timer;
-    }
-
-    static OperationObserver startOperation(final TopologyChangeOperation operation) {
-      return new OperationObserver(
-          operation, OPERATION_DURATION.labels(operation.getClass().getSimpleName()).startTimer());
-    }
-
-    public void failed() {
-      timer.close();
-      OPERATION_ATTEMPTS.labels(operation.getClass().getSimpleName(), "failed").inc();
-    }
-
-    public void applied() {
-      timer.close();
-      OPERATION_ATTEMPTS.labels(operation.getClass().getSimpleName(), "applied").inc();
-    }
   }
 }

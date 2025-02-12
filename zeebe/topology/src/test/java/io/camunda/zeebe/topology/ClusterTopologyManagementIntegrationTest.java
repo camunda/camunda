@@ -25,6 +25,7 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOp
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -246,7 +247,8 @@ class ClusterTopologyManagementIntegrationTest {
             cluster.getCommunicationService(),
             cluster.getMembershipService(),
             new ClusterTopologyGossiperConfig(
-                true, Duration.ofSeconds(1), Duration.ofMillis(100), 2));
+                true, Duration.ofSeconds(1), Duration.ofMillis(100), 2),
+            new SimpleMeterRegistry());
     return new TestNode(cluster, service);
   }
 

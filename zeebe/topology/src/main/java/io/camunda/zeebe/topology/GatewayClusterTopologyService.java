@@ -12,8 +12,10 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiper;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
+import io.camunda.zeebe.topology.metrics.TopologyMetrics;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,11 +30,14 @@ public class GatewayClusterTopologyService extends Actor implements TopologyUpda
 
   // Keep an in memory copy of the topology. No need to persist it.
   private ClusterTopology clusterTopology = ClusterTopology.uninitialized();
+  private final TopologyMetrics topologyMetrics;
 
   public GatewayClusterTopologyService(
       final ClusterCommunicationService communicationService,
       final ClusterMembershipService memberShipService,
-      final ClusterTopologyGossiperConfig config) {
+      final ClusterTopologyGossiperConfig config,
+      final MeterRegistry meterRegistry) {
+    topologyMetrics = new TopologyMetrics(meterRegistry);
     clusterTopologyGossiper =
         new ClusterTopologyGossiper(
             this,
@@ -40,7 +45,8 @@ public class GatewayClusterTopologyService extends Actor implements TopologyUpda
             memberShipService,
             new ProtoBufSerializer(),
             config,
-            this::updateClusterTopology);
+            this::updateClusterTopology,
+            topologyMetrics);
   }
 
   private void updateClusterTopology(final ClusterTopology clusterTopology) {

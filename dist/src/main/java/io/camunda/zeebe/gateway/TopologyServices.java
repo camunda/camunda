@@ -31,6 +31,7 @@ public class TopologyServices {
   private final ClusterMembershipService clusterMembershipService;
   private final ClusterCommunicationService clusterCommunicationService;
   private final BrokerClientTopologyMetrics brokerClientTopologyMetrics;
+  private final MeterRegistry meterRegistry;
 
   @Autowired
   public TopologyServices(
@@ -41,6 +42,7 @@ public class TopologyServices {
     clusterMembershipService = atomixCluster.getMembershipService();
     clusterCommunicationService = atomixCluster.getCommunicationService();
     brokerClientTopologyMetrics = BrokerClientTopologyMetrics.of(registry);
+    meterRegistry = registry;
   }
 
   @Bean
@@ -50,7 +52,8 @@ public class TopologyServices {
             clusterCommunicationService,
             clusterMembershipService,
             new ClusterTopologyGossiperConfig(
-                false, Duration.ofSeconds(10), Duration.ofSeconds(1), 2));
+                false, Duration.ofSeconds(10), Duration.ofSeconds(1), 2),
+            meterRegistry);
     scheduler.submitActor(service).join();
     return service;
   }

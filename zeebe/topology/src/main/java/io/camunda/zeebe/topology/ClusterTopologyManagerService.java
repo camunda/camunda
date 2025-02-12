@@ -31,9 +31,12 @@ import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinatorImpl;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiper;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
+import io.camunda.zeebe.topology.metrics.TopologyManagerMetrics;
+import io.camunda.zeebe.topology.metrics.TopologyMetrics;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -54,12 +57,15 @@ public final class ClusterTopologyManagerService implements TopologyUpdateNotifi
   private final TopologyRequestServer topologyRequestServer;
   private final Actor gossipActor;
   private final Actor managerActor;
+  private final TopologyMetrics topologyMetrics;
+  private final TopologyManagerMetrics topologyManagerMetrics;
 
   public ClusterTopologyManagerService(
       final Path dataRootDirectory,
       final ClusterCommunicationService communicationService,
       final ClusterMembershipService memberShipService,
-      final ClusterTopologyGossiperConfig config) {
+      final ClusterTopologyGossiperConfig config,
+      final MeterRegistry meterRegistry) {
     this.memberShipService = memberShipService;
     try {
       FileUtil.ensureDirectoryExists(dataRootDirectory);
@@ -73,8 +79,11 @@ public final class ClusterTopologyManagerService implements TopologyUpdateNotifi
         PersistedClusterTopology.ofFile(topologyFile, new ProtoBufSerializer());
     gossipActor = new Actor() {};
     managerActor = new Actor() {};
+    topologyMetrics = new TopologyMetrics(meterRegistry);
+    topologyManagerMetrics = new TopologyManagerMetrics(meterRegistry);
     clusterTopologyManager =
-        new ClusterTopologyManagerImpl(managerActor, localMemberId, persistedClusterTopology);
+        new ClusterTopologyManagerImpl(
+            managerActor, localMemberId, persistedClusterTopology, topologyManagerMetrics);
     clusterTopologyGossiper =
         new ClusterTopologyGossiper(
             gossipActor,
@@ -82,7 +91,8 @@ public final class ClusterTopologyManagerService implements TopologyUpdateNotifi
             memberShipService,
             new ProtoBufSerializer(),
             config,
-            clusterTopologyManager::onGossipReceived);
+            clusterTopologyManager::onGossipReceived,
+            topologyMetrics);
     isCoordinator = localMemberId.id().equals(COORDINATOR_ID);
     topologyChangeCoordinator =
         new TopologyChangeCoordinatorImpl(clusterTopologyManager, localMemberId, managerActor);

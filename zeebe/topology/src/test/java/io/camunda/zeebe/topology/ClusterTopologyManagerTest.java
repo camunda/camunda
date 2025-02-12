@@ -19,6 +19,7 @@ import io.camunda.zeebe.topology.ClusterTopologyManager.InconsistentTopologyList
 import io.camunda.zeebe.topology.changes.NoopTopologyChangeAppliers;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliers;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.MemberOperationApplier;
+import io.camunda.zeebe.topology.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.topology.serializer.ClusterTopologySerializer;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
@@ -26,6 +27,8 @@ import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.util.Either;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -55,6 +58,8 @@ final class ClusterTopologyManagerTest {
   private final MemberId localMemberId = MemberId.from("1");
 
   private PersistedClusterTopology persistedClusterTopology;
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private final TopologyManagerMetrics topologyMetrics = new TopologyManagerMetrics(meterRegistry);
 
   @BeforeEach
   void init() {
@@ -94,6 +99,7 @@ final class ClusterTopologyManagerTest {
             new TestConcurrencyControl(),
             localMemberId,
             persistedClusterTopology,
+            topologyMetrics,
             Duration.ofMillis(100),
             Duration.ofMillis(200));
     clusterTopologyManager.setTopologyGossiper(gossipHandler);
