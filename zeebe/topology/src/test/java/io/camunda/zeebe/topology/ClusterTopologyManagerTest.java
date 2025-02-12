@@ -20,6 +20,7 @@ import io.camunda.zeebe.topology.changes.NoopTopologyChangeAppliers;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliers;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.topology.metrics.TopologyMetrics;
+import io.camunda.zeebe.topology.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.topology.serializer.ClusterTopologySerializer;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
@@ -59,7 +60,7 @@ final class ClusterTopologyManagerTest {
 
   private PersistedClusterTopology persistedClusterTopology;
   private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
-  private final TopologyMetrics topologyMetrics = new TopologyMetrics(meterRegistry);
+  private final TopologyManagerMetrics topologyMetrics = new TopologyManagerMetrics(meterRegistry);
 
   @BeforeEach
   void init() {

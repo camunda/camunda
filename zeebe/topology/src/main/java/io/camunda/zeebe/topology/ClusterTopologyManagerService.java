@@ -31,6 +31,7 @@ import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinatorImpl;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiper;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
+import io.camunda.zeebe.topology.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.topology.metrics.TopologyMetrics;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
@@ -57,6 +58,7 @@ public final class ClusterTopologyManagerService implements TopologyUpdateNotifi
   private final Actor gossipActor;
   private final Actor managerActor;
   private final TopologyMetrics topologyMetrics;
+  private final TopologyManagerMetrics topologyManagerMetrics;
 
   public ClusterTopologyManagerService(
       final Path dataRootDirectory,
@@ -78,9 +80,10 @@ public final class ClusterTopologyManagerService implements TopologyUpdateNotifi
     gossipActor = new Actor() {};
     managerActor = new Actor() {};
     topologyMetrics = new TopologyMetrics(meterRegistry);
+    topologyManagerMetrics = new TopologyManagerMetrics(meterRegistry);
     clusterTopologyManager =
         new ClusterTopologyManagerImpl(
-            managerActor, localMemberId, persistedClusterTopology, topologyMetrics);
+            managerActor, localMemberId, persistedClusterTopology, topologyManagerMetrics);
     clusterTopologyGossiper =
         new ClusterTopologyGossiper(
             gossipActor,

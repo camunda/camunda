@@ -11,8 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliers;
-import io.camunda.zeebe.topology.metrics.TopologyMetrics;
-import io.camunda.zeebe.topology.metrics.TopologyMetrics.OperationObserver;
+import io.camunda.zeebe.topology.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState.State;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
@@ -64,18 +63,18 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
   private boolean shouldRetry = false;
   private final ExponentialBackoffRetryDelay backoffRetry;
   private boolean initialized = false;
-  private final TopologyMetrics topologyMetrics;
+  private final TopologyManagerMetrics topologyManagerMetrics;
 
   ClusterTopologyManagerImpl(
       final ConcurrencyControl executor,
       final MemberId localMemberId,
       final PersistedClusterTopology persistedClusterTopology,
-      final TopologyMetrics topologyMetrics) {
+      final TopologyManagerMetrics topologyManagerMetrics) {
     this(
         executor,
         localMemberId,
         persistedClusterTopology,
-        topologyMetrics,
+        topologyManagerMetrics,
         MIN_RETRY_DELAY,
         MAX_RETRY_DELAY);
   }
@@ -85,10 +84,10 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
       final ConcurrencyControl executor,
       final MemberId localMemberId,
       final PersistedClusterTopology persistedClusterTopology,
-      final TopologyMetrics topologyMetrics,
+      final TopologyManagerMetrics topologyMetrics,
       final Duration minRetryDelay,
       final Duration maxRetryDelay) {
-    this.topologyMetrics = topologyMetrics;
+    topologyManagerMetrics = topologyMetrics;
     this.executor = executor;
     this.persistedClusterTopology = persistedClusterTopology;
     startFuture = executor.createFuture();
@@ -262,7 +261,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
     onGoingTopologyChangeOperation = true;
     shouldRetry = false;
     final var operation = mergedTopology.pendingChangesFor(localMemberId).orElseThrow();
-    final var observer = topologyMetrics.observeOperation(operation);
+    final var observer = topologyManagerMetrics.observeOperation(operation);
     LOG.info("Applying topology change operation {}", operation);
     final var operationApplier = changeAppliers.getApplier(operation);
     final var operationInitialized =
@@ -311,7 +310,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
       final TopologyChangeOperation operation,
       final UnaryOperator<ClusterTopology> transformer,
       final Throwable error,
-      final OperationObserver observer) {
+      final TopologyManagerMetrics.OperationObserver observer) {
     onGoingTopologyChangeOperation = false;
     if (error == null) {
       observer.applied();

@@ -139,8 +139,8 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
         rootDirectory,
         brokerStartupContext.getClusterServices().getCommunicationService(),
         brokerStartupContext.getClusterServices().getMembershipService(),
-        getDefaultClusterTopologyGossipConfig() // TODO: allow user specified config
-        );
+        getDefaultClusterTopologyGossipConfig(), // TODO: allow user specified config
+        brokerStartupContext.getMeterRegistry());
   }
 
   private ClusterTopologyGossiperConfig getDefaultClusterTopologyGossipConfig() {
