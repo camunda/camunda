@@ -229,7 +229,7 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
   private void banInstanceInState(final long processInstanceKey) {
     final var zeebeDb = adminControl.getZeebeDb();
     final var context = zeebeDb.createContext();
-    final var dbBannedInstanceState = new DbBannedInstanceState(zeebeDb, context, partitionId);
+    final var dbBannedInstanceState = new DbBannedInstanceState(zeebeDb, context);
 
     dbBannedInstanceState.banProcessInstance(processInstanceKey);
   }

@@ -40,9 +40,7 @@ public final class DbBannedInstanceState implements MutableBannedInstanceState {
   private final BannedInstanceMetrics bannedInstanceMetrics;
 
   public DbBannedInstanceState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb,
-      final TransactionContext transactionContext,
-      final int partitionId) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     processInstanceKey = new DbLong();
     bannedInstanceColumnFamily =
         zeebeDb.createColumnFamily(
@@ -50,7 +48,7 @@ public final class DbBannedInstanceState implements MutableBannedInstanceState {
             transactionContext,
             processInstanceKey,
             DbNil.INSTANCE);
-    bannedInstanceMetrics = new BannedInstanceMetrics(partitionId);
+    bannedInstanceMetrics = new BannedInstanceMetrics(zeebeDb.getMeterRegistry());
   }
 
   @Override
