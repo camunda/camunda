@@ -39,14 +39,13 @@ public final class MetricsStep implements PartitionTransitionStep {
   @Override
   public ActorFuture<Void> transitionTo(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
-    final var brokerRegistry = context.getPartitionStartupMeterRegistry();
+    final var startupMeterRegistry = context.getPartitionStartupMeterRegistry();
+    final var transitionRegistry = new CompositeMeterRegistry();
 
-    // Create a new registry that already has the partition tag defined.
-    final var partitionRegistry = new CompositeMeterRegistry();
     // Wrap over the broker registry so that all meters are forwarded to the broker registry.
-    partitionRegistry.add(brokerRegistry);
+    transitionRegistry.add(startupMeterRegistry);
 
-    context.setPartitionTransitionMeterRegistry(partitionRegistry);
+    context.setPartitionTransitionMeterRegistry(transitionRegistry);
     return context.getConcurrencyControl().createCompletedFuture();
   }
 
