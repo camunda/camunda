@@ -359,13 +359,13 @@ public class ProcessInstanceMigrationMigrateProcessor
         incidentState.getProcessInstanceIncidentKey(elementInstance.getKey());
     if (processIncidentKey != MISSING_INCIDENT) {
       appendIncidentMigratedEvent(
-          processIncidentKey, targetProcessDefinition, targetElementId, processInstanceKey);
+          processIncidentKey, targetProcessDefinition, targetElementId, elementInstanceRecord);
     }
 
     final var jobIncidentKey = incidentState.getJobIncidentKey(elementInstance.getJobKey());
     if (jobIncidentKey != MISSING_INCIDENT) {
       appendIncidentMigratedEvent(
-          jobIncidentKey, targetProcessDefinition, targetElementId, processInstanceKey);
+          jobIncidentKey, targetProcessDefinition, targetElementId, elementInstanceRecord);
     }
 
     if (elementInstance.getUserTaskKey() > 0) {
@@ -523,7 +523,7 @@ public class ProcessInstanceMigrationMigrateProcessor
       final long incidentKey,
       final DeployedProcess targetProcessDefinition,
       final String targetElementId,
-      final long processInstanceKey) {
+      final ProcessInstanceRecord elementInstanceRecord) {
     final var incidentRecord = incidentState.getIncidentRecord(incidentKey);
     if (incidentRecord == null) {
       throw new SafetyCheckFailedException(
@@ -532,7 +532,7 @@ public class ProcessInstanceMigrationMigrateProcessor
               Expected to migrate a user task for process instance with key '%d', \
               but could not find incident with key '%d'. \
               Please report this as a bug""",
-              processInstanceKey, incidentKey));
+              elementInstanceRecord.getProcessInstanceKey(), incidentKey));
     }
     stateWriter.appendFollowUpEvent(
         incidentKey,
@@ -540,7 +540,10 @@ public class ProcessInstanceMigrationMigrateProcessor
         incidentRecord
             .setProcessDefinitionKey(targetProcessDefinition.getKey())
             .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
-            .setElementId(BufferUtil.wrapString(targetElementId)));
+            .setElementId(BufferUtil.wrapString(targetElementId))
+            .setElementInstancePath(elementInstanceRecord.getElementInstancePath())
+            .setProcessDefinitionPath(elementInstanceRecord.getProcessDefinitionPath())
+            .setCallingElementPath(elementInstanceRecord.getCallingElementPath()));
   }
 
   private Set<ExecutableSequenceFlow> getSequenceFlowsToMigrate(
