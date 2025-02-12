@@ -40,6 +40,18 @@ public final class StatefulMeterRegistry extends CompositeMeterRegistry {
 
   /**
    * Registers a gauge whose will report the value of the returned {@link StatefulGauge#state()}. If
+   * a gauge with the same documentation already exists <strong>in this registry</strong>, it will
+   * return the same {@link StatefulGauge} again and will not register anything.
+   *
+   * @param documentation the documentation for the gauge
+   * @return an {@link StatefulGauge} which represents the gauge value and its state
+   */
+  public StatefulGauge newLongGauge(final ExtendedMeterDocumentation documentation) {
+    return newLongGauge(documentation, Tags.empty());
+  }
+
+  /**
+   * Registers a gauge whose will report the value of the returned {@link StatefulGauge#state()}. If
    * a gauge with the same documentation <strong>and</strong> tags already exists <strong>in this
    * registry</strong>, it will return the same {@link StatefulGauge} again and will not register
    * anything.
