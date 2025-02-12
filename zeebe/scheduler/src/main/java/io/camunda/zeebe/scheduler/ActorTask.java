@@ -9,6 +9,7 @@ package io.camunda.zeebe.scheduler;
 
 import static io.camunda.zeebe.scheduler.ActorThread.ensureCalledFromActorThread;
 
+import io.camunda.zeebe.scheduler.ActorMetrics.ActorMetricsScoped;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Loggers;
