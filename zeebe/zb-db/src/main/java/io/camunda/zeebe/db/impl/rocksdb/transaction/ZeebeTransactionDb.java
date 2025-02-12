@@ -165,9 +165,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
     final var metrics =
         switch (accessMetricsConfiguration.kind()) {
           case NONE -> new NoopColumnFamilyMetrics();
-          case FINE ->
-              new FineGrainedColumnFamilyMetrics(
-                  accessMetricsConfiguration.partitionId(), columnFamily);
+          case FINE -> new FineGrainedColumnFamilyMetrics(columnFamily, meterRegistry);
         };
     return new TransactionalColumnFamily<>(
         this,
