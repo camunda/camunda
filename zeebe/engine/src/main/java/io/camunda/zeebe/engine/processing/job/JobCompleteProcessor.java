@@ -37,7 +37,9 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
   private final EventHandle eventHandle;
 
   public JobCompleteProcessor(
-      final ProcessingState state, final JobProcessingMetrics jobMetrics, final EventHandle eventHandle) {
+      final ProcessingState state,
+      final JobProcessingMetrics jobMetrics,
+      final EventHandle eventHandle) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     defaultProcessor =
