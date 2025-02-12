@@ -26,6 +26,13 @@ public class ContainerVersionsUtil {
   private static final String VERSIONS_FILE = "/container-versions.properties";
 
   public static String readProperty(final String propertyName) {
+    // Read first System properties, to make sure we can override it in CI
+    // If not available we default to spring/maven properties
+    final String value = System.getProperty(propertyName);
+    if (value != null) {
+      return value;
+    }
+
     try (final InputStream propsFile =
         ContainerVersionsUtil.class.getResourceAsStream(VERSIONS_FILE)) {
       final Properties props = new Properties();
