@@ -38,7 +38,7 @@ public final class IncidentMetrics {
       final StatefulMeterRegistry meterRegistry, final IncidentAction action) {
     return Counter.builder(EngineMetricsDoc.INCIDENT_EVENTS.getName())
         .description(EngineMetricsDoc.INCIDENT_EVENTS.getDescription())
-        .tag(EngineKeyNames.INCIDENT_ACTION.asString(), action.name())
+        .tag(EngineKeyNames.INCIDENT_ACTION.asString(), action.toString())
         .register(meterRegistry);
   }
 }

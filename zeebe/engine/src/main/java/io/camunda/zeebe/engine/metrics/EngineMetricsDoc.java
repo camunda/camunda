@@ -236,6 +236,34 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getAdditionalKeyNames() {
       return PartitionKeyNames.values();
     }
+  },
+
+  /** Number of job events */
+  JOB_EVENTS {
+    @Override
+    public String getDescription() {
+      return "Number of job events";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.job.events.total";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {EngineKeyNames.JOB_ACTION};
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
   };
 
   /** Tags/label values possibly used by the engine metrics. */
@@ -294,6 +322,21 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
       }
     },
 
+    /** The possible actions performed on a job; see {@link JobAction} for possible values. */
+    JOB_ACTION {
+      @Override
+      public String asString() {
+        return "action";
+      }
+    },
+
+    /** The type of the job that triggered the job event */
+    JOB_TYPE {
+      @Override
+      public String asString() {
+        return "type";
+      }
+    },
     /**
      * Metrics that are annotated with this label are vitally important for usage tracking and
      * data-based decision-making as part of Camunda's SaaS offering.
@@ -339,6 +382,23 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
   public enum IncidentAction {
     CREATED,
     RESOLVED;
+
+    @Override
+    public String toString() {
+      return name().toLowerCase();
+    }
+  }
+
+  public enum JobAction {
+    CREATED,
+    ACTIVATED,
+    TIMED_OUT,
+    COMPLETED,
+    FAILED,
+    CANCELED,
+    ERROR_THROWN,
+    WORKERS_NOTIFIED,
+    PUSHED;
 
     @Override
     public String toString() {

@@ -23,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-public class JobMetricsTest {
+public class JobProcessingMetricsTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
@@ -48,7 +48,7 @@ public class JobMetricsTest {
 
   @Before
   public void resetMetrics() {
-    JobMetrics.clear();
+    ENGINE.getMeterRegistry().clear();
   }
 
   @Test
