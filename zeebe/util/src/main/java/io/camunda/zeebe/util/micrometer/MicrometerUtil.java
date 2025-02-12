@@ -17,9 +17,9 @@ import io.micrometer.core.instrument.Timer.Builder;
 import io.micrometer.core.instrument.Timer.Sample;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.time.Duration;
-import java.util.Collections;
 import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
 
@@ -90,6 +90,7 @@ public final class MicrometerUtil {
       final LongConsumer setter, final TimeUnit unit, final Clock clock) {
     return new CloseableGaugeTimer(setter, unit, clock, clock.monotonicTime());
   }
+
   /**
    * Closes the registry after clearing it. In this way all metrics registered are removed.
    *
@@ -99,6 +100,7 @@ public final class MicrometerUtil {
     registry.clear();
     registry.close();
   }
+
   /**
    * Returns a {@link CompositeMeterRegistry} using the same config as the given registry, which
    * will forward all metrics to that registry. This means if the forwardee has some common tags,
