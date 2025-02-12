@@ -115,5 +115,10 @@ final class ActorMetricsImpl implements ActorMetrics {
     public CloseableSilently startExecutionTimer() {
       return MicrometerUtil.timer(executionLatency, Timer.start(registry));
     }
+
+    @Override
+    public boolean isEnabled() {
+      return true;
+    }
   }
 }

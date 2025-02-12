@@ -60,7 +60,7 @@ public class ActorTask {
    */
   private volatile Queue<ActorJob> submittedJobs = new ClosedQueue();
 
-  private ActorMetricsScoped metrics;
+  private ActorMetricsScoped metrics = ActorMetricsScoped.NOOP;
 
   public ActorTask(final Actor actor) {
     this.actor = actor;
