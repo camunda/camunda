@@ -12,6 +12,7 @@ import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.EnsureUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
@@ -83,14 +84,7 @@ public final class ExporterContext implements Context, AutoCloseable {
 
   @Override
   public void close() {
-    // Clear the registry, so the metrics created are deleted:
-    // it must be done before removing the parent registry
-    meterRegistry.clear();
-    // remove the parentMeterRegistry so it's not closed when we close the composite.
-    if (underlyingMetricRegistry != null) {
-      meterRegistry.remove(underlyingMetricRegistry);
-    }
-    meterRegistry.close();
+    MicrometerUtil.discard(meterRegistry);
   }
 
   private static final class AcceptAllRecordsFilter implements RecordFilter {

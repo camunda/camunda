@@ -21,6 +21,7 @@ import io.camunda.zeebe.db.impl.NoopColumnFamilyMetrics;
 import io.camunda.zeebe.db.impl.rocksdb.Loggers;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.protocol.EnumValue;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.StatefulMeterRegistry;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
@@ -115,12 +116,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
     closables.add(defaultColumnFamilyHandle);
 
     final var statefulMeterRegistry = new StatefulMeterRegistry(wrappedRegistry);
-    closables.add(
-        () -> {
-          statefulMeterRegistry.clear();
-          statefulMeterRegistry.close();
-          statefulMeterRegistry.remove(wrappedRegistry);
-        });
+    closables.add(() -> MicrometerUtil.discard(statefulMeterRegistry));
 
     return new ZeebeTransactionDb<>(
         defaultColumnFamilyHandle,

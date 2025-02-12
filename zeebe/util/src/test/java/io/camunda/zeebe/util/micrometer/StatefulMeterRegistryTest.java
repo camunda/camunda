@@ -23,9 +23,7 @@ final class StatefulMeterRegistryTest {
 
   @AfterEach
   void afterEach() {
-    registry.clear();
-    registry.close();
-    registry.remove(wrapped);
+    MicrometerUtil.discard(registry);
 
     wrapped.clear();
     wrapped.close();

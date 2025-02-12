@@ -20,6 +20,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
@@ -113,18 +114,7 @@ public class RestoreManager {
             backupStore, raftPartition, new ChecksumProviderRocksDBImpl(), partition.registry())
         .restore(backupId, validator)
         .thenAccept(backup -> logSuccessfulRestore(backup, raftPartition.id().id(), backupId))
-        .whenComplete(
-            (ok, error) -> {
-              registry.clear();
-              registry.close();
-              registry.remove(meterRegistry);
-            });
-  }
-
-  private void closeRegistry(final CompositeMeterRegistry registry) {
-    registry.clear();
-    registry.close();
-    registry.remove(meterRegistry);
+        .whenComplete((ok, error) -> MicrometerUtil.discard(registry));
   }
 
   private Set<InstrumentedRaftPartition> collectPartitions() {

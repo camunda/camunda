@@ -19,6 +19,7 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.nio.file.Path;
 
 public final class PartitionStartupContext {
@@ -36,7 +37,7 @@ public final class PartitionStartupContext {
 
   private Path partitionDirectory;
 
-  private MeterRegistry partitionMeterRegistry;
+  private CompositeMeterRegistry partitionMeterRegistry;
   private FileBasedSnapshotStore snapshotStore;
   private RaftPartition raftPartition;
   private ZeebePartition zeebePartition;
@@ -148,12 +149,12 @@ public final class PartitionStartupContext {
   }
 
   public PartitionStartupContext partitionMeterRegistry(
-      final MeterRegistry partitionMeterRegistry) {
+      final CompositeMeterRegistry partitionMeterRegistry) {
     this.partitionMeterRegistry = partitionMeterRegistry;
     return this;
   }
 
-  public MeterRegistry partitionMeterRegistry() {
+  public CompositeMeterRegistry partitionMeterRegistry() {
     return partitionMeterRegistry;
   }
 
