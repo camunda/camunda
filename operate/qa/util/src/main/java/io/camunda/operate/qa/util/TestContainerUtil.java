@@ -482,10 +482,11 @@ public class TestContainerUtil {
     if (broker == null) {
       final String dockerRepo =
           ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_REPO_PROPERTY_NAME);
-      LOGGER.info("************ Starting Zeebe {} ************", version);
+      LOGGER.info("************ Starting Zeebe {}:{} ************", dockerRepo, version);
       final long startTime = System.currentTimeMillis();
       Testcontainers.exposeHostPorts(ELS_PORT);
-      broker = new ZeebeContainer(DockerImageName.parse(dockerRepo + version));
+      broker =
+          new ZeebeContainer(DockerImageName.parse(String.format("%s:%s", dockerRepo, version)));
       broker.withLogConsumer(new Slf4jLogConsumer(LOGGER));
       if (testContext.getNetwork() != null) {
         broker.withNetwork(testContext.getNetwork());
