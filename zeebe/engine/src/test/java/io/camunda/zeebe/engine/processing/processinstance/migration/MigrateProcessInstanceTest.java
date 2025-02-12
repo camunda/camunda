@@ -346,6 +346,12 @@ public class MigrateProcessInstanceTest {
         .isTrue();
   }
 
+  /**
+   * After migrating a process instance started by a message, we expect that a buffered message with
+   * the same correlation key cannot be correlated to the migrated instance until the process
+   * instance completes. We expect that the buffered message is automatically correlated once the
+   * migrated instance finishes.
+   */
   @Test
   public void shouldAdjustMessageCardinalityTrackingWhenMigratedForTargetProcessWithMessageTTL() {
     final String processId = helper.getBpmnProcessId();
