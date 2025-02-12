@@ -1234,9 +1234,9 @@
     react-markdown "8.0.7"
 
 "@camunda8/sdk@^8.6.8":
-  version "8.6.23"
-  resolved "https://registry.yarnpkg.com/@camunda8/sdk/-/sdk-8.6.23.tgz#ccf22785463c49d4a9fd744b5d69e98caf2fffcc"
-  integrity sha512-IckeulaFgG91ZQMtC2mQMt7Y3NiPIScFuiSLE7K4UJQvEAYd8ojv0oF1WZ2xOK5FVKVmL51UWkSy54q9dpB2pA==
+  version "8.6.24"
+  resolved "https://registry.yarnpkg.com/@camunda8/sdk/-/sdk-8.6.24.tgz#cd0ae0dc590d577cbe80ab91f3bf6ce32d0fcd10"
+  integrity sha512-wJSy37dg6l6FMPTiCIFhD1dLIOWxptRftfC5SlsDGOpefOOHNehevyEJ/4x+oMN5q6jkomkbfhPHmyNRvWFN2A==
   dependencies:
     "@grpc/grpc-js" "1.12.5"
     "@grpc/proto-loader" "0.7.13"
@@ -8617,9 +8617,9 @@ long@^4.0.0:
   integrity sha512-XsP+KhQif4bjX1kbuSiySJFNAehNxgLb6hPRGJ9QsUr8ajHkuXGdrHmFUTUUXhDwVX2R5bY4JNZEwbUiMhV+MA==
 
 long@^5.0.0:
-  version "5.2.4"
-  resolved "https://registry.yarnpkg.com/long/-/long-5.2.4.tgz#ee651d5c7c25901cfca5e67220ae9911695e99b2"
-  integrity sha512-qtzLbJE8hq7VabR3mISmVGtoXP8KGc2Z/AT8OuqlYD7JTR3oqrgwdjnk07wpj1twXxYmgDXgoKVWUG/fReSzHg==
+  version "5.3.0"
+  resolved "https://registry.yarnpkg.com/long/-/long-5.3.0.tgz#3bab70330c40c2c1b5cb73c4254723c81f00e15c"
+  integrity sha512-5vvY5yF1zF/kXk+L94FRiTDa1Znom46UjPCH6/XbSvS8zBKMFBHTJk8KDMqJ+2J6QezQFi7k1k8v21ClJYHPaw==
 
 loose-envify@^1.0.0, loose-envify@^1.1.0, loose-envify@^1.4.0:
   version "1.4.0"
