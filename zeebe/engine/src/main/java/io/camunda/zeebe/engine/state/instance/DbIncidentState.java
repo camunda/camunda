@@ -70,7 +70,7 @@ public final class DbIncidentState implements MutableIncidentState {
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.INCIDENT_JOBS, transactionContext, jobKey, incidentKeyValue);
 
-    metrics = new IncidentMetrics(partitionId);
+    metrics = new IncidentMetrics(zeebeDb.getMeterRegistry());
   }
 
   @Override

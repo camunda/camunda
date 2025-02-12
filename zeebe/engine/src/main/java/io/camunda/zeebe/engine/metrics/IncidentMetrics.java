@@ -7,44 +7,38 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
-import io.prometheus.client.Counter;
-import io.prometheus.client.Gauge;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.EngineKeyNames;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.IncidentAction;
+import io.camunda.zeebe.util.micrometer.StatefulMeterRegistry;
+import io.micrometer.core.instrument.Counter;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class IncidentMetrics {
+  private final Counter incidentCreated;
+  private final Counter incidentResolved;
+  private final AtomicLong pendingIncidents;
 
-  private static final Counter INCIDENT_EVENTS =
-      Counter.build()
-          .namespace("zeebe")
-          .name("incident_events_total")
-          .help("Number of incident events")
-          .labelNames("action", "partition")
-          .register();
-
-  private static final Gauge PENDING_INCIDENTS =
-      Gauge.build()
-          .namespace("zeebe")
-          .name("pending_incidents_total")
-          .help("Number of pending incidents")
-          .labelNames("partition")
-          .register();
-
-  private final String partitionIdLabel;
-
-  public IncidentMetrics(final int partitionId) {
-    partitionIdLabel = String.valueOf(partitionId);
-  }
-
-  private void incidentEvent(final String action) {
-    INCIDENT_EVENTS.labels(action, partitionIdLabel).inc();
+  public IncidentMetrics(final StatefulMeterRegistry meterRegistry) {
+    pendingIncidents = meterRegistry.newLongGauge(EngineMetricsDoc.PENDING_INCIDENTS).state();
+    incidentCreated = registerCounter(meterRegistry, IncidentAction.CREATED);
+    incidentResolved = registerCounter(meterRegistry, IncidentAction.RESOLVED);
   }
 
   public void incidentCreated() {
-    incidentEvent("created");
-    PENDING_INCIDENTS.labels(partitionIdLabel).inc();
+    incidentCreated.increment();
+    pendingIncidents.incrementAndGet();
   }
 
   public void incidentResolved() {
-    incidentEvent("resolved");
-    PENDING_INCIDENTS.labels(partitionIdLabel).dec();
+    incidentResolved.increment();
+    pendingIncidents.decrementAndGet();
+  }
+
+  private Counter registerCounter(
+      final StatefulMeterRegistry meterRegistry, final IncidentAction action) {
+    return Counter.builder(EngineMetricsDoc.INCIDENT_EVENTS.getName())
+        .description(EngineMetricsDoc.INCIDENT_EVENTS.getDescription())
+        .tag(EngineKeyNames.INCIDENT_ACTION.asString(), action.name())
+        .register(meterRegistry);
   }
 }
