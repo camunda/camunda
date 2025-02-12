@@ -129,7 +129,6 @@ jobs:
             echo "IS_ALPHA=${{ steps.release-type.outputs.is_alpha }}"
             echo "IS_RC=${{ steps.release-type.outputs.is_rc }}"
             echo "IS_DRY_RUN=${{ github.event.inputs.IS_DRY_RUN || 'true' }}"
-            echo "PUSH_CHANGES=${{ !github.event.inputs.IS_DRY_RUN || 'false' }}"
             echo "TAG=${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}-optimize"
           } >> "$GITHUB_ENV"
 
@@ -182,8 +181,8 @@ jobs:
       - name: Prepare release
         run: |
           mvn -f optimize \
-            -DpushChanges="${PUSH_CHANGES}" \
-            -DremoteTagging="${PUSH_CHANGES}" \
+            -DpushChanges="${{ github.event.inputs.IS_DRY_RUN != 'true' }}" \
+            -DremoteTagging="${{ github.event.inputs.IS_DRY_RUN != 'true' }}" \
             -DskipTests=true \
             -DignoreSnapshots=true \
             -Prelease,runAssembly \
