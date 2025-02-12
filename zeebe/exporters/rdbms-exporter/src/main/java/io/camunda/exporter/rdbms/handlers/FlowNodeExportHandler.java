@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel.FlowNodeInstanceDbModelBuilder;
 import io.camunda.db.rdbms.write.service.FlowNodeInstanceWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
@@ -27,6 +28,7 @@ public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstance
       Set.of(
           ProcessInstanceIntent.ELEMENT_ACTIVATING,
           ProcessInstanceIntent.ELEMENT_COMPLETED,
+          ProcessInstanceIntent.ELEMENT_MIGRATED,
           ProcessInstanceIntent.ELEMENT_TERMINATED);
 
   private static final Set<BpmnElementType> UNHANDLED_BPMN_TYPES =
@@ -49,19 +51,9 @@ public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstance
   public void export(final Record<ProcessInstanceRecordValue> record) {
     final var value = record.getValue();
     if (record.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATING) {
-      final var flowNode =
-          new FlowNodeInstanceDbModelBuilder()
-              .flowNodeInstanceKey(record.getKey())
-              .flowNodeId(value.getElementId())
-              .processInstanceKey(value.getProcessInstanceKey())
-              .processDefinitionKey(value.getProcessDefinitionKey())
-              .processDefinitionId(value.getBpmnProcessId())
-              .tenantId(value.getTenantId())
-              .state(FlowNodeState.ACTIVE)
-              .startDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
-              .type(mapFlowNodeType(value))
-              .build();
-      flowNodeInstanceWriter.create(flowNode);
+      flowNodeInstanceWriter.create(map(record, value));
+    } else if (record.getIntent() == ProcessInstanceIntent.ELEMENT_MIGRATED) {
+      flowNodeInstanceWriter.update(map(record, value));
     } else if (record.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED) {
       flowNodeInstanceWriter.finish(
           record.getKey(),
@@ -73,6 +65,21 @@ public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstance
           FlowNodeState.TERMINATED,
           DateUtil.toOffsetDateTime(record.getTimestamp()));
     }
+  }
+
+  private static FlowNodeInstanceDbModel map(
+      final Record<ProcessInstanceRecordValue> record, final ProcessInstanceRecordValue value) {
+    return new FlowNodeInstanceDbModelBuilder()
+        .flowNodeInstanceKey(record.getKey())
+        .flowNodeId(value.getElementId())
+        .processInstanceKey(value.getProcessInstanceKey())
+        .processDefinitionKey(value.getProcessDefinitionKey())
+        .processDefinitionId(value.getBpmnProcessId())
+        .tenantId(value.getTenantId())
+        .state(FlowNodeState.ACTIVE)
+        .startDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
+        .type(mapFlowNodeType(value))
+        .build();
   }
 
   private static FlowNodeType mapFlowNodeType(final ProcessInstanceRecordValue recordValue) {

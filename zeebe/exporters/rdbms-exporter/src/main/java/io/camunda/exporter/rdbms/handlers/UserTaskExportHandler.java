@@ -14,6 +14,7 @@ import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.MIGRATED;
 
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel.UserTaskState;
+import io.camunda.db.rdbms.write.domain.UserTaskMigrationDbModel;
 import io.camunda.db.rdbms.write.service.UserTaskWriter;
 import io.camunda.exporter.rdbms.DateUtil;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
@@ -65,7 +66,15 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
                   value,
                   UserTaskState.COMPLETED,
                   DateUtil.toOffsetDateTime(record.getTimestamp())));
-      case MIGRATED -> userTaskWriter.update(map(value, UserTaskState.CREATED, null));
+      case MIGRATED ->
+          userTaskWriter.migrateToProcess(
+              new UserTaskMigrationDbModel.Builder()
+                  .userTaskKey(value.getUserTaskKey())
+                  .processDefinitionKey(value.getProcessDefinitionKey())
+                  .processDefinitionId(value.getBpmnProcessId())
+                  .elementId(value.getElementId())
+                  .processDefinitionVersion(value.getProcessDefinitionVersion())
+                  .build());
       default -> userTaskWriter.update(map(value, null, null));
     }
   }

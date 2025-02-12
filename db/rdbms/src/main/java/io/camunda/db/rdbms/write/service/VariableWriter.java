@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -42,5 +43,16 @@ public class VariableWriter {
             variable.variableKey(),
             "io.camunda.db.rdbms.sql.VariableMapper.update",
             variable.truncateValue(vendorDatabaseProperties.variableValuePreviewSize())));
+  }
+
+  public void migrateToProcess(final long variableKey, final String processDefinitionId) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.VARIABLE,
+            variableKey,
+            "io.camunda.db.rdbms.sql.VariableMapper.migrateToProcess",
+            new VariableMapper.MigrateToProcessDto.Builder()
+                .variableKey(variableKey)
+                .processDefinitionId(processDefinitionId)));
   }
 }
