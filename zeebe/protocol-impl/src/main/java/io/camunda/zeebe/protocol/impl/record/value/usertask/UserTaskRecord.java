@@ -45,6 +45,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   public static final String DUE_DATE = "dueDate";
   public static final String FOLLOW_UP_DATE = "followUpDate";
   public static final String PRIORITY = "priority";
+  public static final String VARIABLES = "variables";
 
   private static final String EMPTY_STRING = "";
   private static final StringValue ASSIGNEE_VALUE = new StringValue(ASSIGNEE);
@@ -53,6 +54,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private static final StringValue DUE_DATE_VALUE = new StringValue(DUE_DATE);
   private static final StringValue FOLLOW_UP_DATE_VALUE = new StringValue(FOLLOW_UP_DATE);
   private static final StringValue PRIORITY_VALUE = new StringValue(PRIORITY);
+  private static final StringValue VARIABLES_VALUE = new StringValue(VARIABLES);
 
   /**
    * Defines the mapping between names of attributes that may be modified (updated or corrected) and
@@ -88,7 +90,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private final StringProperty externalFormReferenceProp =
       new StringProperty("externalFormReference", EMPTY_STRING);
 
-  private final DocumentProperty variableProp = new DocumentProperty("variables");
+  private final DocumentProperty variableProp = new DocumentProperty(VARIABLES);
   private final PackedProperty customHeadersProp = new PackedProperty("customHeaders", NO_HEADERS);
 
   private final LongProperty processInstanceKeyProp =
@@ -538,6 +540,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     return this;
   }
 
+  public UserTaskRecord resetChangedAttributes() {
+    changedAttributesProp.reset();
+    return this;
+  }
+
   public UserTaskRecord setAssigneeChanged() {
     changedAttributesProp.add().wrap(ASSIGNEE_VALUE);
     return this;
@@ -565,6 +572,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord setPriorityChanged() {
     changedAttributesProp.add().wrap(PRIORITY_VALUE);
+    return this;
+  }
+
+  public UserTaskRecord setVariableChanged() {
+    changedAttributesProp.add().wrap(VARIABLES_VALUE);
     return this;
   }
 

@@ -10,20 +10,19 @@ package io.camunda.zeebe.engine.processing.variable;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
-import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
+import io.camunda.zeebe.engine.state.instance.UserTaskRecordRequestMetadata;
+import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.msgpack.spec.MsgpackReaderException;
-import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -45,7 +44,7 @@ public final class VariableDocumentUpdateProcessor
   private final Writers writers;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final ProcessState processState;
-  private final UserTaskState userTaskState;
+  private final MutableUserTaskState userTaskState;
   private final BpmnJobBehavior jobBehavior;
 
   public VariableDocumentUpdateProcessor(
@@ -55,7 +54,7 @@ public final class VariableDocumentUpdateProcessor
       final Writers writers,
       final AuthorizationCheckBehavior authCheckBehavior,
       final ProcessState processState,
-      final UserTaskState userTaskState,
+      final MutableUserTaskState userTaskState,
       final BpmnJobBehavior jobBehavior) {
     this.elementInstanceState = elementInstanceState;
     this.keyGenerator = keyGenerator;
@@ -102,20 +101,42 @@ public final class VariableDocumentUpdateProcessor
       return;
     }
 
-    var shouldDryRun = false;
+    final var shouldDryRun = false;
     if (scope.getValue().getBpmnElementType() == BpmnElementType.USER_TASK
         && scope.getUserTaskKey() > -1L) {
-      final var userTaskElement =
-          processState.getFlowElement(
-              scope.getValue().getProcessDefinitionKey(),
-              tenantId,
-              scope.getValue().getElementIdBuffer(),
-              ExecutableUserTask.class);
-      if (userTaskElement != null
-          && userTaskElement.hasTaskListeners(ZeebeTaskListenerEventType.updating)) {
-        // set variables as intermediate state
-        shouldDryRun = true;
-      }
+
+      // From now on, SET VARIABLES on CAMUNDA USER TASK flows through the User Task UPDATE logic
+
+      // We need to store the request id and request stream id
+      // TODO: Can we store it on the command directly (propagate it to the follow-up command)?
+      // This would mean the UserTaskProcessor can take care of storing it for future use
+      // All we need to watch out with is how we end up responding to the request
+      // Can we figure out in the UserTaskProcessor what command we need to respond to?
+      // Alternatively, we can store it here, highlighting the unique intent (see
+      // UserTaskProcessor.storeUserTaskRecordRequestMetadata), and ensure we don't overwrite it
+      // in the UserTaskProcessor (easy just don't provide the request data on the command)
+      final var metadata =
+          new UserTaskRecordRequestMetadata()
+              .setIntent((UserTaskIntent) record.getIntent()) // todo: this cast will fail
+              .setRequestId(record.getRequestId())
+              .setRequestStreamId(record.getRequestStreamId());
+      userTaskState.storeRecordRequestMetadata(scope.getUserTaskKey(), metadata);
+
+      final long key = keyGenerator.nextKey();
+      writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATING, value);
+
+      final var userTaskRecord = userTaskState.getUserTask(scope.getUserTaskKey());
+      writers
+          .command()
+          .appendFollowUpCommand(
+              scope.getUserTaskKey(),
+              UserTaskIntent.UPDATE,
+              userTaskRecord
+                  .resetChangedAttributes()
+                  .setVariables(value.getVariablesBuffer())
+                  .setVariableChanged());
+
+      return;
     }
 
     var hasChangedVariables = false;
@@ -156,30 +177,8 @@ public final class VariableDocumentUpdateProcessor
 
     final long key = keyGenerator.nextKey();
 
-    if (hasChangedVariables
-        && scope.getValue().getBpmnElementType() == BpmnElementType.USER_TASK
-        && scope.getUserTaskKey() > -1L) {
-      writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATING, value);
-
-      final var userTaskElement =
-          processState.getFlowElement(
-              scope.getValue().getProcessDefinitionKey(),
-              tenantId,
-              scope.getValue().getElementIdBuffer(),
-              ExecutableUserTask.class);
-      if (userTaskElement != null
-          && userTaskElement.hasTaskListeners(ZeebeTaskListenerEventType.updating)) {
-        // trigger the `updating` listener
-        final var listener =
-            userTaskElement.getTaskListeners(ZeebeTaskListenerEventType.updating).getFirst();
-        final var context = buildContext(scope);
-        final UserTaskRecord persistedRecord = userTaskState.getUserTask(scope.getUserTaskKey());
-        jobBehavior.createNewTaskListenerJob(context, persistedRecord, listener);
-      }
-    } else {
-      writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
-      writers.response().writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
-    }
+    writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
+    writers.response().writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
   }
 
   private BpmnElementContext buildContext(final ElementInstance elementInstance) {
