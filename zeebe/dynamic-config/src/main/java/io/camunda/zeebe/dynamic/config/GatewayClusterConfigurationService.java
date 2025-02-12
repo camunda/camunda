@@ -11,9 +11,11 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiper;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
+import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.Actor;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,11 +33,14 @@ public class GatewayClusterConfigurationService extends Actor
 
   // Keep an in memory copy of the configuration. No need to persist it.
   private ClusterConfiguration clusterConfiguration = ClusterConfiguration.uninitialized();
+  private final TopologyMetrics topologyMetrics;
 
   public GatewayClusterConfigurationService(
       final ClusterCommunicationService communicationService,
       final ClusterMembershipService memberShipService,
-      final ClusterConfigurationGossiperConfig config) {
+      final ClusterConfigurationGossiperConfig config,
+      final MeterRegistry meterRegistry) {
+    topologyMetrics = new TopologyMetrics(meterRegistry);
     clusterConfigurationGossiper =
         new ClusterConfigurationGossiper(
             this,
@@ -43,7 +48,8 @@ public class GatewayClusterConfigurationService extends Actor
             memberShipService,
             new ProtoBufSerializer(),
             config,
-            this::updateClusterTopology);
+            this::updateClusterTopology,
+            topologyMetrics);
   }
 
   private void updateClusterTopology(final ClusterConfiguration clusterConfiguration) {

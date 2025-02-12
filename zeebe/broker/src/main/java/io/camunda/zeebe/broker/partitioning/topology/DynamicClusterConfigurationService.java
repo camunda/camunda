@@ -165,6 +165,7 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
             .getExperimental()
             .getFeatures()
             .isEnablePartitionScaling(),
-        clusterChangeExecutor);
+        clusterChangeExecutor,
+        brokerStartupContext.getMeterRegistry());
   }
 }
