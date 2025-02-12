@@ -47,6 +47,7 @@ public interface ActorMetrics {
   interface ActorMetricsScoped extends CloseableSilently {
     ActorMetricsScoped NOOP =
         new ActorMetricsScoped() {
+          private final CloseableSilently closeable = () -> {};
 
           @Override
           public void close() {}
@@ -59,7 +60,12 @@ public interface ActorMetrics {
 
           @Override
           public CloseableSilently startExecutionTimer() {
-            return () -> {};
+            return closeable;
+          }
+
+          @Override
+          public boolean isEnabled() {
+            return false;
           }
         };
 
@@ -72,6 +78,8 @@ public interface ActorMetrics {
     static ActorMetricsScoped noop() {
       return NOOP;
     }
+
+    boolean isEnabled();
   }
 
   enum SubscriptionType {
