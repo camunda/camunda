@@ -22,7 +22,7 @@ import java.lang.annotation.Target;
  * way.
  */
 @Target({ElementType.TYPE, ElementType.METHOD, ElementType.FIELD, ElementType.CONSTRUCTOR})
-@Retention(RetentionPolicy.SOURCE)
+@Retention(RetentionPolicy.CLASS)
 @Documented
 public @interface VisibleForTesting {
 
