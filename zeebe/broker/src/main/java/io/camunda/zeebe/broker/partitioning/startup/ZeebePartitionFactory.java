@@ -150,7 +150,7 @@ public final class ZeebePartitionFactory {
     final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
 
     final StateController stateController =
-        createStateController(raftPartition, snapshotStore, snapshotStore);
+        createStateController(raftPartition, snapshotStore, snapshotStore, partitionMeterRegistry);
 
     final var context =
         new PartitionStartupAndTransitionContextImpl(
@@ -186,7 +186,8 @@ public final class ZeebePartitionFactory {
   private StateController createStateController(
       final RaftPartition raftPartition,
       final ConstructableSnapshotStore snapshotStore,
-      final ConcurrencyControl concurrencyControl) {
+      final ConcurrencyControl concurrencyControl,
+      final MeterRegistry partitionMeterRegistry) {
     final Path runtimeDirectory;
     if (brokerCfg.getData().useSeparateRuntimeDirectory()) {
       final Path rootRuntimeDirectory = Paths.get(brokerCfg.getData().getRuntimeDirectory());
@@ -206,8 +207,8 @@ public final class ZeebePartitionFactory {
         new ZeebeRocksDbFactory<>(
             databaseCfg.createRocksDbConfiguration(),
             consistencyChecks.getSettings(),
-            new AccessMetricsConfiguration(
-                databaseCfg.getAccessMetrics(), raftPartition.id().id())),
+            new AccessMetricsConfiguration(databaseCfg.getAccessMetrics(), raftPartition.id().id()),
+            partitionMeterRegistry),
         snapshotStore,
         runtimeDirectory,
         new AtomixRecordEntrySupplierImpl(raftPartition.getServer()),
