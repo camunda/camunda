@@ -52,9 +52,7 @@ public class RaftRequestMetricsTest {
           });
     }
     // when
-    for (final var task : tasks) {
-      executorService.submit(task);
-    }
+    tasks.forEach(executorService::submit);
     // shutdown the executor and wait for all tasks
     executorService.shutdown();
     // then
