@@ -7,79 +7,55 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
-import io.prometheus.client.Counter;
-import io.prometheus.client.Counter.Child;
-import io.prometheus.client.Gauge;
-import io.prometheus.client.Histogram;
-import io.prometheus.client.Histogram.Timer;
+import static io.camunda.zeebe.snapshots.impl.SnapshotMetricsDoc.SNAPSHOT_CHUNK_COUNT;
+import static io.camunda.zeebe.snapshots.impl.SnapshotMetricsDoc.SNAPSHOT_COUNT;
+import static io.camunda.zeebe.snapshots.impl.SnapshotMetricsDoc.SNAPSHOT_DURATION;
+import static io.camunda.zeebe.snapshots.impl.SnapshotMetricsDoc.SNAPSHOT_FILE_SIZE;
+import static io.camunda.zeebe.snapshots.impl.SnapshotMetricsDoc.SNAPSHOT_PERSIST_DURATION;
+import static io.camunda.zeebe.snapshots.impl.SnapshotMetricsDoc.SNAPSHOT_SIZE;
+
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class SnapshotMetrics {
-  private static final String NAMESPACE = "zeebe";
-  private static final String PARTITION_LABEL_NAME = "partition";
 
-  private static final Counter SNAPSHOT_COUNT =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .labelNames(PARTITION_LABEL_NAME)
-          .name("snapshot_count")
-          .help("Total count of committed snapshots on disk")
-          .register();
-  private static final Gauge SNAPSHOT_SIZE =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .labelNames(PARTITION_LABEL_NAME)
-          .name("snapshot_size_bytes")
-          .help("Estimated snapshot size on disk")
-          .register();
-  private static final Gauge SNAPSHOT_CHUNK_COUNT =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .labelNames(PARTITION_LABEL_NAME)
-          .name("snapshot_chunks_count")
-          .help("Number of chunks in the last snapshot")
-          .register();
-  private static final Histogram SNAPSHOT_DURATION =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .labelNames(PARTITION_LABEL_NAME)
-          .name("snapshot_duration")
-          .help("Approximate duration of snapshot operation")
-          .register();
+  private final AtomicLong snapshotChunkCount = new AtomicLong();
+  private final AtomicLong snapshotSize = new AtomicLong();
 
-  private static final Histogram SNAPSHOT_PERSIST_DURATION =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .labelNames(PARTITION_LABEL_NAME)
-          .name("snapshot_persist_duration")
-          .help("Approximate duration of snapshot persist operation")
-          .register();
-  private static final Histogram SNAPSHOT_FILE_SIZE =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .labelNames(PARTITION_LABEL_NAME)
-          .help("Approximate size of snapshot files")
-          .name("snapshot_file_size_megabytes")
-          .buckets(.01, .1, .5, 1, 5, 10, 25, 50, 100, 250, 500)
-          .register();
+  private final Clock clock;
+  private final Timer snapshotPersistDuration;
+  private final DistributionSummary snapshotFileSize;
+  private final Timer snapshotDuration;
+  private final Counter snapshotCount;
 
-  private final Histogram.Child snapshotPersistDuration;
-  private final Histogram.Child snapshotFileSize;
-  private final Histogram.Child snapshotDuration;
-  private final Gauge.Child snapshotChunkCount;
-  private final Gauge.Child snapshotSize;
-  private final Child snapshotCount;
+  public SnapshotMetrics(final MeterRegistry registry) {
+    clock = registry.config().clock();
 
-  public SnapshotMetrics(final String partitionId) {
-    snapshotDuration = SNAPSHOT_DURATION.labels(partitionId);
-    snapshotPersistDuration = SNAPSHOT_PERSIST_DURATION.labels(partitionId);
-    snapshotFileSize = SNAPSHOT_FILE_SIZE.labels(partitionId);
-    snapshotChunkCount = SNAPSHOT_CHUNK_COUNT.labels(partitionId);
-    snapshotSize = SNAPSHOT_SIZE.labels(partitionId);
-    snapshotCount = SNAPSHOT_COUNT.labels(partitionId);
+    snapshotDuration = MicrometerUtil.timer(SNAPSHOT_DURATION).register(registry);
+    snapshotPersistDuration = MicrometerUtil.timer(SNAPSHOT_PERSIST_DURATION).register(registry);
+    snapshotFileSize = MicrometerUtil.summary(SNAPSHOT_FILE_SIZE).register(registry);
+    snapshotCount =
+        Counter.builder(SNAPSHOT_COUNT.getName())
+            .description(SNAPSHOT_COUNT.getDescription())
+            .register(registry);
+
+    Gauge.builder(SNAPSHOT_CHUNK_COUNT.getName(), snapshotChunkCount, Number::longValue)
+        .description(SNAPSHOT_CHUNK_COUNT.getDescription())
+        .register(registry);
+    Gauge.builder(SNAPSHOT_SIZE.getName(), snapshotSize, Number::longValue)
+        .description(SNAPSHOT_SIZE.getDescription())
+        .register(registry);
   }
 
   void incrementSnapshotCount() {
-    snapshotCount.inc();
+    snapshotCount.increment();
   }
 
   void observeSnapshotSize(final long sizeInBytes) {
@@ -91,14 +67,14 @@ public final class SnapshotMetrics {
   }
 
   void observeSnapshotFileSize(final long sizeInBytes) {
-    snapshotFileSize.observe(sizeInBytes / 1_000_000f);
+    snapshotFileSize.record(sizeInBytes / 1_000_000f);
   }
 
-  Timer startTimer() {
-    return snapshotDuration.startTimer();
+  CloseableSilently startTimer() {
+    return MicrometerUtil.timer(snapshotDuration, Timer.start(clock));
   }
 
-  Timer startPersistTimer() {
-    return snapshotPersistDuration.startTimer();
+  CloseableSilently startPersistTimer() {
+    return MicrometerUtil.timer(snapshotPersistDuration, Timer.start(clock));
   }
 }

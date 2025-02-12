@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Rule;
@@ -30,7 +31,8 @@ public class PersistedSnapshotStoreTest {
     final var root = temporaryFolder.getRoot();
 
     final var snapshotStore =
-        new FileBasedSnapshotStore(partitionId, root.toPath(), snapshotPath -> Map.of());
+        new FileBasedSnapshotStore(
+            partitionId, root.toPath(), snapshotPath -> Map.of(), new SimpleMeterRegistry());
     scheduler.submitActor(snapshotStore).join();
     persistedSnapshotStore = snapshotStore;
   }

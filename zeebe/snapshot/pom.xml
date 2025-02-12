@@ -27,8 +27,13 @@
     </dependency>
 
     <dependency>
-      <groupId>io.prometheus</groupId>
-      <artifactId>simpleclient</artifactId>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-commons</artifactId>
     </dependency>
 
     <dependency>

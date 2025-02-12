@@ -29,6 +29,7 @@ import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -84,7 +85,10 @@ public final class FileBasedSnapshotStore extends Actor
   private final int partitionId;
 
   public FileBasedSnapshotStore(
-      final int partitionId, final Path root, final ChecksumProvider checksumProvider) {
+      final int partitionId,
+      final Path root,
+      final ChecksumProvider checksumProvider,
+      final MeterRegistry meterRegistry) {
     snapshotsDirectory = root.resolve(SNAPSHOTS_DIRECTORY);
     pendingDirectory = root.resolve(PENDING_DIRECTORY);
 
@@ -95,7 +99,7 @@ public final class FileBasedSnapshotStore extends Actor
       throw new UncheckedIOException("Failed to create snapshot directories", e);
     }
 
-    snapshotMetrics = new SnapshotMetrics(String.valueOf(partitionId));
+    snapshotMetrics = new SnapshotMetrics(meterRegistry);
     receivingSnapshotStartCount = new AtomicLong();
 
     listeners = new CopyOnWriteArraySet<>();

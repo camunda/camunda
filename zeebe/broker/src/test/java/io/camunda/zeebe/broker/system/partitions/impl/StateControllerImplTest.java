@@ -22,6 +22,7 @@ import io.camunda.zeebe.snapshots.SnapshotException.StateClosedException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -63,7 +64,10 @@ public final class StateControllerImplTest {
 
     store =
         new FileBasedSnapshotStore(
-            1, tempFolderRule.newFolder("data").toPath(), snapshotPath -> Map.of());
+            1,
+            tempFolderRule.newFolder("data").toPath(),
+            snapshotPath -> Map.of(),
+            new SimpleMeterRegistry());
     actorSchedulerRule.submitActor(store).join();
 
     runtimeDirectory = tempFolderRule.getRoot().toPath().resolve("runtime");
