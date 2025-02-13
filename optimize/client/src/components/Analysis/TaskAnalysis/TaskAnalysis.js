@@ -20,7 +20,7 @@ import {track} from 'tracking';
 import OutlierControlPanel from './OutlierControlPanel';
 import OutlierDetailsModal from './OutlierDetailsModal';
 import OutlierDetailsTable from './OutlierDetailsTable';
-import {loadNodesOutliers, loadDurationData, loadCommonOutliersVariables} from './service';
+import {loadNodesOutliers, loadDurationData} from './service';
 
 import './TaskAnalysis.scss';
 
@@ -38,7 +38,6 @@ export default function TaskAnalysis() {
   const [higherNodeOutliersHeatData, setHigherNodeOutliersHeatData] = useState();
   const [flowNodeNames, setFlowNodeNames] = useState({});
   const [selectedOutlierNode, setSelectedOutlierNode] = useState(null);
-  const [higherNodeOutlierVariables, setHigherNodeOutlierVariables] = useState({});
   const [isLoadingXml, setIsLoadingXml] = useState(false);
   const [isLoadingFlowNodeNames, setIsLoadingFlowNodeNames] = useState(false);
   const [isLoadingNodeOutliers, setIsLoadingNodeOutliers] = useState(false);
@@ -90,19 +89,6 @@ export default function TaskAnalysis() {
     });
   }
 
-  const loadOutlierVariables = useCallback(async (outliersHeatData, nodeOutliers, config) => {
-    return Object.keys(outliersHeatData).reduce(async (nodeOutlierVariables, nodeOutlierId) => {
-      const outlierVariables = await loadCommonOutliersVariables({
-        ...config,
-        flowNodeId: nodeOutlierId,
-        higherOutlierBound: nodeOutliers[nodeOutlierId].higherOutlier.boundValue,
-      });
-
-      nodeOutlierVariables[nodeOutlierId] = outlierVariables;
-      return nodeOutlierVariables;
-    }, {});
-  }, []);
-
   const loadOutlierData = useCallback(
     (config) => {
       setIsLoadingNodeOutliers(true);
@@ -127,22 +113,15 @@ export default function TaskAnalysis() {
             {}
           );
 
-          const higherNodeOutlierVariables = await loadOutlierVariables(
-            higherOutliersHeatData,
-            nodeOutliers,
-            config
-          );
-
           setNodeOutliers(nodeOutliers);
           nodeOutliersRef.current = nodeOutliers;
           setHigherNodeOutliersHeatData(higherOutliersHeatData);
-          setHigherNodeOutlierVariables(higherNodeOutlierVariables);
         },
         showError,
         () => setIsLoadingNodeOutliers(false)
       );
     },
-    [loadOutlierVariables, loadFlowNodeNames, mightFail]
+    [loadFlowNodeNames, mightFail]
   );
 
   function onNodeClick({element: {id}}) {
@@ -234,7 +213,6 @@ export default function TaskAnalysis() {
             flowNodeNames={flowNodeNames}
             loading={isLoadingFlowNodeNames || isLoadingNodeOutliers}
             onDetailsClick={loadChartData}
-            outlierVariables={higherNodeOutlierVariables}
             nodeOutliers={nodeOutliers}
             config={config}
           />
