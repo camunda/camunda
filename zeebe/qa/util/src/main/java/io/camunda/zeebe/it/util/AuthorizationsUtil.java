@@ -11,7 +11,7 @@ import static io.camunda.security.configuration.InitializationConfiguration.DEFA
 import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_USERNAME;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.CredentialsProvider;
+import io.camunda.client.impl.basicauth.BasicAuthCredentialsProvider;
 import io.camunda.client.protocol.rest.OwnerTypeEnum;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
@@ -25,7 +25,6 @@ import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.List;
 import java.util.function.Supplier;
 import org.awaitility.Awaitility;
@@ -133,23 +132,7 @@ public class AuthorizationsUtil implements CloseableSilently {
         .newClientBuilder()
         .preferRestOverGrpc(true)
         .defaultRequestTimeout(Duration.ofSeconds(15))
-        .credentialsProvider(
-            new CredentialsProvider() {
-              @Override
-              public void applyCredentials(final CredentialsApplier applier) {
-                applier.put(
-                    "Authorization",
-                    "Basic %s"
-                        .formatted(
-                            Base64.getEncoder()
-                                .encodeToString("%s:%s".formatted(username, password).getBytes())));
-              }
-
-              @Override
-              public boolean shouldRetryRequest(final StatusCode statusCode) {
-                return false;
-              }
-            })
+        .credentialsProvider(new BasicAuthCredentialsProvider(username, password))
         .build();
   }
 
@@ -159,23 +142,7 @@ public class AuthorizationsUtil implements CloseableSilently {
         .newClientBuilder()
         .defaultRequestTimeout(Duration.ofSeconds(15))
         .preferRestOverGrpc(false)
-        .credentialsProvider(
-            new CredentialsProvider() {
-              @Override
-              public void applyCredentials(final CredentialsApplier applier) {
-                applier.put(
-                    "Authorization",
-                    "Basic %s"
-                        .formatted(
-                            Base64.getEncoder()
-                                .encodeToString("%s:%s".formatted(username, password).getBytes())));
-              }
-
-              @Override
-              public boolean shouldRetryRequest(final StatusCode statusCode) {
-                return false;
-              }
-            })
+        .credentialsProvider(new BasicAuthCredentialsProvider(username, password))
         .build();
   }
 

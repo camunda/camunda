@@ -8,7 +8,7 @@
 package io.camunda.it.utils;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.CredentialsProvider;
+import io.camunda.client.impl.basicauth.BasicAuthCredentialsProvider;
 import io.camunda.client.protocol.rest.OwnerTypeEnum;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
@@ -21,7 +21,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -139,23 +138,7 @@ public final class CamundaClientTestFactory implements AutoCloseable {
     return gateway
         .newClientBuilder()
         .preferRestOverGrpc(true)
-        .credentialsProvider(
-            new CredentialsProvider() {
-              @Override
-              public void applyCredentials(final CredentialsApplier applier) {
-                applier.put(
-                    "Authorization",
-                    "Basic %s"
-                        .formatted(
-                            Base64.getEncoder()
-                                .encodeToString("%s:%s".formatted(username, password).getBytes())));
-              }
-
-              @Override
-              public boolean shouldRetryRequest(final StatusCode statusCode) {
-                return false;
-              }
-            })
+        .credentialsProvider(new BasicAuthCredentialsProvider(username, password))
         .build();
   }
 
