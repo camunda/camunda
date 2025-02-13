@@ -96,9 +96,11 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
 
     if (subscription == null) {
       rejectCommand(command, RejectionType.NOT_FOUND, NO_SUBSCRIPTION_FOUND_MESSAGE);
+      return;
 
     } else if (subscription.isClosing()) {
       rejectCommand(command, RejectionType.INVALID_STATE, ALREADY_CLOSING_MESSAGE);
+      return;
 
     } else if (hasAlreadyBeenCorrelated(record, subscription)) {
       rejectionWriter.appendRejection(
@@ -107,48 +109,44 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
       // attempt recovering from a previous acknowledgment that didn't make it to the other
       // partition.
       sendAcknowledgeCommand(record);
-
-    } else {
-      final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
-      final var canTriggerElement =
-          eventHandle.canTriggerElement(
-              elementInstance, subscription.getRecord().getElementIdBuffer());
-
-      if (!canTriggerElement) {
-        rejectCommand(command, RejectionType.INVALID_STATE, NO_EVENT_OCCURRED_MESSAGE);
-
-      } else {
-        // avoid reusing the subscription record directly as any access to the state (e.g. as #get)
-        // will overwrite it - safer to just copy its values into an one-time-use record
-        final ProcessMessageSubscriptionRecord subscriptionRecord = subscription.getRecord();
-        record
-            .setElementId(subscriptionRecord.getElementIdBuffer())
-            .setInterrupting(subscriptionRecord.isInterrupting());
-
-        stateWriter.appendFollowUpEvent(
-            subscription.getKey(), ProcessMessageSubscriptionIntent.CORRELATED, record);
-
-        // update transient state in a side-effect to ensure that these changes only take effect
-        // after
-        // the command has been successfully processed
-        sideEffectWriter.appendSideEffect(
-            () -> {
-              transientProcessMessageSubscriptionState.remove(
-                  new PendingSubscription(elementInstanceKey, messageName, tenantId));
-              return true;
-            });
-
-        final var catchEvent =
-            getCatchEvent(elementInstance.getValue(), record.getElementIdBuffer());
-        eventHandle.activateElement(
-            catchEvent,
-            elementInstanceKey,
-            elementInstance.getValue(),
-            record.getVariablesBuffer());
-
-        sendAcknowledgeCommand(record);
-      }
+      return;
     }
+
+    final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
+    final var canTriggerElement =
+        eventHandle.canTriggerElement(
+            elementInstance, subscription.getRecord().getElementIdBuffer());
+
+    if (!canTriggerElement) {
+      rejectCommand(command, RejectionType.INVALID_STATE, NO_EVENT_OCCURRED_MESSAGE);
+      return;
+    }
+
+    // avoid reusing the subscription record directly as any access to the state (e.g. as #get)
+    // will overwrite it - safer to just copy its values into an one-time-use record
+    final ProcessMessageSubscriptionRecord subscriptionRecord = subscription.getRecord();
+    record
+        .setElementId(subscriptionRecord.getElementIdBuffer())
+        .setInterrupting(subscriptionRecord.isInterrupting());
+
+    stateWriter.appendFollowUpEvent(
+        subscription.getKey(), ProcessMessageSubscriptionIntent.CORRELATED, record);
+
+    // update transient state in a side-effect to ensure that these changes only take effect
+    // after
+    // the command has been successfully processed
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          transientProcessMessageSubscriptionState.remove(
+              new PendingSubscription(elementInstanceKey, messageName, tenantId));
+          return true;
+        });
+
+    final var catchEvent = getCatchEvent(elementInstance.getValue(), record.getElementIdBuffer());
+    eventHandle.activateElement(
+        catchEvent, elementInstanceKey, elementInstance.getValue(), record.getVariablesBuffer());
+
+    sendAcknowledgeCommand(record);
   }
 
   private boolean hasAlreadyBeenCorrelated(
