@@ -194,7 +194,7 @@ public final class MicrometerUtil {
     };
 
     public static Tags tags(final int partitionId) {
-      return Tags.of(PARTITION.name(), String.valueOf(partitionId));
+      return Tags.of(PARTITION.asString(), String.valueOf(partitionId));
     }
   }
 }
