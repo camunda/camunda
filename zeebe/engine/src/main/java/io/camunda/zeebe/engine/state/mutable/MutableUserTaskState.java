@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.mutable;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.UserTaskIntermediateStateValue;
 import io.camunda.zeebe.engine.state.instance.UserTaskRecordRequestMetadata;
+import io.camunda.zeebe.engine.state.instance.VariableDocumentRecordRequestMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.function.Consumer;
 
@@ -31,6 +32,9 @@ public interface MutableUserTaskState extends UserTaskState {
 
   void storeRecordRequestMetadata(
       final long userTaskKey, final UserTaskRecordRequestMetadata recordRequestMetadata);
+
+  void storeRecordRequestMetadata(
+      long userTaskKey, VariableDocumentRecordRequestMetadata recordRequestMetadata);
 
   void deleteRecordRequestMetadata(final long userTaskKey);
 }

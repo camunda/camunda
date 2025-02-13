@@ -8,8 +8,8 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
+import io.camunda.zeebe.engine.state.instance.RecordRequestMetadata;
 import io.camunda.zeebe.engine.state.instance.UserTaskIntermediateStateValue;
-import io.camunda.zeebe.engine.state.instance.UserTaskRecordRequestMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.Optional;
 
@@ -23,7 +23,8 @@ public interface UserTaskState {
 
   UserTaskIntermediateStateValue getIntermediateState(final long userTaskKey);
 
-  Optional<UserTaskRecordRequestMetadata> findRecordRequestMetadata(final long userTaskKey);
+  <T extends RecordRequestMetadata> Optional<RecordRequestMetadata> findRecordRequestMetadata(
+      final long userTaskKey);
 
   enum LifecycleState {
     NOT_FOUND((byte) 0),

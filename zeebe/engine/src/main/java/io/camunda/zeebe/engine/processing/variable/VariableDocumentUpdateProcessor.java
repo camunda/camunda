@@ -10,15 +10,18 @@ package io.camunda.zeebe.engine.processing.variable;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.engine.state.instance.UserTaskRecordRequestMetadata;
+import io.camunda.zeebe.engine.state.instance.VariableDocumentRecordRequestMetadata;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.spec.MsgpackReaderException;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -101,11 +104,21 @@ public final class VariableDocumentUpdateProcessor
       return;
     }
 
-    final var shouldDryRun = false;
     if (scope.getValue().getBpmnElementType() == BpmnElementType.USER_TASK
         && scope.getUserTaskKey() > -1L) {
 
       // From now on, SET VARIABLES on CAMUNDA USER TASK flows through the User Task UPDATE logic
+
+      if (userTaskState.getLifecycleState(scope.getUserTaskKey()) != LifecycleState.CREATED) {
+        writers
+            .rejection()
+            .appendRejection(record, RejectionType.INVALID_STATE, "User task is not CREATED");
+        writers
+            .response()
+            .writeRejectionOnCommand(
+                record, RejectionType.INVALID_STATE, "User task is not CREATED");
+        return;
+      }
 
       // We need to store the request id and request stream id
       // TODO: Can we store it on the command directly (propagate it to the follow-up command)?
@@ -116,8 +129,8 @@ public final class VariableDocumentUpdateProcessor
       // UserTaskProcessor.storeUserTaskRecordRequestMetadata), and ensure we don't overwrite it
       // in the UserTaskProcessor (easy just don't provide the request data on the command)
       final var metadata =
-          new UserTaskRecordRequestMetadata()
-              .setIntent((UserTaskIntent) record.getIntent()) // todo: this cast will fail
+          new VariableDocumentRecordRequestMetadata()
+              .setIntent((VariableDocumentIntent) record.getIntent())
               .setRequestId(record.getRequestId())
               .setRequestStreamId(record.getRequestStreamId());
       userTaskState.storeRecordRequestMetadata(scope.getUserTaskKey(), metadata);
@@ -126,44 +139,66 @@ public final class VariableDocumentUpdateProcessor
       writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATING, value);
 
       final var userTaskRecord = userTaskState.getUserTask(scope.getUserTaskKey());
+
+      userTaskRecord
+          .resetChangedAttributes()
+          .setVariables(value.getVariablesBuffer())
+          .setVariableChanged();
+
       writers
-          .command()
-          .appendFollowUpCommand(
-              scope.getUserTaskKey(),
-              UserTaskIntent.UPDATE,
-              userTaskRecord
-                  .resetChangedAttributes()
-                  .setVariables(value.getVariablesBuffer())
-                  .setVariableChanged());
+          .state()
+          .appendFollowUpEvent(scope.getUserTaskKey(), UserTaskIntent.UPDATING, userTaskRecord);
+
+      final var userTaskElement =
+          processState.getFlowElement(
+              userTaskRecord.getProcessDefinitionKey(),
+              tenantId,
+              userTaskRecord.getElementIdBuffer(),
+              ExecutableUserTask.class);
+      if (userTaskElement.hasTaskListeners(ZeebeTaskListenerEventType.updating)) {
+        final var listener =
+            userTaskElement.getTaskListeners(ZeebeTaskListenerEventType.updating).getFirst();
+        // may raise an incident on failure
+        jobBehavior.createNewTaskListenerJob(buildContext(scope), userTaskRecord, listener);
+      } else {
+        variableBehavior.mergeLocalDocument(
+            userTaskRecord.getElementInstanceKey(),
+            userTaskRecord.getProcessDefinitionKey(),
+            userTaskRecord.getProcessInstanceKey(),
+            userTaskRecord.getBpmnProcessIdBuffer(),
+            userTaskRecord.getTenantId(),
+            value.getVariablesBuffer());
+        writers
+            .state()
+            .appendFollowUpEvent(scope.getUserTaskKey(), UserTaskIntent.UPDATED, userTaskRecord);
+
+        writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
+        writers.response().writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
+      }
 
       return;
     }
 
-    var hasChangedVariables = false;
     final long processDefinitionKey = scope.getValue().getProcessDefinitionKey();
     final long processInstanceKey = scope.getValue().getProcessInstanceKey();
     final DirectBuffer bpmnProcessId = scope.getValue().getBpmnProcessIdBuffer();
     try {
       if (value.getUpdateSemantics() == VariableDocumentUpdateSemantic.LOCAL) {
-        hasChangedVariables =
-            variableBehavior.mergeLocalDocument(
-                scope.getKey(),
-                processDefinitionKey,
-                processInstanceKey,
-                bpmnProcessId,
-                tenantId,
-                value.getVariablesBuffer(),
-                shouldDryRun);
+        variableBehavior.mergeLocalDocument(
+            scope.getKey(),
+            processDefinitionKey,
+            processInstanceKey,
+            bpmnProcessId,
+            tenantId,
+            value.getVariablesBuffer());
       } else {
-        hasChangedVariables =
-            variableBehavior.mergeDocument(
-                scope.getKey(),
-                processDefinitionKey,
-                processInstanceKey,
-                bpmnProcessId,
-                tenantId,
-                value.getVariablesBuffer(),
-                shouldDryRun);
+        variableBehavior.mergeDocument(
+            scope.getKey(),
+            processDefinitionKey,
+            processInstanceKey,
+            bpmnProcessId,
+            tenantId,
+            value.getVariablesBuffer());
       }
     } catch (final MsgpackReaderException e) {
       final String reason =

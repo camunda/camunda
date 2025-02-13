@@ -63,8 +63,7 @@ public final class VariableBehavior {
       final long processInstanceKey,
       final DirectBuffer bpmnProcessId,
       final String tenantId,
-      final DirectBuffer document,
-      final boolean shouldDryRun) {
+      final DirectBuffer document) {
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
       return false;
@@ -79,7 +78,7 @@ public final class VariableBehavior {
     boolean hasChangedVariables = false;
     for (final DocumentEntry entry : indexedDocument) {
       applyEntryToRecord(entry);
-      if (setLocalVariable(variableRecord, shouldDryRun)) {
+      if (setLocalVariable(variableRecord)) {
         hasChangedVariables = true;
       }
     }
@@ -113,8 +112,7 @@ public final class VariableBehavior {
       final long processInstanceKey,
       final DirectBuffer bpmnProcessId,
       final String tenantId,
-      final DirectBuffer document,
-      final boolean shouldDryRun) {
+      final DirectBuffer document) {
     boolean hasChangedVariables = false;
 
     indexedDocument.index(document);
@@ -154,7 +152,7 @@ public final class VariableBehavior {
     variableRecord.setScopeKey(currentScope);
     for (final DocumentEntry entry : indexedDocument) {
       applyEntryToRecord(entry);
-      if (setLocalVariable(variableRecord, shouldDryRun)) {
+      if (setLocalVariable(variableRecord)) {
         hasChangedVariables = true;
       }
     }
@@ -197,23 +195,21 @@ public final class VariableBehavior {
         .setName(name)
         .setValue(value, valueOffset, valueLength);
 
-    setLocalVariable(variableRecord, false);
+    setLocalVariable(variableRecord);
   }
 
   /**
    * @return True if it changed a variable (created or updated), false otherwise
    */
-  private boolean setLocalVariable(final VariableRecord record, final boolean shouldDryRun) {
+  private boolean setLocalVariable(final VariableRecord record) {
     final VariableInstance variableInstance =
         variableState.getVariableInstanceLocal(record.getScopeKey(), record.getNameBuffer());
     if (variableInstance == null) {
       final long key = keyGenerator.nextKey();
-      final var intent = shouldDryRun ? VariableIntent.CREATING : VariableIntent.CREATED;
-      stateWriter.appendFollowUpEvent(key, intent, record);
+      stateWriter.appendFollowUpEvent(key, VariableIntent.CREATED, record);
       return true;
     } else if (!variableInstance.getValue().equals(record.getValueBuffer())) {
-      final var intent = shouldDryRun ? VariableIntent.UPDATING : VariableIntent.UPDATED;
-      stateWriter.appendFollowUpEvent(variableInstance.getKey(), intent, record);
+      stateWriter.appendFollowUpEvent(variableInstance.getKey(), VariableIntent.UPDATED, record);
       return true;
     }
     return false;

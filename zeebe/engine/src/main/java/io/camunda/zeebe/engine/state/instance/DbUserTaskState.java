@@ -54,6 +54,11 @@ public class DbUserTaskState implements MutableUserTaskState {
   private final ColumnFamily<DbLong, UserTaskRecordRequestMetadata>
       userTasksRecordRequestMetadataColumnFamily;
 
+  private final VariableDocumentRecordRequestMetadata variableDocumentRecordRequestMetadata =
+      new VariableDocumentRecordRequestMetadata();
+  private final ColumnFamily<DbLong, VariableDocumentRecordRequestMetadata>
+      variableDocumentRecordRequestMetadataColumnFamily;
+
   public DbUserTaskState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     userTaskKey = new DbLong();
@@ -81,6 +86,13 @@ public class DbUserTaskState implements MutableUserTaskState {
             transactionContext,
             userTaskKey,
             userTaskRecordRequestMetadata);
+
+    variableDocumentRecordRequestMetadataColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.VARIABLE_DOCUMENT_RECORD_REQUEST_METADATA,
+            transactionContext,
+            userTaskKey,
+            variableDocumentRecordRequestMetadata);
   }
 
   @Override
@@ -154,6 +166,13 @@ public class DbUserTaskState implements MutableUserTaskState {
   }
 
   @Override
+  public void storeRecordRequestMetadata(
+      final long key, final VariableDocumentRecordRequestMetadata recordRequestMetadata) {
+    userTaskKey.wrapLong(key);
+    variableDocumentRecordRequestMetadataColumnFamily.insert(userTaskKey, recordRequestMetadata);
+  }
+
+  @Override
   public void deleteRecordRequestMetadata(final long key) {
     userTaskKey.wrapLong(key);
     userTasksRecordRequestMetadataColumnFamily.deleteIfExists(userTaskKey);
@@ -193,8 +212,20 @@ public class DbUserTaskState implements MutableUserTaskState {
   }
 
   @Override
-  public Optional<UserTaskRecordRequestMetadata> findRecordRequestMetadata(final long key) {
+  public Optional<RecordRequestMetadata> findRecordRequestMetadata(final long key) {
     userTaskKey.wrapLong(key);
-    return Optional.ofNullable(userTasksRecordRequestMetadataColumnFamily.get(userTaskKey));
+
+    final var userTaskMetadata = userTasksRecordRequestMetadataColumnFamily.get(userTaskKey);
+    if (userTaskMetadata != null) {
+      return Optional.of(userTaskMetadata);
+    }
+
+    final var variableDocumentMetadata =
+        variableDocumentRecordRequestMetadataColumnFamily.get(userTaskKey);
+    if (variableDocumentMetadata != null) {
+      return Optional.of(variableDocumentMetadata);
+    }
+
+    return Optional.empty();
   }
 }

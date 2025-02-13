@@ -74,8 +74,7 @@ public final class BpmnVariableMappingBehavior {
                     processInstanceKey,
                     bpmnProcessId,
                     context.getTenantId(),
-                    result,
-                    false);
+                    result);
                 return null;
               });
     }
@@ -125,8 +124,7 @@ public final class BpmnVariableMappingBehavior {
             processInstanceKey,
             bpmnProcessId,
             context.getTenantId(),
-            variables,
-            false);
+            variables);
       }
 
       // apply the output mappings
@@ -140,8 +138,7 @@ public final class BpmnVariableMappingBehavior {
                     processInstanceKey,
                     bpmnProcessId,
                     context.getTenantId(),
-                    result,
-                    false);
+                    result);
                 return null;
               });
 
@@ -153,8 +150,7 @@ public final class BpmnVariableMappingBehavior {
           processInstanceKey,
           bpmnProcessId,
           context.getTenantId(),
-          variables,
-          false);
+          variables);
     } else if (isConnectedToEventBasedGateway(element)
         || (element.getElementType() == BpmnElementType.BOUNDARY_EVENT && !isErrorEvent(element))
         || element.getElementType() == BpmnElementType.START_EVENT) {
@@ -166,8 +162,7 @@ public final class BpmnVariableMappingBehavior {
           processInstanceKey,
           bpmnProcessId,
           context.getTenantId(),
-          localVariables,
-          false);
+          localVariables);
     }
 
     return Either.right(null);

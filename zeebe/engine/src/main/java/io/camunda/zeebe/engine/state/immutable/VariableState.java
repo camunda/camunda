@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.variable.VariableInstance;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import java.util.Collection;
 import java.util.List;
 import org.agrona.DirectBuffer;
@@ -49,6 +50,8 @@ public interface VariableState {
    *     VariableState#NO_PARENT}
    */
   long getParentScopeKey(long childScopeKey);
+
+  VariableDocumentRecord getVariableDocument(long scopeKey);
 
   /** Data wrapper for a variable. */
   record Variable(long key, long scopeKey, DirectBuffer name, DirectBuffer value) {}

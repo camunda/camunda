@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
@@ -78,8 +79,7 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
           userTaskRecord.getProcessInstanceKey(),
           userTaskRecord.getBpmnProcessIdBuffer(),
           userTaskRecord.getTenantId(),
-          command.getValue().getVariablesBuffer(),
-          false);
+          command.getValue().getVariablesBuffer());
     }
 
     if (command.hasRequestMetadata()) {
@@ -87,17 +87,35 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
       responseWriter.writeEventOnCommand(
           userTaskKey, UserTaskIntent.UPDATED, userTaskRecord, command);
     } else {
-      final var recordRequestMetadata = userTaskState.findRecordRequestMetadata(userTaskKey);
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
+
+      final var recordRequestMetadata = userTaskState.findRecordRequestMetadata(userTaskKey);
       recordRequestMetadata.ifPresent(
-          metadata ->
-              responseWriter.writeResponse(
-                  userTaskKey,
-                  UserTaskIntent.UPDATED,
-                  userTaskRecord,
-                  ValueType.USER_TASK,
-                  metadata.getRequestId(),
-                  metadata.getRequestStreamId()));
+          metadata -> {
+            switch (metadata.responseType()) {
+              case USER_TASK ->
+                  responseWriter.writeResponse(
+                      userTaskKey,
+                      UserTaskIntent.UPDATED,
+                      userTaskRecord,
+                      ValueType.USER_TASK,
+                      metadata.getRequestId(),
+                      metadata.getRequestStreamId());
+              case VARIABLE_DOCUMENT -> {
+                final var variableDocument =
+                    variableState.getVariableDocument(userTaskRecord.getElementInstanceKey());
+                responseWriter.writeResponse(
+                    variableDocument.getKey(),
+                    VariableDocumentIntent.UPDATED,
+                    variableDocumentRecord,
+                    ValueType.VARIABLE_DOCUMENT,
+                    metadata.getRequestId(),
+                    metadata.getRequestStreamId());
+              }
+              default ->
+                  throw new IllegalStateException("Unexpected value: " + metadata.responseType());
+            }
+          });
     }
   }
 }

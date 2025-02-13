@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.VariableState;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import org.agrona.DirectBuffer;
 
 public interface MutableVariableState extends VariableState {
@@ -64,4 +65,6 @@ public interface MutableVariableState extends VariableState {
   void removeScope(long scopeKey);
 
   void removeAllVariables(long scopeKey);
+
+  void storeVariableDocument(long key, VariableDocumentRecord value);
 }

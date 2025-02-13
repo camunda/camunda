@@ -13,7 +13,7 @@ import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 
 /**
  * This class represents the metadata needed to properly finalize the original user task command
@@ -31,27 +31,27 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
  * <p>This metadata is crucial for ensuring that after all task listener jobs are processed, the
  * engine can respond appropriately to the original command request.
  */
-public class UserTaskRecordRequestMetadata extends UnpackedObject
+public class VariableDocumentRecordRequestMetadata extends UnpackedObject
     implements DbValue, RecordRequestMetadata {
 
-  private final EnumProperty<UserTaskIntent> intentProperty =
-      new EnumProperty<>("intent", UserTaskIntent.class);
+  private final EnumProperty<VariableDocumentIntent> intentProperty =
+      new EnumProperty<>("intent", VariableDocumentIntent.class);
   private final LongProperty requestIdProperty = new LongProperty("requestId", -1);
   private final IntegerProperty requestStreamIdProperty =
       new IntegerProperty("requestStreamId", -1);
 
-  public UserTaskRecordRequestMetadata() {
+  public VariableDocumentRecordRequestMetadata() {
     super(3);
     declareProperty(intentProperty)
         .declareProperty(requestIdProperty)
         .declareProperty(requestStreamIdProperty);
   }
 
-  public UserTaskIntent getIntent() {
+  public VariableDocumentIntent getIntent() {
     return intentProperty.getValue();
   }
 
-  public UserTaskRecordRequestMetadata setIntent(final UserTaskIntent intent) {
+  public VariableDocumentRecordRequestMetadata setIntent(final VariableDocumentIntent intent) {
     intentProperty.setValue(intent);
     return this;
   }
@@ -61,7 +61,7 @@ public class UserTaskRecordRequestMetadata extends UnpackedObject
     return requestIdProperty.getValue();
   }
 
-  public UserTaskRecordRequestMetadata setRequestId(final long requestId) {
+  public VariableDocumentRecordRequestMetadata setRequestId(final long requestId) {
     requestIdProperty.setValue(requestId);
     return this;
   }
@@ -73,10 +73,10 @@ public class UserTaskRecordRequestMetadata extends UnpackedObject
 
   @Override
   public ValueType responseType() {
-    return ValueType.USER_TASK;
+    return ValueType.VARIABLE_DOCUMENT;
   }
 
-  public RecordRequestMetadata setRequestStreamId(final int requestStreamId) {
+  public VariableDocumentRecordRequestMetadata setRequestStreamId(final int requestStreamId) {
     requestStreamIdProperty.setValue(requestStreamId);
     return this;
   }
