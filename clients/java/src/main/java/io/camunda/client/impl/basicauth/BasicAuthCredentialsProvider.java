@@ -23,7 +23,7 @@ public class BasicAuthCredentialsProvider implements CredentialsProvider {
   public static final String AUTH_HEADER_KEY = "Authorization";
   private final String authHeaderValue;
 
-  public BasicAuthCredentialsProvider(final String username, final String password) {
+  BasicAuthCredentialsProvider(final String username, final String password) {
     final String base64EncodedCredentials =
         Base64.getEncoder().encodeToString(String.format("%s:%s", username, password).getBytes());
     authHeaderValue = String.format("Basic %s", base64EncodedCredentials);

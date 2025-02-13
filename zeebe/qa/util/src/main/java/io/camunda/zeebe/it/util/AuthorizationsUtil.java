@@ -11,7 +11,7 @@ import static io.camunda.security.configuration.InitializationConfiguration.DEFA
 import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_USERNAME;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.impl.basicauth.BasicAuthCredentialsProvider;
+import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.client.protocol.rest.OwnerTypeEnum;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
@@ -132,7 +132,8 @@ public class AuthorizationsUtil implements CloseableSilently {
         .newClientBuilder()
         .preferRestOverGrpc(true)
         .defaultRequestTimeout(Duration.ofSeconds(15))
-        .credentialsProvider(new BasicAuthCredentialsProvider(username, password))
+        .credentialsProvider(
+            new BasicAuthCredentialsProviderBuilder().username(username).password(password).build())
         .build();
   }
 
@@ -142,7 +143,8 @@ public class AuthorizationsUtil implements CloseableSilently {
         .newClientBuilder()
         .defaultRequestTimeout(Duration.ofSeconds(15))
         .preferRestOverGrpc(false)
-        .credentialsProvider(new BasicAuthCredentialsProvider(username, password))
+        .credentialsProvider(
+            new BasicAuthCredentialsProviderBuilder().username(username).password(password).build())
         .build();
   }
 

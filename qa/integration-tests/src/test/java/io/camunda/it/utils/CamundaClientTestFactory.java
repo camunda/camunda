@@ -8,7 +8,7 @@
 package io.camunda.it.utils;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.impl.basicauth.BasicAuthCredentialsProvider;
+import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.client.protocol.rest.OwnerTypeEnum;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
@@ -138,7 +138,8 @@ public final class CamundaClientTestFactory implements AutoCloseable {
     return gateway
         .newClientBuilder()
         .preferRestOverGrpc(true)
-        .credentialsProvider(new BasicAuthCredentialsProvider(username, password))
+        .credentialsProvider(
+            new BasicAuthCredentialsProviderBuilder().username(username).password(password).build())
         .build();
   }
 

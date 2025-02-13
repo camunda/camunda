@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.impl.HttpStatusCode;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProvider;
+import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.client.util.TestCredentialsApplier;
 import io.camunda.client.util.TestCredentialsApplier.Credential;
 import java.util.Base64;
@@ -35,7 +36,7 @@ public class BasicAuthCredentialsProviderTest {
     final String username = UUID.randomUUID().toString();
     final String password = UUID.randomUUID().toString();
     final BasicAuthCredentialsProvider provider =
-        new BasicAuthCredentialsProvider(username, password);
+        new BasicAuthCredentialsProviderBuilder().username(username).password(password).build();
 
     // when
     provider.applyCredentials(applier);
@@ -51,7 +52,7 @@ public class BasicAuthCredentialsProviderTest {
   void shouldNotRetryRequest() {
     // given
     final BasicAuthCredentialsProvider provider =
-        new BasicAuthCredentialsProvider("username", "password");
+        new BasicAuthCredentialsProviderBuilder().username("username").password("password").build();
 
     // when
     final boolean shouldRetryRequest = provider.shouldRetryRequest(new HttpStatusCode(401));
