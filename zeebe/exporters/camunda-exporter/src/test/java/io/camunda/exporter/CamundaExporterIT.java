@@ -63,6 +63,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -678,11 +679,24 @@ final class CamundaExporterIT {
     }
 
     @TestTemplate
-    void shouldNotFlushIfImportersAreNotCompleted(
+    void shouldFlushIfImporterNotCompletedButNoZeebeIndices(
         final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
         throws IOException {
       // given
       createSchemas(config, clientAdapter);
+      indexImportPositionEntity("decision", false, clientAdapter);
+      clientAdapter.refresh();
+
+      checkExporterFlushesRecord(config, clientAdapter);
+    }
+
+    @TestTemplate
+    void shouldNotFlushIfImportersAreNotCompletedAndThereAreZeebeIndices(
+        final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+        throws IOException {
+      // given
+      createSchemas(config, clientAdapter);
+      clientAdapter.index("1", "zeebe-record-decision", Map.of("key", "12345"));
       // adds a not complete position index document so exporter sees importing as not yet completed
       indexImportPositionEntity("decision", false, clientAdapter);
       clientAdapter.refresh();
@@ -726,39 +740,7 @@ final class CamundaExporterIT {
     void shouldFlushIfImportersAreCompleted(
         final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
         throws IOException {
-      // given
-      final var context = spy(getContextFromConfig(config));
-      doReturn(partitionId).when(context).getPartitionId();
-      camundaExporter.configure(context);
-      camundaExporter.open(controller);
-
-      controller.runScheduledTasks(Duration.ofMinutes(1));
-
-      // when
-      final var record =
-          factory.generateRecord(
-              ValueType.USER,
-              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
-              UserIntent.CREATED);
-
-      camundaExporter.export(record);
-
-      // then
-      assertThat(controller.getPosition()).isEqualTo(record.getPosition());
-      verify(controller, times(1))
-          .updateLastExportedRecordPosition(eq(record.getPosition()), any());
-
-      final var authHandler =
-          getHandlers(config).stream()
-              .filter(handler -> handler.getHandledValueType().equals(record.getValueType()))
-              .filter(handler -> handler.handlesRecord(record))
-              .findFirst()
-              .orElseThrow();
-      final var recordId = authHandler.generateIds(record).getFirst();
-
-      assertThat(
-              clientAdapter.get(recordId, authHandler.getIndexName(), authHandler.getEntityType()))
-          .isNotNull();
+      checkExporterFlushesRecord(config, clientAdapter);
     }
 
     @TestTemplate
@@ -879,6 +861,44 @@ final class CamundaExporterIT {
       exporter.open(new ExporterTestController());
 
       adapter.refresh();
+    }
+
+    private void checkExporterFlushesRecord(
+        final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+        throws IOException {
+      // given
+      final var context = spy(getContextFromConfig(config));
+      doReturn(partitionId).when(context).getPartitionId();
+      camundaExporter.configure(context);
+      camundaExporter.open(controller);
+
+      controller.runScheduledTasks(Duration.ofMinutes(1));
+
+      // when
+      final var record =
+          factory.generateRecord(
+              ValueType.USER,
+              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
+              UserIntent.CREATED);
+
+      camundaExporter.export(record);
+
+      // then
+      assertThat(controller.getPosition()).isEqualTo(record.getPosition());
+      verify(controller, times(1))
+          .updateLastExportedRecordPosition(eq(record.getPosition()), any());
+
+      final var authHandler =
+          getHandlers(config).stream()
+              .filter(handler -> handler.getHandledValueType().equals(record.getValueType()))
+              .filter(handler -> handler.handlesRecord(record))
+              .findFirst()
+              .orElseThrow();
+      final var recordId = authHandler.generateIds(record).getFirst();
+
+      assertThat(
+              clientAdapter.get(recordId, authHandler.getIndexName(), authHandler.getEntityType()))
+          .isNotNull();
     }
   }
 }
