@@ -66,4 +66,6 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<? extends EnumValue> & En
   boolean isEmpty(ColumnFamilyType column, TransactionContext context);
 
   StatefulMeterRegistry getMeterRegistry();
+
+  default void exportMetrics() {}
 }
