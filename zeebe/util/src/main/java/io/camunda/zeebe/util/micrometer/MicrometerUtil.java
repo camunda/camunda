@@ -12,6 +12,7 @@ import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.Builder;
 import io.micrometer.core.instrument.Timer.Sample;
@@ -183,6 +184,10 @@ public final class MicrometerUtil {
       public String asString() {
         return "partition";
       }
+    };
+
+    public static Tags tags(final int partitionId) {
+      return Tags.of(PARTITION.name(), String.valueOf(partitionId));
     }
   }
 }

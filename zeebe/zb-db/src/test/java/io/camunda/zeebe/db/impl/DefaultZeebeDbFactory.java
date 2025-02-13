@@ -15,6 +15,7 @@ import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 public final class DefaultZeebeDbFactory {
@@ -32,6 +33,7 @@ public final class DefaultZeebeDbFactory {
         new RocksDbConfiguration(),
         consistencyChecks,
         new AccessMetricsConfiguration(Kind.NONE, 1),
-        meterRegistry);
+        meterRegistry,
+        Tags.empty());
   }
 }

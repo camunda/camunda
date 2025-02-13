@@ -9,6 +9,7 @@ package io.camunda.zeebe.util.micrometer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Meter.Type;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -19,7 +20,8 @@ import org.junit.jupiter.api.Test;
 final class StatefulMeterRegistryTest {
 
   private final MeterRegistry wrapped = new SimpleMeterRegistry();
-  private final StatefulMeterRegistry registry = new StatefulMeterRegistry(wrapped);
+  private final StatefulMeterRegistry registry =
+      new StatefulMeterRegistry(wrapped, PartitionKeyNames.tags(1));
 
   @AfterEach
   void afterEach() {

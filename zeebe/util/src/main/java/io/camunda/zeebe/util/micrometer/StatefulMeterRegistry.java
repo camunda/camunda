@@ -33,9 +33,10 @@ import net.jcip.annotations.ThreadSafe;
 public final class StatefulMeterRegistry extends CompositeMeterRegistry {
   private final ConcurrentMap<Meter.Id, StatefulGauge> gauges = new ConcurrentHashMap<>();
 
-  public StatefulMeterRegistry(final MeterRegistry wrapped) {
+  public StatefulMeterRegistry(final MeterRegistry wrapped, final Tags tags) {
     super();
     add(wrapped);
+    config().commonTags(tags);
   }
 
   /**

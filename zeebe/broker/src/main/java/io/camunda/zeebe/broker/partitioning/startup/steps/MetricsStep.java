@@ -26,9 +26,7 @@ public class MetricsStep implements StartupStep<PartitionStartupContext> {
     final var brokerRegistry = context.brokerMeterRegistry();
     final var partitionRegistry = MicrometerUtil.wrap(brokerRegistry);
     final Integer partitionId = context.partitionMetadata().id().id();
-    partitionRegistry
-        .config()
-        .commonTags(PartitionKeyNames.PARTITION.asString(), partitionId.toString());
+    partitionRegistry.config().commonTags(PartitionKeyNames.tags(partitionId));
 
     context.partitionMeterRegistry(partitionRegistry);
     return CompletableActorFuture.completed(context);

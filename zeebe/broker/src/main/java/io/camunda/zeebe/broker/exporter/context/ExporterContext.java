@@ -44,6 +44,9 @@ public final class ExporterContext implements Context, AutoCloseable {
     if (meterRegistry != null) {
       this.meterRegistry.add(meterRegistry);
     }
+    // due to a weird behavior in Micrometer, tags are not forwarded by nested composite registries
+    // until this is solved, we need to pass them on over and over; later we should extract some
+    // utility to forward tags when nesting registries
     this.meterRegistry
         .config()
         .commonTags(
