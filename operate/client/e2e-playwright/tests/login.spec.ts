@@ -14,8 +14,7 @@ test.beforeEach(async ({loginPage}) => {
   await loginPage.navigateToLogin();
 });
 
-// Skipped because E2E tests run with auth-basic profile, which currently has no dedicated login page.
-test.describe.skip('login page', () => {
+test.describe('login page', () => {
   test('Log in with invalid user account', async ({loginPage, page}) => {
     expect(await loginPage.passwordInput.getAttribute('type')).toEqual(
       'password',
