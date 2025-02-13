@@ -503,7 +503,7 @@ public class ClusteringRule extends ExternalResource {
             topologyManager,
             BrokerClientRequestMetrics.of(meterRegistry));
     final var jobStreamClient =
-        new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster);
+        new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster, meterRegistry);
     jobStreamClient.start().join();
 
     // before we can add the job stream client as a topology listener, we need to wait for the
