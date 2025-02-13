@@ -51,6 +51,7 @@ public enum JobClientStreamMetricsDoc implements ExtendedMeterDocumentation {
 
   /** Total count of aggregated streams */
   AGGREGATED_STREAMS {
+
     @Override
     public String getDescription() {
       return "Total count of aggregated streams";
@@ -69,6 +70,11 @@ public enum JobClientStreamMetricsDoc implements ExtendedMeterDocumentation {
 
   /** Distribution of client count per aggregated stream */
   AGGREGATED_CLIENTS {
+    /* Default buckets from Prometheus' histogram */
+    private static final double[] BUCKETS = {
+      .005, .01, .025, .05, .075, .1, .25, .5, .75, 1, 2.5, 5, 7.5, 10
+    };
+
     @Override
     public String getDescription() {
       return "Distribution of client count per aggregated stream";
@@ -82,6 +88,11 @@ public enum JobClientStreamMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public Type getType() {
       return Type.DISTRIBUTION_SUMMARY;
+    }
+
+    @Override
+    public double[] getDistributionSLOs() {
+      return BUCKETS;
     }
   },
 
