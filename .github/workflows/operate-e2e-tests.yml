@@ -115,6 +115,7 @@ jobs:
         run: yarn run test:e2e:ci
         env:
           ZEEBE_GATEWAY_ADDRESS: localhost:26500
+          ZEEBE_REST_GATEWAY_ADDRESS: http://localhost:8080
       - uses: actions/upload-artifact@v4
         if: always()
         with:
