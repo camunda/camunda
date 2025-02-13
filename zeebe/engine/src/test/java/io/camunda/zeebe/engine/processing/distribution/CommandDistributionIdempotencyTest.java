@@ -173,7 +173,7 @@ public class CommandDistributionIdempotencyTest {
 
                   ENGINE.authorization().deleteAuthorization(key).delete();
                 },
-                3),
+                4),
             AuthorizationDeleteProcessor.class
           },
           {
@@ -198,7 +198,7 @@ public class CommandDistributionIdempotencyTest {
 
                   ENGINE.authorization().updateAuthorization(key).update();
                 },
-                3),
+                4),
             AuthorizationUpdateProcessor.class
           },
           {
@@ -267,7 +267,7 @@ public class CommandDistributionIdempotencyTest {
                       .withEntityType(EntityType.USER)
                       .add();
                 },
-                3),
+                4),
             GroupAddEntityProcessor.class
           },
           {
@@ -291,7 +291,7 @@ public class CommandDistributionIdempotencyTest {
                       .withEntityType(EntityType.USER)
                       .remove();
                 },
-                4),
+                5),
             GroupRemoveEntityProcessor.class
           },
           {
@@ -387,7 +387,7 @@ public class CommandDistributionIdempotencyTest {
                       .withEntityType(EntityType.USER)
                       .add();
                 },
-                3),
+                4),
             RoleAddEntityProcessor.class
           },
           {
@@ -411,7 +411,7 @@ public class CommandDistributionIdempotencyTest {
                       .withEntityType(EntityType.USER)
                       .remove();
                 },
-                4),
+                5),
             RoleRemoveEntityProcessor.class
           },
           {
@@ -475,7 +475,7 @@ public class CommandDistributionIdempotencyTest {
                       .withEntityType(EntityType.USER)
                       .add();
                 },
-                3),
+                4),
             TenantAddEntityProcessor.class
           },
           {
@@ -499,7 +499,7 @@ public class CommandDistributionIdempotencyTest {
                       .withEntityType(EntityType.USER)
                       .remove();
                 },
-                4),
+                5),
             TenantRemoveEntityProcessor.class
           },
           {
@@ -520,7 +520,7 @@ public class CommandDistributionIdempotencyTest {
                   final var user = createUser();
                   ENGINE.user().deleteUser(user.getValue().getUsername()).delete();
                 },
-                2),
+                3),
             UserDeleteProcessor.class,
           },
           {
@@ -537,7 +537,7 @@ public class CommandDistributionIdempotencyTest {
                       .withName(UUID.randomUUID().toString())
                       .update();
                 },
-                2),
+                3),
             UserUpdateProcessor.class
           },
           {
