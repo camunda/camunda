@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -318,14 +320,23 @@
       </exclusions>
     </dependency>
 
+    <!-- Micrometer backend/implementations -->
     <dependency>
       <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-registry-prometheus-simpleclient</artifactId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
+      <scope>runtime</scope>
     </dependency>
 
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-registry-otlp</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-dynatrace</artifactId>
+      <scope>runtime</scope>
     </dependency>
 
     <dependency>
@@ -548,7 +559,8 @@
           <configurationDirectory>config</configurationDirectory>
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
           <extraJvmArguments>-XX:+ExitOnOutOfMemoryError
-            -Dfile.encoding=UTF-8 -Xshare:auto</extraJvmArguments>
+            -Dfile.encoding=UTF-8 -Xshare:auto
+          </extraJvmArguments>
           <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
           <platforms>
             <platform>windows</platform>
@@ -663,8 +675,10 @@
             <dependency>org.bouncycastle:bcprov-jdk18on</dependency>
             <dependency>org.bouncycastle:bcpkix-jdk18on</dependency>
 
-            <!-- OTLP Micrometer Exporter -->
+            <!-- Micrometer Exporters/Registries -->
+            <dependency>io.micrometer:micrometer-registry-prometheus</dependency>
             <dependency>io.micrometer:micrometer-registry-otlp</dependency>
+            <dependency>io.micrometer:micrometer-registry-dynatrace</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
