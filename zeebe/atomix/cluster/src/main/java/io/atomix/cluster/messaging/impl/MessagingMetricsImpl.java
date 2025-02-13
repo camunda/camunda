@@ -8,10 +8,24 @@
 package io.atomix.cluster.messaging.impl;
 
 import io.camunda.zeebe.util.CloseableSilently;
+<<<<<<< HEAD
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
+=======
+import io.camunda.zeebe.util.collection.Map3D;
+import io.camunda.zeebe.util.collection.Table;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import net.jcip.annotations.ThreadSafe;
+>>>>>>> 444c8eee (fix: make MessagingMetricsImpl ThreadSafe)
 
+@ThreadSafe
 final class MessagingMetricsImpl implements MessagingMetrics {
 
   private static final String NAMESPACE = "zeebe";
@@ -44,6 +58,7 @@ final class MessagingMetricsImpl implements MessagingMetrics {
           .labelNames("type", LABEL_ADDRESS, LABEL_TOPIC)
           .register();
 
+<<<<<<< HEAD
   private static final Counter RESPONSE_COUNT =
       Counter.build()
           .namespace(NAMESPACE)
@@ -59,6 +74,17 @@ final class MessagingMetricsImpl implements MessagingMetrics {
           .help("The count of inflight requests")
           .labelNames(LABEL_ADDRESS, LABEL_TOPIC)
           .register();
+=======
+  MessagingMetricsImpl(final MeterRegistry registry) {
+    this.registry = registry;
+    requestResponseLatency = new ConcurrentHashMap<>();
+    requestSize = Table.concurrent();
+    requestMessageCounter = Table.concurrent();
+    requestRespCounter = Table.concurrent();
+    responseCounter = Map3D.concurrent();
+    inFlightCounter = Table.concurrent();
+  }
+>>>>>>> 444c8eee (fix: make MessagingMetricsImpl ThreadSafe)
 
   @Override
   public CloseableSilently startRequestTimer(final String name) {

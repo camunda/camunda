@@ -7,8 +7,19 @@
  */
 package io.atomix.cluster.protocol;
 
+<<<<<<< HEAD
 import io.prometheus.client.Gauge;
+=======
+import io.atomix.cluster.protocol.SwimMembershipProtocolMetricsDoc.SwimKeyNames;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import net.jcip.annotations.ThreadSafe;
+>>>>>>> 444c8eee (fix: make MessagingMetricsImpl ThreadSafe)
 
+@ThreadSafe
 final class SwimMembershipProtocolMetrics {
 
   private static final Gauge MEMBERS_INCARNATION_NUMBER =
