@@ -118,15 +118,15 @@ public class GcpDocumentStore implements DocumentStore {
     final String fullBlobName = getFullBlobName(documentId);
     final String fileName = Optional.ofNullable(request.metadata().fileName()).orElse(documentId);
 
-    Blob existingBlob = null;
     try {
-      existingBlob = storage.get(bucketName, fullBlobName);
+      final Blob existingBlob = storage.get(bucketName, fullBlobName);
+      if (existingBlob != null) {
+        return Either.left(new DocumentError.DocumentAlreadyExists(documentId));
+      }
     } catch (final Exception e) {
-      //      return Either.left(new UnknownDocumentError(e));
+      return Either.left(new UnknownDocumentError(e));
     }
-    if (existingBlob != null) {
-      return Either.left(new DocumentError.DocumentAlreadyExists(documentId));
-    }
+
     final BlobId blobId = BlobId.of(bucketName, fullBlobName);
     final var blobInfoBuilder = BlobInfo.newBuilder(blobId);
 
