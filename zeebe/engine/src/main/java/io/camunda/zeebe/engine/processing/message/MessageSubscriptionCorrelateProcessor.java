@@ -99,7 +99,7 @@ public final class MessageSubscriptionCorrelateProcessor
       final var reason =
           """
           Expected to acknowledge correlating message with key '%d' to subscription with key '%d' \
-          but the subscription is already correlating'"""
+          but the subscription has already been correlated'"""
               .formatted(record.getValue().getMessageKey(), subscription.getKey());
       rejectionWriter.appendRejection(record, RejectionType.INVALID_STATE, reason);
       return;
