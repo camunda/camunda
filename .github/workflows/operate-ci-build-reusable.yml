@@ -83,7 +83,7 @@ jobs:
       - uses: ./.github/actions/setup-build
         name: Build setup
         with:
-          dockerhub: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
+          dockerhub: ${{ env.SHOULD_PUSH_DOCKER_SNAPSHOT == 'true' }}
           harbor: true
           java-distribution: adopt
           maven-cache-key-modifier: operate
