@@ -901,6 +901,9 @@
         #
         #   index:
         #     prefix:
+        #     zeebeIndexPrefix: zeebe-record
+        #     The 'zeebeIndexPrefix' must be the same value as the Elasticsearch exporter 'elasticsearch.args.index.prefix'
+        #     otherwise the exporter may never start.
         #     numberOfShards: 3
         #     numberOfReplicas: 0
         #     variableSizeThreshold: 8191
