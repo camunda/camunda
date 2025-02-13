@@ -43,7 +43,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 @ZeebeIntegration
-@Disabled("https://github.com/camunda/camunda/issues/27289")
+@Disabled("https://github.com/camunda/camunda/issues/26799")
 public class OidcAuthOverGrpcIT {
 
   private static final String DEFAULT_USER_ID = UUID.randomUUID().toString();

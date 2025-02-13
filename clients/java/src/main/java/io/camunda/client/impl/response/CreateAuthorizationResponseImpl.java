@@ -13,9 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.response;
+package io.camunda.client.impl.response;
 
-public interface CreateAuthorizationResponse {
+import io.camunda.client.api.response.CreateAuthorizationResponse;
+import io.camunda.client.protocol.rest.AuthorizationCreateResult;
 
-  long getAuthorizationKey();
+public class CreateAuthorizationResponseImpl implements CreateAuthorizationResponse {
+
+  private long authorizationKey;
+
+  @Override
+  public long getAuthorizationKey() {
+    return authorizationKey;
+  }
+
+  public CreateAuthorizationResponseImpl setResponse(final AuthorizationCreateResult response) {
+    authorizationKey = Long.parseLong(response.getAuthorizationKey());
+    return this;
+  }
 }
