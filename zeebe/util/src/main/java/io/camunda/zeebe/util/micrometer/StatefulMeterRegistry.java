@@ -14,7 +14,6 @@ import io.micrometer.core.instrument.Meter.Type;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
-import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -30,12 +29,11 @@ import net.jcip.annotations.ThreadSafe;
  * you're really, really sure.
  */
 @ThreadSafe
-public final class StatefulMeterRegistry extends CompositeMeterRegistry {
+public final class StatefulMeterRegistry extends WrappedCompositeMeterRegistry {
   private final ConcurrentMap<Meter.Id, StatefulGauge> gauges = new ConcurrentHashMap<>();
 
   public StatefulMeterRegistry(final MeterRegistry wrapped) {
-    super();
-    add(wrapped);
+    super(wrapped);
   }
 
   /**

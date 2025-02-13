@@ -96,8 +96,9 @@ public final class MicrometerUtil {
    * will forward all metrics to that registry. This means if the forwardee has some common tags,
    * they will be applied to the metrics you create on the returned registry.
    */
-  public static CompositeMeterRegistry wrap(final MeterRegistry registry) {
-    return new CompositeMeterRegistry(registry.config().clock(), Collections.singleton(registry));
+  public static WrappedCompositeMeterRegistry wrap(final MeterRegistry registry) {
+    return new WrappedCompositeMeterRegistry(
+        registry.config().clock(), Collections.singleton(registry));
   }
 
   /** Returns a timer builder pre-configured based on the given documentation. */

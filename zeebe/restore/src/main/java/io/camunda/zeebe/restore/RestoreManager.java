@@ -137,10 +137,10 @@ public class RestoreManager {
 
   private InstrumentedRaftPartition createRaftPartition(
       final PartitionMetadata metadata, final RaftPartitionFactory factory) {
-    final var partitionRegistry = new CompositeMeterRegistry();
     final var partitionId = metadata.id().id().toString();
-    partitionRegistry.config().commonTags(PartitionKeyNames.PARTITION.asString(), partitionId);
-    partitionRegistry.add(meterRegistry);
+    final var partitionRegistry =
+        MicrometerUtil.wrap(meterRegistry)
+            .addTags(PartitionKeyNames.PARTITION.asString(), partitionId);
 
     return new InstrumentedRaftPartition(
         factory.createRaftPartition(metadata, partitionRegistry), partitionRegistry);
