@@ -49,14 +49,14 @@ public class PrefixMigrationIT {
           .withStartupTimeout(Duration.ofMinutes(5)); // can be slow in CI
 
   private GenericContainer<?> createCamundaContainer(
-      final String tag,
+      final String image,
       final String operatePrefix,
       final String tasklistPrefix,
       final String newPrefix) {
     final var esUrl = String.format("http://%s:%d", ELASTIC_ALIAS, 9200);
 
     final var container =
-        new GenericContainer<>(DockerImageName.parse("camunda/camunda:" + tag))
+        new GenericContainer<>(DockerImageName.parse(image))
             .waitingFor(
                 new HttpWaitStrategy()
                     .forPort(MANAGEMENT_PORT)
@@ -143,7 +143,8 @@ public class PrefixMigrationIT {
   void shouldReindexDocumentsDuringPrefixMigration() throws IOException, InterruptedException {
     // given
     final var camunda87 =
-        createCamundaContainer("8.7.0-alpha4", OLD_OPERATE_PREFIX, OLD_TASKLIST_PREFIX, NEW_PREFIX);
+        createCamundaContainer(
+            "camunda/camunda:8.7.0-alpha4", OLD_OPERATE_PREFIX, OLD_TASKLIST_PREFIX, NEW_PREFIX);
     camunda87.start();
 
     final var camunda87Client = createCamundaClient(camunda87);
@@ -165,7 +166,8 @@ public class PrefixMigrationIT {
 
     // then
     final var currentCamunda =
-        createCamundaContainer("current-test", NEW_PREFIX, NEW_PREFIX, NEW_PREFIX);
+        createCamundaContainer(
+            "localhost:5000/camunda/camunda:current-test", NEW_PREFIX, NEW_PREFIX, NEW_PREFIX);
     currentCamunda.start();
 
     final var currentCamundaClient = createCamundaClient(currentCamunda);
