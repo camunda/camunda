@@ -16,7 +16,8 @@ public record DecisionRequirementsDbModel(
     String resourceName,
     Integer version,
     String xml,
-    String tenantId) {
+    String tenantId,
+    int partitionId) {
 
   public static final class Builder implements ObjectBuilder<DecisionRequirementsDbModel> {
 
@@ -27,6 +28,7 @@ public record DecisionRequirementsDbModel(
     private Integer version;
     private String xml;
     private String tenantId;
+    private int partitionId;
 
     public DecisionRequirementsDbModel.Builder decisionRequirementsKey(final Long value) {
       decisionRequirementsKey = value;
@@ -63,6 +65,11 @@ public record DecisionRequirementsDbModel(
       return this;
     }
 
+    public DecisionRequirementsDbModel.Builder partitionId(final int value) {
+      partitionId = value;
+      return this;
+    }
+
     @Override
     public DecisionRequirementsDbModel build() {
       return new DecisionRequirementsDbModel(
@@ -72,7 +79,8 @@ public record DecisionRequirementsDbModel(
           resourceName,
           version,
           xml,
-          tenantId);
+          tenantId,
+          partitionId);
     }
   }
 }

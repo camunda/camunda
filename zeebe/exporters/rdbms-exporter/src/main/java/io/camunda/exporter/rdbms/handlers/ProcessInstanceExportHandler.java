@@ -8,6 +8,7 @@
 package io.camunda.exporter.rdbms.handlers;
 
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
+import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
@@ -55,18 +56,20 @@ public class ProcessInstanceExportHandler
 
   private ProcessInstanceDbModel map(final Record<ProcessInstanceRecordValue> record) {
     final var value = record.getValue();
-    return new ProcessInstanceDbModel(
-        value.getProcessInstanceKey(),
-        value.getBpmnProcessId(),
-        value.getProcessDefinitionKey(),
-        ProcessInstanceState.ACTIVE,
-        DateUtil.toOffsetDateTime(record.getTimestamp()),
-        null,
-        value.getTenantId(),
-        value.getParentProcessInstanceKey(),
-        value.getParentElementInstanceKey(),
-        0,
-        null,
-        value.getVersion());
+    return new ProcessInstanceDbModelBuilder()
+        .processInstanceKey(value.getProcessInstanceKey())
+        .processDefinitionId(value.getBpmnProcessId())
+        .processDefinitionKey(value.getProcessDefinitionKey())
+        .state(ProcessInstanceState.ACTIVE)
+        .startDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
+        .endDate(null)
+        .tenantId(value.getTenantId())
+        .parentProcessInstanceKey(value.getParentProcessInstanceKey())
+        .parentElementInstanceKey(value.getParentElementInstanceKey())
+        .numIncidents(0)
+        .elementId(null)
+        .version(value.getVersion())
+        .partitionId(record.getPartitionId())
+        .build();
   }
 }

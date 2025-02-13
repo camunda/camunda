@@ -33,6 +33,7 @@ public record DecisionInstanceDbModel(
     Long rootDecisionDefinitionKey,
     DecisionDefinitionType decisionType,
     String tenantId,
+    Long partitionId,
     List<EvaluatedInput> evaluatedInputs,
     List<EvaluatedOutput> evaluatedOutputs) {
 
@@ -61,6 +62,7 @@ public record DecisionInstanceDbModel(
     private Long rootDecisionDefinitionKey;
     private DecisionDefinitionType decisionType;
     private String tenantId;
+    private int partitionId;
     private List<EvaluatedInput> evaluatedInputs;
     private List<EvaluatedOutput> evaluatedOutputs;
 
@@ -154,6 +156,11 @@ public record DecisionInstanceDbModel(
       return this;
     }
 
+    public Builder partitionId(final int value) {
+      partitionId = value;
+      return this;
+    }
+
     public Builder evaluatedInputs(final List<EvaluatedInput> value) {
       evaluatedInputs = value;
       return this;
@@ -185,6 +192,7 @@ public record DecisionInstanceDbModel(
           rootDecisionDefinitionKey,
           decisionType,
           tenantId,
+          Long.valueOf(partitionId),
           evaluatedInputs,
           evaluatedOutputs);
     }

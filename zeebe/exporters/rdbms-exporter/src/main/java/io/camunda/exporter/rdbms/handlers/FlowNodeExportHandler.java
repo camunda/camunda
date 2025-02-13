@@ -79,6 +79,7 @@ public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstance
         .state(FlowNodeState.ACTIVE)
         .startDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
         .type(mapFlowNodeType(value))
+        .partitionId(record.getPartitionId())
         .build();
   }
 
