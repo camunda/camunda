@@ -68,14 +68,18 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<? extends EnumValue> & En
   /**
    * Returns a meter registry tied to the lifecycle of the DB; any metrics registered while the DB
    * is opened will be removed once the DB is closed.
+   *
+   * <p><strong>Do not register metrics that must outlive the scope of this ZeebeDb
+   * instance</strong>
    */
   MeterRegistry getMeterRegistry();
 
   /**
-   * On every call, takes a snapshot of RocksDB metrics and exports them.
+   * On every call, takes a snapshot of RocksDB metrics and exports them via the associated {@link
+   * #getMeterRegistry()}.
    *
    * <p>NOTE: on the first call, this may cause some metrics to be registered for the first time on
-   * the DB's meter registry (see {@link #getMeterRegistry()}.
+   * the DB's meter registry (see {@link #getMeterRegistry()}).
    */
   default void exportMetrics() {}
 }
