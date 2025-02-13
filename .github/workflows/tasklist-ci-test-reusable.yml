@@ -60,34 +60,24 @@ jobs:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags
 
-      # Setup: import secrets from vault
-      - name: Import Secrets
-        id: secrets  # important to refer to it in later steps
-        uses: hashicorp/vault-action@a1b77a09293a4366e48a5067a86692ac6e94fdc0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false  # we rely on step outputs, no need for environment variables
-          secrets: |
-            secret/data/github.com/organizations/camunda NEXUS_USR;
-            secret/data/github.com/organizations/camunda NEXUS_PSW;
-
       # Setup: configure Java, Maven, settings.xml
-      - uses: ./.github/actions/build-tasklist-setup
+      - uses: ./.github/actions/setup-build
         name: Build setup
         with:
-          nexusUsername: ${{ steps.secrets.outputs.NEXUS_USR }}
-          nexusPassword: ${{ steps.secrets.outputs.NEXUS_PSW }}
+          java-distribution: adopt
+          maven-cache-key-modifier: tasklist-tests
+          maven-version: 3.8.6
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
       - name: Build backend
-        run: mvn -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
+        run: ./mvnw -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
 
       # Run integration tests in parallel
       - name: Run Integration Tests
         run: |
-          mvn -f tasklist -T${{ env.LIMITS_CPU }} verify -P ${{ matrix.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ matrix.database }}
+          ./mvnw -f tasklist -T${{ env.LIMITS_CPU }} verify -P ${{ matrix.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ matrix.database }}
 
       # Sanitize the branch name to replace non alphanumeric characters with `-`
       - id: sanitize
@@ -97,7 +87,7 @@ jobs:
           max_length: '50'
 
       - name: Upload failed test results
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/collect-test-artifacts
         if: failure()
         with:
           name: tasklist-test-results-${{ matrix.database }}
