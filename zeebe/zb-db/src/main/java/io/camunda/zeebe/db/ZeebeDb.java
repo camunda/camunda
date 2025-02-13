@@ -65,7 +65,14 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<? extends EnumValue> & En
    */
   boolean isEmpty(ColumnFamilyType column, TransactionContext context);
 
+  /**
+   * @return the StatefulMeterRegister instance that is tied to this ZeebeDb instance. When ZeebeDb
+   *     is closed, all metrics registered through this instances will be removed from the
+   *     underlying registry.
+   *     <p>Do not register metrics that must outlive the scope of this ZeebeDb instance
+   */
   StatefulMeterRegistry getMeterRegistry();
 
+  /** Export the metrics from RocksDB into micrometer */
   default void exportMetrics() {}
 }
