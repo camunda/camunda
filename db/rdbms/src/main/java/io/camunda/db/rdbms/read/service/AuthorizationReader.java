@@ -14,7 +14,6 @@ import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.entity.Permission;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,16 +30,13 @@ public class AuthorizationReader extends AbstractEntityReader<AuthorizationEntit
   }
 
   public Optional<AuthorizationEntity> findOne(
-      final long ownerKey, final String ownerType, final String resourceType) {
+      final String ownerId, final String ownerType, final String resourceType) {
     final var result =
         search(
             AuthorizationQuery.of(
                 b ->
                     b.filter(
-                        f ->
-                            f.ownerKeys(ownerKey)
-                                .ownerType(ownerType)
-                                .resourceType(resourceType))));
+                        f -> f.ownerIds(ownerId).ownerType(ownerType).resourceType(resourceType))));
     return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
   }
 
@@ -66,8 +62,8 @@ public class AuthorizationReader extends AbstractEntityReader<AuthorizationEntit
         model.ownerKey(),
         model.ownerType(),
         model.resourceType(),
-        model.permissions().stream()
-            .map(p -> new Permission(p.permissionType(), p.resourceIds()))
-            .toList());
+        null,
+        null,
+        null);
   }
 }
