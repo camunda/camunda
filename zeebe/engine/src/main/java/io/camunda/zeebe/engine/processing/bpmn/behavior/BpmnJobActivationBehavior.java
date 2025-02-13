@@ -7,7 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
-import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
+import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.JobStream;
@@ -42,14 +43,14 @@ public class BpmnJobActivationBehavior {
   private final StateWriter stateWriter;
   private final SideEffectWriter sideEffectWriter;
   private final KeyGenerator keyGenerator;
-  private final JobMetrics jobMetrics;
+  private final JobProcessingMetrics jobMetrics;
 
   public BpmnJobActivationBehavior(
       final JobStreamer jobStreamer,
       final VariableState variableState,
       final Writers writers,
       final KeyGenerator keyGenerator,
-      final JobMetrics jobMetrics) {
+      final JobProcessingMetrics jobMetrics) {
     this.jobStreamer = jobStreamer;
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
@@ -90,7 +91,7 @@ public class BpmnJobActivationBehavior {
       sideEffectWriter.appendSideEffect(
           () -> {
             jobStream.push(activatedJob);
-            jobMetrics.jobPush(jobType);
+            jobMetrics.countJobEvent(JobAction.PUSHED, jobType);
             return true;
           });
     } else {
@@ -107,7 +108,7 @@ public class BpmnJobActivationBehavior {
     sideEffectWriter.appendSideEffect(
         () -> {
           jobStreamer.notifyWorkAvailable(jobType);
-          jobMetrics.jobNotification(jobType);
+          jobMetrics.countJobEvent(JobAction.WORKERS_NOTIFIED, jobType);
           return true;
         });
   }

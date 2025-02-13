@@ -7,29 +7,27 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
-import io.prometheus.client.Gauge;
+import io.camunda.zeebe.util.micrometer.StatefulMeterRegistry;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class BannedInstanceMetrics {
 
-  private static final Gauge BANNED_INSTANCES_COUNTER =
-      Gauge.build()
-          .namespace("zeebe")
-          .name("banned_instances_total")
-          .help("Number of banned instances")
-          .labelNames("partition")
-          .register();
+  private final AtomicLong bannedInstanceCounter;
 
-  private final String partitionIdLabel;
-
-  public BannedInstanceMetrics(final int partitionId) {
-    partitionIdLabel = String.valueOf(partitionId);
+  public BannedInstanceMetrics(final StatefulMeterRegistry meterRegistry) {
+    bannedInstanceCounter = meterRegistry.newLongGauge(EngineMetricsDoc.BANNED_INSTANCES).state();
   }
 
   public void countBannedInstance() {
-    BANNED_INSTANCES_COUNTER.labels(partitionIdLabel).inc();
+    bannedInstanceCounter.incrementAndGet();
   }
 
+  /**
+   * Since this is setting an absolute value, be very careful about calling this from outside the
+   * stream processor actor. You could get incorrect values due to race conditions. If you need to
+   * update it from outside, use increment/decrement only.
+   */
   public void setBannedInstanceCounter(final int counter) {
-    BANNED_INSTANCES_COUNTER.labels(partitionIdLabel).set(counter);
+    bannedInstanceCounter.set(counter);
   }
 }

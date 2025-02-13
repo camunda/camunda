@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
-import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
@@ -52,7 +52,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
       final Writers writers,
-      final JobMetrics jobMetrics,
+      final JobProcessingMetrics jobMetrics,
       final DecisionBehavior decisionBehavior,
       final SubscriptionCommandSender subscriptionCommandSender,
       final int partitionsCount,

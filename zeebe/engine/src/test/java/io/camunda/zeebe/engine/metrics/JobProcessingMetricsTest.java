@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
-import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -15,27 +14,29 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.micrometer.core.instrument.Counter;
 import java.time.Duration;
+import java.util.Optional;
 import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestWatcher;
+import org.junit.rules.RuleChain;
 
-public class JobMetricsTest {
-
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+public class JobProcessingMetricsTest {
 
   private static final String PROCESS_ID = "process";
   private static final String TASK_ID = "task";
   private static final String JOB_TYPE = "job";
 
-  @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
+  private final EngineRule engine = EngineRule.singlePartition();
 
-  @BeforeClass
-  public static void deployProcess() {
-    ENGINE
+  @Rule
+  public final RuleChain rules =
+      RuleChain.outerRule(engine).around(new RecordingExporterTestWatcher());
+
+  @Before
+  public void deployProcess() {
+    engine
         .deployment()
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
@@ -48,18 +49,18 @@ public class JobMetricsTest {
 
   @Before
   public void resetMetrics() {
-    JobMetrics.clear();
+    engine.getMeterRegistry().clear();
   }
 
   @Test
   public void allCountsStartAtNull() {
-    assertThat(jobMetric("created", JOB_TYPE)).isNull();
-    assertThat(jobMetric("activated", JOB_TYPE)).isNull();
-    assertThat(jobMetric("timed out", JOB_TYPE)).isNull();
-    assertThat(jobMetric("completed", JOB_TYPE)).isNull();
-    assertThat(jobMetric("failed", JOB_TYPE)).isNull();
-    assertThat(jobMetric("canceled", JOB_TYPE)).isNull();
-    assertThat(jobMetric("error thrown", JOB_TYPE)).isNull();
+    assertThat(findJobCounter("created", JOB_TYPE)).isEmpty();
+    assertThat(findJobCounter("activated", JOB_TYPE)).isEmpty();
+    assertThat(findJobCounter("timed out", JOB_TYPE)).isEmpty();
+    assertThat(findJobCounter("completed", JOB_TYPE)).isEmpty();
+    assertThat(findJobCounter("failed", JOB_TYPE)).isEmpty();
+    assertThat(findJobCounter("canceled", JOB_TYPE)).isEmpty();
+    assertThat(findJobCounter("error thrown", JOB_TYPE)).isEmpty();
   }
 
   @Test
@@ -68,7 +69,7 @@ public class JobMetricsTest {
     createProcessInstanceWithJob(JOB_TYPE);
 
     // then
-    assertThat(jobMetric("created", JOB_TYPE)).isNotNull().isEqualTo(1);
+    assertThat(jobMetric("created", JOB_TYPE)).isNotNull().isOne();
   }
 
   @Test
@@ -81,7 +82,7 @@ public class JobMetricsTest {
     createProcessInstanceWithJob(jobType);
 
     // when
-    ENGINE.jobs().withType(jobType).activate();
+    engine.jobs().withType(jobType).activate();
 
     // then
     assertThat(jobMetric("activated", jobType)).isNotNull().isEqualTo(1);
@@ -94,7 +95,7 @@ public class JobMetricsTest {
 
     final var timeout = Duration.ofMinutes(10);
     final var jobRecord =
-        ENGINE
+        engine
             .jobs()
             .withType(JOB_TYPE)
             .withTimeout(timeout.toMillis())
@@ -107,11 +108,11 @@ public class JobMetricsTest {
     // We need to add 1 ms as the deadline needs to be < the current time. Without the extra 1 ms
     // it could be that the JobTimeoutChecker is triggered at the exact same time as the job
     // deadline resulting in the Job activation not being expired yet.
-    ENGINE
+    engine
         .getClock()
         .addTime(
             Duration.ofMillis(
-                jobRecord.getDeadline() - ENGINE.getClock().getCurrentTimeInMillis() + 1));
+                jobRecord.getDeadline() - engine.getClock().getCurrentTimeInMillis() + 1));
     RecordingExporter.jobRecords(JobIntent.TIMED_OUT)
         .withProcessInstanceKey(processInstanceKey)
         .await();
@@ -126,7 +127,7 @@ public class JobMetricsTest {
     final long processInstanceKey = createProcessInstanceWithJob(JOB_TYPE);
 
     // when
-    ENGINE.job().ofInstance(processInstanceKey).withType(JOB_TYPE).complete();
+    engine.job().ofInstance(processInstanceKey).withType(JOB_TYPE).complete();
 
     // then
     assertThat(jobMetric("completed", JOB_TYPE)).isNotNull().isEqualTo(1);
@@ -138,7 +139,7 @@ public class JobMetricsTest {
     final long processInstanceKey = createProcessInstanceWithJob(JOB_TYPE);
 
     // when
-    ENGINE.job().ofInstance(processInstanceKey).withType(JOB_TYPE).fail();
+    engine.job().ofInstance(processInstanceKey).withType(JOB_TYPE).fail();
 
     // then
     assertThat(jobMetric("failed", JOB_TYPE)).isNotNull().isEqualTo(1);
@@ -150,7 +151,7 @@ public class JobMetricsTest {
     final long processInstanceKey = createProcessInstanceWithJob(JOB_TYPE);
 
     // when
-    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+    engine.processInstance().withInstanceKey(processInstanceKey).cancel();
     RecordingExporter.jobRecords(JobIntent.CANCELED)
         .withProcessInstanceKey(processInstanceKey)
         .await();
@@ -165,7 +166,7 @@ public class JobMetricsTest {
     final long processInstanceKey = createProcessInstanceWithJob(JOB_TYPE);
 
     // when
-    ENGINE.job().ofInstance(processInstanceKey).withType(JOB_TYPE).throwError();
+    engine.job().ofInstance(processInstanceKey).withType(JOB_TYPE).throwError();
 
     // then
     assertThat(jobMetric("error thrown", JOB_TYPE)).isNotNull().isEqualTo(1);
@@ -177,9 +178,9 @@ public class JobMetricsTest {
    * @param jobType the job type for the service task
    * @return the key of the created process instance
    */
-  private static long createProcessInstanceWithJob(final String jobType) {
+  private long createProcessInstanceWithJob(final String jobType) {
     final long processInstanceKey =
-        ENGINE
+        engine
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable("jobType", jobType)
@@ -192,11 +193,25 @@ public class JobMetricsTest {
     return processInstanceKey;
   }
 
-  private static Double jobMetric(final String action, final String type) {
-    return MetricsTestHelper.readMetricValue(
-        "zeebe_job_events_total",
-        entry("action", action),
-        entry("partition", "1"),
-        entry("type", type));
+  private Optional<Counter> findJobCounter(final String action, final String type) {
+    return Optional.ofNullable(
+        engine
+            .getMeterRegistry()
+            .find("zeebe.job.events.total")
+            .tag("action", action)
+            .tag("partition", "1")
+            .tag("type", type)
+            .counter());
+  }
+
+  private double jobMetric(final String action, final String type) {
+    return engine
+        .getMeterRegistry()
+        .get("zeebe.job.events.total")
+        .tag("action", action)
+        .tag("partition", "1")
+        .tag("type", type)
+        .counter()
+        .count();
   }
 }

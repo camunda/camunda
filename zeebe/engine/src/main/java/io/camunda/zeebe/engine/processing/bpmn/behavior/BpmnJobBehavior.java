@@ -9,7 +9,8 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import com.google.common.base.Strings;
 import io.camunda.zeebe.el.Expression;
-import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
+import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -56,7 +57,7 @@ public final class BpmnJobBehavior {
   private final ExpressionProcessor expressionBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
-  private final JobMetrics jobMetrics;
+  private final JobProcessingMetrics jobMetrics;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final BpmnUserTaskBehavior userTaskBehavior;
 
@@ -68,7 +69,7 @@ public final class BpmnJobBehavior {
       final BpmnStateBehavior stateBehavior,
       final BpmnIncidentBehavior incidentBehavior,
       final BpmnJobActivationBehavior jobActivationBehavior,
-      final JobMetrics jobMetrics,
+      final JobProcessingMetrics jobMetrics,
       final BpmnUserTaskBehavior userTaskBehavior) {
     this.keyGenerator = keyGenerator;
     this.jobState = jobState;
@@ -140,7 +141,7 @@ public final class BpmnJobBehavior {
         jobProperties,
         JobKind.BPMN_ELEMENT,
         element.getJobWorkerProperties().getTaskHeaders());
-    jobMetrics.jobCreated(jobProperties.getType());
+    jobMetrics.countJobEvent(JobAction.CREATED, jobProperties.getType());
   }
 
   public void createNewExecutionListenerJob(
@@ -150,7 +151,7 @@ public final class BpmnJobBehavior {
 
     writeJobCreatedEvent(
         context, element, jobProperties, JobKind.EXECUTION_LISTENER, Collections.emptyMap());
-    jobMetrics.jobCreated(jobProperties.getType());
+    jobMetrics.countJobEvent(JobAction.CREATED, jobProperties.getType());
   }
 
   private Either<Failure, String> evalTypeExp(final Expression type, final long scopeKey) {
@@ -252,7 +253,7 @@ public final class BpmnJobBehavior {
       // Note that this logic is duplicated in JobCancelProcessor, if you change this please change
       // it there as well.
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.CANCELED, job);
-      jobMetrics.jobCanceled(job.getType());
+      jobMetrics.countJobEvent(JobAction.CANCELED, job.getType());
     }
   }
 
