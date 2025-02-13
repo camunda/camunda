@@ -1311,22 +1311,19 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
                 assertThat(task.getCompletionDate()).isNotNull();
               });
 
-      // Validate variables has processInstanceKey in ES/OS
-      // Fetch variables via variableStore
+      // when
       final var taskVariablesMap =
           variableStore.getTaskVariablesPerTaskId(
               List.of(new GetVariablesRequest().setTaskId(taskId)));
       assertThat(taskVariablesMap).containsKey(taskId);
       final List<TaskVariableEntity> variables = taskVariablesMap.get(taskId);
 
+      // then
       assertThat(variables).isNotNull().isNotEmpty();
 
-      // Validate that each variable has a non-null processInstanceKey
       variables.forEach(
           variable -> {
-            assertThat(variable.getProcessInstanceKey())
-                .isNotNull()
-                .isEqualTo(processInstanceId); // Replace with the expected value
+            assertThat(variable.getProcessInstanceKey()).isNotNull().isEqualTo(processInstanceId);
           });
 
       assertThat(taskVariables)
@@ -1406,22 +1403,19 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
                 assertThat(task.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
               });
 
-      // Validate variables has processInstanceKey in ES/OS
-      // Fetch variables via variableStore
+      // when
       final var taskVariablesMap =
           variableStore.getTaskVariablesPerTaskId(
               List.of(new GetVariablesRequest().setTaskId(taskId)));
       assertThat(taskVariablesMap).containsKey(taskId);
       final List<TaskVariableEntity> variables = taskVariablesMap.get(taskId);
 
+      // then
       assertThat(variables).isNotNull().isNotEmpty();
 
-      // Validate that each variable has a non-null processInstanceKey
       variables.forEach(
           variable -> {
-            assertThat(variable.getProcessInstanceKey())
-                .isNotNull()
-                .isEqualTo(processInstanceId); // Replace with the expected value
+            assertThat(variable.getProcessInstanceKey()).isNotNull().isEqualTo(processInstanceId);
           });
 
       assertThat(taskVariables)
