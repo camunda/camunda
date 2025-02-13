@@ -60,7 +60,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
       final BrokerShutdownHelper shutdownHelper,
-      final PrometheusMeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.springBrokerBridge = springBrokerBridge;
