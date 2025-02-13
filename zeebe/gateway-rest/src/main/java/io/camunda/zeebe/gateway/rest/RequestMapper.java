@@ -436,7 +436,12 @@ public class RequestMapper {
       final MappingRuleCreateRequest request) {
     return getResult(
         validateMappingRequest(request),
-        () -> new MappingDTO(request.getClaimName(), request.getClaimValue(), request.getName()));
+        () ->
+            new MappingDTO(
+                request.getClaimName(),
+                request.getClaimValue(),
+                request.getName(),
+                request.getId()));
   }
 
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(

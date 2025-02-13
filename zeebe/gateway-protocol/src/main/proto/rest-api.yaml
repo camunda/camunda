@@ -5643,11 +5643,15 @@ components:
         name:
           type: string
           description: The name of the mapping.
+        id:
+          type: string
+          description: The unique external id of the mapping.
       required:
         - claimName
         - claimValue
         - name
-    MappingRuleCreateResult:
+        - id
+    MappingRuleCreateResponseBase:
       type: object
       properties:
         claimName:
@@ -5659,6 +5663,23 @@ components:
         name:
           type: string
           description: The name of the mapping.
+        id:
+          type: string
+          description: The unique external id of the mapping.
+    MappingRuleCreateResponse:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/MappingRuleCreateResponseBase"
+      properties:
+        mappingKey:
+          description: The key of the created mapping rule.
+          type: integer
+          format: int64
+    MappingRuleCreateResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/MappingRuleCreateResponseBase"
+      properties:
         mappingKey:
           description: The key of the created mapping rule.
           type: string

@@ -54,7 +54,11 @@ public class UsersGroupMigrationHandler extends MigrationHandler<UserGroups> {
   public MigrationStatusUpdateRequest processTask(final UserGroups userGroups) {
     try {
       final var mapping =
-          new MappingDTO(USERNAME_CLAIM, userGroups.username(), userGroups.username() + "_mapping");
+          new MappingDTO(
+              USERNAME_CLAIM,
+              userGroups.username(),
+              userGroups.username() + "_mapping",
+              userGroups.username() + "_mapping");
 
       final long mappingKey =
           mappingServices
