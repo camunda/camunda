@@ -8,7 +8,6 @@
 package io.camunda.webapps.schema.descriptors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertNotNull;
 
 import java.util.List;
 import java.util.regex.Pattern;
@@ -49,7 +48,6 @@ public class IndexDescriptorTest {
   @ParameterizedTest
   @MethodSource("indicesAndTemplates")
   void testIndexAndTemplateVersions(final IndexDescriptor index) {
-    assertNotNull(index);
     assertThat(index.getVersion())
         .as("Testing version for %s", index.getFullQualifiedName())
         .matches(INDEX_VERSION_PATTERN);

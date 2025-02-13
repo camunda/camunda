@@ -638,6 +638,11 @@ abstract class IncidentUpdateRepositoryIT {
         }
 
         @Override
+        public String getIndexNameWithoutVersion() {
+          return source.getIndexNameWithoutVersion();
+        }
+
+        @Override
         public String getVersion() {
           return source.getVersion();
         }
