@@ -5453,22 +5453,15 @@ components:
     UserUpdateRequest:
       type: object
       properties:
-        changeset:
-          $ref: "#/components/schemas/UserChangeset"
-    UserChangeset:
-      description: |
-        JSON object with changed user attribute values.
-      type: object
-      properties:
-        name:
-          type: string
-          description: The new name of the user.
-        email:
-          type: string
-          description: The new email of the user.
         password:
-          type: string
-          description: The new password of the user.
+          description: The password of the user.
+          type: "string"
+        name:
+          description: The name of the user.
+          type: "string"
+        email:
+          description: The email of the user.
+          type: "string"
     RoleCreateRequest:
       type: "object"
       properties:
