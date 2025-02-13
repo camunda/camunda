@@ -27,7 +27,7 @@ public final class ZeebeRocksDBMetricExporter<
 
   private static final String MEMORY_METRICS_HELP =
       "Everything which might be related to current memory consumption of RocksDB per column family and partition";
-  private static final String MEMORY_METRICS_PREFIX = "rocksdb_memory";
+  private static final String MEMORY_METRICS_PREFIX = "rocksdb.memory";
   private static final RocksDBMetric[] MEMORY_METRICS = {
     new RocksDBMetric(
         "rocksdb.cur-size-all-mem-tables", MEMORY_METRICS_PREFIX, MEMORY_METRICS_HELP),
@@ -44,7 +44,7 @@ public final class ZeebeRocksDBMetricExporter<
 
   private static final String SST_METRICS_HELP =
       "Everything which is related to SST files in RocksDB per column family and partition";
-  private static final String SST_METRICS_PREFIX = "rocksdb_sst";
+  private static final String SST_METRICS_PREFIX = "rocksdb.sst";
   private static final RocksDBMetric[] SST_METRICS = {
     new RocksDBMetric("rocksdb.total-sst-files-size", SST_METRICS_PREFIX, SST_METRICS_HELP),
     new RocksDBMetric("rocksdb.live-sst-files-size", SST_METRICS_PREFIX, SST_METRICS_HELP),
@@ -52,7 +52,7 @@ public final class ZeebeRocksDBMetricExporter<
 
   private static final String LIVE_METRICS_HELP =
       "Other estimated properties based on entries in RocksDb per column family and partition";
-  private static final String LIVE_METRICS_PREFIX = "rocksdb_live";
+  private static final String LIVE_METRICS_PREFIX = "rocksdb.live";
   private static final RocksDBMetric[] LIVE_METRICS = {
     new RocksDBMetric("rocksdb.num-entries-imm-mem-tables", LIVE_METRICS_PREFIX, LIVE_METRICS_HELP),
     new RocksDBMetric("rocksdb.estimate-num-keys", LIVE_METRICS_PREFIX, LIVE_METRICS_HELP),
@@ -61,7 +61,7 @@ public final class ZeebeRocksDBMetricExporter<
 
   private static final String WRITE_METRICS_HELP =
       "Properties related to writes, flushes and compactions for RocksDb per column family and partition";
-  private static final String WRITE_METRICS_PREFIX = "rocksdb_writes";
+  private static final String WRITE_METRICS_PREFIX = "rocksdb.writes";
 
   private static final RocksDBMetric[] WRITE_METRICS = {
     new RocksDBMetric("rocksdb.is-write-stopped", WRITE_METRICS_PREFIX, WRITE_METRICS_HELP),
@@ -139,5 +139,28 @@ public final class ZeebeRocksDBMetricExporter<
     public String getPropertyName() {
       return propertyName;
     }
+<<<<<<< HEAD
+=======
+
+    @Override
+    public String getDescription() {
+      return help;
+    }
+
+    @Override
+    public String getName() {
+      return ZEEBE_NAMESPACE + "." + namePrefix + gaugeSuffix();
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+>>>>>>> 48d00a7d (fix: RocksDB metric names contained a typo)
   }
 }
