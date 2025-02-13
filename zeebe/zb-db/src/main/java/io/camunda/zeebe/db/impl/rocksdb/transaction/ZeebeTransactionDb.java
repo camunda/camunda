@@ -20,6 +20,7 @@ import io.camunda.zeebe.db.impl.FineGrainedColumnFamilyMetrics;
 import io.camunda.zeebe.db.impl.NoopColumnFamilyMetrics;
 import io.camunda.zeebe.db.impl.rocksdb.Loggers;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDBMetricExporter;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -58,6 +59,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
   private final ConsistencyChecksSettings consistencyChecksSettings;
   private final AccessMetricsConfiguration accessMetricsConfiguration;
   private final MeterRegistry meterRegistry;
+  private final ZeebeRocksDBMetricExporter<ColumnFamilyNames> metricExporter;
 
   protected ZeebeTransactionDb(
       final ColumnFamilyHandle defaultHandle,
@@ -74,6 +76,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
     this.consistencyChecksSettings = consistencyChecksSettings;
     this.accessMetricsConfiguration = accessMetricsConfiguration;
     this.meterRegistry = meterRegistry;
+    metricExporter = new ZeebeRocksDBMetricExporter<>(this, meterRegistry);
 
     prefixReadOptions =
         new ReadOptions()
@@ -218,6 +221,11 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
   @Override
   public MeterRegistry getMeterRegistry() {
     return meterRegistry;
+  }
+
+  @Override
+  public void exportMetrics() {
+    metricExporter.exportMetrics();
   }
 
   @Override

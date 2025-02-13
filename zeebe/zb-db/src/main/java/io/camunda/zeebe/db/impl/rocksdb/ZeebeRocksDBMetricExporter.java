@@ -9,10 +9,16 @@ package io.camunda.zeebe.db.impl.rocksdb;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.protocol.EnumValue;
+import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.Meter.Type;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Arrays;
 import java.util.Objects;
-import java.util.function.Supplier;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,175 +33,141 @@ public final class ZeebeRocksDBMetricExporter<
 
   private static final String MEMORY_METRICS_HELP =
       "Everything which might be related to current memory consumption of RocksDB per column family and partition";
-  private static final String MEMORY_METRICS_PREFIX = "rocksdb.memory";
+  private static final String MEMORY_METRICS_PREFIX = "rocksdb_memory";
+  private static final RocksDBMetric[] MEMORY_METRICS = {
+    new RocksDBMetric(
+        "rocksdb.cur-size-all-mem-tables", MEMORY_METRICS_PREFIX, MEMORY_METRICS_HELP),
+    new RocksDBMetric(
+        "rocksdb.cur-size-active-mem-table", MEMORY_METRICS_PREFIX, MEMORY_METRICS_HELP),
+    new RocksDBMetric("rocksdb.size-all-mem-tables", MEMORY_METRICS_PREFIX, MEMORY_METRICS_HELP),
+    new RocksDBMetric("rocksdb.block-cache-usage", MEMORY_METRICS_PREFIX, MEMORY_METRICS_HELP),
+    new RocksDBMetric("rocksdb.block-cache-capacity", MEMORY_METRICS_PREFIX, MEMORY_METRICS_HELP),
+    new RocksDBMetric(
+        "rocksdb.block-cache-pinned-usage", MEMORY_METRICS_PREFIX, MEMORY_METRICS_HELP),
+    new RocksDBMetric(
+        "rocksdb.estimate-table-readers-mem", MEMORY_METRICS_PREFIX, MEMORY_METRICS_HELP),
+  };
+
   private static final String SST_METRICS_HELP =
       "Everything which is related to SST files in RocksDB per column family and partition";
-  private static final String SST_METRICS_PREFIX = "rocksdb.sst";
+  private static final String SST_METRICS_PREFIX = "rocksdb_sst";
+  private static final RocksDBMetric[] SST_METRICS = {
+    new RocksDBMetric("rocksdb.total-sst-files-size", SST_METRICS_PREFIX, SST_METRICS_HELP),
+    new RocksDBMetric("rocksdb.live-sst-files-size", SST_METRICS_PREFIX, SST_METRICS_HELP),
+  };
+
   private static final String LIVE_METRICS_HELP =
       "Other estimated properties based on entries in RocksDb per column family and partition";
-  private static final String LIVE_METRICS_PREFIX = "rocksdb.live";
+  private static final String LIVE_METRICS_PREFIX = "rocksdb_live";
+  private static final RocksDBMetric[] LIVE_METRICS = {
+    new RocksDBMetric("rocksdb.num-entries-imm-mem-tables", LIVE_METRICS_PREFIX, LIVE_METRICS_HELP),
+    new RocksDBMetric("rocksdb.estimate-num-keys", LIVE_METRICS_PREFIX, LIVE_METRICS_HELP),
+    new RocksDBMetric("rocksdb.estimate-live-data-size", LIVE_METRICS_PREFIX, LIVE_METRICS_HELP),
+  };
+
   private static final String WRITE_METRICS_HELP =
       "Properties related to writes, flushes and compactions for RocksDb per column family and partition";
-  private static final String WRITE_METRICS_PREFIX = "rocksdb.writes";
-  private final String partition;
-  private final Supplier<ZeebeDb<ColumnFamilyType>> databaseSupplier;
-  private final RocksDBMetric[] memoryMetrics;
-  private final RocksDBMetric[] liveMetrics;
-  private final RocksDBMetric[] writeMetrics;
-  private final RocksDBMetric[] sstMetrics;
+  private static final String WRITE_METRICS_PREFIX = "rocksdb_writes";
+
+  private static final RocksDBMetric[] WRITE_METRICS = {
+    new RocksDBMetric("rocksdb.is-write-stopped", WRITE_METRICS_PREFIX, WRITE_METRICS_HELP),
+    new RocksDBMetric(
+        "rocksdb.actual-delayed-write-rate", WRITE_METRICS_PREFIX, WRITE_METRICS_HELP),
+    new RocksDBMetric("rocksdb.mem-table-flush-pending", WRITE_METRICS_PREFIX, WRITE_METRICS_HELP),
+    new RocksDBMetric("rocksdb.num-running-flushes", WRITE_METRICS_PREFIX, WRITE_METRICS_HELP),
+    new RocksDBMetric("rocksdb.num-running-compactions", WRITE_METRICS_PREFIX, WRITE_METRICS_HELP),
+  };
+  private static final RocksDBMetric[] ALL_METRICS =
+      Stream.of(MEMORY_METRICS, LIVE_METRICS, SST_METRICS, WRITE_METRICS)
+          .flatMap(Arrays::stream)
+          .toArray(RocksDBMetric[]::new);
+  private final ZeebeDb<ColumnFamilyType> database;
 
   public ZeebeRocksDBMetricExporter(
-      final String partition,
-      final Supplier<ZeebeDb<ColumnFamilyType>> databaseSupplier,
-      final MeterRegistry meterRegistry) {
-    this.partition = Objects.requireNonNull(partition);
-    this.databaseSupplier = databaseSupplier;
-    memoryMetrics =
-        new RocksDBMetric[] {
-          new RocksDBMetric(
-              "rocksdb.cur-size-all-mem-tables",
-              MEMORY_METRICS_PREFIX,
-              MEMORY_METRICS_HELP,
-              meterRegistry),
-          new RocksDBMetric(
-              "rocksdb.cur-size-active-mem-table",
-              MEMORY_METRICS_PREFIX,
-              MEMORY_METRICS_HELP,
-              meterRegistry),
-          new RocksDBMetric(
-              "rocksdb.size-all-mem-tables",
-              MEMORY_METRICS_PREFIX,
-              MEMORY_METRICS_HELP,
-              meterRegistry),
-          new RocksDBMetric(
-              "rocksdb.block-cache-usage",
-              MEMORY_METRICS_PREFIX,
-              MEMORY_METRICS_HELP,
-              meterRegistry),
-          new RocksDBMetric(
-              "rocksdb.block-cache-capacity",
-              MEMORY_METRICS_PREFIX,
-              MEMORY_METRICS_HELP,
-              meterRegistry),
-          new RocksDBMetric(
-              "rocksdb.block-cache-pinned-usage",
-              MEMORY_METRICS_PREFIX,
-              MEMORY_METRICS_HELP,
-              meterRegistry),
-          new RocksDBMetric(
-              "rocksdb.estimate-table-readers-mem",
-              MEMORY_METRICS_PREFIX,
-              MEMORY_METRICS_HELP,
-              meterRegistry),
-        };
+      final ZeebeDb<ColumnFamilyType> database, final MeterRegistry meterRegistry) {
+    this.database = database;
+    forAllMetrics(metric -> metric.register(meterRegistry));
+  }
 
-    liveMetrics =
-        new RocksDBMetric[] {
-          new RocksDBMetric(
-              "rocksdb.num-entries-imm-mem-tables",
-              LIVE_METRICS_PREFIX,
-              LIVE_METRICS_HELP,
-              meterRegistry),
-          new RocksDBMetric(
-              "rocksdb.estimate-num-keys", LIVE_METRICS_PREFIX, LIVE_METRICS_HELP, meterRegistry),
-          new RocksDBMetric(
-              "rocksdb.estimate-live-data-size",
-              LIVE_METRICS_PREFIX,
-              LIVE_METRICS_HELP,
-              meterRegistry),
-        };
-    writeMetrics =
-        new RocksDBMetric[] {
-          new RocksDBMetric(
-              "rocksdb.is-write-stopped", WRITE_METRICS_PREFIX, WRITE_METRICS_HELP, meterRegistry),
-          new RocksDBMetric(
-              "rocksdb.actual-delayed-write-rate",
-              WRITE_METRICS_PREFIX,
-              WRITE_METRICS_HELP,
-              meterRegistry),
-          new RocksDBMetric(
-              "rocksdb.mem-table-flush-pending",
-              WRITE_METRICS_PREFIX,
-              WRITE_METRICS_HELP,
-              meterRegistry),
-          new RocksDBMetric(
-              "rocksdb.num-running-flushes",
-              WRITE_METRICS_PREFIX,
-              WRITE_METRICS_HELP,
-              meterRegistry),
-          new RocksDBMetric(
-              "rocksdb.num-running-compactions",
-              WRITE_METRICS_PREFIX,
-              WRITE_METRICS_HELP,
-              meterRegistry),
-        };
+  public static ExtendedMeterDocumentation[] allMeterDocumentations() {
+    return ALL_METRICS;
+  }
 
-    sstMetrics =
-        new RocksDBMetric[] {
-          new RocksDBMetric(
-              "rocksdb.total-sst-files-size", SST_METRICS_PREFIX, SST_METRICS_HELP, meterRegistry),
-          new RocksDBMetric(
-              "rocksdb.live-sst-files-size", SST_METRICS_PREFIX, SST_METRICS_HELP, meterRegistry),
-        };
+  private static void forAllMetrics(final Consumer<RocksDBMetric> consumer) {
+    for (final var metric : ALL_METRICS) {
+      consumer.accept(metric);
+    }
   }
 
   public void exportMetrics() {
     final long startTime = System.currentTimeMillis();
-    exportMetrics(memoryMetrics);
-    exportMetrics(liveMetrics);
-    exportMetrics(sstMetrics);
-    exportMetrics(writeMetrics);
+    forAllMetrics(this::exportMetric);
 
     final long elapsedTime = System.currentTimeMillis() - startTime;
     LOG.trace("Exporting RocksDBMetrics took + {} ms", elapsedTime);
   }
 
-  private void exportMetrics(final RocksDBMetric[] metrics) {
-    final var database = databaseSupplier.get();
-    if (database == null) {
-      return;
-    }
-    for (final RocksDBMetric metric : metrics) {
-      try {
-        database
-            .getProperty(metric.getPropertyName())
-            .map(Double::parseDouble)
-            .ifPresent(value -> metric.exportValue(partition, value));
-      } catch (final Exception exception) {
-        LOG.debug("Error occurred on exporting metric {}", metric.getPropertyName(), exception);
-      }
+  private void exportMetric(final RocksDBMetric metric) {
+    try {
+      database
+          .getProperty(metric.getPropertyName())
+          .map(Double::parseDouble)
+          .ifPresent(metric::exportValue);
+    } catch (final Exception exception) {
+      LOG.debug("Error occurred on exporting metric {}", metric.getPropertyName(), exception);
     }
   }
 
-  private static final class RocksDBMetric {
+  @SuppressWarnings("NullableProblems")
+  private static final class RocksDBMetric implements ExtendedMeterDocumentation {
 
     private final String propertyName;
+    private final String namePrefix;
+    private final String help;
     private volatile double value;
 
-    private RocksDBMetric(
-        final String propertyName,
-        final String namePrefix,
-        final String help,
-        final MeterRegistry registry) {
+    private RocksDBMetric(final String propertyName, final String namePrefix, final String help) {
       this.propertyName = Objects.requireNonNull(propertyName);
+      this.namePrefix = namePrefix;
+      this.help = help;
+    }
 
-      Gauge.builder(ZEEBE_NAMESPACE + ". " + namePrefix + gaugeSuffix(), () -> value)
-          .description(help)
-          .register(registry);
+    public void register(final MeterRegistry registry) {
+      Gauge.builder(getName(), () -> value).description(help).register(registry);
     }
 
     private String gaugeSuffix() {
       final String suffix =
-          "_" + propertyName.substring(propertyName.indexOf(".") + 1); // cut off "rocksdb." prefix
-      return suffix.replaceAll("-", "_");
+          "." + propertyName.substring(propertyName.indexOf(".") + 1); // cut off "rocksdb." prefix
+      return suffix.replaceAll("-", ".");
     }
 
-    public void exportValue(final String partitionID, final Double value) {
+    public void exportValue(final Double value) {
       this.value = value;
     }
 
     public String getPropertyName() {
       return propertyName;
+    }
+
+    @Override
+    public String getDescription() {
+      return help;
+    }
+
+    @Override
+    public String getName() {
+      return ZEEBE_NAMESPACE + ". " + namePrefix + gaugeSuffix();
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
     }
   }
 }
