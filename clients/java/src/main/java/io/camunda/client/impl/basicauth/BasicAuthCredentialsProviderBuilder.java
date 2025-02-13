@@ -15,9 +15,13 @@
  */
 package io.camunda.client.impl.basicauth;
 
+import io.camunda.client.impl.BuilderUtils;
+import io.camunda.client.impl.CamundaClientEnvironmentVariables;
+
 public final class BasicAuthCredentialsProviderBuilder {
   private String username;
   private String password;
+  private boolean applyEnvironmentOverrides = true;
 
   public BasicAuthCredentialsProviderBuilder username(final String username) {
     this.username = username;
@@ -29,7 +33,37 @@ public final class BasicAuthCredentialsProviderBuilder {
     return this;
   }
 
+  public BasicAuthCredentialsProviderBuilder applyEnvironmentOverrides(
+      final boolean applyEnvironmentOverrides) {
+    this.applyEnvironmentOverrides = applyEnvironmentOverrides;
+    return this;
+  }
+
   public BasicAuthCredentialsProvider build() {
+    if (applyEnvironmentOverrides) {
+      BuilderUtils.applyEnvironmentValueIfNotNull(
+          this::username, CamundaClientEnvironmentVariables.BASIC_AUTH_ENV_USERNAME);
+      BuilderUtils.applyEnvironmentValueIfNotNull(
+          this::password, CamundaClientEnvironmentVariables.BASIC_AUTH_ENV_PASSWORD);
+    }
+
+    validate();
+
     return new BasicAuthCredentialsProvider(username, password);
+  }
+
+  private void validate() {
+    if (username == null || username.isEmpty()) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Username cannot be null or empty. Ensure the username is set explicitly, or through the environment variable '%s'.",
+              CamundaClientEnvironmentVariables.BASIC_AUTH_ENV_USERNAME));
+    }
+    if (password == null || password.isEmpty()) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Password cannot be null or empty. Ensure the password is set explicitly, or through the environment variable '%s'.",
+              CamundaClientEnvironmentVariables.BASIC_AUTH_ENV_PASSWORD));
+    }
   }
 }
