@@ -9,11 +9,9 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer.Bean;
-import io.camunda.zeebe.qa.util.cluster.util.RelaxedCollectorRegistry;
 import io.camunda.zeebe.shared.MainSupport;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
-import io.prometheus.client.CollectorRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -53,11 +51,6 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     overridePropertyIfAbsent("server.port", SocketUtil.getNextAddress().getPort());
     overridePropertyIfAbsent("management.server.port", SocketUtil.getNextAddress().getPort());
     overridePropertyIfAbsent("spring.lifecycle.timeout-per-shutdown-phase", "1s");
-
-    if (!beans.containsKey("collectorRegistry")) {
-      beans.put(
-          "collectorRegistry", new Bean<>(new RelaxedCollectorRegistry(), CollectorRegistry.class));
-    }
 
     // configure each application to use their own resources for the embedded Netty web server,
     // otherwise shutting one down will shut down all embedded servers
