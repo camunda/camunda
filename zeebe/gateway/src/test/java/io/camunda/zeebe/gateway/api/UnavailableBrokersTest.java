@@ -55,7 +55,7 @@ class UnavailableBrokersTest {
   static BrokerClient brokerClient;
   static JobStreamClient jobStreamClient;
   static BrokerTopologyManagerImpl topologyManager;
-  private static final MeterRegistry registry = new SimpleMeterRegistry();
+  private static final MeterRegistry REGISTRY = new SimpleMeterRegistry();
 
   @BeforeAll
   static void setUp() throws IOException {
@@ -63,7 +63,7 @@ class UnavailableBrokersTest {
     final GatewayCfg config = new GatewayCfg().setNetwork(networkCfg);
     config.init(InetAddress.getLocalHost().getHostName());
 
-    cluster = AtomixCluster.builder(registry).build();
+    cluster = AtomixCluster.builder(REGISTRY).build();
     cluster.start();
 
     actorScheduler = ActorScheduler.newActorScheduler().build();
@@ -106,8 +106,8 @@ class UnavailableBrokersTest {
 
   @AfterAll
   static void tearDown() {
-    registry.clear();
-    registry.close();
+    REGISTRY.clear();
+    REGISTRY.close();
     CloseHelper.closeAll(
         client,
         gateway,
