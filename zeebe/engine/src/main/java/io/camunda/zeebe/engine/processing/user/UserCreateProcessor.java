@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -41,6 +42,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior distributionBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final TypedCommandWriter commandWriter;
 
   public UserCreateProcessor(
       final KeyGenerator keyGenerator,
@@ -55,6 +57,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
     responseWriter = writers.response();
     this.distributionBehavior = distributionBehavior;
     this.authCheckBehavior = authCheckBehavior;
+    commandWriter = writers.command();
   }
 
   @Override
@@ -105,17 +108,14 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
             },
             () -> {
               stateWriter.appendFollowUpEvent(command.getKey(), UserIntent.CREATED, record);
-              addUserPermissions(record.getUserKey(), record.getUsername());
             });
 
     distributionBehavior.acknowledgeCommand(command);
   }
 
   private void addUserPermissions(final long key, final String username) {
-    final var authenticationKey = keyGenerator.nextKey();
     final var authorizationRecord =
         new AuthorizationRecord()
-            .setAuthorizationKey(authenticationKey)
             .setOwnerKey(key)
             .setOwnerId(username)
             .setOwnerType(AuthorizationOwnerType.USER)
@@ -123,7 +123,6 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
             .setResourceId(username)
             .setAuthorizationPermissions(Set.of(PermissionType.READ, PermissionType.UPDATE));
 
-    stateWriter.appendFollowUpEvent(
-        authenticationKey, AuthorizationIntent.CREATED, authorizationRecord);
+    commandWriter.appendFollowUpCommand(key, AuthorizationIntent.CREATE, authorizationRecord);
   }
 }
