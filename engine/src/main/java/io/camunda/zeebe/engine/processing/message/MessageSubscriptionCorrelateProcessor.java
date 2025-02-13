@@ -27,6 +27,14 @@ public final class MessageSubscriptionCorrelateProcessor
   private static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
       "Expected to correlate subscription for element with key '%d' and message name '%s', "
           + "but no such message subscription exists";
+  private static final String SUBSCRIPTION_ALREADY_CORRELATING_AGAIN_MESSAGE =
+      """
+      Expected to acknowledge correlating message with key '%d' to subscription with key '%d' \
+      but the subscription is already correlating to another message with key '%d'""";
+  private static final String SUBSCRIPTION_ALREADY_CORRELATED_MESSAGE =
+      """
+      Expected to acknowledge correlating message with key '%d' to subscription with key '%d' \
+      but the subscription has already been correlated'""";
 
   private final MessageSubscriptionState subscriptionState;
   private final MessageCorrelator messageCorrelator;
@@ -70,13 +78,10 @@ public final class MessageSubscriptionCorrelateProcessor
       // command. The message subscription was already marked as correlated for this message, and
       // another message has started correlating. There's no need to update the state.
       final var reason =
-          """
-          Expected to acknowledge correlating message with key '%d' to subscription with key '%d' \
-          but the subscription is already correlating to another message with key '%d'"""
-              .formatted(
-                  record.getValue().getMessageKey(),
-                  subscription.getKey(),
-                  subscription.getRecord().getMessageKey());
+          SUBSCRIPTION_ALREADY_CORRELATING_AGAIN_MESSAGE.formatted(
+              record.getValue().getMessageKey(),
+              subscription.getKey(),
+              subscription.getRecord().getMessageKey());
       rejectionWriter.appendRejection(record, RejectionType.INVALID_STATE, reason);
       return;
 
@@ -85,10 +90,8 @@ public final class MessageSubscriptionCorrelateProcessor
       // command. The message subscription was already marked as correlated. No need to update the
       // state.
       final var reason =
-          """
-          Expected to acknowledge correlating message with key '%d' to subscription with key '%d' \
-          but the subscription has already been correlated'"""
-              .formatted(record.getValue().getMessageKey(), subscription.getKey());
+          SUBSCRIPTION_ALREADY_CORRELATED_MESSAGE.formatted(
+              record.getValue().getMessageKey(), subscription.getKey());
       rejectionWriter.appendRejection(record, RejectionType.INVALID_STATE, reason);
       return;
     }
