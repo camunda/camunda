@@ -159,7 +159,8 @@ final class StandaloneGatewaySecurityTest {
         new BrokerClientComponent(
             config, atomixCluster, actorScheduler, topologyManager, meterRegistry);
     brokerClient = brokerClientComponent.brokerClient();
-    jobStreamClient = new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster);
+    jobStreamClient =
+        new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster, meterRegistry);
 
     return new StandaloneGateway(
         config,

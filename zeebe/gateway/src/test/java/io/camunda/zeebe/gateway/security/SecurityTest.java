@@ -161,6 +161,7 @@ final class SecurityTest {
   }
 
   private Gateway buildGateway(final GatewayCfg gatewayCfg) {
+    final var meterRegistry = new SimpleMeterRegistry();
     final var clusterAddress = SocketUtil.getNextAddress();
     atomix =
         AtomixCluster.builder(meterRegistry)
@@ -181,7 +182,8 @@ final class SecurityTest {
             actorScheduler,
             topologyManager,
             BrokerClientRequestMetrics.NOOP);
-    jobStreamClient = new JobStreamClientImpl(actorScheduler, atomix.getCommunicationService());
+    jobStreamClient =
+        new JobStreamClientImpl(actorScheduler, atomix.getCommunicationService(), meterRegistry);
     jobStreamClient.start().join();
 
     // before we can add the job stream client as a topology listener, we need to wait for the
@@ -190,10 +192,6 @@ final class SecurityTest {
     topologyManager.addTopologyListener(jobStreamClient);
     atomix.getMembershipService().addListener(topologyManager);
     return new Gateway(
-        gatewayCfg,
-        brokerClient,
-        actorScheduler,
-        jobStreamClient.streamer(),
-        new SimpleMeterRegistry());
+        gatewayCfg, brokerClient, actorScheduler, jobStreamClient.streamer(), meterRegistry);
   }
 }
