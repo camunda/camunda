@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -26,6 +27,7 @@ public final class UserTaskClient {
   private static final long DEFAULT_KEY = -1L;
   private static final int DEFAULT_REQUEST_STREAM_ID = 1;
   private static final long DEFAULT_REQUEST_ID = 1L;
+  private static final int DEFAULT_PARTITION_ID = 1;
 
   private static final Function<Long, Record<UserTaskRecordValue>> SUCCESS_SUPPLIER =
       (position) ->
@@ -198,15 +200,27 @@ public final class UserTaskClient {
 
   public Record<UserTaskRecordValue> complete() {
     final long userTaskKey = findUserTaskKey();
+    final int partitionId = decodePartitionId(userTaskKey);
     final long position =
-        writer.writeCommand(
-            userTaskKey,
-            DEFAULT_REQUEST_STREAM_ID,
-            DEFAULT_REQUEST_ID,
-            UserTaskIntent.COMPLETE,
-            userTaskRecord.setUserTaskKey(userTaskKey),
-            authorizedTenantIds.toArray(new String[0]));
+        writer.writeCommandOnPartition(
+            partitionId,
+            r ->
+                r.key(userTaskKey)
+                    .requestStreamId(DEFAULT_REQUEST_STREAM_ID)
+                    .requestId(DEFAULT_REQUEST_ID)
+                    .intent(UserTaskIntent.COMPLETE)
+                    .event(userTaskRecord.setUserTaskKey(userTaskKey))
+                    .authorizations(authorizedTenantIds.toArray(new String[0])));
     return expectation.apply(position);
+  }
+
+  private static int decodePartitionId(final long userTaskKey) {
+    final var partitionId = Protocol.decodePartitionId(userTaskKey);
+    if (partitionId <= 0) {
+      // the userTaskKey does not encode a partition id
+      return DEFAULT_PARTITION_ID;
+    }
+    return partitionId;
   }
 
   public Record<UserTaskRecordValue> complete(final String username) {
