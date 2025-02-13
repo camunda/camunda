@@ -17,8 +17,10 @@ import io.netty.handler.codec.dns.DnsResponseCode;
 import io.netty.resolver.dns.DnsQueryLifecycleObserver;
 import java.net.InetSocketAddress;
 import java.util.List;
+import net.jcip.annotations.ThreadSafe;
 import org.agrona.collections.Int2ObjectHashMap;
 
+@ThreadSafe
 final class NettyDnsMetrics implements DnsQueryLifecycleObserver {
 
   private final MeterRegistry registry;

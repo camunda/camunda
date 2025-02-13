@@ -13,7 +13,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import net.jcip.annotations.ThreadSafe;
 
+@ThreadSafe
 final class SwimMembershipProtocolMetrics {
 
   private final Map<String, AtomicLong> incarnationNumbers = new ConcurrentHashMap<>();
