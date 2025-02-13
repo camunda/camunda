@@ -8,6 +8,7 @@
 package io.camunda.search.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.search.clients.AdHocSubprocessActivitySearchClient;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
@@ -41,6 +42,7 @@ import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.query.AdHocSubprocessActivityQuery;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
@@ -70,6 +72,7 @@ public class RdbmsSearchClient
         DecisionInstanceSearchClient,
         DecisionRequirementSearchClient,
         FlowNodeInstanceSearchClient,
+        AdHocSubprocessActivitySearchClient,
         FormSearchClient,
         IncidentSearchClient,
         ProcessInstanceSearchClient,
@@ -197,6 +200,13 @@ public class RdbmsSearchClient
   public SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
       final FlowNodeInstanceQuery query) {
     return rdbmsService.getFlowNodeInstanceReader().search(query);
+  }
+
+  @Override
+  public SearchQueryResult<FlowNodeInstanceEntity> searchAdHocSubprocessActivities(
+      final AdHocSubprocessActivityQuery query) {
+    throw new UnsupportedOperationException(
+        "AdHocSubprocessActivitySearchClient searchAdHocSubprocessActivities not implemented yet.");
   }
 
   @Override
