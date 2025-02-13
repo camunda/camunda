@@ -43,9 +43,9 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthMonitor;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collection;
 import java.util.List;
@@ -54,7 +54,7 @@ import java.util.function.Consumer;
 
 public class TestPartitionTransitionContext implements PartitionTransitionContext {
 
-  private final CompositeMeterRegistry startupMeterRegistry = new CompositeMeterRegistry();
+  private final MeterRegistry startupMeterRegistry = new SimpleMeterRegistry();
 
   private RaftPartition raftPartition;
   private Role currentRole;
@@ -83,10 +83,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private MeterRegistry transitionMeterRegistry;
 
   public TestPartitionTransitionContext() {
-    transitionMeterRegistry = new SimpleMeterRegistry();
-    transitionMeterRegistry.config().commonTags(PartitionKeyNames.PARTITION.asString(), "1");
-
-    startupMeterRegistry.add(transitionMeterRegistry);
+    startupMeterRegistry.config().commonTags(PartitionKeyNames.tags(1));
+    transitionMeterRegistry = MicrometerUtil.wrap(startupMeterRegistry, PartitionKeyNames.tags(1));
   }
 
   @Override

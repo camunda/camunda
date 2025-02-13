@@ -21,11 +21,10 @@ import io.camunda.zeebe.db.impl.NoopColumnFamilyMetrics;
 import io.camunda.zeebe.db.impl.rocksdb.Loggers;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDBMetricExporter;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.StatefulMeterRegistryProvider;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.StatefulMeterRegistry;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tags;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -101,8 +100,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
           final RocksDbConfiguration rocksDbConfiguration,
           final ConsistencyChecksSettings consistencyChecksSettings,
           final AccessMetricsConfiguration metrics,
-          final MeterRegistry wrappedRegistry,
-          final Tags tags)
+          final StatefulMeterRegistryProvider meterRegistryProvider)
           throws RocksDBException {
     final var cfDescriptors =
         List.of(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, options.cfOptions()));
@@ -120,7 +118,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
     final ColumnFamilyHandle defaultColumnFamilyHandle = cfHandles.getFirst();
     closables.add(defaultColumnFamilyHandle);
 
-    final var statefulMeterRegistry = new StatefulMeterRegistry(wrappedRegistry, tags);
+    final var statefulMeterRegistry = meterRegistryProvider.createMeterRegistry();
     closables.add(() -> MicrometerUtil.discard(statefulMeterRegistry));
 
     return new ZeebeTransactionDb<>(

@@ -10,6 +10,7 @@ package io.camunda.zeebe.util.micrometer;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.temporal.ChronoUnit;
@@ -29,7 +30,7 @@ final class MicrometerUtilTest {
   @Nested
   final class DiscardTest {
     private final MeterRegistry wrapped = new SimpleMeterRegistry();
-    private final CompositeMeterRegistry registry = MicrometerUtil.wrap(wrapped);
+    private final CompositeMeterRegistry registry = MicrometerUtil.wrap(wrapped, Tags.empty());
 
     @Test
     void shouldNotCloseWrappedRegistriesOnDiscard() {

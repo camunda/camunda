@@ -33,11 +33,8 @@ public final class MetricsStep implements PartitionTransitionStep {
   public ActorFuture<Void> transitionTo(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     final var startupMeterRegistry = context.getPartitionStartupMeterRegistry();
-    final var transitionRegistry = MicrometerUtil.wrap(startupMeterRegistry);
-    // due to a weird behavior in Micrometer, tags are not forwarded by nested composite registries
-    // until this is solved, we need to pass them on over and over; later we should extract some
-    // utility to forward tags when nesting registries
-    transitionRegistry.config().commonTags(PartitionKeyNames.tags(context.getPartitionId()));
+    final var transitionRegistry =
+        MicrometerUtil.wrap(startupMeterRegistry, PartitionKeyNames.tags(context.getPartitionId()));
 
     context.setPartitionTransitionMeterRegistry(transitionRegistry);
     return context.getConcurrencyControl().createCompletedFuture();

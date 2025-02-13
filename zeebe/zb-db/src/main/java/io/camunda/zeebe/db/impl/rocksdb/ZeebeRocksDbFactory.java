@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbOptions;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
 import io.camunda.zeebe.protocol.EnumValue;
+import io.camunda.zeebe.util.micrometer.StatefulMeterRegistry;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import java.io.File;
@@ -54,20 +55,17 @@ public final class ZeebeRocksDbFactory<
   private final RocksDbConfiguration rocksDbConfiguration;
   private final ConsistencyChecksSettings consistencyChecksSettings;
   private final AccessMetricsConfiguration metrics;
-  private final MeterRegistry meterRegistry;
-  private final Tags tags;
+  private final StatefulMeterRegistryProvider meterRegistryProvider;
 
   public ZeebeRocksDbFactory(
       final RocksDbConfiguration rocksDbConfiguration,
       final ConsistencyChecksSettings consistencyChecksSettings,
       final AccessMetricsConfiguration metricsConfiguration,
-      final MeterRegistry meterRegistry,
-      final Tags tags) {
+      final StatefulMeterRegistryProvider meterRegistryProvider) {
     this.rocksDbConfiguration = Objects.requireNonNull(rocksDbConfiguration);
     this.consistencyChecksSettings = Objects.requireNonNull(consistencyChecksSettings);
     metrics = metricsConfiguration;
-    this.meterRegistry = Objects.requireNonNull(meterRegistry);
-    this.tags = tags;
+    this.meterRegistryProvider = Objects.requireNonNull(meterRegistryProvider);
   }
 
   @Override
@@ -81,8 +79,7 @@ public final class ZeebeRocksDbFactory<
           rocksDbConfiguration,
           consistencyChecksSettings,
           metrics,
-          meterRegistry,
-          tags);
+          meterRegistryProvider);
     } catch (final RocksDBException e) {
       CloseHelper.quietCloseAll(closeables);
       throw new IllegalStateException("Unexpected error occurred trying to open the database", e);
@@ -315,5 +312,20 @@ public final class ZeebeRocksDbFactory<
         // keeping the whole keys in the prefixes is still useful for efficient gets. think of
         // it as a two-tiered index
         .setWholeKeyFiltering(true);
+  }
+
+  @FunctionalInterface
+  public interface StatefulMeterRegistryProvider {
+    StatefulMeterRegistry createMeterRegistry();
+
+    /** Convenience constructor to return a default registry */
+    static StatefulMeterRegistryProvider defaultProvider() {
+      return StatefulMeterRegistry::new;
+    }
+
+    static StatefulMeterRegistryProvider wrapping(
+        final MeterRegistry meterRegistry, final Tags tags) {
+      return () -> new StatefulMeterRegistry(meterRegistry, tags);
+    }
   }
 }

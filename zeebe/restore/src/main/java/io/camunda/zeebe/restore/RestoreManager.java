@@ -137,13 +137,9 @@ public class RestoreManager {
 
   private InstrumentedRaftPartition createRaftPartition(
       final PartitionMetadata metadata, final RaftPartitionFactory factory) {
-    final var partitionRegistry = new CompositeMeterRegistry();
-    // due to a weird behavior in Micrometer, tags are not forwarded by nested composite registries
-    // until this is solved, we need to pass them on over and over; later we should extract some
-    // utility to forward tags when nesting registries
     final var partitionId = metadata.id().id();
-    partitionRegistry.config().commonTags(PartitionKeyNames.tags(partitionId));
-    partitionRegistry.add(meterRegistry);
+    final var partitionRegistry =
+        MicrometerUtil.wrap(meterRegistry, PartitionKeyNames.tags(partitionId));
 
     return new InstrumentedRaftPartition(
         factory.createRaftPartition(metadata, partitionRegistry), partitionRegistry);

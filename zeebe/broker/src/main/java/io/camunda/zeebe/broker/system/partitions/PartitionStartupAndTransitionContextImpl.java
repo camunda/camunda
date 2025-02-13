@@ -46,9 +46,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthMonitor;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -151,11 +149,7 @@ public class PartitionStartupAndTransitionContextImpl
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
     this.topologyManager = topologyManager;
-    this.startupMeterRegistry = new CompositeMeterRegistry().add(startupMeterRegistry);
-    // due to a weird behavior in Micrometer, tags are not forwarded by nested composite registries
-    // until this is solved, we need to pass them on over and over; later we should extract some
-    // utility to forward tags when nesting registries
-    startupMeterRegistry.config().commonTags(PartitionKeyNames.tags(partitionId));
+    this.startupMeterRegistry = startupMeterRegistry;
   }
 
   public PartitionAdminControl getPartitionAdminControl() {

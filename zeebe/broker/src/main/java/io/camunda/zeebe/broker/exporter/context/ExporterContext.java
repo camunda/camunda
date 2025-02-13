@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.EnsureUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
@@ -39,20 +40,10 @@ public final class ExporterContext implements Context, AutoCloseable {
     this.configuration = configuration;
     this.partitionId = partitionId;
     underlyingMetricRegistry = meterRegistry;
-    this.meterRegistry = new CompositeMeterRegistry();
-    // meterRegistry is null in tests
-    if (meterRegistry != null) {
-      this.meterRegistry.add(meterRegistry);
-    }
-    // due to a weird behavior in Micrometer, tags are not forwarded by nested composite registries
-    // until this is solved, we need to pass them on over and over; later we should extract some
-    // utility to forward tags when nesting registries
-    this.meterRegistry
-        .config()
-        .commonTags(
-            Tags.of(
-                "partition", Integer.toString(partitionId),
-                "exporterId", configuration.getId()));
+    this.meterRegistry =
+        MicrometerUtil.wrap(
+            underlyingMetricRegistry,
+            Tags.concat(PartitionKeyNames.tags(partitionId), "exporterId", configuration.getId()));
   }
 
   @Override
