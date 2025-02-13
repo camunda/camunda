@@ -17,7 +17,6 @@ import io.camunda.zeebe.shared.MainSupport;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,7 +62,7 @@ public class StandaloneBroker
       final ActorScheduler actorScheduler,
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
-      final PrometheusMeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.springBrokerBridge = springBrokerBridge;
