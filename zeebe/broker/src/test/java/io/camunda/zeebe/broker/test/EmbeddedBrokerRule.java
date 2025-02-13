@@ -34,7 +34,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.util.NetUtil;
@@ -162,7 +161,8 @@ public final class EmbeddedBrokerRule extends ExternalResource {
       } catch (final IOException e) {
         LOG.error("Unexpected error on deleting data.", e);
       }
-      MicrometerUtil.closeRegistry(meterRegistry);
+      meterRegistry.clear();
+      meterRegistry.close();
 
       controlledActorClock.reset();
     }

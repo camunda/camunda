@@ -18,7 +18,6 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.topology.metrics.TopologyMetrics;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
@@ -48,7 +47,7 @@ final class ClusterTopologyGossiperTest {
   private TestGossiper node1;
   private TestGossiper node2;
   private TestGossiper node3;
-  private MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final TopologyMetrics topologyMetrics = new TopologyMetrics(meterRegistry);
 
   @BeforeEach
