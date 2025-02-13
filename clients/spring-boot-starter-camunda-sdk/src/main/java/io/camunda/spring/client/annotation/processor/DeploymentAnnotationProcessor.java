@@ -23,6 +23,7 @@ import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.spring.client.annotation.value.DeploymentValue;
 import io.camunda.spring.client.bean.ClassInfo;
+import io.camunda.spring.client.event.CamundaPostDeploymentEvent;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
@@ -42,8 +44,11 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
       new PathMatchingResourcePatternResolver();
 
   private final List<DeploymentValue> deploymentValues = new ArrayList<>();
+  private final ApplicationEventPublisher publisher;
 
-  public DeploymentAnnotationProcessor() {}
+  public DeploymentAnnotationProcessor(final ApplicationEventPublisher publisher) {
+    this.publisher = publisher;
+  }
 
   @Override
   public boolean isApplicableFor(final ClassInfo beanInfo) {
@@ -61,46 +66,61 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
 
   @Override
   public void start(final CamundaClient client) {
-    deploymentValues.forEach(
-        deployment -> {
-          final DeployResourceCommandStep1 deployResourceCommand =
-              client.newDeployResourceCommand();
+    final List<Resource> resources =
+        deploymentValues.stream()
+            .flatMap(d -> d.getResources().stream())
+            .flatMap(r -> Arrays.stream(getResources(r)))
+            .distinct()
+            .toList();
 
-          final DeploymentEvent deploymentResult =
-              deployment.getResources().stream()
-                  .flatMap(resource -> Stream.of(getResources(resource)))
-                  .map(
-                      resource -> {
-                        try (final InputStream inputStream = resource.getInputStream()) {
-                          return deployResourceCommand.addResourceStream(
-                              inputStream, resource.getFilename());
-                        } catch (final IOException e) {
-                          throw new RuntimeException(e.getMessage());
-                        }
-                      })
-                  .filter(Objects::nonNull)
-                  .reduce((first, second) -> second)
-                  .orElseThrow(
-                      () ->
-                          new IllegalArgumentException("Requires at least one resource to deploy"))
-                  .send()
-                  .join();
+    final List<DeploymentEvent> list =
+        deploymentValues.stream()
+            .map(
+                deployment -> {
+                  final DeployResourceCommandStep1 deployResourceCommand =
+                      client.newDeployResourceCommand();
 
-          LOGGER.info(
-              "Deployed: {}",
-              Stream.concat(
-                      deploymentResult.getDecisionRequirements().stream()
+                  final DeploymentEvent deploymentResult =
+                      deployment.getResources().stream()
+                          .flatMap(resource -> Stream.of(getResources(resource)))
                           .map(
-                              wf ->
-                                  String.format(
-                                      "<%s:%d>",
-                                      wf.getDmnDecisionRequirementsId(), wf.getVersion())),
-                      deploymentResult.getProcesses().stream()
-                          .map(
-                              wf ->
-                                  String.format("<%s:%d>", wf.getBpmnProcessId(), wf.getVersion())))
-                  .collect(Collectors.joining(",")));
-        });
+                              resource -> {
+                                try (final InputStream inputStream = resource.getInputStream()) {
+                                  return deployResourceCommand.addResourceStream(
+                                      inputStream, resource.getFilename());
+                                } catch (final IOException e) {
+                                  throw new RuntimeException(e.getMessage());
+                                }
+                              })
+                          .filter(Objects::nonNull)
+                          .reduce((first, second) -> second)
+                          .orElseThrow(
+                              () ->
+                                  new IllegalArgumentException(
+                                      "Requires at least one resource to deploy"))
+                          .send()
+                          .join();
+
+                  LOGGER.info(
+                      "Deployed: {}",
+                      Stream.concat(
+                              deploymentResult.getDecisionRequirements().stream()
+                                  .map(
+                                      wf ->
+                                          String.format(
+                                              "<%s:%d>",
+                                              wf.getDmnDecisionRequirementsId(), wf.getVersion())),
+                              deploymentResult.getProcesses().stream()
+                                  .map(
+                                      wf ->
+                                          String.format(
+                                              "<%s:%d>", wf.getBpmnProcessId(), wf.getVersion())))
+                          .collect(Collectors.joining(",")));
+                  return deploymentResult;
+                })
+            .toList();
+
+    publisher.publishEvent(new CamundaPostDeploymentEvent(list));
   }
 
   @Override

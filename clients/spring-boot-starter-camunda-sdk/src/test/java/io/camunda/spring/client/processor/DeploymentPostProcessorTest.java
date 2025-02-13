@@ -34,6 +34,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 
@@ -50,11 +51,13 @@ public class DeploymentPostProcessorTest {
 
   @Mock private DeploymentEvent deploymentEvent;
 
+  @Mock private ApplicationEventPublisher applicationEventPublisher;
+
   @InjectMocks private DeploymentAnnotationProcessor deploymentPostProcessor;
 
   @BeforeEach
   public void init() {
-    deploymentPostProcessor = spy(new DeploymentAnnotationProcessor());
+    deploymentPostProcessor = spy(new DeploymentAnnotationProcessor(applicationEventPublisher));
   }
 
   @Test
