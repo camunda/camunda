@@ -9,9 +9,16 @@ package io.camunda.zeebe.db.impl.rocksdb;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.protocol.EnumValue;
-import io.prometheus.client.Gauge;
+import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.micrometer.common.docs.KeyName;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.Meter.Type;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Arrays;
 import java.util.Objects;
-import java.util.function.Supplier;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +29,6 @@ public final class ZeebeRocksDBMetricExporter<
   private static final Logger LOG =
       LoggerFactory.getLogger(ZeebeRocksDBMetricExporter.class.getName());
 
-  private static final String PARTITION = "partition";
   private static final String ZEEBE_NAMESPACE = "zeebe";
 
   private static final String MEMORY_METRICS_HELP =
@@ -71,73 +77,97 @@ public final class ZeebeRocksDBMetricExporter<
     new RocksDBMetric("rocksdb.num-running-flushes", WRITE_METRICS_PREFIX, WRITE_METRICS_HELP),
     new RocksDBMetric("rocksdb.num-running-compactions", WRITE_METRICS_PREFIX, WRITE_METRICS_HELP),
   };
-
-  private final String partition;
-  private final Supplier<ZeebeDb<ColumnFamilyType>> databaseSupplier;
+  private static final RocksDBMetric[] ALL_METRICS =
+      Stream.of(MEMORY_METRICS, LIVE_METRICS, SST_METRICS, WRITE_METRICS)
+          .flatMap(Arrays::stream)
+          .toArray(RocksDBMetric[]::new);
+  private final ZeebeDb<ColumnFamilyType> database;
 
   public ZeebeRocksDBMetricExporter(
-      final String partition, final Supplier<ZeebeDb<ColumnFamilyType>> databaseSupplier) {
-    this.partition = Objects.requireNonNull(partition);
-    this.databaseSupplier = databaseSupplier;
+      final ZeebeDb<ColumnFamilyType> database, final MeterRegistry meterRegistry) {
+    this.database = database;
+    forAllMetrics(metric -> metric.register(meterRegistry));
+  }
+
+  public static ExtendedMeterDocumentation[] allMeterDocumentations() {
+    return ALL_METRICS;
+  }
+
+  private static void forAllMetrics(final Consumer<RocksDBMetric> consumer) {
+    for (final var metric : ALL_METRICS) {
+      consumer.accept(metric);
+    }
   }
 
   public void exportMetrics() {
     final long startTime = System.currentTimeMillis();
-    exportMetrics(MEMORY_METRICS);
-    exportMetrics(LIVE_METRICS);
-    exportMetrics(SST_METRICS);
-    exportMetrics(WRITE_METRICS);
+    forAllMetrics(this::exportMetric);
 
     final long elapsedTime = System.currentTimeMillis() - startTime;
     LOG.trace("Exporting RocksDBMetrics took + {} ms", elapsedTime);
   }
 
-  private void exportMetrics(final RocksDBMetric[] metrics) {
-    final var database = databaseSupplier.get();
-    if (database == null) {
-      return;
-    }
-    for (final RocksDBMetric metric : metrics) {
-      try {
-        database
-            .getProperty(metric.getPropertyName())
-            .map(Double::parseDouble)
-            .ifPresent(value -> metric.exportValue(partition, value));
-      } catch (final Exception exception) {
-        LOG.debug("Error occurred on exporting metric {}", metric.getPropertyName(), exception);
-      }
+  private void exportMetric(final RocksDBMetric metric) {
+    try {
+      database
+          .getProperty(metric.getPropertyName())
+          .map(Double::parseDouble)
+          .ifPresent(metric::exportValue);
+    } catch (final Exception exception) {
+      LOG.debug("Error occurred on exporting metric {}", metric.getPropertyName(), exception);
     }
   }
 
-  private static final class RocksDBMetric {
+  @SuppressWarnings("NullableProblems")
+  private static final class RocksDBMetric implements ExtendedMeterDocumentation {
 
     private final String propertyName;
-    private final Gauge gauge;
+    private final String namePrefix;
+    private final String help;
+    private volatile double value;
 
     private RocksDBMetric(final String propertyName, final String namePrefix, final String help) {
       this.propertyName = Objects.requireNonNull(propertyName);
+      this.namePrefix = namePrefix;
+      this.help = help;
+    }
 
-      gauge =
-          Gauge.build()
-              .namespace(ZEEBE_NAMESPACE)
-              .name(namePrefix + gaugeSuffix())
-              .help(help)
-              .labelNames(PARTITION)
-              .register();
+    public void register(final MeterRegistry registry) {
+      Gauge.builder(getName(), () -> value).description(help).register(registry);
     }
 
     private String gaugeSuffix() {
       final String suffix =
-          "_" + propertyName.substring(propertyName.indexOf(".") + 1); // cut off "rocksdb." prefix
-      return suffix.replaceAll("-", "_");
+          "." + propertyName.substring(propertyName.indexOf(".") + 1); // cut off "rocksdb." prefix
+      return suffix.replaceAll("-", ".");
     }
 
-    public void exportValue(final String partitionID, final Double value) {
-      gauge.labels(partitionID).set(value);
+    public void exportValue(final Double value) {
+      this.value = value;
     }
 
     public String getPropertyName() {
       return propertyName;
+    }
+
+    @Override
+    public String getDescription() {
+      return help;
+    }
+
+    @Override
+    public String getName() {
+      return ZEEBE_NAMESPACE + ". " + namePrefix + gaugeSuffix();
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
     }
   }
 }
