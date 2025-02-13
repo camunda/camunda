@@ -60,6 +60,7 @@ final class InterceptorIT {
 
   @BeforeEach
   void beforeEach() {
+    final var meterRegistry = new SimpleMeterRegistry();
     final var clusterAddress = SocketUtil.getNextAddress();
     final var gatewayAddress = SocketUtil.getNextAddress();
     config
@@ -88,10 +89,10 @@ final class InterceptorIT {
             topologyManager,
             BrokerClientRequestMetrics.NOOP);
 
-    jobStreamClient = new JobStreamClientImpl(scheduler, cluster.getCommunicationService());
+    jobStreamClient =
+        new JobStreamClientImpl(scheduler, cluster.getCommunicationService(), meterRegistry);
     gateway =
-        new Gateway(
-            config, brokerClient, scheduler, jobStreamClient.streamer(), new SimpleMeterRegistry());
+        new Gateway(config, brokerClient, scheduler, jobStreamClient.streamer(), meterRegistry);
 
     cluster.start().join();
     scheduler.start();

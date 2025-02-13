@@ -57,6 +57,7 @@ class UnavailableBrokersTest {
 
   @BeforeAll
   static void setUp() throws IOException {
+    final var meterRegistry = new SimpleMeterRegistry();
     final NetworkCfg networkCfg = new NetworkCfg().setPort(SocketUtil.getNextAddress().getPort());
     final GatewayCfg config = new GatewayCfg().setNetwork(networkCfg);
     config.init(InetAddress.getLocalHost().getHostName());
@@ -81,7 +82,8 @@ class UnavailableBrokersTest {
             actorScheduler,
             topologyManager,
             BrokerClientRequestMetrics.NOOP);
-    jobStreamClient = new JobStreamClientImpl(actorScheduler, cluster.getCommunicationService());
+    jobStreamClient =
+        new JobStreamClientImpl(actorScheduler, cluster.getCommunicationService(), meterRegistry);
     jobStreamClient.start().join();
 
     // before we can add the job stream client as a topology listener, we need to wait for the
@@ -91,11 +93,7 @@ class UnavailableBrokersTest {
 
     gateway =
         new Gateway(
-            config,
-            brokerClient,
-            actorScheduler,
-            jobStreamClient.streamer(),
-            new SimpleMeterRegistry());
+            config, brokerClient, actorScheduler, jobStreamClient.streamer(), meterRegistry);
     gateway.start().join();
 
     final String gatewayAddress = NetUtil.toSocketAddressString(networkCfg.toSocketAddress());
