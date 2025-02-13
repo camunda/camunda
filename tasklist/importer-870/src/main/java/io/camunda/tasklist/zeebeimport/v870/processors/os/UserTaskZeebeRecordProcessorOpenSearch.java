@@ -66,7 +66,7 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
       final List<TaskVariableEntity> variables =
           userTaskRecordToVariableEntityMapper.mapVariables(record);
       for (final TaskVariableEntity variable : variables) {
-        operations.add(getVariableQuery(variable));
+        operations.add(getVariableQuery(variable, record.getValue().getProcessInstanceKey()));
       }
     }
     // else skip task
@@ -87,12 +87,14 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
         .build();
   }
 
-  private BulkOperation getVariableQuery(final TaskVariableEntity variable) {
+  private BulkOperation getVariableQuery(
+      final TaskVariableEntity variable, final Long processInstanceKey) {
     LOGGER.debug("Variable instance for list view: id {}", variable.getId());
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(TaskVariableTemplate.VALUE, variable.getValue());
     updateFields.put(TaskVariableTemplate.FULL_VALUE, variable.getFullValue());
     updateFields.put(TaskVariableTemplate.IS_PREVIEW, variable.getIsPreview());
+    updateFields.put(TaskVariableTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
 
     return new BulkOperation.Builder()
         .update(

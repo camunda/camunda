@@ -17,10 +17,11 @@ public class TaskVariableEntity extends TasklistZeebeEntity<TaskVariableEntity> 
   private String value;
   private String fullValue;
   private boolean isPreview;
+  private Long processInstanceKey;
 
   public TaskVariableEntity() {}
 
-  public static String getIdBy(String taskId, String name) {
+  public static String getIdBy(final String taskId, final String name) {
     return String.format("%s-%s", taskId, name);
   }
 
@@ -69,8 +70,22 @@ public class TaskVariableEntity extends TasklistZeebeEntity<TaskVariableEntity> 
     return this;
   }
 
+  public Long getProcessInstanceKey() {
+    return processInstanceKey;
+  }
+
+  public TaskVariableEntity setProcessInstanceKey(final Long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
+    return this;
+  }
+
   public static TaskVariableEntity createFrom(
-      String tenantId, String taskId, String name, String value, int variableSizeThreshold) {
+      final String tenantId,
+      final String taskId,
+      final String name,
+      final String value,
+      final int variableSizeThreshold,
+      final String processInstanceKey) {
     final TaskVariableEntity entity =
         new TaskVariableEntity().setId(getIdBy(taskId, name)).setTaskId(taskId).setName(name);
     if (value.length() > variableSizeThreshold) {
@@ -82,10 +97,12 @@ public class TaskVariableEntity extends TasklistZeebeEntity<TaskVariableEntity> 
     }
     entity.setFullValue(value);
     entity.setTenantId(tenantId);
+    entity.setProcessInstanceKey(Long.valueOf(processInstanceKey));
     return entity;
   }
 
-  public static TaskVariableEntity createFrom(String taskId, VariableEntity variableEntity) {
+  public static TaskVariableEntity createFrom(
+      final String taskId, final VariableEntity variableEntity, final String processInstanceKey) {
     return new TaskVariableEntity()
         .setId(getIdBy(taskId, variableEntity.getName()))
         .setTaskId(taskId)
@@ -93,11 +110,14 @@ public class TaskVariableEntity extends TasklistZeebeEntity<TaskVariableEntity> 
         .setValue(variableEntity.getValue())
         .setIsPreview(variableEntity.getIsPreview())
         .setFullValue(variableEntity.getFullValue())
+        .setProcessInstanceKey(Long.valueOf(processInstanceKey))
         .setTenantId(variableEntity.getTenantId());
   }
 
   public static TaskVariableEntity createFrom(
-      String taskId, DraftTaskVariableEntity draftTaskVariableEntity) {
+      final String taskId,
+      final DraftTaskVariableEntity draftTaskVariableEntity,
+      final String processInstanceKey) {
     return new TaskVariableEntity()
         .setId(getIdBy(taskId, draftTaskVariableEntity.getName()))
         .setTaskId(taskId)
@@ -105,7 +125,14 @@ public class TaskVariableEntity extends TasklistZeebeEntity<TaskVariableEntity> 
         .setValue(draftTaskVariableEntity.getValue())
         .setIsPreview(draftTaskVariableEntity.getIsPreview())
         .setFullValue(draftTaskVariableEntity.getFullValue())
+        .setProcessInstanceKey(Long.valueOf(processInstanceKey))
         .setTenantId(draftTaskVariableEntity.getTenantId());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(), taskId, name, value, fullValue, isPreview, processInstanceKey);
   }
 
   @Override
@@ -124,11 +151,7 @@ public class TaskVariableEntity extends TasklistZeebeEntity<TaskVariableEntity> 
         && Objects.equals(taskId, that.taskId)
         && Objects.equals(name, that.name)
         && Objects.equals(value, that.value)
+        && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(fullValue, that.fullValue);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(super.hashCode(), taskId, name, value, fullValue, isPreview);
   }
 }

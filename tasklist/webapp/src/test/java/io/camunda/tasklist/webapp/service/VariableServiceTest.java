@@ -482,6 +482,7 @@ class VariableServiceTest {
         new TaskEntity()
             .setId(taskId)
             .setFlowNodeInstanceId(flowNodeInstanceId)
+            .setProcessInstanceId("123456")
             .setTenantId("tenant_b");
     when(taskStore.getTask(taskId)).thenReturn(task);
     final ImportProperties importProperties = mock(ImportProperties.class);
@@ -502,7 +503,8 @@ class VariableServiceTest {
         List.of(
             new VariableInputDTO().setName("varB").setValue("\"changedB\""),
             new VariableInputDTO().setName("varC").setValue("\"changedC\"")),
-        false);
+        false,
+        task.getProcessInstanceId());
 
     // then
     verify(draftVariableStore, never()).getVariablesByTaskIdAndVariableNames(any(), any());
@@ -525,6 +527,7 @@ class VariableServiceTest {
         new TaskEntity()
             .setId(taskId)
             .setFlowNodeInstanceId(flowNodeInstanceId)
+            .setProcessInstanceId("123456")
             .setTenantId("tenant_c");
     when(taskStore.getTask(taskId)).thenReturn(task);
     final ImportProperties importProperties = mock(ImportProperties.class);
@@ -566,7 +569,8 @@ class VariableServiceTest {
                 .setName("varD")
                 .setValue("\"changedD_longValueThatExceedLimit\""),
             new VariableInputDTO().setName("varE").setValue("\"changedE\"")),
-        true);
+        true,
+        task.getProcessInstanceId());
 
     // then
     verify(variableStore).persistTaskVariables(taskVariableCaptor.capture());

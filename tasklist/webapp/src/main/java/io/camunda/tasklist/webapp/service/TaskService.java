@@ -197,7 +197,8 @@ public class TaskService {
       final TaskEntity completedTaskEntity = taskStore.persistTaskCompletion(task);
       try {
         LOGGER.info("Start variable persistence: {}", taskId);
-        variableService.persistTaskVariables(taskId, variables, withDraftVariableValues);
+        variableService.persistTaskVariables(
+            taskId, variables, withDraftVariableValues, task.getProcessInstanceId());
         deleteDraftTaskVariablesSafely(taskId);
         updateCompletedMetric(completedTaskEntity);
         LOGGER.info("Task with ID {} completed successfully.", taskId);

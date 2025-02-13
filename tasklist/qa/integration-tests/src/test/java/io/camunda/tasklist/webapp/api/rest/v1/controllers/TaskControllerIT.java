@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
+import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.queries.RangeValueFilter;
 import io.camunda.tasklist.queries.RangeValueFilter.RangeValueFilterBuilder;
@@ -28,6 +29,8 @@ import io.camunda.tasklist.queries.Sort;
 import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskOrderBy;
 import io.camunda.tasklist.queries.TaskSortFields;
+import io.camunda.tasklist.store.VariableStore;
+import io.camunda.tasklist.store.VariableStore.GetVariablesRequest;
 import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistTester;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
@@ -65,6 +68,8 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
   @InjectMocks private IdentityProperties identityProperties;
 
   @MockBean private IdentityAuthorizationService identityAuthorizationService;
+
+  @Autowired private VariableStore variableStore;
 
   @Autowired private WebApplicationContext context;
 
@@ -1290,6 +1295,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
               patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/complete"), taskId),
               completeRequest);
       final var taskVariables = tester.getTaskVariables();
+      final var processInstanceId = Long.valueOf(tester.getProcessInstanceId());
 
       // then
       assertThat(result)
@@ -1304,6 +1310,21 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
                 assertThat(task.getCreationDate()).isNotNull();
                 assertThat(task.getCompletionDate()).isNotNull();
               });
+
+      // when
+      final var taskVariablesMap =
+          variableStore.getTaskVariablesPerTaskId(
+              List.of(new GetVariablesRequest().setTaskId(taskId)));
+      assertThat(taskVariablesMap).containsKey(taskId);
+      final List<TaskVariableEntity> variables = taskVariablesMap.get(taskId);
+
+      // then
+      assertThat(variables).isNotNull().isNotEmpty();
+
+      variables.forEach(
+          variable -> {
+            assertThat(variable.getProcessInstanceKey()).isNotNull().isEqualTo(processInstanceId);
+          });
 
       assertThat(taskVariables)
           .extracting("name", "value", "previewValue", "isValueTruncated")
@@ -1365,6 +1386,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
               patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/complete"), taskId),
               completeRequest);
       final var taskVariables = tester.getTaskVariables();
+      final var processInstanceId = Long.valueOf(tester.getProcessInstanceId());
 
       // then
       assertThat(result)
@@ -1380,6 +1402,21 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
                 assertThat(task.getCompletionDate()).isNotNull();
                 assertThat(task.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
               });
+
+      // when
+      final var taskVariablesMap =
+          variableStore.getTaskVariablesPerTaskId(
+              List.of(new GetVariablesRequest().setTaskId(taskId)));
+      assertThat(taskVariablesMap).containsKey(taskId);
+      final List<TaskVariableEntity> variables = taskVariablesMap.get(taskId);
+
+      // then
+      assertThat(variables).isNotNull().isNotEmpty();
+
+      variables.forEach(
+          variable -> {
+            assertThat(variable.getProcessInstanceKey()).isNotNull().isEqualTo(processInstanceId);
+          });
 
       assertThat(taskVariables)
           .extracting("name", "value", "previewValue", "isValueTruncated")
