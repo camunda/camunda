@@ -159,7 +159,10 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
 
     // return true if it has already been correlated, otherwise false
     final var lastCorrelatedMessageKey = subscription.getRecord().getMessageKey();
-    return lastCorrelatedMessageKey == messageKey;
+    // as correlations are ordered per message, a message is considered to have been correlated
+    // either if it is the last correlated message (keys are equal), or if it was a message prior to
+    // the last correlated one (messageKey is less than lastCorrelatedMessageKey).
+    return messageKey <= lastCorrelatedMessageKey;
   }
 
   private ExecutableFlowElement getCatchEvent(
