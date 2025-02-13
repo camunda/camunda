@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbOptions;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
 import io.camunda.zeebe.protocol.EnumValue;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -52,14 +53,17 @@ public final class ZeebeRocksDbFactory<
   private final RocksDbConfiguration rocksDbConfiguration;
   private final ConsistencyChecksSettings consistencyChecksSettings;
   private final AccessMetricsConfiguration metrics;
+  private final MeterRegistry meterRegistry;
 
   public ZeebeRocksDbFactory(
       final RocksDbConfiguration rocksDbConfiguration,
       final ConsistencyChecksSettings consistencyChecksSettings,
-      final AccessMetricsConfiguration metricsConfiguration) {
+      final AccessMetricsConfiguration metricsConfiguration,
+      final MeterRegistry meterRegistry) {
     this.rocksDbConfiguration = Objects.requireNonNull(rocksDbConfiguration);
     this.consistencyChecksSettings = Objects.requireNonNull(consistencyChecksSettings);
     metrics = metricsConfiguration;
+    this.meterRegistry = Objects.requireNonNull(meterRegistry);
   }
 
   @Override
@@ -72,7 +76,8 @@ public final class ZeebeRocksDbFactory<
           closeables,
           rocksDbConfiguration,
           consistencyChecksSettings,
-          metrics);
+          metrics,
+          meterRegistry);
     } catch (final RocksDBException e) {
       CloseHelper.quietCloseAll(closeables);
       throw new IllegalStateException("Unexpected error occurred trying to open the database", e);

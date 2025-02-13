@@ -144,6 +144,20 @@ public final class MicrometerUtil {
     return buckets.toArray(Duration[]::new);
   }
 
+  /**
+   * Marks this registry as discarded, clearing any metrics, closing it, and removing it from any of
+   * the wrapped registries.
+   *
+   * <p>Only use if you're sure you won't use this registry again.
+   */
+  public static void discard(final CompositeMeterRegistry registry) {
+    registry.clear();
+    // we have to remove all wrapped registries before closing, otherwise closing the composite
+    // registry will also close the wrapped registries
+    registry.getRegistries().forEach(registry::remove);
+    registry.close();
+  }
+
   private record CloseableTimer(Timer timer, Timer.Sample sample) implements CloseableSilently {
     @Override
     public void close() {

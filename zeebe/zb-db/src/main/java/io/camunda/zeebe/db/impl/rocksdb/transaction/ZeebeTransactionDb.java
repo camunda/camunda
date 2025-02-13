@@ -21,9 +21,11 @@ import io.camunda.zeebe.db.impl.NoopColumnFamilyMetrics;
 import io.camunda.zeebe.db.impl.rocksdb.Loggers;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.protocol.EnumValue;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.micrometer.StatefulMeterRegistry;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -46,7 +48,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
   private static final String ERROR_MESSAGE_CLOSE_RESOURCE =
       "Expected to close RocksDB resource successfully, but exception was thrown. Will continue to close remaining resources.";
   private final OptimisticTransactionDB optimisticTransactionDB;
-  private final List<AutoCloseable> closables;
+  private final List<AutoCloseable> closeables;
   private final ReadOptions prefixReadOptions;
   private final ReadOptions defaultReadOptions;
   private final WriteOptions defaultWriteOptions;
@@ -54,20 +56,23 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
   private final long defaultNativeHandle;
   private final ConsistencyChecksSettings consistencyChecksSettings;
   private final AccessMetricsConfiguration accessMetricsConfiguration;
+  private final StatefulMeterRegistry meterRegistry;
 
   protected ZeebeTransactionDb(
       final ColumnFamilyHandle defaultHandle,
       final OptimisticTransactionDB optimisticTransactionDB,
-      final List<AutoCloseable> closables,
+      final List<AutoCloseable> closeables,
       final RocksDbConfiguration rocksDbConfiguration,
       final ConsistencyChecksSettings consistencyChecksSettings,
-      final AccessMetricsConfiguration accessMetricsConfiguration) {
+      final AccessMetricsConfiguration accessMetricsConfiguration,
+      final StatefulMeterRegistry meterRegistry) {
     this.defaultHandle = defaultHandle;
     defaultNativeHandle = getNativeHandle(defaultHandle);
     this.optimisticTransactionDB = optimisticTransactionDB;
-    this.closables = closables;
+    this.closeables = closeables;
     this.consistencyChecksSettings = consistencyChecksSettings;
     this.accessMetricsConfiguration = accessMetricsConfiguration;
+    this.meterRegistry = meterRegistry;
 
     prefixReadOptions =
         new ReadOptions()
@@ -77,11 +82,11 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
             // high latency, at the cost of making iterators more expensive (memory and computation
             // wise)
             .setReadaheadSize(0);
-    closables.add(prefixReadOptions);
+    closeables.add(prefixReadOptions);
     defaultReadOptions = new ReadOptions();
-    closables.add(defaultReadOptions);
+    closeables.add(defaultReadOptions);
     defaultWriteOptions = new WriteOptions().setDisableWAL(rocksDbConfiguration.isWalDisabled());
-    closables.add(defaultWriteOptions);
+    closeables.add(defaultWriteOptions);
   }
 
   public static <ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue>
@@ -91,11 +96,11 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
           final List<AutoCloseable> closables,
           final RocksDbConfiguration rocksDbConfiguration,
           final ConsistencyChecksSettings consistencyChecksSettings,
-          final AccessMetricsConfiguration metrics)
+          final AccessMetricsConfiguration metrics,
+          final MeterRegistry wrappedRegistry)
           throws RocksDBException {
     final var cfDescriptors =
-        Arrays.asList( // todo: could consider using List.of
-            new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, options.cfOptions()));
+        List.of(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, options.cfOptions()));
     final List<ColumnFamilyHandle> cfHandles = new ArrayList<>();
     final OptimisticTransactionDB optimisticTransactionDB =
         OptimisticTransactionDB.open(options.dbOptions(), path, cfDescriptors, cfHandles);
@@ -110,13 +115,17 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
     final ColumnFamilyHandle defaultColumnFamilyHandle = cfHandles.getFirst();
     closables.add(defaultColumnFamilyHandle);
 
+    final var statefulMeterRegistry = new StatefulMeterRegistry(wrappedRegistry);
+    closables.add(() -> MicrometerUtil.discard(statefulMeterRegistry));
+
     return new ZeebeTransactionDb<>(
         defaultColumnFamilyHandle,
         optimisticTransactionDB,
         closables,
         rocksDbConfiguration,
         consistencyChecksSettings,
-        metrics);
+        metrics,
+        statefulMeterRegistry);
   }
 
   static long getNativeHandle(final RocksObject object) {
@@ -195,7 +204,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
   public TransactionContext createContext() {
     final Transaction transaction = optimisticTransactionDB.beginTransaction(defaultWriteOptions);
     final ZeebeTransaction zeebeTransaction = new ZeebeTransaction(transaction, this);
-    closables.add(zeebeTransaction);
+    closeables.add(zeebeTransaction);
     return new DefaultTransactionContext(zeebeTransaction);
   }
 
@@ -204,6 +213,11 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
       final ColumnFamilyNames columnFamilyName, final TransactionContext context) {
     return createColumnFamily(columnFamilyName, context, DbNullKey.INSTANCE, DbNil.INSTANCE)
         .isEmpty();
+  }
+
+  @Override
+  public StatefulMeterRegistry getMeterRegistry() {
+    return meterRegistry;
   }
 
   @Override
@@ -221,8 +235,8 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
     // 5. db options
     // 6. column family options
     // https://github.com/facebook/rocksdb/wiki/RocksJava-Basics#opening-a-database-with-column-families
-    Collections.reverse(closables);
-    closables.forEach(
+    Collections.reverse(closeables);
+    closeables.forEach(
         closable -> {
           try {
             closable.close();
