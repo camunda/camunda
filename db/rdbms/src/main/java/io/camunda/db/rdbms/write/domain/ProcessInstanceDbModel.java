@@ -27,6 +27,7 @@ public class ProcessInstanceDbModel implements DbModel<ProcessInstanceDbModel> {
   private final Integer numIncidents;
   private final String elementId;
   private final int version;
+  private final Boolean hasIncident;
 
   public ProcessInstanceDbModel(
       Long processInstanceKey,
@@ -41,7 +42,10 @@ public class ProcessInstanceDbModel implements DbModel<ProcessInstanceDbModel> {
       Long parentElementInstanceKey,
       Integer numIncidents,
       String elementId,
-      int version) {
+      int version,
+      String name,
+      String versionTag,
+      Boolean hasIncident) {
     this.processInstanceKey = processInstanceKey;
     this.legacyProcessInstanceId = legacyProcessInstanceId;
     this.processDefinitionId = processDefinitionId;
@@ -55,6 +59,7 @@ public class ProcessInstanceDbModel implements DbModel<ProcessInstanceDbModel> {
     this.numIncidents = numIncidents;
     this.elementId = elementId;
     this.version = version;
+    this.hasIncident = hasIncident;
   }
 
   public ProcessInstanceDbModel copy(
@@ -118,16 +123,20 @@ public class ProcessInstanceDbModel implements DbModel<ProcessInstanceDbModel> {
     return parentElementInstanceKey;
   }
 
-  public Integer numIncidents() {
-    return numIncidents;
-  }
-
   public String elementId() {
     return elementId;
   }
 
   public int version() {
     return version;
+  }
+
+  public Boolean hasIncident() {
+    return hasIncident;
+  }
+
+  public Integer numIncidents() {
+    return numIncidents;
   }
 
   @Override
@@ -149,7 +158,6 @@ public class ProcessInstanceDbModel implements DbModel<ProcessInstanceDbModel> {
         && Objects.equals(this.tenantId, that.tenantId)
         && Objects.equals(this.parentProcessInstanceKey, that.parentProcessInstanceKey)
         && Objects.equals(this.parentElementInstanceKey, that.parentElementInstanceKey)
-        && Objects.equals(this.numIncidents, that.numIncidents)
         && Objects.equals(this.elementId, that.elementId)
         && this.version == that.version;
   }
@@ -229,9 +237,10 @@ public class ProcessInstanceDbModel implements DbModel<ProcessInstanceDbModel> {
     private Long parentProcessInstanceKey;
     private Long parentElementInstanceKey;
     private String elementId;
-    private int numIncidents = 0;
+    private int numIncidents;
     private int version;
     private String legacyProcessInstanceId;
+    private Boolean hasIncident;
 
     // Public constructor to initialize the builder
     public ProcessInstanceDbModelBuilder() {}
@@ -309,6 +318,11 @@ public class ProcessInstanceDbModel implements DbModel<ProcessInstanceDbModel> {
       return this;
     }
 
+    public ProcessInstanceDbModelBuilder hasIncident(Boolean hasIncident) {
+      this.hasIncident = hasIncident;
+      return this;
+    }
+
     @Override
     public ProcessInstanceDbModel build() {
       return new ProcessInstanceDbModel(
@@ -324,7 +338,10 @@ public class ProcessInstanceDbModel implements DbModel<ProcessInstanceDbModel> {
           parentElementInstanceKey,
           numIncidents,
           elementId,
-          version);
+          version,
+          null,
+          null,
+          hasIncident);
     }
   }
 }

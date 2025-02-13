@@ -29,6 +29,7 @@
            END AS HAS_INCIDENT,
            pi.PARENT_PROCESS_INSTANCE_KEY,
            pi.PARENT_ELEMENT_INSTANCE_KEY,
+           pi.NUM_INCIDENTS,
            pi.ELEMENT_ID,
            pi.VERSION AS PROCESS_DEFINITION_VERSION,
            pd.NAME        AS PROCESS_DEFINITION_NAME,
@@ -58,16 +59,17 @@
     pi.START_DATE,
     pi.END_DATE,
     pi.TENANT_ID,
-    CASE
-        WHEN pi.NUM_INCIDENTS = 0 THEN FALSE
-        ELSE TRUE
-    END AS HAS_INCIDENT,
     pi.PARENT_PROCESS_INSTANCE_KEY,
     pi.PARENT_ELEMENT_INSTANCE_KEY,
+    pi.NUM_INCIDENTS,
     pi.ELEMENT_ID,
     pi.VERSION PROCESS_DEFINITION_VERSION,
     pd.NAME AS PROCESS_DEFINITION_NAME,
-    pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG
+    pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG,
+    CASE
+        WHEN pi.NUM_INCIDENTS = 0 THEN FALSE
+        ELSE TRUE
+    END AS HAS_INCIDENT
     FROM ${prefix}PROCESS_INSTANCE pi
     LEFT JOIN ${prefix}PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
     <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
@@ -165,10 +167,11 @@
       <result property="processDefinitionKey" column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
       <result property="parentProcessInstanceKey" column="PARENT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <result property="parentElementInstanceKey" column="PARENT_ELEMENT_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <result property="numIncidents" column="NUM_INCIDENTS" javaType="java.lang.Integer"/>
       <result property="startDate" column="START_DATE" javaType="java.time.OffsetDateTime" />
       <result property="endDate" column="END_DATE" javaType="java.time.OffsetDateTime" />
       <result property="state" column="STATE" javaType="io.camunda.search.entities.ProcessInstanceEntity$ProcessInstanceState"/>
-      <!--<result property="" column="HAS_INCIDENT" javaType="java.lang.Boolean"/>-->
+      <result property="hasIncident" column="HAS_INCIDENT" javaType="java.lang.Boolean"/>
       <result property="tenantId" column="TENANT_ID" javaType="java.lang.String"/>
   </resultMap>
 
