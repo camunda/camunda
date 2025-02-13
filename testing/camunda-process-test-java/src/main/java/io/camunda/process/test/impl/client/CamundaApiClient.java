@@ -35,8 +35,10 @@ public class CamundaApiClient {
 
   // Operate v1 endpoints
   private static final String PROCESS_INSTANCE_GET_ENDPOINT = "/v1/process-instances/%d";
+  private static final String PROCESS_INSTANCE_SEARCH_ENDPOINT = "/v1/process-instances/search";
   private static final String FLOW_NODE_INSTANCES_SEARCH_ENDPOINT = "/v1/flownode-instances/search";
   private static final String VARIABLES_SEARCH_ENDPOINT = "/v1/variables/search";
+  private static final String INCIDENTS_GET_ENDPOINT = "/v1/incidents/%d";
 
   private final ObjectMapper objectMapper =
       new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
@@ -100,6 +102,14 @@ public class CamundaApiClient {
     return objectMapper.readValue(body, ProcessInstanceDto.class);
   }
 
+  public SearchProcessInstanceResponseDto findProcessInstances() throws IOException {
+    ensureAuthenticated();
+
+    final String requestBody = "{}";
+    final String responseBody = sendPostRequest(PROCESS_INSTANCE_SEARCH_ENDPOINT, requestBody);
+    return objectMapper.readValue(responseBody, SearchProcessInstanceResponseDto.class);
+  }
+
   public FlowNodeInstancesResponseDto findFlowNodeInstancesByProcessInstanceKey(
       final long processInstanceKey) throws IOException {
     ensureAuthenticated();
@@ -120,6 +130,13 @@ public class CamundaApiClient {
             processInstanceKey, processInstanceKey);
     final String responseBody = sendPostRequest(VARIABLES_SEARCH_ENDPOINT, requestBody);
     return objectMapper.readValue(responseBody, VariableResponseDto.class);
+  }
+
+  public IncidentDto getIncidentByKey(final long incidentKey) throws IOException {
+    ensureAuthenticated();
+
+    final String body = sendGetRequest(String.format(INCIDENTS_GET_ENDPOINT, incidentKey));
+    return objectMapper.readValue(body, IncidentDto.class);
   }
 
   private String sendGetRequest(final String endpoint) throws IOException {

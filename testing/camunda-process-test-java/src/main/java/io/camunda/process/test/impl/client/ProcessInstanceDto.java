@@ -15,42 +15,158 @@
  */
 package io.camunda.process.test.impl.client;
 
-public class ProcessInstanceDto {
+import io.camunda.zeebe.client.api.search.response.ProcessInstance;
+import io.camunda.zeebe.client.impl.search.response.OperationImpl;
+import io.camunda.zeebe.client.impl.search.response.ProcessInstanceReferenceImpl;
+import java.util.Collections;
+import java.util.List;
 
-  private long key;
-  private int processVersion;
+public class ProcessInstanceDto implements ProcessInstance {
+
+  private Long key;
   private String bpmnProcessId;
+  private String processDefinitionName;
+  private int processDefinitionVersion;
   private long parentKey;
-  private long parentFlowNodeInstanceKey;
+  private Long parentFlowNodeInstanceKey;
   private String startDate;
   private String endDate;
-  private ProcessInstanceState state;
-  private long processDefinitionKey;
+  private String state;
+  private Long processDefinitionKey;
   private String tenantId;
-  private long parentProcessInstanceKey;
+  private Long parentProcessInstanceKey;
+  private String rootInstanceId;
 
-  public long getKey() {
+  @Override
+  public Long getKey() {
     return key;
   }
 
-  public void setKey(final long key) {
-    this.key = key;
+  public void setKey(final long processInstanceKey) {
+    key = processInstanceKey;
   }
 
-  public int getProcessVersion() {
-    return processVersion;
+  @Override
+  public String getProcessName() {
+    return processDefinitionName;
   }
 
-  public void setProcessVersion(final int processVersion) {
-    this.processVersion = processVersion;
+  @Override
+  public Integer getProcessVersion() {
+    return processDefinitionVersion;
   }
 
+  @Override
   public String getBpmnProcessId() {
     return bpmnProcessId;
   }
 
   public void setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
+  }
+
+  @Override
+  public Long getParentProcessInstanceKey() {
+    return parentProcessInstanceKey;
+  }
+
+  @Override
+  public Long getParentFlowNodeInstanceKey() {
+    return parentFlowNodeInstanceKey;
+  }
+
+  public void setParentFlowNodeInstanceKey(final long parentFlowNodeInstanceKey) {
+    this.parentFlowNodeInstanceKey = parentFlowNodeInstanceKey;
+  }
+
+  @Override
+  public String getStartDate() {
+    return startDate;
+  }
+
+  public void setStartDate(final String startDate) {
+    this.startDate = startDate;
+  }
+
+  @Override
+  public String getEndDate() {
+    return endDate;
+  }
+
+  public void setEndDate(final String endDate) {
+    this.endDate = endDate;
+  }
+
+  @Override
+  public String getState() {
+    return state;
+  }
+
+  public void setState(final String state) {
+    this.state = state;
+  }
+
+  public void setState(final ProcessInstanceState state) {
+    this.state = state.name();
+  }
+
+  @Override
+  public Boolean getIncident() {
+    return false;
+  }
+
+  @Override
+  public Boolean getHasActiveOperation() {
+    return false;
+  }
+
+  @Override
+  public Long getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  public void setProcessDefinitionKey(final long processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+  }
+
+  @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public void setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
+  }
+
+  @Override
+  public String getRootInstanceId() {
+    return rootInstanceId;
+  }
+
+  public void setRootInstanceId(final String rootInstanceId) {
+    this.rootInstanceId = rootInstanceId;
+  }
+
+  @Override
+  public List<OperationImpl> getOperations() {
+    return Collections.emptyList();
+  }
+
+  @Override
+  public List<ProcessInstanceReferenceImpl> getCallHierarchy() {
+    return Collections.emptyList();
+  }
+
+  public void setParentProcessInstanceKey(final long parentProcessInstanceKey) {
+    this.parentProcessInstanceKey = parentProcessInstanceKey;
+  }
+
+  public void setProcessDefinitionName(final String processDefinitionName) {
+    this.processDefinitionName = processDefinitionName;
+  }
+
+  public void setProcessDefinitionVersion(final int processDefinitionVersion) {
+    this.processDefinitionVersion = processDefinitionVersion;
   }
 
   public long getParentKey() {
@@ -61,59 +177,7 @@ public class ProcessInstanceDto {
     this.parentKey = parentKey;
   }
 
-  public long getParentFlowNodeInstanceKey() {
-    return parentFlowNodeInstanceKey;
-  }
-
-  public void setParentFlowNodeInstanceKey(final long parentFlowNodeInstanceKey) {
-    this.parentFlowNodeInstanceKey = parentFlowNodeInstanceKey;
-  }
-
-  public String getStartDate() {
-    return startDate;
-  }
-
-  public void setStartDate(final String startDate) {
-    this.startDate = startDate;
-  }
-
-  public String getEndDate() {
-    return endDate;
-  }
-
-  public void setEndDate(final String endDate) {
-    this.endDate = endDate;
-  }
-
-  public ProcessInstanceState getState() {
-    return state;
-  }
-
-  public void setState(final ProcessInstanceState state) {
-    this.state = state;
-  }
-
-  public long getProcessDefinitionKey() {
-    return processDefinitionKey;
-  }
-
-  public void setProcessDefinitionKey(final long processDefinitionKey) {
-    this.processDefinitionKey = processDefinitionKey;
-  }
-
-  public String getTenantId() {
-    return tenantId;
-  }
-
-  public void setTenantId(final String tenantId) {
-    this.tenantId = tenantId;
-  }
-
-  public long getParentProcessInstanceKey() {
-    return parentProcessInstanceKey;
-  }
-
-  public void setParentProcessInstanceKey(final long parentProcessInstanceKey) {
-    this.parentProcessInstanceKey = parentProcessInstanceKey;
+  public ProcessInstanceState getProcessInstanceState() {
+    return state != null ? ProcessInstanceState.valueOf(state) : null;
   }
 }

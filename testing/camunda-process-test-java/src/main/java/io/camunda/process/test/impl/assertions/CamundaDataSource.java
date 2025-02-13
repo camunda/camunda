@@ -17,8 +17,10 @@ package io.camunda.process.test.impl.assertions;
 
 import io.camunda.process.test.impl.client.CamundaApiClient;
 import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
+import io.camunda.process.test.impl.client.IncidentDto;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
 import io.camunda.process.test.impl.client.VariableDto;
+import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import java.io.IOException;
 import java.util.List;
 
@@ -44,5 +46,13 @@ public class CamundaDataSource {
   public List<VariableDto> getVariablesByProcessInstanceKey(final long processInstanceKey)
       throws IOException {
     return camundaApiClient.findVariablesByProcessInstanceKey(processInstanceKey).getItems();
+  }
+
+  public List<ProcessInstance> findProcessInstances() throws IOException {
+    return camundaApiClient.findProcessInstances().getItems();
+  }
+
+  public IncidentDto getIncidentByKey(final long incidentKey) throws IOException {
+    return camundaApiClient.getIncidentByKey(incidentKey);
   }
 }

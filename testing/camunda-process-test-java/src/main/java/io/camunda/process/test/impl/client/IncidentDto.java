@@ -13,21 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.impl.assertions;
+package io.camunda.process.test.impl.client;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
+public class IncidentDto {
+  private long key;
+  private String type;
+  private String message;
 
-public class AssertFormatUtil {
-
-  public static String formatNames(final String[] names) {
-    return formatNames(Arrays.asList(names));
+  public long getKey() {
+    return key;
   }
 
-  public static String formatNames(final List<String> names) {
-    return names.stream()
-        .map(elementName -> String.format("'%s'", elementName))
-        .collect(Collectors.joining(", ", "[", "]"));
+  public void setKey(final long key) {
+    this.key = key;
+  }
+
+  public String getType() {
+    return type;
+  }
+
+  public void setType(final String type) {
+    this.type = type;
+  }
+
+  public String getMessage() {
+    return message;
+  }
+
+  public void setMessage(final String message) {
+    this.message = message;
   }
 }
