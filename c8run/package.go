@@ -133,6 +133,7 @@ func PackageUnix(camundaVersion string, elasticsearchVersion string, connectorsV
 	composeExtractionPath := "camunda-platform-" + composeTag
 	authToken := os.Getenv("GH_TOKEN")
 
+	// set your LDAP credentials for local usage (name.surname as username, password)
 	javaArtifactsUser := os.Getenv("JAVA_ARTIFACTS_USER")
 	javaArtifactsPassword := os.Getenv("JAVA_ARTIFACTS_PASSWORD")
 
