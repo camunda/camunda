@@ -18,6 +18,7 @@ package io.camunda.zeebe.model.bpmn.validation.zeebe;
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
+import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
@@ -71,7 +72,10 @@ public final class ZeebeDesignTimeValidators {
     validators.add(new ProcessValidator());
     validators.add(new ScriptTaskValidator());
     validators.add(new SequenceFlowValidator());
-    validators.add(new ServiceTaskValidator());
+    validators.add(
+        ExtensionElementsValidator.verifyThat(ServiceTask.class)
+            .hasSingleExtensionElement(
+                ZeebeTaskDefinition.class, ZeebeConstants.ELEMENT_TASK_DEFINITION));
     validators.add(new ReceiveTaskValidator());
     validators.add(new StartEventValidator());
     validators.add(new SubProcessValidator());
