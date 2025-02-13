@@ -56,7 +56,7 @@ public class AuthorizationCreateProcessor
                     record.getAuthorizationPermissions(),
                     record.getResourceType(),
                     "Expected to create authorization with permission types '%s' and resource type '%s', but these permissions are not supported. Supported permission types are: '%s'"))
-        .flatMap(permissionsBehavior::authorizationAlreadyExists)
+        .flatMap(permissionsBehavior::permissionsAlreadyExist)
         .ifRightOrLeft(
             authorizationRecord -> writeEventAndDistribute(command, authorizationRecord),
             (rejection) -> {
@@ -68,7 +68,7 @@ public class AuthorizationCreateProcessor
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
     permissionsBehavior
-        .authorizationAlreadyExists(command.getValue())
+        .permissionsAlreadyExist(command.getValue())
         .ifRightOrLeft(
             ignored ->
                 stateWriter.appendFollowUpEvent(

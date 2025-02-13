@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -46,9 +47,7 @@ public class RoleAppliersTest {
     userState = processingState.getUserState();
     authorizationState = processingState.getAuthorizationState();
     mappingState = processingState.getMappingState();
-    roleDeletedApplier =
-        new RoleDeletedApplier(
-            processingState.getRoleState(), processingState.getAuthorizationState());
+    roleDeletedApplier = new RoleDeletedApplier(processingState.getRoleState());
     roleEntityAddedApplier = new RoleEntityAddedApplier(processingState);
     roleEntityRemovedApplier = new RoleEntityRemovedApplier(processingState);
   }
@@ -111,25 +110,30 @@ public class RoleAppliersTest {
     final String roleName = "foo";
     final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName(roleName);
     roleState.create(roleRecord);
-    authorizationState.createOrAddPermission(
-        AuthorizationOwnerType.ROLE,
-        roleName,
-        AuthorizationResourceType.ROLE,
-        PermissionType.DELETE,
-        Set.of("role1", "role2"));
+    authorizationState.create(
+        1L,
+        new AuthorizationRecord()
+            .setAuthorizationKey(1L)
+            .setResourceId("role1")
+            .setResourceType(AuthorizationResourceType.ROLE)
+            .setAuthorizationPermissions(Set.of(PermissionType.DELETE))
+            .setOwnerType(AuthorizationOwnerType.ROLE)
+            .setOwnerId(roleId));
+    authorizationState.create(
+        2L,
+        new AuthorizationRecord()
+            .setAuthorizationKey(2L)
+            .setResourceId("role2")
+            .setResourceType(AuthorizationResourceType.ROLE)
+            .setAuthorizationPermissions(Set.of(PermissionType.DELETE))
+            .setOwnerType(AuthorizationOwnerType.ROLE)
+            .setOwnerId(roleId));
 
     // when
     roleDeletedApplier.applyState(roleKey, roleRecord);
 
     // then
     assertThat(roleState.getRole(roleKey)).isEmpty();
-    final var resourceIdentifiers =
-        authorizationState.getResourceIdentifiers(
-            AuthorizationOwnerType.ROLE,
-            roleId,
-            AuthorizationResourceType.ROLE,
-            PermissionType.DELETE);
-    assertThat(resourceIdentifiers).isEmpty();
   }
 
   @Test
