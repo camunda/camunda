@@ -30,10 +30,10 @@ import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics;
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics;
-import io.micrometer.prometheus.PrometheusConfig;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
-import io.micrometer.prometheus.PrometheusRenameFilter;
-import io.prometheus.client.exporter.HTTPServer;
+import io.micrometer.prometheusmetrics.PrometheusConfig;
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
+import io.micrometer.prometheusmetrics.PrometheusRenameFilter;
+import io.prometheus.metrics.exporter.httpserver.HTTPServer;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -71,10 +71,10 @@ abstract class App implements Runnable {
     try {
       // you can set the daemon flag to false if you want the server to block
       monitoringServer =
-          new HTTPServer.Builder()
-              .withPort(appCfg.getMonitoringPort())
-              .withRegistry(registry.getPrometheusRegistry())
-              .build();
+          HTTPServer.builder()
+              .port(appCfg.getMonitoringPort())
+              .registry(registry.getPrometheusRegistry())
+              .buildAndStart();
     } catch (final IOException e) {
       LOG.error("Problem on starting monitoring server.", e);
     }
