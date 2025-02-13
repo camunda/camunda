@@ -17,6 +17,8 @@ import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.transport.ClientRequest;
 import io.camunda.zeebe.transport.ClientTransport;
@@ -25,6 +27,8 @@ import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.ServerTransport;
 import io.camunda.zeebe.transport.TransportFactory;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.Arrays;
@@ -53,6 +57,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
+@AutoCloseResources
 public class AtomixTransportTest {
 
   @ClassRule public static final ActorSchedulerRule SCHEDULER_RULE = new ActorSchedulerRule();
@@ -65,6 +70,7 @@ public class AtomixTransportTest {
   private static String serverAddress;
   private static TransportFactory transportFactory;
   private static NettyMessagingService nettyMessagingService;
+  @AutoCloseResource private static MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @Parameter(0)
   public String testName;
@@ -111,7 +117,10 @@ public class AtomixTransportTest {
                     nodeAddressSupplier = () -> serverAddress;
                     nettyMessagingService =
                         new NettyMessagingService(
-                            "cluster", Address.from(serverAddress), new MessagingConfig());
+                            "cluster",
+                            Address.from(serverAddress),
+                            new MessagingConfig(),
+                            meterRegistry);
                     nettyMessagingService.start().join();
                   }
 
@@ -128,7 +137,7 @@ public class AtomixTransportTest {
     nodeAddressSupplier = () -> serverAddress;
 
     cluster =
-        AtomixCluster.builder()
+        AtomixCluster.builder(meterRegistry)
             .withAddress(Address.from(serverAddress))
             .withMemberId("0")
             .withClusterId("cluster")
@@ -426,7 +435,7 @@ public class AtomixTransportTest {
     private ServerResponseImpl serverResponse;
 
     DirectlyResponder() {
-      this.requestConsumer = (bytes -> {});
+      requestConsumer = (bytes -> {});
     }
 
     DirectlyResponder(final Consumer<byte[]> requestConsumer) {

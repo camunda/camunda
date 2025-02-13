@@ -47,7 +47,7 @@ final class ClusterTopologyGossiperTest {
   private TestGossiper node1;
   private TestGossiper node2;
   private TestGossiper node3;
-  private MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final TopologyMetrics topologyMetrics = new TopologyMetrics(meterRegistry);
 
   @BeforeEach
@@ -110,7 +110,7 @@ final class ClusterTopologyGossiperTest {
   }
 
   private AtomixCluster createClusterNode(final Node localNode, final Collection<Node> nodes) {
-    return AtomixCluster.builder()
+    return AtomixCluster.builder(meterRegistry)
         .withAddress(localNode.address())
         .withMemberId(localNode.id().id())
         .withMembershipProvider(new BootstrapDiscoveryProvider(nodes))

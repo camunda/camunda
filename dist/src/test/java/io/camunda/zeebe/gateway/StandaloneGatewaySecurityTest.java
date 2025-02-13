@@ -21,7 +21,10 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.shared.ActorClockConfiguration;
 import io.camunda.zeebe.shared.IdleStrategyConfig.IdleStrategySupplier;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.File;
@@ -32,6 +35,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
 
+@AutoCloseResources
 final class StandaloneGatewaySecurityTest {
   private SelfSignedCertificate certificate;
   private StandaloneGateway gateway;
@@ -39,6 +43,7 @@ final class StandaloneGatewaySecurityTest {
   private AtomixCluster atomixCluster;
   private ActorScheduler actorScheduler;
   private JobStreamClient jobStreamClient;
+  @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @BeforeEach
   void beforeEach() throws Exception {
@@ -141,7 +146,8 @@ final class StandaloneGatewaySecurityTest {
     final var config = new GatewayConfiguration(gatewayCfg, new LifecycleProperties());
     final var clusterConfig = new GatewayClusterConfiguration();
     atomixCluster =
-        new GatewayClusterConfiguration().atomixCluster(clusterConfig.clusterConfig(config));
+        new GatewayClusterConfiguration()
+            .atomixCluster(clusterConfig.clusterConfig(config, meterRegistry));
     final ActorSchedulerConfiguration actorSchedulerConfiguration =
         new ActorSchedulerConfiguration(gatewayCfg, new ActorClockConfiguration(false));
     actorScheduler = actorSchedulerConfiguration.actorScheduler(IdleStrategySupplier.ofDefault());

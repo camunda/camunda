@@ -45,7 +45,8 @@ public class ApiMessagingServiceStep extends AbstractBrokerStartupStep {
         new NettyMessagingService(
             brokerCfg.getCluster().getClusterName(),
             Address.from(commandApiCfg.getAdvertisedHost(), commandApiCfg.getAdvertisedPort()),
-            messagingConfig);
+            messagingConfig,
+            brokerStartupContext.getMeterRegistry());
 
     messagingService
         .start()

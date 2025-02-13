@@ -352,8 +352,9 @@ public class ClusteringRule extends ExternalResource {
 
     final var atomixCluster =
         new AtomixCluster(
-            new BrokerClusterConfiguration().clusterConfig(brokerSpringConfig),
-            Version.from(VersionUtil.getVersion()));
+            new BrokerClusterConfiguration().clusterConfig(brokerSpringConfig, meterRegistry),
+            Version.from(VersionUtil.getVersion()),
+            meterRegistry);
     final var scheduler =
         new io.camunda.zeebe.broker.ActorSchedulerConfiguration(
                 brokerSpringConfig, actorClockConfiguration, null)
@@ -481,7 +482,8 @@ public class ClusteringRule extends ExternalResource {
   private GatewayResource createGateway(final GatewayProperties gatewayCfg) {
     final var config = new GatewayConfiguration(gatewayCfg, new LifecycleProperties());
     final var clusterFactory = new GatewayClusterConfiguration();
-    final var atomixCluster = clusterFactory.atomixCluster(clusterFactory.clusterConfig(config));
+    final var atomixCluster =
+        clusterFactory.atomixCluster(clusterFactory.clusterConfig(config, meterRegistry));
     atomixCluster.start().join();
 
     final ActorScheduler actorScheduler =

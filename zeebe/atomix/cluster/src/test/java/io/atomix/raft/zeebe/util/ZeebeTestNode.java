@@ -121,7 +121,7 @@ public class ZeebeTestNode {
   }
 
   private AtomixCluster buildCluster(final Collection<ZeebeTestNode> nodes) {
-    return AtomixCluster.builder()
+    return AtomixCluster.builder(meterRegistry)
         .withAddress(node.address())
         .withClusterId(CLUSTER_ID)
         .withMembershipProvider(buildDiscoveryProvider(nodes))

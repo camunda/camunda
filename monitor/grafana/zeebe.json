@@ -6539,7 +6539,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(increase(zeebe_messaging_request_response_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(zeebe_messaging_request_response_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]) or increase(zeebe_messaging_request_response_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -6787,7 +6787,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.50, sum(rate(zeebe_messaging_request_response_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (topic, le))",
+              "expr": "histogram_quantile(0.50, sum(rate(zeebe_messaging_request_response_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_messaging_request_response_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (topic, le))",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -6801,7 +6801,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.90, sum(rate(zeebe_messaging_request_response_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (topic, le))",
+              "expr": "histogram_quantile(0.90, sum(rate(zeebe_messaging_request_response_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_messaging_request_response_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (topic, le))",
               "hide": false,
               "legendFormat": "p90 {{topic}}",
               "range": true,
@@ -6813,7 +6813,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.99, sum(rate(zeebe_messaging_request_response_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (topic, le))",
+              "expr": "histogram_quantile(0.99, sum(rate(zeebe_messaging_request_response_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_messaging_request_response_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (topic, le))",
               "hide": false,
               "legendFormat": "p99 {{topic}}",
               "range": true,
@@ -17514,7 +17514,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(increase(zeebe_messaging_request_response_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", topic=~\"atomix-membership-probe-request\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(zeebe_messaging_request_response_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", topic=~\"atomix-membership-probe-request\"}[$__rate_interval]) or increase(zeebe_messaging_request_response_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", topic=~\"atomix-membership-probe-request\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
