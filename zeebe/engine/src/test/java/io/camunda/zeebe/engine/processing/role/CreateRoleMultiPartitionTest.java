@@ -73,6 +73,7 @@ public class CreateRoleMultiPartitionTest {
     for (int partitionId = 2; partitionId < PARTITION_COUNT; partitionId++) {
       assertThat(
               RecordingExporter.roleRecords()
+                  .withName(name)
                   .withPartitionId(partitionId)
                   .limit(record -> record.getIntent().equals(RoleIntent.CREATED))
                   .collect(Collectors.toList()))
