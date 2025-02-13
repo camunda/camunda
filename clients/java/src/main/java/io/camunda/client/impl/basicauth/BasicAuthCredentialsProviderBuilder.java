@@ -23,16 +23,33 @@ public final class BasicAuthCredentialsProviderBuilder {
   private String password;
   private boolean applyEnvironmentOverrides = true;
 
+  /**
+   * Username to be used for basic authentication. This can also be set using the environment
+   * variable 'CAMUNDA_BASIC_AUTH_USERNAME'. If both are set the environment variable will take
+   * precedence unless disabling environment by setting it to false using the {@link
+   * #applyEnvironmentOverrides}' method.
+   */
   public BasicAuthCredentialsProviderBuilder username(final String username) {
     this.username = username;
     return this;
   }
 
+  /**
+   * Password to be used for basic authentication. This can also be set using the environment
+   * variable 'CAMUNDA_BASIC_AUTH_PASSWORD'. If both are set the environment variable will take
+   * precedence unless disabling environment by setting it to false using the {@link
+   * #applyEnvironmentOverrides}' method.
+   */
   public BasicAuthCredentialsProviderBuilder password(final String password) {
     this.password = password;
     return this;
   }
 
+  /**
+   * Whether to apply environment overrides to the builder. If set to true environment variables
+   * will take precedence over values explicitly set in this builder. If set to false the
+   * environment variables will not be used at all. If they do exist they will be ignored.
+   */
   public BasicAuthCredentialsProviderBuilder applyEnvironmentOverrides(
       final boolean applyEnvironmentOverrides) {
     this.applyEnvironmentOverrides = applyEnvironmentOverrides;
