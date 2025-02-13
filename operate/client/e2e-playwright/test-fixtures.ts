@@ -11,7 +11,7 @@ import AxeBuilder from '@axe-core/playwright';
 import {Common} from './pages/Common';
 import {Login} from './pages/Login';
 import {Processes} from './pages/Processes/Processes';
-// import fs from 'fs';
+import fs from 'fs';
 import {Dashboard} from './pages/Dashboard';
 import {ProcessInstance} from './pages/ProcessInstance';
 import {Decisions} from './pages/Decisions';
@@ -36,7 +36,7 @@ const loginTest = base.extend<Fixture>({
   },
 });
 
-// const authFile = 'playwright/.auth/user.json';
+const authFile = 'playwright/.auth/user.json';
 
 const test = base.extend<
   {
@@ -51,45 +51,45 @@ const test = base.extend<
   },
   {workerStorageState: string}
 >({
-  // storageState: ({workerStorageState}, use) => use(workerStorageState),
+  storageState: ({workerStorageState}, use) => use(workerStorageState),
 
-  // workerStorageState: [
-  //   async (
-  //     {browser},
-  //     use,
-  //     {
-  //       project: {
-  //         use: {baseURL},
-  //       },
-  //     },
-  //   ) => {
-  //     if (fs.existsSync(authFile)) {
-  //       await use(authFile);
-  //       return;
-  //     }
+  workerStorageState: [
+    async (
+      {browser},
+      use,
+      {
+        project: {
+          use: {baseURL},
+        },
+      },
+    ) => {
+      if (fs.existsSync(authFile)) {
+        await use(authFile);
+        return;
+      }
 
-  //     // when using a baseURL containing domain + basePath, playwright expects a slash at the end of the baseURL when navigating and validating Urls
-  //     // https://playwright.dev/docs/api/class-browser#browser-new-context-option-base-url
-  //     // removing the slash here, as the used goto(url) below does not work with double slashes
-  //     if (baseURL && baseURL.endsWith('/')) {
-  //       baseURL = baseURL.slice(0, -1);
-  //     }
+      // when using a baseURL containing domain + basePath, playwright expects a slash at the end of the baseURL when navigating and validating Urls
+      // https://playwright.dev/docs/api/class-browser#browser-new-context-option-base-url
+      // removing the slash here, as the used goto(url) below does not work with double slashes
+      if (baseURL && baseURL.endsWith('/')) {
+        baseURL = baseURL.slice(0, -1);
+      }
 
-  //     // Important: make sure we authenticate in a clean environment by unsetting storage state.
-  //     const page = await browser.newPage({storageState: undefined});
-  //     await page.goto(`${baseURL}/login`);
-  //     await page.getByLabel(/^username$/i).fill('demo');
-  //     await page.getByLabel(/^password$/i).fill('demo');
-  //     await page.getByRole('button', {name: 'Login'}).click();
+      // Important: make sure we authenticate in a clean environment by unsetting storage state.
+      const page = await browser.newPage({storageState: undefined});
+      await page.goto(`${baseURL}/login`);
+      await page.getByLabel(/^username$/i).fill('demo');
+      await page.getByLabel(/^password$/i).fill('demo');
+      await page.getByRole('button', {name: 'Login'}).click();
 
-  //     await page.waitForURL(`${baseURL}`);
+      await page.waitForURL(`${baseURL}`);
 
-  //     await page.context().storageState({path: authFile});
-  //     await page.close();
-  //     await use(authFile);
-  //   },
-  //   {scope: 'worker'},
-  // ],
+      await page.context().storageState({path: authFile});
+      await page.close();
+      await use(authFile);
+    },
+    {scope: 'worker'},
+  ],
   makeAxeBuilder: async ({page}, use) => {
     const makeAxeBuilder = () => new AxeBuilder({page});
     await use(makeAxeBuilder);
