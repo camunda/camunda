@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
-@Disabled
+@Disabled("Enable again with https://github.com/camunda/camunda/pull/27928")
 public class OperatePermissionsIT {
 
   private static final String SUPER_USER = "super";
