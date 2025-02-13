@@ -1,7 +1,10 @@
 ---
 name: Common paths filter for camunda/camunda
 
-description: Common filters to detect and group changes against a base branch
+description: |
+  Common filters to detect and group changes against a base branch
+  It leverages the `dorny/paths-filter` action to filter paths
+  Said third-party action uses picomatch patterns to filter paths
 
 outputs:
   actionlint:
@@ -11,8 +14,8 @@ outputs:
         github.event_name == 'push' ||
         steps.filter-common.outputs.github-actions-change == 'true'
       }}
-  java-code-changes:  # Also runs spotless for Markdown linting
-    description: Output whether jobs depending on Java code changes should be run, related checks are based on GitHub events and java files changes
+  maven-spotless-linter:
+    description: Output whether jobs depending on files relevant for Maven spotless should be run, related checks are based on GitHub events and file changes
     value: >-
       ${{
         github.event_name == 'push' ||
@@ -21,6 +24,15 @@ outputs:
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.markdown-change == 'true'
       }}
+  java-code-changes:
+    description: Output whether jobs depending on Java code changes should be run, related checks are based on GitHub events and java files changes
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-common.outputs.java-code-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true'
+      }}
   identity-frontend-tests:
     description: Output whether Identity frontend tests should be run based on GitHub event and files changed
     value: >-
@@ -28,6 +40,36 @@ outputs:
         github.event_name == 'push' ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-identity.outputs.identity-frontend-change == 'true'
+      }}
+  operate-backend-changes:
+    description: Output whether Operate backend build should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-operate.outputs.operate-backend-change == 'true' ||
+        steps.filter-common.outputs.webapps-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true' ||
+        steps.filter-common.outputs.dockerfile-change == 'true'
+      }}
+  tasklist-frontend-changes:
+    description: Output whether Tasklist frontend tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-tasklist.outputs.tasklist-frontend-change == 'true'
+      }}
+  tasklist-backend-changes:
+    description: Output whether Tasklist backend build should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-tasklist.outputs.tasklist-backend-change == 'true' ||
+        steps.filter-common.outputs.webapps-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true' ||
+        steps.filter-common.outputs.dockerfile-change == 'true'
       }}
   optimize-frontend-changes:
     description: Output whether Optimize frontend tests should be run based on GitHub event and files changed
@@ -158,6 +200,27 @@ runs:
           - 'zeebe/**'
           - 'clients/**'
           - 'Dockerfile'
+
+  - uses: dorny/paths-filter@v3
+    id: filter-operate
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        operate-backend-change:
+          - 'operate/!(client/**)/**'
+
+  - uses: dorny/paths-filter@v3
+    id: filter-tasklist
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        tasklist-backend-change:
+          - 'tasklist/!(client/**)/**'
+
+        tasklist-frontend-change:
+          - tasklist/client/**
 
   - uses: dorny/paths-filter@v3
     id: filter-optimize

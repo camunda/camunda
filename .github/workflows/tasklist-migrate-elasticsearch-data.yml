@@ -41,12 +41,17 @@ jobs:
         with:
           distribution: "adopt"
           java-version: ${{ env.JAVA_VERSION }}
-          cache: "maven"
 
       - name: Setup Maven
-        uses: stCarolas/setup-maven@v4.5
+        uses: ./.github/actions/setup-maven-dist
         with:
           maven-version: 3.8.6
+          set-mvnw: true
+
+      - name: Configure Maven
+        uses: ./.github/actions/setup-maven-cache
+        with:
+          maven-cache-key-modifier: tasklist-tests
 
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: Create Maven settings.xml
@@ -64,12 +69,12 @@ jobs:
       # Build: maven artifacts
       - name: Build backend
         run: |
-          mvn -B -DskipTests -DskipChecks -T1C -P skipFrontendBuild clean install
+          ./mvnw -B -DskipTests -DskipChecks -T1C -P skipFrontendBuild clean install
 
       # Tests: run migration tests
       - name: Run migration tests
         run: |
-          mvn -B -f tasklist/qa/migration-tests -DskipTests=false -DskipChecks verify
+          ./mvnw -B -f tasklist/qa/migration-tests -DskipTests=false -DskipChecks verify
 
       # Notify: send Slack notification on tests failure
       - name: Send Slack notification on failure
