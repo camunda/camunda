@@ -42,7 +42,7 @@ public final class JobProcessingMetrics {
     return Counter.builder(EngineMetricsDoc.JOB_EVENTS.getName())
         .description(EngineMetricsDoc.JOB_EVENTS.getDescription())
         .tag(EngineKeyNames.JOB_ACTION.asString(), jobAction.getLabel())
-        .tags(EngineKeyNames.JOB_TYPE.asString(), jobType)
+        .tag(EngineKeyNames.JOB_TYPE.asString(), jobType)
         .register(registry);
   }
 }
