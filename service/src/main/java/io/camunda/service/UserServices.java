@@ -21,6 +21,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.util.concurrent.CompletableFuture;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 public class UserServices extends SearchQueryService<UserServices, UserQuery, UserEntity> {
@@ -65,7 +66,8 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
   }
 
   public CompletableFuture<UserRecord> updateUser(final UserDTO request) {
-    final String encodedPassword = passwordEncoder.encode(request.password());
+    final String encodedPassword =
+        StringUtils.isEmpty(request.password) ? "" : passwordEncoder.encode(request.password());
     return sendBrokerRequest(
         new BrokerUserUpdateRequest()
             .setUsername(request.username())
