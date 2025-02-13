@@ -14,12 +14,15 @@ import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.journal.util.MockJournalMetastore;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -28,6 +31,7 @@ final class JournalReaderTest {
 
   private static final int ENTRIES = 4;
 
+  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final UnsafeBuffer data = new UnsafeBuffer("test".getBytes(StandardCharsets.UTF_8));
   private final BufferWriter recordDataWriter = new DirectBufferWriter().wrap(data);
   private JournalReader reader;
@@ -38,7 +42,7 @@ final class JournalReaderTest {
     final File directory = tempDir.resolve("data").toFile();
 
     journal =
-        SegmentedJournal.builder()
+        SegmentedJournal.builder(meterRegistry)
             .withDirectory(directory)
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())

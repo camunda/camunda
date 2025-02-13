@@ -13,9 +13,9 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.service.FormServices;
 import io.camunda.service.ProcessDefinitionServices;
-import io.camunda.zeebe.gateway.protocol.rest.FormItem;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.FormResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
@@ -44,13 +44,13 @@ public class ProcessDefinitionController {
   }
 
   @CamundaPostMapping(path = "/search")
-  public ResponseEntity<ProcessDefinitionSearchQueryResponse> searchProcessDefinitions(
-      @RequestBody(required = false) final ProcessDefinitionSearchQueryRequest query) {
+  public ResponseEntity<ProcessDefinitionSearchQueryResult> searchProcessDefinitions(
+      @RequestBody(required = false) final ProcessDefinitionSearchQuery query) {
     return SearchQueryRequestMapper.toProcessDefinitionQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  private ResponseEntity<ProcessDefinitionSearchQueryResponse> search(
+  private ResponseEntity<ProcessDefinitionSearchQueryResult> search(
       final ProcessDefinitionQuery query) {
     try {
       final var result =
@@ -102,7 +102,7 @@ public class ProcessDefinitionController {
   }
 
   @CamundaGetMapping(path = "/{processDefinitionKey}/form")
-  public ResponseEntity<FormItem> getStartProcessForm(
+  public ResponseEntity<FormResult> getStartProcessForm(
       @PathVariable("processDefinitionKey") final long processDefinitionKey) {
     try {
       final ProcessDefinitionEntity processDefinition =

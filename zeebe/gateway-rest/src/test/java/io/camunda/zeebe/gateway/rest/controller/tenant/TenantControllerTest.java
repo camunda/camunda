@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
+import io.camunda.service.UserServices;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
@@ -42,6 +43,8 @@ public class TenantControllerTest extends RestControllerTest {
   private static final String TENANT_BASE_URL = "/v2/tenants";
 
   @MockBean private TenantServices tenantServices;
+
+  @MockBean private UserServices userServices;
 
   @BeforeEach
   void setup() {
@@ -371,8 +374,8 @@ public class TenantControllerTest extends RestControllerTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideRemoveMemberTestCases")
-  void testRemoveMemberFromTenant(final EntityType entityType, final String entityPath) {
+  @MethodSource("provideRemoveMemberByKeyTestCases")
+  void testRemoveMemberByKeyFromTenant(final EntityType entityType, final String entityPath) {
     // given
     final var tenantKey = 100L;
     final var entityKey = 42L;
@@ -393,6 +396,29 @@ public class TenantControllerTest extends RestControllerTest {
     verify(tenantServices, times(1)).removeMember(tenantKey, entityType, entityKey);
   }
 
+  @ParameterizedTest
+  @MethodSource("provideRemoveMemberByIdTestCases")
+  void testRemoveMemberByIdFromTenant(final EntityType entityType, final String entityPath) {
+    // given
+    final var tenantId = "some-tenant-id";
+    final var entityId = "entity-id";
+
+    when(tenantServices.removeMember(tenantId, entityType, entityId))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .delete()
+        .uri("%s/%s/%s/%s".formatted(TENANT_BASE_URL, tenantId, entityPath, entityId))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    // then
+    verify(tenantServices, times(1)).removeMember(tenantId, entityType, entityId);
+  }
+
   private static Stream<Arguments> provideAddMemberByKeyTestCases() {
     return Stream.of(
         Arguments.of(EntityType.MAPPING, "mapping-rules"),
@@ -403,10 +429,13 @@ public class TenantControllerTest extends RestControllerTest {
     return Stream.of(Arguments.of(EntityType.USER, "users"));
   }
 
-  private static Stream<Arguments> provideRemoveMemberTestCases() {
+  private static Stream<Arguments> provideRemoveMemberByKeyTestCases() {
     return Stream.of(
-        Arguments.of(EntityType.USER, "users"),
         Arguments.of(EntityType.MAPPING, "mapping-rules"),
         Arguments.of(EntityType.GROUP, "groups"));
+  }
+
+  private static Stream<Arguments> provideRemoveMemberByIdTestCases() {
+    return Stream.of(Arguments.of(EntityType.USER, "users"));
   }
 }

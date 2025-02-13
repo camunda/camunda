@@ -38,8 +38,8 @@ public class FlownodeInstanceTest extends ClientRestTest {
     client.newFlownodeInstanceQuery().send().join();
 
     // then
-    final FlowNodeInstanceSearchQueryRequest request =
-        gatewayService.getLastRequest(FlowNodeInstanceSearchQueryRequest.class);
+    final FlowNodeInstanceSearchQuery request =
+        gatewayService.getLastRequest(FlowNodeInstanceSearchQuery.class);
     assertThat(request.getFilter()).isNull();
   }
 
@@ -63,18 +63,18 @@ public class FlownodeInstanceTest extends ClientRestTest {
         .send()
         .join();
     // then
-    final FlowNodeInstanceSearchQueryRequest request =
-        gatewayService.getLastRequest(FlowNodeInstanceSearchQueryRequest.class);
-    final FlowNodeInstanceFilterRequest filter = Objects.requireNonNull(request.getFilter());
-    assertThat(filter.getFlowNodeInstanceKey()).isEqualTo(1L);
-    assertThat(filter.getType()).isEqualTo(FlowNodeInstanceFilterRequest.TypeEnum.SERVICE_TASK);
-    assertThat(filter.getState()).isEqualTo(FlowNodeInstanceFilterRequest.StateEnum.ACTIVE);
-    assertThat(filter.getProcessDefinitionKey()).isEqualTo(2L);
+    final FlowNodeInstanceSearchQuery request =
+        gatewayService.getLastRequest(FlowNodeInstanceSearchQuery.class);
+    final FlowNodeInstanceFilter filter = Objects.requireNonNull(request.getFilter());
+    assertThat(filter.getFlowNodeInstanceKey()).isEqualTo("1");
+    assertThat(filter.getType()).isEqualTo(FlowNodeInstanceFilter.TypeEnum.SERVICE_TASK);
+    assertThat(filter.getState()).isEqualTo(FlowNodeInstanceFilter.StateEnum.ACTIVE);
+    assertThat(filter.getProcessDefinitionKey()).isEqualTo("2");
     assertThat(filter.getProcessDefinitionId()).isEqualTo("complexProcess");
-    assertThat(filter.getProcessInstanceKey()).isEqualTo(3L);
+    assertThat(filter.getProcessInstanceKey()).isEqualTo("3");
     assertThat(filter.getFlowNodeId()).isEqualTo("flowNodeId");
     assertThat(filter.getHasIncident()).isTrue();
-    assertThat(filter.getIncidentKey()).isEqualTo(4L);
+    assertThat(filter.getIncidentKey()).isEqualTo("4");
     assertThat(filter.getTenantId()).isEqualTo("<default>");
   }
 
@@ -108,8 +108,8 @@ public class FlownodeInstanceTest extends ClientRestTest {
         .join();
 
     // then
-    final FlowNodeInstanceSearchQueryRequest request =
-        gatewayService.getLastRequest(FlowNodeInstanceSearchQueryRequest.class);
+    final FlowNodeInstanceSearchQuery request =
+        gatewayService.getLastRequest(FlowNodeInstanceSearchQuery.class);
     final List<SearchQuerySortRequest> sorts =
         SearchQuerySortRequestMapper.fromFlowNodeInstanceSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
@@ -141,12 +141,12 @@ public class FlownodeInstanceTest extends ClientRestTest {
   public void shouldConvertFlowNodeInstanceType() {
 
     for (final FlowNodeInstanceType value : FlowNodeInstanceType.values()) {
-      final FlowNodeInstanceFilterRequest.TypeEnum protocolValue =
+      final FlowNodeInstanceFilter.TypeEnum protocolValue =
           FlowNodeInstanceType.toProtocolType(value);
       assertThat(protocolValue).isNotNull();
       if (value == FlowNodeInstanceType.UNKNOWN_ENUM_VALUE) {
         assertThat(protocolValue)
-            .isEqualTo(FlowNodeInstanceFilterRequest.TypeEnum.UNKNOWN_DEFAULT_OPEN_API);
+            .isEqualTo(FlowNodeInstanceFilter.TypeEnum.UNKNOWN_DEFAULT_OPEN_API);
       } else {
         assertThat(protocolValue.name()).isEqualTo(value.name());
       }
@@ -168,12 +168,12 @@ public class FlownodeInstanceTest extends ClientRestTest {
   public void shouldConvertFlowNodeInstanceState() {
 
     for (final FlowNodeInstanceState value : FlowNodeInstanceState.values()) {
-      final FlowNodeInstanceFilterRequest.StateEnum protocolValue =
+      final FlowNodeInstanceFilter.StateEnum protocolValue =
           FlowNodeInstanceState.toProtocolState(value);
       assertThat(protocolValue).isNotNull();
       if (value == FlowNodeInstanceState.UNKNOWN_ENUM_VALUE) {
         assertThat(protocolValue)
-            .isEqualTo(FlowNodeInstanceFilterRequest.StateEnum.UNKNOWN_DEFAULT_OPEN_API);
+            .isEqualTo(FlowNodeInstanceFilter.StateEnum.UNKNOWN_DEFAULT_OPEN_API);
       } else {
         assertThat(protocolValue.name()).isEqualTo(value.name());
       }

@@ -128,6 +128,23 @@
   </insert>
 
   <update
+    id="update"
+    parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel"
+    flushCache="true">
+    UPDATE FLOW_NODE_INSTANCE
+    SET FLOW_NODE_ID             = #{flowNodeId},
+        PROCESS_INSTANCE_KEY     = #{processInstanceKey},
+        PROCESS_DEFINITION_ID    = #{processDefinitionId},
+        PROCESS_DEFINITION_KEY   = #{processDefinitionKey},
+        TYPE                     = #{type},
+        STATE                    = #{state},
+        START_DATE               = #{startDate, jdbcType=TIMESTAMP},
+        END_DATE                 = #{endDate, jdbcType=TIMESTAMP},
+        TENANT_ID                = #{tenantId}
+    WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
+  </update>
+
+  <update
     id="updateStateAndEndDate"
     statementType="PREPARED"
     parameterType="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper$EndFlowNodeDto"

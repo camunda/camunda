@@ -75,7 +75,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
   private LogCompactor logCompactor;
   private final ThreadContext threadContext = new InlineThreadContext();
   @Mock private RaftLog raftLog;
-  private final RaftServiceMetrics raftMetrics = new RaftServiceMetrics("1");
+  private final RaftServiceMetrics raftMetrics = new RaftServiceMetrics("1", meterRegistry);
 
   @BeforeEach
   void setUp() {
@@ -94,7 +94,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
 
     journal =
         manage(
-            SegmentedJournal.builder()
+            SegmentedJournal.builder(meterRegistry)
                 .withDirectory(dataDirectory.toFile())
                 .withName(raftPartition.name())
                 .withMetaStore(mock(JournalMetaStore.class))
@@ -121,8 +121,8 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
                 snapshotStore,
                 dataDirectory,
                 // RaftPartitions implements this interface, but the RaftServer is not started
-                index ->
-                    CompletableFuture.completedFuture(journal.getTailSegments(index).values())));
+                index -> CompletableFuture.completedFuture(journal.getTailSegments(index).values()),
+                meterRegistry));
     actorScheduler.submitActor(backupService);
   }
 

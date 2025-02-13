@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
@@ -99,25 +100,20 @@ public class MappingAppliersTest {
     groupState.create(groupKey, group);
     groupState.addEntity(groupKey, group);
     // create authorization
-    authorizationState.createOrAddPermission(
-        AuthorizationOwnerType.MAPPING,
-        mappingId,
-        AuthorizationResourceType.PROCESS_DEFINITION,
-        PermissionType.READ,
-        Set.of("process"));
+    authorizationState.create(
+        5L,
+        new AuthorizationRecord()
+            .setAuthorizationPermissions(Set.of(PermissionType.READ))
+            .setResourceId("process")
+            .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .setOwnerType(AuthorizationOwnerType.MAPPING)
+            .setOwnerId(mappingId));
 
     // when
     mappingDeletedApplier.applyState(mappingKey, mappingRecord);
 
     // then
     assertThat(mappingState.get(mappingKey)).isEmpty();
-    assertThat(
-            authorizationState.getResourceIdentifiers(
-                AuthorizationOwnerType.MAPPING,
-                mappingId,
-                AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.READ))
-        .isEmpty();
   }
 
   @Test

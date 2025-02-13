@@ -233,11 +233,6 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             executor);
   }
 
-  @Override
-  public void close() throws Exception {
-    client._transport().close();
-  }
-
   private SearchRequest createFinishedBatchOperationsSearchRequest(final Aggregation aggregation) {
     final var endDateQ =
         QueryBuilders.range()

@@ -7,12 +7,12 @@
  */
 package io.camunda.optimize.dto.zeebe.usertask;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.service.util.DateFormatterUtil;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
-import net.minidev.json.annotate.JsonIgnore;
 import org.slf4j.Logger;
 
 public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
@@ -54,223 +54,246 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
   }
 
   @Override
+  public long getUserTaskKey() {
+    return userTaskKey;
+  }
+
+  @Override
+  public String getAssignee() {
+    return assignee;
+  }
+
+  @Override
+  public List<String> getCandidateGroupsList() {
+    return candidateGroupsList;
+  }
+
+  @Override
+  public List<String> getCandidateUsersList() {
+    return candidateUsersList;
+  }
+
+  @Override
+  public String getDueDate() {
+    return dueDate;
+  }
+
+  @Override
+  public String getFollowUpDate() {
+    return followUpDate;
+  }
+
+  @Override
+  public long getFormKey() {
+    return formKey;
+  }
+
+  @Override
+  public List<String> getChangedAttributes() {
+    return changedAttributes;
+  }
+
+  @Override
+  public String getAction() {
+    return action;
+  }
+
+  @Override
+  public String getExternalFormReference() {
+    return externalFormReference;
+  }
+
+  @Override
+  public Map<String, String> getCustomHeaders() {
+    return customHeaders;
+  }
+
+  @Override
+  public long getCreationTimestamp() {
+    return creationTimestamp;
+  }
+
+  @Override
+  public String getElementId() {
+    return elementId;
+  }
+
+  @Override
+  public long getElementInstanceKey() {
+    return elementInstanceKey;
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
+
+  @Override
+  public int getProcessDefinitionVersion() {
+    return processDefinitionVersion;
+  }
+
+  @Override
+  public long getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  @Override
   public int getPriority() {
     throw new UnsupportedOperationException("Operation not supported");
-  }
-
-  public long getUserTaskKey() {
-    return this.userTaskKey;
-  }
-
-  public String getAssignee() {
-    return this.assignee;
-  }
-
-  public List<String> getCandidateGroupsList() {
-    return this.candidateGroupsList;
-  }
-
-  public List<String> getCandidateUsersList() {
-    return this.candidateUsersList;
-  }
-
-  public String getDueDate() {
-    return this.dueDate;
-  }
-
-  public String getElementId() {
-    return this.elementId;
-  }
-
-  public long getElementInstanceKey() {
-    return this.elementInstanceKey;
-  }
-
-  public String getBpmnProcessId() {
-    return this.bpmnProcessId;
-  }
-
-  public int getProcessDefinitionVersion() {
-    return this.processDefinitionVersion;
-  }
-
-  public long getProcessDefinitionKey() {
-    return this.processDefinitionKey;
-  }
-
-  public long getProcessInstanceKey() {
-    return this.processInstanceKey;
-  }
-
-  public String getTenantId() {
-    return this.tenantId;
-  }
-
-  public List<String> getChangedAttributes() {
-    return this.changedAttributes;
-  }
-
-  public Map<String, Object> getVariables() {
-    return this.variables;
-  }
-
-  public String getFollowUpDate() {
-    return this.followUpDate;
-  }
-
-  public long getFormKey() {
-    return this.formKey;
-  }
-
-  public String getAction() {
-    return this.action;
-  }
-
-  public String getExternalFormReference() {
-    return this.externalFormReference;
-  }
-
-  public Map<String, String> getCustomHeaders() {
-    return this.customHeaders;
-  }
-
-  public long getCreationTimestamp() {
-    return this.creationTimestamp;
-  }
-
-  public void setUserTaskKey(final long userTaskKey) {
-    this.userTaskKey = userTaskKey;
-  }
-
-  public void setAssignee(final String assignee) {
-    this.assignee = assignee;
-  }
-
-  public void setCandidateGroupsList(final List<String> candidateGroupsList) {
-    this.candidateGroupsList = candidateGroupsList;
-  }
-
-  public void setCandidateUsersList(final List<String> candidateUsersList) {
-    this.candidateUsersList = candidateUsersList;
-  }
-
-  public void setDueDate(final String dueDate) {
-    this.dueDate = dueDate;
-  }
-
-  public void setElementId(final String elementId) {
-    this.elementId = elementId;
-  }
-
-  public void setElementInstanceKey(final long elementInstanceKey) {
-    this.elementInstanceKey = elementInstanceKey;
-  }
-
-  public void setBpmnProcessId(final String bpmnProcessId) {
-    this.bpmnProcessId = bpmnProcessId;
-  }
-
-  public void setProcessDefinitionVersion(final int processDefinitionVersion) {
-    this.processDefinitionVersion = processDefinitionVersion;
   }
 
   public void setProcessDefinitionKey(final long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
   }
 
-  public void setProcessInstanceKey(final long processInstanceKey) {
-    this.processInstanceKey = processInstanceKey;
+  public void setProcessDefinitionVersion(final int processDefinitionVersion) {
+    this.processDefinitionVersion = processDefinitionVersion;
   }
 
-  public void setTenantId(final String tenantId) {
-    this.tenantId = tenantId;
+  public void setBpmnProcessId(final String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
   }
 
-  public void setChangedAttributes(final List<String> changedAttributes) {
-    this.changedAttributes = changedAttributes;
+  public void setElementInstanceKey(final long elementInstanceKey) {
+    this.elementInstanceKey = elementInstanceKey;
   }
 
-  public void setVariables(final Map<String, Object> variables) {
-    this.variables = variables;
-  }
-
-  public void setFollowUpDate(final String followUpDate) {
-    this.followUpDate = followUpDate;
-  }
-
-  public void setFormKey(final long formKey) {
-    this.formKey = formKey;
-  }
-
-  public void setAction(final String action) {
-    this.action = action;
-  }
-
-  public void setExternalFormReference(final String externalFormReference) {
-    this.externalFormReference = externalFormReference;
-  }
-
-  public void setCustomHeaders(final Map<String, String> customHeaders) {
-    this.customHeaders = customHeaders;
+  public void setElementId(final String elementId) {
+    this.elementId = elementId;
   }
 
   public void setCreationTimestamp(final long creationTimestamp) {
     this.creationTimestamp = creationTimestamp;
   }
 
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public void setCustomHeaders(final Map<String, String> customHeaders) {
+    this.customHeaders = customHeaders;
+  }
+
+  public void setExternalFormReference(final String externalFormReference) {
+    this.externalFormReference = externalFormReference;
+  }
+
+  public void setAction(final String action) {
+    this.action = action;
+  }
+
+  public void setChangedAttributes(final List<String> changedAttributes) {
+    this.changedAttributes = changedAttributes;
+  }
+
+  public void setFormKey(final long formKey) {
+    this.formKey = formKey;
+  }
+
+  public void setFollowUpDate(final String followUpDate) {
+    this.followUpDate = followUpDate;
+  }
+
+  public void setDueDate(final String dueDate) {
+    this.dueDate = dueDate;
+  }
+
+  public void setCandidateUsersList(final List<String> candidateUsersList) {
+    this.candidateUsersList = candidateUsersList;
+  }
+
+  public void setCandidateGroupsList(final List<String> candidateGroupsList) {
+    this.candidateGroupsList = candidateGroupsList;
+  }
+
+  public void setAssignee(final String assignee) {
+    this.assignee = assignee;
+  }
+
+  public void setUserTaskKey(final long userTaskKey) {
+    this.userTaskKey = userTaskKey;
+  }
+
+  @Override
+  public long getProcessInstanceKey() {
+    return processInstanceKey;
+  }
+
+  public void setProcessInstanceKey(final long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
+  }
+
+  @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public void setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
+  }
+
+  @Override
+  public Map<String, Object> getVariables() {
+    return variables;
+  }
+
+  public void setVariables(final Map<String, Object> variables) {
+    this.variables = variables;
   }
 
   protected boolean canEqual(final Object other) {
     return other instanceof ZeebeUserTaskDataDto;
   }
 
+  @Override
   public int hashCode() {
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
+  @Override
+  public boolean equals(final Object o) {
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  }
+
+  @Override
   public String toString() {
     return "ZeebeUserTaskDataDto(userTaskKey="
-        + this.getUserTaskKey()
+        + getUserTaskKey()
         + ", assignee="
-        + this.getAssignee()
+        + getAssignee()
         + ", candidateGroupsList="
-        + this.getCandidateGroupsList()
+        + getCandidateGroupsList()
         + ", candidateUsersList="
-        + this.getCandidateUsersList()
+        + getCandidateUsersList()
         + ", dueDate="
-        + this.getDueDate()
+        + getDueDate()
         + ", elementId="
-        + this.getElementId()
+        + getElementId()
         + ", elementInstanceKey="
-        + this.getElementInstanceKey()
+        + getElementInstanceKey()
         + ", bpmnProcessId="
-        + this.getBpmnProcessId()
+        + getBpmnProcessId()
         + ", processDefinitionVersion="
-        + this.getProcessDefinitionVersion()
+        + getProcessDefinitionVersion()
         + ", processDefinitionKey="
-        + this.getProcessDefinitionKey()
+        + getProcessDefinitionKey()
         + ", processInstanceKey="
-        + this.getProcessInstanceKey()
+        + getProcessInstanceKey()
         + ", tenantId="
-        + this.getTenantId()
+        + getTenantId()
         + ", changedAttributes="
-        + this.getChangedAttributes()
+        + getChangedAttributes()
         + ", variables="
-        + this.getVariables()
+        + getVariables()
         + ", followUpDate="
-        + this.getFollowUpDate()
+        + getFollowUpDate()
         + ", formKey="
-        + this.getFormKey()
+        + getFormKey()
         + ", action="
-        + this.getAction()
+        + getAction()
         + ", externalFormReference="
-        + this.getExternalFormReference()
+        + getExternalFormReference()
         + ", customHeaders="
-        + this.getCustomHeaders()
+        + getCustomHeaders()
         + ", creationTimestamp="
-        + this.getCreationTimestamp()
+        + getCreationTimestamp()
         + ")";
   }
 

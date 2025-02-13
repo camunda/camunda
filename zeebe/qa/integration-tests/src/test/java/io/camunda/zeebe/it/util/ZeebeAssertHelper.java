@@ -534,12 +534,12 @@ public final class ZeebeAssertHelper {
   }
 
   public static void assertEntityRemovedFromTenant(
-      final long tenantKey, final long entityKey, final Consumer<TenantRecordValue> consumer) {
+      final String tenantId, final String entityId, final Consumer<TenantRecordValue> consumer) {
     final TenantRecordValue tenantRecordValue =
         RecordingExporter.tenantRecords()
             .withIntent(TenantIntent.ENTITY_REMOVED)
-            .withTenantKey(tenantKey)
-            .withEntityKey(entityKey)
+            .withTenantId(tenantId)
+            .withEntityId(entityId)
             .getFirst()
             .getValue();
 

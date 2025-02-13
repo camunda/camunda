@@ -67,7 +67,6 @@
     <version.identity>8.6.7</version.identity>
     <version.surefire>3.5.2</version.surefire>
     <version.jackson>2.18.2</version.jackson>
-    <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
     <version.junit>5.11.4</version.junit>
     <version.junit4>4.13.2</version.junit4>
     <version.log4j>2.24.3</version.log4j>
@@ -102,9 +101,9 @@
     <version.feel-scala>1.19.1</version.feel-scala>
     <version.dmn-scala>1.10.1</version.dmn-scala>
     <version.rest-assured>5.5.0</version.rest-assured>
-    <version.spring>6.1.14</version.spring>
+    <version.spring>6.2.1</version.spring>
     <version.spring-security>6.4.2</version.spring-security>
-    <version.spring-boot>3.3.7</version.spring-boot>
+    <version.spring-boot>3.4.1</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
@@ -1480,18 +1479,6 @@
       </dependency>
 
       <dependency>
-        <groupId>io.prometheus</groupId>
-        <artifactId>simpleclient_httpserver</artifactId>
-        <version>${version.prometheus}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.prometheus</groupId>
-        <artifactId>simpleclient_hotspot</artifactId>
-        <version>${version.prometheus}</version>
-      </dependency>
-
-      <dependency>
         <groupId>org.apache.httpcomponents.client5</groupId>
         <artifactId>httpclient5</artifactId>
         <version>${version.httpclient5}</version>
@@ -1501,18 +1488,6 @@
         <groupId>org.apache.httpcomponents.core5</groupId>
         <artifactId>httpcore5</artifactId>
         <version>${version.httpcore5}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>me.dinowernli</groupId>
-        <artifactId>java-grpc-prometheus</artifactId>
-        <version>${version.java-grpc-prometheus}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-all</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
 
       <!-- Interface based code generation -->
@@ -1911,7 +1886,7 @@
       <dependency>
         <groupId>net.minidev</groupId>
         <artifactId>json-smart</artifactId>
-        <version>2.5.1</version>
+        <version>2.4.11</version>
       </dependency>
 
       <!-- needed for tests in elasticsearch-exporter -->

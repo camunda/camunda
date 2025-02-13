@@ -159,8 +159,9 @@ jobs:
 
       - name: Prepare release
         run: |
-          ./mvnw -f optimize \
-            -DpushChanges=false \
+          mvn -f optimize \
+            -DpushChanges="${{ github.event.inputs.IS_DRY_RUN != 'true' }}" \
+            -DremoteTagging="${{ github.event.inputs.IS_DRY_RUN != 'true' }}" \
             -DskipTests=true \
             -DignoreSnapshots=true \
             -Prelease,runAssembly \
@@ -172,12 +173,6 @@ jobs:
             -B \
             --fail-at-end \
             -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
-
-      - name: Push changes
-        if: env.IS_DRY_RUN == 'false'
-        run: |
-          git push --tags
-          git push --all
 
       - name: Perform release
         run: |
@@ -200,7 +195,7 @@ jobs:
           fi
 
       - name: Create a GitHub release
-        if: ${{ env.IS_RC == 'false' && env.DRY_RUN == 'false' }}
+        if: ${{ env.IS_RC == 'false' && env.IS_DRY_RUN == 'false' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         uses: octokit/request-action@v2.4.0

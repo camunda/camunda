@@ -334,4 +334,17 @@
     WHERE USER_TASK_KEY = #{userTaskKey}
   </delete>
 
+  <update
+    flushCache="true"
+    id="migrateToProcess"
+    parameterType="java.util.Map"
+    statementType="PREPARED">
+    UPDATE USER_TASK SET
+    ELEMENT_ID = #{elementId},
+    PROCESS_DEFINITION_ID = #{processDefinitionId},
+    PROCESS_DEFINITION_KEY = #{processDefinitionKey},
+    PROCESS_DEFINITION_VERSION = #{processDefinitionVersion}
+    WHERE USER_TASK_KEY = #{userTaskKey}
+  </update>
+
 </mapper>

@@ -45,7 +45,7 @@ public class CamundaClientPropertiesSaasTest {
   @Test
   void shouldLoadDefaultsSaas() {
     assertThat(properties.getMode()).isEqualTo(ClientMode.saas);
-    assertThat(properties.getAuth().getIssuer())
+    assertThat(properties.getAuth().getTokenUrl())
         .isEqualTo(URI.create("https://login.cloud.camunda.io/oauth/token"));
     assertThat(properties.getEnabled()).isEqualTo(true);
     assertThat(properties.getAuth().getAudience()).isEqualTo("zeebe.camunda.io");

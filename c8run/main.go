@@ -141,16 +141,18 @@ func adjustJavaOpts(javaOpts string, settings C8RunSettings) string {
 }
 
 func validateKeystore(settings C8RunSettings, parentDir string) error {
-	if settings.keystore != "" {
-		if settings.keystorePassword == "" {
-			return fmt.Errorf("You must provide a password with --keystorePassword to unlock your keystore.")
-		}
-		if settings.keystore != "" {
-			if !strings.HasPrefix(settings.keystore, "/") {
-				settings.keystore = filepath.Join(parentDir, settings.keystore)
-			}
-		}
+	if settings.keystore == "" {
+		return nil
 	}
+
+	if settings.keystorePassword == "" {
+		return fmt.Errorf("you must provide a password with --keystorePassword to unlock your keystore")
+	}
+
+	if !strings.HasPrefix(settings.keystore, "/") {
+		settings.keystore = filepath.Join(parentDir, settings.keystore)
+	}
+
 	return nil
 }
 
@@ -310,7 +312,6 @@ func main() {
 	}
 
 	elasticsearchVersion := os.Getenv("ELASTICSEARCH_VERSION")
-	camundaReleaseTag := os.Getenv("CAMUNDA_RELEASE_TAG")
 	camundaVersion := os.Getenv("CAMUNDA_VERSION")
 	connectorsVersion := os.Getenv("CONNECTORS_VERSION")
 	composeTag := os.Getenv("COMPOSE_TAG")
@@ -560,13 +561,13 @@ func main() {
 
 	if baseCommand == "package" {
 		if runtime.GOOS == "windows" {
-			err := PackageWindows(camundaVersion, elasticsearchVersion, connectorsVersion, camundaReleaseTag, composeTag)
+			err := PackageWindows(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag)
 			if err != nil {
 				fmt.Printf("%+v", err)
 				os.Exit(1)
 			}
 		} else if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-			err := PackageUnix(camundaVersion, elasticsearchVersion, connectorsVersion, camundaReleaseTag, composeTag)
+			err := PackageUnix(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag)
 			if err != nil {
 				fmt.Printf("%+v", err)
 				os.Exit(1)
