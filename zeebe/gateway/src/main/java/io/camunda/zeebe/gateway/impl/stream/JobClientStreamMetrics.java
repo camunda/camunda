@@ -43,7 +43,7 @@ final class JobClientStreamMetrics implements ClientStreamMetrics {
     registerGauge(JobClientStreamMetricsDoc.CLIENTS, clientCount, registry);
     registerGauge(JobClientStreamMetricsDoc.AGGREGATED_STREAMS, aggregatedStreamCount, registry);
 
-    // pre-populate the map to
+    // pre-populate the map to ensure it is thread safe
     for (final var errorCode : ErrorCode.values()) {
       pushAttempts.put(errorCode, registerPushAttemptCounter(registry, errorCode));
     }
@@ -85,8 +85,8 @@ final class JobClientStreamMetrics implements ClientStreamMetrics {
   }
 
   private void registerGauge(
-      final JobClientStreamMetricsDoc doc, final Number state, final MeterRegistry registry) {
-    Gauge.builder(doc.getName(), state, Number::doubleValue)
+      final JobClientStreamMetricsDoc doc, final AtomicLong state, final MeterRegistry registry) {
+    Gauge.builder(doc.getName(), state, AtomicLong::get)
         .description(doc.getDescription())
         .register(registry);
   }
