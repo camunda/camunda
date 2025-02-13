@@ -69,7 +69,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
       final BrokerShutdownHelper shutdownHelper,
-      final PrometheusMeterRegistry meterRegistry,
+      final MeterRegistry meterRegistry,
       final SecurityConfiguration securityConfiguration,
       // The UserServices class is not available if you want to start-up the Standalone Broker
       @Autowired(required = false) final UserServices userServices,
