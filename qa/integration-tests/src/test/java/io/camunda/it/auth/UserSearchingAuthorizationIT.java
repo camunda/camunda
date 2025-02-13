@@ -74,7 +74,7 @@ class UserSearchingAuthorizationIT {
           .withBasicAuth()
           .withAuthorizationsEnabled()
           .withUsers(ADMIN_USER, RESTRICTED_USER, RESTRICTED_USER_WITH_READ_PERMISSION)
-          .withJustBasicAuth();
+          .withBasicAuth();
 
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
   private boolean initialized;

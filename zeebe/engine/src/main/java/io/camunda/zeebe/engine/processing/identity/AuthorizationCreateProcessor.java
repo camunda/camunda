@@ -64,25 +64,7 @@ public class AuthorizationCreateProcessor
                     "Expected to create authorization with permission types '%s' and resource type '%s', but these permissions are not supported. Supported permission types are: '%s'"))
         .flatMap(permissionsBehavior::permissionsAlreadyExist)
         .ifRightOrLeft(
-            authorizationRecord -> {
-              final Optional<PersistedUser> user =
-                  userState.getUser(authorizationRecord.getOwnerId());
-              // todo : need to investigate this part with adding userKey and resetting permissions
-              user.ifPresent(
-                  persistedUser -> authorizationRecord.setOwnerKey(persistedUser.getUserKey()));
-              authorizationRecord
-                  .getAuthorizationPermissions()
-                  .forEach(
-                      permissionType ->
-                          command
-                              .getValue()
-                              .addPermission(
-                                  new Permission()
-                                      .setPermissionType(permissionType)
-                                      .addResourceId(authorizationRecord.getResourceId())));
-
-              writeEventAndDistribute(command, command.getValue());
-            },
+            authorizationRecord -> writeEventAndDistribute(command, command.getValue()),
             (rejection) -> {
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
               responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
