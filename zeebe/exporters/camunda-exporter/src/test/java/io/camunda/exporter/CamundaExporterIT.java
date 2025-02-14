@@ -762,6 +762,57 @@ final class CamundaExporterIT {
     }
 
     @TestTemplate
+    void shouldRunDelayedFlushIfNotWaitingForImportersRegardlessOfImporterIndexState(
+        final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+        throws IOException {
+      // given
+      createSchemas(config, clientAdapter);
+      // an incomplete position index document so exporter sees importing as not yet completed
+      indexImportPositionEntity("decision", false, clientAdapter);
+      clientAdapter.refresh();
+
+      // increase bulk size so we flush via delayed flush, adding fewer records than bulk size
+      config.getBulk().setSize(5);
+      // ignore importer state, to export regardless of the importer state
+      config.getIndex().setShouldWaitForImporters(false);
+
+      final var context = spy(getContextFromConfig(config));
+      doReturn(partitionId).when(context).getPartitionId();
+      camundaExporter.configure(context);
+      camundaExporter.open(controller);
+
+      // when
+      final var record =
+          factory.generateRecord(
+              ValueType.USER,
+              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
+              UserIntent.CREATED);
+
+      camundaExporter.export(record);
+
+      // as the importer state is ignored, this should trigger a flush still resulting in the
+      // record being visible in ES/OS
+      controller.runScheduledTasks(Duration.ofSeconds(config.getBulk().getDelay()));
+
+      // then
+      assertThat(controller.getPosition()).isEqualTo(record.getPosition());
+      verify(controller, times(1))
+          .updateLastExportedRecordPosition(eq(record.getPosition()), any());
+
+      final var authHandler =
+          getHandlers(config).stream()
+              .filter(handler -> handler.getHandledValueType().equals(record.getValueType()))
+              .filter(handler -> handler.handlesRecord(record))
+              .findFirst()
+              .orElseThrow();
+      final var recordId = authHandler.generateIds(record).getFirst();
+
+      assertThat(
+              clientAdapter.get(recordId, authHandler.getIndexName(), authHandler.getEntityType()))
+          .isNotNull();
+    }
+
+    @TestTemplate
     @DisabledIfSystemProperty(
         named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
         matches = "^(?=\\s*\\S).*$",

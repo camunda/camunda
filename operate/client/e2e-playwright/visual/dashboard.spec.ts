@@ -14,7 +14,7 @@ import {
   mockResponses,
   mockStatistics,
 } from '../mocks/dashboard.mocks';
-import {URL_PATTERN} from '../constants';
+import {URL_API_PATTERN} from '../constants';
 import {clientConfigMock} from '../mocks/clientConfig';
 
 test.beforeEach(async ({context}) => {
@@ -35,7 +35,7 @@ test.describe('dashboard page', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           statistics: {
             running: 0,
@@ -55,7 +55,7 @@ test.describe('dashboard page', () => {
     test(`error page - ${theme}`, async ({page, commonPage, dashboardPage}) => {
       await commonPage.changeTheme(theme);
 
-      await page.route(URL_PATTERN, mockResponses({}));
+      await page.route(URL_API_PATTERN, mockResponses({}));
 
       await dashboardPage.navigateToDashboard({waitUntil: 'networkidle'});
 
@@ -70,7 +70,7 @@ test.describe('dashboard page', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           statistics: mockStatistics,
           incidentsByError: mockIncidentsByError,
@@ -91,7 +91,7 @@ test.describe('dashboard page', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           statistics: mockStatistics,
           incidentsByError: mockIncidentsByError,

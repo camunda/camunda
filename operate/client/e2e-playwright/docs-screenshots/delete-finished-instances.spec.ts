@@ -23,7 +23,7 @@ import {
   completedOrderProcessInstance,
 } from '../mocks/processInstance';
 import {open} from 'modules/mocks/diagrams';
-import {URL_PATTERN} from '../constants';
+import {URL_API_PATTERN} from '../constants';
 
 test.beforeEach(async ({page, commonPage, context}) => {
   await commonPage.mockClientConfig(context);
@@ -38,7 +38,7 @@ test.describe('delete finished instances', () => {
     commonPage,
   }) => {
     await page.route(
-      URL_PATTERN,
+      URL_API_PATTERN,
       mockProcessesResponses({
         groupedProcesses: mockGroupedProcesses,
         batchOperations: mockBatchOperations,
@@ -100,7 +100,7 @@ test.describe('delete finished instances', () => {
     };
 
     await page.route(
-      URL_PATTERN,
+      URL_API_PATTERN,
       mockProcessesResponses({
         groupedProcesses: mockGroupedProcesses,
         batchOperations: [mockNewDeleteOperation, ...mockBatchOperations],
@@ -159,7 +159,7 @@ test.describe('delete finished instances', () => {
     commonPage,
   }) => {
     await page.route(
-      URL_PATTERN,
+      URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: completedOrderProcessInstance.detail,
         flowNodeInstances: completedOrderProcessInstance.flowNodeInstances,
@@ -199,7 +199,7 @@ test.describe('delete finished instances', () => {
 
     await page.getByRole('button', {name: /danger delete/i}).click();
 
-    await page.route(URL_PATTERN, (route) => {
+    await page.route(URL_API_PATTERN, (route) => {
       if (route.request().url().includes('/api/process-instances/')) {
         return route.fulfill({
           status: 404,

@@ -192,6 +192,7 @@ public class RecordFixtures {
                 .withProcessInstanceKey(processInstanceKey)
                 .withBpmnElementType(BpmnElementType.SERVICE_TASK)
                 .withVersion(1)
+                .withElementInstancePath(List.of(List.of(1L, 2L)))
                 .build())
         .build();
   }

@@ -61,7 +61,7 @@ public class WebSecurityConfig {
   private static final String LOGIN_URL = "/login";
   private static final String LOGOUT_URL = "/logout";
 
-  private static final Set<String> API_PATHS = Set.of("/v1/**", "/v2/**", "/api/**");
+  private static final Set<String> API_PATHS = Set.of("/v1/**", "/v2/**");
   private static final Set<String> UNAUTHENTICATED_PATHS =
       Set.of(
           LOGIN_URL,

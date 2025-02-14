@@ -14,7 +14,7 @@ import {
   mockResponses as mockProcessDetailResponses,
   orderProcessInstance,
 } from '../mocks/processInstance';
-import {URL_PATTERN} from '../constants';
+import {URL_API_PATTERN} from '../constants';
 
 test.beforeEach(async ({page, commonPage, context}) => {
   await commonPage.mockClientConfig(context);
@@ -24,7 +24,7 @@ test.beforeEach(async ({page, commonPage, context}) => {
 test.describe('variables and incidents', () => {
   test('view process with incident', async ({page, processesPage}) => {
     await page.route(
-      URL_PATTERN,
+      URL_API_PATTERN,
       mockProcessesResponses({
         groupedProcesses: [
           {
@@ -101,7 +101,7 @@ test.describe('variables and incidents', () => {
     processInstancePage,
   }) => {
     await page.route(
-      URL_PATTERN,
+      URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: orderProcessInstance.incidentState.detail,
         flowNodeInstances: orderProcessInstance.incidentState.flowNodeInstances,
@@ -180,7 +180,7 @@ test.describe('variables and incidents', () => {
 
   test('retry an incident', async ({page, commonPage, processInstancePage}) => {
     await page.route(
-      URL_PATTERN,
+      URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: orderProcessInstance.incidentState.detail,
         flowNodeInstances: orderProcessInstance.incidentState.flowNodeInstances,
@@ -239,7 +239,7 @@ test.describe('variables and incidents', () => {
 
   test('view resolved incident', async ({page, processInstancePage}) => {
     await page.route(
-      URL_PATTERN,
+      URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail:
           orderProcessInstance.incidentResolvedState.detail,
@@ -264,7 +264,7 @@ test.describe('variables and incidents', () => {
 
   test('view completed instance', async ({page, processInstancePage}) => {
     await page.route(
-      URL_PATTERN,
+      URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: orderProcessInstance.completedState.detail,
         flowNodeInstances:

@@ -17,7 +17,7 @@ import {
   mockResponses,
   mockStatistics,
 } from '../mocks/processes.mocks';
-import {URL_PATTERN} from '../constants';
+import {URL_API_PATTERN} from '../constants';
 import {clientConfigMock} from '../mocks/clientConfig';
 
 test.beforeEach(async ({context}) => {
@@ -47,7 +47,7 @@ test.describe('processes page', () => {
       }, theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           batchOperations: [],
           groupedProcesses: mockGroupedProcesses,
@@ -87,7 +87,7 @@ test.describe('processes page', () => {
       }, theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           groupedProcesses: mockGroupedProcesses,
         }),
@@ -117,7 +117,7 @@ test.describe('processes page', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           groupedProcesses: mockGroupedProcesses,
           batchOperations: mockBatchOperations,
@@ -162,7 +162,7 @@ test.describe('processes page', () => {
       }, theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           groupedProcesses: mockGroupedProcesses,
           batchOperations: mockBatchOperations,
@@ -206,7 +206,7 @@ test.describe('processes page', () => {
       }, theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           groupedProcesses: mockGroupedProcesses,
           batchOperations: mockBatchOperations,
@@ -251,7 +251,7 @@ test.describe('processes page', () => {
       }, theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           groupedProcesses: mockGroupedProcesses,
           batchOperations: mockBatchOperations,
@@ -287,7 +287,7 @@ test.describe('processes page', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           groupedProcesses: mockGroupedProcesses,
           batchOperations: mockBatchOperations,
@@ -321,7 +321,7 @@ test.describe('processes page', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           groupedProcesses: mockGroupedProcesses,
           batchOperations: mockBatchOperations,
@@ -362,7 +362,7 @@ test.describe('processes page', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           groupedProcesses: mockGroupedProcesses,
           batchOperations: mockBatchOperations,

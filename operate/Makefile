@@ -3,7 +3,7 @@
 .PHONY: env-up
 env-up:
 	docker compose -f docker-compose.yml up -d elasticsearch \
-    && mvn install -DskipTests=true -Dskip.fe.build=true -DskipChecks -DskipQaBuild \
+    && mvn install -DskipTests=true -Dskip.fe.build=false -DskipChecks -DskipQaBuild \
 	&& CAMUNDA_OPERATE_IMPORTERENABLED=false \
 	CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false \
 	CAMUNDA_OPERATE_ELASTICSEARCH_CREATESCHEMA=false \
@@ -102,4 +102,4 @@ start-e2e:
 	MANAGEMENT_SERVER_PORT=9601 \
 	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
 	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
-	  -Dspring.profiles.active=operate,broker
+	  -Dspring.profiles.active=operate,broker,consolidated-auth

@@ -16,7 +16,7 @@ import {
   mockResponses,
 } from '../mocks/processes.mocks';
 import {validateResults} from './validateResults';
-import {URL_PATTERN} from '../constants';
+import {URL_API_PATTERN} from '../constants';
 
 test.describe('processes', () => {
   for (const theme of ['light', 'dark']) {
@@ -28,7 +28,7 @@ test.describe('processes', () => {
     }) => {
       await commonPage.changeTheme(theme);
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           groupedProcesses: mockGroupedProcesses,
           batchOperations: mockBatchOperations,
