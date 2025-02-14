@@ -6,6 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const URL_PATTERN = /^.*\/(api|v2).*$/i;
+const URL_API_PATTERN = /^.*\/(api|v2).*$/i;
 
-export {URL_PATTERN};
+export {URL_API_PATTERN};

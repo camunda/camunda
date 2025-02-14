@@ -13,7 +13,7 @@ import {
   mockResponses,
   runningInstance,
 } from '../mocks/processInstance';
-import {URL_PATTERN} from '../constants';
+import {URL_API_PATTERN} from '../constants';
 import {clientConfigMock} from '../mocks/clientConfig';
 
 test.beforeEach(async ({context}) => {
@@ -38,7 +38,7 @@ test.describe('modifications', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: runningInstance.detail,
           flowNodeInstances: runningInstance.flowNodeInstances,
@@ -73,7 +73,7 @@ test.describe('modifications', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: runningInstance.detail,
           flowNodeInstances: runningInstance.flowNodeInstances,
@@ -116,7 +116,7 @@ test.describe('modifications', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: instanceWithIncident.detail,
           flowNodeInstances: instanceWithIncident.flowNodeInstances,
@@ -183,7 +183,7 @@ test.describe('modifications', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: instanceWithIncident.detail,
           flowNodeInstances: instanceWithIncident.flowNodeInstances,

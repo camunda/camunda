@@ -13,7 +13,7 @@ import {
   mockResponses as mockProcessDetailResponses,
   eventBasedGatewayProcessInstance,
 } from '../mocks/processInstance';
-import {URL_PATTERN} from '../constants';
+import {URL_API_PATTERN} from '../constants';
 
 test.beforeEach(async ({page, commonPage, context}) => {
   await commonPage.mockClientConfig(context);
@@ -27,7 +27,7 @@ test.describe('process instance modification', () => {
     processInstancePage,
   }) => {
     await page.route(
-      URL_PATTERN,
+      URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
         flowNodeInstances: eventBasedGatewayProcessInstance.flowNodeInstances,
@@ -128,7 +128,7 @@ test.describe('process instance modification', () => {
 
   test('move modification', async ({page, commonPage, processInstancePage}) => {
     await page.route(
-      URL_PATTERN,
+      URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
         flowNodeInstances: eventBasedGatewayProcessInstance.flowNodeInstances,
@@ -245,7 +245,7 @@ test.describe('process instance modification', () => {
     const nodeDetails = await page.getByTestId('node-details-2251799813888430');
 
     await page.route(
-      URL_PATTERN,
+      URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
         flowNodeInstances: eventBasedGatewayProcessInstance.flowNodeInstances,
@@ -386,7 +386,7 @@ test.describe('process instance modification', () => {
     processInstancePage,
   }) => {
     await page.route(
-      URL_PATTERN,
+      URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
         flowNodeInstances: eventBasedGatewayProcessInstance.flowNodeInstances,
