@@ -70,8 +70,7 @@ public enum ExporterMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return
-      """
+      return """
         Describes the phase of the exporter, namely if it is exporting (0), paused (1), soft \
         paused (2), or closed (3)""";
     }
@@ -135,6 +134,16 @@ public enum ExporterMetricsDoc implements ExtendedMeterDocumentation {
       return ExporterActionKeyNames.values();
     }
   };
+
+  public enum ExporterContainerKeyNames implements KeyName {
+    /** Identifies which exporter is emitting a metric */
+    EXPORTER_ID {
+      @Override
+      public String asString() {
+        return "exporterId";
+      }
+    }
+  }
 
   enum ExporterActionKeyNames implements KeyName {
     SKIPPED {

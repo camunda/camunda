@@ -38,8 +38,9 @@ public final class SnapshotMetrics {
   public SnapshotMetrics(final MeterRegistry registry) {
     clock = registry.config().clock();
 
-    snapshotDuration = MicrometerUtil.timer(SNAPSHOT_DURATION).register(registry);
-    snapshotPersistDuration = MicrometerUtil.timer(SNAPSHOT_PERSIST_DURATION).register(registry);
+    snapshotDuration = MicrometerUtil.buildTimer(SNAPSHOT_DURATION).register(registry);
+    snapshotPersistDuration =
+        MicrometerUtil.buildTimer(SNAPSHOT_PERSIST_DURATION).register(registry);
     snapshotFileSize = MicrometerUtil.summary(SNAPSHOT_FILE_SIZE).register(registry);
     snapshotCount =
         Counter.builder(SNAPSHOT_COUNT.getName())
