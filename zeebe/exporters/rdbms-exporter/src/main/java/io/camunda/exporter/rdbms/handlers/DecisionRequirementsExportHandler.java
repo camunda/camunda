@@ -48,7 +48,6 @@ public class DecisionRequirementsExportHandler
         .resourceName(value.getResourceName())
         .xml(new String(value.getResource(), StandardCharsets.UTF_8))
         .tenantId(value.getTenantId())
-        .partitionId(record.getPartitionId())
         .build();
   }
 }

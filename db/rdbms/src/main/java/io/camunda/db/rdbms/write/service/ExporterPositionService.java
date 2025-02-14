@@ -46,7 +46,7 @@ public class ExporterPositionService {
             variable));
   }
 
-  public ExporterPositionModel findOne(final Long key) {
+  public ExporterPositionModel findOne(final int key) {
     return exporterPositionMapper.findOne(key);
   }
 }

@@ -86,9 +86,8 @@
     parameterType="io.camunda.db.rdbms.write.domain.DecisionRequirementsDbModel"
     flushCache="true">
     INSERT INTO ${prefix}DECISION_REQUIREMENTS (DECISION_REQUIREMENTS_KEY, DECISION_REQUIREMENTS_ID,
-                                                NAME, TENANT_ID, VERSION, RESOURCE_NAME, XML,
-                                                PARTITION_ID)
+                                                NAME, TENANT_ID, VERSION, RESOURCE_NAME, XML)
     VALUES (#{decisionRequirementsKey}, #{decisionRequirementsId}, #{name},
-            #{tenantId}, #{version}, #{resourceName}, #{xml}, #{partitionId})
+            #{tenantId}, #{version}, #{resourceName}, #{xml})
   </insert>
 </mapper>

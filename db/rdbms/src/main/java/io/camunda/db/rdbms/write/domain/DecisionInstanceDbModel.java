@@ -33,7 +33,7 @@ public record DecisionInstanceDbModel(
     Long rootDecisionDefinitionKey,
     DecisionDefinitionType decisionType,
     String tenantId,
-    Long partitionId,
+    int partitionId,
     List<EvaluatedInput> evaluatedInputs,
     List<EvaluatedOutput> evaluatedOutputs) {
 
@@ -192,7 +192,7 @@ public record DecisionInstanceDbModel(
           rootDecisionDefinitionKey,
           decisionType,
           tenantId,
-          Long.valueOf(partitionId),
+          partitionId,
           evaluatedInputs,
           evaluatedOutputs);
     }

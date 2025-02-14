@@ -237,7 +237,6 @@
       <column name="VERSION" type="SMALLINT" />
       <column name="RESOURCE_NAME" type="VARCHAR(4000)" />
       <column name="XML" type="CLOB" />
-      <column name="PARTITION_ID" type="NUMBER"/>
     </createTable>
 
     <createIndex tableName="${prefix}DECISION_REQUIREMENTS" indexName="${prefix}IDX_DECISION_REQUIREMENTS_ID">

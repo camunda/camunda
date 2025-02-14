@@ -10,7 +10,7 @@ package io.camunda.db.rdbms.write.domain;
 import java.time.LocalDateTime;
 
 public record ExporterPositionModel(
-    Long partitionId,
+    int partitionId,
     String exporter,
     Long lastExportedPosition,
     LocalDateTime created,

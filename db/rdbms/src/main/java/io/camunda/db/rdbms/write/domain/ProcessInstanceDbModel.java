@@ -59,11 +59,11 @@ public record ProcessInstanceDbModel(
     private Long processDefinitionKey;
     private ProcessInstanceState state;
     private OffsetDateTime startDate;
-    private OffsetDateTime endDate;
+    private OffsetDateTime endDate = null;
     private String tenantId;
     private Long parentProcessInstanceKey;
     private Long parentElementInstanceKey;
-    private String elementId;
+    private String elementId = null;
     private int numIncidents = 0;
     private int version;
     private int partitionId;
