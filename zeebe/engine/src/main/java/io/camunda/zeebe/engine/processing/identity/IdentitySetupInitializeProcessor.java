@@ -251,7 +251,8 @@ public final class IdentitySetupInitializeProcessor
               .setOwnerType(AuthorizationOwnerType.ROLE)
               .setResourceType(resourceType)
               .setResourceId(WILDCARD_PERMISSION)
-              .setAuthorizationPermissions(resourceType.getSupportedPermissionTypes());
+              .setPermissionTypes(resourceType.getSupportedPermissionTypes());
+
       stateWriter.appendFollowUpEvent(authorizationKey, AuthorizationIntent.CREATED, record);
     }
   }

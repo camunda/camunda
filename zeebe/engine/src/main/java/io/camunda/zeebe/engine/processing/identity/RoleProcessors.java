@@ -67,7 +67,7 @@ public class RoleProcessors {
         ValueType.ROLE,
         RoleIntent.DELETE,
         new RoleDeleteProcessor(
-            processingState.getRoleState(),
+            processingState,
             authCheckBehavior,
             keyGenerator,
             writers,

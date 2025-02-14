@@ -22,6 +22,7 @@
                 resourceType="config"
               />
         </zeebe:linkedResources>
+        <zeebe:taskDefinition type="task_type" retries="8" />
       </extensionElements>
       <incoming>sequenceFlow_b5b62cfb-7be8-4451-a6d5-9348d8fc0f5d</incoming>
       <outgoing>sequenceFlow_52b3e40b-ed4b-4a4a-8108-cd897630f393</outgoing>

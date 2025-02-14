@@ -24,7 +24,8 @@ public record ProcessInstanceDbModel(
     Long parentElementInstanceKey,
     Integer numIncidents,
     String elementId,
-    int version)
+    int version,
+    int partitionId)
     implements DbModel<ProcessInstanceDbModel> {
 
   @Override
@@ -45,7 +46,8 @@ public record ProcessInstanceDbModel(
                 .state(state)
                 .numIncidents(numIncidents)
                 .tenantId(tenantId)
-                .version(version))
+                .version(version)
+                .partitionId(partitionId))
         .build();
   }
 
@@ -57,13 +59,14 @@ public record ProcessInstanceDbModel(
     private Long processDefinitionKey;
     private ProcessInstanceState state;
     private OffsetDateTime startDate;
-    private OffsetDateTime endDate;
+    private OffsetDateTime endDate = null;
     private String tenantId;
     private Long parentProcessInstanceKey;
     private Long parentElementInstanceKey;
-    private String elementId;
+    private String elementId = null;
     private int numIncidents = 0;
     private int version;
+    private int partitionId;
 
     // Public constructor to initialize the builder
     public ProcessInstanceDbModelBuilder() {}
@@ -135,6 +138,11 @@ public record ProcessInstanceDbModel(
       return this;
     }
 
+    public ProcessInstanceDbModelBuilder partitionId(final int partitionId) {
+      this.partitionId = partitionId;
+      return this;
+    }
+
     @Override
     public ProcessInstanceDbModel build() {
       return new ProcessInstanceDbModel(
@@ -149,7 +157,8 @@ public record ProcessInstanceDbModel(
           parentElementInstanceKey,
           numIncidents,
           elementId,
-          version);
+          version,
+          partitionId);
     }
   }
 }

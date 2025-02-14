@@ -18,12 +18,12 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessPublicEndpointsRes
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
 import io.camunda.tasklist.webapp.dto.ProcessInstanceDTO;
+import io.camunda.tasklist.webapp.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
-import io.camunda.tasklist.webapp.security.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.service.ProcessService;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;

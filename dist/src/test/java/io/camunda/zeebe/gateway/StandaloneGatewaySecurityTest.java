@@ -205,7 +205,8 @@ final class StandaloneGatewaySecurityTest {
             schedulerConfig, IdleStrategySupplier.ofDefault(), new ActorClockConfiguration(false));
 
     actorScheduler = actorSchedulerConfiguration.scheduler();
-    final var topologyServices = new DynamicClusterServices(actorScheduler, atomixCluster);
+    final var topologyServices =
+        new DynamicClusterServices(actorScheduler, atomixCluster, meterRegistry);
     final var topologyManager = topologyServices.brokerTopologyManager();
     topologyServices.gatewayClusterTopologyService(topologyManager, gatewayCfg);
 

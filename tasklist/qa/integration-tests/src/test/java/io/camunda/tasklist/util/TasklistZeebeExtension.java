@@ -122,11 +122,17 @@ public abstract class TasklistZeebeExtension
     final String zeebeVersion =
         ContainerVersionsUtil.readProperty(
             ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME);
+    final String zeebeRepo =
+        ContainerVersionsUtil.readProperty(
+            ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_REPO_PROPERTY_NAME);
     final String indexPrefix = indexPrefixHolder.getIndexPrefix();
     LOGGER.info(
-        "************ Starting Zeebe:{}, indexPrefix={} ************", zeebeVersion, indexPrefix);
+        "************ Starting Zeebe - {}:{}, indexPrefix={} ************",
+        zeebeRepo,
+        zeebeVersion,
+        indexPrefix);
     final ZeebeContainer zContainer =
-        new ZeebeContainer(DockerImageName.parse("camunda/zeebe").withTag(zeebeVersion))
+        new ZeebeContainer(DockerImageName.parse(zeebeRepo).withTag(zeebeVersion))
             .withEnv(getDatabaseEnvironmentVariables(indexPrefix))
             .withEnv("JAVA_OPTS", "-Xss256k -XX:+TieredCompilation -XX:TieredStopAtLevel=1")
             .withEnv("ZEEBE_LOG_LEVEL", "ERROR")

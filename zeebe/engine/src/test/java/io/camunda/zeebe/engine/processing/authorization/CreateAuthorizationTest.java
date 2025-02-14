@@ -35,8 +35,6 @@ public class CreateAuthorizationTest {
         engine
             .authorization()
             .newAuthorization()
-            // TODO: remove with https://github.com/camunda/camunda/issues/26883
-            .withOwnerKey(1L)
             .withOwnerId("ownerId")
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceId("resourceId")
@@ -52,7 +50,7 @@ public class CreateAuthorizationTest {
             AuthorizationRecordValue::getOwnerType,
             AuthorizationRecordValue::getResourceId,
             AuthorizationRecordValue::getResourceType,
-            AuthorizationRecordValue::getAuthorizationPermissions)
+            AuthorizationRecordValue::getPermissionTypes)
         .containsExactly(
             "ownerId",
             AuthorizationOwnerType.USER,
@@ -67,8 +65,6 @@ public class CreateAuthorizationTest {
     engine
         .authorization()
         .newAuthorization()
-        // TODO: remove with https://github.com/camunda/camunda/issues/26883
-        .withOwnerKey(1L)
         .withOwnerId("ownerId")
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceId("resourceId")
@@ -79,8 +75,6 @@ public class CreateAuthorizationTest {
     engine
         .authorization()
         .newAuthorization()
-        // TODO: remove with https://github.com/camunda/camunda/issues/26883
-        .withOwnerKey(1L)
         .withOwnerId("ownerId")
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceId("anotherResourceId")
@@ -93,8 +87,6 @@ public class CreateAuthorizationTest {
         engine
             .authorization()
             .newAuthorization()
-            // TODO: remove with https://github.com/camunda/camunda/issues/26883
-            .withOwnerKey(1L)
             .withOwnerId("ownerId")
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceId("resourceId")
@@ -108,13 +100,8 @@ public class CreateAuthorizationTest {
         .describedAs("Authorization already exists")
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
-            "Expected to create authorization for owner '%s' with permission type '%s' and resource type '%s', but this permission for resource identifiers '%s' already exist. Existing resource ids are: '%s'"
-                .formatted(
-                    "ownerId",
-                    PermissionType.CREATE,
-                    AuthorizationResourceType.RESOURCE,
-                    "resourceId",
-                    "[resourceId, anotherResourceId]"));
+            "Expected to create authorization for owner '%s' for resource identifier '%s', but an authorization for this resource identifier already exists."
+                .formatted("ownerId", "resourceId"));
   }
 
   @Test
@@ -127,8 +114,6 @@ public class CreateAuthorizationTest {
         engine
             .authorization()
             .newAuthorization()
-            // TODO: remove with https://github.com/camunda/camunda/issues/26883
-            .withOwnerKey(1L)
             .withOwnerId("ownerId")
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceId("resourceId")

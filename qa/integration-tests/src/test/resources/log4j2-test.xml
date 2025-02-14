@@ -27,6 +27,7 @@
 
     <Logger name="org.apache.ibatis" level="debug"/>
     <Logger name="io.camunda.db.rdbms" level="debug"/>
+    <Logger name="io.camunda.exporter.rdbms" level="debug"/>
     <Logger name="io.camunda.zeebe.gateway.rest" level="debug"/>
 
     <Root level="info">

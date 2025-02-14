@@ -15,4 +15,7 @@
  */
 package io.camunda.client.api.response;
 
-public interface CreateAuthorizationResponse {}
+public interface CreateAuthorizationResponse {
+
+  long getAuthorizationKey();
+}

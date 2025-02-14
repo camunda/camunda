@@ -33,14 +33,16 @@ public class VariableExportHandler implements RdbmsExportHandler<VariableRecordV
   public void export(final Record<VariableRecordValue> record) {
     final VariableRecordValue value = record.getValue();
     if (record.getIntent() == VariableIntent.CREATED) {
-      variableWriter.create(map(record.getKey(), value));
-    } else if (record.getIntent() == VariableIntent.UPDATED
-        || record.getIntent() == VariableIntent.MIGRATED) {
-      variableWriter.update(map(record.getKey(), value));
+      variableWriter.create(map(record.getKey(), record));
+    } else if (record.getIntent() == VariableIntent.UPDATED) {
+      variableWriter.update(map(record.getKey(), record));
+    } else if (record.getIntent() == VariableIntent.MIGRATED) {
+      variableWriter.migrateToProcess(record.getKey(), value.getBpmnProcessId());
     }
   }
 
-  private VariableDbModel map(final Long key, final VariableRecordValue value) {
+  private VariableDbModel map(final Long key, final Record<VariableRecordValue> record) {
+    final VariableRecordValue value = record.getValue();
     return new VariableDbModel.VariableDbModelBuilder()
         .variableKey(key)
         .name(value.getName())
@@ -49,6 +51,7 @@ public class VariableExportHandler implements RdbmsExportHandler<VariableRecordV
         .processInstanceKey(value.getProcessInstanceKey())
         .processDefinitionId(value.getBpmnProcessId())
         .tenantId(value.getTenantId())
+        .partitionId(record.getPartitionId())
         .build();
   }
 }

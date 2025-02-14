@@ -129,6 +129,48 @@ public class UserTaskListenersTest {
         });
   }
 
+  @Test
+  void shouldUpdateUserTaskAfterCompletingUpdatingTaskListener() {
+    // given
+    final var action = "my_update_action";
+    final var userTaskKey =
+        resourcesHelper.createSingleUserTask(
+            t -> t.zeebeTaskListener(l -> l.updating().type("my_listener")));
+
+    final JobHandler completeJobHandler =
+        (jobClient, job) -> client.newCompleteCommand(job).send().join();
+    client.newWorker().jobType("my_listener").handler(completeJobHandler).open();
+
+    // when: invoke `UPDATE` user task command
+    final var updateUserTaskFuture =
+        client
+            .newUserTaskUpdateCommand(userTaskKey)
+            .candidateUsers("frodo", "samwise")
+            .priority(88)
+            .action(action)
+            .send();
+
+    // wait for successful `UPDATE` user task command completion
+    assertThatCode(updateUserTaskFuture::join).doesNotThrowAnyException();
+
+    // then
+    ZeebeAssertHelper.assertUserTaskUpdated(
+        userTaskKey,
+        (userTask) -> {
+          assertThat(userTask.getAssignee()).isEmpty();
+          assertThat(userTask.getCandidateGroupsList()).isEmpty();
+          assertThat(userTask.getDueDate()).isEmpty();
+          assertThat(userTask.getFollowUpDate()).isEmpty();
+          assertThat(userTask.getVariables()).isEmpty();
+          // updated properties
+          assertThat(userTask.getCandidateUsersList()).containsExactly("frodo", "samwise");
+          assertThat(userTask.getPriority()).isEqualTo(88);
+          assertThat(userTask.getChangedAttributes())
+              .containsExactly(UserTaskRecord.CANDIDATE_USERS, UserTaskRecord.PRIORITY);
+          assertThat(userTask.getAction()).isEqualTo(action);
+        });
+  }
+
   /**
    * This test verifies the behavior when attempting to complete a Task Listener job with variables
    * while awaiting the result of the completion command.

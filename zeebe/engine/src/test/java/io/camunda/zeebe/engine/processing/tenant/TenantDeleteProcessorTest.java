@@ -111,7 +111,7 @@ public class TenantDeleteProcessorTest {
     final var tenantRecords =
         RecordingExporter.tenantRecords()
             .withIntents(TenantIntent.ENTITY_REMOVED, TenantIntent.DELETED)
-            .withTenantKey(tenantKey)
+            .withTenantId(tenantId)
             .asList();
 
     assertThat(deletedTenant).hasTenantKey(tenantKey);

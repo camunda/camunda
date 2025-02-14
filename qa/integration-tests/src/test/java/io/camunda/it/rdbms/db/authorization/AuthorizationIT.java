@@ -169,7 +169,7 @@ public class AuthorizationIT {
                     .ownerIds(authorization.ownerId())
                     .ownerType(authorization.ownerType())
                     .resourceType(authorization.resourceType())
-                    .permissionType(authorization.permissionTypes().stream().findFirst().get())
+                    .permissionTypes(authorization.permissionTypes().stream().findFirst().get())
                     .resourceIds(authorization.resourceId())
                     .build(),
                 AuthorizationSort.of(b -> b),

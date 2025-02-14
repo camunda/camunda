@@ -99,7 +99,7 @@ public class AuthorizationCreatedUpdatedHandlerTest {
             .withOwnerId("foo")
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceId("*")
-            .withAuthorizationPermissions(List.of(PermissionType.CREATE, PermissionType.DELETE))
+            .withPermissionTypes(List.of(PermissionType.CREATE, PermissionType.DELETE))
             .build();
 
     final Record<AuthorizationRecordValue> authorizationRecord =
@@ -129,7 +129,7 @@ public class AuthorizationCreatedUpdatedHandlerTest {
     assertThat(authorizationEntity.getResourceId())
         .isEqualTo(authorizationRecordValue.getResourceId());
     assertThat(authorizationEntity.getPermissionTypes())
-        .isEqualTo(authorizationRecordValue.getAuthorizationPermissions());
+        .isEqualTo(authorizationRecordValue.getPermissionTypes());
   }
 
   @Test

@@ -37,6 +37,7 @@ public class UserTaskDbModel {
   private String serializedCustomHeaders;
   private Map<String, String> customHeaders;
   private Integer priority;
+  private int partitionId;
 
   public UserTaskDbModel(final Long userTaskKey) {
     this.userTaskKey = userTaskKey;
@@ -60,7 +61,8 @@ public class UserTaskDbModel {
       final String externalFormReference,
       final Integer processDefinitionVersion,
       final Map<String, String> customHeaders,
-      final Integer priority) {
+      final Integer priority,
+      final int partitionId) {
     this.userTaskKey = userTaskKey;
     this.elementId = elementId;
     this.processDefinitionId = processDefinitionId;
@@ -80,6 +82,7 @@ public class UserTaskDbModel {
     this.customHeaders = customHeaders;
     serializedCustomHeaders = CustomHeaderSerializer.serialize(customHeaders);
     this.priority = priority;
+    this.partitionId = partitionId;
   }
 
   // Methods without get/set prefix
@@ -253,6 +256,10 @@ public class UserTaskDbModel {
     this.priority = priority;
   }
 
+  public int partitionId() {
+    return partitionId;
+  }
+
   public Builder toBuilder() {
     return new Builder()
         .userTaskKey(userTaskKey)
@@ -274,7 +281,8 @@ public class UserTaskDbModel {
         .externalFormReference(externalFormReference)
         .processDefinitionVersion(processDefinitionVersion)
         .customHeaders(customHeaders)
-        .priority(priority);
+        .priority(priority)
+        .partitionId(partitionId);
   }
 
   public static class Builder implements ObjectBuilder<UserTaskDbModel> {
@@ -299,6 +307,7 @@ public class UserTaskDbModel {
     private Integer processDefinitionVersion;
     private Map<String, String> customHeaders;
     private Integer priority;
+    private int partitionId;
 
     // Public constructor to initialize the builder
     public Builder() {}
@@ -409,6 +418,11 @@ public class UserTaskDbModel {
       return this;
     }
 
+    public Builder partitionId(final int partitionId) {
+      this.partitionId = partitionId;
+      return this;
+    }
+
     // Build method to create the record
     @Override
     public UserTaskDbModel build() {
@@ -431,7 +445,8 @@ public class UserTaskDbModel {
               externalFormReference,
               processDefinitionVersion,
               customHeaders,
-              priority);
+              priority,
+              partitionId);
 
       model.candidateUsers(candidateUsers);
       model.candidateGroups(candidateGroups);
