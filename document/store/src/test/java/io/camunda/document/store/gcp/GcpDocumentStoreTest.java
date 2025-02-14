@@ -8,10 +8,12 @@
 package io.camunda.document.store.gcp;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.ReadChannel;
 import com.google.cloud.storage.Blob;
@@ -30,13 +32,16 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.security.DigestInputStream;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -472,5 +477,69 @@ public class GcpDocumentStoreTest {
                 .metadata()
                 .processInstanceKey())
         .isEqualTo(123L);
+  }
+
+  @Test
+  void shouldStoreCustomPropertiesIfPresent() throws IOException {
+    // given
+    final var documentId = "documentId";
+    final var inputStream = new ByteArrayInputStream("content".getBytes());
+    final var documentCreationRequest =
+        new DocumentCreationRequest(
+            documentId,
+            inputStream,
+            new DocumentMetadataModel(
+                null,
+                null,
+                null,
+                null,
+                "Def ID",
+                123L,
+                Map.of(
+                    "String",
+                    "StringValue",
+                    "Int",
+                    1,
+                    "List",
+                    List.of("str1", "str2"),
+                    "Map",
+                    Map.of("key1", "val1", "key2", "val2"))));
+
+    when(storage.get(BUCKET_NAME, documentId)).thenReturn(null);
+
+    final var blobCaptor = ArgumentCaptor.forClass(BlobInfo.class);
+
+    // when
+    final var documentReferenceResponse =
+        gcpDocumentStore.createDocument(documentCreationRequest).join();
+
+    // then
+    assertThat(documentReferenceResponse).isNotNull();
+    assertThat(documentReferenceResponse).isInstanceOf(Right.class);
+    assertThat(((Right<DocumentError, DocumentReference>) documentReferenceResponse).value())
+        .isNotNull();
+    assertThat(
+            ((Right<DocumentError, DocumentReference>) documentReferenceResponse)
+                .value()
+                .metadata()
+                .processInstanceKey())
+        .isEqualTo(123L);
+    verify(storage).createFrom(blobCaptor.capture(), (DigestInputStream) any());
+
+    final var blobMetadata = blobCaptor.getValue().getMetadata();
+    assertThat(blobMetadata).hasSize(7);
+    assertThat(blobMetadata)
+        .containsAllEntriesOf(
+            Map.of(
+                "String", "\"StringValue\"",
+                "Int", "1",
+                "List", "[\"str1\",\"str2\"]",
+                "contentHash", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "camunda.processDefinitionId", "Def ID",
+                "camunda.processInstanceKey", "123"));
+
+    final var deserialisedMap =
+        mapper.readValue(blobMetadata.get("Map"), new TypeReference<Map<String, Object>>() {});
+    assertThat(deserialisedMap).isEqualTo(Map.of("key1", "val1", "key2", "val2"));
   }
 }
