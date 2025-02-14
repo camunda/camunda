@@ -16,25 +16,30 @@
  */
 package io.atomix.raft.metrics;
 
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
-public class LeaderMetrics extends RaftMetrics {
+public class LeaderAppenderMetrics extends RaftMetrics implements CloseableSilently {
   private final MeterRegistry meterRegistry;
   private final Map<String, Timer> appendLatency;
   private final Map<String, Counter> appendDataRate;
   private final Map<String, Counter> appendRate;
   private final Counter commitRate;
-  private final AtomicLong nonCommittedEntriesValue;
-  private final Map<String, AtomicLong> nonReplicatedEntries;
+  private final StatefulGauge nonCommittedEntriesValue;
+  private final Map<String, StatefulGauge> nonReplicatedEntries;
 
-  public LeaderMetrics(final String partitionName, final MeterRegistry meterRegistry) {
+  public LeaderAppenderMetrics(final String partitionName, final MeterRegistry meterRegistry) {
     super(partitionName);
     this.meterRegistry = meterRegistry;
     appendLatency = new HashMap<>();
@@ -45,14 +50,14 @@ public class LeaderMetrics extends RaftMetrics {
     commitRate =
         Counter.builder(LeaderMetricsDoc.COMMIT_RATE.getName())
             .description(LeaderMetricsDoc.COMMIT_RATE.getDescription())
-            .tags(PARTITION_GROUP_NAME_LABEL, partitionGroupName)
+            .tag(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
             .register(meterRegistry);
 
-    nonCommittedEntriesValue = new AtomicLong(0L);
-    Gauge.builder(LeaderMetricsDoc.NON_COMMITTED_ENTRIES.getName(), nonCommittedEntriesValue::get)
-        .description(LeaderMetricsDoc.NON_COMMITTED_ENTRIES.getDescription())
-        .tags(PARTITION_GROUP_NAME_LABEL, partitionGroupName)
-        .register(meterRegistry);
+    nonCommittedEntriesValue =
+        StatefulGauge.builder(LeaderMetricsDoc.NON_COMMITTED_ENTRIES.getName())
+            .description(LeaderMetricsDoc.NON_COMMITTED_ENTRIES.getDescription())
+            .tag(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
+            .register(meterRegistry);
   }
 
   public void appendComplete(final long latencyms, final String memberId) {
@@ -74,7 +79,9 @@ public class LeaderMetrics extends RaftMetrics {
   }
 
   public void observeRemainingEntries(final String memberId, final long remainingEntries) {
-    getNonReplicatedEntries(memberId).set(remainingEntries);
+    nonReplicatedEntries
+        .computeIfAbsent(memberId, this::registerNonReplicatedEntries)
+        .set(remainingEntries);
   }
 
   private Timer getAppendLatency(final String memberId) {
@@ -87,7 +94,7 @@ public class LeaderMetrics extends RaftMetrics {
                 .tags(
                     RaftKeyNames.FOLLOWER.asString(),
                     memberId,
-                    PARTITION_GROUP_NAME_LABEL,
+                    RaftKeyNames.PARTITION_GROUP.asString(),
                     partitionGroupName)
                 .register(meterRegistry));
   }
@@ -101,7 +108,7 @@ public class LeaderMetrics extends RaftMetrics {
                 .tags(
                     RaftKeyNames.FOLLOWER.asString(),
                     id,
-                    PARTITION_GROUP_NAME_LABEL,
+                    RaftKeyNames.PARTITION_GROUP.asString(),
                     partitionGroupName)
                 .register(meterRegistry));
   }
@@ -115,26 +122,26 @@ public class LeaderMetrics extends RaftMetrics {
                 .tags(
                     RaftKeyNames.FOLLOWER.asString(),
                     id,
-                    PARTITION_GROUP_NAME_LABEL,
+                    RaftKeyNames.PARTITION_GROUP.asString(),
                     partitionGroupName)
                 .register(meterRegistry));
   }
 
-  private AtomicLong getNonReplicatedEntries(final String memberId) {
-    var inMap = nonReplicatedEntries.get(memberId);
-    if (inMap == null) {
-      inMap = new AtomicLong(0L);
-      // add new gauge for this entry
-      Gauge.builder(LeaderMetricsDoc.NON_REPLICATED_ENTRIES.getName(), inMap::get)
-          .description(LeaderMetricsDoc.NON_REPLICATED_ENTRIES.getDescription())
-          .tags(
-              RaftKeyNames.FOLLOWER.asString(),
-              memberId,
-              PARTITION_GROUP_NAME_LABEL,
-              partitionGroupName)
-          .register(meterRegistry);
-      nonReplicatedEntries.put(memberId, inMap);
-    }
-    return inMap;
+  private StatefulGauge registerNonReplicatedEntries(final String memberId) {
+    return StatefulGauge.builder(LeaderMetricsDoc.NON_REPLICATED_ENTRIES.getName())
+        .description(LeaderMetricsDoc.NON_REPLICATED_ENTRIES.getDescription())
+        .tag(RaftKeyNames.FOLLOWER.asString(), memberId)
+        .tag(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
+        .register(meterRegistry);
+  }
+
+  @Override
+  public void close() {
+    meterRegistry.remove(commitRate);
+    meterRegistry.remove(nonCommittedEntriesValue);
+    appendLatency.values().forEach(meterRegistry::remove);
+    appendRate.values().forEach(meterRegistry::remove);
+    appendDataRate.values().forEach(meterRegistry::remove);
+    nonReplicatedEntries.values().forEach(meterRegistry::remove);
   }
 }
