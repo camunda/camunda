@@ -13,7 +13,7 @@ import {
   mockStatistics as mockDashboardStatistics,
   mockResponses as mockDashboardResponses,
 } from '../mocks/dashboard.mocks';
-import {URL_PATTERN} from '../constants';
+import {URL_API_PATTERN} from '../constants';
 
 test.beforeEach(async ({page, commonPage, context}) => {
   await commonPage.mockClientConfig(context);
@@ -23,7 +23,7 @@ test.beforeEach(async ({page, commonPage, context}) => {
 test.describe('self managed platform deployment', () => {
   test('view dashboard with no processes', async ({page, dashboardPage}) => {
     await page.route(
-      URL_PATTERN,
+      URL_API_PATTERN,
       mockDashboardResponses({
         statistics: {running: 0, withIncidents: 0, active: 0},
         incidentsByError: [],
@@ -40,7 +40,7 @@ test.describe('self managed platform deployment', () => {
 
   test('view dashboard with processes', async ({page, dashboardPage}) => {
     await page.route(
-      URL_PATTERN,
+      URL_API_PATTERN,
       mockDashboardResponses({
         statistics: mockDashboardStatistics,
         incidentsByError: mockIncidentsByError,

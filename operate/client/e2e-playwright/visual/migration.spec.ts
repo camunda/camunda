@@ -16,7 +16,7 @@ import {
   mockStatistics,
 } from '../mocks/processes.mocks';
 import {open} from 'modules/mocks/diagrams';
-import {URL_PATTERN} from '../constants';
+import {URL_API_PATTERN} from '../constants';
 import {clientConfigMock} from '../mocks/clientConfig';
 
 test.beforeEach(async ({context}) => {
@@ -50,7 +50,7 @@ test.describe('migration view', () => {
       }, theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           groupedProcesses: mockGroupedProcesses,
           batchOperations: mockBatchOperations,

@@ -15,7 +15,7 @@ import {
   mockResponses,
   runningInstance,
 } from '../mocks/processInstance';
-import {URL_PATTERN} from '../constants';
+import {URL_API_PATTERN} from '../constants';
 import {clientConfigMock} from '../mocks/clientConfig';
 
 test.beforeEach(async ({context}) => {
@@ -40,7 +40,7 @@ test.describe('process instance page', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: runningInstance.detail,
           xml: runningInstance.xml,
@@ -65,7 +65,7 @@ test.describe('process instance page', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: runningInstance.detail,
           flowNodeInstances: runningInstance.flowNodeInstances,
@@ -94,7 +94,7 @@ test.describe('process instance page', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: runningInstance.detail,
           flowNodeInstances: runningInstance.flowNodeInstances,
@@ -124,7 +124,7 @@ test.describe('process instance page', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: runningInstance.detail,
           flowNodeInstances: runningInstance.flowNodeInstances,
@@ -159,7 +159,7 @@ test.describe('process instance page', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: instanceWithIncident.detail,
           flowNodeInstances: instanceWithIncident.flowNodeInstances,
@@ -195,7 +195,7 @@ test.describe('process instance page', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: completedInstance.detail,
           flowNodeInstances: completedInstance.flowNodeInstances,
@@ -229,7 +229,7 @@ test.describe('process instance page', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        URL_PATTERN,
+        URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: compensationProcessInstance.detail,
           flowNodeInstances: compensationProcessInstance.flowNodeInstances,
