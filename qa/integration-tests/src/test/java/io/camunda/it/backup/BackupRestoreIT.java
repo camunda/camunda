@@ -9,6 +9,7 @@ package io.camunda.it.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import feign.FeignException.NotFound;
 import io.camunda.client.CamundaClient;
 import io.camunda.it.utils.MultiDbConfigurator;
 import io.camunda.management.backups.TakeBackupHistoryResponse;
@@ -127,13 +128,17 @@ public class BackupRestoreIT {
     final var snapshots = takeResponse.getScheduledSnapshots();
 
     Awaitility.await("Backup completed")
-        .pollDelay(Duration.ofSeconds(1))
         .atMost(Duration.ofSeconds(600))
         .untilAsserted(
             () -> {
-              final var backupResponse = historyBackupClient.getBackup(1L);
-              assertThat(backupResponse.getState()).isEqualTo(BackupStateDto.COMPLETED);
-              assertThat(backupResponse.getDetails()).allMatch(d -> d.getState().equals("SUCCESS"));
+              try {
+                final var backupResponse = historyBackupClient.getBackup(1L);
+                assertThat(backupResponse.getState()).isEqualTo(BackupStateDto.COMPLETED);
+                assertThat(backupResponse.getDetails())
+                    .allMatch(d -> d.getState().equals("SUCCESS"));
+              } catch (final NotFound e) {
+                throw new AssertionError("Backup not found:", e);
+              }
             });
 
     // when
