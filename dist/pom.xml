@@ -210,12 +210,6 @@
     </dependency>
 
     <dependency>
-      <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-registry-dynatrace</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-beans</artifactId>
     </dependency>
@@ -518,7 +512,6 @@
             <!-- Micrometer Exporters/Registries -->
             <dependency>io.micrometer:micrometer-registry-prometheus-simpleclient</dependency>
             <dependency>io.micrometer:micrometer-registry-otlp</dependency>
-            <dependency>io.micrometer:micrometer-registry-dynatrace</dependency>
           </usedDependencies>
         </configuration>
       </plugin>

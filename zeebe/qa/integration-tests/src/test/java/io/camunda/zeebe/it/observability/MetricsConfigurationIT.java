@@ -15,7 +15,6 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
-import io.micrometer.dynatrace.DynatraceMeterRegistry;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.micrometer.registry.otlp.OtlpMeterRegistry;
 import java.time.Duration;
@@ -102,30 +101,6 @@ final class MetricsConfigurationIT {
               () ->
                   assertThat(logLines)
                       .anyMatch(s -> s.contains("Name: zeebe.gateway.topology.partition.roles")));
-    }
-  }
-
-  @Nested
-  final class DynatraceIT {
-    @TestZeebe
-    private final TestStandaloneBroker broker =
-        new TestStandaloneBroker()
-            .withProperty("management.dynatrace.metrics.export.enabled", "true")
-            .withProperty("management.endpoint.prometheus.enabled", "false")
-            .withProperty("management.prometheus.metrics.export.enabled", "false");
-
-    @Test
-    void shouldUseDynatraceRegistryIfEnabled() {
-      // given / when
-      final var registry = broker.bean(MeterRegistry.class);
-
-      // then
-      assertThat(registry)
-          .as(
-              "should be directly a %s, otherwise it means multiple backends are enabled",
-              DynatraceMeterRegistry.class)
-          .isNotInstanceOf(CompositeMeterRegistry.class)
-          .isInstanceOf(DynatraceMeterRegistry.class);
     }
   }
 }
