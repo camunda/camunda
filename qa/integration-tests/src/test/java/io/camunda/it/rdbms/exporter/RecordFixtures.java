@@ -404,7 +404,7 @@ public class RecordFixtures {
                 .withOwnerType(ownerType)
                 .withResourceType(resourceType)
                 .withResourceId(resourceId)
-                .withAuthorizationPermissions(permissionTypes)
+                .withPermissionTypes(permissionTypes)
                 .build())
         .build();
   }

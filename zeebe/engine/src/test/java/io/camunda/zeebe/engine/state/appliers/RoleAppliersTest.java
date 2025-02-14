@@ -116,7 +116,7 @@ public class RoleAppliersTest {
             .setAuthorizationKey(1L)
             .setResourceId("role1")
             .setResourceType(AuthorizationResourceType.ROLE)
-            .setAuthorizationPermissions(Set.of(PermissionType.DELETE))
+            .setPermissionTypes(Set.of(PermissionType.DELETE))
             .setOwnerType(AuthorizationOwnerType.ROLE)
             .setOwnerId(roleId));
     authorizationState.create(
@@ -125,7 +125,7 @@ public class RoleAppliersTest {
             .setAuthorizationKey(2L)
             .setResourceId("role2")
             .setResourceType(AuthorizationResourceType.ROLE)
-            .setAuthorizationPermissions(Set.of(PermissionType.DELETE))
+            .setPermissionTypes(Set.of(PermissionType.DELETE))
             .setOwnerType(AuthorizationOwnerType.ROLE)
             .setOwnerId(roleId));
 

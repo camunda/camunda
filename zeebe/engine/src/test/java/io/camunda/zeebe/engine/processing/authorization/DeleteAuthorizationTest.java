@@ -31,8 +31,6 @@ public class DeleteAuthorizationTest {
         engine
             .authorization()
             .newAuthorization()
-            // TODO: remove with https://github.com/camunda/camunda/issues/26883
-            .withOwnerKey(1L)
             .withOwnerId("ownerId")
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceId("resourceId")
