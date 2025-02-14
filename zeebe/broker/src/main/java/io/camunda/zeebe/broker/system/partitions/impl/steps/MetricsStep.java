@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 
 public final class MetricsStep implements PartitionTransitionStep {
@@ -32,7 +33,8 @@ public final class MetricsStep implements PartitionTransitionStep {
   public ActorFuture<Void> transitionTo(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     final var startupMeterRegistry = context.getPartitionStartupMeterRegistry();
-    final var transitionRegistry = MicrometerUtil.wrap(startupMeterRegistry);
+    final var transitionRegistry =
+        MicrometerUtil.wrap(startupMeterRegistry, PartitionKeyNames.tags(context.getPartitionId()));
 
     context.setPartitionTransitionMeterRegistry(transitionRegistry);
     return context.getConcurrencyControl().createCompletedFuture();

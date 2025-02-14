@@ -199,7 +199,7 @@
     <!-- Micrometer backend/implementations -->
     <dependency>
       <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-registry-prometheus</artifactId>
+      <artifactId>micrometer-registry-prometheus-simpleclient</artifactId>
       <scope>runtime</scope>
     </dependency>
 
@@ -516,7 +516,7 @@
             <dependency>org.bouncycastle:bcpkix-jdk18on</dependency>
 
             <!-- Micrometer Exporters/Registries -->
-            <dependency>io.micrometer:micrometer-registry-prometheus</dependency>
+            <dependency>io.micrometer:micrometer-registry-prometheus-simpleclient</dependency>
             <dependency>io.micrometer:micrometer-registry-otlp</dependency>
             <dependency>io.micrometer:micrometer-registry-dynatrace</dependency>
           </usedDependencies>

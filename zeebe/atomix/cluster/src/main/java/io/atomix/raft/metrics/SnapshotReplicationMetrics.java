@@ -17,19 +17,30 @@ package io.atomix.raft.metrics;
 
 import static io.atomix.raft.metrics.SnapshotReplicationMetricsDoc.*;
 
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class SnapshotReplicationMetrics extends RaftMetrics {
+public class SnapshotReplicationMetrics extends RaftMetrics implements CloseableSilently {
 
+  private final CompositeMeterRegistry meterRegistry;
   private final AtomicLong count;
   private final AtomicLong duration;
 
-  public SnapshotReplicationMetrics(final String partitionName, final MeterRegistry meterRegistry) {
+  public SnapshotReplicationMetrics(
+      final String partitionName, final MeterRegistry wrappedRegistry) {
     super(partitionName);
-    Objects.requireNonNull(meterRegistry, "meterRegistry cannot be null");
+
+    meterRegistry =
+        MicrometerUtil.wrap(
+            Objects.requireNonNull(wrappedRegistry, "meterRegistry cannot be null"),
+            Tags.of(PartitionKeyNames.PARTITION.asString(), partition));
 
     count = new AtomicLong(0L);
     Gauge.builder(COUNT.getName(), count::get)
@@ -58,5 +69,10 @@ public class SnapshotReplicationMetrics extends RaftMetrics {
 
   public void observeDuration(final long durationMillis) {
     duration.set(durationMillis);
+  }
+
+  @Override
+  public void close() {
+    MicrometerUtil.discard(meterRegistry);
   }
 }

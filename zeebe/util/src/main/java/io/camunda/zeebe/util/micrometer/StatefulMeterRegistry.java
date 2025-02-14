@@ -33,9 +33,23 @@ import net.jcip.annotations.ThreadSafe;
 public final class StatefulMeterRegistry extends CompositeMeterRegistry {
   private final ConcurrentMap<Meter.Id, StatefulGauge> gauges = new ConcurrentHashMap<>();
 
-  public StatefulMeterRegistry(final MeterRegistry wrapped) {
+  public StatefulMeterRegistry() {
     super();
+  }
+
+  /**
+   * Wraps a given meter registry, applying the given tags to this registry.
+   *
+   * <p>NOTE: Micrometer doesn't forward tags more than one level down when nesting composite meter
+   * registries, so make sure to always re-apply your tags.
+   *
+   * @param wrapped the registry to forward to
+   * @param tags the tags to apply on this registry
+   */
+  public StatefulMeterRegistry(final MeterRegistry wrapped, final Tags tags) {
+    this();
     add(wrapped);
+    config().commonTags(tags);
   }
 
   /**

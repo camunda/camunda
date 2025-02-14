@@ -12,6 +12,7 @@ import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.Builder;
 import io.micrometer.core.instrument.Timer.Sample;
@@ -93,15 +94,22 @@ public final class MicrometerUtil {
 
   /**
    * Returns a {@link CompositeMeterRegistry} using the same config as the given registry, which
-   * will forward all metrics to that registry. This means if the forwardee has some common tags,
-   * they will be applied to the metrics you create on the returned registry.
+   * will forward all metrics to that registry.
+   *
+   * <p>NOTE: Micrometer does not support forwarding tags more than two levels down, so you always
+   * have to specify the tags again on every wrapped registry!
    */
-  public static CompositeMeterRegistry wrap(final MeterRegistry registry) {
-    return new CompositeMeterRegistry(registry.config().clock(), Collections.singleton(registry));
+  public static CompositeMeterRegistry wrap(final MeterRegistry wrapped, final Tags tags) {
+    final var registry =
+        wrapped != null
+            ? new CompositeMeterRegistry(wrapped.config().clock(), Collections.singleton(wrapped))
+            : new CompositeMeterRegistry();
+    registry.config().commonTags(tags);
+    return registry;
   }
 
   /** Returns a timer builder pre-configured based on the given documentation. */
-  public static Timer.Builder timer(final ExtendedMeterDocumentation documentation) {
+  public static Timer.Builder buildTimer(final ExtendedMeterDocumentation documentation) {
     return Timer.builder(documentation.getName())
         .description(documentation.getDescription())
         .serviceLevelObjectives(documentation.getTimerSLOs());
@@ -183,6 +191,10 @@ public final class MicrometerUtil {
       public String asString() {
         return "partition";
       }
+    };
+
+    public static Tags tags(final int partitionId) {
+      return Tags.of(PARTITION.asString(), String.valueOf(partitionId));
     }
   }
 }

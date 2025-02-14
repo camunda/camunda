@@ -31,8 +31,8 @@ public class CheckpointMetrics {
         .description(CHECKPOINT_POSITION.getDescription())
         .register(meterRegistry);
 
-    Gauge.builder(CHECKPOINT_POSITION.getName(), checkpointPosition::get)
-        .description(CHECKPOINT_POSITION.getDescription())
+    Gauge.builder(CHECKPOINT_ID.getName(), checkpointId::get)
+        .description(CHECKPOINT_ID.getDescription())
         .register(meterRegistry);
   }
 

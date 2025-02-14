@@ -136,6 +136,16 @@ public enum ExporterMetricsDoc implements ExtendedMeterDocumentation {
     }
   };
 
+  public enum ExporterContainerKeyNames implements KeyName {
+    /** Identifies which exporter is emitting a metric */
+    EXPORTER_ID {
+      @Override
+      public String asString() {
+        return "exporterId";
+      }
+    }
+  }
+
   enum ExporterActionKeyNames implements KeyName {
     SKIPPED {
       @Override

@@ -23,8 +23,8 @@ import io.camunda.zeebe.db.impl.DbByte;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.StatefulMeterRegistryProvider;
 import io.camunda.zeebe.util.ByteValue;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Properties;
@@ -89,7 +89,7 @@ final class ZeebeRocksDbFactoryTest {
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            new SimpleMeterRegistry());
+            StatefulMeterRegistryProvider.defaultProvider());
 
     // when
     final var defaults = factoryWithDefaults.createColumnFamilyOptions(new ArrayList<>());
@@ -123,7 +123,7 @@ final class ZeebeRocksDbFactoryTest {
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            new SimpleMeterRegistry());
+            StatefulMeterRegistryProvider.defaultProvider());
 
     // expect
     //noinspection resource

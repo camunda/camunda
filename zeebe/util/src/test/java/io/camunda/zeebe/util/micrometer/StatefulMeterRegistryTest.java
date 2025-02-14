@@ -14,12 +14,18 @@ import io.micrometer.core.instrument.Meter.Type;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 final class StatefulMeterRegistryTest {
 
   private final MeterRegistry wrapped = new SimpleMeterRegistry();
-  private final StatefulMeterRegistry registry = new StatefulMeterRegistry(wrapped);
+  private final StatefulMeterRegistry registry = new StatefulMeterRegistry();
+
+  @BeforeEach
+  void beforeEach() {
+    registry.add(wrapped);
+  }
 
   @AfterEach
   void afterEach() {

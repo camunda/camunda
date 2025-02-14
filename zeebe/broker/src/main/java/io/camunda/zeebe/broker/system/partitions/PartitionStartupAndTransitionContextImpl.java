@@ -46,10 +46,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthMonitor;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tags;
-import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -152,10 +149,7 @@ public class PartitionStartupAndTransitionContextImpl
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
     this.topologyManager = topologyManager;
-    this.startupMeterRegistry = new CompositeMeterRegistry().add(startupMeterRegistry);
-    this.startupMeterRegistry
-        .config()
-        .commonTags(Tags.of(PartitionKeyNames.PARTITION.asString(), String.valueOf(partitionId)));
+    this.startupMeterRegistry = startupMeterRegistry;
   }
 
   public PartitionAdminControl getPartitionAdminControl() {

@@ -19,8 +19,8 @@ import io.micrometer.dynatrace.DynatraceMeterRegistry;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.micrometer.registry.otlp.OtlpMeterRegistry;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -60,7 +60,7 @@ final class MetricsConfigurationIT {
   @SuppressWarnings("resource")
   @Nested
   final class OtlpIT {
-    private final List<String> logLines = new ArrayList<>();
+    private final List<String> logLines = new CopyOnWriteArrayList<>();
 
     @Container
     private final GenericContainer<?> otelCollector =
