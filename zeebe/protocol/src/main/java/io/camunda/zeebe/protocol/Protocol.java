@@ -86,6 +86,10 @@ public final class Protocol {
   public static final String USER_TASK_CANDIDATE_USERS_HEADER_NAME =
       RESERVED_HEADER_NAME_PREFIX + "candidateUsers";
 
+  /** Task header key used for changed attributes in user task */
+  public static final String USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME =
+      RESERVED_HEADER_NAME_PREFIX + "changedAttributes";
+
   /** Task header key used for due date */
   public static final String USER_TASK_DUE_DATE_HEADER_NAME =
       RESERVED_HEADER_NAME_PREFIX + "dueDate";
