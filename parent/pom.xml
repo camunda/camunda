@@ -76,7 +76,7 @@
     <version.objenesis>3.3</version.objenesis>
     <version.opensearch>2.5.0</version.opensearch>
     <version.opensearch.testcontainers>2.0.2</version.opensearch.testcontainers>
-    <version.prometheus>1.2.1</version.prometheus>
+    <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.25.6</version.protobuf>
     <version.protobuf-common>2.37.1</version.protobuf-common>
     <version.micrometer>1.13.11</version.micrometer>
@@ -921,10 +921,14 @@
 
       <dependency>
         <groupId>io.prometheus</groupId>
-        <artifactId>prometheus-metrics-bom</artifactId>
+        <artifactId>simpleclient</artifactId>
         <version>${version.prometheus}</version>
-        <type>pom</type>
-        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.prometheus</groupId>
+        <artifactId>simpleclient_httpserver</artifactId>
+        <version>${version.prometheus}</version>
       </dependency>
 
       <dependency>
