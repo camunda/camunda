@@ -151,7 +151,8 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
             .getBrokerConfiguration()
             .getExperimental()
             .getFeatures()
-            .isEnablePartitionScaling());
+            .isEnablePartitionScaling(),
+        brokerStartupContext.getMeterRegistry());
   }
 
   private ClusterConfigurationGossiperConfig getDefaultClusterConfigurationGossiperConfig() {

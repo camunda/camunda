@@ -26,6 +26,8 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -37,6 +39,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -46,6 +49,7 @@ class ClusterConfigurationManagementIntegrationTest {
   @TempDir Path rootDir;
 
   private final ActorScheduler actorScheduler = ActorScheduler.newActorScheduler().build();
+  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   private final List<Node> clusterNodes =
       List.of(createNode("0"), createNode("1"), createNode("2"));
@@ -250,7 +254,8 @@ class ClusterConfigurationManagementIntegrationTest {
             cluster.getMembershipService(),
             new ClusterConfigurationGossiperConfig(
                 true, Duration.ofSeconds(1), Duration.ofMillis(100), 2),
-            true);
+            true,
+            meterRegistry);
     return new TestNode(cluster, service);
   }
 
