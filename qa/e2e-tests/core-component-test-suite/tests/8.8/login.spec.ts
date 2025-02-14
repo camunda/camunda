@@ -1,8 +1,8 @@
 import {test} from '@fixtures/8.8';
-import {navigateToApp} from '@pages/8.7/UtilitiesPage';
+import {navigateToApp} from '@pages/8.8/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 
-test.skip('Login Tests', () => {
+test.describe('Login Tests', () => {
   test.afterEach(async ({page}, testInfo) => {
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
