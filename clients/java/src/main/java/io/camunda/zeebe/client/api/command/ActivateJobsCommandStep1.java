@@ -20,7 +20,7 @@ import java.time.Duration;
 import java.util.List;
 
 /**
- * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
  *     io.camunda.client.api.command.ActivateJobsCommandStep1}
  */
 @Deprecated
@@ -36,7 +36,7 @@ public interface ActivateJobsCommandStep1
   ActivateJobsCommandStep2 jobType(String jobType);
 
   /**
-   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
    *     io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep2}
    */
   @Deprecated
@@ -53,7 +53,7 @@ public interface ActivateJobsCommandStep1
   }
 
   /**
-   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
    *     io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3}
    */
   @Deprecated

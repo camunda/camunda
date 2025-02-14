@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -30,6 +31,7 @@ public class AuthorizationCreateProcessor
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final PermissionsBehavior permissionsBehavior;
+  private final UserState userState;
 
   public AuthorizationCreateProcessor(
       final Writers writers,
@@ -43,6 +45,7 @@ public class AuthorizationCreateProcessor
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     permissionsBehavior = new PermissionsBehavior(processingState, authCheckBehavior);
+    userState = processingState.getUserState();
   }
 
   @Override
@@ -56,9 +59,9 @@ public class AuthorizationCreateProcessor
                     record.getAuthorizationPermissions(),
                     record.getResourceType(),
                     "Expected to create authorization with permission types '%s' and resource type '%s', but these permissions are not supported. Supported permission types are: '%s'"))
-        .flatMap(permissionsBehavior::authorizationAlreadyExists)
+        .flatMap(permissionsBehavior::permissionsAlreadyExist)
         .ifRightOrLeft(
-            authorizationRecord -> writeEventAndDistribute(command, authorizationRecord),
+            authorizationRecord -> writeEventAndDistribute(command, command.getValue()),
             (rejection) -> {
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
               responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
@@ -68,7 +71,7 @@ public class AuthorizationCreateProcessor
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
     permissionsBehavior
-        .authorizationAlreadyExists(command.getValue())
+        .permissionsAlreadyExist(command.getValue())
         .ifRightOrLeft(
             ignored ->
                 stateWriter.appendFollowUpEvent(

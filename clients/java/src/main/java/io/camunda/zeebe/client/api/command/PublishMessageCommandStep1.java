@@ -21,7 +21,7 @@ import java.time.Duration;
 import java.util.Map;
 
 /**
- * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
  *     io.camunda.client.api.command.PublishMessageCommandStep1}
  */
 @Deprecated
@@ -37,7 +37,7 @@ public interface PublishMessageCommandStep1
   PublishMessageCommandStep2 messageName(String messageName);
 
   /**
-   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
    *     io.camunda.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep2}
    */
   @Deprecated
@@ -67,7 +67,7 @@ public interface PublishMessageCommandStep1
   }
 
   /**
-   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
    *     io.camunda.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep3}
    */
   @Deprecated

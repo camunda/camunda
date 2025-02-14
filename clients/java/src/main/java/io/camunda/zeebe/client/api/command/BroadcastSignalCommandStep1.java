@@ -20,7 +20,7 @@ import java.io.InputStream;
 import java.util.Map;
 
 /**
- * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
  *     io.camunda.client.api.command.BroadcastSignalCommandStep1}
  */
 @Deprecated
@@ -36,7 +36,7 @@ public interface BroadcastSignalCommandStep1
   BroadcastSignalCommandStep2 signalName(String signalName);
 
   /**
-   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
    *     io.camunda.client.api.command.BroadcastSignalCommandStep1.BroadcastSignalCommandStep2}
    */
   @Deprecated

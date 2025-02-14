@@ -550,8 +550,6 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-
-  /tenants/{tenantKey}/users/{userKey}:
     delete:
       tags:
         - Tenant
@@ -559,13 +557,13 @@ paths:
       summary: Remove a user from a tenant
       description: Removes a single user from a specified tenant without deleting the user.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.
           schema:
             type: string
-        - name: userKey
+        - name: username
           in: path
           required: true
           description: The unique identifier of the user.
@@ -591,6 +589,41 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+
+  /tenants/{tenantId}/users/search:
+    post:
+      tags:
+        - Tenant
+        - User
+      operationId: searchUsersForTenant
+      summary: Query users for tenant
+      description: Retrieves a filtered and sorted list of users for a specified tenant.
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserSearchQueryRequest"
+      responses:
+        "200":
+          description: The search result of users for the tenant.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSearchResult"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/UserSearchResult"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/UserSearchResult"
 
   /tenants/{tenantKey}/mapping-rules/{mappingKey}:
     put:
@@ -5420,22 +5453,15 @@ components:
     UserUpdateRequest:
       type: object
       properties:
-        changeset:
-          $ref: "#/components/schemas/UserChangeset"
-    UserChangeset:
-      description: |
-        JSON object with changed user attribute values.
-      type: object
-      properties:
-        name:
-          type: string
-          description: The new name of the user.
-        email:
-          type: string
-          description: The new email of the user.
         password:
-          type: string
-          description: The new password of the user.
+          description: The password of the user.
+          type: "string"
+        name:
+          description: The name of the user.
+          type: "string"
+        email:
+          description: The email of the user.
+          type: "string"
     RoleCreateRequest:
       type: "object"
       properties:
@@ -5617,11 +5643,15 @@ components:
         name:
           type: string
           description: The name of the mapping.
+        id:
+          type: string
+          description: The unique external id of the mapping.
       required:
         - claimName
         - claimValue
         - name
-    MappingRuleCreateResult:
+        - id
+    MappingRuleCreateResponseBase:
       type: object
       properties:
         claimName:
@@ -5633,6 +5663,23 @@ components:
         name:
           type: string
           description: The name of the mapping.
+        id:
+          type: string
+          description: The unique external id of the mapping.
+    MappingRuleCreateResponse:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/MappingRuleCreateResponseBase"
+      properties:
+        mappingKey:
+          description: The key of the created mapping rule.
+          type: integer
+          format: int64
+    MappingRuleCreateResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/MappingRuleCreateResponseBase"
+      properties:
         mappingKey:
           description: The key of the created mapping rule.
           type: string

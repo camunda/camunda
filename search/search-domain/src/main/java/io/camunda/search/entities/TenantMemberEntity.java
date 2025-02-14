@@ -5,6 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.state.authorization;
+package io.camunda.search.entities;
 
-public record AuthorizationKey(Long ownerKey, String resourceType) {}
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.zeebe.protocol.record.value.EntityType;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record TenantMemberEntity(String id, EntityType entityType) {}

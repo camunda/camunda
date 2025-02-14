@@ -636,11 +636,12 @@ public class UserTaskHandlerTest {
             ValueType.USER_TASK,
             r ->
                 r.withIntent(UserTaskIntent.MIGRATED)
+                    .withKey(111)
                     .withValue(taskRecordValue)
                     .withTimestamp(System.currentTimeMillis()));
 
     // when
-    final TaskEntity taskEntity = new TaskEntity().setId(String.valueOf(123L));
+    final TaskEntity taskEntity = new TaskEntity().setId(String.valueOf(111L));
     underTest.updateEntity(taskRecord, taskEntity);
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -660,11 +661,7 @@ public class UserTaskHandlerTest {
     assertThat(taskEntity.getBpmnProcessId()).isEqualTo(taskRecordValue.getBpmnProcessId());
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
-            taskEntity.getId(),
-            taskEntity,
-            expectedUpdates,
-            taskEntity.getProcessInstanceId());
+            indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 
   @Test
@@ -682,6 +679,7 @@ public class UserTaskHandlerTest {
             ValueType.USER_TASK,
             r ->
                 r.withIntent(UserTaskIntent.ASSIGNED)
+                    .withKey(123)
                     .withValue(taskRecordValue)
                     .withTimestamp(System.currentTimeMillis()));
 
@@ -722,6 +720,7 @@ public class UserTaskHandlerTest {
             ValueType.USER_TASK,
             r ->
                 r.withIntent(UserTaskIntent.ASSIGNED)
+                    .withKey(123)
                     .withValue(taskRecordValue)
                     .withTimestamp(System.currentTimeMillis()));
 
@@ -870,6 +869,7 @@ public class UserTaskHandlerTest {
             ValueType.USER_TASK,
             r ->
                 r.withIntent(UserTaskIntent.UPDATED)
+                    .withKey(111)
                     .withValue(taskRecordValue)
                     .withTimestamp(System.currentTimeMillis()));
 
@@ -885,11 +885,12 @@ public class UserTaskHandlerTest {
             ValueType.USER_TASK,
             r ->
                 r.withIntent(UserTaskIntent.ASSIGNED)
+                    .withKey(111)
                     .withValue(assignTaskRecordValue)
                     .withTimestamp(System.currentTimeMillis()));
 
     // when
-    final TaskEntity taskEntity = underTest.createNewEntity(String.valueOf(123));
+    final TaskEntity taskEntity = underTest.createNewEntity(String.valueOf(111));
     underTest.updateEntity(taskRecord, taskEntity);
     underTest.updateEntity(assignTaskRecord, taskEntity);
 
@@ -906,10 +907,6 @@ public class UserTaskHandlerTest {
     assertThat(taskEntity.getAssignee()).isEqualTo(assignTaskRecordValue.getAssignee());
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
-            taskEntity.getId(),
-            taskEntity,
-            expectedUpdates,
-            taskEntity.getProcessInstanceId());
+            indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 }

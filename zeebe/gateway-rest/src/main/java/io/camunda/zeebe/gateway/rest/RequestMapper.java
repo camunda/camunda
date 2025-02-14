@@ -87,7 +87,6 @@ import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserChangeset;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
@@ -188,12 +187,14 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, UserDTO> toUserUpdateRequest(
       final UserUpdateRequest updateRequest, final String username) {
-    final UserChangeset changeset = updateRequest.getChangeset();
     return getResult(
         validateUserUpdateRequest(updateRequest),
         () ->
             new UserDTO(
-                username, changeset.getName(), changeset.getEmail(), changeset.getPassword()));
+                username,
+                updateRequest.getName(),
+                updateRequest.getEmail(),
+                updateRequest.getPassword()));
   }
 
   public static Either<ProblemDetail, Long> getPinnedEpoch(final ClockPinRequest pinRequest) {
@@ -435,7 +436,12 @@ public class RequestMapper {
       final MappingRuleCreateRequest request) {
     return getResult(
         validateMappingRequest(request),
-        () -> new MappingDTO(request.getClaimName(), request.getClaimValue(), request.getName()));
+        () ->
+            new MappingDTO(
+                request.getClaimName(),
+                request.getClaimValue(),
+                request.getName(),
+                request.getId()));
   }
 
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(

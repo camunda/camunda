@@ -359,7 +359,8 @@ public class ClusteringRule extends ExternalResource {
                 actorClockConfiguration)
             .scheduler();
 
-    final var dynamicClusterServices = new DynamicClusterServices(scheduler, atomixCluster);
+    final var dynamicClusterServices =
+        new DynamicClusterServices(scheduler, atomixCluster, meterRegistry);
     final var topologyManager = dynamicClusterServices.brokerTopologyManager();
 
     final var brokerClientConfig = brokerSpringConfig.brokerClientConfig();
@@ -490,7 +491,8 @@ public class ClusteringRule extends ExternalResource {
     final var atomixCluster = clusterConfiguration.atomixCluster();
     atomixCluster.start().join();
 
-    final var dynamicClusterServices = new DynamicClusterServices(actorScheduler, atomixCluster);
+    final var dynamicClusterServices =
+        new DynamicClusterServices(actorScheduler, atomixCluster, meterRegistry);
     final var topologyManager = dynamicClusterServices.brokerTopologyManager();
 
     final var brokerClientConfig = config.brokerClientConfig();

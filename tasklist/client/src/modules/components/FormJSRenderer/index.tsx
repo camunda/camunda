@@ -16,7 +16,7 @@ import {usePrefersReducedMotion} from 'modules/hooks/usePrefersReducedMotion';
 import styles from './styles.module.scss';
 import '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css';
 import '@bpmn-io/form-js-carbon-styles/src/carbon-styles.scss';
-import type {FileUploadMetadata} from 'modules/mutations/useUploadDocuments';
+import type {SuccessDocument} from 'modules/mutations/useUploadDocuments';
 import set from 'lodash/set';
 import {api} from 'modules/api';
 import {FormLevelErrorMessage} from './FormLevelErrorMessage';
@@ -34,7 +34,7 @@ type Props = {
   handleSubmit: (variables: Variable[]) => Promise<void>;
   handleFileUpload?: (
     files: Map<string, File[]>,
-  ) => Promise<Map<string, FileUploadMetadata[]>>;
+  ) => Promise<Map<string, SuccessDocument[]>>;
   schema: string;
   data?: Record<string, unknown>;
   readOnly?: boolean;
@@ -149,7 +149,7 @@ function extractFilePath(data: object, path: string = ''): Map<string, string> {
 
 function injectFileMetadataIntoData(options: {
   data: Record<string, unknown>;
-  fileMetadata: Map<string, FileUploadMetadata[]>;
+  fileMetadata: Map<string, SuccessDocument[]>;
   pathsToInject: Map<string, string>;
 }): Record<string, unknown> {
   const {data, fileMetadata, pathsToInject} = options;

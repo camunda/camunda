@@ -52,5 +52,6 @@ erDiagram
   Mapping ||--o{ Authorization: "granted"
   Mapping }o..o{ Role: "assigned"
   Mapping }o..o{ Group: "member"
+  Role }o--o{ Tenant: "assigned"
 ```
 

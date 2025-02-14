@@ -13,9 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.filter.builder;
+package io.camunda.client.impl.response;
 
-import io.camunda.client.protocol.rest.BasicStringFilterProperty;
+import io.camunda.client.api.response.CreateAuthorizationResponse;
+import io.camunda.client.protocol.rest.AuthorizationCreateResult;
 
-public interface BasicStringProperty
-    extends PropertyBase<String, BasicStringFilterProperty, BasicStringProperty> {}
+public class CreateAuthorizationResponseImpl implements CreateAuthorizationResponse {
+
+  private long authorizationKey;
+
+  @Override
+  public long getAuthorizationKey() {
+    return authorizationKey;
+  }
+
+  public CreateAuthorizationResponseImpl setResponse(final AuthorizationCreateResult response) {
+    authorizationKey = Long.parseLong(response.getAuthorizationKey());
+    return this;
+  }
+}

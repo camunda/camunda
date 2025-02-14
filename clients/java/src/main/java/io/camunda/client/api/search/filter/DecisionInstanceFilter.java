@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.search.filter;
 
-import io.camunda.client.api.search.filter.builder.BasicStringProperty;
+import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 import io.camunda.client.api.search.response.DecisionDefinitionType;
@@ -52,8 +52,8 @@ public interface DecisionInstanceFilter extends SearchRequestFilter {
   /** Filter by decisionDefinitionKey */
   DecisionInstanceFilter decisionDefinitionKey(long decisionDefinitionKey);
 
-  /** Filter by decisionDefinitionKey using {@link BasicStringProperty} consumer */
-  DecisionInstanceFilter decisionDefinitionKey(Consumer<BasicStringProperty> fn);
+  /** Filter by decisionDefinitionKey using {@link BasicLongProperty} consumer */
+  DecisionInstanceFilter decisionDefinitionKey(Consumer<BasicLongProperty> fn);
 
   /** Filter by decisionDefinitionId */
   DecisionInstanceFilter decisionDefinitionId(String decisionDefinitionId);

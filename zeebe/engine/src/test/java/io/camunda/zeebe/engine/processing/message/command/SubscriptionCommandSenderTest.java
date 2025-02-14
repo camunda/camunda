@@ -361,6 +361,7 @@ public class SubscriptionCommandSenderTest {
 
     // when
     subscriptionCommandSender.correlateMessageSubscription(
+        -1,
         DIFFERENT_PARTITION,
         DIFFERENT_RECEIVER_PARTITION_KEY,
         DEFAULT_ELEMENT_INSTANCE_KEY,
@@ -379,6 +380,7 @@ public class SubscriptionCommandSenderTest {
 
     // when
     subscriptionCommandSender.correlateMessageSubscription(
+        -1,
         SAME_PARTITION,
         DIFFERENT_RECEIVER_PARTITION_KEY,
         DEFAULT_ELEMENT_INSTANCE_KEY,

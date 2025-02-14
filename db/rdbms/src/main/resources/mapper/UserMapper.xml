@@ -12,19 +12,26 @@
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.UserDbQuery">
     SELECT COUNT(*)
-    FROM ${prefix}USERS
+    FROM ${prefix}USERS t
+    <if test="filter.tenantId != null">
+      JOIN ${prefix}TENANT_MEMBER tm ON t.USERNAME = tm.ENTITY_ID
+    </if>
     <include refid="io.camunda.db.rdbms.sql.UserMapper.searchFilter"/>
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.UserDbQuery"
     resultMap="io.camunda.db.rdbms.sql.UserMapper.searchResultMap">
-    SELECT * FROM (
+    SELECT
+    * FROM (
     SELECT USER_KEY,
     USERNAME,
     NAME,
     EMAIL,
     PASSWORD
-    FROM ${prefix}USERS
+    FROM ${prefix}USERS t
+    <if test="filter.tenantId != null">
+    JOIN ${prefix}TENANT_MEMBER tm ON t.USERNAME = tm.ENTITY_ID
+    </if>
     <include refid="io.camunda.db.rdbms.sql.UserMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -35,10 +42,11 @@
   <sql id="searchFilter">
     WHERE 1 = 1
     <!-- basic filters -->
-    <if test="filter.key != null">AND USER_KEY = #{filter.key}</if>
-    <if test="filter.username != null">AND USERNAME = #{filter.username}</if>
-    <if test="filter.name != null">AND NAME = #{filter.name}</if>
-    <if test="filter.email != null">AND EMAIL = #{filter.email}</if>
+    <if test="filter.key != null">AND t.USER_KEY = #{filter.key}</if>
+    <if test="filter.username != null">AND t.USERNAME = #{filter.username}</if>
+    <if test="filter.name != null">AND t.NAME = #{filter.name}</if>
+    <if test="filter.email != null">AND t.EMAIL = #{filter.email}</if>
+    <if test="filter.tenantId != null">AND tm.TENANT_ID = #{filter.tenantId}</if>
   </sql>
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.UserEntity">
