@@ -69,6 +69,7 @@ public class CamundaExporter implements Exporter {
   private BackgroundTaskManager taskManager;
   private ExporterMetadata metadata;
   private boolean exporterCanFlush = false;
+  private boolean zeebeIndicesExist = false;
   private SearchEngineClient searchEngineClient;
   private int partitionId;
 
@@ -291,11 +292,13 @@ public class CamundaExporter implements Exporter {
                   d -> d instanceof ImportPositionIndex || d instanceof TasklistImportPositionIndex)
               .toList();
 
-      final var zeebeIndicesExist =
-          !searchEngineClient
-              .getMappings(
-                  configuration.getIndex().getZeebeIndexPrefix() + "*", MappingSource.INDEX)
-              .isEmpty();
+      if (!zeebeIndicesExist) {
+        zeebeIndicesExist =
+            !searchEngineClient
+                .getMappings(
+                    configuration.getIndex().getZeebeIndexPrefix() + "*", MappingSource.INDEX)
+                .isEmpty();
+      }
 
       exporterCanFlush =
           !zeebeIndicesExist
