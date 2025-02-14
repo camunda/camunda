@@ -6,62 +6,97 @@
  * You may not use this file except in compliance with the Camunda License 1.0.
  */
 import { FC, useState } from "react";
-import { Dropdown } from "@carbon/react";
+import { Dropdown, CheckboxGroup, Checkbox } from "@carbon/react";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
-import { FormModal, UseModalProps } from "src/components/modal";
-import { createAuthorization } from "src/utility/api/authorizations";
+import { FormModal, UseEntityModalProps } from "src/components/modal";
+import {
+  Authorization,
+  createAuthorization,
+  OwnerType,
+  PermissionTypes,
+  ResourceType,
+} from "src/utility/api/authorizations";
 import { useNotifications } from "src/components/notifications";
+import TextField from "src/components/form/TextField";
+import { DocumentationLink } from "src/components/documentation";
 import {
   Row,
   Divider,
   TextFieldContainer,
   PermissionsSectionLabel,
 } from "./components";
-import TextField from "src/components/form/TextField";
-import { ResourceType } from "src/pages/users/detail/authorization/PatchModal";
-import { DocumentationLink } from "src/components/documentation";
-import { CheckboxGroup } from "@carbon/react";
-import { Checkbox } from "@carbon/react";
 
-export enum OwnerType {
-  USER = "User",
-}
+type ResourcePermissionsType = {
+  [key in keyof typeof ResourceType]: Authorization["permissionTypes"];
+};
 
-const AddAuthorizationModal: FC<UseModalProps> = ({
+const resourcePermissions: ResourcePermissionsType = {
+  APPLICATION: ["ACCESS"],
+  AUTHORIZATION: ["UPDATE", "CREATE", "READ", "DELETE"],
+  BATCH: ["CREATE", "READ", "DELETE"],
+  DECISION_DEFINITION: [
+    "DELETE_DECISION_INSTANCE",
+    "CREATE_DECISION_INSTANCE",
+    "READ_DECISION_INSTANCE",
+    "READ_DECISION_DEFINITION",
+  ],
+  DECISION_REQUIREMENTS_DEFINITION: ["UPDATE", "READ", "DELETE"],
+  RESOURCE: ["CREATE", "DELETE_DRD", "DELETE_PROCESS", "DELETE_FORM"],
+  GROUP: ["UPDATE", "CREATE", "READ", "DELETE"],
+  MAPPING_RULE: ["UPDATE", "CREATE", "READ", "DELETE"],
+  MESSAGE: ["CREATE", "READ"],
+  PROCESS_DEFINITION: [
+    "CREATE_PROCESS_INSTANCE",
+    "DELETE_PROCESS_INSTANCE",
+    "UPDATE_USER_TASK",
+    "READ_PROCESS_INSTANCE",
+    "READ_USER_TASK",
+    "UPDATE_PROCESS_INSTANCE",
+    "READ_PROCESS_DEFINITION",
+  ],
+  ROLE: ["UPDATE", "CREATE", "READ", "DELETE"],
+  SYSTEM: ["UPDATE", "READ"],
+  TENANT: ["UPDATE", "CREATE", "READ", "DELETE"],
+  USER: ["UPDATE", "CREATE", "READ", "DELETE"],
+};
+
+const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
   open,
   onClose,
   onSuccess,
+  entity: defaultResourceType,
 }) => {
-  const { t } = useTranslate("authorizations");
+  const { t, Translate } = useTranslate("authorizations");
   const { enqueueNotification } = useNotifications();
-  const [apiCall, { loading, namedErrors }] = useApiCall(createAuthorization);
-  const [ownerType, setOwnerType] = useState("");
+  const [apiCall, { loading }] = useApiCall(createAuthorization);
+  const [ownerType, setOwnerType] = useState<OwnerType>(OwnerType.USER);
   const [ownerId, setOwnerId] = useState("");
   const [resourceId, setResourceId] = useState("");
-  const [resourceType, setResourceType] = useState("");
-  const [permissions, setPermissions] = useState<string[]>([]);
+  const [resourceType, setResourceType] =
+    useState<ResourceType>(defaultResourceType);
+  const [permissionTypes, setPermissionTypes] = useState<
+    Authorization["permissionTypes"]
+  >([]);
 
   const ownerTypeItems = Object.values(OwnerType);
   const resourceTypeItems = Object.values(ResourceType);
-  const submitDisabled = loading;
 
-  const handleChangeCheckbox = (checked: boolean, id: string) => {
+  const handleChangeCheckbox = (checked: boolean, id: PermissionTypes) => {
     if (checked) {
-      setPermissions([...permissions, id]);
+      setPermissionTypes([...permissionTypes, id]);
     } else {
-      setPermissions(permissions.filter((p) => p !== id));
+      setPermissionTypes(permissionTypes.filter((p) => p !== id));
     }
   };
 
-  // @TODO: correct some of the values (casing on some enum values) to get request to work
   const handleSubmit = async () => {
     const { success } = await apiCall({
       ownerType,
       ownerId,
       resourceId,
       resourceType,
-      permissions,
+      permissionTypes,
     });
 
     if (success) {
@@ -85,7 +120,7 @@ const AddAuthorizationModal: FC<UseModalProps> = ({
       open={open}
       onClose={onClose}
       loading={loading}
-      submitDisabled={submitDisabled}
+      submitDisabled={loading}
       confirmLabel={t("Create authorization")}
       onSubmit={handleSubmit}
     >
@@ -94,12 +129,14 @@ const AddAuthorizationModal: FC<UseModalProps> = ({
           id="owner-type-dropdown"
           label="Select Owner type"
           titleText="Owner type"
-          items={ownerTypeItems.map((i) => t(i))}
-          onChange={(item: { selectedItem: string }) =>
+          items={ownerTypeItems}
+          onChange={(item: { selectedItem: OwnerType }) =>
             setOwnerType(item.selectedItem)
           }
-          itemToString={(item: string) => (item ? t(item) : "")}
-          selectedItem={ownerTypeItems.find((item) => item === ownerType) || ""}
+          itemToString={(item: Authorization["ownerType"]) =>
+            item ? t(OwnerType[item]) : ""
+          }
+          selectedItem={ownerType}
         />
         <TextFieldContainer>
           <TextField
@@ -107,7 +144,6 @@ const AddAuthorizationModal: FC<UseModalProps> = ({
             placeholder={t("Enter ID")}
             onChange={setOwnerId}
             value={ownerId}
-            errors={namedErrors?.ownerId}
             autoFocus
           />
         </TextFieldContainer>
@@ -119,7 +155,7 @@ const AddAuthorizationModal: FC<UseModalProps> = ({
           label="Select Resource type"
           titleText="Resource type"
           items={resourceTypeItems}
-          onChange={(item: { selectedItem: string }) =>
+          onChange={(item: { selectedItem: ResourceType }) =>
             setResourceType(item.selectedItem)
           }
           itemToString={(item: string) => (item ? t(item) : "")}
@@ -133,79 +169,38 @@ const AddAuthorizationModal: FC<UseModalProps> = ({
             placeholder={t("Enter ID")}
             onChange={setResourceId}
             value={resourceId}
-            errors={namedErrors?.resourceId}
             autoFocus
           />
         </TextFieldContainer>
       </Row>
       <Divider />
-      <PermissionsSectionLabel>
-        Select at least one permission. Visit{" "}
-        <DocumentationLink path="" withIcon>
-          {t("process definition permissions")}
-        </DocumentationLink>{" "}
-        for a full overview.
-      </PermissionsSectionLabel>
-      <CheckboxGroup>
-        <Checkbox
-          labelText={`Read process definition`}
-          id="read-process-definition"
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            handleChangeCheckbox(e.target.checked, "read-process-definition")
-          }
-        />
-        <Checkbox
-          labelText={`Read process instance`}
-          id="read-process-instance"
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            handleChangeCheckbox(e.target.checked, "read-process-instance")
-          }
-        />
-        <Checkbox
-          labelText={`Read user task`}
-          id="read-user-task"
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            handleChangeCheckbox(e.target.checked, "read-user-task")
-          }
-        />
-        <Checkbox
-          labelText={`Read document`}
-          id="read-document"
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            handleChangeCheckbox(e.target.checked, "read-document")
-          }
-        />
-        <Checkbox
-          labelText={`Update process instance`}
-          id="update-process-instance"
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            handleChangeCheckbox(e.target.checked, "update-process-instance")
-          }
-        />
-        <Checkbox
-          labelText={`Update user task`}
-          id="update-user-task"
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            handleChangeCheckbox(e.target.checked, "update-user-task")
-          }
-        />
-        <Checkbox
-          labelText={`Create process instance`}
-          id="create-process-instance"
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            handleChangeCheckbox(e.target.checked, "create-process-instance")
-          }
-        />
-        <Checkbox
-          labelText={`Delete process instance`}
-          id="delete-process-instance"
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            handleChangeCheckbox(e.target.checked, "delete-process-instance")
-          }
-        />
+      <CheckboxGroup
+        legendText={
+          <PermissionsSectionLabel>
+            <Translate>Select at least one permission. Visit</Translate>{" "}
+            <DocumentationLink
+              path="/concepts/resource-authorizations/"
+              withIcon
+            >
+              {t("Resource permissions")}
+            </DocumentationLink>{" "}
+            <Translate>for a full overview.</Translate>
+          </PermissionsSectionLabel>
+        }
+      >
+        {resourcePermissions[resourceType].map((permission) => (
+          <Checkbox
+            key={permission}
+            labelText={t(permission)}
+            id={permission}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              handleChangeCheckbox(e.target.checked, permission)
+            }
+          />
+        ))}
       </CheckboxGroup>
     </FormModal>
   );
 };
 
-export default AddAuthorizationModal;
+export default AddModal;

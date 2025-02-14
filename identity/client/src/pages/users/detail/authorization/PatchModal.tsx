@@ -13,10 +13,11 @@ import { FormModal, UseEntityModalProps } from "src/components/modal";
 import { Dropdown, Tag } from "@carbon/react";
 import styled from "styled-components";
 import {
-  Authorization,
+  UserAuthorization,
   PatchAuthorizationAction,
   patchAuthorizations,
   PermissionType,
+  ResourceType,
 } from "src/utility/api/authorizations";
 import { ApiDefinition } from "src/utility/api/request";
 import useDebounce from "react-debounced";
@@ -24,23 +25,6 @@ import useDebounce from "react-debounced";
 const SelectedResources = styled.div`
   margin-top: 0;
 `;
-
-export enum ResourceType {
-  APPLICATION = "APPLICATION",
-  AUTHORIZATION = "AUTHORIZATION",
-  BATCH = "BATCH",
-  DECISION_DEFINITION = "DECISION_DEFINITION",
-  DECISION_REQUIREMENTS_DEFINITION = "DECISION_REQUIREMENTS_DEFINITION",
-  DEPLOYMENT = "DEPLOYMENT",
-  GROUP = "GROUP",
-  MAPPING_RULE = "MAPPING_RULE",
-  MESSAGE = "MESSAGE",
-  PROCESS_DEFINITION = "PROCESS_DEFINITION",
-  ROLE = "ROLE",
-  SYSTEM = "SYSTEM",
-  TENANT = "TENANT",
-  USER = "USER",
-}
 
 export type PatchAuthorizationUIParams = {
   ownerKey: number;
@@ -54,13 +38,13 @@ export type PatchAuthorizationModalParams = {
   ownerKey: number;
   resourceType: ResourceType | null;
   permissionType: PermissionType | null;
-  currentAuthorizations: Authorization[];
+  currentAuthorizations: UserAuthorization[];
 };
 
 const findAvailableResourceIds = (
   resourceType: string | null,
   permissionType: PermissionType | null,
-  currentAuthorizations: Authorization[],
+  currentAuthorizations: UserAuthorization[],
 ) => {
   if (resourceType && resourceType != "") {
     if (permissionType) {

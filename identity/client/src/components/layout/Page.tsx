@@ -20,7 +20,7 @@ export const PageTitle = styled.h2`
   font-weight: ${styles.heading04.fontWeight};
 `;
 
-export const PageSubTitle = styled.p`
+export const PageSubTitle = styled.div`
   font-size: ${styles.bodyCompact01.fontSize};
   font-weight: ${styles.bodyCompact01.fontWeight};
   letter-spacing: ${styles.bodyCompact01.letterSpacing};
@@ -30,10 +30,6 @@ export const PageSubTitle = styled.p`
 
 const Page = styled(Content)`
   height: 100%;
-
-  .cds--css-grid {
-    padding-inline: 0;
-  }
 `;
 
 type PageHeaderProps = {

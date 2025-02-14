@@ -8,13 +8,9 @@
 import { FC } from "react";
 import Lazy from "src/components/router/Lazy";
 import PageRoutes from "src/components/router/PageRoutes";
-// import Detail from "src/pages/authorizations/detail";
 
 const Authorizations: FC = () => (
-  <PageRoutes
-    indexElement={<Lazy load={() => import("./List")} />}
-    detailElement={<h1>Authorizations Detail</h1>}
-  />
+  <PageRoutes indexElement={<Lazy load={() => import("./List")} />} />
 );
 
 export default Authorizations;
