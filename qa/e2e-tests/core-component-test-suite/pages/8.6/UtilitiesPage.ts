@@ -12,7 +12,21 @@ export async function navigateToApp(
   page: Page,
   appName: string,
 ): Promise<void> {
-  page.goto('/' + appName.toLowerCase() + '/login');
+  if (appName == 'operate') {
+    page.goto(
+      process.env.CORE_COMPONENT_OPERATE_URL +
+        '/' +
+        appName.toLowerCase() +
+        '/login',
+    );
+  } else if (appName == 'tasklist') {
+    page.goto(
+      process.env.CORE_COMPONENT_TASKLIST_URL +
+        '/' +
+        appName.toLowerCase() +
+        '/login',
+    );
+  }
 }
 
 export async function validateURL(page: Page, URL: RegExp): Promise<void> {
