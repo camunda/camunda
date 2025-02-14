@@ -49,7 +49,7 @@ public class ZeebeMigrationHelper {
 
   public String getZeebeRestAddress() {
     if (zeebeContainer != null && zeebeContainer.isStarted()) {
-      return zeebeContainer.getInternalAddress(TestZeebePort.REST.port());
+      return "http://" + zeebeContainer.getInternalAddress(TestZeebePort.REST.port());
     }
     return "http://host.testcontainers.internal:" + broker.mappedPort(TestZeebePort.REST);
   }
