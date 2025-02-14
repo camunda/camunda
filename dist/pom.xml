@@ -470,6 +470,16 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-registry-prometheus-simpleclient</artifactId>
+<<<<<<< HEAD
+=======
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-otlp</artifactId>
+      <scope>runtime</scope>
+>>>>>>> 0d002d41 (refactor: remove explicit dynatrace support; we will document it instead)
     </dependency>
 
     <dependency>
@@ -855,6 +865,13 @@
             <!-- Used to parse PKCS1 certificates -->
             <dependency>org.bouncycastle:bcprov-jdk18on</dependency>
             <dependency>org.bouncycastle:bcpkix-jdk18on</dependency>
+<<<<<<< HEAD
+=======
+
+            <!-- Micrometer Exporters/Registries -->
+            <dependency>io.micrometer:micrometer-registry-prometheus-simpleclient</dependency>
+            <dependency>io.micrometer:micrometer-registry-otlp</dependency>
+>>>>>>> 0d002d41 (refactor: remove explicit dynatrace support; we will document it instead)
           </usedDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>
