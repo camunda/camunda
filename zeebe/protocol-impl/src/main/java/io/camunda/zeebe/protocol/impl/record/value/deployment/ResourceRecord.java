@@ -22,14 +22,14 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class ResourceRecord extends UnifiedRecordValue implements Resource {
-  private final StringProperty resourceIdProp = new StringProperty("resourceId");
-  private final IntegerProperty versionProp = new IntegerProperty("version");
-  private final LongProperty resourceKeyProp = new LongProperty("resourceKey");
+  private final StringProperty resourceIdProp = new StringProperty("resourceId", "");
+  private final IntegerProperty versionProp = new IntegerProperty("version", -1);
+  private final LongProperty resourceKeyProp = new LongProperty("resourceKey", -1L);
   private final BinaryProperty checksumProp = new BinaryProperty("checksum", new UnsafeBuffer());
-  private final StringProperty resourceNameProp = new StringProperty("resourceName");
+  private final StringProperty resourceNameProp = new StringProperty("resourceName", "");
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
+  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1L);
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
   private final BinaryProperty resourceProp = new BinaryProperty("resource", new UnsafeBuffer());
 
