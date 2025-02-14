@@ -129,6 +129,7 @@ public class BackupRestoreIT {
     final var snapshots = takeResponse.getScheduledSnapshots();
 
     Awaitility.await("Backup completed")
+        .pollDelay(Duration.ofSeconds(1))
         .atMost(Duration.ofSeconds(600))
         .untilAsserted(
             () -> {
