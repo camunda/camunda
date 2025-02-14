@@ -23,7 +23,8 @@ public enum ExecutionLatencyMetricsDoc implements ExtendedMeterDocumentation {
   CACHED_INSTANCES {
     @Override
     public String getDescription() {
-      return """
+      return
+      """
         The current cached entities for counting their execution latency. If only \
         short-lived instances are handled this can be seen or observed as the current active \
         instance count.""";
