@@ -155,9 +155,9 @@ func Package(camundaVersion string, elasticsearchVersion string, connectorsVersi
 		return fmt.Errorf("Package "+osType+": failed to fetch elasticsearch: %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, javaArtifactsToken, archive.UnzipSource)
+	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, javaArtifactsToken, extractFunc)
 	if err != nil {
-		return fmt.Errorf("Package "+osType+": failed to download camunda with gh: %w\n%s", err, debug.Stack())
+		return fmt.Errorf("Package "+osType+": failed to download camunda %w\n%s", err, debug.Stack())
 	}
 
 	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, authToken, extractFunc)
