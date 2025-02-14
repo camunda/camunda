@@ -94,12 +94,7 @@ class UnavailableBrokersTest {
     brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
 
     gateway =
-        new Gateway(
-            config,
-            brokerClient,
-            actorScheduler,
-            jobStreamClient.streamer(),
-            REGISTRY);
+        new Gateway(config, brokerClient, actorScheduler, jobStreamClient.streamer(), REGISTRY);
     gateway.start().join();
 
     final String gatewayAddress = NetUtil.toSocketAddressString(networkCfg.toSocketAddress());
