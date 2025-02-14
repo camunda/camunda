@@ -47,7 +47,7 @@ public class AuthorizationCreatedUpdatedHandler
 
   @Override
   public List<String> generateIds(final Record<AuthorizationRecordValue> record) {
-    return List.of(String.valueOf(record.getValue().getAuthorizationKey()));
+    return List.of(String.valueOf(record.getKey()));
   }
 
   @Override
