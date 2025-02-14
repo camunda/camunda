@@ -11,6 +11,7 @@ import static io.camunda.optimize.AbstractCCSMIT.isZeebeVersionPre85;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_ELASTICSEARCH_EXPORTER;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_OPENSEARCH_EXPORTER;
 
+import com.google.common.collect.ImmutableMap;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
@@ -282,7 +283,11 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
   private void setZeebeRecordPrefixForTest() {
     zeebeContainer =
         zeebeContainer.withEnv(
-            "ZEEBE_BROKER_EXPORTERS_OPTIMIZE_ARGS_INDEX_PREFIX", zeebeRecordPrefix);
+            ImmutableMap.of(
+                "ZEEBE_BROKER_EXPORTERS_OPTIMIZE_ARGS_INDEX_PREFIX",
+                zeebeRecordPrefix,
+                "JAVA_OPTS",
+                "-XX:UseSVE=0"));
   }
 
   private void destroyClient() {
