@@ -16,17 +16,22 @@
  */
 package io.atomix.raft.metrics;
 
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class LeaderMetrics extends RaftMetrics {
-  private final MeterRegistry meterRegistry;
+public class LeaderAppenderMetrics extends RaftMetrics implements CloseableSilently {
+  private final CompositeMeterRegistry meterRegistry;
   private final Map<String, Timer> appendLatency;
   private final Map<String, Counter> appendDataRate;
   private final Map<String, Counter> appendRate;
@@ -34,9 +39,11 @@ public class LeaderMetrics extends RaftMetrics {
   private final AtomicLong nonCommittedEntriesValue;
   private final Map<String, AtomicLong> nonReplicatedEntries;
 
-  public LeaderMetrics(final String partitionName, final MeterRegistry meterRegistry) {
+  public LeaderAppenderMetrics(final String partitionName, final MeterRegistry wrappedRegistry) {
     super(partitionName);
-    this.meterRegistry = meterRegistry;
+    meterRegistry =
+        MicrometerUtil.wrap(
+            wrappedRegistry, Tags.of(PartitionKeyNames.PARTITION.asString(), partition));
     appendLatency = new HashMap<>();
     appendDataRate = new HashMap<>();
     appendRate = new HashMap<>();
@@ -136,5 +143,10 @@ public class LeaderMetrics extends RaftMetrics {
       nonReplicatedEntries.put(memberId, inMap);
     }
     return inMap;
+  }
+
+  @Override
+  public void close() {
+    MicrometerUtil.discard(meterRegistry);
   }
 }
