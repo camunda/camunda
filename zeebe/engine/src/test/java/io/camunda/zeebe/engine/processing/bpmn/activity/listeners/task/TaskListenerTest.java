@@ -2267,6 +2267,19 @@ public class TaskListenerTest {
                 .setPriority(99)
                 .setPriorityChanged());
 
+    // then
+    assertActivatedJob(
+        processInstanceKey,
+        listenerType,
+        job ->
+            assertThat(job.getCustomHeaders())
+                .describedAs(
+                    "Expect the first listener job to receive `changedAttributes` header containing attributes changed by UPDATE command to new values.")
+                .containsEntry(
+                    Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME,
+                    // without `candidateUsersList` as it was updated to the same as initial value
+                    "[\"candidateGroupsList\",\"dueDate\",\"priority\"]"));
+
     // when: first listener corrects `dueDate`
     ENGINE
         .job()
@@ -2357,13 +2370,23 @@ public class TaskListenerTest {
         createProcessInstance(
             createProcessWithZeebeUserTask(
                 task ->
-                    task.zeebeAssignee("aragorn") // Initially assigned
+                    task.zeebeAssignee("aragorn") // initially assigned
                         .zeebeTaskListener(l -> l.completing().type(listenerType))
                         .zeebeTaskListener(l -> l.completing().type(listenerType + "_2"))
                         .zeebeTaskListener(l -> l.completing().type(listenerType + "_3"))));
 
     // when: complete user task
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // then
+    assertActivatedJob(
+        processInstanceKey,
+        listenerType,
+        job ->
+            assertThat(job.getCustomHeaders())
+                .describedAs(
+                    "Expect the first listener job to not have `changedAttributes` header since no attributes changed by complete command")
+                .doesNotContainKey(Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME));
 
     // when: first listener modifies `candidateGroupsList` and `priority`
     ENGINE
