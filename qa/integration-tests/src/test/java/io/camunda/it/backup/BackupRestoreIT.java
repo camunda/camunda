@@ -47,7 +47,6 @@ public class BackupRestoreIT {
   private String dbUrl;
   private GenericContainer<?> searchContainer;
   private DataGenerator generator;
-  private BackupRestoreTestConfig config;
   private HistoryBackupClient historyBackupClient;
 
   @AfterEach
@@ -93,7 +92,6 @@ public class BackupRestoreIT {
     configurator.getOperateProperties().getBackup().setRepositoryName(REPOSITORY_NAME);
     configurator.getTasklistProperties().getBackup().setRepositoryName(REPOSITORY_NAME);
 
-    this.config = config;
     testStandaloneApplication.start().awaitCompleteTopology();
 
     camundaClient = testStandaloneApplication.newClientBuilder().build();
