@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.service.db.os;
 
-import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static java.lang.String.format;
 import static java.lang.String.join;
 
@@ -16,6 +15,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.service.util.WorkaroundUtil;
+import io.camunda.optimize.service.util.mapper.OptimizeObjectMapper;
 import jakarta.json.stream.JsonGenerator;
 import jakarta.json.stream.JsonParser;
 import java.io.ByteArrayInputStream;
@@ -135,7 +135,7 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
 
   private String extractQuery(final SearchRequest searchRequest) {
     try {
-      final JsonpMapper jsonpMapper = new JacksonJsonpMapper(OPTIMIZE_MAPPER);
+      final JsonpMapper jsonpMapper = new JacksonJsonpMapper(OptimizeObjectMapper.OPTIMIZE_MAPPER);
       final StringWriter writer = new StringWriter();
       final JacksonJsonpGenerator generator =
           new JacksonJsonpGenerator(new JsonFactory().createGenerator(writer));

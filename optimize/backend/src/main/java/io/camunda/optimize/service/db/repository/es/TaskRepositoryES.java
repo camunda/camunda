@@ -8,7 +8,6 @@
 package io.camunda.optimize.service.db.repository.es;
 
 import static io.camunda.optimize.service.exceptions.ExceptionHelper.safe;
-import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 
 import co.elastic.clients.elasticsearch._types.Conflicts;
 import co.elastic.clients.elasticsearch._types.Script;
@@ -16,6 +15,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.UpdateByQueryRequest;
 import co.elastic.clients.elasticsearch.tasks.ListRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.repository.TaskRepository;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -39,11 +39,15 @@ public class TaskRepositoryES extends TaskRepository {
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(TaskRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
+  private final ObjectMapper optimizeObjectMapper;
 
   public TaskRepositoryES(
-      final OptimizeElasticsearchClient esClient, final ConfigurationService configurationService) {
+      final OptimizeElasticsearchClient esClient,
+      final ConfigurationService configurationService,
+      final ObjectMapper optimizeObjectMapper) {
     this.esClient = esClient;
     this.configurationService = configurationService;
+    this.optimizeObjectMapper = optimizeObjectMapper;
   }
 
   @Override
@@ -73,7 +77,7 @@ public class TaskRepositoryES extends TaskRepository {
   public TaskResponse getTaskResponse(final String taskId) throws IOException {
     final Request request = new Request(HttpGet.METHOD_NAME, "/" + TASKS_ENDPOINT + "/" + taskId);
     final Response response = esClient.performRequest(request);
-    return OPTIMIZE_MAPPER.readValue(response.getEntity().getContent(), TaskResponse.class);
+    return optimizeObjectMapper.readValue(response.getEntity().getContent(), TaskResponse.class);
   }
 
   public boolean tryUpdateByQueryRequest(

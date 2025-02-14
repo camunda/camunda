@@ -9,7 +9,6 @@ package io.camunda.optimize.service.db.es.schema;
 
 import static io.camunda.optimize.service.db.DatabaseClient.convertToPrefixedAliasNames;
 import static io.camunda.optimize.service.db.DatabaseConstants.INDEX_ALREADY_EXISTS_EXCEPTION_TYPE;
-import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static java.util.stream.Collectors.toSet;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
@@ -27,6 +26,7 @@ import co.elastic.clients.json.jackson.JacksonJsonpGenerator;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.util.Pair;
 import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import io.camunda.optimize.service.db.es.MappingMetadataUtilES;
@@ -91,20 +91,23 @@ public class ElasticSearchSchemaManager
   public ElasticSearchSchemaManager(
       final ElasticSearchMetadataService metadataService,
       final ConfigurationService configurationService,
-      final OptimizeIndexNameService indexNameService) {
+      final OptimizeIndexNameService indexNameService,
+      final ObjectMapper optimizeObjectMapper) {
     this(
         metadataService,
         configurationService,
         indexNameService,
-        new ArrayList<>(getAllNonDynamicMappings()));
+        new ArrayList<>(getAllNonDynamicMappings()),
+        optimizeObjectMapper);
   }
 
   public ElasticSearchSchemaManager(
       final ElasticSearchMetadataService metadataService,
       final ConfigurationService configurationService,
       final OptimizeIndexNameService indexNameService,
-      final List<IndexMappingCreator<IndexSettings.Builder>> mappings) {
-    super(configurationService, indexNameService, mappings);
+      final List<IndexMappingCreator<IndexSettings.Builder>> mappings,
+      final ObjectMapper optimizeObjectMapper) {
+    super(configurationService, indexNameService, mappings, optimizeObjectMapper);
     this.metadataService = metadataService;
   }
 
@@ -500,7 +503,7 @@ public class ElasticSearchSchemaManager
 
   private Map<String, JsonData> convertToMap(final IndexSettings indexSettings) {
     try {
-      final JacksonJsonpMapper jsonpMapper = new JacksonJsonpMapper(OPTIMIZE_MAPPER);
+      final JacksonJsonpMapper jsonpMapper = new JacksonJsonpMapper(optimizeObjectMapper);
       final StringWriter writer = new StringWriter();
       final JacksonJsonpGenerator generator =
           new JacksonJsonpGenerator(new JsonFactory().createGenerator(writer));

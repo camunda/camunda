@@ -7,10 +7,9 @@
  */
 package io.camunda.optimize.service.db.es;
 
-import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
-
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.transport.TransportOptions;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.es.schema.TransportOptionsProvider;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
@@ -36,13 +35,15 @@ public final class OptimizeElasticsearchClientFactory {
       final OptimizeIndexNameService optimizeIndexNameService,
       final ElasticSearchSchemaManager elasticSearchSchemaManager,
       final BackoffCalculator backoffCalculator,
-      final PluginRepository pluginRepository)
+      final PluginRepository pluginRepository,
+      final ObjectMapper optimizeObjectMapper)
       throws IOException {
     LOG.info("Initializing Elasticsearch rest client...");
     final TransportOptionsProvider transportOptionsProvider =
         new TransportOptionsProvider(configurationService);
     final ElasticsearchClient build =
-        ElasticsearchClientBuilder.build(configurationService, OPTIMIZE_MAPPER, pluginRepository);
+        ElasticsearchClientBuilder.build(
+            configurationService, optimizeObjectMapper, pluginRepository);
 
     final boolean clusterTaskCheckingEnabled =
         configurationService
@@ -60,7 +61,7 @@ public final class OptimizeElasticsearchClientFactory {
     final OptimizeElasticsearchClient prefixedClient =
         new OptimizeElasticsearchClient(
             ElasticsearchClientBuilder.restClient(configurationService, pluginRepository),
-            OPTIMIZE_MAPPER,
+            optimizeObjectMapper,
             build,
             optimizeIndexNameService,
             transportOptionsProvider);

@@ -11,8 +11,6 @@ import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static io.camunda.optimize.service.util.WorkaroundUtil.replaceNullWithNanInAggregations;
-import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
-import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER_UNKNOWN_FAIL_DISABLED;
 import static java.util.stream.Collectors.groupingBy;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
@@ -147,7 +145,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(OptimizeElasticsearchClient.class);
   private RestClient restClient;
-  private final ObjectMapper objectMapper;
+  private final ObjectMapper optimizeObjectMapper;
   private ElasticsearchClient esClient;
   private final DocumentBasedSearchClient documentBasedSearchClient;
   private ElasticsearchAsyncClient elasticsearchAsyncClient;
@@ -155,20 +153,25 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
 
   public OptimizeElasticsearchClient(
       final RestClient restClient,
-      final ObjectMapper objectMapper,
+      final ObjectMapper optimizeObjectMapper,
       final ElasticsearchClient esClient,
       final OptimizeIndexNameService indexNameService) {
-    this(restClient, objectMapper, esClient, indexNameService, new TransportOptionsProvider());
+    this(
+        restClient,
+        optimizeObjectMapper,
+        esClient,
+        indexNameService,
+        new TransportOptionsProvider());
   }
 
   public OptimizeElasticsearchClient(
       final RestClient restClient,
-      final ObjectMapper objectMapper,
+      final ObjectMapper optimizeObjectMapper,
       final ElasticsearchClient esClient,
       final OptimizeIndexNameService indexNameService,
       final TransportOptionsProvider transportOptionsProvider) {
     this.restClient = restClient;
-    this.objectMapper = objectMapper;
+    this.optimizeObjectMapper = optimizeObjectMapper;
     this.esClient = esClient;
     this.indexNameService = indexNameService;
     this.transportOptionsProvider = transportOptionsProvider;
@@ -201,7 +204,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     request.setOptions(transportOptionsProvider.getRequestOptions());
     final Response response = restClient.performRequest(request);
     final Map<String, Map> responseContentAsMap =
-        OPTIMIZE_MAPPER.readValue(response.getEntity().getContent(), Map.class);
+        optimizeObjectMapper.readValue(response.getEntity().getContent(), Map.class);
     for (final Map contentEntry : responseContentAsMap.values()) {
       final Map settings = (Map) contentEntry.get("settings");
       if (settings == null) {
@@ -243,9 +246,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
         b -> {
           try {
             return b.withJson(
-                new StringReader(
-                    OPTIMIZE_MAPPER_UNKNOWN_FAIL_DISABLED.writeValueAsString(
-                        responseContentAsMap)));
+                new StringReader(optimizeObjectMapper.writeValueAsString(responseContentAsMap)));
           } catch (final JsonProcessingException e) {
             throw new RuntimeException(e);
           }
@@ -759,12 +760,12 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
           new NStringEntity(extractQuery(searchRequest), ContentType.APPLICATION_JSON);
       request.setEntity(entity);
       final Response response = restClient.performRequest(request);
-      final Map map = OPTIMIZE_MAPPER.readValue(response.getEntity().getContent(), Map.class);
+      final Map map = optimizeObjectMapper.readValue(response.getEntity().getContent(), Map.class);
       replaceNullWithNanInAggregations(map);
       return SearchResponse.of(
           s -> {
             try {
-              return s.withJson(new StringReader(OPTIMIZE_MAPPER.writeValueAsString(map)));
+              return s.withJson(new StringReader(optimizeObjectMapper.writeValueAsString(map)));
             } catch (final JsonProcessingException e) {
               throw new RuntimeException(e);
             }
@@ -785,7 +786,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
 
   String extractQuery(final SearchRequest searchRequest) {
     try {
-      final JacksonJsonpMapper jsonpMapper = new JacksonJsonpMapper(OPTIMIZE_MAPPER);
+      final JacksonJsonpMapper jsonpMapper = new JacksonJsonpMapper(optimizeObjectMapper);
 
       final StringWriter writer = new StringWriter();
       final JacksonJsonpGenerator generator =
@@ -1008,7 +1009,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
       final ConfigurationService configurationService = context.getBean(ConfigurationService.class);
       esClient =
           ElasticsearchClientBuilder.build(
-              configurationService, objectMapper, new PluginRepository());
+              configurationService, optimizeObjectMapper, new PluginRepository());
       restClient =
           ElasticsearchClientBuilder.restClient(configurationService, new PluginRepository());
       indexNameService = context.getBean(OptimizeIndexNameService.class);

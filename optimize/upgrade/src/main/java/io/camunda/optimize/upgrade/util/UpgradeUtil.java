@@ -7,8 +7,6 @@
  */
 package io.camunda.optimize.upgrade.util;
 
-import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
-
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
 import io.camunda.optimize.service.db.es.schema.TransportOptionsProvider;
@@ -19,6 +17,7 @@ import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
+import io.camunda.optimize.service.util.mapper.OptimizeObjectMapper;
 import io.camunda.optimize.upgrade.es.ElasticsearchClientBuilder;
 import io.camunda.optimize.upgrade.os.OpenSearchClientBuilder;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
@@ -61,19 +60,21 @@ public final class UpgradeUtil {
       final OptimizeElasticsearchClient esClient =
           new OptimizeElasticsearchClient(
               ElasticsearchClientBuilder.restClient(configurationService, new PluginRepository()),
-              OPTIMIZE_MAPPER,
+              OptimizeObjectMapper.OPTIMIZE_MAPPER,
               ElasticsearchClientBuilder.build(
-                  configurationService, OPTIMIZE_MAPPER, new PluginRepository()),
+                  configurationService,
+                  OptimizeObjectMapper.OPTIMIZE_MAPPER,
+                  new PluginRepository()),
               indexNameService,
               new TransportOptionsProvider(configurationService));
       final ElasticSearchMetadataService metadataService =
-          new ElasticSearchMetadataService(OPTIMIZE_MAPPER);
+          new ElasticSearchMetadataService(OptimizeObjectMapper.OPTIMIZE_MAPPER);
       return new UpgradeExecutionDependencies(
           databaseType,
           configurationService,
           indexNameService,
           esClient,
-          OPTIMIZE_MAPPER,
+          OptimizeObjectMapper.OPTIMIZE_MAPPER,
           metadataService);
     } else {
       final OptimizeOpenSearchClient osClient =
@@ -84,13 +85,13 @@ public final class UpgradeUtil {
                   configurationService, new PluginRepository()),
               indexNameService);
       final DatabaseMetadataService<OptimizeOpenSearchClient> metadataService =
-          new OpenSearchMetadataService(OPTIMIZE_MAPPER);
+          new OpenSearchMetadataService(OptimizeObjectMapper.OPTIMIZE_MAPPER);
       return new UpgradeExecutionDependencies(
           databaseType,
           configurationService,
           indexNameService,
           osClient,
-          OPTIMIZE_MAPPER,
+          OptimizeObjectMapper.OPTIMIZE_MAPPER,
           metadataService);
     }
   }

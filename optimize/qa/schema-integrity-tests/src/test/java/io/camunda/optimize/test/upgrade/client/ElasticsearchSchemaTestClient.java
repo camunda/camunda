@@ -7,8 +7,6 @@
  */
 package io.camunda.optimize.test.upgrade.client;
 
-import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
-
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.analysis.TokenChar;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
@@ -27,6 +25,7 @@ import co.elastic.clients.elasticsearch.snapshot.RestoreRequest;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import io.camunda.optimize.service.util.mapper.OptimizeJacksonConfig;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.List;
@@ -192,8 +191,11 @@ public class ElasticsearchSchemaTestClient extends AbstractDatabaseSchemaTestCli
                 + "/_settings/"
                 + String.join(",", SETTINGS_FILTER));
     final Response response = restClient.performRequest(request);
+    final OptimizeJacksonConfig optimizeJacksonConfig = new OptimizeJacksonConfig();
     final Map<String, Map> map =
-        OPTIMIZE_MAPPER.readValue(response.getEntity().getContent(), Map.class);
+        optimizeJacksonConfig
+            .objectMapper()
+            .readValue(response.getEntity().getContent(), Map.class);
     for (final Map stringStringEntry : map.values()) {
       final Map analysis =
           (Map) ((Map) ((Map) stringStringEntry.get("settings")).get("index")).get("analysis");

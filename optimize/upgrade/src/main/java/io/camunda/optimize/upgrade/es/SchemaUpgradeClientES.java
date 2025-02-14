@@ -68,21 +68,21 @@ public class SchemaUpgradeClientES
     extends SchemaUpgradeClient<OptimizeElasticsearchClient, IndexSettings.Builder, IndexAliases> {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(SchemaUpgradeClientES.class);
-  private final ObjectMapper objectMapper;
+  private final ObjectMapper optimizeObjectMapper;
 
   public SchemaUpgradeClientES(
       final ElasticSearchSchemaManager schemaManager,
       final ElasticSearchMetadataService metadataService,
       final ConfigurationService configurationService,
       final OptimizeElasticsearchClient elasticsearchClient,
-      final ObjectMapper objectMapper) {
+      final ObjectMapper optimizeObjectMapper) {
     super(
         schemaManager,
         metadataService,
         DatabaseType.ELASTICSEARCH,
         elasticsearchClient,
-        new TaskRepositoryES(elasticsearchClient, configurationService));
-    this.objectMapper = objectMapper;
+        new TaskRepositoryES(elasticsearchClient, configurationService, optimizeObjectMapper));
+    this.optimizeObjectMapper = optimizeObjectMapper;
   }
 
   @Override
@@ -118,7 +118,7 @@ public class SchemaUpgradeClientES
     }
 
     return ElasticsearchReaderUtil.mapHits(
-        searchResponse.hits(), UpgradeStepLogEntryDto.class, objectMapper);
+        searchResponse.hits(), UpgradeStepLogEntryDto.class, optimizeObjectMapper);
   }
 
   @Override
@@ -530,6 +530,6 @@ public class SchemaUpgradeClientES
   }
 
   public ObjectMapper getObjectMapper() {
-    return objectMapper;
+    return optimizeObjectMapper;
   }
 }

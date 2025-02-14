@@ -38,6 +38,7 @@ import io.camunda.optimize.service.db.schema.index.MetadataIndex;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
+import io.camunda.optimize.service.util.mapper.OptimizeJacksonConfig;
 import io.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
 import io.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import io.camunda.optimize.test.it.extension.MockServerUtil;
@@ -209,6 +210,7 @@ public abstract class AbstractUpgradeIT {
   protected void initSchema(
       final List<IndexMappingCreator<IndexSettings.Builder>> mappingCreators) {
     final DatabaseSchemaManager schemaManager;
+    final OptimizeJacksonConfig optimizeJacksonConfig = new OptimizeJacksonConfig();
     if (!isElasticSearchUpgrade()) {
       schemaManager =
           new OpenSearchSchemaManager(
@@ -222,7 +224,8 @@ public abstract class AbstractUpgradeIT {
                                   org.opensearch.client.opensearch.indices.IndexSettings.Builder>)
                               IndexLookupUtilIncludingTestIndices.convertIndexForDatabase(
                                   index, DatabaseType.OPENSEARCH))
-                  .toList());
+                  .toList(),
+              optimizeJacksonConfig.objectMapper());
 
     } else {
       schemaManager =
@@ -230,7 +233,8 @@ public abstract class AbstractUpgradeIT {
               (ElasticSearchMetadataService) metadataService,
               createDefaultConfiguration(),
               getIndexNameService(),
-              mappingCreators);
+              mappingCreators,
+              optimizeJacksonConfig.objectMapper());
     }
     databaseIntegrationTestExtension.initSchema(schemaManager);
   }

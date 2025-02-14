@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.schema;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.Collections;
@@ -21,16 +22,19 @@ public abstract class DatabaseSchemaManager<CLIENT extends DatabaseClient, BUILD
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DatabaseSchemaManager.class);
   protected ConfigurationService configurationService;
   protected OptimizeIndexNameService indexNameService;
+  protected ObjectMapper optimizeObjectMapper;
 
   protected final List<IndexMappingCreator<BUILDER>> mappings;
 
   protected DatabaseSchemaManager(
       final ConfigurationService configurationService,
       final OptimizeIndexNameService indexNameService,
-      final List<IndexMappingCreator<BUILDER>> mappings) {
+      final List<IndexMappingCreator<BUILDER>> mappings,
+      final ObjectMapper optimizeObjectMapper) {
     this.configurationService = configurationService;
     this.indexNameService = indexNameService;
     this.mappings = mappings;
+    this.optimizeObjectMapper = optimizeObjectMapper;
   }
 
   public abstract void validateDatabaseMetadata(final CLIENT dbClient);

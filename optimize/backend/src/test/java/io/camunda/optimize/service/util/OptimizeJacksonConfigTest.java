@@ -9,8 +9,6 @@ package io.camunda.optimize.service.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.ReportType;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
@@ -20,11 +18,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepor
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
-import io.camunda.optimize.service.util.mapper.ObjectMapperFactory;
-import io.camunda.optimize.service.util.mapper.OptimizeDateTimeFormatterFactory;
-import java.time.LocalDateTime;
+import io.camunda.optimize.service.util.mapper.OptimizeJacksonConfig;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,10 +28,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ObjectMapperFactoryTest {
-
+public class OptimizeJacksonConfigTest {
+  private OptimizeJacksonConfig optimizeJacksonConfig;
   private ConfigurationService configurationService;
-  private ObjectMapperFactory objectMapperFactory;
 
   @BeforeEach
   public void init() {
@@ -44,9 +38,7 @@ public class ObjectMapperFactoryTest {
         ConfigurationServiceBuilder.createConfiguration()
             .loadConfigurationFrom("service-config.yaml")
             .build();
-    objectMapperFactory =
-        new ObjectMapperFactory(
-            new OptimizeDateTimeFormatterFactory().getObject(), configurationService);
+    optimizeJacksonConfig = new OptimizeJacksonConfig();
   }
 
   /**
@@ -59,9 +51,10 @@ public class ObjectMapperFactoryTest {
   @Test
   public void testNoFailOnMissingReportDataAlthoughReportTypeSet() throws Exception {
     final ReportDefinitionDto reportDefinitionDto =
-        createOptimizeMapper()
+        optimizeJacksonConfig
+            .objectMapper()
             .readValue(
-                ObjectMapperFactoryTest.class.getResourceAsStream(
+                OptimizeJacksonConfigTest.class.getResourceAsStream(
                     "/test/data/single-process-report-definition-create-request.json"),
                 ReportDefinitionDto.class);
     assertThat(reportDefinitionDto.isCombined()).isFalse();
@@ -77,9 +70,10 @@ public class ObjectMapperFactoryTest {
   @Test
   public void testCanDeserializeToSingleProcessReport() throws Exception {
     final SingleProcessReportDefinitionRequestDto reportDefinitionDto =
-        createOptimizeMapper()
+        optimizeJacksonConfig
+            .objectMapper()
             .readValue(
-                ObjectMapperFactoryTest.class.getResourceAsStream(
+                OptimizeJacksonConfigTest.class.getResourceAsStream(
                     "/test/data/single-process-report-definition-create-request.json"),
                 SingleProcessReportDefinitionRequestDto.class);
 
@@ -91,9 +85,10 @@ public class ObjectMapperFactoryTest {
   @Test
   public void testCanDeserializeToSingleDecisionReport() throws Exception {
     final SingleDecisionReportDefinitionRequestDto reportDefinitionDto =
-        createOptimizeMapper()
+        optimizeJacksonConfig
+            .objectMapper()
             .readValue(
-                ObjectMapperFactoryTest.class.getResourceAsStream(
+                OptimizeJacksonConfigTest.class.getResourceAsStream(
                     "/test/data/single-decision-report-definition-create-request.json"),
                 SingleDecisionReportDefinitionRequestDto.class);
 
@@ -105,9 +100,10 @@ public class ObjectMapperFactoryTest {
   @Test
   public void testCanDeserializeToCombinedProcessReport() throws Exception {
     final CombinedReportDefinitionRequestDto reportDefinitionDto =
-        createOptimizeMapper()
+        optimizeJacksonConfig
+            .objectMapper()
             .readValue(
-                ObjectMapperFactoryTest.class.getResourceAsStream(
+                OptimizeJacksonConfigTest.class.getResourceAsStream(
                     "/test/data/combined-process-report-definition-create-request.json"),
                 CombinedReportDefinitionRequestDto.class);
 
@@ -119,9 +115,11 @@ public class ObjectMapperFactoryTest {
   @Test
   public void testFilterSerialization() throws Exception {
     ProcessReportDataDto data =
-        createOptimizeMapper()
+        optimizeJacksonConfig
+            .objectMapper()
             .readValue(
-                ObjectMapperFactoryTest.class.getResourceAsStream("/test/data/filter_request.json"),
+                OptimizeJacksonConfigTest.class.getResourceAsStream(
+                    "/test/data/filter_request.json"),
                 ProcessReportDataDto.class);
     assertThat(
             ((BooleanVariableFilterDataDto) data.getFilter().get(0).getData())
@@ -130,9 +128,10 @@ public class ObjectMapperFactoryTest {
         .containsExactly(true);
 
     data =
-        createOptimizeMapper()
+        optimizeJacksonConfig
+            .objectMapper()
             .readValue(
-                ObjectMapperFactoryTest.class.getResourceAsStream(
+                OptimizeJacksonConfigTest.class.getResourceAsStream(
                     "/test/data/filter_request_single.json"),
                 ProcessReportDataDto.class);
     assertThat(
@@ -145,9 +144,10 @@ public class ObjectMapperFactoryTest {
   @Test
   public void testFilterSerializationWithLowercaseType() throws Exception {
     ProcessReportDataDto data =
-        createOptimizeMapper()
+        optimizeJacksonConfig
+            .objectMapper()
             .readValue(
-                ObjectMapperFactoryTest.class.getResourceAsStream(
+                OptimizeJacksonConfigTest.class.getResourceAsStream(
                     "/test/data/filter_request_lowercase_type.json"),
                 ProcessReportDataDto.class);
     assertThat(
@@ -157,9 +157,10 @@ public class ObjectMapperFactoryTest {
         .containsExactly(true);
 
     data =
-        createOptimizeMapper()
+        optimizeJacksonConfig
+            .objectMapper()
             .readValue(
-                ObjectMapperFactoryTest.class.getResourceAsStream(
+                OptimizeJacksonConfigTest.class.getResourceAsStream(
                     "/test/data/filter_request_single.json"),
                 ProcessReportDataDto.class);
     assertThat(
@@ -177,7 +178,7 @@ public class ObjectMapperFactoryTest {
     // when
     final DateHolder instance = new DateHolder();
     instance.setDate(OffsetDateTime.parse(dateString, createEngineDateFormatter()));
-    final String parsedString = createOptimizeMapper().writeValueAsString(instance);
+    final String parsedString = optimizeJacksonConfig.objectMapper().writeValueAsString(instance);
 
     // then
     assertThat(parsedString).contains(dateString);
@@ -192,61 +193,8 @@ public class ObjectMapperFactoryTest {
 
     // when
     final OffsetDateTime parsedOffsetDateTime =
-        createOptimizeMapper()
-            .readValue(createDateHolderJsonString(dateString), DateHolder.class)
-            .getDate();
-
-    // then
-    assertThat(parsedOffsetDateTime).isEqualTo(expectedOffsetDateTime);
-  }
-
-  @Test
-  public void testEngineMapperDateSerialization() throws Exception {
-    // given
-    final String dateString = "2017-12-11T17:28:38.222+0100";
-
-    // when
-    final DateHolder instance = new DateHolder();
-    instance.setDate(OffsetDateTime.parse(dateString, createEngineDateFormatter()));
-    final String parsedString = createEngineMapper().writeValueAsString(instance);
-
-    // then
-    assertThat(parsedString).contains(dateString);
-  }
-
-  @Test
-  public void testEngineMapperDateDeserialization() throws JsonProcessingException {
-    // given
-    final String dateString = "2017-12-11T17:28:38.222+0100";
-    final OffsetDateTime expectedOffsetDateTime =
-        OffsetDateTime.parse(dateString, createEngineDateFormatter());
-
-    // when
-    final OffsetDateTime parsedOffsetDateTime =
-        createEngineMapper()
-            .readValue(createDateHolderJsonString(dateString), DateHolder.class)
-            .getDate();
-
-    // then
-    assertThat(parsedOffsetDateTime).isEqualTo(expectedOffsetDateTime);
-  }
-
-  @Test
-  public void testEngineMapperDateDeserializationFromStringWithoutMillisAndTimezone()
-      throws JsonProcessingException {
-    // given
-    final String datePattern = "yyyy-MM-dd'T'HH:mm:ss";
-    configurationService.setEngineDateFormat(datePattern);
-
-    final String dateString = "2017-12-11T17:28:38";
-    final OffsetDateTime expectedOffsetDateTime =
-        LocalDateTime.parse(dateString, createEngineDateFormatter())
-            .atZone(ZoneId.systemDefault())
-            .toOffsetDateTime();
-
-    // when
-    final OffsetDateTime parsedOffsetDateTime =
-        createEngineMapper()
+        optimizeJacksonConfig
+            .objectMapper()
             .readValue(createDateHolderJsonString(dateString), DateHolder.class)
             .getDate();
 
@@ -256,14 +204,6 @@ public class ObjectMapperFactoryTest {
 
   private DateTimeFormatter createEngineDateFormatter() {
     return DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat());
-  }
-
-  private ObjectMapper createEngineMapper() {
-    return objectMapperFactory.createEngineMapper();
-  }
-
-  private ObjectMapper createOptimizeMapper() {
-    return objectMapperFactory.createOptimizeMapper();
   }
 
   private String createDateHolderJsonString(final String dateString) {

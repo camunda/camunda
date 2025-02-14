@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.upgrade.os;
 
-import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static io.camunda.optimize.upgrade.db.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -26,6 +25,7 @@ import io.camunda.optimize.service.db.os.schema.OpenSearchMetadataService;
 import io.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.service.util.mapper.OptimizeObjectMapper;
 import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.github.netmikey.logunit.api.LogCapturer;
@@ -328,7 +328,9 @@ public class SchemaUpgradeClientOSReindexTest {
 
     final HttpEntity httpEntity = mock(HttpEntity.class);
     when(httpEntity.getContent())
-        .thenReturn(new ByteArrayInputStream(OPTIMIZE_MAPPER.writeValueAsBytes(taskResponse)));
+        .thenReturn(
+            new ByteArrayInputStream(
+                OptimizeObjectMapper.OPTIMIZE_MAPPER.writeValueAsBytes(taskResponse)));
     when(mockedReindexResponse.getEntity()).thenReturn(httpEntity);
 
     return mockedReindexResponse;

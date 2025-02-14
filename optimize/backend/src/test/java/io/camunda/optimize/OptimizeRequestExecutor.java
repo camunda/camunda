@@ -12,7 +12,6 @@ import static io.camunda.optimize.MetricEnum.NEW_PAGE_FETCH_TIME_METRIC;
 import static io.camunda.optimize.MetricEnum.OVERALL_IMPORT_TIME_METRIC;
 import static io.camunda.optimize.OptimizeMetrics.METRICS_ENDPOINT;
 import static io.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
-import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static jakarta.ws.rs.HttpMethod.DELETE;
 import static jakarta.ws.rs.HttpMethod.GET;
 import static jakarta.ws.rs.HttpMethod.POST;
@@ -23,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 import io.camunda.optimize.service.security.AuthCookieService;
+import io.camunda.optimize.service.util.mapper.OptimizeObjectMapper;
 import io.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import io.camunda.optimize.tomcat.OptimizeResourceConstants;
 import jakarta.ws.rs.client.Client;
@@ -78,7 +78,7 @@ public class OptimizeRequestExecutor {
       final String defaultUser, final String defaultUserPassword, final String restEndpoint) {
     this.defaultUser = defaultUser;
     this.defaultUserPassword = defaultUserPassword;
-    objectMapper = getDefaultObjectMapper();
+    objectMapper = OptimizeObjectMapper.OPTIMIZE_MAPPER;
     defaultWebTarget = createWebTarget(restEndpoint);
     webTarget = defaultWebTarget;
   }
@@ -339,10 +339,6 @@ public class OptimizeRequestExecutor {
 
     entityStream.reset();
     return stringBuilder.toString();
-  }
-
-  private static ObjectMapper getDefaultObjectMapper() {
-    return OPTIMIZE_MAPPER;
   }
 
   public WebTarget getDefaultWebTarget() {

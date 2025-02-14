@@ -39,7 +39,7 @@ import io.camunda.optimize.service.util.mapper.CustomDefinitionDeserializer;
 import io.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
 import io.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import io.camunda.optimize.service.util.mapper.CustomReportDefinitionDeserializer;
-import io.camunda.optimize.service.util.mapper.ObjectMapperFactory;
+import io.camunda.optimize.service.util.mapper.OptimizeObjectMapper;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.BufferedInputStream;
@@ -132,7 +132,7 @@ public class OpenSearchClientBuilder {
         osConfig.getOpenSearchConfiguration().getFirstConnectionNode().getHost(),
         Region.of(region),
         AwsSdk2TransportOptions.builder()
-            .setMapper(new JacksonJsonpMapper(ObjectMapperFactory.OPTIMIZE_MAPPER))
+            .setMapper(new JacksonJsonpMapper(OptimizeObjectMapper.OPTIMIZE_MAPPER))
             .build());
   }
 

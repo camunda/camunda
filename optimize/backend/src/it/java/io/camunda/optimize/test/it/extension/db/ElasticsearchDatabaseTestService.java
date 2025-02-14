@@ -19,7 +19,6 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.F
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX;
-import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static io.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithPercentileInterpolation;
 
 import co.elastic.clients.elasticsearch._types.Conflicts;
@@ -105,6 +104,7 @@ import io.camunda.optimize.service.util.DatabaseHelper;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
+import io.camunda.optimize.service.util.mapper.OptimizeObjectMapper;
 import io.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import io.camunda.optimize.test.it.extension.MockServerUtil;
 import io.camunda.optimize.test.repository.TestIndexRepositoryES;
@@ -611,7 +611,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
       throw new OptimizeRuntimeException(e);
     }
     return ElasticsearchReaderUtil.mapHits(
-        searchResponse.hits(), zeebeRecordClass, OPTIMIZE_MAPPER);
+        searchResponse.hits(), zeebeRecordClass, OptimizeObjectMapper.OPTIMIZE_MAPPER);
   }
 
   @Override
@@ -1156,9 +1156,9 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
     optimizeElasticsearchClient =
         new OptimizeElasticsearchClient(
             ElasticsearchClientBuilder.restClient(configurationService, new PluginRepository()),
-            OPTIMIZE_MAPPER,
+            OptimizeObjectMapper.OPTIMIZE_MAPPER,
             ElasticsearchClientBuilder.build(
-                configurationService, OPTIMIZE_MAPPER, new PluginRepository()),
+                configurationService, OptimizeObjectMapper.OPTIMIZE_MAPPER, new PluginRepository()),
             new OptimizeIndexNameService(configurationService, DatabaseType.ELASTICSEARCH));
     adjustClusterSettings();
     CLIENT_CACHE.put(clientKey, optimizeElasticsearchClient);

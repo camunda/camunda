@@ -30,9 +30,6 @@ import io.camunda.optimize.service.entities.report.ReportImportService;
 import io.camunda.optimize.service.exceptions.OptimizeImportFileInvalidException;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.security.AuthorizedCollectionService;
-import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.optimize.service.util.mapper.ObjectMapperFactory;
-import io.camunda.optimize.service.util.mapper.OptimizeDateTimeFormatterFactory;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -51,23 +48,23 @@ import org.springframework.stereotype.Component;
 public class EntityImportService {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(EntityImportService.class);
+  protected ObjectMapper optimizeObjectMapper;
   private final ReportImportService reportImportService;
   private final DashboardImportService dashboardImportService;
   private final AuthorizedCollectionService authorizedCollectionService;
   private final CollectionService collectionService;
-  private final ConfigurationService configurationService;
 
   public EntityImportService(
       final ReportImportService reportImportService,
       final DashboardImportService dashboardImportService,
       final AuthorizedCollectionService authorizedCollectionService,
       final CollectionService collectionService,
-      final ConfigurationService configurationService) {
+      final ObjectMapper optimizeObjectMapper) {
     this.reportImportService = reportImportService;
     this.dashboardImportService = dashboardImportService;
     this.authorizedCollectionService = authorizedCollectionService;
     this.collectionService = collectionService;
-    this.configurationService = configurationService;
+    this.optimizeObjectMapper = optimizeObjectMapper;
   }
 
   public List<EntityIdResponseDto> importEntities(
@@ -135,15 +132,10 @@ public class EntityImportService {
           "Could not import entity because the provided file is null or empty.");
     }
 
-    final ObjectMapper objectMapper =
-        new ObjectMapperFactory(
-                new OptimizeDateTimeFormatterFactory().getObject(), configurationService)
-            .createOptimizeMapper();
-
     try {
       // @formatter:off
       final Set<OptimizeEntityExportDto> exportDtos =
-          objectMapper.readValue(exportedDtoJson, new TypeReference<>() {});
+          optimizeObjectMapper.readValue(exportedDtoJson, new TypeReference<>() {});
       // @formatter:on
       final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
       final Set<ConstraintViolation<OptimizeEntityExportDto>> violations = new HashSet<>();

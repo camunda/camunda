@@ -20,8 +20,7 @@ import io.camunda.optimize.service.db.schema.DatabaseMetadataService;
 import io.camunda.optimize.service.db.schema.DatabaseSchemaManager;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
-import io.camunda.optimize.service.util.mapper.ObjectMapperFactory;
-import io.camunda.optimize.service.util.mapper.OptimizeDateTimeFormatterFactory;
+import io.camunda.optimize.service.util.mapper.OptimizeObjectMapper;
 import io.camunda.optimize.upgrade.es.SchemaUpgradeClientES;
 import io.camunda.optimize.upgrade.os.SchemaUpgradeClientOS;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
@@ -43,14 +42,12 @@ public final class SchemaUpgradeClientFactory {
               metadataService,
               upgradeDependencies.configurationService(),
               upgradeDependencies.indexNameService(),
-              mappingUtil.getAllMappings(upgradeDependencies.indexNameService().getIndexPrefix())),
+              mappingUtil.getAllMappings(upgradeDependencies.indexNameService().getIndexPrefix()),
+              OptimizeObjectMapper.OPTIMIZE_MAPPER),
           metadataService,
           upgradeDependencies.configurationService(),
           esClient,
-          new ObjectMapperFactory(
-                  new OptimizeDateTimeFormatterFactory().getObject(),
-                  upgradeDependencies.configurationService())
-              .createOptimizeMapper());
+          OptimizeObjectMapper.OPTIMIZE_MAPPER);
     } else if (upgradeDependencies.databaseType().equals(DatabaseType.OPENSEARCH)) {
       final OptimizeOpenSearchClient osClient =
           (OptimizeOpenSearchClient) upgradeDependencies.databaseClient();
@@ -62,13 +59,11 @@ public final class SchemaUpgradeClientFactory {
               metadataService,
               upgradeDependencies.configurationService(),
               upgradeDependencies.indexNameService(),
-              mappingUtil.getAllMappings(upgradeDependencies.indexNameService().getIndexPrefix())),
+              mappingUtil.getAllMappings(upgradeDependencies.indexNameService().getIndexPrefix()),
+              OptimizeObjectMapper.OPTIMIZE_MAPPER),
           metadataService,
           osClient,
-          new ObjectMapperFactory(
-                  new OptimizeDateTimeFormatterFactory().getObject(),
-                  upgradeDependencies.configurationService())
-              .createOptimizeMapper());
+          OptimizeObjectMapper.OPTIMIZE_MAPPER);
     } else {
       throw new UnsupportedOperationException(
           "Database type "
@@ -89,17 +84,13 @@ public final class SchemaUpgradeClientFactory {
           (ElasticSearchMetadataService) metadataService,
           configurationService,
           esClient,
-          new ObjectMapperFactory(
-                  new OptimizeDateTimeFormatterFactory().getObject(), configurationService)
-              .createOptimizeMapper());
+          OptimizeObjectMapper.OPTIMIZE_MAPPER);
     } else if (dbClient instanceof final OptimizeOpenSearchClient osClient) {
       return new SchemaUpgradeClientOS(
           (OpenSearchSchemaManager) schemaManager,
           (OpenSearchMetadataService) metadataService,
           osClient,
-          new ObjectMapperFactory(
-                  new OptimizeDateTimeFormatterFactory().getObject(), configurationService)
-              .createOptimizeMapper());
+          OptimizeObjectMapper.OPTIMIZE_MAPPER);
     } else {
       throw new UnsupportedOperationException(
           "Database type " + dbClient.getClass() + " not supported for schema upgrade");

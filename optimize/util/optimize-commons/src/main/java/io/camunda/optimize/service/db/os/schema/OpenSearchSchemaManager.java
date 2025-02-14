@@ -10,7 +10,6 @@ package io.camunda.optimize.service.db.os.schema;
 import static io.camunda.optimize.service.db.DatabaseConstants.INDEX_ALREADY_EXISTS_EXCEPTION_TYPE;
 import static io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager.INDEX_EXIST_BATCH_SIZE;
 import static io.camunda.optimize.service.db.os.schema.OpenSearchIndexSettingsBuilder.buildDynamicSettings;
-import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.util.stream.Collectors.toSet;
 
@@ -105,8 +104,13 @@ public class OpenSearchSchemaManager
   public OpenSearchSchemaManager(
       final OpenSearchMetadataService metadataService,
       final ConfigurationService configurationService,
-      final OptimizeIndexNameService indexNameService) {
-    super(configurationService, indexNameService, new ArrayList<>(getAllNonDynamicMappings()));
+      final OptimizeIndexNameService indexNameService,
+      final ObjectMapper optimizeObjectMapper) {
+    super(
+        configurationService,
+        indexNameService,
+        new ArrayList<>(getAllNonDynamicMappings()),
+        optimizeObjectMapper);
     this.metadataService = metadataService;
   }
 
@@ -114,8 +118,9 @@ public class OpenSearchSchemaManager
       final OpenSearchMetadataService metadataService,
       final ConfigurationService configurationService,
       final OptimizeIndexNameService indexNameService,
-      final List<IndexMappingCreator<Builder>> mappings) {
-    super(configurationService, indexNameService, mappings);
+      final List<IndexMappingCreator<Builder>> mappings,
+      final ObjectMapper optimizeObjectMapper) {
+    super(configurationService, indexNameService, mappings, optimizeObjectMapper);
     this.metadataService = metadataService;
   }
 
@@ -503,7 +508,7 @@ public class OpenSearchSchemaManager
 
   private Map<String, JsonData> convertToMap(final IndexSettings indexSettings) {
     try {
-      final JacksonJsonpMapper jsonpMapper = new JacksonJsonpMapper(OPTIMIZE_MAPPER);
+      final JacksonJsonpMapper jsonpMapper = new JacksonJsonpMapper(optimizeObjectMapper);
       final StringWriter writer = new StringWriter();
       final JacksonJsonpGenerator generator =
           new JacksonJsonpGenerator(new JsonFactory().createGenerator(writer));
