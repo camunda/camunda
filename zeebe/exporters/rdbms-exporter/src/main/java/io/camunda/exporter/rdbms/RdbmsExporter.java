@@ -29,7 +29,7 @@ public class RdbmsExporter {
   private final Map<ValueType, List<RdbmsExportHandler>> registeredHandlers;
   private Controller controller;
 
-  private final long partitionId;
+  private final int partitionId;
   private final RdbmsWriter rdbmsWriter;
 
   // configuration
