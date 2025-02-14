@@ -66,8 +66,6 @@ public class BackupRestoreIT {
                     .withStartupTimeout(Duration.ofMinutes(5))
                     // location of the repository that will be used for snapshots
                     .withEnv("path.repo", "~/");
-            // container.addFileSystemBind(
-            // repositoryDir.toString(), "~/", BindMode.READ_WRITE, SelinuxContext.SHARED);
             container.start();
             dbUrl = "http://" + container.getHttpHostAddress();
 
