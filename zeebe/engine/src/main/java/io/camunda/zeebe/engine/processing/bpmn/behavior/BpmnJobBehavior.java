@@ -181,7 +181,8 @@ public final class BpmnJobBehavior {
   public void createNewTaskListenerJob(
       final BpmnElementContext context,
       final UserTaskRecord taskRecordValue,
-      final TaskListener listener) {
+      final TaskListener listener,
+      final List<String> changedAttributes) {
     evaluateTaskListenerJobExpressions(listener.getJobWorkerProperties(), context, taskRecordValue)
         .thenDo(
             listenerJobProperties ->
@@ -190,7 +191,7 @@ public final class BpmnJobBehavior {
                     listenerJobProperties,
                     JobKind.TASK_LISTENER,
                     fromTaskListenerEventType(listener.getEventType()),
-                    extractUserTaskHeaders(taskRecordValue)))
+                    extractUserTaskHeaders(taskRecordValue, changedAttributes)))
         .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
   }
 
@@ -352,7 +353,8 @@ public final class BpmnJobBehavior {
     return headerEncoder.encode(headers);
   }
 
-  private Map<String, String> extractUserTaskHeaders(final UserTaskRecord userTaskRecord) {
+  private Map<String, String> extractUserTaskHeaders(
+      final UserTaskRecord userTaskRecord, final List<String> changedAttributes) {
     final var headers = new HashMap<String, String>();
 
     if (userTaskRecord.getUserTaskKey() > 0) {
@@ -367,6 +369,12 @@ public final class BpmnJobBehavior {
 
     if (StringUtils.isNotEmpty(userTaskRecord.getAction())) {
       headers.put(Protocol.USER_TASK_ACTION_HEADER_NAME, userTaskRecord.getAction());
+    }
+
+    if (changedAttributes != null && !changedAttributes.isEmpty()) {
+      headers.put(
+          Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME,
+          ExpressionTransformer.asListLiteral(changedAttributes));
     }
 
     return Collections.unmodifiableMap(headers);
