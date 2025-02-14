@@ -1206,7 +1206,9 @@ public class TaskListenerTest {
             // Assignee should match the initial value
             entry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "initial_assignee"),
             // Default priority is propagated
-            entry(Protocol.USER_TASK_PRIORITY_HEADER_NAME, "50"));
+            entry(Protocol.USER_TASK_PRIORITY_HEADER_NAME, "50"),
+            // Value for `assignee` was explicitly set on task creation
+            entry(Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME, "[\"assignee\"]"));
 
     // Complete the assigning listener job triggered after the user task creation
     completeJobs(processInstanceKey, listenerType);
@@ -1234,7 +1236,9 @@ public class TaskListenerTest {
             // Priority remains unchanged
             entry(Protocol.USER_TASK_PRIORITY_HEADER_NAME, "50"),
             // Action should reflect the unassign operation
-            entry(Protocol.USER_TASK_ACTION_HEADER_NAME, "unassign"));
+            entry(Protocol.USER_TASK_ACTION_HEADER_NAME, "unassign"),
+            // `assignee` was cleared during unassignment, marking it as a changed attribute.
+            entry(Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME, "[\"assignee\"]"));
   }
 
   @Test
@@ -1855,6 +1859,9 @@ public class TaskListenerTest {
             if (isAssigneeConfiguredOnTaskCreation) {
               put(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "initial_assignee");
             }
+            if (eventType == ZeebeTaskListenerEventType.assigning) {
+              put(Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME, "[\"assignee\"]");
+            }
             put(Protocol.USER_TASK_KEY_HEADER_NAME, userTaskKey);
             put(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "[\"initial_candidate_user\"]");
             put(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, "[\"initial_candidate_group\"]");
@@ -2128,7 +2135,18 @@ public class TaskListenerTest {
     // when
     ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("merry").assign();
 
-    // The first listener applies corrections to the `assignee`, `dueDate`, and `priority` fields
+    // then
+    assertActivatedJob(
+        processInstanceKey,
+        listenerType,
+        job ->
+            assertThat(job.getCustomHeaders())
+                .describedAs(
+                    "Expect the first listener job to receive `changedAttributes` header containing only 'assignee' as the only changed attribute at this stage.")
+                .containsEntry(
+                    Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME, "[\"assignee\"]"));
+
+    // when: first listener applies corrections to the `assignee`, `dueDate`, and `priority` fields
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
@@ -2143,7 +2161,7 @@ public class TaskListenerTest {
                 .setCorrectedAttributes(List.of("assignee", "dueDate", "priority")))
         .complete();
 
-    // The second listener resets the `assignee` and `priority` to their initial user task values
+    // when: second listener resets the `assignee` and `priority` to their initial user task values
     // before the task assignment
     ENGINE
         .job()
@@ -2158,7 +2176,7 @@ public class TaskListenerTest {
                 .setCorrectedAttributes(List.of("assignee", "priority")))
         .complete();
 
-    // The third listener corrects the `candidateGroupsList`
+    // when: third listener corrects the `candidateGroupsList`
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
@@ -2793,6 +2811,14 @@ public class TaskListenerTest {
         .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
         .findFirst()
         .orElseThrow(() -> new AssertionError("No job found with type " + jobType));
+  }
+
+  private void assertActivatedJob(
+      final long processInstanceKey,
+      final String jobType,
+      final Consumer<JobRecordValue> assertion) {
+    final var activatedJob = activateJob(processInstanceKey, jobType);
+    assertThat(activatedJob).satisfies(assertion);
   }
 
   private FormMetadataValue deployForm(final String formPath) {
