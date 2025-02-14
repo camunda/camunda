@@ -47,9 +47,11 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -492,7 +494,9 @@ public final class EngineRule extends ExternalResource {
           .skip(partitionCount - 1)
           .await();
       RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
-          .withDistributionIntent(IdentitySetupIntent.INITIALIZE)
+          .withDistributionIntent(AuthorizationIntent.CREATE)
+          // -2 as we don't create Authorizations for the UNSPECIFIED resource type.
+          .skip(AuthorizationResourceType.values().length - 2)
           .await();
     } else {
       RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED).await();
