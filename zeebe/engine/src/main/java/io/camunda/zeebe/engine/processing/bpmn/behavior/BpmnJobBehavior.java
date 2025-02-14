@@ -478,16 +478,6 @@ public final class BpmnJobBehavior {
       final UserTaskRecord userTaskRecord, final List<String> changedAttributes) {
     final var headers = new HashMap<String, String>();
 
-    if (userTaskRecord.getUserTaskKey() > 0) {
-      headers.put(
-          Protocol.USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskRecord.getUserTaskKey()));
-    }
-
-    if (userTaskRecord.getPriority() > 0) {
-      headers.put(
-          Protocol.USER_TASK_PRIORITY_HEADER_NAME, String.valueOf(userTaskRecord.getPriority()));
-    }
-
     if (StringUtils.isNotEmpty(userTaskRecord.getAction())) {
       headers.put(Protocol.USER_TASK_ACTION_HEADER_NAME, userTaskRecord.getAction());
     }
@@ -496,6 +486,16 @@ public final class BpmnJobBehavior {
       headers.put(
           Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME,
           ExpressionTransformer.asListLiteral(changedAttributes));
+    }
+
+    if (userTaskRecord.getPriority() > 0) {
+      headers.put(
+          Protocol.USER_TASK_PRIORITY_HEADER_NAME, String.valueOf(userTaskRecord.getPriority()));
+    }
+
+    if (userTaskRecord.getUserTaskKey() > 0) {
+      headers.put(
+          Protocol.USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskRecord.getUserTaskKey()));
     }
 
     return Collections.unmodifiableMap(headers);
