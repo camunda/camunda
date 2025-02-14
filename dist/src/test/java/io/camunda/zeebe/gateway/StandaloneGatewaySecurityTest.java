@@ -40,7 +40,6 @@ import java.security.KeyStore;
 import java.security.cert.Certificate;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
@@ -199,7 +198,7 @@ final class StandaloneGatewaySecurityTest {
     final var brokerClientConfig = gatewayConfig.brokerClientConfig();
 
     final var clusterConfig = gatewayConfig.clusterConfig();
-    final var clusterConfiguration = new AtomixClusterConfiguration(clusterConfig);
+    final var clusterConfiguration = new AtomixClusterConfiguration(clusterConfig, meterRegistry);
     atomixCluster = clusterConfiguration.atomixCluster();
     final ActorSchedulerConfiguration actorSchedulerConfiguration =
         new ActorSchedulerConfiguration(

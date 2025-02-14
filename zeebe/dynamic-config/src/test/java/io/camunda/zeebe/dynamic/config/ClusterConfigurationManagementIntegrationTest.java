@@ -41,7 +41,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -53,7 +52,6 @@ class ClusterConfigurationManagementIntegrationTest {
 
   private final ActorScheduler actorScheduler = ActorScheduler.newActorScheduler().build();
   @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
-
   private final List<Node> clusterNodes =
       List.of(createNode("0"), createNode("1"), createNode("2"));
   private final Map<Integer, TestNode> nodes = new HashMap<>();
