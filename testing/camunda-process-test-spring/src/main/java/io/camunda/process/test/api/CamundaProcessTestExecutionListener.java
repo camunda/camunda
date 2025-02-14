@@ -32,6 +32,7 @@ import io.camunda.process.test.impl.testresult.ProcessTestResult;
 import io.camunda.spring.client.event.CamundaClientClosingEvent;
 import io.camunda.spring.client.event.CamundaClientCreatedEvent;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.spring.client.event.ZeebeClientClosingEvent;
 import io.camunda.zeebe.spring.client.event.ZeebeClientCreatedEvent;
 import java.util.ArrayList;
 import java.util.List;
@@ -129,6 +130,9 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     // close Zeebe clients
     testContext.getApplicationContext().publishEvent(new CamundaClientClosingEvent(this, client));
+    testContext
+        .getApplicationContext()
+        .publishEvent(new ZeebeClientClosingEvent(this, zeebeClient));
 
     for (final var createdClient : createdClients) {
       createdClient.close();

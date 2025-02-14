@@ -16,6 +16,7 @@
 package io.camunda.process.test.api;
 
 import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -114,6 +115,20 @@ public class ProcessInstanceAssertTest {
     @Test
     void shouldUseProcessInstanceEvent() throws IOException {
       // given
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(ACTIVE_PROCESS_INSTANCE_KEY);
+
+      // when
+      CamundaAssert.assertThat(processInstanceEvent).isActive();
+
+      // then
+      verify(camundaDataSource).findProcessInstances();
+    }
+
+    @Test
+    void shouldUseDeprecatedProcessInstanceEvent() throws IOException {
+      // given
+      final io.camunda.zeebe.client.api.response.ProcessInstanceEvent processInstanceEvent =
+          mock(io.camunda.zeebe.client.api.response.ProcessInstanceEvent.class);
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(ACTIVE_PROCESS_INSTANCE_KEY);
 
       // when
