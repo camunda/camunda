@@ -60,7 +60,7 @@ public class AuthorizationCreatedUpdatedHandler
       final Record<AuthorizationRecordValue> record, final AuthorizationEntity entity) {
     final AuthorizationRecordValue value = record.getValue();
     entity
-        .setAuthorizationKey(entity.getAuthorizationKey())
+        .setAuthorizationKey(value.getAuthorizationKey())
         .setOwnerId(value.getOwnerId())
         .setOwnerType(value.getOwnerType().name())
         .setResourceType(value.getResourceType().name())
