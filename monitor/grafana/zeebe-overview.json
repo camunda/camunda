@@ -1348,11 +1348,11 @@
           "datasource": {
             "uid": "$DS_PROMETHEUS"
           },
-          "expr": "sum(rate(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])) by (grpc_method, code)",
+          "expr": "sum(label_replace(label_replace(rate(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval]), \"method\", \"$1\", \"grpc_method\", \"(.+)\"), \"statusCode\", \"$1\", \"code\", \"(.+)\") or rate(grpc_server_processing_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])) by (method, statusCode)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{grpc_method}} Request ({{code}})",
+          "legendFormat": "{{method}} Request ({{statusCode}})",
           "refId": "A"
         }
       ],

@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFa
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTestFactory;
+import io.camunda.zeebe.engine.util.TestStreams.FluentLogWriter;
 import io.camunda.zeebe.engine.util.client.CommandWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
@@ -40,6 +41,7 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
@@ -309,6 +311,12 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final String username) {
     return streamProcessingComposite.writeCommand(
         requestStreamId, requestId, intent, value, username);
+  }
+
+  @Override
+  public long writeCommandOnPartition(
+      final int partitionId, final UnaryOperator<FluentLogWriter> builder) {
+    return streamProcessingComposite.writeCommandOnPartition(partitionId, builder);
   }
 
   @Override

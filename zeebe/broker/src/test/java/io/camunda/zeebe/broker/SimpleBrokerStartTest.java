@@ -26,6 +26,8 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.time.Duration;
 import java.util.Collections;
@@ -42,6 +44,7 @@ public final class SimpleBrokerStartTest {
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private File newTemporaryFolder;
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @Before
   public void setup() throws Exception {
@@ -83,7 +86,7 @@ public final class SimpleBrokerStartTest {
     assignSocketAddresses(brokerCfg);
     brokerCfg.init(newTemporaryFolder.getAbsolutePath());
 
-    final var atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg);
+    final var atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg, meterRegistry);
     final var actorScheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg);
     final var brokerClient =
         TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);

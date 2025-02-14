@@ -18,7 +18,7 @@ package io.camunda.zeebe.client.api.fetch;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 
 /**
- * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
  *     io.camunda.client.api.fetch.DecisionDefinitionGetXmlRequest}
  */
 @Deprecated

@@ -28,6 +28,8 @@ import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.IdleStateEvent;
@@ -67,6 +69,7 @@ import org.junit.jupiter.api.condition.OS;
 final class NettyMessagingServiceTest {
   private static final String CLUSTER_NAME = "zeebe";
   private static final int UID_COLUMN = 7;
+  @AutoClose private final MeterRegistry registry = new SimpleMeterRegistry();
 
   private MessagingConfig defaultConfig() {
     return new MessagingConfig()
@@ -80,7 +83,8 @@ final class NettyMessagingServiceTest {
   }
 
   private NettyMessagingService newMessagingService() {
-    return new NettyMessagingService(CLUSTER_NAME, newAddress(), defaultConfig(), "testingPrefix");
+    return new NettyMessagingService(
+        CLUSTER_NAME, newAddress(), defaultConfig(), "testingPrefix", registry);
   }
 
   private Address newAddress() {
@@ -211,7 +215,8 @@ final class NettyMessagingServiceTest {
       // when
       final var nonBindableAddress = new Address("invalid.host", 1);
       try (final var service =
-          new NettyMessagingService("test", nonBindableAddress, config, "testingPrefix")) {
+          new NettyMessagingService(
+              "test", nonBindableAddress, config, "testingPrefix", registry)) {
         // then - should not fail by using advertisedAddress for binding
         assertThat(service.start()).succeedsWithin(Duration.ofSeconds(5));
         assertThat(service.bindingAddresses()).contains(bindingAddress);
@@ -774,7 +779,8 @@ final class NettyMessagingServiceTest {
           .setHeartbeatTimeout(Duration.ofMillis(2))
           .setHeartbeatInterval(Duration.ofMillis(1));
       try (final var netty3 =
-          new NettyMessagingService(CLUSTER_NAME, newAddress(), netty3Config, "testingPrefix")) {
+          new NettyMessagingService(
+              CLUSTER_NAME, newAddress(), netty3Config, "testingPrefix", registry)) {
         startMessagingServices(netty3);
         // when
         final var clientChannel =

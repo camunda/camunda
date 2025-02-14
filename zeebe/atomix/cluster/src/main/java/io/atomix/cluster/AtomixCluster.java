@@ -41,6 +41,7 @@ import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.net.Address;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -55,7 +56,8 @@ import org.slf4j.LoggerFactory;
  * establishing communication between nodes, and detecting failures.
  *
  * <p>The Atomix cluster can be run as a standalone instance for cluster management and
- * communication. To build a cluster instance, use {@link #builder()} to create a new builder.
+ * communication. To build a cluster instance, use {@link #builder(MeterRegistry)} to create a new
+ * builder.
  *
  * <pre>{@code
  * AtomixCluster cluster = AtomixCluster.builder()
@@ -103,8 +105,11 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   private final AtomicBoolean started = new AtomicBoolean();
 
   public AtomixCluster(
-      final ClusterConfig config, final Version version, final String actorSchedulerName) {
-    this(config, version, null, null, actorSchedulerName);
+      final ClusterConfig config,
+      final Version version,
+      final String actorSchedulerName,
+      final MeterRegistry registry) {
+    this(config, version, null, null, actorSchedulerName, registry);
   }
 
   protected AtomixCluster(
@@ -112,16 +117,19 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
       final Version version,
       final ManagedMessagingService messagingService,
       final ManagedUnicastService unicastService,
-      final String actorSchedulerName) {
+      final String actorSchedulerName,
+      final MeterRegistry registry) {
     this.messagingService =
         messagingService != null
             ? messagingService
-            : buildMessagingService(config, actorSchedulerName);
+            : buildMessagingService(config, actorSchedulerName, registry);
     this.unicastService =
-        unicastService != null ? unicastService : buildUnicastService(config, actorSchedulerName);
+        unicastService != null
+            ? unicastService
+            : buildUnicastService(config, actorSchedulerName, registry);
 
     discoveryProvider = buildLocationProvider(config);
-    membershipProtocol = buildMembershipProtocol(config, actorSchedulerName);
+    membershipProtocol = buildMembershipProtocol(config, actorSchedulerName, registry);
     membershipService =
         buildClusterMembershipService(config, this, discoveryProvider, membershipProtocol, version);
     communicationService =
@@ -135,8 +143,8 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
    *
    * @return a new Atomix builder
    */
-  public static AtomixClusterBuilder builder() {
-    return builder(new ClusterConfig());
+  public static AtomixClusterBuilder builder(final MeterRegistry registry) {
+    return builder(new ClusterConfig(), registry);
   }
 
   /**
@@ -145,8 +153,9 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
    * @param config the Atomix configuration
    * @return a new Atomix builder
    */
-  public static AtomixClusterBuilder builder(final ClusterConfig config) {
-    return new AtomixClusterBuilder(config);
+  public static AtomixClusterBuilder builder(
+      final ClusterConfig config, final MeterRegistry registry) {
+    return new AtomixClusterBuilder(config, registry);
   }
 
   /**
@@ -292,22 +301,24 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
 
   /** Builds a default messaging service. */
   protected static ManagedMessagingService buildMessagingService(
-      final ClusterConfig config, final String actorSchedulerName) {
+      final ClusterConfig config, final String actorSchedulerName, final MeterRegistry registry) {
     return new NettyMessagingService(
         config.getClusterId(),
         config.getNodeConfig().getAddress(),
         config.getMessagingConfig(),
-        actorSchedulerName);
+        actorSchedulerName,
+        registry);
   }
 
   /** Builds a default unicast service. */
   protected static ManagedUnicastService buildUnicastService(
-      final ClusterConfig config, final String actorSchedulerName) {
+      final ClusterConfig config, final String actorSchedulerName, final MeterRegistry registry) {
     return new NettyUnicastService(
         config.getClusterId(),
         config.getNodeConfig().getAddress(),
         config.getMessagingConfig(),
-        actorSchedulerName);
+        actorSchedulerName,
+        registry);
   }
 
   /** Builds a member location provider. */
@@ -324,11 +335,11 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   /** Builds the group membership protocol. */
   @SuppressWarnings("unchecked")
   protected static GroupMembershipProtocol buildMembershipProtocol(
-      final ClusterConfig config, final String actorSchedulerName) {
+      final ClusterConfig config, final String actorSchedulerName, final MeterRegistry registry) {
     return config
         .getProtocolConfig()
         .getType()
-        .newProtocol(config.getProtocolConfig(), actorSchedulerName);
+        .newProtocol(config.getProtocolConfig(), actorSchedulerName, registry);
   }
 
   /** Builds a cluster service. */

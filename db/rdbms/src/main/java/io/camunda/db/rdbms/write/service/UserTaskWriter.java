@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
+import io.camunda.db.rdbms.write.domain.UserTaskMigrationDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
@@ -80,5 +81,14 @@ public class UserTaskWriter {
               "io.camunda.db.rdbms.sql.UserTaskMapper.insertCandidateGroups",
               userTaskDbModel));
     }
+  }
+
+  public void migrateToProcess(final UserTaskMigrationDbModel model) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.USER_TASK,
+            model.userTaskKey(),
+            "io.camunda.db.rdbms.sql.UserTaskMapper.migrateToProcess",
+            model));
   }
 }

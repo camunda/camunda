@@ -65,7 +65,7 @@ public class AuthorizationCreatedUpdatedHandler
         .setOwnerType(value.getOwnerType().name())
         .setResourceType(value.getResourceType().name())
         .setResourceId(value.getResourceId())
-        .setPermissionTypes(new HashSet<>(value.getAuthorizationPermissions()));
+        .setPermissionTypes(new HashSet<>(value.getPermissionTypes()));
   }
 
   @Override

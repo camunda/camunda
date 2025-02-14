@@ -67,7 +67,7 @@ public class GroupProcessors {
         ValueType.GROUP,
         GroupIntent.DELETE,
         new GroupDeleteProcessor(
-            processingState.getGroupState(),
+            processingState,
             authCheckBehavior,
             keyGenerator,
             writers,

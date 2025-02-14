@@ -77,7 +77,6 @@ public class AnonymousAuthorizationTest {
         .withPermissions(PermissionType.CREATE)
         .withResourceType(AuthorizationResourceType.RESOURCE)
         .withResourceId("*")
-        .withOwnerKey(user.getUserKey())
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .create();

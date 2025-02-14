@@ -125,11 +125,10 @@
     parameterType="io.camunda.db.rdbms.write.domain.VariableDbModel"
     flushCache="true">
     INSERT INTO ${prefix}VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, SCOPE_KEY, TYPE, VAR_NAME, DOUBLE_VALUE,
-                          LONG_VALUE,
-                          VAR_VALUE, VAR_FULL_VALUE, TENANT_ID, IS_PREVIEW)
+                                   LONG_VALUE, VAR_VALUE, VAR_FULL_VALUE, TENANT_ID, IS_PREVIEW,
+                                   PARTITION_ID)
     VALUES (#{variableKey}, #{processInstanceKey}, #{processDefinitionId}, #{scopeKey}, #{type}, #{name}, #{doubleValue},
-            #{longValue},
-            #{value}, #{fullValue}, #{tenantId}, #{isPreview})
+            #{longValue}, #{value}, #{fullValue}, #{tenantId}, #{isPreview}, #{partitionId})
   </insert>
 
   <update
@@ -144,6 +143,16 @@
           VAR_VALUE  = #{value},
           VAR_FULL_VALUE = #{fullValue},
           IS_PREVIEW     = #{isPreview}
+      WHERE VAR_KEY = #{variableKey}
+  </update>
+
+  <update
+    id="migrateToProcess"
+    statementType="PREPARED"
+    parameterType="java.util.Map"
+    flushCache="true">
+      UPDATE VARIABLE
+      SET PROCESS_DEFINITION_ID = #{processDefinitionId}
       WHERE VAR_KEY = #{variableKey}
   </update>
 </mapper>

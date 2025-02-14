@@ -79,7 +79,6 @@ public class AuthorizationsUtil implements CloseableSilently {
     return userCreateResponse.getUserKey();
   }
 
-  // TODO: use for authorization creation based on owner Type + ID
   public void createPermissions(final String username, final Permissions... permissions) {
     for (final Permissions permission : permissions) {
       for (final String resourceId : permission.resourceIds()) {
@@ -94,7 +93,7 @@ public class AuthorizationsUtil implements CloseableSilently {
             .join();
       }
     }
-    if (permissions != null && permissions.length > 0) {
+    if (permissions.length > 0) {
       awaitPermissionExistsInElasticsearch(username, Arrays.asList(permissions).getLast());
     }
   }
@@ -203,7 +202,7 @@ public class AuthorizationsUtil implements CloseableSilently {
                     f ->
                         f.ownerIds(username)
                             .resourceType(resourceType)
-                            .permissionType(permissionType)
+                            .permissionTypes(permissionType)
                             .resourceIds(resourceIds)));
 
     awaitEntityExistsInElasticsearch(() -> searchClients.searchAuthorizations(permissionQuery));

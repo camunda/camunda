@@ -21,14 +21,14 @@
                            PROCESS_DEFINITION_KEY, PROCESS_INSTANCE_KEY,
                            ELEMENT_INSTANCE_KEY, TENANT_ID, DUE_DATE, FOLLOW_UP_DATE,
                            EXTERNAL_FORM_REFERENCE, PROCESS_DEFINITION_VERSION, CUSTOM_HEADERS,
-                           PRIORITY)
+                                    PRIORITY, PARTITION_ID)
     VALUES (#{userTaskKey}, #{elementId}, #{processDefinitionId}, #{creationDate},
             #{completionDate},
             #{assignee}, #{state}, #{formKey},
             #{processDefinitionKey}, #{processInstanceKey}, #{elementInstanceKey}, #{tenantId},
             #{dueDate}, #{followUpDate},
             #{externalFormReference}, #{processDefinitionVersion}, #{serializedCustomHeaders},
-            #{priority})
+            #{priority}, #{partitionId})
   </insert>
 
   <insert flushCache="true"
@@ -333,5 +333,18 @@
     FROM ${prefix}CANDIDATE_GROUP
     WHERE USER_TASK_KEY = #{userTaskKey}
   </delete>
+
+  <update
+    flushCache="true"
+    id="migrateToProcess"
+    parameterType="java.util.Map"
+    statementType="PREPARED">
+    UPDATE USER_TASK SET
+    ELEMENT_ID = #{elementId},
+    PROCESS_DEFINITION_ID = #{processDefinitionId},
+    PROCESS_DEFINITION_KEY = #{processDefinitionKey},
+    PROCESS_DEFINITION_VERSION = #{processDefinitionVersion}
+    WHERE USER_TASK_KEY = #{userTaskKey}
+  </update>
 
 </mapper>

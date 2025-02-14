@@ -17,6 +17,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.annotation.WillCloseWhenClosed;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.Time;
@@ -26,7 +27,7 @@ import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
 
-public class OpensearchRepository {
+public class OpensearchRepository implements AutoCloseable {
 
   private static final Time SCROLL_KEEP_ALIVE = Time.of(t -> t.time("1m"));
   private static final int SCROLL_PAGE_SIZE = 100;
@@ -35,7 +36,9 @@ public class OpensearchRepository {
   protected final Logger logger;
 
   public OpensearchRepository(
-      final OpenSearchAsyncClient client, final Executor executor, final Logger logger) {
+      @WillCloseWhenClosed final OpenSearchAsyncClient client,
+      final Executor executor,
+      final Logger logger) {
     this.client = client;
     this.executor = executor;
     this.logger = logger;
@@ -160,5 +163,10 @@ public class OpensearchRepository {
                         errors.size(), type, errors.getFirst().reason())));
 
     return new ExporterException("Failed to flush bulk request: " + collectedErrors);
+  }
+
+  @Override
+  public void close() throws Exception {
+    client._transport().close();
   }
 }

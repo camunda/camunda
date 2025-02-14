@@ -15,7 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
-import io.camunda.client.protocol.rest.UserCreateResponse;
+import io.camunda.client.impl.util.ParseUtil;
+import io.camunda.client.protocol.rest.UserCreateResult;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.CreateUserResponse;
 
@@ -33,8 +34,8 @@ public class CreateUserResponseImpl implements CreateUserResponse {
     return userKey;
   }
 
-  public CreateUserResponseImpl setResponse(final UserCreateResponse response) {
-    userKey = response.getUserKey();
+  public CreateUserResponseImpl setResponse(final UserCreateResult response) {
+    userKey = ParseUtil.parseLongOrEmpty(response.getUserKey());
     return this;
   }
 }

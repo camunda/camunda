@@ -16,6 +16,7 @@ import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.search.clients.query.SearchQueryBuilders;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
@@ -29,10 +30,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-@Disabled("https://github.com/camunda/camunda/issues/27289")
 @ZeebeIntegration
 public class TasklistCompleteUserTaskAuthorizationIT {
 
@@ -58,7 +57,8 @@ public class TasklistCompleteUserTaskAuthorizationIT {
   private TestStandaloneCamunda standaloneCamunda =
       new TestStandaloneCamunda()
           .withCamundaExporter()
-          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true));
+          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
+          .withAuthenticationMethod(AuthenticationMethod.BASIC);
 
   @BeforeEach
   public void beforeAll() {
@@ -76,6 +76,7 @@ public class TasklistCompleteUserTaskAuthorizationIT {
           ADMIN_USER_NAME,
           ADMIN_USER_PASSWORD,
           new Permissions(ResourceTypeEnum.RESOURCE, PermissionTypeEnum.CREATE, List.of("*")),
+          new Permissions(ResourceTypeEnum.AUTHORIZATION, PermissionTypeEnum.CREATE, List.of("*")),
           new Permissions(
               ResourceTypeEnum.PROCESS_DEFINITION,
               PermissionTypeEnum.READ_PROCESS_DEFINITION,

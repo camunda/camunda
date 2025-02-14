@@ -6,6 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 import { FC, useState } from "react";
+import { Stack } from "@carbon/react";
+import { spacing06 } from "@carbon/elements";
+import { Edit, TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
 import Page, { PageTitle } from "src/components/layout/Page";
@@ -20,7 +23,6 @@ import { TranslatedErrorInlineNotification } from "src/components/notifications/
 import useModal from "src/components/modal/useModal";
 import AddModal from "src/pages/mappings/modals/AddModal";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
-import { Edit, TrashCan } from "@carbon/react/icons";
 import { searchMapping } from "src/utility/api/mappings";
 
 const List: FC = () => {
@@ -38,21 +40,23 @@ const List: FC = () => {
   if (success && !mappingSearchResults?.items.length) {
     return (
       <Page>
-        <PageTitle>
-          <Translate>Mappings</Translate>
-        </PageTitle>
-        <C3EmptyState
-          heading={t("You don’t have any mappings yet")}
-          description={t("Mapping of JWT token")}
-          button={{
-            label: t("Create a mapping"),
-            onClick: addMapping,
-          }}
-          link={{
-            href: documentationHref("/concepts/mapping/", ""),
-            label: t("Learn more about mapping"),
-          }}
-        />
+        <Stack gap={spacing06}>
+          <PageTitle>
+            <Translate>Mappings</Translate>
+          </PageTitle>
+          <C3EmptyState
+            heading={t("You don’t have any mappings yet")}
+            description={t("Mapping of JWT token")}
+            button={{
+              label: t("Create a mapping"),
+              onClick: addMapping,
+            }}
+            link={{
+              href: documentationHref("/concepts/mapping/", ""),
+              label: t("Learn more about mapping"),
+            }}
+          />
+        </Stack>
         {addMappingModal}
       </Page>
     );

@@ -192,10 +192,28 @@
     parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel"
     flushCache="true">
     INSERT INTO ${prefix}PROCESS_INSTANCE (PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY, STATE, START_DATE, END_DATE, TENANT_ID, PARENT_PROCESS_INSTANCE_KEY, PARENT_ELEMENT_INSTANCE_KEY,
-                                  NUM_INCIDENTS, VERSION)
+                                           NUM_INCIDENTS, VERSION, PARTITION_ID)
     VALUES (#{processInstanceKey}, #{processDefinitionId}, #{processDefinitionKey}, #{state}, #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId}, #{parentProcessInstanceKey},
-            #{parentElementInstanceKey}, #{numIncidents}, #{version})
+            #{parentElementInstanceKey}, #{numIncidents}, #{version}, #{partitionId})
   </insert>
+
+  <update
+    id="update"
+    parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel"
+    flushCache="true">
+    UPDATE PROCESS_INSTANCE
+    SET PROCESS_DEFINITION_ID       = #{processDefinitionId},
+        PROCESS_DEFINITION_KEY      = #{processDefinitionKey},
+        STATE                       = #{state},
+        START_DATE                  = #{startDate, jdbcType=TIMESTAMP},
+        END_DATE                    = #{endDate, jdbcType=TIMESTAMP},
+        TENANT_ID                   = #{tenantId},
+        PARENT_PROCESS_INSTANCE_KEY = #{parentProcessInstanceKey},
+        PARENT_ELEMENT_INSTANCE_KEY = #{parentElementInstanceKey},
+        NUM_INCIDENTS               = #{numIncidents},
+        VERSION                     = #{version}
+    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </update>
 
   <update
     id="updateStateAndEndDate"

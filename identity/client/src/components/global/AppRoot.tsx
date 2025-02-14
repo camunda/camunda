@@ -8,18 +8,17 @@
 
 import styled, { createGlobalStyle } from "styled-components";
 import { FC, ReactNode } from "react";
-import { background, bodyShort01 } from "@carbon/elements";
+import { g10, bodyShort01 } from "@carbon/elements";
 import AppHeader from "src/components/layout/AppHeader";
 import ErrorBoundary from "src/components/global/ErrorBoundary";
 
 const GlobalStyle = createGlobalStyle`
   body {
-    background: ${background};
+    background: ${g10.background};
     font-size: ${bodyShort01.fontSize};
     font-weight: ${bodyShort01.fontSize};
     line-height: ${bodyShort01.lineHeight};
     letter-spacing: ${bodyShort01.letterSpacing};
-
     margin: 0;
     padding: 0;
     box-sizing: border-box;

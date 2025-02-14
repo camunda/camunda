@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
@@ -54,6 +56,7 @@ public final class BpmnJobBehavior {
       LoggerFactory.getLogger(BpmnJobBehavior.class.getPackageName());
   private static final Set<State> CANCELABLE_STATES =
       EnumSet.of(State.ACTIVATABLE, State.ACTIVATED, State.FAILED, State.ERROR_THROWN);
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final JobRecord jobRecord = new JobRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);
   private final HeaderEncoder headerEncoder = new HeaderEncoder(LOGGER);
@@ -317,6 +320,7 @@ public final class BpmnJobBehavior {
     final String dueDate = props.getDueDate();
     final String followUpDate = props.getFollowUpDate();
     final String formKey = props.getFormKey();
+    final List<LinkedResource> linkedResources = props.getLinkedResources();
 
     if (assignee != null && !assignee.isEmpty()) {
       headers.put(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, assignee);
@@ -335,6 +339,15 @@ public final class BpmnJobBehavior {
     }
     if (formKey != null && !formKey.isEmpty()) {
       headers.put(Protocol.USER_TASK_FORM_KEY_HEADER_NAME, formKey);
+    }
+    if (linkedResources != null && !linkedResources.isEmpty()) {
+      try {
+        final String linkedResourcesJson = OBJECT_MAPPER.writeValueAsString(linkedResources);
+        headers.put(Protocol.LINKED_RESOURCES_HEADER_NAME, linkedResourcesJson);
+      } catch (final JsonProcessingException e) {
+        throw new IllegalArgumentException(
+            "Failed to convert linked resource headers to json object", e);
+      }
     }
     return headerEncoder.encode(headers);
   }
@@ -393,6 +406,7 @@ public final class BpmnJobBehavior {
     private String dueDate;
     private String followUpDate;
     private String formKey;
+    private List<LinkedResource> linkedResources;
 
     public JobProperties type(final String type) {
       this.type = type;
@@ -464,6 +478,45 @@ public final class BpmnJobBehavior {
 
     public String getFormKey() {
       return formKey;
+    }
+
+    public JobProperties linkedResources(final List<LinkedResource> linkedResources) {
+      this.linkedResources = linkedResources;
+      return this;
+    }
+
+    public List<LinkedResource> getLinkedResources() {
+      return linkedResources;
+    }
+  }
+
+  public static final class LinkedResource {
+    private String resourceKey;
+    private String resourceType;
+    private String linkName;
+
+    public String getResourceKey() {
+      return resourceKey;
+    }
+
+    public void setResourceKey(final String resourceKey) {
+      this.resourceKey = resourceKey;
+    }
+
+    public String getResourceType() {
+      return resourceType;
+    }
+
+    public void setResourceType(final String resourceType) {
+      this.resourceType = resourceType;
+    }
+
+    public String getLinkName() {
+      return linkName;
+    }
+
+    public void setLinkName(final String linkName) {
+      this.linkName = linkName;
     }
   }
 }

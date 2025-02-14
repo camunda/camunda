@@ -51,6 +51,16 @@ public interface ProcessInstanceAssert {
   ProcessInstanceAssert isTerminated();
 
   /**
+   * Verifies that the process instance is created (i.e. active, completed, or terminated). The
+   * verification fails if the process instance is not created.
+   *
+   * <p>The assertion waits until the process instance is created.
+   *
+   * @return the assertion object
+   */
+  ProcessInstanceAssert isCreated();
+
+  /**
    * Verifies that the given BPMN elements are active. The verification fails if at least one
    * element is completed, terminated, or not entered.
    *
@@ -118,6 +128,78 @@ public interface ProcessInstanceAssert {
    * @see ElementSelectors
    */
   ProcessInstanceAssert hasTerminatedElements(ElementSelector... elementSelectors);
+
+  /**
+   * Verifies that the BPMN element is active the given amount of times. The verification fails if
+   * the element is not active or not exactly the given amount of times.
+   *
+   * <p>The assertion waits until the element is active the given amount of times.
+   *
+   * @param elementId the BPMN element ID
+   * @param times the expected amount of times
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasActiveElement(String elementId, int times);
+
+  /**
+   * Verifies that the BPMN element is active the given amount of times. The verification fails if
+   * the element is not active or not exactly the given amount of times.
+   *
+   * <p>The assertion waits until the element is active the given amount of times.
+   *
+   * @param elementSelector the selectors for the BPMN element
+   * @param times the expected amount of times
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasActiveElement(ElementSelector elementSelector, int times);
+
+  /**
+   * Verifies that the BPMN element is completed the given amount of times. The verification fails
+   * if the element is not completed or not exactly the given amount of times.
+   *
+   * <p>The assertion waits until the element is completed the given amount of times.
+   *
+   * @param elementId the BPMN element ID
+   * @param times the expected amount of times
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasCompletedElement(String elementId, int times);
+
+  /**
+   * Verifies that the BPMN element is completed the given amount of times. The verification fails
+   * if the element is not completed or not exactly the given amount of times.
+   *
+   * <p>The assertion waits until the element is completed the given amount of times.
+   *
+   * @param elementSelector the selectors for the BPMN element
+   * @param times the expected amount of times
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasCompletedElement(ElementSelector elementSelector, int times);
+
+  /**
+   * Verifies that the BPMN element is terminated the given amount of times. The verification fails
+   * if the element is not terminated or not exactly the given amount of times.
+   *
+   * <p>The assertion waits until the element is terminated the given amount of times.
+   *
+   * @param elementId the BPMN element ID
+   * @param times the expected amount of times
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasTerminatedElement(String elementId, int times);
+
+  /**
+   * Verifies that the BPMN element is terminated the given amount of times. The verification fails
+   * if the element is not terminated or not exactly the given amount of times.
+   *
+   * <p>The assertion waits until the element is terminated the given amount of times.
+   *
+   * @param elementSelector the selectors for the BPMN element
+   * @param times the expected amount of times
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasTerminatedElement(ElementSelector elementSelector, int times);
 
   /**
    * Verifies that the process instance has the given variables. The verification fails if at least

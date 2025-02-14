@@ -17,21 +17,22 @@ package io.camunda.client.impl.search.filter.builder;
 
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.impl.util.CollectionUtil;
-import io.camunda.client.protocol.rest.BasicLongFilterProperty;
+import io.camunda.client.protocol.rest.BasicStringFilterProperty;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class BasicLongPropertyImpl implements BasicLongProperty {
-  private final BasicLongFilterProperty filterProperty = new BasicLongFilterProperty();
+  private final BasicStringFilterProperty filterProperty = new BasicStringFilterProperty();
 
   @Override
   public BasicLongProperty eq(final Long value) {
-    filterProperty.set$Eq(value);
+    filterProperty.set$Eq(String.valueOf(value));
     return this;
   }
 
   @Override
   public BasicLongProperty neq(final Long value) {
-    filterProperty.set$Neq(value);
+    filterProperty.set$Neq(String.valueOf(value));
     return this;
   }
 
@@ -43,7 +44,7 @@ public class BasicLongPropertyImpl implements BasicLongProperty {
 
   @Override
   public BasicLongProperty in(final List<Long> values) {
-    filterProperty.set$In(values);
+    filterProperty.set$In(values.stream().map(String::valueOf).collect(Collectors.toList()));
     return this;
   }
 
@@ -53,7 +54,7 @@ public class BasicLongPropertyImpl implements BasicLongProperty {
   }
 
   @Override
-  public BasicLongFilterProperty build() {
+  public BasicStringFilterProperty build() {
     return filterProperty;
   }
 }

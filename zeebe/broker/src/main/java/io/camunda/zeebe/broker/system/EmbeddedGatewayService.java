@@ -17,6 +17,7 @@ import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import org.agrona.CloseHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -36,7 +37,8 @@ public final class EmbeddedGatewayService implements AutoCloseable {
       final JobStreamClient jobStreamClient,
       final BrokerClient brokerClient,
       final UserServices userServices,
-      final PasswordEncoder passwordEncoder) {
+      final PasswordEncoder passwordEncoder,
+      final MeterRegistry meterRegistry) {
     this.concurrencyControl = concurrencyControl;
     this.brokerClient = brokerClient;
     this.jobStreamClient = jobStreamClient;
@@ -49,7 +51,8 @@ public final class EmbeddedGatewayService implements AutoCloseable {
             actorScheduler,
             jobStreamClient.streamer(),
             userServices,
-            passwordEncoder);
+            passwordEncoder,
+            meterRegistry);
   }
 
   @Override

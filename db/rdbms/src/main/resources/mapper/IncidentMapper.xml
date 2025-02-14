@@ -131,11 +131,32 @@
                           STATE,
                           CREATION_DATE,
                           JOB_KEY,
-                          TENANT_ID)
+                                   TENANT_ID,
+                                   PARTITION_ID)
     VALUES (#{incidentKey}, #{flowNodeInstanceKey}, #{flowNodeId}, #{processInstanceKey},
             #{processDefinitionId}, #{processDefinitionKey}, #{errorMessage}, #{errorType},
-            #{state},             #{creationDate, jdbcType=TIMESTAMP}, #{jobKey}, #{tenantId})
+            #{state}, #{creationDate, jdbcType=TIMESTAMP}, #{jobKey}, #{tenantId}, #{partitionId})
   </insert>
+
+  <update
+    id="update"
+    statementType="PREPARED"
+    parameterType="io.camunda.db.rdbms.write.domain.IncidentDbModel"
+    flushCache="true">
+    UPDATE INCIDENT
+    SET FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey},
+        FLOW_NODE_ID           = #{flowNodeId},
+        PROCESS_INSTANCE_KEY   = #{processInstanceKey},
+        PROCESS_DEFINITION_ID  = #{processDefinitionId},
+        PROCESS_DEFINITION_KEY = #{processDefinitionKey},
+        ERROR_MESSAGE          = #{errorMessage},
+        ERROR_TYPE             = #{errorType},
+        STATE                  = #{state},
+        CREATION_DATE          = #{creationDate, jdbcType=TIMESTAMP},
+        JOB_KEY                = #{jobKey},
+        TENANT_ID              = #{tenantId}
+    WHERE INCIDENT_KEY = #{incidentKey}
+  </update>
 
   <update
     id="updateState"

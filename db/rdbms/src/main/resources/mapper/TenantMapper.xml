@@ -76,7 +76,7 @@
     parameterType="io.camunda.db.rdbms.write.domain.TenantMemberDbModel"
     flushCache="true">
     INSERT INTO ${prefix}TENANT_MEMBER (TENANT_ID, ENTITY_ID, ENTITY_TYPE)
-    VALUES (#{tenantId}, #{entityID}, #{entityType})
+    VALUES (#{tenantId}, #{entityId}, #{entityType})
   </insert>
 
   <delete
