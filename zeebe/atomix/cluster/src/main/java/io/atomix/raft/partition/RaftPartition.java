@@ -242,6 +242,10 @@ public final class RaftPartition implements Partition, HealthMonitorable {
     return server;
   }
 
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
+  }
+
   public CompletableFuture<Void> stepDown() {
     return server.stepDown();
   }
