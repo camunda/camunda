@@ -189,7 +189,7 @@ public final class RaftStorage {
    */
   public RaftLog openLog(final MetaStore metaStore, final ThreadContextFactory threadFactory) {
 
-    return RaftLog.builder()
+    return RaftLog.builder(meterRegistry)
         .withName(prefix)
         .withPartitionId(partitionId)
         .withDirectory(directory)

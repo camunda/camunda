@@ -21,14 +21,17 @@ import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.journal.file.SegmentedJournalBuilder;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 
 public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
 
-  private final SegmentedJournalBuilder journalBuilder = SegmentedJournal.builder();
+  private final SegmentedJournalBuilder journalBuilder;
   private RaftLogFlusher flusher = Factory.DIRECT;
 
-  protected RaftLogBuilder() {}
+  protected RaftLogBuilder(final MeterRegistry meterRegistry) {
+    journalBuilder = SegmentedJournal.builder(meterRegistry);
+  }
 
   /**
    * Sets the storage name.
