@@ -60,6 +60,7 @@
       <column name="NUM_INCIDENTS" type="SMALLINT" />
       <column name="ELEMENT_ID" type="VARCHAR(255)"/>
       <column name="VERSION" type="SMALLINT" />
+      <column name="PARTITION_ID" type="NUMBER"/>
     </createTable>
 
     <modifySql dbms="mariadb">
@@ -84,6 +85,7 @@
       <column name="VAR_FULL_VALUE" type="CLOB"/>
       <column name="TENANT_ID" type="VARCHAR(255)"/>
       <column name="IS_PREVIEW" type="BOOLEAN"/>
+      <column name="PARTITION_ID" type="NUMBER"/>
     </createTable>
 
     <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_PROCESS_INSTANCE_KEY">
@@ -117,6 +119,7 @@
       <column name="TENANT_ID" type="VARCHAR(255)"/>
       <column name="INCIDENT_KEY" type="BIGINT" />
       <column name="NUM_SUBPROCESS_INCIDENTS" type="SMALLINT" />
+      <column name="PARTITION_ID" type="NUMBER"/>
     </createTable>
 
     <modifySql dbms="mariadb">
@@ -147,6 +150,7 @@
       <column name="PROCESS_DEFINITION_VERSION" type="SMALLINT"/>
       <column name="CUSTOM_HEADERS" type="CLOB"/>
       <column name="PRIORITY" type="INT"/>
+      <column name="PARTITION_ID" type="NUMBER"/>
     </createTable>
 
     <createTable tableName="${prefix}CANDIDATE_USER">
@@ -195,6 +199,7 @@
       <column name="TENANT_ID" type="VARCHAR(255)"/>
       <column name="JOB_KEY" type="BIGINT" />
       <column name="SCOPE_KEY" type="BIGINT" />
+      <column name="PARTITION_ID" type="NUMBER"/>
     </createTable>
 
     <modifySql dbms="mariadb">
@@ -261,6 +266,7 @@
       <column name="RESULT" type="VARCHAR(255)" />
       <column name="EVALUATION_FAILURE" type="VARCHAR(255)"/>
       <column name="TENANT_ID" type="VARCHAR(255)"/>
+      <column name="PARTITION_ID" type="NUMBER"/>
     </createTable>
 
     <modifySql dbms="mariadb">

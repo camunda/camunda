@@ -183,7 +183,9 @@
                                    STATE,
                                    EVALUATION_DATE,
                                    RESULT,
-                                   EVALUATION_FAILURE)
+                                            EVALUATION_FAILURE,
+                                            TENANT_ID,
+                                            PARTITION_ID)
     VALUES (#{decisionInstanceId}, #{decisionInstanceKey}, #{processInstanceKey},
             #{processDefinitionKey}, #{processDefinitionId},
             #{decisionDefinitionKey}, #{decisionDefinitionId},
@@ -191,7 +193,8 @@
             #{flowNodeInstanceKey}, #{flowNodeId},
             #{rootDecisionDefinitionKey},
             #{decisionType}, #{state},
-            #{evaluationDate, jdbcType=TIMESTAMP}, #{result}, #{evaluationFailure})
+            #{evaluationDate, jdbcType=TIMESTAMP}, #{result}, #{evaluationFailure},
+            #{tenantId}, #{partitionId})
   </insert>
 
   <insert

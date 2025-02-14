@@ -120,11 +120,12 @@
     flushCache="true">
     INSERT INTO ${prefix}FLOW_NODE_INSTANCE (FLOW_NODE_INSTANCE_KEY, FLOW_NODE_ID, PROCESS_INSTANCE_KEY,
                                     PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY, TYPE, STATE,
-                                    START_DATE, END_DATE, TENANT_ID, TREE_PATH, INCIDENT_KEY, NUM_SUBPROCESS_INCIDENTS)
+                                             START_DATE, END_DATE, TENANT_ID, TREE_PATH,
+                                             INCIDENT_KEY, NUM_SUBPROCESS_INCIDENTS, PARTITION_ID)
     VALUES (#{flowNodeInstanceKey}, #{flowNodeId}, #{processInstanceKey}, #{processDefinitionId},
             #{processDefinitionKey}, #{type}, #{state},
             #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId},
-            #{treePath}, #{incidentKey}, #{numSubprocessIncidents})
+            #{treePath}, #{incidentKey}, #{numSubprocessIncidents}, #{partitionId})
   </insert>
 
   <update

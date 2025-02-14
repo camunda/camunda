@@ -192,9 +192,9 @@
     parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel"
     flushCache="true">
     INSERT INTO ${prefix}PROCESS_INSTANCE (PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY, STATE, START_DATE, END_DATE, TENANT_ID, PARENT_PROCESS_INSTANCE_KEY, PARENT_ELEMENT_INSTANCE_KEY,
-                                  NUM_INCIDENTS, VERSION)
+                                           NUM_INCIDENTS, VERSION, PARTITION_ID)
     VALUES (#{processInstanceKey}, #{processDefinitionId}, #{processDefinitionKey}, #{state}, #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId}, #{parentProcessInstanceKey},
-            #{parentElementInstanceKey}, #{numIncidents}, #{version})
+            #{parentElementInstanceKey}, #{numIncidents}, #{version}, #{partitionId})
   </insert>
 
   <update

@@ -64,11 +64,6 @@ public final class AuthorizationClient {
       authorizationCreationRecord = new AuthorizationRecord();
     }
 
-    public AuthorizationCreateClient withOwnerKey(final Long ownerKey) {
-      authorizationCreationRecord.setOwnerKey(ownerKey);
-      return this;
-    }
-
     public AuthorizationCreateClient withOwnerId(final String ownerId) {
       authorizationCreationRecord.setOwnerId(ownerId);
       return this;
@@ -91,7 +86,7 @@ public final class AuthorizationClient {
     }
 
     public AuthorizationCreateClient withPermissions(final PermissionType... permissions) {
-      authorizationCreationRecord.setAuthorizationPermissions(Set.of(permissions));
+      authorizationCreationRecord.setPermissionTypes(Set.of(permissions));
       return this;
     }
 
@@ -209,7 +204,7 @@ public final class AuthorizationClient {
     }
 
     public AuthorizationUpdateClient withPermissions(final PermissionType... permissions) {
-      authorizationUpdateRecord.setAuthorizationPermissions(Set.of(permissions));
+      authorizationUpdateRecord.setPermissionTypes(Set.of(permissions));
       return this;
     }
 

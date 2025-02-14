@@ -97,6 +97,7 @@ public class DecisionInstanceExportHandler
         .decisionType(DecisionDefinitionType.fromValue(evaluatedDecision.getDecisionType()))
         .evaluationFailure(
             state == DecisionInstanceState.FAILED ? value.getEvaluationFailureMessage() : null)
+        .partitionId(record.getPartitionId())
         .build();
   }
 

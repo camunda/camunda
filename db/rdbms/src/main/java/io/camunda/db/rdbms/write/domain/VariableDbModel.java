@@ -28,7 +28,8 @@ public record VariableDbModel(
     Long scopeKey,
     Long processInstanceKey,
     String processDefinitionId,
-    String tenantId) {
+    String tenantId,
+    int partitionId) {
 
   public VariableDbModel copy(
       final Function<ObjectBuilder<VariableDbModel>, ObjectBuilder<VariableDbModel>>
@@ -42,7 +43,8 @@ public record VariableDbModel(
                 .scopeKey(scopeKey)
                 .processInstanceKey(processInstanceKey)
                 .processDefinitionId(processDefinitionId)
-                .tenantId(tenantId))
+                .tenantId(tenantId)
+                .partitionId(partitionId))
         .build();
   }
 
@@ -60,7 +62,8 @@ public record VariableDbModel(
           scopeKey,
           processInstanceKey,
           processDefinitionId,
-          tenantId);
+          tenantId,
+          partitionId);
     } else {
       return this;
     }
@@ -75,6 +78,7 @@ public record VariableDbModel(
     private Long processInstanceKey;
     private String processDefinitionId;
     private String tenantId;
+    private int partitionId;
 
     public VariableDbModelBuilder() {}
 
@@ -113,6 +117,11 @@ public record VariableDbModel(
       return this;
     }
 
+    public VariableDbModelBuilder partitionId(final int partitionId) {
+      this.partitionId = partitionId;
+      return this;
+    }
+
     // Build method to create the record
     @Override
     public VariableDbModel build() {
@@ -138,7 +147,8 @@ public record VariableDbModel(
           scopeKey,
           processInstanceKey,
           processDefinitionId,
-          tenantId);
+          tenantId,
+          partitionId);
     }
 
     private VariableDbModel getLongModel() {
@@ -154,7 +164,8 @@ public record VariableDbModel(
           scopeKey,
           processInstanceKey,
           processDefinitionId,
-          tenantId);
+          tenantId,
+          partitionId);
     }
 
     private VariableDbModel getDoubleModel() {
@@ -170,7 +181,8 @@ public record VariableDbModel(
           scopeKey,
           processInstanceKey,
           processDefinitionId,
-          tenantId);
+          tenantId,
+          partitionId);
     }
   }
 }

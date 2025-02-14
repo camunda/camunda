@@ -11,7 +11,7 @@
 
   <select id="findOne"
     statementType="PREPARED"
-    parameterType="java.lang.Long"
+    parameterType="java.lang.Integer"
     resultType="io.camunda.db.rdbms.write.domain.ExporterPositionModel">
       SELECT
         PARTITION_ID,
