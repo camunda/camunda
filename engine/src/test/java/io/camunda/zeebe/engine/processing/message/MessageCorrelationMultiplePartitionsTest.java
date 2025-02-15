@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.util.client.ProcessInstanceClient.ProcessInstance
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractEndEventBuilder;
-import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -267,7 +266,7 @@ public final class MessageCorrelationMultiplePartitionsTest {
                             .userTask()
                             .endEvent())
                 .startEvent()
-                .userTask("wait", AbstractUserTaskBuilder::zeebeUserTask)
+                .serviceTask("wait", t -> t.zeebeJobType("wait"))
                 .endEvent("terminate_instance", AbstractEndEventBuilder::terminate)
                 .done())
         .deploy();
@@ -311,7 +310,7 @@ public final class MessageCorrelationMultiplePartitionsTest {
         .hasSize(10);
 
     // complete the task to complete the process instance, for easy record stream limiting
-    engine.userTask().ofInstance(processInstanceKey).complete();
+    engine.job().ofInstance(processInstanceKey).withType("wait").complete();
 
     // then
     assertThat(
