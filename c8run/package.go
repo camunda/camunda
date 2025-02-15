@@ -81,7 +81,7 @@ func getJavaArtifactsToken() (string, error) {
 	return "Basic " + token, nil
 }
 
-func getFilesToArchive(osType, elasticsearchVersion, connectorsFilePath, camundaVersion, composeExtractionPath string) []string {
+func getFilesToArchive(osType, elasticsearchVersion, connectorsFilePath, camundaVersion string) []string {
 	commonFiles := []string{
 		filepath.Join("c8run", "README.md"),
 		filepath.Join("c8run", "connectors-application.properties"),
@@ -123,7 +123,7 @@ func createZipArchive(filesToArchive []string, outputPath string) error {
 	return nil
 }
 
-func Package(camundaVersion string, elasticsearchVersion string, connectorsVersion string, composeTag string) error {
+func Package(camundaVersion string, elasticsearchVersion string, connectorsVersion string) error {
 	var osType, architecture, pkgName, extractFunc, err = setOsSpecificValues()
 	if err != nil {
 		fmt.Printf("%+v", err)
@@ -155,11 +155,6 @@ func Package(camundaVersion string, elasticsearchVersion string, connectorsVersi
 		return fmt.Errorf("Package "+osType+": failed to download camunda %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, authToken, extractFunc)
-	if err != nil {
-		return fmt.Errorf("Package "+osType+": failed to fetch camunda: %w\n%s", err, debug.Stack())
-	}
-
 	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, javaArtifactsToken, func(_, _ string) error { return nil })
 	if err != nil {
 		return fmt.Errorf("Package "+osType+": failed to fetch connectors: %w\n%s", err, debug.Stack())
@@ -170,7 +165,7 @@ func Package(camundaVersion string, elasticsearchVersion string, connectorsVersi
 		return fmt.Errorf("Package "+osType+": failed to chdir %w", err)
 	}
 
-	filesToArchive := getFilesToArchive(osType, elasticsearchVersion, connectorsFilePath, camundaVersion, composeExtractionPath)
+	filesToArchive := getFilesToArchive(osType, elasticsearchVersion, connectorsFilePath, camundaVersion)
 	outputFileName := "camunda8-run-" + camundaVersion + "-" + osType + "-" + architecture + pkgName
 	outputPath := filepath.Join("c8run", outputFileName)
 

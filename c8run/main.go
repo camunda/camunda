@@ -415,7 +415,7 @@ func main() {
 	}
 
 	if baseCommand == "package" {
-		err := Package(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag)
+		err := Package(camundaVersion, elasticsearchVersion, connectorsVersion)
 		if err != nil {
 			fmt.Printf("%+v", err)
 			os.Exit(1)
