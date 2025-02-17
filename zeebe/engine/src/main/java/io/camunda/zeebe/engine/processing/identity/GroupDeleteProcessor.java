@@ -15,10 +15,15 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.GroupState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -29,6 +34,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
   private static final String GROUP_NOT_FOUND_ERROR_MESSAGE =
       "Expected to delete group with key '%s', but a group with this key does not exist.";
   private final GroupState groupState;
+  private final AuthorizationState authorizationState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -37,12 +43,13 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
   private final CommandDistributionBehavior commandDistributionBehavior;
 
   public GroupDeleteProcessor(
-      final GroupState groupState,
+      final ProcessingState processingState,
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
-    this.groupState = groupState;
+    groupState = processingState.getGroupState();
+    authorizationState = processingState.getAuthorizationState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -76,6 +83,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
     record.setName(persistedRecord.get().getName());
 
     removeAssignedEntities(record);
+    deleteAuthorizations(record);
 
     stateWriter.appendFollowUpEvent(groupKey, GroupIntent.DELETED, record);
     responseWriter.writeEventOnCommand(groupKey, GroupIntent.DELETED, record, command);
@@ -95,6 +103,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
         .ifPresentOrElse(
             group -> {
               removeAssignedEntities(command.getValue());
+              deleteAuthorizations(command.getValue());
               stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.DELETED, record);
             },
             () -> {
@@ -123,5 +132,19 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
                         groupKey, GroupIntent.ENTITY_REMOVED, entityRecord);
                   });
             });
+  }
+
+  private void deleteAuthorizations(final GroupRecord record) {
+    final var groupKey = record.getGroupKey();
+    final var authorizationKeysForGroup =
+        authorizationState.getAuthorizationKeysForOwner(
+            AuthorizationOwnerType.GROUP, String.valueOf(groupKey));
+
+    authorizationKeysForGroup.forEach(
+        authorizationKey -> {
+          final var authorization = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
+          stateWriter.appendFollowUpEvent(
+              authorizationKey, AuthorizationIntent.DELETED, authorization);
+        });
   }
 }

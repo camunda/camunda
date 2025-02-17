@@ -7,13 +7,11 @@
  */
 package io.camunda.application;
 
+import io.camunda.application.commons.migration.SchemaManagerHelper;
 import io.camunda.application.listeners.ApplicationErrorListener;
-import io.camunda.exporter.adapters.ClientAdapter;
-import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SchemaManager;
-import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -52,7 +50,7 @@ public class StandaloneSchemaManager {
 
   private static final boolean IS_ELASTICSEARCH = true;
 
-  public static void main(final String[] args) {
+  public static void main(final String[] args) throws IOException {
 
     // To ensure that debug logging performed using java.util.logging is routed into Log4j 2
     MainSupport.putSystemPropertyIfAbsent(
@@ -89,20 +87,10 @@ public class StandaloneSchemaManager {
 
     LOG.info("Creating/updating Elasticsearch schema for Camunda ...");
 
-    final ExporterConfiguration exporterConfig = new ExporterConfiguration();
-    exporterConfig.setConnect(connectConfiguration);
-
-    final IndexDescriptors indexDescriptors =
-        new IndexDescriptors(connectConfiguration.getIndexPrefix(), IS_ELASTICSEARCH);
-
-    final SearchEngineClient client = ClientAdapter.of(exporterConfig).getSearchEngineClient();
-    final SchemaManager schemaManager =
-        new SchemaManager(
-            client, indexDescriptors.indices(), indexDescriptors.templates(), exporterConfig);
-
-    schemaManager.startup();
-
-    LOG.info("... finished creating/updating Elasticsearch schema for Camunda");
+    final var clientAdapter = SchemaManagerHelper.createClientAdapter(connectConfiguration);
+    SchemaManagerHelper.createSchema(connectConfiguration, clientAdapter);
+    LOG.info("... finished creating/updating schema for Camunda");
+    clientAdapter.close();
     System.exit(0);
   }
 

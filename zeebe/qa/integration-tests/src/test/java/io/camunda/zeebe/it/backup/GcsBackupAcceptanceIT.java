@@ -9,7 +9,6 @@ package io.camunda.zeebe.it.backup;
 
 import com.google.cloud.storage.BucketInfo;
 import io.camunda.client.CamundaClient;
-import io.camunda.qa.util.testcontainers.GcsContainer;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
@@ -20,9 +19,9 @@ import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.camunda.zeebe.test.testcontainers.GcsContainer;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.testcontainers.junit.jupiter.Container;
@@ -39,7 +38,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * <p>NOTE: this does not test the consistency of backups, nor that partition leaders correctly
  * maintain consistency via checkpoint records. Other test suites should be set up for this.
  */
-@AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
 final class GcsBackupAcceptanceIT implements BackupAcceptance {
@@ -62,7 +60,7 @@ final class GcsBackupAcceptanceIT implements BackupAcceptance {
           .withNodeConfig(this::configureNode)
           .build();
 
-  @AutoCloseResource private CamundaClient client;
+  @AutoClose private CamundaClient client;
 
   @BeforeAll
   static void beforeAll() throws Exception {

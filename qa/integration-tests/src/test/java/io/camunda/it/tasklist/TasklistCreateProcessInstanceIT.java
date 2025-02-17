@@ -15,25 +15,23 @@ import io.camunda.qa.util.cluster.TestRestTasklistClient.CreateProcessInstanceVa
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-@AutoCloseResources
 @ZeebeIntegration
 public class TasklistCreateProcessInstanceIT {
 
   private static final String PROCESS_ID = "startedByForm";
-  @AutoCloseResource private static CamundaClient defaultCamundaClient;
-  @AutoCloseResource private static TestRestTasklistClient tasklistRestClient;
+  @AutoClose private static CamundaClient defaultCamundaClient;
+  @AutoClose private static TestRestTasklistClient tasklistRestClient;
 
   @TestZeebe
   private TestStandaloneCamunda standaloneCamunda =
-      new TestStandaloneCamunda().withCamundaExporter();
+      new TestStandaloneCamunda().withCamundaExporter().withUnauthenticatedAccess();
 
   @BeforeEach
   public void beforeAll() {

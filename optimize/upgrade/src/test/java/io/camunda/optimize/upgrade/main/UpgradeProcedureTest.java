@@ -114,9 +114,8 @@ public class UpgradeProcedureTest {
 
     // then the validation and execution happens in the expected order
     final InOrder inOrder = inOrder(validationService, createIndexStep);
-    // The validation order matters since we first need to ensure that the ES client
-    // is able to communicate to ElasticSearch before using it to retrieve the schema version.
-    inOrder.verify(validationService).validateDatabaseVersion(any(), any());
+    // The validation order matters since we first need to ensure that the DB client
+    // is able to communicate to the DB before using it to retrieve the schema version.
     inOrder
         .verify(validationService)
         .validateSchemaVersions(FROM_VERSION, FROM_VERSION, TARGET_VERSION);

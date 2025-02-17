@@ -12,7 +12,7 @@
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery">
     SELECT COUNT(*)
-    FROM PROCESS_DEFINITION pi
+    FROM ${prefix}PROCESS_DEFINITION pi
     <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchFilter"/>
   </select>
 
@@ -28,7 +28,7 @@
     VERSION_TAG,
     VERSION,
     FORM_ID
-    FROM PROCESS_DEFINITION
+    FROM ${prefix}PROCESS_DEFINITION
     <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -100,7 +100,7 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel"
     flushCache="true">
-    INSERT INTO PROCESS_DEFINITION (PROCESS_DEFINITION_KEY, PROCESS_DEFINITION_ID, RESOURCE_NAME,
+    INSERT INTO ${prefix}PROCESS_DEFINITION (PROCESS_DEFINITION_KEY, PROCESS_DEFINITION_ID, RESOURCE_NAME,
                                     BPMN_XML, NAME, TENANT_ID, VERSION_TAG, VERSION, FORM_ID)
     VALUES (#{processDefinitionKey}, #{processDefinitionId}, #{resourceName}, #{bpmnXml}, #{name},
             #{tenantId}, #{versionTag}, #{version}, #{formId})

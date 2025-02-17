@@ -19,15 +19,13 @@ import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.DocumentUpdate;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.OperationsAggData;
+import io.camunda.exporter.utils.SearchDBExtension;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -37,24 +35,23 @@ import java.util.stream.Stream;
 import org.apache.http.HttpHost;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.elasticsearch.client.RestClient;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
-@AutoCloseResources
-abstract sealed class BatchOperationUpdateRepositoryIT {
+abstract class BatchOperationUpdateRepositoryIT {
+  @RegisterExtension protected static SearchDBExtension searchDB = SearchDBExtension.create();
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BatchOperationUpdateRepositoryIT.class);
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
   protected final BatchOperationTemplate batchOperationTemplate;
   protected final OperationTemplate operationTemplate;
-  @AutoCloseResource protected final ClientAdapter clientAdapter;
+  @AutoClose protected final ClientAdapter clientAdapter;
   protected final SearchEngineClient engineClient;
   protected final ExporterConfiguration config;
 
@@ -84,21 +81,22 @@ abstract sealed class BatchOperationUpdateRepositoryIT {
 
   protected abstract BatchOperationUpdateRepository createRepository();
 
-  protected abstract void indexBatchOperation(BatchOperationEntity batchOperationEntity)
-      throws PersistenceException;
+  protected void indexBatchOperation(final BatchOperationEntity batchOperationEntity)
+      throws PersistenceException {
+    final var batchRequest = clientAdapter.createBatchRequest();
+    batchRequest.add(batchOperationTemplate.getFullQualifiedName(), batchOperationEntity);
+    batchRequest.executeWithRefresh();
+  }
 
   protected abstract BatchOperationEntity getBatchOperationEntity(final String id);
 
   static final class ElasticsearchIT extends BatchOperationUpdateRepositoryIT {
-    @Container
-    private static final ElasticsearchContainer CONTAINER =
-        TestSearchContainers.createDefeaultElasticsearchContainer();
 
-    @AutoCloseResource private final RestClientTransport transport = createTransport();
+    @AutoClose private final RestClientTransport transport = createTransport();
     private final ElasticsearchAsyncClient client;
 
     public ElasticsearchIT() {
-      super("http://" + CONTAINER.getHttpHostAddress(), true);
+      super("http://" + searchDB.esUrl(), true);
       final var connector = new ElasticsearchConnector(config.getConnect());
       client = connector.createAsyncClient();
     }
@@ -139,15 +137,13 @@ abstract sealed class BatchOperationUpdateRepositoryIT {
     }
 
     private RestClientTransport createTransport() {
-      final var restClient =
-          RestClient.builder(HttpHost.create(CONTAINER.getHttpHostAddress())).build();
+      final var restClient = RestClient.builder(HttpHost.create(searchDB.esUrl())).build();
       return new RestClientTransport(restClient, new JacksonJsonpMapper());
     }
   }
 
-  // TODO OpenSearchIT
-
   @Nested
+  @Order(1)
   final class GetNotFinishedBatchOperationsTest {
     @Test
     void shouldReturnEmptyList() {
@@ -192,6 +188,7 @@ abstract sealed class BatchOperationUpdateRepositoryIT {
   }
 
   @Nested
+  @Order(2)
   final class GetFinishedOperationsCountTest {
     @Test
     void shouldReturnEmptyList() {
@@ -256,6 +253,7 @@ abstract sealed class BatchOperationUpdateRepositoryIT {
   }
 
   @Nested
+  @Order(3)
   final class BulkUpdateTest {
 
     @Test

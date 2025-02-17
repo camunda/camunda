@@ -42,6 +42,7 @@ import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestD
 import io.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntityType;
+import io.camunda.optimize.rest.exceptions.BadRequestException;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeMultiGetOperationBuilderES;
@@ -56,7 +57,6 @@ import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import jakarta.ws.rs.BadRequestException;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.HashMap;

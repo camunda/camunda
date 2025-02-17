@@ -18,4 +18,14 @@ package io.camunda.client.api.command;
 import io.camunda.client.api.response.UnassignGroupFromTenantResponse;
 
 public interface UnassignGroupFromTenantCommandStep1
-    extends FinalCommandStep<UnassignGroupFromTenantResponse> {}
+    extends FinalCommandStep<UnassignGroupFromTenantResponse> {
+
+  /**
+   * Sets the group key for the unassignment.
+   *
+   * @param groupKey the key of the group
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  UnassignGroupFromTenantCommandStep1 groupKey(long groupKey);
+}

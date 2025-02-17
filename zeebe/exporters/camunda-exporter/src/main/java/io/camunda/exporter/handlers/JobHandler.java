@@ -48,11 +48,9 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
       Set.of(JobIntent.FAILED, JobIntent.ERROR_THROWN);
 
   protected final String indexName;
-  protected final boolean concurrencyMode;
 
-  public JobHandler(final String indexName, final boolean concurrencyMode) {
+  public JobHandler(final String indexName) {
     this.indexName = indexName;
-    this.concurrencyMode = concurrencyMode;
   }
 
   @Override

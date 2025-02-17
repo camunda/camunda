@@ -9,6 +9,14 @@ package io.camunda.exporter.utils;
 
 import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.zeebe.model.bpmn.instance.BaseElement;
+import io.camunda.zeebe.model.bpmn.instance.CallActivity;
+import io.camunda.zeebe.util.modelreader.ProcessModelReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public final class ProcessCacheUtil {
@@ -41,5 +49,23 @@ public final class ProcessCacheUtil {
       return Optional.empty();
     }
     return Optional.of(cachedProcess.get().callElementIds().get(callActivityIndex));
+  }
+
+  /**
+   * Returns all call activity ids from the Process sorted lexicographically.
+   *
+   * @param processEntity
+   * @return
+   */
+  public static List<String> extractCallActivityIdsFromDiagram(final ProcessEntity processEntity) {
+    final String bpmnXml = processEntity.getBpmnXml();
+    return ProcessModelReader.of(
+            bpmnXml.getBytes(StandardCharsets.UTF_8), processEntity.getBpmnProcessId())
+        .map(reader -> sortedCallActivityIds(reader.extractCallActivities()))
+        .orElseGet(ArrayList::new);
+  }
+
+  public static List<String> sortedCallActivityIds(final Collection<CallActivity> callActivities) {
+    return callActivities.stream().map(BaseElement::getId).sorted().toList();
   }
 }

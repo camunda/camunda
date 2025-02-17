@@ -12,7 +12,7 @@ const DeleteModal: FC<UseEntityModalProps<User>> = ({
   open,
   onClose,
   onSuccess,
-  entity: { key, username },
+  entity: { username },
 }) => {
   const { t } = useTranslate();
   const { enqueueNotification } = useNotifications();
@@ -20,7 +20,7 @@ const DeleteModal: FC<UseEntityModalProps<User>> = ({
 
   const handleSubmit = async () => {
     const { success } = await apiCall({
-      key: key!,
+      username: username!,
     });
 
     if (success) {

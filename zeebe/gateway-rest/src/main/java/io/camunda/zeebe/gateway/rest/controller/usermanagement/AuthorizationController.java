@@ -11,18 +11,19 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.service.AuthorizationServices;
-import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationFilterRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResponse;
-import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
+import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
+import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
+import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
-import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
@@ -39,38 +40,39 @@ public class AuthorizationController {
     this.authorizationServices = authorizationServices;
   }
 
-  @CamundaPatchMapping(path = "/authorizations/{ownerKey}")
-  public CompletableFuture<ResponseEntity<Object>> patchAuthorization(
-      @PathVariable final long ownerKey,
-      @RequestBody final AuthorizationPatchRequest authorizationPatchRequest) {
-    return RequestMapper.toAuthorizationPatchRequest(ownerKey, authorizationPatchRequest)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::patchAuthorization);
+  @CamundaPostMapping(path = "/authorizations")
+  public CompletableFuture<ResponseEntity<Object>> createAuthorization(
+      @RequestBody final AuthorizationRequest authorizationCreateRequest) {
+    return RequestMapper.toCreateAuthorizationRequest(authorizationCreateRequest)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::create);
+  }
+
+  @CamundaDeleteMapping(path = "/authorizations/{authorizationKey}")
+  public CompletableFuture<ResponseEntity<Object>> delete(
+      @PathVariable final long authorizationKey) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            authorizationServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .deleteAuthorization(authorizationKey));
+  }
+
+  @CamundaPutMapping(path = "/authorizations/{authorizationKey}")
+  public CompletableFuture<ResponseEntity<Object>> updateAuthorization(
+      @PathVariable final long authorizationKey,
+      @RequestBody final AuthorizationRequest authorizationUpdateRequest) {
+    return RequestMapper.toUpdateAuthorizationRequest(authorizationKey, authorizationUpdateRequest)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::update);
   }
 
   @CamundaPostMapping(path = "/authorizations/search")
-  public ResponseEntity<AuthorizationSearchResponse> searchAuthorizations(
-      @RequestBody(required = false) final AuthorizationSearchQueryRequest query) {
+  public ResponseEntity<AuthorizationSearchResult> searchAuthorizations(
+      @RequestBody(required = false) final AuthorizationSearchQuery query) {
     return SearchQueryRequestMapper.toAuthorizationQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  @CamundaPostMapping(path = "/users/{userKey}/authorizations/search")
-  public ResponseEntity<AuthorizationSearchResponse> searchUserAuthorizations(
-      @PathVariable("userKey") final long userKey,
-      @RequestBody(required = false) final AuthorizationSearchQueryRequest query) {
-    var finalQuery = query;
-    if (query == null) {
-      finalQuery = new AuthorizationSearchQueryRequest();
-    }
-    if (finalQuery.getFilter() == null) {
-      finalQuery.setFilter(new AuthorizationFilterRequest());
-    }
-    finalQuery.getFilter().ownerType(OwnerTypeEnum.USER).ownerKey(userKey);
-    return SearchQueryRequestMapper.toAuthorizationQuery(finalQuery)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
-  }
-
-  private ResponseEntity<AuthorizationSearchResponse> search(final AuthorizationQuery query) {
+  private ResponseEntity<AuthorizationSearchResult> search(final AuthorizationQuery query) {
     try {
       final var result =
           authorizationServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
@@ -81,12 +83,22 @@ public class AuthorizationController {
     }
   }
 
-  private CompletableFuture<ResponseEntity<Object>> patchAuthorization(
-      final PatchAuthorizationRequest patchAuthorizationRequest) {
+  private CompletableFuture<ResponseEntity<Object>> create(
+      final CreateAuthorizationRequest createAuthorizationRequest) {
+    return RequestMapper.executeServiceMethod(
+        () ->
+            authorizationServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .createAuthorization(createAuthorizationRequest),
+        ResponseMapper::toAuthorizationCreateResponse);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> update(
+      final UpdateAuthorizationRequest authorizationRequest) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             authorizationServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .patchAuthorization(patchAuthorizationRequest));
+                .updateAuthorization(authorizationRequest));
   }
 }

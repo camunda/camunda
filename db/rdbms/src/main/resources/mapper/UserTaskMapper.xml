@@ -15,27 +15,27 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel"
     statementType="PREPARED">
-    INSERT INTO USER_TASK (USER_TASK_KEY, ELEMENT_ID, PROCESS_DEFINITION_ID, CREATION_DATE,
+    INSERT INTO ${prefix}USER_TASK (USER_TASK_KEY, ELEMENT_ID, PROCESS_DEFINITION_ID, CREATION_DATE,
                            COMPLETION_DATE, ASSIGNEE, STATE,
                            FORM_KEY,
                            PROCESS_DEFINITION_KEY, PROCESS_INSTANCE_KEY,
                            ELEMENT_INSTANCE_KEY, TENANT_ID, DUE_DATE, FOLLOW_UP_DATE,
                            EXTERNAL_FORM_REFERENCE, PROCESS_DEFINITION_VERSION, CUSTOM_HEADERS,
-                           PRIORITY)
+                                    PRIORITY, PARTITION_ID)
     VALUES (#{userTaskKey}, #{elementId}, #{processDefinitionId}, #{creationDate},
             #{completionDate},
             #{assignee}, #{state}, #{formKey},
             #{processDefinitionKey}, #{processInstanceKey}, #{elementInstanceKey}, #{tenantId},
             #{dueDate}, #{followUpDate},
             #{externalFormReference}, #{processDefinitionVersion}, #{serializedCustomHeaders},
-            #{priority})
+            #{priority}, #{partitionId})
   </insert>
 
   <insert flushCache="true"
     id="insertCandidateUsers"
     parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel"
     statementType="PREPARED">
-    INSERT INTO CANDIDATE_USER (USER_TASK_KEY, CANDIDATE_USER)
+    INSERT INTO ${prefix}CANDIDATE_USER (USER_TASK_KEY, CANDIDATE_USER)
     VALUES
     <foreach collection="candidateUsers" item="candidateUser" separator=", ">
       (#{userTaskKey}, #{candidateUser})
@@ -46,7 +46,7 @@
     id="insertCandidateGroups"
     parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel"
     statementType="PREPARED">
-    INSERT INTO CANDIDATE_GROUP (USER_TASK_KEY, CANDIDATE_GROUP)
+    INSERT INTO ${prefix}CANDIDATE_GROUP (USER_TASK_KEY, CANDIDATE_GROUP)
     VALUES
     <foreach collection="candidateGroups" item="candidateGroup" separator=", ">
       (#{userTaskKey}, #{candidateGroup})
@@ -92,12 +92,14 @@
     parameterType="io.camunda.db.rdbms.read.domain.UserTaskDbQuery"
     resultMap="io.camunda.db.rdbms.sql.UserTaskMapper.searchResultMap"
     statementType="PREPARED">
+    SELECT * FROM (
     SELECT
     ut.*,
     cg.CANDIDATE_GROUP,
     cu.CANDIDATE_USER
     FROM
-    (SELECT
+    ( SELECT * FROM (
+    SELECT
     ut.USER_TASK_KEY,
     ut.ELEMENT_ID,
     ut.PROCESS_DEFINITION_ID,
@@ -116,47 +118,26 @@
     ut.PROCESS_DEFINITION_VERSION,
     ut.CUSTOM_HEADERS,
     ut.PRIORITY
-    FROM USER_TASK ut
+    FROM ${prefix}USER_TASK ut
     <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchFilter"/>
-    ${paging.after}
-    ) as ut
-    LEFT JOIN CANDIDATE_USER cu ON (cu.USER_TASK_KEY = ut.USER_TASK_KEY)
-    LEFT JOIN CANDIDATE_GROUP cg ON (cg.USER_TASK_KEY = ut.USER_TASK_KEY)
-    <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
-      <foreach collection="sort.orderings" item="item" open="ORDER BY " separator=", ">
-        <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.userTaskSortMapper"/>
-        ${item.order}
-      </foreach>
-    </if>
+    ) filtered
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+    ) ut
+    LEFT JOIN ${prefix}CANDIDATE_USER cu ON (cu.USER_TASK_KEY = ut.USER_TASK_KEY)
+    LEFT JOIN ${prefix}CANDIDATE_GROUP cg ON (cg.USER_TASK_KEY = ut.USER_TASK_KEY)
+    ) sorted
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
   </select>
 
   <select id="count"
     resultType="java.lang.Long"
     statementType="PREPARED">
     SELECT COUNT(*)
-    FROM USER_TASK ut
+    FROM ${prefix}USER_TASK ut
     <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchFilter"/>
   </select>
-
-  <sql id="userTaskSortMapper">
-    <choose>
-      <when test='item.field == "creationDate"'>
-        ut.CREATION_DATE
-      </when>
-      <when test='item.field == "completionDate"'>
-        ut.COMPLETION_DATE
-      </when>
-      <when test='item.field == "priority"'>
-        ut.PRIORITY
-      </when>
-      <when test='item.field == "dueDate"'>
-        ut.DUE_DATE
-      </when>
-      <when test='item.field == "followUpDate"'>
-        ut.FOLLOW_UP_DATE
-      </when>
-    </choose>
-  </sql>
 
   <sql id="searchFilter">
     WHERE 1 = 1
@@ -170,6 +151,12 @@
     <if test="filter.elementIds != null and !filter.elementIds.isEmpty()">
       AND ut.ELEMENT_ID IN
       <foreach close=")" collection="filter.elementIds" item="value" open="("
+        separator=", ">#{value}
+      </foreach>
+    </if>
+    <if test="filter.elementInstanceKeys != null and !filter.elementInstanceKeys.isEmpty()">
+      AND ut.ELEMENT_INSTANCE_KEY IN
+      <foreach close=")" collection="filter.elementInstanceKeys" item="value" open="("
         separator=", ">#{value}
       </foreach>
     </if>
@@ -219,7 +206,7 @@
     <!-- candidate groups and users -->
     <if
       test="filter.candidateGroupOperations != null and !filter.candidateGroupOperations.isEmpty()">
-      AND EXISTS (Select * from CANDIDATE_GROUP cg where cg.USER_TASK_KEY = ut.USER_TASK_KEY
+      AND EXISTS (Select * from ${prefix}CANDIDATE_GROUP cg where cg.USER_TASK_KEY = ut.USER_TASK_KEY
       <foreach collection="filter.candidateGroupOperations" item="operation">
         AND cg.CANDIDATE_GROUP
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
@@ -227,7 +214,7 @@
       )
     </if>
     <if test="filter.candidateUserOperations != null and !filter.candidateUserOperations.isEmpty()">
-      AND EXISTS (Select * from CANDIDATE_USER cu where cu.USER_TASK_KEY = ut.USER_TASK_KEY
+      AND EXISTS (Select * from ${prefix}CANDIDATE_USER cu where cu.USER_TASK_KEY = ut.USER_TASK_KEY
       <foreach collection="filter.candidateUserOperations" item="operation">
         AND cu.CANDIDATE_USER
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
@@ -251,11 +238,26 @@
       </foreach>
     </if>
 
+    <!-- Due Date Filters -->
+    <if test="filter.dueDateOperations != null and !filter.dueDateOperations.isEmpty()">
+      <foreach collection="filter.dueDateOperations" item="operation">
+        AND ut.DUE_DATE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+
+    <!-- Follow-Up Date Filters -->
+    <if test="filter.followUpDateOperations != null and !filter.followUpDateOperations.isEmpty()">
+      <foreach collection="filter.followUpDateOperations" item="operation">
+        AND ut.FOLLOW_UP_DATE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
 
 
     <!-- Variables Filter -->
     <if test="filter.processInstanceVariableFilter != null and !filter.processInstanceVariableFilter.isEmpty()">
-      AND EXISTS (Select * from VARIABLE v where v.PROCESS_INSTANCE_KEY = ut.PROCESS_INSTANCE_KEY
+      AND EXISTS (Select * from ${prefix}VARIABLE v where v.PROCESS_INSTANCE_KEY = ut.PROCESS_INSTANCE_KEY
       AND ( 1 = 1
       <foreach collection="filter.processInstanceVariableFilter" item="variableValueFilter">
         AND ( v.VAR_NAME = #{variableValueFilter.name}
@@ -273,10 +275,10 @@
 
     <!-- Local Variables Filter -->
     <if test="filter.localVariableFilters != null and !filter.localVariableFilters.isEmpty()">
-      AND EXISTS (Select * from VARIABLE v where v.SCOPE_KEY = ut.USER_TASK_KEY
-      AND ( 1 = 1
-      <foreach collection="filter.localVariableFilters" item="variableValueFilter">
-        AND ( v.VAR_NAME = #{variableValueFilter.name}
+      AND EXISTS (Select * from ${prefix}VARIABLE v where v.SCOPE_KEY = ut.ELEMENT_INSTANCE_KEY
+      AND (
+      <foreach collection="filter.localVariableFilters" item="variableValueFilter" separator=" OR ">
+        ( v.VAR_NAME = #{variableValueFilter.name}
         <if
           test="variableValueFilter.valueOperations != null and !variableValueFilter.valueOperations.isEmpty()">
           <foreach collection="variableValueFilter.valueOperations" item="operation">
@@ -298,7 +300,7 @@
     id="update"
     parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel"
     statementType="PREPARED">
-    UPDATE USER_TASK
+    UPDATE ${prefix}USER_TASK
     SET
     COMPLETION_DATE = #{completionDate},
     DUE_DATE = #{dueDate},
@@ -318,8 +320,8 @@
     parameterType="java.lang.Long"
     statementType="PREPARED">
     DELETE
-    FROM CANDIDATE_USER
-    WHERE USER_TASK_KEY = #{userTaskKey};
+    FROM ${prefix}CANDIDATE_USER
+    WHERE USER_TASK_KEY = #{userTaskKey}
   </delete>
 
   <delete
@@ -328,8 +330,21 @@
     parameterType="java.lang.Long"
     statementType="PREPARED">
     DELETE
-    FROM CANDIDATE_GROUP
-    WHERE USER_TASK_KEY = #{userTaskKey};
+    FROM ${prefix}CANDIDATE_GROUP
+    WHERE USER_TASK_KEY = #{userTaskKey}
   </delete>
+
+  <update
+    flushCache="true"
+    id="migrateToProcess"
+    parameterType="java.util.Map"
+    statementType="PREPARED">
+    UPDATE USER_TASK SET
+    ELEMENT_ID = #{elementId},
+    PROCESS_DEFINITION_ID = #{processDefinitionId},
+    PROCESS_DEFINITION_KEY = #{processDefinitionKey},
+    PROCESS_DEFINITION_VERSION = #{processDefinitionVersion}
+    WHERE USER_TASK_KEY = #{userTaskKey}
+  </update>
 
 </mapper>

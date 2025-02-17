@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
@@ -34,10 +34,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class JobController {
 
   private final ResponseObserverProvider responseObserverProvider;
-  private final JobServices<JobActivationResponse> jobServices;
+  private final JobServices<JobActivationResult> jobServices;
 
   public JobController(
-      final JobServices<JobActivationResponse> jobServices,
+      final JobServices<JobActivationResult> jobServices,
       final ResponseObserverProvider responseObserverProvider) {
     this.jobServices = jobServices;
     this.responseObserverProvider = responseObserverProvider;

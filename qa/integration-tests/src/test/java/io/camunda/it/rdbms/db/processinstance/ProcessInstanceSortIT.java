@@ -7,21 +7,26 @@
  */
 package io.camunda.it.rdbms.db.processinstance;
 
-import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAndSaveProcessDefinition;
-import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveProcessInstances;
+import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveRandomProcessInstance;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
-import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ProcessInstanceQuery;
-import java.time.OffsetDateTime;
-import java.util.List;
+import io.camunda.search.result.ProcessInstanceQueryResultConfig;
+import io.camunda.search.sort.ProcessInstanceSort;
+import io.camunda.search.sort.ProcessInstanceSort.Builder;
+import io.camunda.util.ObjectBuilder;
+import java.util.Comparator;
+import java.util.Random;
+import java.util.function.Function;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,585 +36,132 @@ import org.junit.jupiter.api.extension.ExtendWith;
 public class ProcessInstanceSortIT {
 
   public static final Long PARTITION_ID = 0L;
-  public static final OffsetDateTime NOW = OffsetDateTime.now();
 
   @TestTemplate
-  public void shouldSortAllProcessInstancesByBpmnProcessId(
-      final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
-
-    final Long processDefinitionKey = ProcessInstanceFixtures.nextKey(); // For Test Scope
-    final Long processInstanceKey = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey2 = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey3 = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey4 = ProcessInstanceFixtures.nextKey();
-    createAndSaveProcessInstances(
-        rdbmsWriter,
-        List.of(
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionKey(processDefinitionKey)
-                        .processInstanceKey(processInstanceKey)
-                        .processDefinitionId("test-process-2")),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionKey(processDefinitionKey)
-                        .processInstanceKey(processInstanceKey2)
-                        .processDefinitionId("test-process-1")),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionKey(processDefinitionKey)
-                        .processInstanceKey(processInstanceKey3)
-                        .processDefinitionId("test-process-4")),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionKey(processDefinitionKey)
-                        .processInstanceKey(processInstanceKey4)
-                        .processDefinitionId("test-process-3"))));
-
-    final var searchResult =
-        processInstanceReader
-            .search(
-                ProcessInstanceQuery.of(
-                    b ->
-                        b.filter(f -> f.processDefinitionKeys(processDefinitionKey))
-                            .sort(s -> s.processDefinitionId().asc())
-                            .page(p -> p.from(0).size(5))))
-            .items();
-
-    assertThat(searchResult).hasSize(4);
-    assertThat(searchResult.stream().map(ProcessInstanceEntity::processInstanceKey).toList())
-        .containsExactly(
-            processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
+  public void shouldSortByProcessInstanceKeyAsc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.processInstanceKey().asc(),
+        Comparator.comparing(ProcessInstanceEntity::processInstanceKey));
   }
 
   @TestTemplate
-  public void shouldSortAllProcessInstancesByProcessVersion(
+  public void shouldSortByProcessInstanceKeyDesc(
       final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
-
-    final String bpmProcessId = ProcessInstanceFixtures.nextStringId();
-    final Long processInstanceKey = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey2 = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey3 = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey4 = ProcessInstanceFixtures.nextKey();
-    createAndSaveProcessInstances(
-        rdbmsWriter,
-        List.of(
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey)
-                        .version(2)),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey2)
-                        .version(1)),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey3)
-                        .version(4)),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey4)
-                        .version(3))));
-
-    final var searchResult =
-        processInstanceReader
-            .search(
-                ProcessInstanceQuery.of(
-                    b ->
-                        b.filter(f -> f.processDefinitionIds(bpmProcessId))
-                            .sort(s -> s.processDefinitionVersion().asc())
-                            .page(p -> p.from(0).size(5))))
-            .items();
-
-    assertThat(searchResult).hasSize(4);
-    assertThat(searchResult.stream().map(ProcessInstanceEntity::processInstanceKey).toList())
-        .containsExactly(
-            processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.processInstanceKey().desc(),
+        Comparator.comparing(ProcessInstanceEntity::processInstanceKey).reversed());
   }
 
   @TestTemplate
-  public void shouldSortAllProcessInstancesByProcessDefinitionKey(
+  public void shouldSortByProcessDefinitionKeyAsc(
       final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
-
-    final String bpmProcessId = ProcessInstanceFixtures.nextStringId();
-    final Long processInstanceKey = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey2 = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey3 = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey4 = ProcessInstanceFixtures.nextKey();
-    createAndSaveProcessInstances(
-        rdbmsWriter,
-        List.of(
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey)
-                        .processDefinitionKey(processInstanceKey2)),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey2)
-                        .processDefinitionKey(processInstanceKey)),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey3)
-                        .processDefinitionKey(processInstanceKey4)),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey4)
-                        .processDefinitionKey(processInstanceKey3))));
-
-    final var searchResult =
-        processInstanceReader
-            .search(
-                ProcessInstanceQuery.of(
-                    b ->
-                        b.filter(f -> f.processDefinitionIds(bpmProcessId))
-                            .sort(s -> s.processDefinitionKey().asc())
-                            .page(p -> p.from(0).size(5))))
-            .items();
-
-    assertThat(searchResult).hasSize(4);
-    assertThat(searchResult.stream().map(ProcessInstanceEntity::processInstanceKey).toList())
-        .containsExactly(
-            processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.processDefinitionKey().asc(),
+        Comparator.comparing(ProcessInstanceEntity::processDefinitionKey));
   }
 
   @TestTemplate
-  public void shouldSortAllProcessInstancesByProcessName(
+  public void shouldSortByProcessDefinitionIdAsc(
       final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
-
-    final String bpmProcessId = ProcessInstanceFixtures.nextStringId();
-    final Long processInstanceKey = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey2 = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey3 = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey4 = ProcessInstanceFixtures.nextKey();
-    createAndSaveProcessDefinition(
-        rdbmsWriter,
-        ProcessDefinitionFixtures.createRandomized(
-            b ->
-                b.processDefinitionId(bpmProcessId)
-                    .processDefinitionKey(processInstanceKey)
-                    .name("Test Process 1")));
-    createAndSaveProcessDefinition(
-        rdbmsWriter,
-        ProcessDefinitionFixtures.createRandomized(
-            b ->
-                b.processDefinitionId(bpmProcessId)
-                    .processDefinitionKey(processInstanceKey2)
-                    .name("Test Process 2")));
-    createAndSaveProcessDefinition(
-        rdbmsWriter,
-        ProcessDefinitionFixtures.createRandomized(
-            b ->
-                b.processDefinitionId(bpmProcessId)
-                    .processDefinitionKey(processInstanceKey3)
-                    .name("Test Process 3")));
-    createAndSaveProcessDefinition(
-        rdbmsWriter,
-        ProcessDefinitionFixtures.createRandomized(
-            b ->
-                b.processDefinitionId(bpmProcessId)
-                    .processDefinitionKey(processInstanceKey4)
-                    .name("Test Process 4")));
-    createAndSaveProcessInstances(
-        rdbmsWriter,
-        List.of(
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey)
-                        .processDefinitionKey(processInstanceKey2)),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey2)
-                        .processDefinitionKey(processInstanceKey)),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey3)
-                        .processDefinitionKey(processInstanceKey4)),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey4)
-                        .processDefinitionKey(processInstanceKey3))));
-
-    final var searchResult =
-        processInstanceReader
-            .search(
-                ProcessInstanceQuery.of(
-                    b ->
-                        b.filter(f -> f.processDefinitionIds(bpmProcessId))
-                            .sort(s -> s.processDefinitionName().asc())
-                            .page(p -> p.from(0).size(5))))
-            .items();
-
-    assertThat(searchResult).hasSize(4);
-    assertThat(searchResult.stream().map(ProcessInstanceEntity::processInstanceKey).toList())
-        .containsExactly(
-            processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.processDefinitionId().asc(),
+        Comparator.comparing(ProcessInstanceEntity::processDefinitionId));
   }
 
   @TestTemplate
-  public void shouldSortAllProcessInstancesByProcessVersionTag(
-      final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
-
-    final String bpmProcessId = ProcessInstanceFixtures.nextStringId();
-    final Long processInstanceKey = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey2 = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey3 = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey4 = ProcessInstanceFixtures.nextKey();
-    createAndSaveProcessDefinition(
-        rdbmsWriter,
-        ProcessDefinitionFixtures.createRandomized(
-            b ->
-                b.processDefinitionId(bpmProcessId)
-                    .processDefinitionKey(processInstanceKey)
-                    .versionTag("Version 1")));
-    createAndSaveProcessDefinition(
-        rdbmsWriter,
-        ProcessDefinitionFixtures.createRandomized(
-            b ->
-                b.processDefinitionId(bpmProcessId)
-                    .processDefinitionKey(processInstanceKey2)
-                    .versionTag("Version 2")));
-    createAndSaveProcessDefinition(
-        rdbmsWriter,
-        ProcessDefinitionFixtures.createRandomized(
-            b ->
-                b.processDefinitionId(bpmProcessId)
-                    .processDefinitionKey(processInstanceKey3)
-                    .versionTag("Version 3")));
-    createAndSaveProcessDefinition(
-        rdbmsWriter,
-        ProcessDefinitionFixtures.createRandomized(
-            b ->
-                b.processDefinitionId(bpmProcessId)
-                    .processDefinitionKey(processInstanceKey4)
-                    .versionTag("Version 4")));
-    createAndSaveProcessInstances(
-        rdbmsWriter,
-        List.of(
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey)
-                        .processDefinitionKey(processInstanceKey2)),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey2)
-                        .processDefinitionKey(processInstanceKey)),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey3)
-                        .processDefinitionKey(processInstanceKey4)),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey4)
-                        .processDefinitionKey(processInstanceKey3))));
-
-    final var searchResult =
-        processInstanceReader
-            .search(
-                ProcessInstanceQuery.of(
-                    b ->
-                        b.filter(f -> f.processDefinitionIds(bpmProcessId))
-                            .sort(s -> s.processDefinitionVersionTag().asc())
-                            .page(p -> p)))
-            .items();
-
-    assertThat(searchResult).hasSize(4);
-    assertThat(searchResult.stream().map(ProcessInstanceEntity::processInstanceKey).toList())
-        .containsExactly(
-            processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
+  public void shouldSortByStartDateAsc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.startDate().asc(),
+        Comparator.comparing(ProcessInstanceEntity::startDate));
   }
 
   @TestTemplate
-  public void shouldSortAllProcessInstanceByStartDate(
-      final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
-
-    final String bpmProcessId = ProcessInstanceFixtures.nextStringId();
-    final Long processInstanceKey = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey2 = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey3 = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey4 = ProcessInstanceFixtures.nextKey();
-    createAndSaveProcessInstances(
-        rdbmsWriter,
-        List.of(
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey)
-                        .startDate(NOW.plusDays(2))),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey2)
-                        .startDate(NOW.plusDays(1))),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey3)
-                        .startDate(NOW.plusDays(4))),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey4)
-                        .startDate(NOW.plusDays(3)))));
-
-    final var searchResult =
-        processInstanceReader
-            .search(
-                ProcessInstanceQuery.of(
-                    b ->
-                        b.filter(f -> f.processDefinitionIds(bpmProcessId))
-                            .sort(s -> s.startDate().asc())
-                            .page(p -> p)))
-            .items();
-
-    assertThat(searchResult).hasSize(4);
-    assertThat(searchResult.stream().map(ProcessInstanceEntity::processInstanceKey).toList())
-        .containsExactly(
-            processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
+  public void shouldSortByEndDateAsc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.endDate().asc(),
+        Comparator.comparing(ProcessInstanceEntity::endDate));
   }
 
   @TestTemplate
-  public void shouldSortAllProcessInstanceByEndDate(
-      final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
-
-    final String bpmProcessId = ProcessInstanceFixtures.nextStringId();
-    final Long processInstanceKey = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey2 = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey3 = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey4 = ProcessInstanceFixtures.nextKey();
-    createAndSaveProcessInstances(
-        rdbmsWriter,
-        List.of(
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey)
-                        .endDate(NOW.plusDays(2))),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey2)
-                        .endDate(NOW.plusDays(1))),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey3)
-                        .endDate(NOW.plusDays(4))),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey4)
-                        .endDate(NOW.plusDays(3)))));
-
-    final var searchResult =
-        processInstanceReader
-            .search(
-                ProcessInstanceQuery.of(
-                    b ->
-                        b.filter(f -> f.processDefinitionIds(bpmProcessId))
-                            .sort(s -> s.endDate().asc())
-                            .page(p -> p)))
-            .items();
-
-    assertThat(searchResult).hasSize(4);
-    assertThat(searchResult.stream().map(ProcessInstanceEntity::processInstanceKey).toList())
-        .containsExactly(
-            processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
+  public void shouldSortByTenantIdAsc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.tenantId().asc(),
+        Comparator.comparing(ProcessInstanceEntity::tenantId));
   }
 
   @TestTemplate
-  public void shouldSortAllProcessInstanceByParentProcessInstanceKey(
-      final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
-
-    final String bpmProcessId = ProcessInstanceFixtures.nextStringId();
-    final Long processInstanceKey = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey2 = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey3 = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey4 = ProcessInstanceFixtures.nextKey();
-    createAndSaveProcessInstances(
-        rdbmsWriter,
-        List.of(
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey)
-                        .parentProcessInstanceKey(processInstanceKey2)),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey2)
-                        .parentProcessInstanceKey(processInstanceKey)),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey3)
-                        .parentProcessInstanceKey(processInstanceKey4)),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey4)
-                        .parentProcessInstanceKey(processInstanceKey3))));
-
-    final var searchResult =
-        processInstanceReader
-            .search(
-                ProcessInstanceQuery.of(
-                    b ->
-                        b.filter(f -> f.processDefinitionIds(bpmProcessId))
-                            .sort(s -> s.parentProcessInstanceKey().asc())
-                            .page(p -> p)))
-            .items();
-
-    assertThat(searchResult).hasSize(4);
-    assertThat(searchResult.stream().map(ProcessInstanceEntity::processInstanceKey).toList())
-        .containsExactly(
-            processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
+  public void shouldSortByHasIncidentAsc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.hasIncident().asc(),
+        Comparator.comparing(ProcessInstanceEntity::hasIncident));
   }
 
   @TestTemplate
-  public void shouldSortAllProcessInstanceByTenantId(
+  public void shouldSortByParentProcessInstanceKeyAsc(
       final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
-
-    final String bpmProcessId = ProcessInstanceFixtures.nextStringId();
-    final Long processInstanceKey = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey2 = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey3 = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey4 = ProcessInstanceFixtures.nextKey();
-    createAndSaveProcessInstances(
-        rdbmsWriter,
-        List.of(
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey)
-                        .tenantId("tenant-2")),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey2)
-                        .tenantId("tenant-1")),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey3)
-                        .tenantId("tenant-4")),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionId(bpmProcessId)
-                        .processInstanceKey(processInstanceKey4)
-                        .tenantId("tenant-3"))));
-
-    final var searchResult =
-        processInstanceReader
-            .search(
-                ProcessInstanceQuery.of(
-                    b ->
-                        b.filter(f -> f.processDefinitionIds(bpmProcessId))
-                            .sort(s -> s.tenantId().asc())
-                            .page(p -> p)))
-            .items();
-
-    assertThat(searchResult).hasSize(4);
-    assertThat(searchResult.stream().map(ProcessInstanceEntity::processInstanceKey).toList())
-        .containsExactly(
-            processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.parentProcessInstanceKey().asc(),
+        Comparator.comparing(ProcessInstanceEntity::parentProcessInstanceKey));
   }
 
   @TestTemplate
-  public void shouldSortAllProcessInstanceByBpmnProcessIdAndStartDate(
+  public void shouldSortByParentFlowNodeInstanceKeyAsc(
       final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.parentFlowNodeInstanceKey().asc(),
+        Comparator.comparing(ProcessInstanceEntity::parentFlowNodeInstanceKey));
+  }
 
-    final Long processDefinitionKey = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey2 = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey3 = ProcessInstanceFixtures.nextKey();
-    final Long processInstanceKey4 = ProcessInstanceFixtures.nextKey();
-    createAndSaveProcessInstances(
-        rdbmsWriter,
-        List.of(
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionKey(processDefinitionKey)
-                        .processInstanceKey(processInstanceKey)
-                        .processDefinitionId("test-process-2")
-                        .startDate(NOW.plusDays(1))),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionKey(processDefinitionKey)
-                        .processInstanceKey(processInstanceKey2)
-                        .processDefinitionId("test-process-1")
-                        .startDate(NOW.plusDays(1))),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionKey(processDefinitionKey)
-                        .processInstanceKey(processInstanceKey3)
-                        .processDefinitionId("test-process-1")
-                        .startDate(NOW.plusDays(2))),
-            ProcessInstanceFixtures.createRandomized(
-                b ->
-                    b.processDefinitionKey(processDefinitionKey)
-                        .processInstanceKey(processInstanceKey4)
-                        .processDefinitionId("test-process-2")
-                        .startDate(NOW.plusDays(2)))));
+  @TestTemplate
+  public void shouldSortByStateAsc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.state().asc(),
+        Comparator.comparing(p -> p.state().name()));
+  }
+
+  private void testSorting(
+      final RdbmsService rdbmsService,
+      final Function<Builder, ObjectBuilder<ProcessInstanceSort>> sortBuilder,
+      final Comparator<ProcessInstanceEntity> comparator) {
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceReader reader = rdbmsService.getProcessInstanceReader();
+
+    final var version = new Random().nextInt(32767);
+    for (int i = 0; i < 20; i++) {
+      final var def =
+          ProcessDefinitionFixtures.createAndSaveProcessDefinition(
+              rdbmsWriter, b -> b.version(version));
+
+      createAndSaveRandomProcessInstance(
+          rdbmsWriter,
+          b ->
+              b.processDefinitionKey(def.processDefinitionKey())
+                  .processDefinitionId(def.processDefinitionId())
+                  .version(def.version()));
+    }
 
     final var searchResult =
-        processInstanceReader
+        reader
             .search(
-                ProcessInstanceQuery.of(
-                    b ->
-                        b.filter(f -> f.processDefinitionKeys(processDefinitionKey))
-                            .sort(s -> s.processDefinitionId().asc().startDate().asc())
-                            .page(p -> p)))
+                new ProcessInstanceQuery(
+                    new ProcessInstanceFilter.Builder().processDefinitionVersions(version).build(),
+                    ProcessInstanceSort.of(sortBuilder),
+                    SearchQueryPage.of(b -> b),
+                    ProcessInstanceQueryResultConfig.of(b -> b)))
             .items();
 
-    assertThat(searchResult).hasSize(4);
-    assertThat(searchResult.stream().map(ProcessInstanceEntity::processInstanceKey).toList())
-        .containsExactly(
-            processInstanceKey2, processInstanceKey3, processInstanceKey, processInstanceKey4);
+    assertThat(searchResult.size()).isGreaterThanOrEqualTo(20);
+    assertThat(searchResult).isSortedAccordingTo(comparator);
   }
 }

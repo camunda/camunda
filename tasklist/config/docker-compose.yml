@@ -16,7 +16,7 @@ services:
       - zeebe_network
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.1
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -56,7 +56,7 @@ services:
         soft: 65536 # maximum number of open files for the OpenSearch user, set to at least 65536 on modern systems
         hard: 65536
     ports:
-      - 9205:9200
+      - 9200:9200
       - 9605:9605 # required for Performance Analyzer
     networks:
       - zeebe_network
@@ -76,7 +76,7 @@ services:
     depends_on:
       - postgres
     container_name: keycloak
-    image: bitnami/keycloak:26.0.7
+    image: bitnami/keycloak:26.1.0
     ports:
       - "18080:8080"
     environment:

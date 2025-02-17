@@ -29,16 +29,24 @@ public class CreateTenantTest extends ClientRestTest {
 
   public static final String TENANT_ID = "tenant-id";
   public static final String NAME = "Tenant Name";
+  public static final String DESCRIPTION = "Tenant Description";
 
   @Test
   void shouldCreateTenant() {
     // when
-    client.newCreateTenantCommand().tenantId(TENANT_ID).name(NAME).send().join();
+    client
+        .newCreateTenantCommand()
+        .tenantId(TENANT_ID)
+        .name(NAME)
+        .description(DESCRIPTION)
+        .send()
+        .join();
 
     // then
     final TenantCreateRequest request = gatewayService.getLastRequest(TenantCreateRequest.class);
     assertThat(request.getTenantId()).isEqualTo(TENANT_ID);
     assertThat(request.getName()).isEqualTo(NAME);
+    assertThat(request.getDescription()).isEqualTo(DESCRIPTION);
   }
 
   @Test

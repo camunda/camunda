@@ -16,7 +16,6 @@ import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -26,7 +25,6 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-@AutoCloseResources
 @Timeout(2 * 60)
 class ForceScaleDownBrokersTest {
   private static final int PARTITIONS_COUNT = 1;

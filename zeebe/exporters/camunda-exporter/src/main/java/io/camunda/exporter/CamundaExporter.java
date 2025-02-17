@@ -66,18 +66,19 @@ public class CamundaExporter implements Exporter {
   private final ExporterResourceProvider provider;
   private CamundaExporterMetrics metrics;
   private BackgroundTaskManager taskManager;
-  private final ExporterMetadata metadata;
+  private ExporterMetadata metadata;
   private boolean importersCompleted = false;
   private SearchEngineClient searchEngineClient;
   private int partitionId;
 
   public CamundaExporter() {
-    this(new DefaultExporterResourceProvider());
+    // the metadata will be initialized on open
+    this(new DefaultExporterResourceProvider(), null);
   }
 
   @VisibleForTesting
   public CamundaExporter(final ExporterResourceProvider provider) {
-    this(provider, new ExporterMetadata());
+    this(provider, null);
   }
 
   @VisibleForTesting
@@ -93,12 +94,16 @@ public class CamundaExporter implements Exporter {
     context.setFilter(new CamundaExporterRecordFilter());
     metrics = new CamundaExporterMetrics(context.getMeterRegistry());
     clientAdapter = ClientAdapter.of(configuration);
+    if (metadata == null) {
+      metadata = new ExporterMetadata(clientAdapter.objectMapper());
+    }
     partitionId = context.getPartitionId();
     provider.init(
         configuration,
         clientAdapter.getExporterEntityCacheProvider(),
         context.getMeterRegistry(),
-        metadata);
+        metadata,
+        clientAdapter.objectMapper());
 
     taskManager =
         new BackgroundTaskManagerFactory(
@@ -122,7 +127,8 @@ public class CamundaExporter implements Exporter {
             searchEngineClient,
             provider.getIndexDescriptors(),
             provider.getIndexTemplateDescriptors(),
-            configuration);
+            configuration,
+            clientAdapter.objectMapper());
 
     schemaManager.startup();
 
@@ -137,6 +143,8 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void close() {
+    provider.close();
+
     if (writer != null) {
       try {
         flush();
@@ -163,7 +171,7 @@ public class CamundaExporter implements Exporter {
 
     final var recordVersion = getVersion(record.getBrokerVersion());
 
-    if (recordVersion.major() == 8 && recordVersion.minor() < 7) {
+    if (recordVersion.major() == 8 && recordVersion.minor() < 8) {
       LOG.debug(
           "Skip record with broker version '{}'. Last exported position will be updated to '{}'",
           record.getBrokerVersion(),
@@ -206,6 +214,11 @@ public class CamundaExporter implements Exporter {
     }
   }
 
+  @VisibleForTesting
+  ExporterMetadata getMetadata() {
+    return metadata;
+  }
+
   private void ensureCachedRecordsLessThanBulkSize(final Record<?> record) {
     final var maxCachedRecords = configuration.getBulk().getSize();
 
@@ -236,6 +249,7 @@ public class CamundaExporter implements Exporter {
   private ExporterBatchWriter createBatchWriter() {
     final var builder = ExporterBatchWriter.Builder.begin();
     provider.getExportHandlers().forEach(builder::withHandler);
+    builder.withCustomErrorHandlers(provider.getCustomErrorHandlers());
     return builder.build();
   }
 
@@ -260,6 +274,12 @@ public class CamundaExporter implements Exporter {
   }
 
   private void checkImportersCompletedAndReschedule() {
+    if (!configuration.getIndex().shouldWaitForImporters()) {
+      LOG.debug(
+          "Waiting for importers to complete is disabled, thus scheduling delayed flush regardless of importer state.");
+      scheduleDelayedFlush();
+      return;
+    }
     if (!importersCompleted) {
       scheduleImportersCompletedCheck();
     }

@@ -20,7 +20,7 @@ import io.camunda.search.query.TenantQuery;
 import io.camunda.search.sort.TenantSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.TenantServices;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Set;
@@ -42,9 +42,9 @@ public class TenantQueryControllerTest extends RestControllerTest {
 
   private static final List<TenantEntity> TENANT_ENTITIES =
       List.of(
-          new TenantEntity(100L, "tenant-id-1", "Tenant 1", Set.of()),
-          new TenantEntity(200L, "tenant-id-2", "Tenant 2", Set.of(1L, 2L)),
-          new TenantEntity(300L, "tenant-id-3", "Tenant 12", Set.of(3L)));
+          new TenantEntity(100L, "tenant-id-1", "Tenant 1", "Description 1"),
+          new TenantEntity(200L, "tenant-id-2", "Tenant 2", "Description 2"),
+          new TenantEntity(300L, "tenant-id-3", "Tenant 12", "Description 3"));
 
   private static final String RESPONSE =
       """
@@ -53,20 +53,20 @@ public class TenantQueryControllerTest extends RestControllerTest {
            {
              "tenantKey": %s,
              "name": "%s",
-             "tenantId": "%s",
-             "assignedMemberKeys": %s
+             "description": "%s",
+             "tenantId": "%s"
            },
            {
              "tenantKey": %s,
              "name": "%s",
-             "tenantId": "%s",
-             "assignedMemberKeys": %s
+             "description": "%s",
+             "tenantId": "%s"
            },
            {
              "tenantKey": %s,
              "name": "%s",
-             "tenantId": "%s",
-             "assignedMemberKeys": %s
+             "description": "%s",
+             "tenantId": "%s"
            }
          ],
          "page": {
@@ -80,34 +80,20 @@ public class TenantQueryControllerTest extends RestControllerTest {
       RESPONSE.formatted(
           "\"%s\"".formatted(TENANT_ENTITIES.get(0).key()),
           TENANT_ENTITIES.get(0).name(),
+          TENANT_ENTITIES.get(0).description(),
           TENANT_ENTITIES.get(0).tenantId(),
-          formatSet(TENANT_ENTITIES.get(0).assignedMemberKeys(), true),
           "\"%s\"".formatted(TENANT_ENTITIES.get(1).key()),
           TENANT_ENTITIES.get(1).name(),
+          TENANT_ENTITIES.get(1).description(),
           TENANT_ENTITIES.get(1).tenantId(),
-          formatSet(TENANT_ENTITIES.get(1).assignedMemberKeys(), true),
           "\"%s\"".formatted(TENANT_ENTITIES.get(2).key()),
           TENANT_ENTITIES.get(2).name(),
+          TENANT_ENTITIES.get(2).description(),
           TENANT_ENTITIES.get(2).tenantId(),
-          formatSet(TENANT_ENTITIES.get(2).assignedMemberKeys(), true),
-          TENANT_ENTITIES.size());
-  private static final String EXPECTED_RESPONSE_NUMBER_KEYS =
-      RESPONSE.formatted(
-          TENANT_ENTITIES.get(0).key(),
-          TENANT_ENTITIES.get(0).name(),
-          TENANT_ENTITIES.get(0).tenantId(),
-          formatSet(TENANT_ENTITIES.get(0).assignedMemberKeys(), false),
-          TENANT_ENTITIES.get(1).key(),
-          TENANT_ENTITIES.get(1).name(),
-          TENANT_ENTITIES.get(1).tenantId(),
-          formatSet(TENANT_ENTITIES.get(1).assignedMemberKeys(), false),
-          TENANT_ENTITIES.get(2).key(),
-          TENANT_ENTITIES.get(2).name(),
-          TENANT_ENTITIES.get(2).tenantId(),
-          formatSet(TENANT_ENTITIES.get(2).assignedMemberKeys(), false),
           TENANT_ENTITIES.size());
 
   @MockBean private TenantServices tenantServices;
+  @MockBean private UserServices userServices;
 
   private static String formatSet(final Set<Long> set, final boolean asString) {
     return set.isEmpty()
@@ -121,6 +107,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @BeforeEach
   void setup() {
     when(tenantServices.withAuthentication(any(Authentication.class))).thenReturn(tenantServices);
+    when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
   }
 
   @Test
@@ -128,13 +115,14 @@ public class TenantQueryControllerTest extends RestControllerTest {
     // given
     final var tenantName = "Tenant Name";
     final var tenantId = "tenant-id";
-    final var tenant = new TenantEntity(100L, tenantId, tenantName, Set.of());
-    when(tenantServices.getByKey(tenant.key())).thenReturn(tenant);
+    final var tenantDescription = "Tenant Description";
+    final var tenant = new TenantEntity(100L, tenantId, tenantName, tenantDescription);
+    when(tenantServices.getById(tenant.tenantId())).thenReturn(tenant);
 
     // when
     webClient
         .get()
-        .uri("%s/%s".formatted(TENANT_BASE_URL, tenant.key()))
+        .uri("%s/%s".formatted(TENANT_BASE_URL, tenant.tenantId()))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -145,22 +133,22 @@ public class TenantQueryControllerTest extends RestControllerTest {
             {
               "tenantKey": "%d",
               "name": "%s",
-              "tenantId": "%s",
-              "assignedMemberKeys": []
+              "description": "%s",
+              "tenantId": "%s"
             }
             """
-                .formatted(tenant.key(), tenantName, tenantId));
+                .formatted(tenant.key(), tenantName, tenantDescription, tenantId));
 
     // then
-    verify(tenantServices, times(1)).getByKey(tenant.key());
+    verify(tenantServices, times(1)).getById(tenant.tenantId());
   }
 
   @Test
   void getNonExistingTenantShouldReturnNotFound() {
     // given
-    final var tenantKey = 100L;
-    final var path = "%s/%s".formatted(TENANT_BASE_URL, tenantKey);
-    when(tenantServices.getByKey(tenantKey)).thenThrow(new NotFoundException("tenant not found"));
+    final var tenantId = "non-existing-tenant";
+    final var path = "%s/%s".formatted(TENANT_BASE_URL, tenantId);
+    when(tenantServices.getById(tenantId)).thenThrow(new NotFoundException("tenant not found"));
 
     // when
     webClient
@@ -183,7 +171,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
                 .formatted(path));
 
     // then
-    verify(tenantServices, times(1)).getByKey(tenantKey);
+    verify(tenantServices, times(1)).getById(tenantId);
   }
 
   @Test
@@ -212,36 +200,6 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
         .json(EXPECTED_RESPONSE);
-
-    verify(tenantServices).search(new TenantQuery.Builder().build());
-  }
-
-  @Test
-  void shouldSearchTenantsWithEmptyQueryNumberKeys() {
-    // given
-    when(tenantServices.search(any(TenantQuery.class)))
-        .thenReturn(
-            new SearchQueryResult.Builder<TenantEntity>()
-                .total(3)
-                .firstSortValues(new Object[] {"f"})
-                .lastSortValues(new Object[] {"v"})
-                .items(TENANT_ENTITIES)
-                .build());
-
-    // when / then
-    webClient
-        .post()
-        .uri(SEARCH_TENANT_URL)
-        .accept(RequestMapper.MEDIA_TYPE_KEYS_NUMBER)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue("{}")
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(RequestMapper.MEDIA_TYPE_KEYS_NUMBER)
-        .expectBody()
-        .json(EXPECTED_RESPONSE_NUMBER_KEYS);
 
     verify(tenantServices).search(new TenantQuery.Builder().build());
   }
@@ -345,9 +303,9 @@ public class TenantQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "INVALID_ARGUMENT",
+                      "title": "Bad Request",
                       "status": 400,
-                      "detail": "Unknown sortBy: unknownField.",
+                      "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [key, name, tenantId]",
                       "instance": "%s"
                     }""",
                 SEARCH_TENANT_URL)),

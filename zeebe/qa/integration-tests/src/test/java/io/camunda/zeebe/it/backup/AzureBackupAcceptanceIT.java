@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.it.backup;
 
-import io.camunda.qa.util.testcontainers.AzuriteContainer;
 import io.camunda.zeebe.backup.azure.AzureBackupConfig;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
@@ -15,6 +14,7 @@ import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.testcontainers.AzuriteContainer;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import java.util.Map;
 import org.agrona.CloseHelper;

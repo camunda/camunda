@@ -86,6 +86,7 @@ public class ClientConfigRestServiceIT {
                 + "\"mixpanelToken\":\"i-am-a-token\","
                 + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","
                 + "\"isResourcePermissionsEnabled\":false,"
-                + "\"isUserAccessRestrictionsEnabled\":true};");
+                + "\"isUserAccessRestrictionsEnabled\":true,"
+                + "\"maxRequestSize\":4194304};");
   }
 }

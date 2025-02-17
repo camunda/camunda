@@ -21,12 +21,14 @@ import io.camunda.client.api.response.DecisionRequirements;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.Form;
 import io.camunda.client.api.response.Process;
+import io.camunda.client.api.response.Resource;
 import io.camunda.client.impl.Loggers;
 import io.camunda.client.protocol.rest.DeploymentDecisionRequirementsResult;
 import io.camunda.client.protocol.rest.DeploymentDecisionResult;
 import io.camunda.client.protocol.rest.DeploymentFormResult;
 import io.camunda.client.protocol.rest.DeploymentMetadataResult;
 import io.camunda.client.protocol.rest.DeploymentProcessResult;
+import io.camunda.client.protocol.rest.DeploymentResourceResult;
 import io.camunda.client.protocol.rest.DeploymentResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
@@ -50,6 +52,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
   private final List<Decision> decisions = new ArrayList<>();
   private final List<DecisionRequirements> decisionRequirements = new ArrayList<>();
   private final List<Form> forms = new ArrayList<>();
+  private final List<Resource> resources = new ArrayList<>();
 
   public DeploymentEventImpl(final DeployProcessResponse response) {
     key = response.getKey();
@@ -92,6 +95,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
       addDeployedProcess(deployment.getProcessDefinition());
       addDeployedDecision(deployment.getDecisionDefinition());
       addDeployedDecisionRequirements(deployment.getDecisionRequirements());
+      addDeployedResource(deployment.getResource());
     }
   }
 
@@ -108,6 +112,19 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                         f.getTenantId())));
   }
 
+  private void addDeployedResource(final DeploymentResourceResult resource) {
+    Optional.ofNullable(resource)
+        .ifPresent(
+            f ->
+                resources.add(
+                    new ResourceImpl(
+                        f.getResourceId(),
+                        Long.parseLong(f.getResourceKey()),
+                        f.getVersion(),
+                        f.getResourceName(),
+                        f.getTenantId())));
+  }
+
   private void addDeployedDecisionRequirements(
       final DeploymentDecisionRequirementsResult decisionRequirement) {
     Optional.ofNullable(decisionRequirement)
@@ -116,7 +133,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                 decisionRequirements.add(
                     new DecisionRequirementsImpl(
                         dr.getDecisionRequirementsId(),
-                        dr.getName(),
+                        dr.getDecisionRequirementsName(),
                         dr.getVersion(),
                         Long.parseLong(dr.getDecisionRequirementsKey()),
                         dr.getResourceName(),
@@ -174,6 +191,11 @@ public final class DeploymentEventImpl implements DeploymentEvent {
   @Override
   public List<Form> getForm() {
     return forms;
+  }
+
+  @Override
+  public List<Resource> getResource() {
+    return resources;
   }
 
   @Override

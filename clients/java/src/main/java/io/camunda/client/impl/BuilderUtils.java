@@ -16,12 +16,13 @@
 package io.camunda.client.impl;
 
 import io.camunda.client.impl.util.Environment;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class BuilderUtils {
+public final class BuilderUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(BuilderUtils.class);
 
@@ -32,32 +33,42 @@ final class BuilderUtils {
     sb.append(propertyName).append(": ").append(value).append("\n");
   }
 
-  static void applyIfNotNull(
-      final Properties properties, final String propertyName, final Consumer<String> action) {
-    final String value = getProperty(properties, propertyName);
-    if (value != null) {
-      action.accept(value);
+  /**
+   * Applies the provided action to the first non-null property value found in the given list of
+   * property names.
+   */
+  public static void applyPropertyValueIfNotNull(
+      final Properties properties, final Consumer<String> action, final String... propertyNames) {
+    for (final String propertyName : propertyNames) {
+      final Optional<String> value = getPropertyValue(properties, propertyName);
+      value.ifPresent(action);
+      if (value.isPresent()) {
+        break;
+      }
     }
   }
 
-  static String getProperty(final Properties properties, final String propertyName) {
-    if (properties.containsKey(propertyName)) {
-      return properties.getProperty(propertyName);
-    }
-    return null;
+  private static Optional<String> getPropertyValue(
+      final Properties properties, final String propertyName) {
+    return Optional.ofNullable(properties.getProperty(propertyName));
   }
 
-  static void applyIfNotNull(final String envName, final Consumer<String> action) {
-    final String value = getProperty(Environment.system(), envName);
-    if (value != null) {
-      action.accept(value);
+  /**
+   * Applies the provided action to the first non-null environment variable value found in the given
+   * list of environment variable names.
+   */
+  public static void applyEnvironmentValueIfNotNull(
+      final Consumer<String> action, final String... envNames) {
+    for (final String envName : envNames) {
+      final Optional<String> value = getEnvironmentVariableValue(envName);
+      value.ifPresent(action);
+      if (value.isPresent()) {
+        break;
+      }
     }
   }
 
-  static String getProperty(final Environment environment, final String envName) {
-    if (environment.isDefined(envName)) {
-      return environment.get(envName);
-    }
-    return null;
+  private static Optional<String> getEnvironmentVariableValue(final String envName) {
+    return Optional.ofNullable(Environment.system().get(envName));
   }
 }

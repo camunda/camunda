@@ -8,6 +8,8 @@
 package io.camunda.db.rdbms.write.domain;
 
 import static io.camunda.util.ValueTypeUtil.mapBoolean;
+import static io.camunda.util.ValueTypeUtil.mapDouble;
+import static io.camunda.util.ValueTypeUtil.mapLong;
 
 import io.camunda.search.entities.ValueTypeEnum;
 import io.camunda.util.ObjectBuilder;
@@ -26,9 +28,8 @@ public record VariableDbModel(
     Long scopeKey,
     Long processInstanceKey,
     String processDefinitionId,
-    String tenantId) {
-
-  public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191; // TODO make configurable
+    String tenantId,
+    int partitionId) {
 
   public VariableDbModel copy(
       final Function<ObjectBuilder<VariableDbModel>, ObjectBuilder<VariableDbModel>>
@@ -36,14 +37,36 @@ public record VariableDbModel(
     return builderFunction
         .apply(
             new VariableDbModelBuilder()
-                .variableKey(this.variableKey)
-                .value(this.value)
-                .name(this.name)
-                .scopeKey(this.scopeKey)
-                .processInstanceKey(this.processInstanceKey)
-                .processDefinitionId(this.processDefinitionId)
-                .tenantId(this.tenantId))
+                .variableKey(variableKey)
+                .value(value)
+                .name(name)
+                .scopeKey(scopeKey)
+                .processInstanceKey(processInstanceKey)
+                .processDefinitionId(processDefinitionId)
+                .tenantId(tenantId)
+                .partitionId(partitionId))
         .build();
+  }
+
+  public VariableDbModel truncateValue(final int sizeLimit) {
+    if (type == ValueTypeEnum.STRING && value != null && value.length() > sizeLimit) {
+      return new VariableDbModel(
+          variableKey,
+          name,
+          type,
+          doubleValue,
+          longValue,
+          value.substring(0, sizeLimit),
+          value,
+          true,
+          scopeKey,
+          processInstanceKey,
+          processDefinitionId,
+          tenantId,
+          partitionId);
+    } else {
+      return this;
+    }
   }
 
   public static class VariableDbModelBuilder implements ObjectBuilder<VariableDbModel> {
@@ -55,6 +78,7 @@ public record VariableDbModel(
     private Long processInstanceKey;
     private String processDefinitionId;
     private String tenantId;
+    private int partitionId;
 
     public VariableDbModelBuilder() {}
 
@@ -93,25 +117,28 @@ public record VariableDbModel(
       return this;
     }
 
-    // Build method to create the record
-    public VariableDbModel build() {
-      if (value != null && value.length() > DEFAULT_VARIABLE_SIZE_THRESHOLD) {
-        return getModelWithPreview();
-      } else {
-        return switch (ValueTypeUtil.getValueType(value)) {
-          case LONG -> getLongModel();
-          case DOUBLE -> getDoubleModel();
-          case BOOLEAN -> getModel(mapBoolean(value));
-          default -> getModel(value);
-        };
-      }
+    public VariableDbModelBuilder partitionId(final int partitionId) {
+      this.partitionId = partitionId;
+      return this;
     }
 
-    private VariableDbModel getModel(final String value) {
+    // Build method to create the record
+    @Override
+    public VariableDbModel build() {
+      return switch (ValueTypeUtil.getValueType(value)) {
+        case LONG -> getLongModel();
+        case DOUBLE -> getDoubleModel();
+        case BOOLEAN -> getModel(ValueTypeEnum.BOOLEAN, mapBoolean(value));
+        case NULL -> getModel(ValueTypeEnum.NULL, null);
+        default -> getModel(ValueTypeEnum.STRING, value);
+      };
+    }
+
+    private VariableDbModel getModel(final ValueTypeEnum valueTypeEnum, final String value) {
       return new VariableDbModel(
           variableKey,
           name,
-          ValueTypeEnum.STRING,
+          valueTypeEnum,
           null,
           null,
           value,
@@ -120,23 +147,8 @@ public record VariableDbModel(
           scopeKey,
           processInstanceKey,
           processDefinitionId,
-          tenantId);
-    }
-
-    private VariableDbModel getModelWithPreview() {
-      return new VariableDbModel(
-          variableKey,
-          name,
-          ValueTypeEnum.STRING,
-          null,
-          null,
-          value.substring(0, DEFAULT_VARIABLE_SIZE_THRESHOLD),
-          value,
-          true,
-          scopeKey,
-          processInstanceKey,
-          processDefinitionId,
-          tenantId);
+          tenantId,
+          partitionId);
     }
 
     private VariableDbModel getLongModel() {
@@ -145,14 +157,15 @@ public record VariableDbModel(
           name,
           ValueTypeEnum.LONG,
           null,
-          Long.parseLong(value),
+          mapLong(value),
           value,
           null,
           false,
           scopeKey,
           processInstanceKey,
           processDefinitionId,
-          tenantId);
+          tenantId,
+          partitionId);
     }
 
     private VariableDbModel getDoubleModel() {
@@ -160,7 +173,7 @@ public record VariableDbModel(
           variableKey,
           name,
           ValueTypeEnum.DOUBLE,
-          Double.parseDouble(value),
+          mapDouble(value),
           null,
           value,
           null,
@@ -168,7 +181,8 @@ public record VariableDbModel(
           scopeKey,
           processInstanceKey,
           processDefinitionId,
-          tenantId);
+          tenantId,
+          partitionId);
     }
   }
 }

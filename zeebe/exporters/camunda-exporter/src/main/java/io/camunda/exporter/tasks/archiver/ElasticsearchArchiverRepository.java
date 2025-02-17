@@ -34,6 +34,7 @@ import co.elastic.clients.json.JsonData;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
@@ -46,7 +47,8 @@ import java.util.regex.Pattern;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
 
-public final class ElasticsearchArchiverRepository implements ArchiverRepository {
+public final class ElasticsearchArchiverRepository extends ElasticsearchRepository
+    implements ArchiverRepository {
   private static final String DATES_AGG = "datesAgg";
   private static final String INSTANCES_AGG = "instancesAgg";
   private static final String DATES_SORTED_AGG = "datesSortedAgg";
@@ -63,10 +65,7 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
   private final String indexPrefix;
   private final String processInstanceIndex;
   private final String batchOperationIndex;
-  private final ElasticsearchAsyncClient client;
-  private final Executor executor;
   private final CamundaExporterMetrics metrics;
-  private final Logger logger;
 
   private final CalendarInterval rolloverInterval;
 
@@ -81,16 +80,14 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
       final Executor executor,
       final CamundaExporterMetrics metrics,
       final Logger logger) {
+    super(client, executor, logger);
     this.partitionId = partitionId;
     this.config = config;
     this.retention = retention;
     this.indexPrefix = indexPrefix;
     this.processInstanceIndex = processInstanceIndex;
     this.batchOperationIndex = batchOperationIndex;
-    this.client = client;
-    this.executor = executor;
     this.metrics = metrics;
-    this.logger = logger;
 
     rolloverInterval = mapCalendarInterval(config.getRolloverInterval());
   }
@@ -201,11 +198,6 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
                     .filter(indexName -> indexNamePattern.matcher(indexName).matches())
                     .toList(),
             executor);
-  }
-
-  @Override
-  public void close() throws Exception {
-    client._transport().close();
   }
 
   private SearchRequest createFinishedInstancesSearchRequest(final Aggregation aggregation) {

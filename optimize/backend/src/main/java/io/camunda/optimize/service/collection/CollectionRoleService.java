@@ -14,6 +14,7 @@ import io.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDt
 import io.camunda.optimize.dto.optimize.query.collection.CollectionRoleResponseDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateRequestDto;
 import io.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.db.reader.CollectionReader;
 import io.camunda.optimize.service.db.writer.CollectionWriter;
 import io.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
@@ -21,7 +22,6 @@ import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.security.AuthorizedCollectionService;
-import jakarta.ws.rs.NotFoundException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;

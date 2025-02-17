@@ -19,10 +19,10 @@ import io.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateReq
 import io.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import io.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.IdGenerator;
-import jakarta.ws.rs.NotFoundException;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;

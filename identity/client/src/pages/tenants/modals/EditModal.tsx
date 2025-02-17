@@ -17,17 +17,19 @@ const EditTenantModal: FC<UseEntityModalProps<UpdateTenantParams>> = ({
   open,
   onClose,
   onSuccess,
-  entity: { tenantKey, name: currentName },
+  entity: { tenantId, name: currentName, description: currentDescription },
 }) => {
   const { t } = useTranslate();
   const { enqueueNotification } = useNotifications();
   const [apiCall, { loading, namedErrors }] = useApiCall(updateTenant);
   const [name, setName] = useState(currentName);
+  const [description, setDescription] = useState(currentDescription);
 
   const handleSubmit = async () => {
     const { success } = await apiCall({
-      tenantKey,
-      name,
+      tenantId: tenantId,
+      name: name,
+      description: description ?? "",
     });
 
     if (success) {
@@ -59,6 +61,13 @@ const EditTenantModal: FC<UseEntityModalProps<UpdateTenantParams>> = ({
         onChange={setName}
         errors={namedErrors?.name}
         autoFocus
+      />
+      <TextField
+        label={t("Description")}
+        value={description}
+        placeholder={t("Tenant description")}
+        onChange={setDescription}
+        errors={namedErrors?.description}
       />
     </FormModal>
   );

@@ -20,10 +20,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
-import io.camunda.process.test.impl.client.ProcessInstanceState;
 import java.io.IOException;
+import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -54,14 +55,16 @@ public class CamundaAssertTest {
     when(processInstanceEvent.getProcessInstanceKey()).thenReturn(processInstanceKey);
 
     final ProcessInstanceDto processInstanceDto = new ProcessInstanceDto();
+    processInstanceDto.setKey(processInstanceKey);
     processInstanceDto.setState(ProcessInstanceState.ACTIVE);
-    when(camundaDataSource.getProcessInstance(processInstanceKey)).thenReturn(processInstanceDto);
+    when(camundaDataSource.findProcessInstances())
+        .thenReturn(Collections.singletonList(processInstanceDto));
 
     // when
     CamundaAssert.initialize(camundaDataSource);
     CamundaAssert.assertThat(processInstanceEvent).isActive();
 
     // then
-    verify(camundaDataSource).getProcessInstance(processInstanceKey);
+    verify(camundaDataSource).findProcessInstances();
   }
 }

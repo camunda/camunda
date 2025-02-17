@@ -7,6 +7,7 @@
  */
 package io.camunda.migration.identity;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -15,6 +16,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
@@ -32,10 +34,10 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import org.apache.commons.lang3.NotImplementedException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -74,11 +76,23 @@ final class UserTenantsMigrationHandlerTest {
   }
 
   @Test
+  void stopWhenIdentityEndpointNotFound() {
+    when(managementIdentityClient.fetchUserTenants(anyInt()))
+        .thenThrow(new NotImplementedException());
+
+    // when
+    assertThrows(NotImplementedException.class, migrationHandler::migrate);
+
+    // then
+    verify(managementIdentityClient).fetchUserTenants(anyInt());
+    verifyNoMoreInteractions(managementIdentityClient);
+  }
+
+  @Test
   void stopWhenNoMoreRecords() {
     // given
     givenUserTenants();
-    when(tenantServices.getById(any()))
-        .thenReturn(new TenantEntity(1L, "", "", Collections.emptySet()));
+    when(tenantServices.getById(any())).thenReturn(new TenantEntity(1L, "", "", null));
     when(tenantServices.createTenant(any()))
         .thenReturn(CompletableFuture.completedFuture(new TenantRecord()));
     when(mappingServices.createMapping(any()))
@@ -146,8 +160,7 @@ final class UserTenantsMigrationHandlerTest {
   void ignoreWhenUserAlreadyAssigned() {
     // given
     givenUserTenants();
-    when(tenantServices.getById(any()))
-        .thenReturn(new TenantEntity(1L, "", "", Collections.emptySet()));
+    when(tenantServices.getById(any())).thenReturn(new TenantEntity(1L, "", "", null));
     doThrow(
             new BrokerRejectionException(
                 new BrokerRejection(TenantIntent.ADD_ENTITY, -1, RejectionType.ALREADY_EXISTS, "")))

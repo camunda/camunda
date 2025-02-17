@@ -46,16 +46,12 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
   private static final Set<Intent> PI_AND_AI_FINISH_STATES =
       Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
 
-  private final boolean concurrencyMode;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
   private final String indexName;
 
   public ListViewProcessInstanceFromProcessInstanceHandler(
-      final String indexName,
-      final boolean concurrencyMode,
-      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
+      final String indexName, final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
     this.indexName = indexName;
-    this.concurrencyMode = concurrencyMode;
     this.processCache = processCache;
   }
 
@@ -182,17 +178,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       updateFields.put(ListViewTemplate.STATE, entity.getState());
     }
 
-    if (concurrencyMode) {
-      batchRequest.upsertWithScriptAndRouting(
-          indexName,
-          entity.getId(),
-          entity,
-          getProcessInstanceScript(),
-          updateFields,
-          String.valueOf(entity.getProcessInstanceKey()));
-    } else {
-      batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
-    }
+    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
   }
 
   @Override
@@ -213,46 +199,6 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     return bpmnElementType.equals(type);
   }
 
-  protected String getProcessInstanceScript() {
-    return String.format(
-        "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
-            + "ctx._source.%s = params.%s; " // position
-            + "ctx._source.%s = params.%s; " // process name
-            + "ctx._source.%s = params.%s; " // process version
-            + "ctx._source.%s = params.%s; " // process key
-            + "ctx._source.%s = params.%s; " // bpmnProcessId
-            + "if (params.%s != null) { ctx._source.%s = params.%s; }" // process version tag
-            + "if (params.%s != null) { ctx._source.%s = params.%s; }" // start date
-            + "if (params.%s != null) { ctx._source.%s = params.%s; }" // end date
-            + "if (params.%s != null) { ctx._source.%s = params.%s; }" // state
-            + "}",
-        POSITION,
-        POSITION,
-        POSITION,
-        POSITION,
-        POSITION,
-        PROCESS_NAME,
-        PROCESS_NAME,
-        PROCESS_VERSION,
-        PROCESS_VERSION,
-        PROCESS_KEY,
-        PROCESS_KEY,
-        BPMN_PROCESS_ID,
-        BPMN_PROCESS_ID,
-        PROCESS_VERSION_TAG,
-        PROCESS_VERSION_TAG,
-        PROCESS_VERSION_TAG,
-        START_DATE,
-        START_DATE,
-        START_DATE,
-        END_DATE,
-        END_DATE,
-        END_DATE,
-        STATE,
-        STATE,
-        STATE);
-  }
-
   /// TODO - because it depends on importBatch
   private void incrementFinishedCount() {
     /*
@@ -266,16 +212,14 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
   }
 
   private String getProcessName(final Long processDefinitionKey, final String bpmnProcessId) {
+    // If the cache does not contain the process definition then the process has been
+    // deleted from the backend. This is a special case which can happen only if there was a
+    // data loss in the backend. In that case, inorder to not block the exporter, we can
+    // return the bpmnProcessId as the process name.
     return processCache
         .get(processDefinitionKey)
         .map(CachedProcessEntity::name)
-        .map(
-            processName ->
-                processName == null || processName.isBlank() ? bpmnProcessId : processName)
-        // If the cache does not contain the process definition then the process has been
-        // deleted from the backend. This is a special case which can happen only if there was a
-        // data loss in the backend. In that case, inorder to not block the exporter, we can
-        // return the bpmnProcessId as the process name.
+        .filter(processName -> !processName.isBlank())
         .orElse(bpmnProcessId);
   }
 

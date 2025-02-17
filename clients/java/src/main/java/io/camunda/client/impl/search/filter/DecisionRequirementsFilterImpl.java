@@ -17,31 +17,33 @@ package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.client.protocol.rest.DecisionRequirementsFilterRequest;
+import io.camunda.client.impl.util.ParseUtil;
 
 public class DecisionRequirementsFilterImpl
-    extends TypedSearchRequestPropertyProvider<DecisionRequirementsFilterRequest>
+    extends TypedSearchRequestPropertyProvider<
+        io.camunda.client.protocol.rest.DecisionRequirementsFilter>
     implements DecisionRequirementsFilter {
 
-  private final DecisionRequirementsFilterRequest filter;
+  private final io.camunda.client.protocol.rest.DecisionRequirementsFilter filter;
 
-  public DecisionRequirementsFilterImpl(final DecisionRequirementsFilterRequest filter) {
-    this.filter = new DecisionRequirementsFilterRequest();
+  public DecisionRequirementsFilterImpl(
+      final io.camunda.client.protocol.rest.DecisionRequirementsFilter filter) {
+    this.filter = new io.camunda.client.protocol.rest.DecisionRequirementsFilter();
   }
 
   public DecisionRequirementsFilterImpl() {
-    filter = new DecisionRequirementsFilterRequest();
+    filter = new io.camunda.client.protocol.rest.DecisionRequirementsFilter();
   }
 
   @Override
   public DecisionRequirementsFilter decisionRequirementsKey(final Long key) {
-    filter.decisionRequirementsKey(key);
+    filter.decisionRequirementsKey(ParseUtil.keyToString(key));
     return this;
   }
 
   @Override
-  public DecisionRequirementsFilter name(final String name) {
-    filter.name(name);
+  public DecisionRequirementsFilter decisionRequirementsName(final String name) {
+    filter.decisionRequirementsName(name);
     return this;
   }
 
@@ -64,7 +66,7 @@ public class DecisionRequirementsFilterImpl
   }
 
   @Override
-  protected DecisionRequirementsFilterRequest getSearchRequestProperty() {
+  protected io.camunda.client.protocol.rest.DecisionRequirementsFilter getSearchRequestProperty() {
     return filter;
   }
 }

@@ -13,12 +13,17 @@ public interface TasklistProfileService {
 
   String SSO_AUTH_PROFILE = "sso-auth";
   String IDENTITY_AUTH_PROFILE = "identity-auth";
-  String AUTH_BASIC = "auth-basic";
+  String CONSOLIDATED_AUTH_PROFILE = "consolidated-auth";
   String AUTH_PROFILE = "auth";
   String DEFAULT_AUTH = AUTH_PROFILE;
   String LDAP_AUTH_PROFILE = "ldap-auth";
   Set<String> AUTH_PROFILES =
-      Set.of(AUTH_PROFILE, LDAP_AUTH_PROFILE, SSO_AUTH_PROFILE, IDENTITY_AUTH_PROFILE, AUTH_BASIC);
+      Set.of(
+          AUTH_PROFILE,
+          LDAP_AUTH_PROFILE,
+          SSO_AUTH_PROFILE,
+          IDENTITY_AUTH_PROFILE,
+          CONSOLIDATED_AUTH_PROFILE);
 
   String getMessageByProfileFor(Exception exception);
 

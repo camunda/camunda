@@ -22,7 +22,7 @@ describe('format', () => {
 
   describe('formatDate', () => {
     it('shows now when date is the same', () => {
-      expect(formatDate(now, now)).to.be.toEqual({
+      expect(formatDate(now, now)).toEqual({
         date: new Date(Date.parse('2024-01-10T12:00:00Z')),
         relative: {
           resolution: 'now',
@@ -265,7 +265,7 @@ describe('format', () => {
   });
   describe('formatDateTime', () => {
     it('shows now when date is the same', () => {
-      expect(formatDateTime(now, now)).to.be.toEqual({
+      expect(formatDateTime(now, now)).toEqual({
         date: new Date(Date.parse('2024-01-10T12:00:00Z')),
         relative: {
           resolution: 'now',

@@ -14,6 +14,7 @@ import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.MIGRATED;
 
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel.UserTaskState;
+import io.camunda.db.rdbms.write.domain.UserTaskMigrationDbModel;
 import io.camunda.db.rdbms.write.service.UserTaskWriter;
 import io.camunda.exporter.rdbms.DateUtil;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
@@ -55,49 +56,62 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
   public void export(final Record<UserTaskRecordValue> record) {
     final UserTaskRecordValue value = record.getValue();
     switch (record.getIntent()) {
-      case CREATED -> userTaskWriter.create(map(value, UserTaskState.CREATED, null));
+      case CREATED -> userTaskWriter.create(map(record, UserTaskState.CREATED, null));
       case CANCELED ->
           userTaskWriter.update(
-              map(value, UserTaskState.CANCELED, DateUtil.toOffsetDateTime(record.getTimestamp())));
+              map(
+                  record,
+                  UserTaskState.CANCELED,
+                  DateUtil.toOffsetDateTime(record.getTimestamp())));
       case COMPLETED ->
           userTaskWriter.update(
               map(
-                  value,
+                  record,
                   UserTaskState.COMPLETED,
                   DateUtil.toOffsetDateTime(record.getTimestamp())));
-      case MIGRATED -> userTaskWriter.update(map(value, UserTaskState.CREATED, null));
-      default -> userTaskWriter.update(map(value, null, null));
+      case MIGRATED ->
+          userTaskWriter.migrateToProcess(
+              new UserTaskMigrationDbModel.Builder()
+                  .userTaskKey(value.getUserTaskKey())
+                  .processDefinitionKey(value.getProcessDefinitionKey())
+                  .processDefinitionId(value.getBpmnProcessId())
+                  .elementId(value.getElementId())
+                  .processDefinitionVersion(value.getProcessDefinitionVersion())
+                  .build());
+      default -> userTaskWriter.update(map(record, null, null));
     }
   }
 
   private UserTaskDbModel map(
-      final UserTaskRecordValue record,
+      final Record<UserTaskRecordValue> record,
       final UserTaskState state,
       final OffsetDateTime completionTime) {
+    final UserTaskRecordValue value = record.getValue();
     return new UserTaskDbModel.Builder()
-        .userTaskKey(record.getUserTaskKey())
-        .elementId(record.getElementId())
-        .processDefinitionId(record.getBpmnProcessId())
-        .creationDate(DateUtil.toOffsetDateTime(record.getCreationTimestamp()))
+        .userTaskKey(value.getUserTaskKey())
+        .elementId(value.getElementId())
+        .processDefinitionId(value.getBpmnProcessId())
+        .creationDate(DateUtil.toOffsetDateTime(value.getCreationTimestamp()))
         .completionDate(completionTime)
-        .assignee(StringUtils.isNotEmpty(record.getAssignee()) ? record.getAssignee() : null)
+        .assignee(StringUtils.isNotEmpty(value.getAssignee()) ? value.getAssignee() : null)
         .state(state)
-        .formKey(record.getFormKey() > 0 ? record.getFormKey() : null)
-        .processDefinitionKey(record.getProcessDefinitionKey())
-        .processInstanceKey(record.getProcessInstanceKey())
-        .elementInstanceKey(record.getElementInstanceKey())
-        .tenantId(record.getTenantId())
-        .dueDate(DateUtil.toOffsetDateTime(record.getDueDate()))
-        .followUpDate(DateUtil.toOffsetDateTime(record.getFollowUpDate()))
-        .candidateGroups(record.getCandidateGroupsList())
-        .candidateUsers(record.getCandidateUsersList())
+        .formKey(value.getFormKey() > 0 ? value.getFormKey() : null)
+        .processDefinitionKey(value.getProcessDefinitionKey())
+        .processInstanceKey(value.getProcessInstanceKey())
+        .elementInstanceKey(value.getElementInstanceKey())
+        .tenantId(value.getTenantId())
+        .dueDate(DateUtil.toOffsetDateTime(value.getDueDate()))
+        .followUpDate(DateUtil.toOffsetDateTime(value.getFollowUpDate()))
+        .candidateGroups(value.getCandidateGroupsList())
+        .candidateUsers(value.getCandidateUsersList())
         .externalFormReference(
-            StringUtils.isNotEmpty(record.getExternalFormReference())
-                ? record.getExternalFormReference()
+            StringUtils.isNotEmpty(value.getExternalFormReference())
+                ? value.getExternalFormReference()
                 : null)
-        .processDefinitionVersion(record.getProcessDefinitionVersion())
-        .customHeaders(record.getCustomHeaders())
-        .priority(record.getPriority())
+        .processDefinitionVersion(value.getProcessDefinitionVersion())
+        .customHeaders(value.getCustomHeaders())
+        .priority(value.getPriority())
+        .partitionId(record.getPartitionId())
         .build();
   }
 }

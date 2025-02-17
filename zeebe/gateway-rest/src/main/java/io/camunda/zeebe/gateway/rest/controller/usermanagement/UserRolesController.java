@@ -10,7 +10,8 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.service.RoleServices;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
@@ -32,17 +33,20 @@ public class UserRolesController {
   }
 
   @CamundaPostMapping(path = "/search")
-  public ResponseEntity<RoleSearchQueryResponse> searchRoles(
+  public ResponseEntity<RoleSearchQueryResult> searchRoles(
       @PathVariable("userKey") final long userKey,
       @RequestBody(required = false) final RoleSearchQueryRequest queryRequest) {
     return SearchQueryRequestMapper.toRoleQuery(queryRequest)
         .fold(RestErrorMapper::mapProblemToResponse, query -> searchRoles(userKey, query));
   }
 
-  private ResponseEntity<RoleSearchQueryResponse> searchRoles(
+  private ResponseEntity<RoleSearchQueryResult> searchRoles(
       final long userKey, final RoleQuery query) {
     try {
-      final var result = roleServices.getMemberRoles(userKey, query);
+      final var result =
+          roleServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .getMemberRoles(userKey, query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toRoleSearchQueryResponse(result));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);

@@ -63,7 +63,8 @@ public class DecisionRestServiceIT extends OperateAbstractIT {
     when(decisionReader.getDecision(decisionDefinitionKey))
         .thenReturn(new DecisionDefinitionEntity().setDecisionId(decisionId));
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.hasPermissionForDecision(decisionId, IdentityPermission.READ))
+    when(permissionsService.hasPermissionForDecision(
+            decisionId, IdentityPermission.READ_DECISION_INSTANCE))
         .thenReturn(false);
     final MvcResult mvcResult =
         getRequestShouldFailWithNoAuthorization(
@@ -81,7 +82,8 @@ public class DecisionRestServiceIT extends OperateAbstractIT {
     when(decisionReader.getDecision(decisionDefinitionKey))
         .thenReturn(new DecisionDefinitionEntity().setDecisionId(decisionId));
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.hasPermissionForDecision(decisionId, IdentityPermission.DELETE))
+    when(permissionsService.hasPermissionForDecision(
+            decisionId, IdentityPermission.DELETE_DECISION_INSTANCE))
         .thenReturn(true);
     when(batchOperationWriter.scheduleDeleteDecisionDefinition(any()))
         .thenReturn(new BatchOperationEntity());
@@ -131,7 +133,8 @@ public class DecisionRestServiceIT extends OperateAbstractIT {
     when(decisionReader.getDecision(decisionDefinitionKey))
         .thenReturn(new DecisionDefinitionEntity().setDecisionId(decisionId));
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.hasPermissionForDecision(decisionId, IdentityPermission.DELETE))
+    when(permissionsService.hasPermissionForDecision(
+            decisionId, IdentityPermission.DELETE_DECISION_INSTANCE))
         .thenReturn(false);
     when(batchOperationWriter.scheduleDeleteDecisionDefinition(any()))
         .thenReturn(new BatchOperationEntity());

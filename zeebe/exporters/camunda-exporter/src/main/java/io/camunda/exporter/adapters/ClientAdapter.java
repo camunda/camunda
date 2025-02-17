@@ -7,21 +7,26 @@
  */
 package io.camunda.exporter.adapters;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
-import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.search.connect.configuration.DatabaseType;
 import java.io.IOException;
 
 public interface ClientAdapter {
 
   static ClientAdapter of(final ExporterConfiguration configuration) {
-    return switch (ConnectionTypes.from(configuration.getConnect().getType())) {
-      case ELASTICSEARCH -> new ElasticsearchAdapter(configuration);
-      case OPENSEARCH -> new OpensearchAdapter(configuration);
+    final var databaseType = configuration.getConnect().getTypeEnum();
+    return switch (databaseType) {
+      case DatabaseType.ELASTICSEARCH -> new ElasticsearchAdapter(configuration.getConnect());
+      case DatabaseType.OPENSEARCH -> new OpensearchAdapter(configuration.getConnect());
+      default -> throw new IllegalArgumentException("Unsupported databaseType: " + databaseType);
     };
   }
+
+  ObjectMapper objectMapper();
 
   SearchEngineClient getSearchEngineClient();
 

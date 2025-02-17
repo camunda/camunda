@@ -555,6 +555,9 @@ public class CompactRecordLogger {
         .append("@[")
         .append(shortenKey(value.getElementInstanceKey()))
         .append("]")
+        .append(" msg[")
+        .append(shortenKey(value.getMessageKey()))
+        .append("]")
         .append(
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
         .append(summarizeVariables(value.getVariables()));
@@ -911,6 +914,8 @@ public class CompactRecordLogger {
         .append(formatId(value.getName()))
         .append(", EntityKey=")
         .append(shortenKey(value.getEntityKey()))
+        .append(", EntityId=")
+        .append(formatId(value.getEntityId()))
         .append("]");
 
     return builder.toString();

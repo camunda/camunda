@@ -44,7 +44,7 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
       final PartitionChangeExecutor partitionChangeExecutor,
       final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
     if (clusterConfigurationManagerService != null) {
-      clusterConfigurationManagerService.registerChangeExecutors(
+      clusterConfigurationManagerService.registerPartitionChangeExecutors(
           partitionChangeExecutor, partitionScalingChangeExecutor);
     } else {
       throw new IllegalStateException(
@@ -123,6 +123,11 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   }
 
   @Override
+  public ClusterChangeExecutor getClusterChangeExecutor() {
+    return clusterChangeExecutor;
+  }
+
+  @Override
   public ActorFuture<Void> closeAsync() {
     partitionDistribution = null;
     if (clusterConfigurationManagerService != null) {
@@ -159,6 +164,8 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
             .getBrokerConfiguration()
             .getExperimental()
             .getFeatures()
-            .isEnablePartitionScaling());
+            .isEnablePartitionScaling(),
+        clusterChangeExecutor,
+        brokerStartupContext.getMeterRegistry());
   }
 }

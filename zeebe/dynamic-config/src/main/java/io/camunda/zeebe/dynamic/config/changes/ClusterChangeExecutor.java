@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.changes;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 
 public interface ClusterChangeExecutor {
 
@@ -23,4 +24,11 @@ public interface ClusterChangeExecutor {
    * @return future when the operation is completed
    */
   ActorFuture<Void> deleteHistory();
+
+  final class NoopClusterChangeExecutor implements ClusterChangeExecutor {
+    @Override
+    public ActorFuture<Void> deleteHistory() {
+      return CompletableActorFuture.completed(null);
+    }
+  }
 }

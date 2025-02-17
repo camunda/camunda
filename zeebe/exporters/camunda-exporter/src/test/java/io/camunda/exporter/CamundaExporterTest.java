@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
@@ -21,15 +22,14 @@ import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.exporter.utils.XMLUtil;
+import io.camunda.exporter.utils.TestObjectMapper;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,7 +37,6 @@ import org.mockito.Answers;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
-@AutoCloseResources
 final class CamundaExporterTest {
   private final MockedStatic<ClientAdapter> mockedClientAdapterFactory =
       Mockito.mockStatic(ClientAdapter.class);
@@ -51,7 +50,7 @@ final class CamundaExporterTest {
   private ClientAdapter stubbedClientAdapterInUse;
 
   @SuppressWarnings("FieldCanBeLocal")
-  @AutoCloseResource
+  @AutoClose
   private CamundaExporter exporter;
 
   @BeforeEach
@@ -72,7 +71,7 @@ final class CamundaExporterTest {
 
     @Override
     public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
-        final String processIndexName, final XMLUtil xmlUtil) {
+        final String processIndexName) {
       return k -> null;
     }
 
@@ -89,6 +88,11 @@ final class CamundaExporterTest {
         mock(
             SearchEngineClient.class,
             Mockito.withSettings().defaultAnswer(Answers.RETURNS_SMART_NULLS));
+
+    @Override
+    public ObjectMapper objectMapper() {
+      return TestObjectMapper.objectMapper();
+    }
 
     @Override
     public SearchEngineClient getSearchEngineClient() {
@@ -115,8 +119,8 @@ final class CamundaExporterTest {
     @Test
     void shouldDeserializeMetadataOnOpen() {
       // given
-      final var expected = new ExporterMetadata();
-      final var metadata = new ExporterMetadata();
+      final var expected = new ExporterMetadata(TestObjectMapper.objectMapper());
+      final var metadata = new ExporterMetadata(TestObjectMapper.objectMapper());
       exporter = new CamundaExporter(resourceProvider, metadata);
       expected.setLastIncidentUpdatePosition(3);
       expected.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, 5);
@@ -142,7 +146,7 @@ final class CamundaExporterTest {
     @Test
     void shouldUpdateMetadataOnFlush() {
       // given
-      final var expected = new ExporterMetadata();
+      final var expected = new ExporterMetadata(TestObjectMapper.objectMapper());
       exporter = new CamundaExporter(resourceProvider, expected);
 
       final var exporterEngineClient = stubbedClientAdapterInUse.getSearchEngineClient();
@@ -158,7 +162,7 @@ final class CamundaExporterTest {
       testController.runScheduledTasks(Duration.ofHours(1));
 
       // then
-      final var actual = new ExporterMetadata();
+      final var actual = new ExporterMetadata(TestObjectMapper.objectMapper());
       testController.readMetadata().ifPresent(actual::deserialize);
       assertThat(actual.getLastIncidentUpdatePosition()).isEqualTo(5);
       assertThat(actual.getFirstUserTaskKey(TaskImplementation.JOB_WORKER)).isEqualTo(10);

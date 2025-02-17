@@ -12,7 +12,7 @@ import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
-import io.camunda.zeebe.gateway.rest.util.XmlUtil;
+import io.camunda.zeebe.gateway.rest.util.ProcessFlowNodeProvider;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -26,14 +26,16 @@ import org.springframework.context.annotation.Configuration;
 public class RestApiConfiguration {
 
   @Bean
-  public XmlUtil xmlUtil(final ProcessDefinitionServices processDefinitionServices) {
-    return new XmlUtil(processDefinitionServices);
+  public ProcessFlowNodeProvider processFlowNodeProvider(
+      final ProcessDefinitionServices processDefinitionServices) {
+    return new ProcessFlowNodeProvider(processDefinitionServices);
   }
 
   @Bean
   public ProcessCache processCache(
-      final GatewayRestConfiguration configuration, final XmlUtil xmlUtil) {
-    return new ProcessCache(configuration, xmlUtil);
+      final GatewayRestConfiguration configuration,
+      final ProcessFlowNodeProvider processFlowNodeProvider) {
+    return new ProcessCache(configuration, processFlowNodeProvider);
   }
 
   @ConfigurationProperties("camunda.rest")

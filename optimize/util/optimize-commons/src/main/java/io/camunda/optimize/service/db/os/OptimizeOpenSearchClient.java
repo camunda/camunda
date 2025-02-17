@@ -22,6 +22,7 @@ import io.camunda.optimize.dto.optimize.DataImportSourceType;
 import io.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
+import io.camunda.optimize.rest.exceptions.NotSupportedException;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.es.schema.TransportOptionsProvider;
 import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
@@ -36,7 +37,6 @@ import io.camunda.optimize.upgrade.os.OpenSearchClientBuilder;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.search.os.clients.OpensearchSearchClient;
-import jakarta.ws.rs.NotSupportedException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -109,9 +109,6 @@ import org.opensearch.client.opensearch.indices.RolloverResponse;
 import org.opensearch.client.opensearch.indices.rollover.RolloverConditions;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotResponse;
-import org.opensearch.client.opensearch.snapshot.GetRepositoryRequest;
-import org.opensearch.client.opensearch.snapshot.GetSnapshotRequest;
-import org.opensearch.client.opensearch.snapshot.GetSnapshotResponse;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.opensearch.client.opensearch.tasks.ListRequest;
 import org.opensearch.client.opensearch.tasks.ListResponse;
@@ -463,6 +460,11 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   @Override
+  public DocumentBasedSearchClient documentBasedSearchClient() {
+    return documentBasedSearchClient;
+  }
+
+  @Override
   public void update(final String indexName, final String entityId, final ScriptData script) {
 
     final Script scr = QueryDSL.script(script.scriptString(), script.params());
@@ -574,11 +576,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     } catch (final IOException e) {
       LOG.warn("There was an error deleting all indexes.", e);
     }
-  }
-
-  @Override
-  public DocumentBasedSearchClient documentBasedSearchClient() {
-    return documentBasedSearchClient;
   }
 
   public long count(final String[] indexNames, final Query query) throws IOException {
@@ -1031,16 +1028,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     }
   }
 
-  public void verifyRepositoryExists(final GetRepositoryRequest getRepositoriesRequest)
-      throws IOException, OpenSearchException {
-    openSearchClient.snapshot().getRepository(getRepositoriesRequest);
-  }
-
-  public GetSnapshotResponse getSnapshots(final GetSnapshotRequest getSnapshotRequest)
-      throws IOException {
-    return openSearchClient.getSnapshots(getSnapshotRequest);
-  }
-
   public CompletableFuture<CreateSnapshotResponse> triggerSnapshotAsync(
       final CreateSnapshotRequest createSnapshotRequest) {
     return safe(
@@ -1051,10 +1038,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
 
   public ExtendedOpenSearchClient getOpenSearchClient() {
     return openSearchClient;
-  }
-
-  public OpenSearchAsyncClient getOpenSearchAsyncClient() {
-    return openSearchAsyncClient;
   }
 
   public RichOpenSearchClient getRichOpenSearchClient() {

@@ -7,8 +7,20 @@
  */
 package io.camunda.security.entity;
 
+import java.util.Arrays;
+
 public enum AuthenticationMethod {
-  NONE,
   BASIC,
-  OIDC
+  OIDC;
+
+  public static AuthenticationMethod parse(final String value) {
+    if (value == null) {
+      return null;
+    }
+    return Arrays.stream(values())
+        .filter(method -> method.name().equalsIgnoreCase(value))
+        .findFirst()
+        .orElseThrow(
+            () -> new IllegalArgumentException("unsupported authentication method: " + value));
+  }
 }

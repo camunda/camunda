@@ -16,7 +16,6 @@ import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import java.io.File;
 import java.net.URL;
 import java.security.cert.CertificateException;
@@ -30,7 +29,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Timeout(time = 120)
 @Testcontainers
 @ZeebeIntegration
-@AutoCloseResources
 public final class SecurityTest {
 
   @TestZeebe(autoStart = false)

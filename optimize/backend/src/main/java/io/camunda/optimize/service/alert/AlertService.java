@@ -32,6 +32,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.group.Proces
 import io.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import io.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import io.camunda.optimize.dto.optimize.rest.ConflictedItemType;
+import io.camunda.optimize.rest.exceptions.BadRequestException;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.db.reader.AlertReader;
 import io.camunda.optimize.service.db.writer.AlertWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -44,8 +46,6 @@ import io.camunda.optimize.service.util.ValidationHelper;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.NotFoundException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;

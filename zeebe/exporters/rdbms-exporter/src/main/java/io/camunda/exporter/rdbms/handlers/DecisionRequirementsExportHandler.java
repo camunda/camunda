@@ -35,11 +35,11 @@ public class DecisionRequirementsExportHandler
 
   @Override
   public void export(final Record<DecisionRequirementsRecordValue> record) {
-    final DecisionRequirementsRecordValue value = record.getValue();
-    decisionRequirementsWriter.create(map(value));
+    decisionRequirementsWriter.create(map(record));
   }
 
-  private DecisionRequirementsDbModel map(final DecisionRequirementsRecordValue value) {
+  private DecisionRequirementsDbModel map(final Record<DecisionRequirementsRecordValue> record) {
+    final DecisionRequirementsRecordValue value = record.getValue();
     return new DecisionRequirementsDbModel.Builder()
         .decisionRequirementsKey(value.getDecisionRequirementsKey())
         .decisionRequirementsId(value.getDecisionRequirementsId())

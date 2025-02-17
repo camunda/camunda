@@ -10,12 +10,10 @@ package io.camunda.exporter.cache;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
-import io.camunda.exporter.utils.XMLUtil;
 
 public interface ExporterEntityCacheProvider {
 
-  CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
-      String processIndexName, final XMLUtil xmlUtil);
+  CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(String processIndexName);
 
   CacheLoader<String, CachedFormEntity> getFormCacheLoader(String formIndexName);
 }

@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.search.filter;
 
-import io.camunda.client.api.search.filter.builder.LongProperty;
+import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 import java.util.function.Consumer;
@@ -31,12 +31,12 @@ public interface VariableFilter extends SearchRequestFilter {
   VariableFilter variableKey(final Long key);
 
   /**
-   * Filters variables by the specified key using {@link LongProperty} consumer.
+   * Filters variables by the specified key using {@link BasicLongProperty} consumer.
    *
-   * @param fn the key {@link LongProperty} consumer of the variable
+   * @param fn the key {@link BasicLongProperty} consumer of the variable
    * @return the updated filter
    */
-  VariableFilter variableKey(final Consumer<LongProperty> fn);
+  VariableFilter variableKey(final Consumer<BasicLongProperty> fn);
 
   /**
    * Filters variables by the specified value.
@@ -79,12 +79,12 @@ public interface VariableFilter extends SearchRequestFilter {
   VariableFilter scopeKey(final Long scopeKey);
 
   /**
-   * Filters variables by the specified scope key using {@link LongProperty} consumer.
+   * Filters variables by the specified scope key using {@link BasicLongProperty} consumer.
    *
-   * @param fn the scope key {@link LongProperty} consumer of the variable
+   * @param fn the scope key {@link BasicLongProperty} consumer of the variable
    * @return the updated filter
    */
-  VariableFilter scopeKey(final Consumer<LongProperty> fn);
+  VariableFilter scopeKey(final Consumer<BasicLongProperty> fn);
 
   /**
    * Filters variables by the specified process instance key.
@@ -95,12 +95,13 @@ public interface VariableFilter extends SearchRequestFilter {
   VariableFilter processInstanceKey(final Long processInstanceKey);
 
   /**
-   * Filters variables by the specified process instance key using {@link LongProperty} consumer.
+   * Filters variables by the specified process instance key using {@link BasicLongProperty}
+   * consumer.
    *
-   * @param fn the process instance key {@link LongProperty} consumer of the variable
+   * @param fn the process instance key {@link BasicLongProperty} consumer of the variable
    * @return the updated filter
    */
-  VariableFilter processInstanceKey(final Consumer<LongProperty> fn);
+  VariableFilter processInstanceKey(final Consumer<BasicLongProperty> fn);
 
   /**
    * Filters variables by the specified tenant id.

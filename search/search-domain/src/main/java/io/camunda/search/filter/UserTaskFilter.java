@@ -11,7 +11,6 @@ import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
-import io.camunda.search.filter.ProcessInstanceFilter.Builder;
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
@@ -36,10 +35,13 @@ public record UserTaskFilter(
     List<Long> elementInstanceKeys,
     List<Operation<OffsetDateTime>> creationDateOperations,
     List<Operation<OffsetDateTime>> completionDateOperations,
+    List<Operation<OffsetDateTime>> followUpDateOperations,
+    List<Operation<OffsetDateTime>> dueDateOperations,
     String type)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<UserTaskFilter> {
+
     private List<Long> userTaskKeys;
     private List<String> elementIds;
     private List<String> bpmnProcessIds;
@@ -56,6 +58,8 @@ public record UserTaskFilter(
     private List<Long> elementInstanceKeys;
     private List<Operation<OffsetDateTime>> creationDateOperations;
     private List<Operation<OffsetDateTime>> completionDateOperations;
+    private List<Operation<OffsetDateTime>> followUpDateOperations;
+    private List<Operation<OffsetDateTime>> dueDateOperations;
     private String type;
 
     public Builder userTaskKeys(final Long... values) {
@@ -212,7 +216,7 @@ public record UserTaskFilter(
     }
 
     public Builder completionDateOperations(final List<Operation<OffsetDateTime>> operations) {
-      completionDateOperations = addValuesToList(creationDateOperations, operations);
+      completionDateOperations = addValuesToList(completionDateOperations, operations);
       return this;
     }
 
@@ -220,6 +224,28 @@ public record UserTaskFilter(
     public final Builder completionDateOperations(
         final Operation<OffsetDateTime> operation, final Operation<OffsetDateTime>... operations) {
       return completionDateOperations(collectValues(operation, operations));
+    }
+
+    public Builder followUpDateOperations(final List<Operation<OffsetDateTime>> operations) {
+      followUpDateOperations = addValuesToList(followUpDateOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder followUpDateOperations(
+        final Operation<OffsetDateTime> operation, final Operation<OffsetDateTime>... operations) {
+      return followUpDateOperations(collectValues(operation, operations));
+    }
+
+    public Builder dueDateOperations(final List<Operation<OffsetDateTime>> operations) {
+      dueDateOperations = addValuesToList(dueDateOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder dueDateOperations(
+        final Operation<OffsetDateTime> operation, final Operation<OffsetDateTime>... operations) {
+      return dueDateOperations(collectValues(operation, operations));
     }
 
     public Builder type(final String value) {
@@ -246,6 +272,8 @@ public record UserTaskFilter(
           Objects.requireNonNullElse(elementInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(creationDateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(completionDateOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(followUpDateOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(dueDateOperations, Collections.emptyList()),
           type);
     }
   }

@@ -31,6 +31,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandPreconditionChecker;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandProcessor;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 @AnalyzeClasses(
@@ -107,6 +108,12 @@ public class AuthorizationArchTest {
             .or(
                 ArchConditions.callMethod(
                     PermissionsBehavior.class, "isAuthorized", TypedRecord.class))
+            .or(
+                ArchConditions.callMethod(
+                    PermissionsBehavior.class,
+                    "isAuthorized",
+                    TypedRecord.class,
+                    PermissionType.class))
             .check(item, events);
       }
     };

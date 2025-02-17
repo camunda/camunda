@@ -12,6 +12,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 public class TaskProcessInstanceEntity extends TasklistEntity<TaskProcessInstanceEntity> {
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Long processInstanceId;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private TaskJoinRelationship join;
 
   public TaskProcessInstanceEntity() {}
@@ -27,6 +30,15 @@ public class TaskProcessInstanceEntity extends TasklistEntity<TaskProcessInstanc
 
   public TaskProcessInstanceEntity setJoin(final TaskJoinRelationship join) {
     this.join = join;
+    return this;
+  }
+
+  public Long getProcessInstanceId() {
+    return processInstanceId;
+  }
+
+  public TaskProcessInstanceEntity setProcessInstanceId(final Long processInstanceId) {
+    this.processInstanceId = processInstanceId;
     return this;
   }
 }

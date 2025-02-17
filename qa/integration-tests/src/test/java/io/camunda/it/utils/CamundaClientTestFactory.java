@@ -9,6 +9,7 @@ package io.camunda.it.utils;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CredentialsProvider;
+import io.camunda.client.protocol.rest.OwnerTypeEnum;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.security.configuration.InitializationConfiguration;
@@ -99,25 +100,32 @@ public final class CamundaClientTestFactory implements AutoCloseable {
       final String username,
       final String password,
       final List<Permissions> permissions) {
-    final var userCreateResponse =
-        defaultClient
-            .newUserCreateCommand()
-            .username(username)
-            .password(password)
-            .name(username)
-            .email("%s@foo.com".formatted(username))
-            .send()
-            .join();
+    defaultClient
+        .newUserCreateCommand()
+        .username(username)
+        .password(password)
+        .name(username)
+        .email("%s@foo.com".formatted(username))
+        .send()
+        .join();
 
-    for (final Permissions permission : permissions) {
-      defaultClient
-          .newAddPermissionsCommand(userCreateResponse.getUserKey())
-          .resourceType(permission.resourceType())
-          .permission(permission.permissionType())
-          .resourceIds(permission.resourceIds())
-          .send()
-          .join();
-    }
+    permissions.forEach(
+        permission -> {
+          permission
+              .resourceIds()
+              .forEach(
+                  resourceId -> {
+                    defaultClient
+                        .newCreateAuthorizationCommand()
+                        .ownerId(username)
+                        .ownerType(OwnerTypeEnum.USER)
+                        .resourceId(resourceId)
+                        .resourceType(permission.resourceType())
+                        .permissionTypes(permission.permissionType())
+                        .send()
+                        .join();
+                  });
+        });
     // TODO replace with proper user get by key once it is implemented
     try {
       Thread.sleep(2000);

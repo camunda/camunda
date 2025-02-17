@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.zeebe.auth.impl.Authorization;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -134,7 +135,7 @@ public final class AuthorizationCheckBehavior {
     return Optional.ofNullable(authorizedAnonymousUserClaim).map(Boolean.class::cast).orElse(false);
   }
 
-  private static Optional<Long> getUserKey(final AuthorizationRequest request) {
+  private Optional<Long> getUserKey(final AuthorizationRequest request) {
     return getUserKey(request.getCommand());
   }
 
@@ -210,32 +211,39 @@ public final class AuthorizationCheckBehavior {
    * assigned roles or groups.
    */
   public Set<String> getDirectAuthorizedResourceIdentifiers(
-      final long ownerKey,
+      final AuthorizationOwnerType ownerType,
+      final String ownerId,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
-    return authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType);
+    return authorizationState.getResourceIdentifiers(
+        ownerType, ownerId, resourceType, permissionType);
   }
 
+  // TODO: refactor role and group keys to use groupNames and roleNames after
+  // https://github.com/camunda/camunda/issues/26981
   private Stream<String> getUserAuthorizedResourceIdentifiers(
       final PersistedUser user,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
     // Get resource identifiers for this user
     final var userAuthorizedResourceIdentifiers =
-        authorizationState.getResourceIdentifiers(user.getUserKey(), resourceType, permissionType);
+        authorizationState.getResourceIdentifiers(
+            AuthorizationOwnerType.USER, user.getUsername(), resourceType, permissionType);
     // Get resource identifiers for the user's roles
     final var roleAuthorizedResourceIdentifiers =
         getAuthorizedResourceIdentifiersForOwners(
-            user.getRoleKeysList(), resourceType, permissionType);
+            AuthorizationOwnerType.ROLE, user.getRoleKeysList(), resourceType, permissionType);
     // Get resource identifiers for the user's groups
     final var groupAuthorizedResourceIdentifiers =
         getAuthorizedResourceIdentifiersForOwners(
-            user.getGroupKeysList(), resourceType, permissionType);
+            AuthorizationOwnerType.GROUP, user.getGroupKeysList(), resourceType, permissionType);
     return Stream.concat(
         userAuthorizedResourceIdentifiers.stream(),
         Stream.concat(roleAuthorizedResourceIdentifiers, groupAuthorizedResourceIdentifiers));
   }
 
+  // TODO: refactor to use String-based ownerKeys when all Identity-related entities use them
+  // https://github.com/camunda/camunda/issues/26981
   private Stream<String> getMappingsAuthorizedResourceIdentifiers(
       final AuthorizationRequest request) {
     return extractUserTokenClaims(request.getCommand())
@@ -243,21 +251,33 @@ public final class AuthorizationCheckBehavior {
             (claim, stream) ->
                 mappingState.get(claim.claimName(), claim.claimValue()).ifPresent(stream))
         .filter(mapping -> isMappingAuthorizedForTenant(request, mapping))
-        .<Long>mapMulti(
+        .<String>mapMulti(
             (mapping, stream) -> {
-              stream.accept(mapping.getMappingKey());
-              mapping.getGroupKeysList().forEach(stream);
-              mapping.getRoleKeysList().forEach(stream);
-            })
-        .flatMap(
-            ownerKey ->
-                authorizationState
-                    .getResourceIdentifiers(
-                        ownerKey, request.getResourceType(), request.getPermissionType())
-                    .stream());
+              getAuthorizedResourceIdentifiersForOwners(
+                      AuthorizationOwnerType.MAPPING,
+                      List.of(mapping.getMappingKey()),
+                      request.getResourceType(),
+                      request.getPermissionType())
+                  .forEach(stream);
+              getAuthorizedResourceIdentifiersForOwners(
+                      AuthorizationOwnerType.GROUP,
+                      mapping.getGroupKeysList(),
+                      request.getResourceType(),
+                      request.getPermissionType())
+                  .forEach(stream);
+              getAuthorizedResourceIdentifiersForOwners(
+                      AuthorizationOwnerType.ROLE,
+                      mapping.getRoleKeysList(),
+                      request.getResourceType(),
+                      request.getPermissionType())
+                  .forEach(stream);
+            });
   }
 
+  // TODO: refactor to use String-based ownerKeys when all Identity-related entities use them
+  // https://github.com/camunda/camunda/issues/26981
   private Stream<String> getAuthorizedResourceIdentifiersForOwners(
+      final AuthorizationOwnerType ownerType,
       final List<Long> ownerKeys,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
@@ -265,7 +285,8 @@ public final class AuthorizationCheckBehavior {
         .flatMap(
             ownerKey ->
                 authorizationState
-                    .getResourceIdentifiers(ownerKey, resourceType, permissionType)
+                    .getResourceIdentifiers(
+                        ownerType, String.valueOf(ownerKey), resourceType, permissionType)
                     .stream());
   }
 
@@ -319,9 +340,11 @@ public final class AuthorizationCheckBehavior {
         : new AuthenticatedAuthorizedTenants(tenantsOfMapping);
   }
 
-  private static Optional<Long> getUserKey(final TypedRecord<?> command) {
+  private Optional<Long> getUserKey(final TypedRecord<?> command) {
     return Optional.ofNullable(
-        (Long) command.getAuthorizations().get(Authorization.AUTHORIZED_USER_KEY));
+            (String) command.getAuthorizations().get(Authorization.AUTHORIZED_USERNAME))
+        .flatMap(userState::getUser)
+        .map(PersistedUser::getUserKey);
   }
 
   private static Stream<UserTokenClaim> extractUserTokenClaims(final TypedRecord<?> command) {

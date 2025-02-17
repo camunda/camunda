@@ -66,7 +66,7 @@ public class TenantProcessors {
             ValueType.TENANT,
             TenantIntent.DELETE,
             new TenantDeleteProcessor(
-                processingState.getTenantState(),
+                processingState,
                 authCheckBehavior,
                 keyGenerator,
                 writers,

@@ -52,13 +52,15 @@ public class IdentitySetupInitializeMultiPartitionTest {
     final var tenant =
         new TenantRecord().setTenantKey(3).setTenantId("tenant-id").setName("tenant-name");
 
-    engine
-        .identitySetup()
-        .initialize()
-        .withRole(role)
-        .withUser(user)
-        .withTenant(tenant)
-        .initialize();
+    final var identitySetupKey =
+        engine
+            .identitySetup()
+            .initialize()
+            .withRole(role)
+            .withUser(user)
+            .withTenant(tenant)
+            .initialize()
+            .getKey();
 
     // then
     assertThat(
@@ -92,7 +94,8 @@ public class IdentitySetupInitializeMultiPartitionTest {
 
     for (int partitionId = 2; partitionId < PARTITION_COUNT; partitionId++) {
       assertThat(
-              RecordingExporter.records()
+              RecordingExporter.identitySetupRecords()
+                  .withRecordKey(identitySetupKey)
                   .withPartitionId(partitionId)
                   .limit(r -> r.getIntent().equals(IdentitySetupIntent.INITIALIZED))
                   .collect(Collectors.toList()))

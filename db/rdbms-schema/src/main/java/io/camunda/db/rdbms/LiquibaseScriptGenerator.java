@@ -20,26 +20,41 @@ import liquibase.sqlgenerator.SqlGeneratorFactory;
 
 public class LiquibaseScriptGenerator {
 
+  /**
+   * Generates Liquibase SQL scripts for a given database type. arg0: target directory arg1: table
+   * prefix (optional)
+   */
   public static void main(final String[] args) throws Exception {
     final var targetDir = args[0] + "/liquibase";
-    final var databases = Set.of("h2", "mysql", "postgresql");
+
+    final var prefix = args.length >= 2 ? args[1] : "";
+    final var databases = Set.of("h2", "mysql", "postgresql", "oracle");
 
     for (final var database : databases) {
       generateLiquibaseScript(
-          database, "db/changelog/rdbms-exporter/changelog-master.xml", targetDir, "master.sql");
+          database,
+          "db/changelog/rdbms-exporter/changelog-master.xml",
+          prefix,
+          targetDir,
+          "master.sql");
 
       generateLiquibaseScript(
-          database, "db/changelog/rdbms-exporter/changesets/8.8.0.xml", targetDir, "8.8.0.sql");
+          database,
+          "db/changelog/rdbms-exporter/changesets/8.8.0.xml",
+          prefix,
+          targetDir,
+          "8.8.0.sql");
     }
   }
 
   public static void generateLiquibaseScript(
       final String databaseType,
       final String changesetFile,
+      final String prefix,
       final String targetBaseDir,
       final String outputFileName)
       throws Exception {
-    final var sqlScript = generateSqlScript(databaseType, changesetFile);
+    final var sqlScript = generateSqlScript(databaseType, changesetFile, prefix);
 
     final String basedir = targetBaseDir + "/" + databaseType;
     Files.createDirectories(Paths.get(basedir));
@@ -50,13 +65,15 @@ public class LiquibaseScriptGenerator {
         StandardOpenOption.TRUNCATE_EXISTING);
   }
 
-  public static String generateSqlScript(final String databaseType, final String changesetFile)
+  public static String generateSqlScript(
+      final String databaseType, final String changesetFile, final String prefix)
       throws LiquibaseException {
 
     final var database = DatabaseFactory.getInstance().getDatabase(databaseType);
 
     final Liquibase liquibase =
         new Liquibase(changesetFile, new ClassLoaderResourceAccessor(), database);
+    liquibase.setChangeLogParameter("prefix", prefix);
 
     final var changelog = liquibase.getDatabaseChangeLog();
 

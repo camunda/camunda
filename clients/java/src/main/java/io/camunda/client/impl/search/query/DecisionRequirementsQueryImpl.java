@@ -29,12 +29,12 @@ import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.sort.DecisionRequirementsSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.impl.search.SearchRequestPageImpl;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.search.sort.DecisionRequirementsSortImpl;
-import io.camunda.client.protocol.rest.DecisionRequirementsFilterRequest;
-import io.camunda.client.protocol.rest.DecisionRequirementsSearchQueryRequest;
+import io.camunda.client.protocol.rest.DecisionRequirementsSearchQuery;
 import io.camunda.client.protocol.rest.DecisionRequirementsSearchQueryResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -42,16 +42,16 @@ import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class DecisionRequirementsQueryImpl
-    extends TypedSearchRequestPropertyProvider<DecisionRequirementsSearchQueryRequest>
+    extends TypedSearchRequestPropertyProvider<DecisionRequirementsSearchQuery>
     implements DecisionRequirementsQuery {
 
-  private final DecisionRequirementsSearchQueryRequest request;
+  private final DecisionRequirementsSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
   public DecisionRequirementsQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
-    request = new DecisionRequirementsSearchQueryRequest();
+    request = new DecisionRequirementsSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -79,7 +79,8 @@ public class DecisionRequirementsQueryImpl
 
   @Override
   public DecisionRequirementsQuery filter(final DecisionRequirementsFilter value) {
-    final DecisionRequirementsFilterRequest filter = provideSearchRequestProperty(value);
+    final io.camunda.client.protocol.rest.DecisionRequirementsFilter filter =
+        provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
@@ -92,7 +93,9 @@ public class DecisionRequirementsQueryImpl
   @Override
   public DecisionRequirementsQuery sort(final DecisionRequirementsSort value) {
     final DecisionRequirementsSortImpl sorting = (DecisionRequirementsSortImpl) value;
-    request.setSort(sorting.getSearchRequestProperty());
+    request.setSort(
+        SearchQuerySortRequestMapper.toDecisionRequirementsSearchQuerySortRequest(
+            sorting.getSearchRequestProperty()));
     return this;
   }
 
@@ -114,7 +117,7 @@ public class DecisionRequirementsQueryImpl
   }
 
   @Override
-  protected DecisionRequirementsSearchQueryRequest getSearchRequestProperty() {
+  protected DecisionRequirementsSearchQuery getSearchRequestProperty() {
     return request;
   }
 }

@@ -23,6 +23,7 @@ import io.camunda.exporter.tasks.archiver.ProcessInstancesArchiverJob;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
 import io.camunda.exporter.tasks.batchoperations.ElasticsearchBatchOperationUpdateRepository;
+import io.camunda.exporter.tasks.batchoperations.OpensearchBatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.incident.ElasticsearchIncidentUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
@@ -36,7 +37,6 @@ import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
-import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.util.ArrayList;
 import java.util.List;
@@ -127,15 +127,18 @@ public final class BackgroundTaskManagerFactory {
             logger),
         1,
         postExport.getDelayBetweenRuns(),
+        postExport.getMaxDelayBetweenRuns(),
         executor,
         logger);
   }
 
   private ReschedulingTask buildBatchOperationUpdateTask() {
+    final var postExport = config.getPostExport();
     return new ReschedulingTask(
         new BatchOperationUpdateTask(batchOperationUpdateRepository, logger, executor),
-        config.getArchiver().getRolloverBatchSize(),
-        config.getArchiver().getDelayBetweenRuns(),
+        1,
+        postExport.getDelayBetweenRuns(),
+        postExport.getMaxDelayBetweenRuns(),
         executor,
         logger);
   }
@@ -146,12 +149,6 @@ public final class BackgroundTaskManagerFactory {
         .filter(ProcessInstanceDependant.class::isInstance)
         .map(ProcessInstanceDependant.class::cast)
         .forEach(dependantTemplates::add);
-
-    // add a special case just for TaskTemplate, which has 2 kinds of documents in the same
-    // index
-    final var taskTemplate = resourceProvider.getIndexTemplateDescriptor(TaskTemplate.class);
-    dependantTemplates.add(
-        new ProcessInstanceDependantAdapter(taskTemplate.getFullQualifiedName(), TaskTemplate.ID));
 
     return buildReschedulingArchiverTask(
         new ProcessInstancesArchiverJob(
@@ -178,6 +175,7 @@ public final class BackgroundTaskManagerFactory {
         task,
         config.getArchiver().getRolloverBatchSize(),
         config.getArchiver().getDelayBetweenRuns(),
+        config.getArchiver().getMaxDelayBetweenRuns(),
         executor,
         logger);
   }
@@ -255,6 +253,7 @@ public final class BackgroundTaskManagerFactory {
             postImporterTemplate.getAlias(),
             incidentTemplate.getAlias(),
             listViewTemplate.getAlias(),
+            listViewTemplate.getFullQualifiedName(),
             flowNodeTemplate.getAlias(),
             operationTemplate.getAlias(),
             connector.createAsyncClient(),
@@ -268,6 +267,7 @@ public final class BackgroundTaskManagerFactory {
             postImporterTemplate.getAlias(),
             incidentTemplate.getAlias(),
             listViewTemplate.getAlias(),
+            listViewTemplate.getFullQualifiedName(),
             flowNodeTemplate.getAlias(),
             operationTemplate.getAlias(),
             connector.createAsyncClient(),
@@ -293,23 +293,14 @@ public final class BackgroundTaskManagerFactory {
             logger);
       }
       case OPENSEARCH -> {
-        // TODO
-        yield null;
+        final var connector = new OpensearchConnector(config.getConnect());
+        yield new OpensearchBatchOperationUpdateRepository(
+            connector.createAsyncClient(),
+            executor,
+            batchOperationTemplate.getFullQualifiedName(),
+            operationTemplate.getFullQualifiedName(),
+            logger);
       }
     };
-  }
-
-  private record ProcessInstanceDependantAdapter(String name, String field)
-      implements ProcessInstanceDependant {
-
-    @Override
-    public String getFullQualifiedName() {
-      return name;
-    }
-
-    @Override
-    public String getProcessInstanceDependantField() {
-      return field;
-    }
   }
 }

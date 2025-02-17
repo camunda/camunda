@@ -33,7 +33,6 @@ import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutablePermissionValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableRoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableTenantRecordValue;
@@ -51,9 +50,11 @@ import io.camunda.zeebe.protocol.record.value.deployment.ImmutableDecisionRequir
 import io.camunda.zeebe.protocol.record.value.deployment.ImmutableProcess;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public class RecordFixtures {
@@ -103,6 +104,16 @@ public class RecordFixtures {
     final io.camunda.zeebe.protocol.record.Record<RecordValue> recordValueRecord =
         FACTORY.generateRecord(ValueType.PROCESS);
 
+    final byte[] resource;
+    try {
+      final var resourceUrl =
+          RecordFixtures.class.getClassLoader().getResource("process/process_start_form.bpmn");
+      assert resourceUrl != null;
+      resource = Files.readAllBytes(Path.of(resourceUrl.getPath()));
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
+
     return ImmutableRecord.builder()
         .from(recordValueRecord)
         .withIntent(ProcessIntent.CREATED)
@@ -112,6 +123,8 @@ public class RecordFixtures {
         .withValue(
             ImmutableProcess.builder()
                 .from((Process) recordValueRecord.getValue())
+                .withResource(resource)
+                .withBpmnProcessId("Process_11hxie4")
                 .withVersion(1)
                 .build())
         .build();
@@ -159,6 +172,14 @@ public class RecordFixtures {
     final io.camunda.zeebe.protocol.record.Record<RecordValue> recordValueRecord =
         FACTORY.generateRecord(ValueType.PROCESS_INSTANCE);
 
+    return getFlowNodeActivatingRecord(position, FACTORY.generateObject(Long.class));
+  }
+
+  protected static ImmutableRecord<RecordValue> getFlowNodeActivatingRecord(
+      final Long position, final long processInstanceKey) {
+    final io.camunda.zeebe.protocol.record.Record<RecordValue> recordValueRecord =
+        FACTORY.generateRecord(ValueType.PROCESS_INSTANCE);
+
     return ImmutableRecord.builder()
         .from(recordValueRecord)
         .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
@@ -168,7 +189,10 @@ public class RecordFixtures {
         .withValue(
             ImmutableProcessInstanceRecordValue.builder()
                 .from((ProcessInstanceRecordValue) recordValueRecord.getValue())
+                .withProcessInstanceKey(processInstanceKey)
+                .withBpmnElementType(BpmnElementType.SERVICE_TASK)
                 .withVersion(1)
+                .withElementInstancePath(List.of(List.of(1L, 2L)))
                 .build())
         .build();
   }
@@ -188,6 +212,8 @@ public class RecordFixtures {
         .withValue(
             ImmutableProcessInstanceRecordValue.builder()
                 .from((ProcessInstanceRecordValue) recordValueRecord.getValue())
+                .withProcessInstanceKey(elementKey)
+                .withBpmnElementType(BpmnElementType.SERVICE_TASK)
                 .withVersion(1)
                 .build())
         .build();
@@ -228,12 +254,15 @@ public class RecordFixtures {
   }
 
   protected static ImmutableRecord<RecordValue> getTenantRecord(
-      final Long tenantKey, final TenantIntent intent) {
-    return getTenantRecord(tenantKey, intent, null);
+      final Long tenantKey, final String tenantId, final TenantIntent intent) {
+    return getTenantRecord(tenantKey, tenantId, intent, null);
   }
 
   protected static ImmutableRecord<RecordValue> getTenantRecord(
-      final Long tenantKey, final TenantIntent intent, final Long entityKey) {
+      final Long tenantKey,
+      final String tenantId,
+      final TenantIntent intent,
+      final Long entityKey) {
     final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.TENANT);
     return ImmutableRecord.builder()
         .from(recordValueRecord)
@@ -244,6 +273,7 @@ public class RecordFixtures {
         .withValue(
             ImmutableTenantRecordValue.builder()
                 .from((TenantRecordValue) recordValueRecord.getValue())
+                .withTenantId(tenantId)
                 .withTenantKey(tenantKey)
                 .withEntityKey(entityKey != null ? entityKey : 0)
                 .withEntityType(entityKey != null ? EntityType.USER : null)
@@ -252,7 +282,7 @@ public class RecordFixtures {
   }
 
   protected static ImmutableRecord<RecordValue> getUserRecord(
-      final Long userKey, final UserIntent intent) {
+      final Long userKey, final String username, final UserIntent intent) {
     final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.USER);
 
     return ImmutableRecord.builder()
@@ -265,6 +295,7 @@ public class RecordFixtures {
             ImmutableUserRecordValue.builder()
                 .from((UserRecordValue) recordValueRecord.getValue())
                 .withUserKey(userKey)
+                .withUsername(username)
                 .build())
         .build();
   }
@@ -354,10 +385,12 @@ public class RecordFixtures {
 
   protected static ImmutableRecord<RecordValue> getAuthorizationRecord(
       final AuthorizationIntent intent,
-      final Long ownerKey,
+      final Long authorizationKey,
+      final String ownerId,
       final AuthorizationOwnerType ownerType,
       final AuthorizationResourceType resourceType,
-      final Map<PermissionType, Set<String>> permissions) {
+      final String resourceId,
+      final Set<PermissionType> permissionTypes) {
     final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.AUTHORIZATION);
     return ImmutableRecord.builder()
         .from(recordValueRecord)
@@ -367,18 +400,12 @@ public class RecordFixtures {
         .withValue(
             ImmutableAuthorizationRecordValue.builder()
                 .from((AuthorizationRecordValue) recordValueRecord.getValue())
-                .withOwnerKey(ownerKey)
+                .withAuthorizationKey(authorizationKey)
+                .withOwnerId(ownerId)
                 .withOwnerType(ownerType)
                 .withResourceType(resourceType)
-                .withPermissions(
-                    permissions.entrySet().stream()
-                        .map(
-                            p ->
-                                ImmutablePermissionValue.builder()
-                                    .withPermissionType(p.getKey())
-                                    .addAllResourceIds(p.getValue())
-                                    .build())
-                        .toList())
+                .withResourceId(resourceId)
+                .withPermissionTypes(permissionTypes)
                 .build())
         .build();
   }

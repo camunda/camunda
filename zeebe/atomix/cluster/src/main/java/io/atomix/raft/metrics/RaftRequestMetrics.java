@@ -16,35 +16,63 @@
  */
 package io.atomix.raft.metrics;
 
-import io.prometheus.client.Counter;
+import static io.atomix.raft.metrics.RaftRequestMetricsDoc.*;
+
+import io.camunda.zeebe.util.collection.Table;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RaftRequestMetrics extends RaftMetrics {
 
-  private static final Counter RAFT_MESSAGES_RECEIVED =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("raft_messages_received")
-          .help("Number of raft requests received")
-          .labelNames("type", PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
-          .register();
+  private final Map<String, Counter> raftMessagesReceived;
+  private final MeterRegistry registry;
+  private final Table<String, String, Counter> raftMessagesSend;
 
-  private static final Counter RAFT_MESSAGES_SEND =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("raft_messages_send")
-          .help("Number of raft requests send")
-          .labelNames("to", "type", PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
-          .register();
-
-  public RaftRequestMetrics(final String partitionName) {
+  public RaftRequestMetrics(final String partitionName, final MeterRegistry registry) {
     super(partitionName);
+    raftMessagesReceived = new ConcurrentHashMap<>(32);
+    raftMessagesSend = Table.concurrent();
+    this.registry = registry;
   }
 
   public void receivedMessage(final String type) {
-    RAFT_MESSAGES_RECEIVED.labels(type, partitionGroupName, partition).inc();
+    getMessageReceived(type).increment();
   }
 
   public void sendMessage(final String memberId, final String type) {
-    RAFT_MESSAGES_SEND.labels(memberId, type, partitionGroupName, partition).inc();
+    getMessageSent(memberId, type).increment();
+  }
+
+  private Counter getMessageReceived(final String type) {
+    return raftMessagesReceived.computeIfAbsent(
+        type,
+        tpe ->
+            Counter.builder(RAFT_MESSAGE_RECEIVED.getName())
+                .description(RAFT_MESSAGE_RECEIVED.getDescription())
+                .tags(
+                    RaftKeyNames.TYPE.asString(),
+                    type,
+                    RaftKeyNames.PARTITION_GROUP.asString(),
+                    partitionGroupName)
+                .register(registry));
+  }
+
+  private Counter getMessageSent(final String memberId, final String type) {
+    return raftMessagesSend.computeIfAbsent(
+        memberId,
+        type,
+        (member, tpe) ->
+            Counter.builder(RAFT_MESSAGE_SEND.getName())
+                .description(RAFT_MESSAGE_SEND.getDescription())
+                .tags(
+                    RaftKeyNames.TO.asString(),
+                    member,
+                    RaftKeyNames.TYPE.asString(),
+                    tpe,
+                    RaftKeyNames.PARTITION_GROUP.asString(),
+                    partitionGroupName)
+                .register(registry));
   }
 }

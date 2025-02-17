@@ -4,19 +4,14 @@ import { useNavigate } from "react-router";
 import { useApi } from "src/utility/api";
 import { checkLicense, License } from "src/utility/api/headers";
 import { getAuthentication } from "src/utility/api/authentication";
-import { useCallback } from "react";
 import { ArrowRight } from "@carbon/react/icons";
+import { logout } from "src/utility/auth";
 
 const AppHeader = () => {
   const routes = useGlobalRoutes();
   const navigate = useNavigate();
   const { data: license } = useApi(checkLicense);
   const { data: camundaUser } = useApi(getAuthentication);
-
-  const logout = useCallback(() => {
-    console.log("logout");
-  }, []);
-
   return (
     <C3Navigation
       app={{

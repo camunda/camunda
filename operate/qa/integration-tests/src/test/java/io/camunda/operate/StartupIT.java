@@ -7,7 +7,7 @@
  */
 package io.camunda.operate;
 
-import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
+import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
@@ -49,7 +49,7 @@ public class StartupIT {
     testContainerUtil.startElasticsearch(testContext);
 
     testContainerUtil.startZeebe(
-        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_PROPERTY_NAME), testContext);
+        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME), testContext);
 
     operateContainer =
         testContainerUtil

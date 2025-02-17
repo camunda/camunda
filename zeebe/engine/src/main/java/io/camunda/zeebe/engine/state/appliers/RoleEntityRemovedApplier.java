@@ -22,16 +22,19 @@ public class RoleEntityRemovedApplier implements TypedEventApplier<RoleIntent, R
   private final MutableMappingState mappingState;
 
   public RoleEntityRemovedApplier(final MutableProcessingState state) {
-    this.roleState = state.getRoleState();
-    this.userState = state.getUserState();
-    this.mappingState = state.getMappingState();
+    roleState = state.getRoleState();
+    userState = state.getUserState();
+    mappingState = state.getMappingState();
   }
 
   @Override
   public void applyState(final long key, final RoleRecord value) {
     roleState.removeEntity(value.getRoleKey(), value.getEntityKey());
     switch (value.getEntityType()) {
-      case USER -> userState.removeRole(value.getEntityKey(), value.getRoleKey());
+      case USER ->
+          userState
+              .getUser(value.getEntityKey())
+              .ifPresent(user -> userState.removeRole(user.getUsername(), value.getRoleKey()));
       case MAPPING -> mappingState.removeRole(value.getEntityKey(), value.getRoleKey());
       default ->
           throw new IllegalStateException(

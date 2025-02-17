@@ -13,6 +13,7 @@ import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,15 +39,18 @@ public class RestoreApp implements ApplicationRunner {
   private long backupId;
 
   private final RestoreConfiguration restoreConfiguration;
+  private final MeterRegistry meterRegistry;
 
   @Autowired
   public RestoreApp(
       final BrokerBasedConfiguration configuration,
       final BackupStore backupStore,
-      final RestoreConfiguration restoreConfiguration) {
+      final RestoreConfiguration restoreConfiguration,
+      final MeterRegistry meterRegistry) {
     this.configuration = configuration.config();
     this.backupStore = backupStore;
     this.restoreConfiguration = restoreConfiguration;
+    this.meterRegistry = meterRegistry;
   }
 
   public static void main(final String[] args) {
@@ -65,7 +69,7 @@ public class RestoreApp implements ApplicationRunner {
   @Override
   public void run(final ApplicationArguments args) {
     LOG.info("Starting to restore from backup {}", backupId);
-    new RestoreManager(configuration, backupStore)
+    new RestoreManager(configuration, backupStore, meterRegistry)
         .restore(backupId, restoreConfiguration.validateConfig())
         .join();
     LOG.info("Successfully restored broker from backup {}", backupId);

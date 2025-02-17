@@ -17,9 +17,9 @@ import io.camunda.zeebe.it.gateway.rest.util.DisableUserTasksTestFilter;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
 import java.util.List;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -46,7 +46,7 @@ public class FilterIT {
               })
           .build();
 
-  @AutoCloseResource private CamundaClient client;
+  @AutoClose private CamundaClient client;
 
   @BeforeEach
   void initClient() {

@@ -13,32 +13,21 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.it.utils.MultiDbTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-@ZeebeIntegration
+@MultiDbTest
 public class DeleteDocumentTest {
 
   private static final String DOCUMENT_CONTENT = "test";
 
   private static CamundaClient camundaClient;
 
-  @TestZeebe(initMethod = "initTestStandaloneCamunda")
-  private static TestStandaloneCamunda testStandaloneCamunda;
-
   private DocumentReferenceResponse documentReference;
-
-  @SuppressWarnings("unused")
-  static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda();
-  }
 
   @BeforeEach
   public void beforeEach() {
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     documentReference =
         camundaClient.newCreateDocumentCommand().content(DOCUMENT_CONTENT).send().join();
   }
@@ -47,7 +36,6 @@ public class DeleteDocumentTest {
   public void shouldWorkWithDocumentId() {
     // given
     final var documentId = documentReference.getDocumentId();
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
     camundaClient.newDeleteDocumentCommand(documentId).send().join();
@@ -61,7 +49,6 @@ public class DeleteDocumentTest {
     // given
     final var documentId = documentReference.getDocumentId();
     final var storeId = documentReference.getStoreId();
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
     camundaClient.newDeleteDocumentCommand(documentId).storeId(storeId).send().join();
@@ -73,7 +60,6 @@ public class DeleteDocumentTest {
   @Test
   public void shouldWorkWithDocumentReference() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
     camundaClient.newDeleteDocumentCommand(documentReference).send().join();
@@ -86,7 +72,6 @@ public class DeleteDocumentTest {
   public void shouldReturnNotFoundIfDocumentDoesNotExist() {
     // given
     final var documentId = "non-existing-document";
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
     final var exception =
@@ -105,7 +90,6 @@ public class DeleteDocumentTest {
   @Test
   public void shouldReturnBadRequestForNonExistingStoreId() {
     // given
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = "test";
     final var storeId = "non-existing";
 

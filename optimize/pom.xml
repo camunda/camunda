@@ -5,13 +5,13 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
   <groupId>io.camunda.optimize</groupId>
   <artifactId>optimize-parent</artifactId>
-  <version>8.7.0-SNAPSHOT</version>
+  <version>8.8.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Optimize Parent</name>
 
@@ -56,14 +56,14 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.previousVersion>8.6.0</project.previousVersion>
+    <project.previousVersion>8.7.0</project.previousVersion>
     <camunda.maven.artifacts.version>7.22.0</camunda.maven.artifacts.version>
 
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
     <zeebe.version>8.6.0</zeebe.version>
     <identity.version>8.6.0</identity.version>
     <!-- We use this for the Zeebe test container version only -->
-    <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
+    <zeebe.docker.version>8.7.0-alpha4</zeebe.docker.version>
 
     <!-- maven plugins -->
     <surefire-plugin.version>3.5.2</surefire-plugin.version>
@@ -110,7 +110,7 @@
     <junit.jupiter.version>5.11.4</junit.jupiter.version>
     <junit.platform.version>1.11.4</junit.platform.version>
     <mockserver.version>5.15.0</mockserver.version>
-    <assertj.version>3.27.2</assertj.version>
+    <assertj.version>3.27.3</assertj.version>
     <google-java-format.plugin.version>1.25.2</google-java-format.plugin.version>
     <!-- This is the default profile used for the DB selection in tests -->
     <database.type>elasticsearch</database.type>
@@ -124,7 +124,7 @@
 
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
-    <spring-boot.version>3.3.5</spring-boot.version>
+    <spring-boot.version>3.4.1</spring-boot.version>
   </properties>
 
   <dependencyManagement>
@@ -149,11 +149,6 @@
         <version>${version.jackson}</version>
         <type>pom</type>
         <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.ws.rs</groupId>
-        <artifactId>jakarta.ws.rs-api</artifactId>
-        <version>${jakarta.rs-api.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -333,7 +328,6 @@
               <dep>org.codehaus.janino:janino</dep>
               <dep>org.eclipse.angus:jakarta.mail</dep>
               <dep>org.springframework:spring-tx</dep>
-              <dep>org.springframework.boot:spring-boot-starter-jersey</dep>
               <dep>org.springframework.boot:spring-boot-starter-tomcat</dep>
               <dep>org.springframework.boot:spring-boot-starter-web</dep>
               <dep>software.amazon.awssdk:sdk-core</dep>
@@ -364,6 +358,8 @@
               <dep>org.mockito:mockito-inline</dep>
               <dep>org.mockito:mockito-junit-jupiter</dep>
               <dep>org.springframework.boot:spring-boot-starter-test</dep>
+              <dep>org.glassfish.jersey.core:jersey-client</dep>
+              <dep>org.glassfish.jersey.media:jersey-media-json-jackson</dep>
             </ignoredUnusedDeclaredDependencies>
             <ignoredNonTestScopedDependencies combine.children="append">
               <dep>com.fasterxml.jackson.datatype:jackson-datatype-jdk8</dep>
@@ -371,7 +367,6 @@
               <dep>commons-collections:commons-collections</dep>
               <dep>org.apache.httpcomponents:httpcore-nio</dep>
               <dep>org.apache.tika:tika-core</dep>
-              <dep>org.glassfish.jersey.core:jersey-client</dep>
               <dep>org.opensearch.client:opensearch-java</dep>
               <dep>org.opensearch.client:opensearch-rest-client</dep>
             </ignoredNonTestScopedDependencies>
@@ -481,7 +476,7 @@
         <plugin>
           <groupId>com.diffplug.spotless</groupId>
           <artifactId>spotless-maven-plugin</artifactId>
-          <version>2.43.0</version>
+          <version>2.44.2</version>
           <configuration>
             <java>
               <includes>

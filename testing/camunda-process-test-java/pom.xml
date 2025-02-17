@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
@@ -151,8 +151,8 @@
 
     <plugins>
 
-      <!-- we are breaking backwards compatibility with 8.7.0 -->
-      <!-- TODO re-enable the plugin after the 8.7.0 minor release -->
+      <!-- we are breaking backwards compatibility with 8.8.0 -->
+      <!-- TODO re-enable the plugin after the 8.8.0 minor release -->
       <!--
       <plugin>
         <groupId>org.revapi</groupId>

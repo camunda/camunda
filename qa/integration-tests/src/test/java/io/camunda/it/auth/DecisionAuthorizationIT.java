@@ -9,13 +9,13 @@ package io.camunda.it.auth;
 
 import static io.camunda.client.protocol.rest.PermissionTypeEnum.CREATE;
 import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ;
+import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ_DECISION_DEFINITION;
 import static io.camunda.client.protocol.rest.ResourceTypeEnum.DECISION_DEFINITION;
 import static io.camunda.client.protocol.rest.ResourceTypeEnum.DECISION_REQUIREMENTS_DEFINITION;
-import static io.camunda.client.protocol.rest.ResourceTypeEnum.DEPLOYMENT;
+import static io.camunda.client.protocol.rest.ResourceTypeEnum.RESOURCE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
@@ -47,15 +47,16 @@ class DecisionAuthorizationIT {
           ADMIN,
           "password",
           List.of(
-              new Permissions(DEPLOYMENT, CREATE, List.of("*")),
-              new Permissions(DECISION_DEFINITION, READ, List.of("*")),
+              new Permissions(RESOURCE, CREATE, List.of("*")),
+              new Permissions(DECISION_DEFINITION, READ_DECISION_DEFINITION, List.of("*")),
               new Permissions(DECISION_REQUIREMENTS_DEFINITION, READ, List.of("*"))));
   private static final User RESTRICTED_USER =
       new User(
           RESTRICTED,
           "password",
           List.of(
-              new Permissions(DECISION_DEFINITION, READ, List.of(DECISION_DEFINITION_ID_1)),
+              new Permissions(
+                  DECISION_DEFINITION, READ_DECISION_DEFINITION, List.of(DECISION_DEFINITION_ID_1)),
               new Permissions(
                   DECISION_REQUIREMENTS_DEFINITION, READ, List.of(DECISION_REQUIREMENTS_ID_1))));
 
@@ -63,7 +64,7 @@ class DecisionAuthorizationIT {
   static final BrokerITInvocationProvider PROVIDER =
       new BrokerITInvocationProvider()
           .withoutRdbmsExporter()
-          .withAdditionalProfiles(Profile.AUTH_BASIC)
+          .withBasicAuth()
           .withAuthorizationsEnabled()
           .withUsers(ADMIN_USER, RESTRICTED_USER);
 
@@ -109,7 +110,8 @@ class DecisionAuthorizationIT {
     final var problemException = assertThrows(ProblemException.class, executeGet);
     assertThat(problemException.code()).isEqualTo(403);
     assertThat(problemException.details().getDetail())
-        .isEqualTo("Unauthorized to perform operation 'READ' on resource 'DECISION_DEFINITION'");
+        .isEqualTo(
+            "Unauthorized to perform operation 'READ_DECISION_DEFINITION' on resource 'DECISION_DEFINITION'");
   }
 
   @TestTemplate

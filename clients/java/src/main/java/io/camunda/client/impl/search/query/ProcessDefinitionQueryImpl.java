@@ -30,13 +30,13 @@ import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.search.SearchQuerySortRequest;
+import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.client.protocol.rest.ProcessDefinitionFilterRequest;
-import io.camunda.client.protocol.rest.ProcessDefinitionSearchQueryRequest;
+import io.camunda.client.protocol.rest.ProcessDefinitionSearchQuery;
 import io.camunda.client.protocol.rest.ProcessDefinitionSearchQueryResult;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
-import io.camunda.client.protocol.rest.SearchQuerySortRequest;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -44,16 +44,16 @@ import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class ProcessDefinitionQueryImpl
-    extends TypedSearchRequestPropertyProvider<ProcessDefinitionSearchQueryRequest>
+    extends TypedSearchRequestPropertyProvider<ProcessDefinitionSearchQuery>
     implements ProcessDefinitionQuery {
 
-  private final ProcessDefinitionSearchQueryRequest request;
+  private final ProcessDefinitionSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
   public ProcessDefinitionQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
-    request = new ProcessDefinitionSearchQueryRequest();
+    request = new ProcessDefinitionSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -81,7 +81,8 @@ public class ProcessDefinitionQueryImpl
 
   @Override
   public ProcessDefinitionQuery filter(final ProcessDefinitionFilter value) {
-    final ProcessDefinitionFilterRequest filter = provideSearchRequestProperty(value);
+    final io.camunda.client.protocol.rest.ProcessDefinitionFilter filter =
+        provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
@@ -94,7 +95,8 @@ public class ProcessDefinitionQueryImpl
   @Override
   public ProcessDefinitionQuery sort(final ProcessDefinitionSort value) {
     final List<SearchQuerySortRequest> sorting = provideSearchRequestProperty(value);
-    request.setSort(sorting);
+    request.setSort(
+        SearchQuerySortRequestMapper.toProcessDefinitionSearchQuerySortRequest(sorting));
     return this;
   }
 
@@ -116,7 +118,7 @@ public class ProcessDefinitionQueryImpl
   }
 
   @Override
-  protected ProcessDefinitionSearchQueryRequest getSearchRequestProperty() {
+  protected ProcessDefinitionSearchQuery getSearchRequestProperty() {
     return request;
   }
 }

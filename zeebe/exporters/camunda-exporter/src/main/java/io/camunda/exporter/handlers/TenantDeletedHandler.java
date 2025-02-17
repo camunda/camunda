@@ -44,7 +44,7 @@ public class TenantDeletedHandler implements ExportHandler<TenantEntity, TenantR
 
   @Override
   public List<String> generateIds(final Record<TenantRecordValue> record) {
-    return List.of(String.valueOf(record.getKey()));
+    return List.of(record.getValue().getTenantId());
   }
 
   @Override
@@ -55,7 +55,11 @@ public class TenantDeletedHandler implements ExportHandler<TenantEntity, TenantR
   @Override
   public void updateEntity(final Record<TenantRecordValue> record, final TenantEntity entity) {
     final TenantRecordValue value = record.getValue();
-    entity.setKey(value.getTenantKey()).setTenantId(value.getTenantId()).setName(value.getName());
+    entity
+        .setKey(value.getTenantKey())
+        .setTenantId(value.getTenantId())
+        .setName(value.getName())
+        .setDescription(value.getDescription());
   }
 
   @Override

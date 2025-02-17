@@ -51,15 +51,15 @@ if ! baseImageInfo="$(docker manifest inspect "${BASE_IMAGE}")"; then
   exit 1
 fi
 
-DIGEST_REGEX="BASE_SHA=\"(sha256\:[a-f0-9\:]+)\""
-DOCKERFILE=$(<"${BASH_SOURCE%/*}/../../../optimize.Dockerfile")
-if [[ $DOCKERFILE =~ $DIGEST_REGEX ]]; then
-    DIGEST="${BASH_REMATCH[1]}"
-    echo "Digest found: $DIGEST"
-else
-    echo >&2 "Docker image digest can not be found in the Dockerfile (with name $DOCKERFILE)"
+SCRIPT_DIR=$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")
+DOCKERFILE_PATH="${SCRIPT_DIR}/../../../optimize.Dockerfile"
+DIGEST=$(cat $DOCKERFILE_PATH | grep -o 'sha256:[a-f0-9]\{64\}')
+if [[ -z "$DIGEST" ]]; then
+    echo >&2 "Docker image digest can not be found in the Dockerfile (with name $DOCKERFILE_PATH)"
     exit 1
 fi
+
+echo "Digest found: $DIGEST"
 
 imageName="${1}"
 # Iterate through all the images passed as parameter

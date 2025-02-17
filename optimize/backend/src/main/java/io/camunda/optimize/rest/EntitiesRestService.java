@@ -8,32 +8,32 @@
 package io.camunda.optimize.rest;
 
 import static io.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import io.camunda.optimize.dto.optimize.query.entity.EntitiesDeleteRequestDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
+import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import io.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import io.camunda.optimize.rest.mapper.EntityRestMapper;
 import io.camunda.optimize.service.entities.EntitiesService;
 import io.camunda.optimize.service.security.SessionService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import jakarta.ws.rs.BeanParam;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
 import java.util.List;
-import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-@Path(EntitiesRestService.ENTITIES_PATH)
-@Component
+@Validated
+@RestController
+@RequestMapping(REST_API_PATH + EntitiesRestService.ENTITIES_PATH)
 public class EntitiesRestService {
 
   public static final String ENTITIES_PATH = "/entities";
@@ -51,44 +51,37 @@ public class EntitiesRestService {
     this.entityRestMapper = entityRestMapper;
   }
 
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
+  @GetMapping
   public List<EntityResponseDto> getEntities(
-      @Context final ContainerRequestContext requestContext,
-      @BeanParam final EntitySorter entitySorter) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @RequestParam(name = "sortBy", required = false) final String sortBy,
+      @RequestParam(name = "sortOrder", required = false) final SortOrder sortOrder,
+      final HttpServletRequest request) {
+    final EntitySorter entitySorter = new EntitySorter(sortBy, sortOrder);
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     final List<EntityResponseDto> entities = entitiesService.getAllEntities(userId);
     entities.forEach(entityRestMapper::prepareRestResponse);
     return entitySorter.applySort(entities);
   }
 
-  @GET
-  @Path("/names")
-  @Produces(MediaType.APPLICATION_JSON)
+  @GetMapping("/names")
   public EntityNameResponseDto getEntityNames(
-      @Context final ContainerRequestContext requestContext,
-      @BeanParam final EntityNameRequestDto requestDto) {
-    return entitiesService.getEntityNames(
-        requestDto, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
+      final EntityNameRequestDto requestDto, final HttpServletRequest request) {
+    return entitiesService.getEntityNames(requestDto, request.getHeader(X_OPTIMIZE_CLIENT_LOCALE));
   }
 
-  @POST
-  @Path("/delete-conflicts")
-  @Consumes(MediaType.APPLICATION_JSON)
+  @PostMapping("/delete-conflicts")
   public boolean entitiesHaveDeleteConflicts(
-      @Context final ContainerRequestContext requestContext,
-      @Valid @NotNull @RequestBody final EntitiesDeleteRequestDto entities) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @Valid @NotNull @RequestBody final EntitiesDeleteRequestDto entities,
+      final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     return entitiesService.entitiesHaveConflicts(entities, userId);
   }
 
-  @POST
-  @Path("/delete")
-  @Consumes(MediaType.APPLICATION_JSON)
+  @PostMapping("/delete")
   public void bulkDeleteEntities(
-      @Context final ContainerRequestContext requestContext,
-      @Valid @NotNull @RequestBody final EntitiesDeleteRequestDto entities) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @Valid @NotNull @RequestBody final EntitiesDeleteRequestDto entities,
+      final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     entitiesService.bulkDeleteEntities(entities, userId);
   }
 }

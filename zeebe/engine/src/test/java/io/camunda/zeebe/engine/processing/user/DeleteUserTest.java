@@ -42,8 +42,7 @@ public class DeleteUserTest {
             .withPassword("password")
             .create();
 
-    final var deletedUser =
-        ENGINE.user().deleteUser(userRecord.getKey()).withUsername("").delete().getValue();
+    final var deletedUser = ENGINE.user().deleteUser(username).delete().getValue();
 
     assertThat(deletedUser).isNotNull().hasFieldOrPropertyWithValue("userKey", userRecord.getKey());
   }
@@ -51,6 +50,7 @@ public class DeleteUserTest {
   @Test
   public void shouldCleanupMembership() {
     final var username = UUID.randomUUID().toString();
+    final var tenantId = "tenant";
     final var userRecord =
         ENGINE
             .user()
@@ -61,7 +61,7 @@ public class DeleteUserTest {
             .create();
     final var group = ENGINE.group().newGroup("group").create();
     final var role = ENGINE.role().newRole("role").create();
-    final var tenant = ENGINE.tenant().newTenant().withTenantId("tenant").create();
+    final var tenant = ENGINE.tenant().newTenant().withTenantId(tenantId).create();
 
     ENGINE
         .group()
@@ -77,13 +77,13 @@ public class DeleteUserTest {
         .add();
     ENGINE
         .tenant()
-        .addEntity(tenant.getKey())
-        .withEntityKey(userRecord.getKey())
+        .addEntity(tenantId)
+        .withEntityId(username)
         .withEntityType(EntityType.USER)
         .add();
 
     // when
-    ENGINE.user().deleteUser(userRecord.getKey()).withUsername("").delete();
+    ENGINE.user().deleteUser(username).delete();
 
     // then
     Assertions.assertThat(
@@ -100,8 +100,8 @@ public class DeleteUserTest {
         .isTrue();
     Assertions.assertThat(
             RecordingExporter.tenantRecords(TenantIntent.ENTITY_REMOVED)
-                .withTenantKey(tenant.getKey())
-                .withEntityKey(userRecord.getKey())
+                .withTenantId(tenantId)
+                .withEntityId(username)
                 .exists())
         .isTrue();
   }
@@ -111,8 +111,7 @@ public class DeleteUserTest {
     final var userNotFoundRejection =
         ENGINE
             .user()
-            .deleteUser(1234L)
-            .withUsername("foobar")
+            .deleteUser("1234")
             .withName("Bar Foo")
             .withEmail("foo@bar.blah")
             .withPassword("Foo Bar")
@@ -122,6 +121,6 @@ public class DeleteUserTest {
     assertThat(userNotFoundRejection)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to delete user with key 1234, but a user with this key does not exist");
+            "Expected to delete user with username 1234, but a user with this username does not exist");
   }
 }

@@ -29,12 +29,12 @@ public class CompleteJobResult {
 
   /**
    * Indicates whether the worker denies the work, i.e. explicitly doesn't approve it. For example,
-   * a Task Listener can deny the completion of a task by setting this flag to true. In this
+   * a user task listener can deny the completion of a task by setting this flag to true. In this
    * example, the completion of a task is represented by a job that the worker can complete as
    * denied. As a result, the completion request is rejected and the task remains active. Defaults
-   * to false.
+   * to {@code false}.
    *
-   * @param isDenied true if the work must be denied, false otherwise
+   * @param isDenied indicates if the worker has denied the reason for the job
    * @return this job result
    */
   public CompleteJobResult deny(final boolean isDenied) {
@@ -43,9 +43,12 @@ public class CompleteJobResult {
   }
 
   /**
-   * Correct the task.
+   * Applies corrections to the user task attributes.
    *
-   * @param corrections corrections to apply
+   * <p>This method allows the worker to modify key attributes of the user task (such as {@code
+   * assignee}, {@code candidateGroups}, and so on).
+   *
+   * @param corrections the corrections to apply to the user task.
    * @return this job result
    */
   public CompleteJobResult correct(final JobResultCorrections corrections) {
@@ -58,14 +61,15 @@ public class CompleteJobResult {
   }
 
   /**
-   * Correct the task.
+   * Dynamically applies corrections to the user task attributes using a lambda expression.
    *
-   * <p>This is a convenience method for {@link #correct(JobResultCorrections)} that allows you to
-   * apply corrections using a lambda expression. It provides the current corrections as input, so
-   * you can easily modify them. If no corrections have been set yet, it provides the default
-   * corrections as input.
+   * <p>This method is a functional alternative to {@link #correct(JobResultCorrections)}. It allows
+   * the worker to modify key user task attributes (such as {@code assignee}, {@code dueDate},
+   * {@code priority}, and so on) directly via a lambda expression. The lambda receives the current
+   * {@link JobResultCorrections} instance, which can be updated as needed. If no corrections have
+   * been set yet, a default {@link JobResultCorrections} instance is provided.
    *
-   * @param corrections function to modify the corrections
+   * @param corrections a lambda expression to modify the {@link JobResultCorrections}.
    * @return this job result
    */
   public CompleteJobResult correct(final UnaryOperator<JobResultCorrections> corrections) {

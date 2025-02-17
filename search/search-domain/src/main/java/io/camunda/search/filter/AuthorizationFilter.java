@@ -15,26 +15,26 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 
 public record AuthorizationFilter(
-    List<Long> ownerKeys,
+    List<String> ownerIds,
     String ownerType,
     List<String> resourceIds,
     String resourceType,
-    PermissionType permissionType)
+    List<PermissionType> permissionTypes)
     implements FilterBase {
   public static final class Builder implements ObjectBuilder<AuthorizationFilter> {
-    private List<Long> ownerKeys;
+    private List<String> ownerIds;
     private String ownerType;
     private List<String> resourceIds;
     private String resourceType;
-    private PermissionType permissionType;
+    private List<PermissionType> permissionTypes;
 
-    public Builder ownerKeys(final List<Long> value) {
-      ownerKeys = addValuesToList(ownerKeys, value);
+    public Builder ownerIds(final List<String> value) {
+      ownerIds = addValuesToList(ownerIds, value);
       return this;
     }
 
-    public Builder ownerKeys(final Long... values) {
-      return ownerKeys(collectValuesAsList(values));
+    public Builder ownerIds(final String... values) {
+      return ownerIds(collectValuesAsList(values));
     }
 
     public Builder ownerType(final String value) {
@@ -56,15 +56,19 @@ public record AuthorizationFilter(
       return this;
     }
 
-    public Builder permissionType(final PermissionType value) {
-      permissionType = value;
+    public Builder permissionTypes(final List<PermissionType> value) {
+      permissionTypes = addValuesToList(permissionTypes, value);
       return this;
+    }
+
+    public Builder permissionTypes(final PermissionType... values) {
+      return permissionTypes(collectValuesAsList(values));
     }
 
     @Override
     public AuthorizationFilter build() {
       return new AuthorizationFilter(
-          ownerKeys, ownerType, resourceIds, resourceType, permissionType);
+          ownerIds, ownerType, resourceIds, resourceType, permissionTypes);
     }
   }
 }

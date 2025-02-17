@@ -16,9 +16,9 @@ import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.grpc.Status.Code;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 
 @ZeebeIntegration
@@ -32,7 +32,7 @@ public class MultipleInvalidResourceDeletionTest {
           .withRecordingExporter(true);
 
   private final PartitionsActuator partitions = PartitionsActuator.of(zeebe);
-  @AutoCloseResource private CamundaClient client;
+  @AutoClose private CamundaClient client;
 
   @BeforeEach
   void beforeEach() {

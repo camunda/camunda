@@ -8,22 +8,33 @@
 package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.util.ObjectBuilder;
-import java.util.List;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.Set;
 import java.util.function.Function;
 
 public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
 
-  private Long ownerKey;
+  private Long authorizationKey;
+  private String ownerId;
   private String ownerType;
   private String resourceType;
-  private List<AuthorizationPermissionDbModel> permissions;
+  private String resourceId;
+  private Set<PermissionType> permissionTypes;
 
-  public Long ownerKey() {
-    return ownerKey;
+  public Long authorizationKey() {
+    return authorizationKey;
   }
 
-  public void ownerKey(final Long ownerKey) {
-    this.ownerKey = ownerKey;
+  public void authorizationKey(final Long authorizationKey) {
+    this.authorizationKey = authorizationKey;
+  }
+
+  public String ownerId() {
+    return ownerId;
+  }
+
+  public void ownerId(final String ownerId) {
+    this.ownerId = ownerId;
   }
 
   public String ownerType() {
@@ -42,12 +53,20 @@ public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
     this.resourceType = resourceType;
   }
 
-  public List<AuthorizationPermissionDbModel> permissions() {
-    return permissions;
+  public String resourceId() {
+    return resourceId;
   }
 
-  public void permissions(final List<AuthorizationPermissionDbModel> permissions) {
-    this.permissions = permissions;
+  public void resourceId(final String resourceId) {
+    this.resourceId = resourceId;
+  }
+
+  public Set<PermissionType> permissionTypes() {
+    return permissionTypes;
+  }
+
+  public void permissionTypes(final Set<PermissionType> permissionTypes) {
+    this.permissionTypes = permissionTypes;
   }
 
   @Override
@@ -57,24 +76,33 @@ public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
     return copyFunction
         .apply(
             new Builder()
-                .ownerKey(ownerKey)
+                .authorizationKey(authorizationKey)
+                .ownerId(ownerId)
                 .ownerType(ownerType)
+                .resourceId(resourceId)
                 .resourceType(resourceType)
-                .permissions(permissions))
+                .permissionTypes(permissionTypes))
         .build();
   }
 
   public static class Builder implements ObjectBuilder<AuthorizationDbModel> {
 
-    private Long ownerKey;
+    private Long authorizationKey;
+    private String ownerId;
     private String ownerType;
+    private String resourceId;
     private String resourceType;
-    private List<AuthorizationPermissionDbModel> permissions;
+    private Set<PermissionType> permissionTypes;
 
     public Builder() {}
 
-    public Builder ownerKey(final Long ownerKey) {
-      this.ownerKey = ownerKey;
+    public Builder authorizationKey(final Long authorizationKey) {
+      this.authorizationKey = authorizationKey;
+      return this;
+    }
+
+    public Builder ownerId(final String ownerId) {
+      this.ownerId = ownerId;
       return this;
     }
 
@@ -88,18 +116,25 @@ public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
       return this;
     }
 
-    public Builder permissions(final List<AuthorizationPermissionDbModel> permissions) {
-      this.permissions = permissions;
+    public Builder resourceId(final String resourceId) {
+      this.resourceId = resourceId;
+      return this;
+    }
+
+    public Builder permissionTypes(final Set<PermissionType> permissionTypes) {
+      this.permissionTypes = permissionTypes;
       return this;
     }
 
     @Override
     public AuthorizationDbModel build() {
       final AuthorizationDbModel model = new AuthorizationDbModel();
-      model.ownerKey(ownerKey);
+      model.authorizationKey(authorizationKey);
+      model.ownerId(ownerId);
       model.ownerType(ownerType);
+      model.resourceId(resourceId);
       model.resourceType(resourceType);
-      model.permissions(permissions);
+      model.permissionTypes(permissionTypes);
       return model;
     }
   }

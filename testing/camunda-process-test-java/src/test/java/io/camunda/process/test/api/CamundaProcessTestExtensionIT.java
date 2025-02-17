@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api;
 
+import static io.camunda.process.test.api.assertions.ElementSelectors.byName;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -56,7 +57,7 @@ public class CamundaProcessTestExtensionIT {
     // then
     CamundaAssert.assertThat(processInstance)
         .isActive()
-        .hasActiveElements("task")
+        .hasActiveElements(byName("task"))
         .hasVariable("status", "active");
   }
 
@@ -87,7 +88,7 @@ public class CamundaProcessTestExtensionIT {
         client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
 
     // when
-    CamundaAssert.assertThat(processInstance).hasActiveElements("A");
+    CamundaAssert.assertThat(processInstance).hasActiveElements(byName("A"));
 
     final Instant timeBefore = processTestContext.getCurrentTime();
 
@@ -96,7 +97,9 @@ public class CamundaProcessTestExtensionIT {
     final Instant timeAfter = processTestContext.getCurrentTime();
 
     // then
-    CamundaAssert.assertThat(processInstance).hasTerminatedElements("A").hasActiveElements("B");
+    CamundaAssert.assertThat(processInstance)
+        .hasTerminatedElements(byName("A"))
+        .hasActiveElements(byName("B"));
 
     assertThat(Duration.between(timeBefore, timeAfter))
         .isCloseTo(timerDuration, Duration.ofSeconds(10));

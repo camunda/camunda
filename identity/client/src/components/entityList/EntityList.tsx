@@ -29,12 +29,13 @@ import {
 } from "@carbon/react";
 import useDebounce from "react-debounced";
 import styled from "styled-components";
-import { StyledTableContainer } from "./components";
-import useTranslate from "../../utility/localization";
+import { ButtonKind } from "@carbon/react/lib/components/Button/Button";
+import { Add } from "@carbon/react/icons";
 import { DocumentationLink } from "src/components/documentation";
 import LateLoading from "src/components/layout/LateLoading";
 import Flex from "src/components/layout/Flex";
-import { ButtonKind } from "@carbon/react/lib/components/Button/Button";
+import useTranslate from "src/utility/localization";
+import { StyledTableContainer } from "./components";
 
 const ToolbarMultiSelect = styled(MultiSelect)`
   grid-gap: 0;
@@ -90,7 +91,7 @@ type MenuItem<D> = TextMenuItem<D> & {
 };
 
 type DefaultEntityListProps = {
-  title: string;
+  title?: string;
   isInsideModal?: false;
 };
 
@@ -105,7 +106,8 @@ type EntityListProps<D extends EntityData> = (
 ) & {
   description?: ReactNode | string;
   documentationPath?: string;
-  data: D[] | null;
+  searchPlaceholder?: string;
+  data: D[] | null | undefined;
   headers: DataTableHeader<D>[];
   filter?: DataTableFilter<D>;
   addEntityLabel?: string | null;
@@ -146,6 +148,7 @@ const EntityList = <D extends EntityData>({
   sortProperty,
   loading,
   batchSelection,
+  searchPlaceholder,
 }: EntityListProps<D>): ReturnType<FC> => {
   const debounce = useDebounce(300);
   const { t } = useTranslate("components");
@@ -256,6 +259,8 @@ const EntityList = <D extends EntityData>({
               <TableToolbar {...getToolbarProps()}>
                 <TableToolbarContent>
                   <TableToolbarSearch
+                    placeholder={searchPlaceholder}
+                    persistent
                     onChange={(e: ChangeEvent<HTMLInputElement>) => {
                       const { value } = e.target;
                       debounce(() => {
@@ -296,7 +301,11 @@ const EntityList = <D extends EntityData>({
                     />
                   )}
                   {addEntityLabel && (
-                    <Button onClick={onAddEntity} disabled={addEntityDisabled}>
+                    <Button
+                      renderIcon={Add}
+                      onClick={onAddEntity}
+                      disabled={addEntityDisabled}
+                    >
                       {addEntityLabel}
                     </Button>
                   )}
@@ -398,10 +407,10 @@ const EntityList = <D extends EntityData>({
                                     disabled,
                                   } = menuItem as MenuItem<D>;
 
-                                  const kind: ButtonKind =
-                                    !icon && isDangerous
-                                      ? "danger--ghost"
-                                      : "ghost";
+                                  const kind: ButtonKind = isDangerous
+                                    ? "danger--ghost"
+                                    : "ghost";
+                                  const hasIconOnly = !!icon && !isDangerous;
 
                                   return (
                                     <Button
@@ -409,7 +418,7 @@ const EntityList = <D extends EntityData>({
                                       kind={kind}
                                       size="md"
                                       disabled={disabled}
-                                      hasIconOnly={!!icon}
+                                      hasIconOnly={hasIconOnly}
                                       renderIcon={icon}
                                       tooltipAlignment="end"
                                       iconDescription={label}
@@ -418,7 +427,7 @@ const EntityList = <D extends EntityData>({
                                         onClick,
                                       )}
                                     >
-                                      {icon ? "" : label}
+                                      {hasIconOnly ? "" : label}
                                     </Button>
                                   );
                                 })}

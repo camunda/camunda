@@ -263,7 +263,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   }
 
   private void checkIdentityReadPermission(final Long processInstanceKey) {
-    checkIdentityPermission(processInstanceKey, IdentityPermission.READ);
+    checkIdentityPermission(processInstanceKey, IdentityPermission.READ_PROCESS_INSTANCE);
   }
 
   private void checkIdentityPermission(

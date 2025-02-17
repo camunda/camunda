@@ -323,7 +323,7 @@ public class DeployResourceRestTest extends ClientRestTest {
                     .decisionRequirements(
                         new DeploymentDecisionRequirementsResult()
                             .decisionRequirementsId(DMN_DECISION_REQUIREMENTS_ID)
-                            .name(DMN_DECISION_REQUIREMENTS_NAME)
+                            .decisionRequirementsName(DMN_DECISION_REQUIREMENTS_NAME)
                             .version(version)
                             .decisionRequirementsKey(String.valueOf(decisionRequirementsKey))
                             .resourceName(filename)

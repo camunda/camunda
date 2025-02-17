@@ -14,15 +14,18 @@ import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Future;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class ClusterChangeExecutorImplTest {
 
   @Test
-  public void shouldRunPurgeForEveryExporter() {
+  void shouldRunPurgeForEveryExporter() {
     // given
     final ExporterRepository repository = new ExporterRepository();
     try {
@@ -32,17 +35,22 @@ public class ClusterChangeExecutorImplTest {
       Assertions.fail(e);
     }
 
-    // when
     final var executor =
         new ClusterChangeExecutorImpl(
             new TestConcurrencyControl(), repository, new SimpleMeterRegistry());
-    executor.deleteHistory().join();
+
+    // when
+    final Future<Void> result = executor.deleteHistory();
 
     // then
+    Assertions.assertThat(result).succeedsWithin(Duration.ofSeconds(5));
     Assertions.assertThat(AuditExporter.AUDITS)
         .containsSubsequence("configure-test-1", "purge-test-1", "close-test-1");
     Assertions.assertThat(AuditExporter.AUDITS)
         .containsSubsequence("configure-test-2", "purge-test-2", "close-test-2");
+    Assertions.assertThat(AuditExporter.AUDITS)
+        .doesNotContainAnyElementsOf(
+            Arrays.asList("open-test-1", "export-test-1", "open-test-2", "export-test-2"));
   }
 
   public static class AuditExporter implements Exporter {

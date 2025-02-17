@@ -7,13 +7,12 @@
  */
 package io.camunda.zeebe.stream.impl;
 
-import static org.junit.platform.commons.util.ReflectionUtils.makeAccessible;
-
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.stream.util.DefaultZeebeDbFactory;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.ReflectUtil;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -62,7 +61,7 @@ public class StreamPlatformExtension implements BeforeEachCallback {
         .forEach(
             field -> {
               try {
-                makeAccessible(field)
+                ReflectUtil.makeAccessible(field, testInstance)
                     .set(testInstance, lookupOrCreate(extensionContext).streamPlatform);
               } catch (final Throwable t) {
                 ExceptionUtils.throwAsUncheckedException(t);
@@ -77,7 +76,8 @@ public class StreamPlatformExtension implements BeforeEachCallback {
         .forEach(
             field -> {
               try {
-                makeAccessible(field).set(testInstance, lookupOrCreate(extensionContext).clock);
+                ReflectUtil.makeAccessible(field, testInstance)
+                    .set(testInstance, lookupOrCreate(extensionContext).clock);
               } catch (final Throwable t) {
                 ExceptionUtils.throwAsUncheckedException(t);
               }

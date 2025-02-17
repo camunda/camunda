@@ -112,7 +112,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                         meterRegistry,
                         clock))
             .collect(Collectors.toCollection(ArrayList::new));
-    metrics = new ExporterMetrics(partitionId);
+    metrics = new ExporterMetrics(meterRegistry);
     metrics.initializeExporterState(exporterPhase);
     recordExporter = new RecordExporter(metrics, containers, partitionId, clock);
     exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));

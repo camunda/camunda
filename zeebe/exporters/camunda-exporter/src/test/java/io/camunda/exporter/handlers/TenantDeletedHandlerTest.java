@@ -57,7 +57,7 @@ public class TenantDeletedHandlerTest {
     final var idList = underTest.generateIds(tenantRecord);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(tenantRecord.getKey()));
+    assertThat(idList).containsExactly(String.valueOf(tenantRecord.getValue().getTenantId()));
   }
 
   @Test
@@ -73,7 +73,7 @@ public class TenantDeletedHandlerTest {
   @Test
   void shouldDeleteEntityOnFlush() throws PersistenceException {
     // given
-    final TenantEntity inputEntity = new TenantEntity().setId("111");
+    final TenantEntity inputEntity = new TenantEntity().setId("test-tenant");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

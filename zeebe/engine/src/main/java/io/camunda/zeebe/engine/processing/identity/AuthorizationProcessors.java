@@ -26,13 +26,18 @@ public final class AuthorizationProcessors {
       final AuthorizationCheckBehavior authCheckBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.AUTHORIZATION,
-        AuthorizationIntent.ADD_PERMISSION,
-        new AuthorizationAddPermissionProcessor(
+        AuthorizationIntent.CREATE,
+        new AuthorizationCreateProcessor(
             writers, keyGenerator, processingState, distributionBehavior, authCheckBehavior));
     typedRecordProcessors.onCommand(
         ValueType.AUTHORIZATION,
-        AuthorizationIntent.REMOVE_PERMISSION,
-        new AuthorizationRemovePermissionProcessor(
+        AuthorizationIntent.DELETE,
+        new AuthorizationDeleteProcessor(
+            writers, keyGenerator, processingState, distributionBehavior, authCheckBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.AUTHORIZATION,
+        AuthorizationIntent.UPDATE,
+        new AuthorizationUpdateProcessor(
             writers, keyGenerator, processingState, distributionBehavior, authCheckBehavior));
   }
 }

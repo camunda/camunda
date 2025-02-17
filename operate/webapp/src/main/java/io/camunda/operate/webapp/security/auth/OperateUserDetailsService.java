@@ -38,13 +38,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
       + " & !"
       + OperateProfileService.IDENTITY_AUTH_PROFILE
       + " & !"
-      + OperateProfileService.AUTH_BASIC
+      + OperateProfileService.CONSOLIDATED_AUTH
 })
-/*
- * Required as primary for now due to a clashing bean in the always active Identity service classes.
- * In future versions this class will be removed and the Identity service will be used instead.
- */
-@Primary
 public class OperateUserDetailsService implements UserDetailsService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OperateUserDetailsService.class);

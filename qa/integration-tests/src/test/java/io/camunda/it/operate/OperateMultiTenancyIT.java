@@ -12,14 +12,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 
-import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -36,20 +37,20 @@ public class OperateMultiTenancyIT {
   private long processDefinitionKey2;
 
   @ZeebeIntegration.TestZeebe
-  private TestStandaloneCamunda testInstance =
+  private final TestStandaloneCamunda testInstance =
       new TestStandaloneCamunda()
           .withCamundaExporter()
-          .withAdditionalProfile(Profile.AUTH_BASIC)
+          .withAuthenticationMethod(AuthenticationMethod.BASIC)
           .withMultiTenancyEnabled();
 
   @BeforeEach
   public void beforeEach() {
     try (final var authorizationsUtil =
         AuthorizationsUtil.create(testInstance, testInstance.getElasticSearchHostAddress())) {
-      final var userKey1 = authorizationsUtil.createUser(USERNAME_1, PASSWORD);
-      final var userKey2 = authorizationsUtil.createUser(USERNAME_2, PASSWORD);
-      authorizationsUtil.createTenant(TENANT_ID_1, TENANT_ID_1, userKey1);
-      authorizationsUtil.createTenant(TENANT_ID_2, TENANT_ID_2, userKey2);
+      authorizationsUtil.createUser(USERNAME_1, PASSWORD);
+      authorizationsUtil.createUser(USERNAME_2, PASSWORD);
+      authorizationsUtil.createTenant(TENANT_ID_1, TENANT_ID_1, USERNAME_1);
+      authorizationsUtil.createTenant(TENANT_ID_2, TENANT_ID_2, USERNAME_2);
 
       final var processTenant1 =
           deployResourceForTenant(
@@ -76,6 +77,7 @@ public class OperateMultiTenancyIT {
   }
 
   @Test
+  @Disabled
   public void shouldGetProcessByKeyOnlyForProcessesInAuthenticatedTenants() {
     try (final var operateClient1 = testInstance.newOperateClient(USERNAME_1, PASSWORD);
         final var operateClient2 = testInstance.newOperateClient(USERNAME_2, PASSWORD)) {

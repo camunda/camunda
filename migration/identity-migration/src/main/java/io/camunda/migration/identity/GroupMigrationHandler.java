@@ -17,7 +17,7 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 @Component
-public class GroupMigrationHandler implements MigrationHandler {
+public class GroupMigrationHandler extends MigrationHandler<Group> {
 
   private final ManagementIdentityClient managementIdentityClient;
   private final ManagementIdentityTransformer managementIdentityTransformer;
@@ -34,16 +34,16 @@ public class GroupMigrationHandler implements MigrationHandler {
   }
 
   @Override
-  public void migrate() {
-    List<Group> groups;
-    do {
-      groups = managementIdentityClient.fetchGroups(SIZE);
-      managementIdentityClient.updateMigrationStatus(
-          groups.stream().map(this::createGroup).toList());
-    } while (!groups.isEmpty());
+  protected List<Group> fetchBatch() {
+    return managementIdentityClient.fetchGroups(SIZE);
   }
 
-  private MigrationStatusUpdateRequest createGroup(final Group group) {
+  @Override
+  protected void process(final List<Group> batch) {
+    managementIdentityClient.updateMigrationStatus(batch.stream().map(this::processTask).toList());
+  }
+
+  private MigrationStatusUpdateRequest processTask(final Group group) {
     try {
       groupServices.createGroup(group.name()).join();
     } catch (final Exception e) {

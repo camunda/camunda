@@ -10,6 +10,7 @@ package io.camunda.it.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.response.UserTaskState;
 import io.camunda.it.migration.util.MigrationITInvocationProvider;
 import io.camunda.it.migration.util.MigrationITInvocationProvider.DatabaseType;
 import io.camunda.it.migration.util.TasklistMigrationHelper;
@@ -201,7 +202,7 @@ public class MigrationUserTaskUpdateIT {
                       .join()
                       .items()
                       .getFirst();
-              return task != null && TaskState.COMPLETED.name().equals(task.getState());
+              return task != null && UserTaskState.COMPLETED.equals(task.getState());
             });
   }
 

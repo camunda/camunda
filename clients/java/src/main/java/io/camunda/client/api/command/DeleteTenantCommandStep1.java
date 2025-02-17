@@ -19,10 +19,10 @@ import io.camunda.client.api.response.DeleteTenantResponse;
 
 public interface DeleteTenantCommandStep1 extends FinalCommandStep<DeleteTenantResponse> {
   /**
-   * Set the tenant key for the tenant to be deleted.
+   * Set the tenant id for the tenant to be deleted.
    *
-   * @param tenantKey the unique tenant key
+   * @param tenantId the unique tenant id
    * @return the builder for this command
    */
-  DeleteTenantCommandStep1 tenantKey(long tenantKey);
+  DeleteTenantCommandStep1 tenantId(String tenantId);
 }

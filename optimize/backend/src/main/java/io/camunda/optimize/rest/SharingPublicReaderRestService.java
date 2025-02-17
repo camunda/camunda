@@ -20,6 +20,7 @@ import static io.camunda.optimize.rest.SharingRestService.DASHBOARD_SUB_PATH;
 import static io.camunda.optimize.rest.SharingRestService.EVALUATE_SUB_PATH;
 import static io.camunda.optimize.rest.SharingRestService.REPORT_SUB_PATH;
 import static io.camunda.optimize.rest.SharingRestService.SHARE_PATH;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import io.camunda.optimize.dto.optimize.GroupDto;
 import io.camunda.optimize.dto.optimize.UserDto;
@@ -34,27 +35,25 @@ import io.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import io.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import io.camunda.optimize.dto.optimize.rest.report.AuthorizedReportEvaluationResponseDto;
+import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.rest.providers.CacheRequest;
 import io.camunda.optimize.service.SettingsService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.BeanParam;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.NotAuthorizedException;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.function.Supplier;
-import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-@Path(EXTERNAL_SUB_PATH)
-@Component
+@Validated
+@RestController
+@RequestMapping(REST_API_PATH + EXTERNAL_SUB_PATH)
 public class SharingPublicReaderRestService {
 
   private static final String SHARING_DISABLED_MSG = "Sharing has been disabled by configuration";
@@ -90,127 +89,96 @@ public class SharingPublicReaderRestService {
     this.settingsService = settingsService;
   }
 
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
-  @Path(UIConfigurationRestService.UI_CONFIGURATION_PATH)
+  @GetMapping(UIConfigurationRestService.UI_CONFIGURATION_PATH)
   public UIConfigurationResponseDto getUIConfiguration() {
     // UI Configuration is always open, regardless of whether sharing is enabled or not
     return uiConfigurationService.getUIConfiguration();
   }
 
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
+  @GetMapping(LOCALIZATION_PATH)
   @CacheRequest
-  @Path(LOCALIZATION_PATH)
-  public byte[] getLocalizationFile(@QueryParam("localeCode") final String localeCode) {
+  public byte[] getLocalizationFile(
+      @RequestParam(name = "localeCode", required = false) final String localeCode) {
     // Localization is always open, regardless of whether sharing is enabled or not
     return localizationRestService.getLocalizationFile(localeCode);
   }
 
-  @POST
-  @Path(SHARE_PATH + REPORT_SUB_PATH + "/{shareId}" + EVALUATE_SUB_PATH)
-  @Produces(MediaType.APPLICATION_JSON)
+  @PostMapping(SHARE_PATH + REPORT_SUB_PATH + "/{shareId}" + EVALUATE_SUB_PATH)
   public AuthorizedReportEvaluationResponseDto evaluateReport(
-      @Context final ContainerRequestContext requestContext,
-      @PathParam("shareId") final String reportShareId,
-      @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
+      @PathVariable("shareId") final String reportShareId,
+      @Valid final PaginationRequestDto paginationRequestDto,
+      final HttpServletRequest request) {
     return executeIfSharingEnabled(
         () ->
             protectedSharingRestService.evaluateReport(
-                requestContext, reportShareId, paginationRequestDto));
+                reportShareId, paginationRequestDto, request));
   }
 
-  @POST
-  @Path(
+  @PostMapping(
       SHARE_PATH
           + DASHBOARD_SUB_PATH
           + "/{shareId}"
           + REPORT_SUB_PATH
           + "/{reportId}"
           + EVALUATE_SUB_PATH)
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
   public AuthorizedReportEvaluationResponseDto evaluateReport(
-      @Context final ContainerRequestContext requestContext,
-      @PathParam("shareId") final String dashboardShareId,
-      @PathParam("reportId") final String reportId,
-      final AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter,
-      @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
+      @PathVariable("shareId") final String dashboardShareId,
+      @PathVariable("reportId") final String reportId,
+      @RequestBody final AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter,
+      @Valid final PaginationRequestDto paginationRequestDto,
+      final HttpServletRequest request) {
     return executeIfSharingEnabled(
         () ->
             protectedSharingRestService.evaluateReport(
-                requestContext,
-                dashboardShareId,
-                reportId,
-                reportEvaluationFilter,
-                paginationRequestDto));
+                dashboardShareId, reportId, reportEvaluationFilter, paginationRequestDto, request));
   }
 
-  @GET
-  @Path(SHARE_PATH + DASHBOARD_SUB_PATH + "/{shareId}" + EVALUATE_SUB_PATH)
-  @Produces(MediaType.APPLICATION_JSON)
+  @GetMapping(SHARE_PATH + DASHBOARD_SUB_PATH + "/{shareId}" + EVALUATE_SUB_PATH)
   public DashboardDefinitionRestDto evaluateDashboard(
-      @Context final ContainerRequestContext requestContext,
-      @PathParam("shareId") final String dashboardShareId) {
+      @PathVariable("shareId") final String dashboardShareId, final HttpServletRequest request) {
     return executeIfSharingEnabled(
-        () -> protectedSharingRestService.evaluateDashboard(requestContext, dashboardShareId));
+        () -> protectedSharingRestService.evaluateDashboard(dashboardShareId, request));
   }
 
-  @POST
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Path(PROCESS_VARIABLES_PATH)
+  @PostMapping(PROCESS_VARIABLES_PATH)
   public List<ProcessVariableNameResponseDto> getVariableNames(
-      @Context final ContainerRequestContext requestContext,
-      @Valid final ProcessVariableNameRequestDto variableRequestDtos) {
+      @Valid @RequestBody final ProcessVariableNameRequestDto variableRequestDtos,
+      final HttpServletRequest request) {
     return executeIfSharingEnabled(
-        () -> processVariableRestService.getVariableNames(requestContext, variableRequestDtos));
+        () -> processVariableRestService.getVariableNames(variableRequestDtos, request));
   }
 
-  @POST
-  @Path(DECISION_VARIABLES_PATH + DECISION_INPUTS_NAMES_PATH)
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
+  @PostMapping(DECISION_VARIABLES_PATH + DECISION_INPUTS_NAMES_PATH)
   public List<DecisionVariableNameResponseDto> getInputVariableNames(
-      @Valid final List<DecisionVariableNameRequestDto> variableRequestDto) {
+      @Valid @RequestBody final List<DecisionVariableNameRequestDto> variableRequestDto) {
     return executeIfSharingEnabled(
         () -> decisionVariableRestService.getInputVariableNames(variableRequestDto));
   }
 
-  @POST
-  @Path(DECISION_VARIABLES_PATH + DECISION_OUTPUTS_NAMES_PATH)
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
+  @PostMapping(DECISION_VARIABLES_PATH + DECISION_OUTPUTS_NAMES_PATH)
   public List<DecisionVariableNameResponseDto> getOutputVariableNames(
-      @Valid final List<DecisionVariableNameRequestDto> variableRequestDto) {
+      @Valid @RequestBody final List<DecisionVariableNameRequestDto> variableRequestDto) {
     return executeIfSharingEnabled(
         () -> decisionVariableRestService.getOutputVariableNames(variableRequestDto));
   }
 
-  @POST
-  @Path(FlowNodeRestService.FLOW_NODE_PATH + FLOW_NODE_NAMES_SUB_PATH)
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
+  @PostMapping(FlowNodeRestService.FLOW_NODE_PATH + FLOW_NODE_NAMES_SUB_PATH)
   @CacheRequest
-  public FlowNodeNamesResponseDto getFlowNodeNames(final FlowNodeIdsToNamesRequestDto request) {
+  public FlowNodeNamesResponseDto getFlowNodeNames(
+      @RequestBody final FlowNodeIdsToNamesRequestDto request) {
     return executeIfSharingEnabled(() -> flowNodeRestService.getFlowNodeNames(request));
   }
 
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Path(CANDIDATE_GROUP_RESOURCE_PATH)
+  @GetMapping(CANDIDATE_GROUP_RESOURCE_PATH)
   public List<GroupDto> getCandidateGroupsByIds(
-      @QueryParam("idIn") final String commaSeparatedIdn) {
+      @RequestParam(name = "idIn", required = false) final String commaSeparatedIdn) {
     return executeIfSharingEnabled(
         () -> candidateGroupRestService.getCandidateGroupsByIds(commaSeparatedIdn));
   }
 
-  @GET
-  @Path(ASSIGNEE_RESOURCE_PATH)
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  public List<UserDto> getAssigneesByIds(@QueryParam("idIn") final String commaSeparatedIdn) {
+  @GetMapping(ASSIGNEE_RESOURCE_PATH)
+  public List<UserDto> getAssigneesByIds(
+      @RequestParam(name = "idIn", required = false) final String commaSeparatedIdn) {
     return executeIfSharingEnabled(() -> assigneeRestService.getAssigneesByIds(commaSeparatedIdn));
   }
 

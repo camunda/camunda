@@ -17,7 +17,7 @@ package io.camunda.client.usertask;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.protocol.rest.VariableSearchQueryRequest;
+import io.camunda.client.protocol.rest.VariableSearchQuery;
 import io.camunda.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
 
@@ -31,8 +31,55 @@ public final class SearchUserTaskVariableTest extends ClientRestTest {
     client.newUserTaskVariableQuery(userTaskKey).send().join();
 
     // then
-    final VariableSearchQueryRequest request =
-        gatewayService.getLastRequest(VariableSearchQueryRequest.class);
+    final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
     assertThat(request.getFilter()).isNull();
+  }
+
+  @Test
+  void shouldSearchVariablesByNameWithEqOperator() {
+    final long userTaskKey = 1L;
+    final String variableName = "variableName";
+
+    // when
+    client.newUserTaskVariableQuery(userTaskKey).filter(f -> f.name(variableName)).send().join();
+
+    // then
+    final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
+    assertThat(request.getFilter().getName().get$Eq()).isEqualTo(variableName);
+  }
+
+  @Test
+  void shouldSearchVariablesByNameWithLikeOperator() {
+    final long userTaskKey = 1L;
+    final String variableName = "variableName";
+
+    // when
+    client
+        .newUserTaskVariableQuery(userTaskKey)
+        .filter(f -> f.name(b -> b.like(variableName)))
+        .send()
+        .join();
+
+    // then
+    final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
+    assertThat(request.getFilter().getName().get$Like()).isEqualTo(variableName);
+  }
+
+  @Test
+  void shouldSearchVariablesByNameWithInOperator() {
+    // Given
+    final long userTaskKey = 1L;
+    final String variableName = "variableName";
+
+    // When
+    client
+        .newUserTaskVariableQuery(userTaskKey)
+        .filter(f -> f.name(b -> b.in(variableName)))
+        .send()
+        .join();
+
+    // Then
+    final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
+    assertThat(request.getFilter().getName().get$In()).containsExactly(variableName);
   }
 }

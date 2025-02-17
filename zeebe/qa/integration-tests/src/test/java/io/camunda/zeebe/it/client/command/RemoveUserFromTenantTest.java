@@ -17,132 +17,120 @@ import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
+import java.util.UUID;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
-@AutoCloseResources
 class RemoveUserFromTenantTest {
 
   private static final String TENANT_ID = "tenant-id";
+  private static final String USERNAME = "username";
 
   @TestZeebe
-  private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+  private final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
-  @AutoCloseResource private CamundaClient client;
-
-  private long tenantKey;
-  private long userKey;
+  @AutoClose private CamundaClient client;
 
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
 
     // Create Tenant
-    tenantKey =
-        client
-            .newCreateTenantCommand()
-            .tenantId(TENANT_ID)
-            .name("Tenant Name")
-            .send()
-            .join()
-            .getTenantKey();
+    client.newCreateTenantCommand().tenantId(TENANT_ID).name("Tenant Name").send().join();
 
     // Create User
-    userKey =
-        client
-            .newUserCreateCommand()
-            .username("username")
-            .name("name")
-            .email("email@example.com")
-            .password("password")
-            .send()
-            .join()
-            .getUserKey();
+    client
+        .newUserCreateCommand()
+        .username(USERNAME)
+        .name("name")
+        .email("email@example.com")
+        .password("password")
+        .send()
+        .join();
 
     // Assign User to Tenant
-    client.newAssignUserToTenantCommand(tenantKey).userKey(userKey).send().join();
+    client.newAssignUserToTenantCommand(TENANT_ID).username(USERNAME).send().join();
   }
 
   @Test
   void shouldRemoveUserFromTenant() {
     // When
-    client.newRemoveUserFromTenantCommand(tenantKey).userKey(userKey).send().join();
+    client.newRemoveUserFromTenantCommand(TENANT_ID).username(USERNAME).send().join();
 
     // Then
     ZeebeAssertHelper.assertEntityRemovedFromTenant(
-        tenantKey, userKey, tenant -> assertThat(tenant.getEntityType()).isEqualTo(USER));
+        TENANT_ID, USERNAME, tenant -> assertThat(tenant.getEntityType()).isEqualTo(USER));
   }
 
   @Test
   void shouldRejectUnassignIfTenantDoesNotExist() {
     // Given
-    final long invalidTenantKey = 99999L;
+    final var invalidTenantId = UUID.randomUUID().toString();
 
     // When / Then
     assertThatThrownBy(
             () ->
                 client
-                    .newRemoveUserFromTenantCommand(invalidTenantKey)
-                    .userKey(userKey)
+                    .newRemoveUserFromTenantCommand(invalidTenantId)
+                    .username(USERNAME)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Command 'REMOVE_ENTITY' rejected with code 'NOT_FOUND': Expected to remove entity from tenant with key '%d', but no tenant with this key exists."
-                .formatted(invalidTenantKey));
+            "Command 'REMOVE_ENTITY' rejected with code 'NOT_FOUND': Expected to remove entity from tenant '%s', but no tenant with this id exists."
+                .formatted(invalidTenantId));
   }
 
   @Test
   void shouldRejectUnassignIfUserDoesNotExist() {
     // Given
-    final long invalidUserKey = 99999L;
+    final var invalidUsername = UUID.randomUUID().toString();
 
     // When / Then
     assertThatThrownBy(
             () ->
                 client
-                    .newRemoveUserFromTenantCommand(tenantKey)
-                    .userKey(invalidUserKey)
+                    .newRemoveUserFromTenantCommand(TENANT_ID)
+                    .username(invalidUsername)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Command 'REMOVE_ENTITY' rejected with code 'NOT_FOUND': Expected to remove entity with key '%d' from tenant with key '%d', but the entity does not exist."
-                .formatted(invalidUserKey, tenantKey));
+            "Command 'REMOVE_ENTITY' rejected with code 'NOT_FOUND': Expected to remove user '%s' from tenant, but no user with this id exists."
+                .formatted(invalidUsername));
   }
 
   @Test
   void shouldRejectUnassignIfUserIsNotAssignedToTenant() {
     // Given
-    final long unassignedUserKey =
-        client
-            .newUserCreateCommand()
-            .username("username2")
-            .name("name2")
-            .email("email2@example.com")
-            .password("password")
-            .send()
-            .join()
-            .getUserKey();
+    final var unassignedUsername = "username2";
+    client
+        .newUserCreateCommand()
+        .username(unassignedUsername)
+        .name("name2")
+        .email("email2@example.com")
+        .password("password")
+        .send()
+        .join();
 
     // When / Then
     assertThatThrownBy(
             () ->
                 client
-                    .newRemoveUserFromTenantCommand(tenantKey)
-                    .userKey(unassignedUserKey)
+                    .newRemoveUserFromTenantCommand(TENANT_ID)
+                    .username(unassignedUsername)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Command 'REMOVE_ENTITY' rejected with code 'NOT_FOUND': Expected to remove entity with key '%d' from tenant with key '%d', but the entity is not assigned to this tenant."
-                .formatted(unassignedUserKey, tenantKey));
+            "Command 'REMOVE_ENTITY' rejected with code 'NOT_FOUND': Expected to remove user '%s' from tenant '%s', but the user is not assigned to this tenant."
+                .formatted(unassignedUsername, TENANT_ID));
   }
 }

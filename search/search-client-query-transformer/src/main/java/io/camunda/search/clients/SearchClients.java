@@ -7,6 +7,8 @@
  */
 package io.camunda.search.clients;
 
+import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
+
 import io.camunda.search.clients.auth.DocumentAuthorizationQueryStrategy;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.AuthorizationEntity;
@@ -22,6 +24,7 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.entities.UsageMetricsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
@@ -49,6 +52,7 @@ import io.camunda.security.auth.SecurityContext;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class SearchClients
     implements AuthorizationSearchClient,
@@ -115,6 +119,12 @@ public class SearchClients
   public SearchQueryResult<MappingEntity> searchMappings(final MappingQuery filter) {
     return getSearchExecutor()
         .search(filter, io.camunda.webapps.schema.entities.usermanagement.MappingEntity.class);
+  }
+
+  @Override
+  public List<MappingEntity> findAllMappings(final MappingQuery query) {
+    return getSearchExecutor()
+        .findAll(query, io.camunda.webapps.schema.entities.usermanagement.MappingEntity.class);
   }
 
   @Override
@@ -200,19 +210,31 @@ public class SearchClients
   }
 
   @Override
-  public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery filter) {
-    return new SearchClientBasedQueryExecutor(
-            searchClient,
-            transformers,
-            new DocumentAuthorizationQueryStrategy(this),
-            securityContext)
-        .search(filter, io.camunda.webapps.schema.entities.usermanagement.GroupEntity.class);
+  public List<TenantEntity> findAllTenants(final TenantQuery query) {
+    return getSearchExecutor()
+        .findAll(query, io.camunda.webapps.schema.entities.usermanagement.TenantEntity.class);
   }
 
   @Override
-  public SearchQueryResult<UserEntity> searchUsers(final UserQuery filter) {
+  public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery query) {
     return getSearchExecutor()
-        .search(filter, io.camunda.webapps.schema.entities.usermanagement.UserEntity.class);
+        .search(query, io.camunda.webapps.schema.entities.usermanagement.GroupEntity.class);
+  }
+
+  @Override
+  public List<GroupEntity> findAllGroups(final GroupQuery query) {
+    return getSearchExecutor()
+        .findAll(query, io.camunda.webapps.schema.entities.usermanagement.GroupEntity.class);
+  }
+
+  @Override
+  public SearchQueryResult<UserEntity> searchUsers(final UserQuery userQuery) {
+    var query = userQuery;
+    if (query.filter().tenantId() != null) {
+      query = expandTenantFilter(query);
+    }
+    return getSearchExecutor()
+        .search(query, io.camunda.webapps.schema.entities.usermanagement.UserEntity.class);
   }
 
   @Override
@@ -273,5 +295,21 @@ public class SearchClients
                 securityContext)
             .findAll(filter, io.camunda.webapps.schema.entities.operate.UsageMetricsEntity.class);
     return metrics.stream().map(UsageMetricsEntity::value).distinct().count();
+  }
+
+  private UserQuery expandTenantFilter(final UserQuery userQuery) {
+    final List<TenantMemberEntity> tenantMembers =
+        getSearchExecutor()
+            .findAll(
+                new TenantQuery.Builder()
+                    .filter(f -> f.joinParentId(userQuery.filter().tenantId()).memberType(USER))
+                    .build(),
+                io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity.class);
+    final var usernames =
+        tenantMembers.stream().map(TenantMemberEntity::id).collect(Collectors.toSet());
+
+    return userQuery.toBuilder()
+        .filter(userQuery.filter().toBuilder().usernames(usernames).build())
+        .build();
   }
 }

@@ -118,15 +118,15 @@ public class GcpDocumentStore implements DocumentStore {
     final String fullBlobName = getFullBlobName(documentId);
     final String fileName = Optional.ofNullable(request.metadata().fileName()).orElse(documentId);
 
-    Blob existingBlob = null;
     try {
-      existingBlob = storage.get(bucketName, fullBlobName);
+      final Blob existingBlob = storage.get(bucketName, fullBlobName);
+      if (existingBlob != null) {
+        return Either.left(new DocumentError.DocumentAlreadyExists(documentId));
+      }
     } catch (final Exception e) {
-      //      return Either.left(new UnknownDocumentError(e));
+      return Either.left(new UnknownDocumentError(e));
     }
-    if (existingBlob != null) {
-      return Either.left(new DocumentError.DocumentAlreadyExists(documentId));
-    }
+
     final BlobId blobId = BlobId.of(bucketName, fullBlobName);
     final var blobInfoBuilder = BlobInfo.newBuilder(blobId);
 
@@ -258,9 +258,14 @@ public class GcpDocumentStore implements DocumentStore {
     blobInfoBuilder.setContentDisposition("attachment; filename=" + fileName);
 
     final Map<String, String> blobMetadata = new HashMap<>();
-    final var valueAsString = objectMapper.writeValueAsString(metadata.customProperties());
+
     if (metadata.customProperties() != null && !metadata.customProperties().isEmpty()) {
-      metadata.customProperties().forEach((key, value) -> blobMetadata.put(key, valueAsString));
+      for (final var key : metadata.customProperties().keySet()) {
+        final var value = metadata.customProperties().get(key);
+        final var valueAsString = objectMapper.writeValueAsString(value);
+
+        blobMetadata.put(key, valueAsString);
+      }
     }
     if (metadata.processDefinitionId() != null) {
       blobMetadata.put(METADATA_PROCESS_DEFINITION_ID, metadata.processDefinitionId());

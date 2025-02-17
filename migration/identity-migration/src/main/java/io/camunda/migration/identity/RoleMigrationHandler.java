@@ -7,8 +7,6 @@
  */
 package io.camunda.migration.identity;
 
-import static io.camunda.migration.identity.transformer.AuthorizationTransformer.transform;
-
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
@@ -18,13 +16,12 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-public class RoleMigrationHandler implements MigrationHandler {
+public class RoleMigrationHandler extends MigrationHandler<Role> {
   private static final Logger LOG = LoggerFactory.getLogger(RoleMigrationHandler.class);
   private final RoleServices roleServices;
   private final AuthorizationServices authorizationServices;
@@ -44,13 +41,13 @@ public class RoleMigrationHandler implements MigrationHandler {
   }
 
   @Override
-  public void migrate() {
-    LOG.debug("Migrating roles");
-    List<Role> roles;
-    do {
-      roles = managementIdentityClient.fetchRoles(SIZE);
-      managementIdentityClient.updateMigrationStatus(roles.stream().map(this::createRole).toList());
-    } while (!roles.isEmpty());
+  protected List<Role> fetchBatch() {
+    return managementIdentityClient.fetchRoles(SIZE);
+  }
+
+  @Override
+  protected void process(final List<Role> batch) {
+    managementIdentityClient.updateMigrationStatus(batch.stream().map(this::createRole).toList());
   }
 
   private MigrationStatusUpdateRequest createRole(final Role role) {
@@ -67,9 +64,10 @@ public class RoleMigrationHandler implements MigrationHandler {
     }
 
     try {
-      transform(roleKey, role.permissions()).stream()
-          .map(authorizationServices::patchAuthorization)
-          .forEach(CompletableFuture::join);
+      // TODO: this part needs to be revisited
+      //      transform(roleKey, role.permissions()).stream()
+      //          .map(authorizationServices::patchAuthorization)
+      //          .forEach(CompletableFuture::join);
     } catch (final Exception e) {
       LOG.error("patch authorization for role failed", e);
       if (!isConflictError(e)) {

@@ -7,6 +7,8 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.client.api.search.response.ProcessInstanceState.ACTIVE;
+import static io.camunda.client.api.search.response.ProcessInstanceState.COMPLETED;
 import static io.camunda.it.client.QueryTest.assertSorted;
 import static io.camunda.it.client.QueryTest.deployResource;
 import static io.camunda.it.client.QueryTest.startProcessInstance;
@@ -26,9 +28,7 @@ import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.it.utils.MultiDbTest;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -36,31 +36,19 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-@ZeebeIntegration
+@MultiDbTest
 public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
   static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
   static final List<ProcessInstanceEvent> PROCESS_INSTANCES = new ArrayList<>();
 
-  private static CamundaClient camundaClient;
-
-  @TestZeebe(initMethod = "initTestStandaloneCamunda")
-  private static TestStandaloneCamunda testStandaloneCamunda;
-
   private static FlowNodeInstance flowNodeInstance;
   private static FlowNodeInstance flowNodeInstanceWithIncident;
-
-  @SuppressWarnings("unused")
-  static void initTestStandaloneCamunda() {
-    testStandaloneCamunda =
-        new TestStandaloneCamunda().withElasticsearchExporter(false).withCamundaExporter();
-  }
+  private static CamundaClient camundaClient;
 
   @BeforeAll
   public static void beforeAll() {
-
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
-
+    Objects.requireNonNull(camundaClient);
     final List<String> processes =
         List.of(
             "service_tasks_v1.bpmn",
@@ -136,7 +124,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     assertThat(result.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(result.getStartDate()).isNotNull();
     assertThat(result.getEndDate()).isNull();
-    assertThat(result.getState()).isEqualTo("ACTIVE");
+    assertThat(result.getState()).isEqualTo(ACTIVE);
     assertThat(result.getHasIncident()).isFalse();
     assertThat(result.getTenantId()).isEqualTo("<default>");
   }
@@ -191,48 +179,6 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
         camundaClient
             .newProcessInstanceQuery()
             .filter(f -> f.processInstanceKey(processInstanceKey))
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
-  }
-
-  @Test
-  void shouldQueryProcessInstancesByKeyFilterGtLt() {
-    // given
-    final long processInstanceKey =
-        PROCESS_INSTANCES.stream().findFirst().orElseThrow().getProcessInstanceKey();
-
-    // when
-    final var result =
-        camundaClient
-            .newProcessInstanceQuery()
-            .filter(
-                f ->
-                    f.processInstanceKey(
-                        b -> b.gt(processInstanceKey - 1).lt(processInstanceKey + 1)))
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
-  }
-
-  @Test
-  void shouldQueryProcessInstancesByKeyFilterGteLte() {
-    // given
-    final long processInstanceKey =
-        PROCESS_INSTANCES.stream().findFirst().orElseThrow().getProcessInstanceKey();
-
-    // when
-    final var result =
-        camundaClient
-            .newProcessInstanceQuery()
-            .filter(
-                f -> f.processInstanceKey(b -> b.gte(processInstanceKey).lte(processInstanceKey)))
             .send()
             .join();
 
@@ -455,7 +401,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldQueryProcessInstancesByStateActive() {
     // when
     final var result =
-        camundaClient.newProcessInstanceQuery().filter(f -> f.state("ACTIVE")).send().join();
+        camundaClient.newProcessInstanceQuery().filter(f -> f.state(ACTIVE)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -498,7 +444,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldQueryProcessInstancesByStateCompleted() {
     // when
     final var result =
-        camundaClient.newProcessInstanceQuery().filter(f -> f.state("COMPLETED")).send().join();
+        camundaClient.newProcessInstanceQuery().filter(f -> f.state(COMPLETED)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);

@@ -20,21 +20,21 @@ import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import java.util.Objects;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 
-@AutoCloseResources
 @ZeebeIntegration
 final class StandaloneBrokerIT {
 
-  @TestZeebe private final TestStandaloneBroker broker = new TestStandaloneBroker();
+  @TestZeebe
+  private final TestStandaloneBroker broker =
+      new TestStandaloneBroker().withUnauthenticatedAccess();
 
-  @AutoCloseResource private CamundaClient client;
+  @AutoClose private CamundaClient client;
 
   @BeforeEach
   void beforeEach() {

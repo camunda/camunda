@@ -14,12 +14,11 @@ import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
+import io.camunda.exporter.utils.TestObjectMapper;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -38,6 +37,7 @@ import java.util.UUID;
 import org.apache.http.HttpHost;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -61,7 +61,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SuppressWarnings("resource")
 @Testcontainers
-@AutoCloseResources
 final class OpenSearchArchiverRepositoryIT {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(OpenSearchArchiverRepositoryIT.class);
@@ -70,8 +69,8 @@ final class OpenSearchArchiverRepositoryIT {
   private static final OpensearchContainer<?> OPENSEARCH =
       TestSearchContainers.createDefaultOpensearchContainer();
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
-  @AutoCloseResource private final RestClientTransport transport = createRestClient();
+  private static final ObjectMapper MAPPER = TestObjectMapper.objectMapper();
+  @AutoClose private final RestClientTransport transport = createRestClient();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final ArchiverConfiguration config = new ArchiverConfiguration();
   private final ConnectConfiguration connectConfiguration = new ConnectConfiguration();
@@ -371,7 +370,7 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   private void createLifeCyclePolicy() {
-    final var engineClient = new OpensearchEngineClient(testClient);
+    final var engineClient = new OpensearchEngineClient(testClient, MAPPER);
     try {
       engineClient.putIndexLifeCyclePolicy(retention.getPolicyName(), retention.getMinimumAge());
     } catch (final Exception e) {

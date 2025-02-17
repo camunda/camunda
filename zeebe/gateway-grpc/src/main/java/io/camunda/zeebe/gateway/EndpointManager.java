@@ -9,8 +9,8 @@ package io.camunda.zeebe.gateway;
 
 import io.atomix.utils.net.Address;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
-import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
-import io.camunda.zeebe.auth.impl.Authorization;
+import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.auth.ClaimTransformer;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -74,6 +74,7 @@ import io.grpc.Context;
 import io.grpc.stub.ServerCallStreamObserver;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -488,29 +489,22 @@ public final class EndpointManager {
 
     final BrokerRequest<BrokerResponseT> brokerRequest = requestMapper.apply(grpcRequest);
 
-    final var authorizationToken =
-        Authorization.jwtEncoder()
-            .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
-            .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
-            .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT);
+    final Map<String, Object> claims = new HashMap<>();
 
-    // retrieve the user claims from the context and add them to the token if present
+    // retrieve the user claims from the context and add them to the authorization if present
     final Map<String, Object> userClaims =
         Context.current().call(AuthenticationInterceptor.USER_CLAIMS::get);
     if (userClaims != null) {
-      userClaims.forEach(
-          (key, value) -> {
-            authorizationToken.withClaim(Authorization.USER_TOKEN_CLAIM_PREFIX + key, value);
-          });
+      userClaims.forEach((key, value) -> ClaimTransformer.applyUserClaim(claims, key, value));
     }
 
-    // retrieve the user key from the context and add it to the token if present
-    final Long userKey = Context.current().call(AuthenticationInterceptor.USER_KEY::get);
-    if (userKey != null) {
-      authorizationToken.withClaim(Authorization.AUTHORIZED_USER_KEY, userKey);
+    // retrieve the username from the context and add it to the authorization if present
+    final String username = Context.current().call(AuthenticationInterceptor.USERNAME::get);
+    if (username != null) {
+      claims.put(Authorization.AUTHORIZED_USERNAME, username);
     }
 
-    brokerRequest.setAuthorization(authorizationToken.encode());
+    brokerRequest.setAuthorization(claims);
 
     return brokerRequest;
   }

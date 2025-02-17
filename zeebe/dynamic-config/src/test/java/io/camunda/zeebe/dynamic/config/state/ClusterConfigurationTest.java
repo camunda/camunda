@@ -172,8 +172,8 @@ class ClusterConfigurationTest {
             .addMember(member(1), MemberState.uninitialized())
             .startConfigurationChange(
                 List.of(
-                    new PartitionLeaveOperation(member(1), 1, false),
-                    new PartitionLeaveOperation(member(2), 2, false)));
+                    new PartitionLeaveOperation(member(1), 1, 1),
+                    new PartitionLeaveOperation(member(2), 2, 1)));
 
     // when
     final var updatedTopology =
@@ -192,7 +192,7 @@ class ClusterConfigurationTest {
     final var initialTopology =
         ClusterConfiguration.init()
             .addMember(member(1), MemberState.initializeAsActive(Map.of()))
-            .startConfigurationChange(List.of(new PartitionLeaveOperation(member(1), 1, false)));
+            .startConfigurationChange(List.of(new PartitionLeaveOperation(member(1), 1, 1)));
 
     // when
     final var updatedTopology =
@@ -213,8 +213,8 @@ class ClusterConfigurationTest {
             .addMember(member(1), MemberState.uninitialized())
             .startConfigurationChange(
                 List.of(
-                    new PartitionLeaveOperation(member(1), 1, false),
-                    new PartitionLeaveOperation(member(2), 2, false)));
+                    new PartitionLeaveOperation(member(1), 1, 1),
+                    new PartitionLeaveOperation(member(2), 2, 1)));
 
     // when
     final var updatedTopology =

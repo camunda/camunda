@@ -15,12 +15,13 @@
  */
 package io.camunda.client.api.search.filter;
 
+import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
-import io.camunda.client.api.search.filter.builder.LongProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
+import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -32,8 +33,8 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   /** Filter by processInstanceKey */
   ProcessInstanceFilter processInstanceKey(final Long processInstanceKey);
 
-  /** Filter by processInstanceKey using {@link LongProperty} consumer */
-  ProcessInstanceFilter processInstanceKey(final Consumer<LongProperty> fn);
+  /** Filter by processInstanceKey using {@link BasicLongProperty} consumer */
+  ProcessInstanceFilter processInstanceKey(final Consumer<BasicLongProperty> fn);
 
   /** Filter by processDefinitionId */
   ProcessInstanceFilter processDefinitionId(final String processDefinitionId);
@@ -62,20 +63,20 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   /** Filter by processDefinitionKey */
   ProcessInstanceFilter processDefinitionKey(final Long processDefinitionKey);
 
-  /** Filter by processDefinitionKey using {@link LongProperty} consumer */
-  ProcessInstanceFilter processDefinitionKey(final Consumer<LongProperty> fn);
+  /** Filter by processDefinitionKey using {@link BasicLongProperty} consumer */
+  ProcessInstanceFilter processDefinitionKey(final Consumer<BasicLongProperty> fn);
 
   /** Filter by parentProcessInstanceKey */
   ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey);
 
-  /** Filter by parentProcessInstanceKey using {@link LongProperty} consumer */
-  ProcessInstanceFilter parentProcessInstanceKey(final Consumer<LongProperty> fn);
+  /** Filter by parentProcessInstanceKey using {@link BasicLongProperty} consumer */
+  ProcessInstanceFilter parentProcessInstanceKey(final Consumer<BasicLongProperty> fn);
 
   /** Filter by parentFlowNodeInstanceKey */
   ProcessInstanceFilter parentFlowNodeInstanceKey(final Long parentFlowNodeInstanceKey);
 
-  /** Filter by parentFlowNodeInstanceKey using {@link LongProperty} consumer */
-  ProcessInstanceFilter parentFlowNodeInstanceKey(final Consumer<LongProperty> fn);
+  /** Filter by parentFlowNodeInstanceKey using {@link BasicLongProperty} consumer */
+  ProcessInstanceFilter parentFlowNodeInstanceKey(final Consumer<BasicLongProperty> fn);
 
   /** Filter by startDate */
   ProcessInstanceFilter startDate(final OffsetDateTime startDate);
@@ -90,7 +91,7 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   ProcessInstanceFilter endDate(final Consumer<DateTimeProperty> fn);
 
   /** Filter by state */
-  ProcessInstanceFilter state(final String state);
+  ProcessInstanceFilter state(final ProcessInstanceState state);
 
   /** Filter by state using {@link ProcessInstanceStateProperty} consumer */
   ProcessInstanceFilter state(final Consumer<ProcessInstanceStateProperty> fn);

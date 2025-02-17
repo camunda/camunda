@@ -15,15 +15,15 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -38,25 +38,17 @@ public class SignalBroadcastAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
-  @ClassRule
-  public static final EngineRule ENGINE =
+  @Rule
+  public final EngineRule engine =
       EngineRule.singlePartition()
-          .withoutAwaitingIdentitySetup()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  private static long defaultUserKey = -1L;
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
-  @BeforeClass
-  public static void beforeAll() {
-    defaultUserKey =
-        RecordingExporter.userRecords(UserIntent.CREATED)
-            .withUsername(DEFAULT_USER.getUsername())
-            .getFirst()
-            .getKey();
-
-    ENGINE
+  @Before
+  public void before() {
+    engine
         .deployment()
         .withXmlResource(
             "process.bpmn",
@@ -69,7 +61,7 @@ public class SignalBroadcastAuthorizationTest {
                 .startEvent()
                 .signal(s -> s.name(SIGNAL_NAME))
                 .done())
-        .deploy(defaultUserKey);
+        .deploy(DEFAULT_USER.getUsername());
   }
 
   @Test
@@ -78,7 +70,7 @@ public class SignalBroadcastAuthorizationTest {
     createProcessInstance();
 
     // when
-    ENGINE.signal().withSignalName(SIGNAL_NAME).broadcast(defaultUserKey);
+    engine.signal().withSignalName(SIGNAL_NAME).broadcast(DEFAULT_USER.getUsername());
 
     // then
     assertThat(
@@ -92,18 +84,14 @@ public class SignalBroadcastAuthorizationTest {
   public void shouldBeAuthorizedToBroadcastSignalWithUser() {
     // given
     createProcessInstance();
-    final var userKey = createUser();
+    final var user = createUser();
     addPermissionsToUser(
-        userKey,
-        AuthorizationResourceType.PROCESS_DEFINITION,
-        PermissionType.CREATE_PROCESS_INSTANCE);
+        user, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.CREATE_PROCESS_INSTANCE);
     addPermissionsToUser(
-        userKey,
-        AuthorizationResourceType.PROCESS_DEFINITION,
-        PermissionType.UPDATE_PROCESS_INSTANCE);
+        user, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE_PROCESS_INSTANCE);
 
     // when
-    ENGINE.signal().withSignalName(SIGNAL_NAME).broadcast(userKey);
+    engine.signal().withSignalName(SIGNAL_NAME).broadcast(user.getUsername());
 
     // then
     assertThat(
@@ -117,11 +105,11 @@ public class SignalBroadcastAuthorizationTest {
   public void shouldBeUnauthorizedToBroadcastSignalIfNoPermissions() {
     // given
     createProcessInstance();
-    final var userKey = createUser();
+    final var user = createUser();
 
     // when
     final var rejection =
-        ENGINE.signal().withSignalName(SIGNAL_NAME).expectRejection().broadcast(userKey);
+        engine.signal().withSignalName(SIGNAL_NAME).expectRejection().broadcast(user.getUsername());
 
     // then
     Assertions.assertThat(rejection)
@@ -135,15 +123,13 @@ public class SignalBroadcastAuthorizationTest {
   public void shouldNotBroadcastSignalIfUnauthorizedForOne() {
     // given
     createProcessInstance();
-    final var userKey = createUser();
+    final var user = createUser();
     addPermissionsToUser(
-        userKey,
-        AuthorizationResourceType.PROCESS_DEFINITION,
-        PermissionType.CREATE_PROCESS_INSTANCE);
+        user, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.CREATE_PROCESS_INSTANCE);
 
     // when
     final var rejection =
-        ENGINE.signal().withSignalName(SIGNAL_NAME).expectRejection().broadcast(userKey);
+        engine.signal().withSignalName(SIGNAL_NAME).expectRejection().broadcast(user.getUsername());
 
     // then
     Assertions.assertThat(rejection)
@@ -153,31 +139,33 @@ public class SignalBroadcastAuthorizationTest {
                 .formatted(PROCESS_ID));
   }
 
-  private static long createUser() {
-    return ENGINE
+  private UserRecordValue createUser() {
+    return engine
         .user()
         .newUser(UUID.randomUUID().toString())
         .withPassword(UUID.randomUUID().toString())
         .withName(UUID.randomUUID().toString())
         .withEmail(UUID.randomUUID().toString())
         .create()
-        .getKey();
+        .getValue();
   }
 
   private void addPermissionsToUser(
-      final long userKey,
+      final UserRecordValue user,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType) {
-    ENGINE
+    engine
         .authorization()
-        .permission()
-        .withOwnerKey(userKey)
+        .newAuthorization()
+        .withPermissions(permissionType)
+        .withOwnerId(user.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
-        .withPermission(permissionType, "*")
-        .add(defaultUserKey);
+        .withResourceId("*")
+        .create(DEFAULT_USER.getUsername());
   }
 
   private long createProcessInstance() {
-    return ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create(defaultUserKey);
+    return engine.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
   }
 }

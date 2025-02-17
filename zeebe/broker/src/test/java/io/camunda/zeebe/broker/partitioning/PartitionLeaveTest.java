@@ -11,7 +11,7 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddres
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.SystemContext;
@@ -20,6 +20,8 @@ import io.camunda.zeebe.broker.test.TestActorSchedulerFactory;
 import io.camunda.zeebe.broker.test.TestBrokerClientFactory;
 import io.camunda.zeebe.broker.test.TestClusterFactory;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -30,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 final class PartitionLeaveTest {
+  private static final MeterRegistry METER_REGISTRY = new SimpleMeterRegistry();
 
   @Test
   void canStillProcessAfterLeaving(@TempDir final Path tmp) {
@@ -214,7 +217,7 @@ final class PartitionLeaveTest {
     brokerCfg.init(tmp.toAbsolutePath().toString());
     configure.accept(brokerCfg);
     final var actorScheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg);
-    final var atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg);
+    final var atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg, METER_REGISTRY);
     final var brokerClient =
         TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
     final var systemContext =
@@ -223,7 +226,7 @@ final class PartitionLeaveTest {
             actorScheduler,
             atomixCluster,
             brokerClient,
-            new SecurityConfiguration(),
+            SecurityConfigurations.unauthenticated(),
             null,
             null);
 

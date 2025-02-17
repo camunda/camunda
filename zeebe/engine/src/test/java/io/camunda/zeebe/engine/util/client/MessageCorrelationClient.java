@@ -128,7 +128,7 @@ public final class MessageCorrelationClient {
         new Message(messageCorrelationRecord.getCorrelationKey(), position, partitionId));
   }
 
-  public Record<MessageCorrelationRecordValue> correlate(final long userKey) {
+  public Record<MessageCorrelationRecordValue> correlate(final String username) {
 
     if (partitionId == NOT_SET) {
       partitionId =
@@ -138,7 +138,7 @@ public final class MessageCorrelationClient {
 
     final var position =
         writer.writeCommandOnPartition(
-            partitionId, MessageCorrelationIntent.CORRELATE, messageCorrelationRecord, userKey);
+            partitionId, MessageCorrelationIntent.CORRELATE, messageCorrelationRecord, username);
     return expectation.apply(
         new Message(messageCorrelationRecord.getCorrelationKey(), position, partitionId));
   }

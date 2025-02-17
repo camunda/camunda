@@ -14,15 +14,14 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -35,24 +34,13 @@ public class MappingCreateAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
-  @ClassRule
-  public static final EngineRule ENGINE =
+  @Rule
+  public final EngineRule engine =
       EngineRule.singlePartition()
-          .withoutAwaitingIdentitySetup()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  private static long defaultUserKey = -1L;
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
-
-  @BeforeClass
-  public static void beforeAll() {
-    defaultUserKey =
-        RecordingExporter.userRecords(UserIntent.CREATED)
-            .withUsername(DEFAULT_USER.getUsername())
-            .getFirst()
-            .getKey();
-  }
 
   @Test
   public void shouldBeAuthorizedToCreateMappingWithDefaultUser() {
@@ -61,7 +49,11 @@ public class MappingCreateAuthorizationTest {
     final var claimValue = UUID.randomUUID().toString();
 
     // when
-    ENGINE.mapping().newMapping(claimName).withClaimValue(claimValue).create(defaultUserKey);
+    engine
+        .mapping()
+        .newMapping(claimName)
+        .withClaimValue(claimValue)
+        .create(DEFAULT_USER.getUsername());
 
     // then
     assertThat(
@@ -77,11 +69,11 @@ public class MappingCreateAuthorizationTest {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var userKey = createUser();
-    addPermissionsToUser(userKey, AuthorizationResourceType.MAPPING_RULE, PermissionType.CREATE);
+    final var user = createUser();
+    addPermissionsToUser(user, AuthorizationResourceType.MAPPING_RULE, PermissionType.CREATE);
 
     // when
-    ENGINE.mapping().newMapping(claimName).withClaimValue(claimValue).create(userKey);
+    engine.mapping().newMapping(claimName).withClaimValue(claimValue).create(user.getUsername());
 
     // then
     assertThat(
@@ -97,16 +89,16 @@ public class MappingCreateAuthorizationTest {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var userKey = createUser();
+    final var user = createUser();
 
     // when
     final var rejection =
-        ENGINE
+        engine
             .mapping()
             .newMapping(claimName)
             .withClaimValue(claimValue)
             .expectRejection()
-            .create(userKey);
+            .create(user.getUsername());
 
     // then
     Assertions.assertThat(rejection)
@@ -115,27 +107,29 @@ public class MappingCreateAuthorizationTest {
             "Insufficient permissions to perform operation 'CREATE' on resource 'MAPPING_RULE'");
   }
 
-  private static long createUser() {
-    return ENGINE
+  private UserRecordValue createUser() {
+    return engine
         .user()
         .newUser(UUID.randomUUID().toString())
         .withPassword(UUID.randomUUID().toString())
         .withName(UUID.randomUUID().toString())
         .withEmail(UUID.randomUUID().toString())
         .create()
-        .getKey();
+        .getValue();
   }
 
   private void addPermissionsToUser(
-      final long userKey,
+      final UserRecordValue user,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType) {
-    ENGINE
+    engine
         .authorization()
-        .permission()
-        .withOwnerKey(userKey)
+        .newAuthorization()
+        .withPermissions(permissionType)
+        .withOwnerId(user.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
-        .withPermission(permissionType, "*")
-        .add(defaultUserKey);
+        .withResourceId("*")
+        .create(DEFAULT_USER.getUsername());
   }
 }

@@ -32,6 +32,7 @@ import {checkConflicts, importEntity, removeEntities} from './service';
 import {formatLink, formatSubEntities, formatType} from './formatters';
 
 import './CollectionEnitiesList.scss';
+import { getFullURL } from '../../modules/api';
 
 export default function CollectionEnitiesList({
   collection,
@@ -174,9 +175,9 @@ export default function CollectionEnitiesList({
                   icon: <Save />,
                   text: t('common.export'),
                   action: () => {
-                    window.location.href = `api/export/${entityType}/json/${
+                    window.location.href = getFullURL(`api/export/${entityType}/json/${
                       entity.id
-                    }/${encodeURIComponent(formatters.formatFileName(entity.name))}.json`;
+                    }/${encodeURIComponent(formatters.formatFileName(entity.name))}.json`);
                   },
                 }
               );

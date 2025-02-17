@@ -24,6 +24,7 @@ import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.*;
+import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
@@ -73,6 +74,8 @@ public class OpensearchChecks {
   @Autowired private ProcessReader processReader;
   @Autowired private ProcessInstanceReader processInstanceReader;
   @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
+
+  @Autowired private ListenerReader listenerReader;
 
   @Autowired
   @Qualifier("operateFlowNodeInstanceTemplate")
@@ -1154,6 +1157,22 @@ public class OpensearchChecks {
       } catch (final NotFoundException ex) {
         return false;
       }
+    };
+  }
+
+  @Bean(name = "listenerJobIsCreated")
+  public Predicate<Object[]> getListenerJobIsCreatedCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(2);
+      assertThat(objects[0]).isInstanceOf(long.class);
+      assertThat(objects[1]).isInstanceOf(String.class);
+      final long processInstanceId = (long) objects[0];
+      final String flowNodeId = (String) objects[1];
+      final ListenerRequestDto dto = new ListenerRequestDto().setFlowNodeId(flowNodeId);
+      return listenerReader
+              .getListenerExecutions(Long.toString(processInstanceId), dto)
+              .getTotalCount()
+          > 0;
     };
   }
 }

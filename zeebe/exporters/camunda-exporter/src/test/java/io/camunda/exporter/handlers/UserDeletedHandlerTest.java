@@ -57,7 +57,7 @@ public class UserDeletedHandlerTest {
     final var idList = underTest.generateIds(userRecord);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(userRecord.getKey()));
+    assertThat(idList).containsExactly(String.valueOf(userRecord.getValue().getUsername()));
   }
 
   @Test

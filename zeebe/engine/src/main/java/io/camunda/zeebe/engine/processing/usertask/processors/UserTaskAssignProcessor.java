@@ -54,7 +54,11 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
 
-    userTaskRecord.setAssignee(command.getValue().getAssignee());
+    final var newAssignee = command.getValue().getAssignee();
+    if (!userTaskRecord.getAssignee().equals(newAssignee)) {
+      userTaskRecord.setAssignee(newAssignee);
+      userTaskRecord.setAssigneeChanged();
+    }
     userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);

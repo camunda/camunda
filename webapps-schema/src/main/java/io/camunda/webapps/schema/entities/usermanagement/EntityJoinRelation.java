@@ -7,9 +7,9 @@
  */
 package io.camunda.webapps.schema.entities.usermanagement;
 
-public record EntityJoinRelation(String name, Long parent) {
+public record EntityJoinRelation<T>(String name, T parent) {
 
-  public static class EntityJoinRelationFactory {
+  public static class EntityJoinRelationFactory<T> {
 
     private final IdentityJoinRelationshipType parent;
     private final IdentityJoinRelationshipType child;
@@ -20,12 +20,12 @@ public record EntityJoinRelation(String name, Long parent) {
       this.child = child;
     }
 
-    public EntityJoinRelation createParent() {
-      return new EntityJoinRelation(parent.getType(), null);
+    public EntityJoinRelation<T> createParent() {
+      return new EntityJoinRelation<>(parent.getType(), null);
     }
 
-    public EntityJoinRelation createChild(final long parentKey) {
-      return new EntityJoinRelation(child.getType(), parentKey);
+    public EntityJoinRelation<T> createChild(final T parentId) {
+      return new EntityJoinRelation<>(child.getType(), parentId);
     }
   }
 

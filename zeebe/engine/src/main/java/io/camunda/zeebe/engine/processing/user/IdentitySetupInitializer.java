@@ -17,7 +17,6 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.protocol.record.value.UserType;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.Task;
@@ -73,8 +72,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
                       .setUsername(user.getUsername())
                       .setName(user.getName())
                       .setEmail(user.getEmail())
-                      .setPassword(passwordEncoder.encode(user.getPassword()))
-                      .setUserType(UserType.DEFAULT);
+                      .setPassword(passwordEncoder.encode(user.getPassword()));
               setupRecord.addUser(userRecord);
             });
 

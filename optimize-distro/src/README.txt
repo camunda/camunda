@@ -15,10 +15,6 @@ Contents:
                     which can be used to overwrite default values of Optimize configuration. Also the logging
                     level can be configured here.
 
-        elasticsearch/elasticsearch-${elasticsearch.demo.version}/ (full distribution only)
-
-                    this folder contains preconfigured Elasticsearch server.
-
         upgrade/
 
                     execute the upgrade optimize jar files from here to upgrade Optimize.
@@ -30,6 +26,6 @@ Contents:
 ==================
 
 Camunda Optimize version: ${project.version}
-Elasticsearch version: ${elasticsearch.demo.version}
+Elasticsearch version: ${version.elasticsearch}
 
 =================

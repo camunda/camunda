@@ -44,12 +44,9 @@ public final class BackgroundTaskManager implements CloseableSilently {
         Objects.requireNonNull(archiverRepository, "must specify an archiver repository");
     this.incidentRepository =
         Objects.requireNonNull(incidentRepository, "must specify an incident repository");
-    // TODO enable null check when Opensearch is implemented
-    this.batchOperationUpdateRepository = batchOperationUpdateRepository;
-    //    this.batchOperationUpdateRepository =
-    //        Objects.requireNonNull(
-    //            batchOperationUpdateRepository, "must specify a batch operation update
-    // repository");
+    this.batchOperationUpdateRepository =
+        Objects.requireNonNull(
+            batchOperationUpdateRepository, "must specify a batch operation update repository");
     this.logger = Objects.requireNonNull(logger, "must specify a logger");
     this.executor = Objects.requireNonNull(executor, "must specify an executor");
     this.tasks = Objects.requireNonNull(tasks, "must specify tasks");

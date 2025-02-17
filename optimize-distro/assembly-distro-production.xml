@@ -20,7 +20,6 @@
       <directory>src/config/</directory>
       <excludes>
         <exclude>${exclude.from.config}</exclude>
-        <exclude>environment-config-demo.yaml</exclude>
       </excludes>
       <outputDirectory>config/</outputDirectory>
     </fileSet>

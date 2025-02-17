@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.rdbms;
 
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
 import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
@@ -26,10 +27,12 @@ import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Properties;
 import javax.sql.DataSource;
 import liquibase.integration.spring.MultiTenantSpringLiquibase;
-import org.apache.ibatis.mapping.VendorDatabaseIdProvider;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.ibatis.mapping.DatabaseIdProvider;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.OffsetDateTimeTypeHandler;
@@ -37,6 +40,8 @@ import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.mapper.MapperFactoryBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -48,26 +53,62 @@ public class MyBatisConfiguration {
   private static final Logger LOGGER = LoggerFactory.getLogger(MyBatisConfiguration.class);
 
   @Bean
-  public MultiTenantSpringLiquibase customerLiquibase(final DataSource dataSource) {
-    LOGGER.info("Initializing Liquibase for RDBMS.");
+  @ConditionalOnProperty(
+      prefix = "camunda.database",
+      name = "auto-ddl",
+      havingValue = "true",
+      matchIfMissing = true)
+  public MultiTenantSpringLiquibase rdbmsExporterLiquibase(
+      final DataSource dataSource,
+      @Value("${camunda.database.index-prefix:}") final String indexPrefix) {
+    final String prefix = StringUtils.trimToEmpty(indexPrefix);
+    LOGGER.info("Initializing Liquibase for RDBMS with global table prefix '{}'.", prefix);
+
     final var moduleConfig = new MultiTenantSpringLiquibase();
     moduleConfig.setDataSource(dataSource);
+    moduleConfig.setDatabaseChangeLogTable(prefix + "DATABASECHANGELOG");
+    moduleConfig.setDatabaseChangeLogLockTable(prefix + "DATABASECHANGELOGLOCK");
+    moduleConfig.setParameters(Map.of("prefix", prefix));
     // changelog file located in src/main/resources directly in the module
     moduleConfig.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
+
     return moduleConfig;
   }
 
   @Bean
-  public SqlSessionFactory sqlSessionFactory(final DataSource dataSource) throws Exception {
-    final var vendorProperties = new Properties();
-    vendorProperties.put("H2", "h2");
-    vendorProperties.put("PostgreSQL", "postgresql");
-    vendorProperties.put("Oracle", "oracle");
-    vendorProperties.put("MariaDB", "mariadb");
-    vendorProperties.put("MySQL", "mariadb");
-    vendorProperties.put("SQL Server", "sqlserver");
-    final var databaseIdProvider = new VendorDatabaseIdProvider();
-    databaseIdProvider.setProperties(vendorProperties);
+  public RdbmsDatabaseIdProvider databaseIdProvider(
+      @Value("${camunda.database.database-vendor-id:}") final String vendorId) {
+    return new RdbmsDatabaseIdProvider(vendorId);
+  }
+
+  @Bean
+  public VendorDatabaseProperties databaseProperties(
+      final DataSource dataSource, final RdbmsDatabaseIdProvider databaseIdProvider)
+      throws IOException {
+    final var databaseId = databaseIdProvider.getDatabaseId(dataSource);
+    LOGGER.info("Detected databaseId: {}", databaseId);
+
+    final Properties properties = new Properties();
+    final var file = "db/vendor-properties/" + databaseId + ".properties";
+    try (final var propertiesInputStream = getClass().getClassLoader().getResourceAsStream(file)) {
+      if (propertiesInputStream != null) {
+        properties.load(propertiesInputStream);
+      } else {
+        throw new IllegalArgumentException(
+            "No vendor properties found for databaseId " + databaseId);
+      }
+    }
+
+    return new VendorDatabaseProperties(properties);
+  }
+
+  @Bean
+  public SqlSessionFactory sqlSessionFactory(
+      final DataSource dataSource,
+      final DatabaseIdProvider databaseIdProvider,
+      final VendorDatabaseProperties databaseProperties,
+      @Value("${camunda.database.index-prefix:}") final String indexPrefix)
+      throws Exception {
 
     final var configuration = new org.apache.ibatis.session.Configuration();
     configuration.setJdbcTypeForNull(JdbcType.NULL);
@@ -80,11 +121,9 @@ public class MyBatisConfiguration {
     factoryBean.addMapperLocations(
         new PathMatchingResourcePatternResolver().getResources("classpath*:mapper/*.xml"));
 
-    // load vendor specific template variables
-    final var databaseId = databaseIdProvider.getDatabaseId(dataSource);
-    LOGGER.info("Detected databaseId: {}", databaseId);
-    final Properties p = getVendorProperties(databaseIdProvider.getDatabaseId(dataSource));
-
+    final Properties p = new Properties();
+    p.put("prefix", StringUtils.trimToEmpty(indexPrefix));
+    p.putAll(databaseProperties.properties());
     factoryBean.setConfigurationProperties(p);
     return factoryBean.getObject();
   }
@@ -196,18 +235,5 @@ public class MyBatisConfiguration {
     final MapperFactoryBean<T> factoryBean = new MapperFactoryBean<>(clazz);
     factoryBean.setSqlSessionFactory(sqlSessionFactory);
     return factoryBean;
-  }
-
-  private Properties getVendorProperties(final String vendorId) throws IOException {
-    final Properties properties = new Properties();
-    final var file = "db/vendor-properties/" + vendorId + ".properties";
-    try (final var propertiesInputStream = getClass().getClassLoader().getResourceAsStream(file)) {
-      if (propertiesInputStream != null) {
-        properties.load(propertiesInputStream);
-      } else {
-        LOGGER.debug("No vendor properties found for databaseId {}", vendorId);
-      }
-    }
-    return properties;
   }
 }

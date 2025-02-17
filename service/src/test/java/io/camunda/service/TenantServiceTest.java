@@ -33,7 +33,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
-import java.util.Set;
 import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,13 +45,12 @@ public class TenantServiceTest {
   private TenantSearchClient client;
   private StubbedBrokerClient stubbedBrokerClient;
   private final TenantEntity tenantEntity =
-      new TenantEntity(100L, "tenant-id", "Tenant name", Set.of());
+      new TenantEntity(100L, "tenant-id", "Tenant name", "Tenant description");
 
   @BeforeEach
   public void before() {
     stubbedBrokerClient = new StubbedBrokerClient();
-    final Authentication authentication =
-        Authentication.of(builder -> builder.user(1234L).token("auth_token"));
+    final Authentication authentication = Authentication.of(builder -> builder.user("foo"));
     client = mock(TenantSearchClient.class);
     final SecurityContextProvider securityContextProvider = mock(SecurityContextProvider.class);
     when(client.withSecurityContext(any())).thenReturn(client);
@@ -87,7 +85,7 @@ public class TenantServiceTest {
     when(client.searchTenants(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.getByKey(100L);
+    final var searchQueryResult = services.getById("tenant-id");
 
     // then
     assertThat(searchQueryResult).isEqualTo(tenantEntity);
@@ -101,7 +99,7 @@ public class TenantServiceTest {
     when(client.searchTenants(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.getByKey(100L);
+    final var searchQueryResult = services.getById("tenant-id");
 
     // then
     assertThat(searchQueryResult).isEqualTo(tenantEntity);
@@ -110,12 +108,11 @@ public class TenantServiceTest {
   @Test
   public void shouldThrowExceptionIfNotFoundByKey() {
     // given
-    final var key = 100L;
     when(client.searchTenants(any())).thenReturn(new SearchQueryResult(0, List.of(), null, null));
 
     // when / then
 
-    assertThatCode(() -> services.getByKey(key))
+    assertThatCode(() -> services.getById("non-existent-tenant-id"))
         .isInstanceOf(NotFoundException.class)
         .hasMessageMatching("Tenant matching TenantQuery\\[.*] not found");
   }
@@ -123,7 +120,8 @@ public class TenantServiceTest {
   @Test
   public void shouldCreateTenant() {
     // given
-    final var tenantDTO = new TenantDTO(100L, "NewTenantName", "NewTenantId");
+    final var tenantDTO =
+        new TenantDTO(100L, "NewTenantName", "NewTenantId", "NewTenantDescription");
 
     // when
     services.createTenant(tenantDTO);
@@ -139,8 +137,10 @@ public class TenantServiceTest {
 
   @Test
   public void shouldUpdateTenantName() {
+
     // given
-    final var tenantDTO = new TenantDTO(100L, "ignored", "UpdatedTenantId");
+    final var tenantDTO =
+        new TenantDTO(tenantEntity.key(), tenantEntity.tenantId(), "UpdatedTenantId", null);
 
     // when
     services.updateTenant(tenantDTO);
@@ -150,20 +150,40 @@ public class TenantServiceTest {
     assertThat(request.getIntent()).isEqualTo(TenantIntent.UPDATE);
     assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
     final TenantRecord brokerRequestValue = request.getRequestWriter();
-    assertThat(brokerRequestValue.getTenantKey()).isEqualTo(tenantDTO.key());
+    assertThat(brokerRequestValue.getTenantId()).isEqualTo(tenantDTO.tenantId());
     assertThat(brokerRequestValue.getName()).isEqualTo(tenantDTO.name());
+  }
+
+  @Test
+  public void shouldUpdateTenantDescription() {
+
+    // given
+    final var tenantDTO =
+        new TenantDTO(
+            tenantEntity.key(), tenantEntity.tenantId(), "TenantName", "UpdatedTenantDescription");
+
+    // when
+    services.updateTenant(tenantDTO);
+
+    // then
+    final BrokerTenantUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
+    assertThat(request.getIntent()).isEqualTo(TenantIntent.UPDATE);
+    assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
+    final TenantRecord brokerRequestValue = request.getRequestWriter();
+    assertThat(brokerRequestValue.getTenantId()).isEqualTo(tenantDTO.tenantId());
+    assertThat(brokerRequestValue.getDescription()).isEqualTo(tenantDTO.description());
   }
 
   @Test
   public void shouldDeleteTenant() {
     // when
-    services.deleteTenant(100L);
+    services.deleteTenant(tenantEntity.tenantId());
 
     // then
     final BrokerTenantDeleteRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getIntent()).isEqualTo(TenantIntent.DELETE);
     assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
-    assertThat(request.getRequestWriter().getTenantKey()).isEqualTo(100L);
+    assertThat(request.getRequestWriter().getTenantId()).isEqualTo(tenantEntity.tenantId());
   }
 
   @ParameterizedTest

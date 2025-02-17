@@ -9,27 +9,26 @@ package io.camunda.it.tasklist;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.cluster.TestRestTasklistClient.ProcessDefinitionResponse;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
+import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.it.util.SearchClientsUtil;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-@AutoCloseResources
 @ZeebeIntegration
 public class TasklistProcessDefinitionAuthorizationIT {
 
@@ -44,22 +43,28 @@ public class TasklistProcessDefinitionAuthorizationIT {
   private static final String TEST_USER_PASSWORD = "bar";
   private static long testUserKey;
 
-  @AutoCloseResource private static AuthorizationsUtil adminAuthClient;
-  @AutoCloseResource private static CamundaClient adminCamundaClient;
-  @AutoCloseResource private static TestRestTasklistClient tasklistRestClient;
+  @AutoClose private static AuthorizationsUtil adminAuthClient;
+  @AutoClose private static CamundaClient adminCamundaClient;
+  @AutoClose private static TestRestTasklistClient tasklistRestClient;
 
   private static long processDefinitionKey;
 
-  @TestZeebe
+  @TestZeebe(awaitCompleteTopology = false)
   private TestStandaloneCamunda broker =
       new TestStandaloneCamunda()
           .withCamundaExporter()
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
-          .withAdditionalProfile(Profile.AUTH_BASIC);
+          .withSecurityConfig(
+              c ->
+                  c.getInitialization()
+                      .getUsers()
+                      .add(
+                          new ConfiguredUser(
+                              ADMIN_USER_NAME, ADMIN_USER_PASSWORD, "Admin", "test@camunda.com")))
+          .withAuthenticationMethod(AuthenticationMethod.BASIC);
 
   @BeforeEach
-  public void beforeAll() {
-    final var defaultUser = "demo";
+  public void beforeEach() {
     final var searchClients =
         SearchClientsUtil.createSearchClients(broker.getElasticSearchHostAddress());
 
@@ -67,16 +72,7 @@ public class TasklistProcessDefinitionAuthorizationIT {
     // access to the storage to retrieve data
     try (final var intermediateAuthClient =
         AuthorizationsUtil.create(broker, broker.getElasticSearchHostAddress())) {
-      intermediateAuthClient.awaitUserExistsInElasticsearch(defaultUser);
-      intermediateAuthClient.createUserWithPermissions(
-          ADMIN_USER_NAME,
-          ADMIN_USER_PASSWORD,
-          new Permissions(ResourceTypeEnum.DEPLOYMENT, PermissionTypeEnum.CREATE, List.of("*")),
-          new Permissions(
-              ResourceTypeEnum.PROCESS_DEFINITION, PermissionTypeEnum.READ, List.of("*")),
-          new Permissions(ResourceTypeEnum.USER, PermissionTypeEnum.CREATE, List.of("*")),
-          new Permissions(ResourceTypeEnum.AUTHORIZATION, PermissionTypeEnum.CREATE, List.of("*")),
-          new Permissions(ResourceTypeEnum.AUTHORIZATION, PermissionTypeEnum.UPDATE, List.of("*")));
+      intermediateAuthClient.awaitUserExistsInElasticsearch(ADMIN_USER_NAME);
     }
 
     adminCamundaClient =
@@ -116,9 +112,11 @@ public class TasklistProcessDefinitionAuthorizationIT {
   public void shouldBeAuthorizedToRetrieveProcessDefinition() {
     // given
     adminAuthClient.createPermissions(
-        testUserKey,
+        TEST_USER_NAME,
         new Permissions(
-            ResourceTypeEnum.PROCESS_DEFINITION, PermissionTypeEnum.READ, List.of(PROCESS_ID)));
+            ResourceTypeEnum.PROCESS_DEFINITION,
+            PermissionTypeEnum.READ_PROCESS_DEFINITION,
+            List.of(PROCESS_ID)));
 
     // when
     final var response =
@@ -150,7 +148,7 @@ public class TasklistProcessDefinitionAuthorizationIT {
   public void shouldBeAuthorizedToRetrieveDefinitionOne() {
     // given
     adminAuthClient.createPermissions(
-        testUserKey,
+        TEST_USER_NAME,
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,
             PermissionTypeEnum.CREATE_PROCESS_INSTANCE,
@@ -172,7 +170,7 @@ public class TasklistProcessDefinitionAuthorizationIT {
   public void shouldBeAuthorizedToRetrieveDefinitions() {
     // given
     adminAuthClient.createPermissions(
-        testUserKey,
+        TEST_USER_NAME,
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,
             PermissionTypeEnum.CREATE_PROCESS_INSTANCE,

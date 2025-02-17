@@ -17,21 +17,22 @@ package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.client.protocol.rest.ProcessDefinitionFilterRequest;
+import io.camunda.client.impl.util.ParseUtil;
 
 public class ProcessDefinitionFilterImpl
-    extends TypedSearchRequestPropertyProvider<ProcessDefinitionFilterRequest>
+    extends TypedSearchRequestPropertyProvider<
+        io.camunda.client.protocol.rest.ProcessDefinitionFilter>
     implements ProcessDefinitionFilter {
 
-  private final ProcessDefinitionFilterRequest filter;
+  private final io.camunda.client.protocol.rest.ProcessDefinitionFilter filter;
 
   public ProcessDefinitionFilterImpl() {
-    filter = new ProcessDefinitionFilterRequest();
+    filter = new io.camunda.client.protocol.rest.ProcessDefinitionFilter();
   }
 
   @Override
   public ProcessDefinitionFilter processDefinitionKey(final long processDefinitionKey) {
-    filter.setProcessDefinitionKey(processDefinitionKey);
+    filter.setProcessDefinitionKey(ParseUtil.keyToString(processDefinitionKey));
     return this;
   }
 
@@ -72,7 +73,7 @@ public class ProcessDefinitionFilterImpl
   }
 
   @Override
-  protected ProcessDefinitionFilterRequest getSearchRequestProperty() {
+  protected io.camunda.client.protocol.rest.ProcessDefinitionFilter getSearchRequestProperty() {
     return filter;
   }
 }

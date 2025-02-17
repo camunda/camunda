@@ -19,24 +19,23 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.grpc.Status.Code;
 import java.time.Duration;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @ZeebeIntegration
-@AutoCloseResources
 public final class CancelProcessInstanceTest {
 
   private static final String PROCESS_ID = "process";
-  @AutoCloseResource CamundaClient client;
+  @AutoClose CamundaClient client;
 
   @TestZeebe
-  final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+  final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   ZeebeResourcesHelper resourcesHelper;
   private long processDefinitionKey;

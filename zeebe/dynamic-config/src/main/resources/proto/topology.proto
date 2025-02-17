@@ -122,7 +122,7 @@ message PartitionJoinOperation {
 
 message PartitionLeaveOperation {
   int32 partitionId = 1;
-  bool isClusterPurge = 2;
+  int32 minimumAllowedReplicas = 2;
 }
 
 message PartitionReconfigurePriorityOperation {

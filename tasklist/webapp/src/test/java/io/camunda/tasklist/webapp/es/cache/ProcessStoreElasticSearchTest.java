@@ -19,6 +19,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
@@ -33,7 +34,7 @@ import io.camunda.tasklist.store.elasticsearch.ProcessStoreElasticSearch;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.util.SpringContextHolder;
-import io.camunda.tasklist.webapp.security.permission.TasklistPermissionServices;
+import io.camunda.tasklist.webapp.permission.TasklistPermissionServices;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.IOException;
@@ -91,7 +92,7 @@ class ProcessStoreElasticSearchTest {
 
     tenantAttributeHolder = mockStatic(TenantAttributeHolder.class);
     tenantAttributeHolder
-        .when(() -> TenantAttributeHolder.getTenantIds())
+        .when(TenantAttributeHolder::getTenantIds)
         .thenReturn(List.of("<default>"));
   }
 
@@ -268,8 +269,11 @@ class ProcessStoreElasticSearchTest {
     // Mock Authentication
     final Authentication auth = mock(Authentication.class);
     final CamundaUser camundaUser = mock(CamundaUser.class);
+    final AuthenticationContext authenticationContext = mock(AuthenticationContext.class);
     when(auth.getPrincipal()).thenReturn(camundaUser);
     when(camundaUser.getUserKey()).thenReturn(123L);
+    when(camundaUser.getAuthenticationContext()).thenReturn(authenticationContext);
+    when(authenticationContext.roles()).thenReturn(List.of());
 
     // Mock SecurityContextHolder
     final SecurityContext securityContext = mock(SecurityContext.class);

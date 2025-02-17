@@ -13,7 +13,7 @@ import static java.util.Objects.requireNonNull;
 import io.camunda.zeebe.broker.system.monitoring.BrokerStepMetrics;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
-import io.prometheus.client.Gauge.Timer;
+import io.camunda.zeebe.util.CloseableSilently;
 import java.util.function.Function;
 
 /**
@@ -55,7 +55,7 @@ final class BrokerStepMetricDecorator implements StartupStep<BrokerStartupContex
   private ActorFuture<BrokerStartupContext> callDelegateAndUpdateTimer(
       final BrokerStartupContext brokerStartupContext,
       final Function<BrokerStartupContext, ActorFuture<BrokerStartupContext>> functionToCall,
-      final Timer timer) {
+      final CloseableSilently timer) {
 
     try {
       final var concurrencyControl = brokerStartupContext.getConcurrencyControl();

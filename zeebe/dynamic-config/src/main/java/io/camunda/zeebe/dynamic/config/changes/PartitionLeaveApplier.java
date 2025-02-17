@@ -24,7 +24,7 @@ import java.util.function.UnaryOperator;
 record PartitionLeaveApplier(
     int partitionId,
     MemberId localMemberId,
-    boolean isClusterPurge,
+    int minimumAllowedReplicas,
     PartitionChangeExecutor partitionChangeExecutor)
     implements MemberOperationApplier {
 
@@ -68,12 +68,13 @@ record PartitionLeaveApplier(
           currentClusterConfiguration.members().values().stream()
               .filter(m -> m.hasPartition(partitionId))
               .count();
-      if (partitionReplicaCount <= 1 && !isClusterPurge) {
+      if (partitionReplicaCount <= minimumAllowedReplicas) {
         return Either.left(
             new IllegalStateException(
                 String.format(
-                    "Expected to leave partition, but the partition %s has only one replica",
-                    partitionId)));
+                    "Expected to leave partition, but the partition %s has %d replicas "
+                        + "but minimum allowed replicas is %d",
+                    partitionId, partitionReplicaCount, minimumAllowedReplicas)));
       }
       return Either.right(
           memberState -> memberState.updatePartition(partitionId, PartitionState::toLeaving));

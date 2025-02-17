@@ -30,29 +30,28 @@ import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.api.search.sort.VariableSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.impl.search.SearchRequestPageImpl;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.search.sort.VariableSortImpl;
-import io.camunda.client.protocol.rest.VariableFilterRequest;
-import io.camunda.client.protocol.rest.VariableSearchQueryRequest;
+import io.camunda.client.protocol.rest.VariableSearchQuery;
 import io.camunda.client.protocol.rest.VariableSearchQueryResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class VariableQueryImpl
-    extends TypedSearchRequestPropertyProvider<VariableSearchQueryRequest>
+public class VariableQueryImpl extends TypedSearchRequestPropertyProvider<VariableSearchQuery>
     implements VariableQuery {
 
-  private final VariableSearchQueryRequest request;
+  private final VariableSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
   public VariableQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
-    request = new VariableSearchQueryRequest();
+    request = new VariableSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -79,7 +78,8 @@ public class VariableQueryImpl
 
   @Override
   public VariableQuery filter(final VariableFilter value) {
-    final VariableFilterRequest filter = provideSearchRequestProperty(value);
+    final io.camunda.client.protocol.rest.VariableFilter filter =
+        provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
@@ -92,7 +92,9 @@ public class VariableQueryImpl
   @Override
   public VariableQuery sort(final VariableSort value) {
     final VariableSortImpl sorting = (VariableSortImpl) value;
-    request.setSort(sorting.getSearchRequestProperty());
+    request.setSort(
+        SearchQuerySortRequestMapper.toVariableSearchQuerySortRequest(
+            sorting.getSearchRequestProperty()));
     return this;
   }
 
@@ -114,7 +116,7 @@ public class VariableQueryImpl
   }
 
   @Override
-  protected VariableSearchQueryRequest getSearchRequestProperty() {
+  protected VariableSearchQuery getSearchRequestProperty() {
     return request;
   }
 }

@@ -239,7 +239,7 @@ describe('<CollapsiblePanel />', () => {
     );
   });
 
-  it('should allow to delete custom filters', async () => {
+  it('should allow to delete custom filters from the panel item', async () => {
     const {user} = render(<CollapsiblePanel />, {
       wrapper: createWrapper(),
     });

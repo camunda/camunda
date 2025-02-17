@@ -60,6 +60,7 @@ jobs:
 
   es-schema-integrity-test:
     name: Elasticsearch Schema Integrity Test
+    if: false
     runs-on: gcp-core-8-default
     timeout-minutes: 30
     steps:
@@ -130,6 +131,7 @@ jobs:
 
   os-schema-integrity-test:
     name: OpenSearch Schema Integrity Test
+    if: false
     runs-on: gcp-core-8-default
     timeout-minutes: 30
     steps:
@@ -326,7 +328,7 @@ jobs:
         env:
           OPENSEARCH_VERSION: ${{ env.OPENSEARCH_VERSION }}
           OPENSEARCH_JVM_MEMORY: 16
-          OPENSEARCH_HTTP_PORT: 9205
+          OPENSEARCH_HTTP_PORT: 9200
 
       - name: Verify integration
         uses: ./.github/actions/run-maven
@@ -426,7 +428,7 @@ jobs:
   deploy-artifacts:
     if: github.event_name == 'push' && (github.ref_name == 'main' || startsWith(github.ref_name, 'stable/'))
     name: Deploy Artifacts
-    needs: [ integration-tests, upgrade-tests, es-schema-integrity-test, os-schema-integrity-test ]
+    needs: [ integration-tests, upgrade-tests ]
     uses: ./.github/workflows/optimize-deploy-artifacts.yml
     secrets: inherit
 

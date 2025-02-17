@@ -42,4 +42,7 @@ public interface UpdateTenantResponse {
    * @return the tenant name.
    */
   String getName();
+
+  /** Returns the description of the updated tenant. */
+  String getDescription();
 }

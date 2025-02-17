@@ -107,8 +107,8 @@ container:
     # secure HTTPS connections.
     https: ${CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS:8091}
     # A port number that will be used by Optimize's Actuator management server
-    # always defaults to 8092
-    actuator: ${MANAGEMENT_SERVER_PORT:8092}
+    # always defaults to 9600
+    actuator: ${MANAGEMENT_SERVER_PORT:9600}
   # HTTPS requires an SSL Certificate. When you generate an SSL Certificate,
   # you are creating a keystore file and a keystore password for use when the
   # browser interface connects
@@ -351,7 +351,7 @@ opensearch:
       # the address/hostname under which the OpenSearch node is available.
       - host: '${CAMUNDA_OPTIMIZE_OPENSEARCH_HOST:localhost}'
         # A port number used by OpenSearch to accept HTTP connections.
-        httpPort: ${CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT:9205}
+        httpPort: ${CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT:9200}
     # Determines whether the hostname verification should be skipped
     skipHostnameVerification: ${CAMUNDA_OPTIMIZE_OPENSEARCH_CONNECTION_SKIP_HOSTNAME_VERIFICATION:false}
     # Configuration relating to OS backup
@@ -386,7 +386,7 @@ opensearch:
     index:
       # the prefix prepended to all Optimize index and alias names
       # NOTE: Changing this after Optimize was already run before, will create new empty indexes
-      prefix: ${CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX:optimize}
+      prefix: ${CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX:}
       # How often should the data replicated in case of node failure.
       number_of_replicas: ${CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_NUMBER_OF_REPLICAS:1}
       # How many shards should be used in the cluster for process instance and decision instance indices.
@@ -501,7 +501,7 @@ es:
     index:
       # the prefix prepended to all Optimize index and alias names
       # NOTE: Changing this after Optimize was already run before, will create new empty indexes
-      prefix: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX:optimize}
+      prefix: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX:}
       # How often should the data replicated in case of node failure.
       number_of_replicas: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_NUMBER_OF_REPLICAS:1}
       # How many shards should be used in the cluster for process instance and decision instance indices.

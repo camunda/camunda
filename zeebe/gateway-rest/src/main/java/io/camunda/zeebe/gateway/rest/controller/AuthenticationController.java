@@ -13,7 +13,7 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-@Profile("auth-basic")
+@Profile("consolidated-auth")
 @CamundaRestController
 @RequestMapping("/v2/authentication")
 public class AuthenticationController {

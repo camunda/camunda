@@ -8,65 +8,30 @@
 package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.Set;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 
 public interface MutableAuthorizationState extends AuthorizationState {
 
   /**
-   * Checks if a Permission exists for the provided ownerKey, resourceType and permissionType. If it
-   * does, adds the resourceIds to this entry. If it does not, creates a new Permission with the
-   * provided resourceIds.
+   * Stores the provided authorization in the state.
    *
-   * @param ownerKey the key of the owner of the permissions. This could be a userKey, a roleKey or
-   *     a groupKey
-   * @param resourceType the type of resource the permissions are for (Eg. Process definition, Job)
-   * @param permissionType The type of permission being granted (Eg. READ, WRITE)
-   * @param resourceIds A set of resourceIds the permissions are granted for (Eg. bpmnProcessId, *)
+   * @param authorizationKey the key of the authorization
+   * @param authorization the authorization record to store
    */
-  void createOrAddPermission(
-      long ownerKey,
-      AuthorizationResourceType resourceType,
-      PermissionType permissionType,
-      Set<String> resourceIds);
+  void create(final long authorizationKey, final AuthorizationRecord authorization);
 
   /**
-   * Removes the resource ids for the provided ownerKey, resourceType, permissionType. If there are
-   * no other resourceIds left for this entry, the entire entry will be deleted.
+   * Updates the provided authorization in the state.
    *
-   * @param ownerKey the key of the owner of the permissions. This could be a userKey, a roleKey or
-   *     a groupKey
-   * @param resourceType the type of resource the permissions are for (Eg. Process definition, Job)
-   * @param permissionType The type of permission being granted (Eg. READ, WRITE)
-   * @param resourceIds A set of resourceIds the permissions are granted for (Eg. bpmnProcessId, *)
+   * @param authorizationKey the key of the authorization
+   * @param authorization the authorization record to update
    */
-  void removePermission(
-      long ownerKey,
-      AuthorizationResourceType resourceType,
-      PermissionType permissionType,
-      Set<String> resourceIds);
+  void update(final long authorizationKey, final AuthorizationRecord authorization);
 
   /**
-   * Stores the owner type for a new owner in the state.
+   * Removes the authorization with the provided key.
    *
-   * @param ownerKey the key of the owner
-   * @param ownerType the type of the owner
+   * @param authorizationKey the key of the authorization to remove
    */
-  void insertOwnerTypeByKey(final long ownerKey, final AuthorizationOwnerType ownerType);
-
-  /**
-   * Removes all permissions for the provided ownerKey.
-   *
-   * @param ownerKey the key of the owner of the authorizations
-   */
-  void deleteAuthorizationsByOwnerKeyPrefix(final long ownerKey);
-
-  /**
-   * Removes the owner type for the provided ownerKey.
-   *
-   * @param ownerKey the key of the owner
-   */
-  void deleteOwnerTypeByKey(final long ownerKey);
+  void delete(final long authorizationKey);
 }

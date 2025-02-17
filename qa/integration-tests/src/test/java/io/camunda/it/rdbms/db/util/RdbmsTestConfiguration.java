@@ -8,7 +8,9 @@
 package io.camunda.it.rdbms.db.util;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
+import io.micrometer.core.instrument.MeterRegistry;
 import javax.sql.DataSource;
+import org.mockito.Mockito;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,5 +26,10 @@ public class RdbmsTestConfiguration {
   @Bean
   public PlatformTransactionManager platformTransactionManager(final DataSource dataSource) {
     return new DataSourceTransactionManager(dataSource);
+  }
+
+  @Bean
+  public MeterRegistry meterRegistry() {
+    return Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS);
   }
 }

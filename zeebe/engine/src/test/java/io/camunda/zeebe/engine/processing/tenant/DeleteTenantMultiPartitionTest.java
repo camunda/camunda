@@ -39,7 +39,7 @@ public class DeleteTenantMultiPartitionTest {
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
         engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
-    engine.tenant().deleteTenant(tenantKey).delete();
+    engine.tenant().deleteTenant(tenantId).delete();
 
     assertThat(
             RecordingExporter.records()
@@ -96,7 +96,7 @@ public class DeleteTenantMultiPartitionTest {
             .create()
             .getValue()
             .getTenantKey();
-    engine.tenant().deleteTenant(tenantKey).delete().getValue();
+    engine.tenant().deleteTenant(tenantId).delete().getValue();
     assertThat(
             RecordingExporter.commandDistributionRecords()
                 .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
@@ -121,7 +121,7 @@ public class DeleteTenantMultiPartitionTest {
             .create()
             .getValue()
             .getTenantKey();
-    engine.tenant().deleteTenant(tenantKey).delete();
+    engine.tenant().deleteTenant(tenantId).delete();
 
     engine.increaseTime(Duration.ofMinutes(1));
 

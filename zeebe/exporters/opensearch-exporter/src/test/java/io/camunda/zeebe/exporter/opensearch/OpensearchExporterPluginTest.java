@@ -17,12 +17,10 @@ import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 
 @WireMockTest
-@AutoCloseResources
 final class OpensearchExporterPluginTest {
   private final ProtocolFactory recordFactory = new ProtocolFactory();
   private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
@@ -30,7 +28,7 @@ final class OpensearchExporterPluginTest {
       new ExporterTestContext().setConfiguration(new ExporterTestConfiguration<>("test", config));
   private final ExporterTestController controller = new ExporterTestController();
 
-  @AutoCloseResource private final OpensearchExporter exporter = new OpensearchExporter();
+  @AutoClose private final OpensearchExporter exporter = new OpensearchExporter();
 
   @Test
   void shouldLoadPlugins(final WireMockRuntimeInfo wmRuntimeInfo) {

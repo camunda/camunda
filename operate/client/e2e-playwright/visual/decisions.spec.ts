@@ -15,6 +15,19 @@ import {
   mockDecisionXml,
   mockResponses,
 } from '../mocks/decisions.mocks';
+import {clientConfigMock} from '../mocks/clientConfig';
+
+test.beforeEach(async ({context}) => {
+  await context.route('**/client-config.js', (route) =>
+    route.fulfill({
+      status: 200,
+      headers: {
+        'Content-Type': 'text/javascript;charset=UTF-8',
+      },
+      body: clientConfigMock,
+    }),
+  );
+});
 
 test.describe('decisions page', () => {
   for (const theme of ['light', 'dark']) {

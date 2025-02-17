@@ -148,7 +148,17 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                 }
           ]
       }""",
-            q -> q.sort(s -> s.decisionDefinitionName().desc())));
+            q -> q.sort(s -> s.decisionDefinitionName().desc())),
+        new TestArguments(
+            """
+      {
+          "sort": [
+                {
+                    "field": "decisionDefinitionName"
+                }
+          ]
+      }""",
+            q -> q.sort(s -> s.decisionDefinitionName().asc())));
   }
 
   @ParameterizedTest
@@ -364,7 +374,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
   private static Stream<Arguments> provideAdvancedSearchParameters() {
     final var streamBuilder = Stream.<Arguments>builder();
 
-    basicLongOperationTestCases(
+    keyOperationTestCases(
         streamBuilder,
         "decisionDefinitionKey",
         ops -> new DecisionInstanceFilter.Builder().decisionDefinitionKeyOperations(ops).build());

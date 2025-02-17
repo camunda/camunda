@@ -22,11 +22,13 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 public class StandaloneCamundaTest {
 
-  @TestZeebe final TestStandaloneCamunda testStandaloneCamunda = new TestStandaloneCamunda();
+  @TestZeebe
+  final TestStandaloneCamunda testStandaloneCamunda =
+      new TestStandaloneCamunda().withUnauthenticatedAccess();
 
   @Test
   public void shouldCreateAndRetrieveInstance() {
-    // givne
+    // given
     final var camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when

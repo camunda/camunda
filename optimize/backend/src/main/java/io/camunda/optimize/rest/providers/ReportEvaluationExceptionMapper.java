@@ -10,41 +10,40 @@ package io.camunda.optimize.rest.providers;
 import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.ext.ExceptionMapper;
-import jakarta.ws.rs.ext.Provider;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 
-@Provider
-public class ReportEvaluationExceptionMapper implements ExceptionMapper<ReportEvaluationException> {
+@ControllerAdvice
+@Order(Ordered.HIGHEST_PRECEDENCE)
+public class ReportEvaluationExceptionMapper {
 
-  private static final Logger LOG =
-      org.slf4j.LoggerFactory.getLogger(ReportEvaluationExceptionMapper.class);
-  private final LocalizationService localizationService;
+  private static final Logger LOG = LoggerFactory.getLogger(ReportEvaluationExceptionMapper.class);
 
-  public ReportEvaluationExceptionMapper(@Context final LocalizationService localizationService) {
-    this.localizationService = localizationService;
+  @Autowired private LocalizationService localizationService;
+
+  @ExceptionHandler(ReportEvaluationException.class)
+  public ResponseEntity<ErrorResponseDto> handleReportEvaluationException(
+      final ReportEvaluationException reportEvaluationException) {
+    LOG.info("Mapping ReportEvaluationException");
+    final ErrorResponseDto errorResponseDto = getErrorResponseDto(reportEvaluationException);
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+        .body(errorResponseDto);
   }
 
-  @Override
-  public Response toResponse(final ReportEvaluationException reportEvaluationException) {
-    LOG.debug("Mapping ReportEvaluationException: {}", reportEvaluationException.getMessage());
-    return Response.status(Response.Status.BAD_REQUEST)
-        .type(MediaType.APPLICATION_JSON_TYPE)
-        .entity(mapToEvaluationErrorResponseDto(reportEvaluationException))
-        .build();
-  }
-
-  private ErrorResponseDto mapToEvaluationErrorResponseDto(
-      final ReportEvaluationException evaluationException) {
-    final String errorCode = evaluationException.getErrorCode();
+  private ErrorResponseDto getErrorResponseDto(final ReportEvaluationException exception) {
+    final String errorCode = exception.getErrorCode();
     final String errorMessage =
         localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
-    final String detailedErrorMessage = evaluationException.getMessage();
-
+    final String detailedErrorMessage = exception.getMessage();
     return new ErrorResponseDto(
-        errorCode, errorMessage, detailedErrorMessage, evaluationException.getReportDefinition());
+        errorCode, errorMessage, detailedErrorMessage, exception.getReportDefinition());
   }
 }

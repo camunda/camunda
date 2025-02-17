@@ -7,19 +7,19 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.client.api.search.response.UserTaskState.COMPLETED;
+import static io.camunda.client.api.search.response.UserTaskState.CREATED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.client.api.search.response.UserTaskState;
 import io.camunda.client.protocol.rest.StringFilterProperty;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.webapps.schema.entities.tasklist.TaskState;
+import io.camunda.it.utils.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -34,23 +34,14 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-@ZeebeIntegration
+@MultiDbTest
 class UserTaskQueryTest {
   private static Long userTaskKeyTaskAssigned;
 
-  @TestZeebe(initMethod = "initTestStandaloneCamunda")
-  private static TestStandaloneCamunda testStandaloneCamunda;
-
   private static CamundaClient camundaClient;
-
-  @SuppressWarnings("unused")
-  static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda();
-  }
 
   @BeforeAll
   static void beforeAll() {
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     deployProcess("process", "simple.bpmn", "test", "", "");
     deployProcess("process-2", "simple-2.bpmn", "test-2", "group", "user");
@@ -338,14 +329,14 @@ class UserTaskQueryTest {
   @Test
   public void shouldRetrieveTaskByState() {
     final var resultCreated =
-        camundaClient.newUserTaskQuery().filter(f -> f.state("CREATED")).send().join();
+        camundaClient.newUserTaskQuery().filter(f -> f.state(CREATED)).send().join();
     assertThat(resultCreated.items().size()).isEqualTo(7);
-    resultCreated.items().forEach(item -> assertThat(item.getState()).isEqualTo("CREATED"));
+    resultCreated.items().forEach(item -> assertThat(item.getState()).isEqualTo(CREATED));
 
     final var resultCompleted =
-        camundaClient.newUserTaskQuery().filter(f -> f.state("COMPLETED")).send().join();
+        camundaClient.newUserTaskQuery().filter(f -> f.state(COMPLETED)).send().join();
     assertThat(resultCompleted.items().size()).isEqualTo(1);
-    resultCompleted.items().forEach(item -> assertThat(item.getState()).isEqualTo("COMPLETED"));
+    resultCompleted.items().forEach(item -> assertThat(item.getState()).isEqualTo(COMPLETED));
   }
 
   @Test
@@ -453,16 +444,19 @@ class UserTaskQueryTest {
         .isLessThan(result.items().get(2).getCreationDate());
 
     // Assert First and Last Sort Value matches the first and last item
-    assertThat(result.page().firstSortValues())
+    // We need to make use of toString, such the test work with ES/OS
+    assertThat(result.page().firstSortValues().stream().map(Object::toString).toList())
         .isEqualTo(
             List.of(
-                OffsetDateTime.parse(firstItem.getCreationDate()).toInstant().toEpochMilli(),
-                firstItem.getUserTaskKey()));
-    assertThat(result.page().lastSortValues())
+                Long.toString(
+                    OffsetDateTime.parse(firstItem.getCreationDate()).toInstant().toEpochMilli()),
+                Long.toString(firstItem.getUserTaskKey())));
+    assertThat(result.page().lastSortValues().stream().map(Object::toString).toList())
         .isEqualTo(
             List.of(
-                OffsetDateTime.parse(lastItem.getCreationDate()).toInstant().toEpochMilli(),
-                lastItem.getUserTaskKey()));
+                Long.toString(
+                    OffsetDateTime.parse(lastItem.getCreationDate()).toInstant().toEpochMilli()),
+                Long.toString(lastItem.getUserTaskKey())));
   }
 
   @Test
@@ -599,6 +593,69 @@ class UserTaskQueryTest {
     assertThat(result.items().get(0).getName()).isEqualTo("localVariable");
     assertThat(result.items().get(1).getName()).isEqualTo("processVariable");
     assertThat(result.items().get(2).getName()).isEqualTo("subProcessVariable");
+  }
+
+  @Test
+  void shouldReturnUserTaskVariablesFilteredByNameEq() {
+    // when
+    final var userTaskList =
+        camundaClient.newUserTaskQuery().filter(f -> f.elementId("TaskSub")).send().join();
+
+    final var userTaskKey = userTaskList.items().stream().findFirst().get().getUserTaskKey();
+
+    final var result =
+        camundaClient
+            .newUserTaskVariableQuery(userTaskKey)
+            .filter(f -> f.name(b -> b.eq("localVariable")))
+            .send()
+            .join();
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().get(0).getName()).isEqualTo("localVariable");
+  }
+
+  @Test
+  void shouldReturnUserTaskVariablesFilteredByNameLike() {
+    // When
+    final var userTaskList =
+        camundaClient.newUserTaskQuery().filter(f -> f.elementId("TaskSub")).send().join();
+
+    final var userTaskKey =
+        userTaskList.items().stream().findFirst().orElseThrow().getUserTaskKey();
+
+    final var result =
+        camundaClient
+            .newUserTaskVariableQuery(userTaskKey)
+            .filter(f -> f.name(b -> b.like("*rocess*")))
+            .send()
+            .join();
+
+    // Then
+    assertThat(result.items()).hasSize(2);
+    assertThat(result.items().stream().map(item -> item.getName()))
+        .containsExactlyInAnyOrder("processVariable", "subProcessVariable");
+  }
+
+  @Test
+  void shouldReturnUserTaskVariablesFilteredByIn() {
+    // When
+    final var userTaskList =
+        camundaClient.newUserTaskQuery().filter(f -> f.elementId("TaskSub")).send().join();
+
+    final var userTaskKey =
+        userTaskList.items().stream().findFirst().orElseThrow().getUserTaskKey();
+
+    final var result =
+        camundaClient
+            .newUserTaskVariableQuery(userTaskKey)
+            .filter(f -> f.name(b -> b.in(List.of("processVariable", "subProcessVariable"))))
+            .send()
+            .join();
+
+    // Then
+    assertThat(result.items()).hasSize(2);
+    assertThat(result.items().stream().map(item -> item.getName()))
+        .containsExactlyInAnyOrder("processVariable", "subProcessVariable");
   }
 
   @Test
@@ -755,7 +812,7 @@ class UserTaskQueryTest {
     final var userTaskListComplete =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.state(TaskState.COMPLETED.name()))
+            .filter(f -> f.state(UserTaskState.COMPLETED))
             .page(p -> p.limit(1))
             .send()
             .join();
@@ -791,7 +848,7 @@ class UserTaskQueryTest {
     final var userTaskListComplete =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.state(TaskState.COMPLETED.name()))
+            .filter(f -> f.state(UserTaskState.COMPLETED))
             .page(p -> p.limit(1))
             .send()
             .join();
@@ -826,7 +883,7 @@ class UserTaskQueryTest {
     final var userTaskListComplete =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.state(TaskState.COMPLETED.name()))
+            .filter(f -> f.state(UserTaskState.COMPLETED))
             .page(p -> p.limit(1))
             .send()
             .join();
@@ -867,7 +924,7 @@ class UserTaskQueryTest {
     final var userTaskListComplete =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.state(TaskState.COMPLETED.name()))
+            .filter(f -> f.state(UserTaskState.COMPLETED))
             .page(p -> p.limit(1))
             .send()
             .join();
@@ -916,7 +973,7 @@ class UserTaskQueryTest {
         .items()
         .forEach(
             item -> {
-              assertThat(item.getState()).isEqualTo(TaskState.COMPLETED.name());
+              assertThat(item.getState()).isEqualTo(UserTaskState.COMPLETED);
               assertThat(item.getCompletionDate()).isNotNull();
             });
   }
@@ -942,7 +999,7 @@ class UserTaskQueryTest {
     final var userTaskListComplete =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.state(TaskState.COMPLETED.name()))
+            .filter(f -> f.state(UserTaskState.COMPLETED))
             .page(p -> p.limit(1))
             .send()
             .join();
@@ -975,7 +1032,7 @@ class UserTaskQueryTest {
     final var userTaskListComplete =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.state(TaskState.COMPLETED.name()))
+            .filter(f -> f.state(UserTaskState.COMPLETED))
             .page(p -> p.limit(1))
             .send()
             .join();
@@ -1008,7 +1065,7 @@ class UserTaskQueryTest {
     final var userTaskListComplete =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.state(TaskState.COMPLETED.name()))
+            .filter(f -> f.state(UserTaskState.COMPLETED))
             .page(p -> p.limit(1))
             .send()
             .join();
@@ -1048,6 +1105,101 @@ class UserTaskQueryTest {
     assertThat(resultSearchFrom.items().size()).isEqualTo(2);
     assertThat(resultSearchFrom.items().stream().findFirst().get().getUserTaskKey())
         .isEqualTo(thirdKey);
+  }
+
+  @Test
+  void shouldRetrieveTaskByDueDateRange() {
+    // when
+    final var now = OffsetDateTime.now(ZoneId.of("UTC"));
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.dueDate(b -> b.gt(now.minusDays(2)).lt(now.plusDays(2))))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isGreaterThan(0);
+    result
+        .items()
+        .forEach(
+            item -> {
+              final var dueDate = OffsetDateTime.parse(item.getDueDate());
+              assertThat(dueDate).isAfter(now.minusDays(2));
+              assertThat(dueDate).isBefore(now.plusDays(2));
+            });
+  }
+
+  @Test
+  void shouldRetrieveTaskByDueDateEquals() {
+    // when
+    final var userTaskList = camundaClient.newUserTaskQuery().page(p -> p.limit(1)).send().join();
+    final var dueDateExample = OffsetDateTime.parse(userTaskList.items().get(0).getDueDate());
+
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.dueDate(b -> b.eq(dueDateExample)))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isGreaterThan(0);
+    result
+        .items()
+        .forEach(
+            item -> {
+              final var dueDate = OffsetDateTime.parse(item.getDueDate());
+              assertThat(dueDate).isEqualTo(dueDateExample);
+            });
+  }
+
+  @Test
+  void shouldRetrieveTaskByFollowUpDateEquals() {
+    // when
+    final var userTaskList = camundaClient.newUserTaskQuery().page(p -> p.limit(1)).send().join();
+    final var followUpDateExample =
+        OffsetDateTime.parse(userTaskList.items().get(0).getFollowUpDate());
+
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.followUpDate(b -> b.eq(followUpDateExample)))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isGreaterThan(0);
+    result
+        .items()
+        .forEach(
+            item -> {
+              final var followUpDate = OffsetDateTime.parse(item.getFollowUpDate());
+              assertThat(followUpDate).isEqualTo(followUpDateExample);
+            });
+  }
+
+  @Test
+  void shouldRetrieveTaskByFollowUpDateRange() {
+    // when
+    final var now = OffsetDateTime.now(ZoneId.of("UTC"));
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.followUpDate(b -> b.gte(now.minusDays(5)).lte(now.plusDays(5))))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isGreaterThan(0);
+    result
+        .items()
+        .forEach(
+            item -> {
+              final var followUpDate = OffsetDateTime.parse(item.getFollowUpDate());
+              assertThat(followUpDate).isAfterOrEqualTo(now.minusDays(5));
+              assertThat(followUpDate).isBeforeOrEqualTo(now.plusDays(5));
+            });
   }
 
   private static void deployProcess(
@@ -1162,7 +1314,7 @@ class UserTaskQueryTest {
                   camundaClient.newUserTaskQuery().filter(f -> f.assignee("demo")).send().join();
               assertThat(result.items().size()).isEqualTo(1);
               final var resultComplete =
-                  camundaClient.newUserTaskQuery().filter(f -> f.state("COMPLETED")).send().join();
+                  camundaClient.newUserTaskQuery().filter(f -> f.state(COMPLETED)).send().join();
               assertThat(resultComplete.items().size()).isEqualTo(1);
             });
   }

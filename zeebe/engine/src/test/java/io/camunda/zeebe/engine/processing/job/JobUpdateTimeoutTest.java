@@ -44,7 +44,7 @@ public class JobUpdateTimeoutTest {
 
   private static final String PROCESS_ID = "process";
   private static String jobType;
-  private static long userKey;
+  private static String username;
   private static String tenantId;
 
   @Rule
@@ -54,25 +54,28 @@ public class JobUpdateTimeoutTest {
   @BeforeClass
   public static void setUp() {
     tenantId = UUID.randomUUID().toString();
-    final var username = UUID.randomUUID().toString();
-    userKey = ENGINE.user().newUser(username).create().getValue().getUserKey();
+    username = UUID.randomUUID().toString();
+    final var user = ENGINE.user().newUser(username).create().getValue();
+    final var userKey = user.getUserKey();
+    final var username = user.getUsername();
     final var tenantKey =
         ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     ENGINE
         .tenant()
-        .addEntity(tenantKey)
+        .addEntity(tenantId)
         .withEntityType(EntityType.USER)
-        .withEntityKey(userKey)
+        .withEntityId(username)
         .add();
 
     ENGINE
         .authorization()
-        .permission()
-        .withPermission(PermissionType.UPDATE_PROCESS_INSTANCE, PROCESS_ID)
+        .newAuthorization()
+        .withPermissions(PermissionType.UPDATE_PROCESS_INSTANCE)
+        .withResourceId(PROCESS_ID)
         .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-        .withOwnerKey(userKey)
+        .withOwnerId(username)
         .withOwnerType(AuthorizationOwnerType.USER)
-        .add();
+        .create();
   }
 
   @Before
@@ -89,7 +92,7 @@ public class JobUpdateTimeoutTest {
             .jobs()
             .withType(jobType)
             .withTimeout(Duration.ofMinutes(5).toMillis())
-            .activate(userKey);
+            .activate(username);
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
     final long timeout = Duration.ofMinutes(10).toMillis();
@@ -110,7 +113,7 @@ public class JobUpdateTimeoutTest {
             .jobs()
             .withType(jobType)
             .withTimeout(Duration.ofMinutes(15).toMillis())
-            .activate(userKey);
+            .activate(username);
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
     final long timeout = Duration.ofMinutes(10).toMillis();
@@ -166,7 +169,7 @@ public class JobUpdateTimeoutTest {
             .jobs()
             .withType(jobType)
             .withTimeout(Duration.ofMinutes(5).toMillis())
-            .activate(userKey);
+            .activate(username);
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
     final long firstTimeout = Duration.ofMinutes(10).toMillis();
@@ -190,7 +193,7 @@ public class JobUpdateTimeoutTest {
             .jobs()
             .withType(jobType)
             .withTimeout(Duration.ofMinutes(10).toMillis())
-            .activate(userKey);
+            .activate(username);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
     final long timeout = Duration.ofMinutes(5).toMillis();
 
@@ -218,7 +221,7 @@ public class JobUpdateTimeoutTest {
             .jobs()
             .withType(jobType)
             .withTimeout(Duration.ofMinutes(10).toMillis())
-            .activate(userKey);
+            .activate(username);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
     final long timeout = Duration.ofMinutes(15).toMillis();
 
@@ -248,7 +251,7 @@ public class JobUpdateTimeoutTest {
             .withType(jobType)
             .withTimeout(Duration.ofMinutes(5).toMillis())
             .withTenantId(tenantId)
-            .activate(userKey);
+            .activate(username);
 
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
@@ -280,7 +283,7 @@ public class JobUpdateTimeoutTest {
             .withType(jobType)
             .withTimeout(Duration.ofMinutes(5).toMillis())
             .withTenantId(tenantId)
-            .activate(userKey);
+            .activate(username);
 
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
     final long timeout = Duration.ofMinutes(10).toMillis();

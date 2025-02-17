@@ -12,11 +12,13 @@ import static java.util.Arrays.asList;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.client.CamundaClient;
 import io.camunda.it.utils.CamundaClientTestFactory.Authenticated;
 import io.camunda.it.utils.CamundaClientTestFactory.User;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
@@ -49,7 +51,6 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
  */
 public class BrokerITInvocationProvider
     implements TestTemplateInvocationContextProvider, AfterAllCallback, BeforeAllCallback {
-
   private static final Logger LOGGER = LoggerFactory.getLogger(BrokerITInvocationProvider.class);
 
   private final Set<ExporterType> supportedExporterTypes = new HashSet<>();
@@ -116,6 +117,12 @@ public class BrokerITInvocationProvider
     return this;
   }
 
+  public BrokerITInvocationProvider withBasicAuth() {
+    withAdditionalProperty(AuthenticationProperties.METHOD, AuthenticationMethod.BASIC.name());
+    withAdditionalProfiles(Profile.CONSOLIDATED_AUTH);
+    return this;
+  }
+
   public BrokerITInvocationProvider withAuthorizationsEnabled() {
     return withAdditionalSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
   }
@@ -127,8 +134,8 @@ public class BrokerITInvocationProvider
 
   @Override
   public void beforeAll(final ExtensionContext context) {
-    LOGGER.info("Starting up '{}' camunda instances", supportedExporterTypes.size());
-    supportedExporterTypes.parallelStream()
+    LOGGER.info("Starting up '{}' camunda instances", activeExporterTypes.size());
+    activeExporterTypes.parallelStream()
         .forEach(
             exporterType -> {
               LOGGER.info("Start up '{}'", exporterType);

@@ -9,7 +9,6 @@ package io.camunda.zeebe.it.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.qa.util.testcontainers.MinioContainer;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -17,6 +16,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.Backup
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.shared.management.BackupEndpoint;
+import io.camunda.zeebe.test.testcontainers.MinioContainer;
 import java.time.Duration;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;

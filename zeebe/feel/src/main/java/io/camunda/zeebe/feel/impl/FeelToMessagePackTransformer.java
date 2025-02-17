@@ -97,8 +97,8 @@ public class FeelToMessagePackTransformer {
       case final ValDate date -> writeStringValue(date.value().toString());
       case final ValDateTime dateTime -> writeStringValue(dateTime.value().toString());
       case final ValLocalDateTime dateTime -> writeStringValue(dateTime.value().toString());
-      case final ValDayTimeDuration duration -> writeStringValue(duration.value().toString());
-      case final ValYearMonthDuration duration -> writeStringValue(duration.value().toString());
+      case final ValDayTimeDuration duration -> writeStringValue(duration.toString());
+      case final ValYearMonthDuration duration -> writeStringValue(duration.toString());
       default -> {
         writer.writeNil();
         LOGGER.trace(

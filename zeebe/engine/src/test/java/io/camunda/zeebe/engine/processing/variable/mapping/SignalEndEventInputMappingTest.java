@@ -42,7 +42,7 @@ public final class SignalEndEventInputMappingTest {
   private static final String A_DATE_VALUE = "\"2021-02-24\"";
   private static final String A_LOCAL_DATE_AND_TIME_VALUE = "\"2021-02-24T04:20\"";
   private static final String A_DATE_AND_TIME_VALUE = "\"2021-02-24T04:20+01:00\"";
-  private static final String A_DAY_TIME_DURATION_VALUE = "\"PT42H56M33S\"";
+  private static final String A_DAY_TIME_DURATION_VALUE = "\"P1DT18H56M33S\"";
   private static final String A_YEAR_MONTH_DURATION_VALUE = "\"P2Y3M\"";
 
   private static final String SIGNAL_NAME_1 = "a";

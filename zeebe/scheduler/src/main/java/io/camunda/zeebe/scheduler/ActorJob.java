@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.scheduler;
 
+import io.camunda.zeebe.scheduler.ActorMetrics.SubscriptionType;
 import io.camunda.zeebe.scheduler.ActorTask.TaskSchedulingState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -60,12 +61,12 @@ public final class ActorJob {
       if (subscription instanceof final ActorFutureSubscription s
           && s.getFuture() instanceof final CompletableActorFuture<?> f) {
         final var subscriptionCompleted = f.getCompletedAt();
-        metrics.observeJobSchedulingLatency(now - subscriptionCompleted, "Future");
+        metrics.observeJobSchedulingLatency(now - subscriptionCompleted, SubscriptionType.FUTURE);
       } else if (subscription instanceof final TimerSubscription s) {
         final var timerExpired = s.getTimerExpiredAt();
-        metrics.observeJobSchedulingLatency(now - timerExpired, "Timer");
+        metrics.observeJobSchedulingLatency(now - timerExpired, SubscriptionType.TIMER);
       } else if (subscription == null && scheduledAt != -1) {
-        metrics.observeJobSchedulingLatency(now - scheduledAt, "None");
+        metrics.observeJobSchedulingLatency(now - scheduledAt, SubscriptionType.NONE);
       }
     }
   }

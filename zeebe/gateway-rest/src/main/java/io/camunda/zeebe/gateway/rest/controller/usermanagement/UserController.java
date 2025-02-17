@@ -15,16 +15,14 @@ import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
-import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateUserRequest;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
-import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
@@ -50,14 +48,17 @@ public class UserController {
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createUser(
       @RequestBody final UserRequest userRequest) {
-    return RequestMapper.toUserDTO(null, userRequest)
+    return RequestMapper.toUserDTO(userRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createUser);
   }
 
-  @CamundaDeleteMapping(path = "/{key}")
-  public CompletableFuture<ResponseEntity<Object>> deleteUser(@PathVariable final long key) {
+  @CamundaDeleteMapping(path = "/{username}")
+  public CompletableFuture<ResponseEntity<Object>> deleteUser(@PathVariable final String username) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
-        () -> userServices.withAuthentication(RequestMapper.getAuthentication()).deleteUser(key));
+        () ->
+            userServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .deleteUser(username));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createUser(final UserDTO request) {
@@ -67,25 +68,17 @@ public class UserController {
         ResponseMapper::toUserCreateResponse);
   }
 
-  @CamundaPatchMapping(path = "/{userKey}")
+  @CamundaPutMapping(path = "/{username}")
   public CompletableFuture<ResponseEntity<Object>> updateUser(
-      @PathVariable final long userKey, @RequestBody final UserUpdateRequest userUpdateRequest) {
-    return RequestMapper.toUserUpdateRequest(userUpdateRequest, userKey)
+      @PathVariable final String username, @RequestBody final UserUpdateRequest userUpdateRequest) {
+    return RequestMapper.toUserUpdateRequest(userUpdateRequest, username)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateUser);
   }
 
-  private CompletableFuture<ResponseEntity<Object>> updateUser(final UpdateUserRequest request) {
+  private CompletableFuture<ResponseEntity<Object>> updateUser(final UserDTO request) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
-            userServices
-                .withAuthentication(RequestMapper.getAuthentication())
-                .updateUser(
-                    new UserDTO(
-                        request.userKey(),
-                        "",
-                        request.name(),
-                        request.email(),
-                        request.password())));
+            userServices.withAuthentication(RequestMapper.getAuthentication()).updateUser(request));
   }
 
   @CamundaPutMapping(
@@ -111,13 +104,13 @@ public class UserController {
   }
 
   @CamundaPostMapping(path = "/search")
-  public ResponseEntity<UserSearchResponse> searchUsers(
+  public ResponseEntity<UserSearchResult> searchUsers(
       @RequestBody(required = false) final UserSearchQueryRequest query) {
     return SearchQueryRequestMapper.toUserQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  private ResponseEntity<UserSearchResponse> search(final UserQuery query) {
+  private ResponseEntity<UserSearchResult> search(final UserQuery query) {
     try {
       final var result =
           userServices.withAuthentication(RequestMapper.getAuthentication()).search(query);

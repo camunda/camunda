@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.incident;
 
+import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
@@ -17,86 +18,68 @@ import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForLis
 import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
-import io.camunda.zeebe.exporter.api.ExporterException;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import javax.annotation.WillCloseWhenClosed;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
-import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.SortOrder;
-import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch.core.BulkRequest;
-import org.opensearch.client.opensearch.core.ClearScrollRequest;
 import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
-import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
-import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.SourceFilter;
 import org.opensearch.client.opensearch.indices.AnalyzeRequest;
 import org.opensearch.client.opensearch.indices.analyze.AnalyzeToken;
 import org.slf4j.Logger;
 
-public final class OpenSearchIncidentUpdateRepository implements IncidentUpdateRepository {
+public final class OpenSearchIncidentUpdateRepository extends OpensearchRepository
+    implements IncidentUpdateRepository {
   private static final int RETRY_COUNT = 3;
   private static final List<FieldValue> DELETED_OPERATION_STATES =
       List.of(
           FieldValue.of(OperationState.SENT.name()),
           FieldValue.of(OperationState.COMPLETED.name()));
-  private static final Time SCROLL_KEEP_ALIVE = Time.of(t -> t.time("1m"));
-  private static final int SCROLL_PAGE_SIZE = 100;
 
   private final int partitionId;
   private final String pendingUpdateAlias;
   private final String incidentAlias;
   private final String listViewAlias;
+  private final String listViewFullQualifiedName;
   private final String flowNodeAlias;
   private final String operationAlias;
-  private final OpenSearchAsyncClient client;
-  private final Executor executor;
-  private final Logger logger;
 
   public OpenSearchIncidentUpdateRepository(
       final int partitionId,
       final String pendingUpdateAlias,
       final String incidentAlias,
       final String listViewAlias,
+      final String listViewFullQualifiedName,
       final String flowNodeAlias,
       final String operationAlias,
       @WillCloseWhenClosed final OpenSearchAsyncClient client,
       final Executor executor,
       final Logger logger) {
+    super(client, executor, logger);
     this.partitionId = partitionId;
     this.pendingUpdateAlias = pendingUpdateAlias;
     this.incidentAlias = incidentAlias;
     this.listViewAlias = listViewAlias;
+    this.listViewFullQualifiedName = listViewFullQualifiedName;
     this.flowNodeAlias = flowNodeAlias;
     this.operationAlias = operationAlias;
-    this.client = client;
-    this.executor = executor;
-    this.logger = logger;
-  }
-
-  @Override
-  public void close() throws Exception {
-    client._transport().close();
   }
 
   @Override
@@ -231,7 +214,7 @@ public final class OpenSearchIncidentUpdateRepository implements IncidentUpdateR
     final var request =
         new AnalyzeRequest.Builder()
             .field(ListViewTemplate.TREE_PATH)
-            .index(listViewAlias)
+            .index(listViewFullQualifiedName)
             .text(treePath)
             .build();
 
@@ -270,114 +253,6 @@ public final class OpenSearchIncidentUpdateRepository implements IncidentUpdateR
 
     return fetchUnboundedDocumentCollection(
         request, IncidentEntity.class, h -> new ActiveIncident(h.id(), h.source().getTreePath()));
-  }
-
-  /**
-   * Variant of {@link #fetchUnboundedDocumentCollection(SearchRequest.Builder, Class, Function)} to
-   * use when you don't care about the source document, meaning you won't be using any
-   * deserialization functionality.
-   */
-  private <T> CompletionStage<Collection<T>> fetchUnboundedDocumentCollection(
-      final SearchRequest.Builder requestBuilder, final Function<Hit<Object>, T> transformer) {
-    return fetchUnboundedDocumentCollection(requestBuilder, Object.class, transformer);
-  }
-
-  private <TDocument, TResult>
-      CompletionStage<Collection<TResult>> fetchUnboundedDocumentCollection(
-          final SearchRequest.Builder requestBuilder,
-          final Class<TDocument> type,
-          final Function<Hit<TDocument>, TResult> transformer) {
-    final var request =
-        requestBuilder
-            .allowNoIndices(true)
-            .ignoreUnavailable(true)
-            .scroll(SCROLL_KEEP_ALIVE)
-            .size(SCROLL_PAGE_SIZE)
-            .build();
-
-    try {
-      return client
-          .search(request, type)
-          .thenComposeAsync(
-              r -> {
-                try {
-                  return clearScrollOnComplete(
-                      r.scrollId(),
-                      scrollDocuments(
-                          r.hits().hits(), r.scrollId(), new ArrayList<>(), transformer, type));
-                } catch (final Exception e) {
-                  // scrollDocuments may fail, in which case we still want to clear the scroll
-                  // anyway
-                  // we don't need to do this later on however, since at this point our async
-                  // pipeline
-                  // is set up already to clear it
-                  return clearScroll(r.scrollId(), null, e);
-                }
-              },
-              executor);
-    } catch (final Exception e) {
-      return CompletableFuture.failedFuture(e);
-    }
-  }
-
-  private <T> CompletionStage<T> clearScrollOnComplete(
-      final String scrollId, final CompletionStage<T> scrollOperation) {
-    return scrollOperation
-        // we combine `handleAsync` and `thenComposeAsync` to emulate the behavior of a try/finally
-        // so we always clear the scroll even if the future is already failed
-        .handleAsync((result, error) -> clearScroll(scrollId, result, error), executor)
-        .thenComposeAsync(Function.identity(), executor);
-  }
-
-  private <T> CompletableFuture<T> clearScroll(
-      final String scrollId, final T result, final Throwable error) {
-    final var request = new ClearScrollRequest.Builder().scrollId(scrollId).build();
-    final CompletionStage<T> endResult =
-        error != null
-            ? CompletableFuture.failedFuture(error)
-            : CompletableFuture.completedFuture(result);
-    try {
-      return client
-          .clearScroll(request)
-          .exceptionallyAsync(
-              clearError -> {
-                logger.warn(
-                    """
-                        Failed to clear scroll context; this could eventually lead to \
-                        increased resource usage in Elastic""",
-                    clearError);
-
-                return null;
-              },
-              executor)
-          .thenComposeAsync(ignored -> endResult);
-    } catch (final Exception e) {
-      return CompletableFuture.failedFuture(e);
-    }
-  }
-
-  private <TResult, TDocument> CompletionStage<Collection<TDocument>> scrollDocuments(
-      final List<Hit<TResult>> hits,
-      final String scrollId,
-      final List<TDocument> accumulator,
-      final Function<Hit<TResult>, TDocument> transformer,
-      final Class<TResult> type) {
-    if (hits.isEmpty()) {
-      return CompletableFuture.completedFuture(accumulator);
-    }
-
-    for (final var hit : hits) {
-      accumulator.add(transformer.apply(hit));
-    }
-
-    try {
-      return client
-          .scroll(r -> r.scrollId(scrollId).scroll(SCROLL_KEEP_ALIVE), type)
-          .thenComposeAsync(
-              r -> scrollDocuments(r.hits().hits(), r.scrollId(), accumulator, transformer, type));
-    } catch (final Exception e) {
-      return CompletableFuture.failedFuture(e);
-    }
   }
 
   private Query createProcessInstanceDeletedQuery(final long processInstanceKey) {
@@ -502,21 +377,6 @@ public final class OpenSearchIncidentUpdateRepository implements IncidentUpdateR
     }
 
     return new PendingIncidentUpdateBatch(highestPosition, incidents);
-  }
-
-  private Throwable collectBulkErrors(final List<BulkResponseItem> items) {
-    final var collectedErrors = new ArrayList<String>();
-    items.stream()
-        .flatMap(item -> Optional.ofNullable(item.error()).stream())
-        .collect(Collectors.groupingBy(ErrorCause::type))
-        .forEach(
-            (type, errors) ->
-                collectedErrors.add(
-                    String.format(
-                        "Failed to update %d item(s) of bulk update [type: %s, reason: %s]",
-                        errors.size(), type, errors.getFirst().reason())));
-
-    return new ExporterException("Failed to flush bulk request: " + collectedErrors);
   }
 
   private record PendingIncidentUpdate(long key, long position, String intent) {}

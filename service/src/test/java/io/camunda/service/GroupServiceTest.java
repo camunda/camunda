@@ -23,8 +23,7 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupDeleteRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupMemberAddRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupMemberRemoveRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupMemberRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupUpdateRequest;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
@@ -45,7 +44,7 @@ public class GroupServiceTest {
 
   @BeforeEach
   public void before() {
-    authentication = Authentication.of(builder -> builder.user(1234L).token("auth_token"));
+    authentication = Authentication.of(builder -> builder.user("foo"));
     stubbedBrokerClient = new StubbedBrokerClient();
     client = mock(GroupSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
@@ -184,7 +183,7 @@ public class GroupServiceTest {
     services.assignMember(groupKey, memberKey, memberType);
 
     // then
-    final BrokerGroupMemberAddRequest request = stubbedBrokerClient.getSingleBrokerRequest();
+    final BrokerGroupMemberRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
     assertThat(request.getValueType()).isEqualTo(ValueType.GROUP);
     assertThat(request.getIntent()).isNotEvent().isEqualTo(GroupIntent.ADD_ENTITY);
@@ -206,7 +205,7 @@ public class GroupServiceTest {
     services.removeMember(groupKey, memberKey, memberType);
 
     // then
-    final BrokerGroupMemberRemoveRequest request = stubbedBrokerClient.getSingleBrokerRequest();
+    final BrokerGroupMemberRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
     assertThat(request.getValueType()).isEqualTo(ValueType.GROUP);
     assertThat(request.getIntent()).isNotEvent().isEqualTo(GroupIntent.REMOVE_ENTITY);
@@ -215,5 +214,22 @@ public class GroupServiceTest {
     assertThat(record).hasGroupKey(groupKey);
     assertThat(record).hasEntityKey(memberKey);
     assertThat(record).hasEntityType(EntityType.USER);
+  }
+
+  @Test
+  public void shouldReturnGroupByName() {
+    // given
+    final var groupName = "testGroup";
+    final var entity = mock(GroupEntity.class);
+    when(entity.name()).thenReturn(groupName);
+    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
+    when(client.searchGroups(any())).thenReturn(result);
+
+    // when
+    final var group = services.getGroupByName(groupName);
+
+    // then
+    assertThat(group).isNotNull();
+    assertThat(group.name()).isEqualTo(groupName);
   }
 }

@@ -19,6 +19,7 @@ import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
+import io.camunda.client.api.search.response.UserTaskState;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -42,7 +43,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param state the state of the user task
    * @return the updated filter
    */
-  UserTaskFilter state(final String state);
+  UserTaskFilter state(final UserTaskState state);
 
   /**
    * Filters user tasks by the specified assignee.
@@ -220,4 +221,36 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   UserTaskFilter completionDate(final Consumer<DateTimeProperty> completionDate);
+
+  /**
+   * Filters user tasks by the specified follow-up date.
+   *
+   * @param followUpDate the follow-up date of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter followUpDate(final OffsetDateTime followUpDate);
+
+  /**
+   * Filters user tasks by the specified {@link DateTimeProperty} follow-up date.
+   *
+   * @param followUpDate the follow-up date of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter followUpDate(final Consumer<DateTimeProperty> followUpDate);
+
+  /**
+   * Filters user tasks by the specified due date.
+   *
+   * @param dueDate the due date of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter dueDate(final OffsetDateTime dueDate);
+
+  /**
+   * Filters user tasks by the specified {@link DateTimeProperty} due date.
+   *
+   * @param dueDate the due date of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter dueDate(final Consumer<DateTimeProperty> dueDate);
 }

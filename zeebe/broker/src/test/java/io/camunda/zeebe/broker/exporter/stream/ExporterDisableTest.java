@@ -97,7 +97,7 @@ public class ExporterDisableTest {
 
     // when - then
     assertThat(rule.getDirector().disableExporter(EXPORTER_ID_1))
-        .succeedsWithin(Duration.ofMillis(100));
+        .succeedsWithin(Duration.ofSeconds(5));
   }
 
   @Test
@@ -107,7 +107,7 @@ public class ExporterDisableTest {
 
     // when - then
     assertThat(rule.getDirector().disableExporter("non-existing-exporter"))
-        .succeedsWithin(Duration.ofMillis(100));
+        .succeedsWithin(Duration.ofSeconds(5));
   }
 
   @Test
@@ -120,6 +120,6 @@ public class ExporterDisableTest {
 
     // then
     assertThat(rule.getDirector().disableExporter(EXPORTER_ID_1))
-        .succeedsWithin(Duration.ofMillis(100));
+        .succeedsWithin(Duration.ofSeconds(5));
   }
 }

@@ -22,10 +22,10 @@ import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
-import io.camunda.client.api.command.AddPermissionsCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
+import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
 import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
@@ -35,6 +35,7 @@ import io.camunda.client.api.command.ClockResetCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
+import io.camunda.client.api.command.CreateAuthorizationCommandStep1;
 import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.client.api.command.CreateDocumentLinkCommandStep1;
@@ -44,6 +45,7 @@ import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.CreateRoleCommandStep1;
 import io.camunda.client.api.command.CreateTenantCommandStep1;
 import io.camunda.client.api.command.CreateUserCommandStep1;
+import io.camunda.client.api.command.DeleteAuthorizationCommandStep1;
 import io.camunda.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.client.api.command.DeleteGroupCommandStep1;
 import io.camunda.client.api.command.DeleteResourceCommandStep1;
@@ -55,7 +57,6 @@ import io.camunda.client.api.command.FailJobCommandStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1;
-import io.camunda.client.api.command.RemovePermissionsCommandStep1;
 import io.camunda.client.api.command.RemoveUserFromTenantCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
@@ -63,7 +64,9 @@ import io.camunda.client.api.command.StreamJobsCommandStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
+import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
+import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.command.UpdateJobCommandStep1;
 import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
@@ -99,10 +102,10 @@ import io.camunda.client.api.search.query.UserTaskVariableQuery;
 import io.camunda.client.api.search.query.VariableQuery;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
-import io.camunda.client.impl.command.AddPermissionsCommandImpl;
 import io.camunda.client.impl.command.AssignGroupToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignMappingToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignUserTaskCommandImpl;
+import io.camunda.client.impl.command.AssignUserToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignUserToTenantCommandImpl;
 import io.camunda.client.impl.command.BroadcastSignalCommandImpl;
 import io.camunda.client.impl.command.CancelProcessInstanceCommandImpl;
@@ -110,6 +113,7 @@ import io.camunda.client.impl.command.ClockPinCommandImpl;
 import io.camunda.client.impl.command.ClockResetCommandImpl;
 import io.camunda.client.impl.command.CompleteUserTaskCommandImpl;
 import io.camunda.client.impl.command.CorrelateMessageCommandImpl;
+import io.camunda.client.impl.command.CreateAuthorizationCommandImpl;
 import io.camunda.client.impl.command.CreateDocumentBatchCommandImpl;
 import io.camunda.client.impl.command.CreateDocumentCommandImpl;
 import io.camunda.client.impl.command.CreateDocumentLinkCommandImpl;
@@ -119,6 +123,7 @@ import io.camunda.client.impl.command.CreateProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.CreateRoleCommandImpl;
 import io.camunda.client.impl.command.CreateTenantCommandImpl;
 import io.camunda.client.impl.command.CreateUserCommandImpl;
+import io.camunda.client.impl.command.DeleteAuthorizationCommandImpl;
 import io.camunda.client.impl.command.DeleteDocumentCommandImpl;
 import io.camunda.client.impl.command.DeleteGroupCommandImpl;
 import io.camunda.client.impl.command.DeleteResourceCommandImpl;
@@ -132,14 +137,15 @@ import io.camunda.client.impl.command.JobUpdateTimeoutCommandImpl;
 import io.camunda.client.impl.command.MigrateProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.ModifyProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.PublishMessageCommandImpl;
-import io.camunda.client.impl.command.RemovePermissionsCommandImpl;
 import io.camunda.client.impl.command.RemoveUserFromTenantCommandImpl;
 import io.camunda.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.client.impl.command.SetVariablesCommandImpl;
 import io.camunda.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.client.impl.command.TopologyRequestImpl;
 import io.camunda.client.impl.command.UnassignGroupFromTenantCommandImpl;
+import io.camunda.client.impl.command.UnassignUserFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignUserTaskCommandImpl;
+import io.camunda.client.impl.command.UpdateAuthorizationCommandImpl;
 import io.camunda.client.impl.command.UpdateGroupCommandImpl;
 import io.camunda.client.impl.command.UpdateTenantCommandImpl;
 import io.camunda.client.impl.command.UpdateUserTaskCommandImpl;
@@ -735,18 +741,18 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
+  public AssignUserToGroupCommandStep1 newAssignUserToGroupCommand(final long groupKey) {
+    return new AssignUserToGroupCommandImpl(groupKey, httpClient);
+  }
+
+  @Override
+  public UnassignUserFromGroupCommandStep1 newUnassignUserFromGroupCommand(final long groupKey) {
+    return new UnassignUserFromGroupCommandImpl(groupKey, httpClient);
+  }
+
+  @Override
   public CreateUserCommandStep1 newUserCreateCommand() {
     return new CreateUserCommandImpl(httpClient, jsonMapper);
-  }
-
-  @Override
-  public AddPermissionsCommandStep1 newAddPermissionsCommand(final long ownerKey) {
-    return new AddPermissionsCommandImpl(ownerKey, httpClient, jsonMapper);
-  }
-
-  @Override
-  public RemovePermissionsCommandStep1 newRemovePermissionsCommand(final long ownerKey) {
-    return new RemovePermissionsCommandImpl(ownerKey, httpClient, jsonMapper);
   }
 
   @Override
@@ -853,13 +859,13 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public UpdateTenantCommandStep1 newUpdateTenantCommand(final long tenantKey) {
-    return new UpdateTenantCommandImpl(httpClient, jsonMapper, tenantKey);
+  public UpdateTenantCommandStep1 newUpdateTenantCommand(final String tenantId) {
+    return new UpdateTenantCommandImpl(httpClient, jsonMapper, tenantId);
   }
 
   @Override
-  public DeleteTenantCommandStep1 newDeleteTenantCommand(final long tenantKey) {
-    return new DeleteTenantCommandImpl(httpClient).tenantKey(tenantKey);
+  public DeleteTenantCommandStep1 newDeleteTenantCommand(final String tenantId) {
+    return new DeleteTenantCommandImpl(httpClient).tenantId(tenantId);
   }
 
   @Override
@@ -868,25 +874,41 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public AssignUserToTenantCommandStep1 newAssignUserToTenantCommand(final long tenantKey) {
-    return new AssignUserToTenantCommandImpl(httpClient, tenantKey);
+  public AssignUserToTenantCommandStep1 newAssignUserToTenantCommand(final String tenantId) {
+    return new AssignUserToTenantCommandImpl(httpClient, tenantId);
   }
 
   @Override
-  public RemoveUserFromTenantCommandStep1 newRemoveUserFromTenantCommand(final long tenantKey) {
-    return new RemoveUserFromTenantCommandImpl(httpClient, tenantKey);
-  }
-
-  @Override
-  public AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(
-      final long tenantKey, final long groupKey) {
-    return new AssignGroupToTenantCommandImpl(httpClient, tenantKey, groupKey);
+  public AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(final long tenantKey) {
+    return new AssignGroupToTenantCommandImpl(httpClient, tenantKey);
   }
 
   @Override
   public UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(
-      final long tenantKey, final long groupKey) {
-    return new UnassignGroupFromTenantCommandImpl(httpClient, tenantKey, groupKey);
+      final long tenantKey) {
+    return new UnassignGroupFromTenantCommandImpl(httpClient, tenantKey);
+  }
+
+  @Override
+  public CreateAuthorizationCommandStep1 newCreateAuthorizationCommand() {
+    return new CreateAuthorizationCommandImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public DeleteAuthorizationCommandStep1 newDeleteAuthorizationCommand(
+      final long authorizationKey) {
+    return new DeleteAuthorizationCommandImpl(httpClient, authorizationKey);
+  }
+
+  @Override
+  public UpdateAuthorizationCommandStep1 newUpdateAuthorizationCommand(
+      final long authorizationKey) {
+    return new UpdateAuthorizationCommandImpl(httpClient, jsonMapper, authorizationKey);
+  }
+
+  @Override
+  public RemoveUserFromTenantCommandStep1 newRemoveUserFromTenantCommand(final String tenantId) {
+    return new RemoveUserFromTenantCommandImpl(httpClient, tenantId);
   }
 
   private JobClient newJobClient() {

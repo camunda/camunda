@@ -52,6 +52,7 @@ import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.StreamClock;
@@ -65,6 +66,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -311,6 +313,14 @@ public final class EngineRule extends ExternalResource {
     return environmentRule.getStreamClock(partitionId);
   }
 
+  public MeterRegistry getMeterRegistry() {
+    return getMeterRegistry(PARTITION_ID);
+  }
+
+  public MeterRegistry getMeterRegistry(final int partitionId) {
+    return environmentRule.getMeterRegistry(partitionId);
+  }
+
   public long getLastProcessedPosition() {
     return lastProcessedPosition;
   }
@@ -478,6 +488,9 @@ public final class EngineRule extends ExternalResource {
 
   public void awaitIdentitySetup() {
     if (partitionCount > 1) {
+      RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED)
+          .skip(partitionCount - 1)
+          .await();
       RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
           .withDistributionIntent(IdentitySetupIntent.INITIALIZE)
           .await();
@@ -521,6 +534,10 @@ public final class EngineRule extends ExternalResource {
 
   public ClockClient clock() {
     return new ClockClient(environmentRule);
+  }
+
+  public ActorScheduler actorScheduler() {
+    return environmentRule.getActorScheduler();
   }
 
   private static final class VersatileBlob implements DbKey, DbValue {

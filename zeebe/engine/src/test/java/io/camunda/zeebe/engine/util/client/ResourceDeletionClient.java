@@ -67,8 +67,9 @@ public class ResourceDeletionClient {
     return expectation.apply(position);
   }
 
-  public Record<ResourceDeletionRecordValue> delete(final long userKey) {
-    return delete(AuthorizationUtil.getAuthInfo(userKey, TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+  public Record<ResourceDeletionRecordValue> delete(final String username) {
+    return delete(
+        AuthorizationUtil.getUsernameAuthInfo(username, TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
 
   public ResourceDeletionClient expectRejection() {

@@ -25,13 +25,13 @@ import io.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestReque
 import io.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
 import io.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
 import io.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
+import io.camunda.optimize.rest.exceptions.BadRequestException;
+import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import io.camunda.optimize.service.db.reader.ProcessOverviewReader;
 import io.camunda.optimize.service.db.writer.ProcessOverviewWriter;
 import io.camunda.optimize.service.digest.DigestService;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
-import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.ForbiddenException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

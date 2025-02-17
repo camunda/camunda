@@ -21,6 +21,7 @@ jobs:
     needs:
       - fetch-release
     uses: ./.github/workflows/zeebe-benchmark.yml
+    secrets: inherit
     with:
       name: release-rolling
       cluster: zeebe-cluster

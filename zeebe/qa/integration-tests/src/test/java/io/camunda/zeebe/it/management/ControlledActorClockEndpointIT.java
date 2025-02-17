@@ -20,8 +20,6 @@ import io.camunda.zeebe.protocol.record.RecordAssert;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -35,10 +33,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
-@AutoCloseResources
 final class ControlledActorClockEndpointIT {
   private static final ObjectMapper MAPPER =
       new ObjectMapper().registerModule(new JavaTimeModule());
@@ -49,7 +47,7 @@ final class ControlledActorClockEndpointIT {
           .withRecordingExporter(true)
           .withProperty("zeebe.clock.controlled", true);
 
-  @AutoCloseResource private final CamundaClient camundaClient = broker.newClientBuilder().build();
+  @AutoClose private final CamundaClient camundaClient = broker.newClientBuilder().build();
 
   private final HttpClient httpClient = HttpClient.newHttpClient();
 

@@ -6,71 +6,67 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Stack} from '@carbon/react';
-import {Warning} from '@carbon/react/icons';
-import styles from './styles.module.scss';
 import {useTranslation} from 'react-i18next';
+import {FormLevelErrorMessage} from './FormLevelErrorMessage';
+
+const useBuiltMessage = (options: {
+  numberOfNamedFieldsToShow?: number;
+  fieldIds: string[];
+  fieldLabels: string[];
+}) => {
+  const {t} = useTranslation();
+  const {numberOfNamedFieldsToShow, fieldIds, fieldLabels} = options;
+  const parts: string[] = [];
+  if (fieldIds.length == 1) {
+    parts.push(t('taskDetailsFormJSSingleFieldError'));
+  } else {
+    parts.push(
+      t('taskDetailsFormJSMultipleFieldError', {count: fieldIds.length}),
+    );
+  }
+  const namedFieldsSlice =
+    numberOfNamedFieldsToShow !== undefined
+      ? fieldLabels.slice(0, numberOfNamedFieldsToShow)
+      : fieldLabels;
+
+  if (namedFieldsSlice.length > 0) {
+    if (fieldIds.length > namedFieldsSlice.length) {
+      parts.push(
+        ': ',
+        namedFieldsSlice.join(', '),
+        `, and ${fieldIds.length - namedFieldsSlice.length} more`,
+      );
+    } else if (namedFieldsSlice.length > 1) {
+      parts.push(
+        ': ',
+        namedFieldsSlice
+          .slice(0, namedFieldsSlice.length - 1)
+          .concat([`and ${namedFieldsSlice[namedFieldsSlice.length - 1]}`])
+          .join(', '),
+      );
+    } else {
+      parts.push(': ', namedFieldsSlice[0]);
+    }
+  }
+  return parts.join('');
+};
 
 const ValidationMessage: React.FC<{
   fieldIds: string[];
   fieldLabels: string[];
 }> = ({fieldIds, fieldLabels}) => {
-  const {t} = useTranslation();
-
-  const buildMessage = (opts?: {numberOfNamedFieldsToShow?: number}) => {
-    const numberOfNamedFieldsToShow = opts?.numberOfNamedFieldsToShow;
-    const parts: string[] = [];
-    if (fieldIds.length == 1) {
-      parts.push(t('taskDetailsFormJSSingleFieldError'));
-    } else {
-      parts.push(
-        t('taskDetailsFormJSMultipleFieldError', {count: fieldIds.length}),
-      );
-    }
-    const namedFieldsSlice =
-      numberOfNamedFieldsToShow !== undefined
-        ? fieldLabels.slice(0, numberOfNamedFieldsToShow)
-        : fieldLabels;
-
-    if (namedFieldsSlice.length > 0) {
-      if (fieldIds.length > namedFieldsSlice.length) {
-        parts.push(
-          ': ',
-          namedFieldsSlice.join(', '),
-          `, and ${fieldIds.length - namedFieldsSlice.length} more`,
-        );
-      } else if (namedFieldsSlice.length > 1) {
-        parts.push(
-          ': ',
-          namedFieldsSlice
-            .slice(0, namedFieldsSlice.length - 1)
-            .concat([`and ${namedFieldsSlice[namedFieldsSlice.length - 1]}`])
-            .join(', '),
-        );
-      } else {
-        parts.push(': ', namedFieldsSlice[0]);
-      }
-    }
-    return parts.join('');
-  };
-
-  const readableMessage = buildMessage({numberOfNamedFieldsToShow: 2});
-  const screenReaderMessage = buildMessage();
+  const readableMessage = useBuiltMessage({
+    numberOfNamedFieldsToShow: 2,
+    fieldIds,
+    fieldLabels,
+  });
+  const screenReaderMessage = useBuiltMessage({fieldIds, fieldLabels});
 
   return (
-    <>
-      <hr className={styles.hr} />
-      <Stack
-        orientation="horizontal"
-        gap={3}
-        className={styles.validationMessage}
-        role="alert"
-        aria-label={screenReaderMessage}
-      >
-        <Warning aria-hidden className={styles.warningFilled} />
-        <div aria-hidden>{readableMessage}</div>
-      </Stack>
-    </>
+    <FormLevelErrorMessage
+      screenReaderMessage={screenReaderMessage}
+      readableMessage={readableMessage}
+    />
   );
 };
 

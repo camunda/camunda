@@ -102,23 +102,24 @@ message CompleteJobRequest {
   // a JSON document representing the variables in the current task scope
   string variables = 2;
   // The result of the completed job as determined by the worker.
+  // This functionality is currently supported only by user task listeners.
   optional JobResult result = 3;
 }
 
 message JobResult{
   // Indicates whether the worker denies the work, i.e. explicitly doesn't approve it.
-  // For example, a Task Listener can deny the completion of a task by setting this flag to true.
+  // For example, a user task listener can deny the completion of a user task by setting this flag to true.
   // In this example, the completion of a task is represented by a job that the worker can complete as denied.
   // As a result, the completion request is rejected and the task remains active.
   // Defaults to false.
   optional bool denied = 1;
   // Attributes that were corrected by the worker.
   // The following attributes can be corrected, additional attributes will be ignored:
-  //   * `assignee` - reset by providing an empty String
-  //   * `dueDate` - reset by providing an empty String
-  //   * `followUpDate` - reset by providing an empty String
-  //   * `candidateGroups` - reset by providing an empty list
-  //   * `candidateUsers` - reset by providing an empty list
+  //   * `assignee` - clear by providing an empty string
+  //   * `dueDate` - clear by providing an empty string
+  //   * `followUpDate` - clear by providing an empty string
+  //   * `candidateGroups` - clear by providing an empty list
+  //   * `candidateUsers` - clear by providing an empty list
   //   * `priority` - minimum 0, maximum 100, default 50
   //  Omitting any of the attributes will preserve the persisted attribute's value.
   optional JobResultCorrections corrections = 2;

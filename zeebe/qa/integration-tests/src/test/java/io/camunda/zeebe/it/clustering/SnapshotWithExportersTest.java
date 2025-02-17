@@ -42,7 +42,9 @@ final class SnapshotWithExportersTest {
 
   @Nested
   final class WithoutInitialExporterTest {
-    @TestZeebe private final TestStandaloneBroker zeebe = new TestStandaloneBroker();
+    @TestZeebe
+    private final TestStandaloneBroker zeebe =
+        new TestStandaloneBroker().withUnauthenticatedAccess();
 
     private final PartitionsActuator partitions = PartitionsActuator.of(zeebe);
 
@@ -94,7 +96,7 @@ final class SnapshotWithExportersTest {
   final class WithExporter {
     @TestZeebe
     private final TestStandaloneBroker zeebe =
-        new TestStandaloneBroker().withRecordingExporter(true);
+        new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
     private final PartitionsActuator partitions = PartitionsActuator.of(zeebe);
 
@@ -137,7 +139,11 @@ final class SnapshotWithExportersTest {
       // given -- broker with exporter that does not acknowledge anything
       RecordingExporter.autoAcknowledge(false);
       try (final var zeebe =
-          new TestStandaloneBroker().withRecordingExporter(true).start().awaitCompleteTopology()) {
+          new TestStandaloneBroker()
+              .withRecordingExporter(true)
+              .start()
+              .awaitCompleteTopology()
+              .withUnauthenticatedAccess()) {
 
         final var partitions = PartitionsActuator.of(zeebe);
         try (final var client = zeebe.newClientBuilder().build()) {

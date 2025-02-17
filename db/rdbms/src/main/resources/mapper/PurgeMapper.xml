@@ -10,6 +10,6 @@
 <mapper namespace="io.camunda.db.rdbms.sql.PurgeMapper">
 
   <update id="truncateTable" parameterType="java.lang.String">
-    TRUNCATE TABLE ${tableName}
+    TRUNCATE TABLE ${prefix}${tableName}
   </update>
 </mapper>

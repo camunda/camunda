@@ -61,7 +61,7 @@ public class UserCreatedUpdatedHandlerTest {
     final var idList = underTest.generateIds(userRecord);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(userRecord.getKey()));
+    assertThat(idList).containsExactly(userRecord.getValue().getUsername());
   }
 
   @Test

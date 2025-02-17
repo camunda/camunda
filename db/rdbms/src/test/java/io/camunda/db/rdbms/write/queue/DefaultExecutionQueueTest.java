@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -27,6 +28,7 @@ class DefaultExecutionQueueTest {
 
   private SqlSession session;
   private SqlSessionFactory sqlSessionFactory;
+  private RdbmsWriterMetrics metrics;
 
   private DefaultExecutionQueue executionQueue;
 
@@ -34,11 +36,12 @@ class DefaultExecutionQueueTest {
   public void beforeEach() {
     session = mock(SqlSession.class);
     sqlSessionFactory = mock(SqlSessionFactory.class);
+    metrics = mock(RdbmsWriterMetrics.class);
     when(sqlSessionFactory.openSession(
             ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED))
         .thenReturn(session);
 
-    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 5);
+    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 5, metrics);
   }
 
   @Test
@@ -50,7 +53,7 @@ class DefaultExecutionQueueTest {
 
   @Test
   public void whenElementIsAddedNoFlushHappens() {
-    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 0);
+    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 0, metrics);
 
     executionQueue.executeInQueue(mock(QueueItem.class));
 

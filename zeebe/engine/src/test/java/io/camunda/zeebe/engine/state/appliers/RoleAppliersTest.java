@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -46,11 +47,7 @@ public class RoleAppliersTest {
     userState = processingState.getUserState();
     authorizationState = processingState.getAuthorizationState();
     mappingState = processingState.getMappingState();
-    roleDeletedApplier =
-        new RoleDeletedApplier(
-            processingState.getRoleState(),
-            processingState.getUserState(),
-            processingState.getAuthorizationState());
+    roleDeletedApplier = new RoleDeletedApplier(processingState.getRoleState());
     roleEntityAddedApplier = new RoleEntityAddedApplier(processingState);
     roleEntityRemovedApplier = new RoleEntityRemovedApplier(processingState);
   }
@@ -108,53 +105,54 @@ public class RoleAppliersTest {
   @Test
   void shouldDeleteRole() {
     // given
-    userState.create(
-        new UserRecord()
-            .setUserKey(1L)
-            .setUsername("username")
-            .setName("Foo")
-            .setEmail("foo@bar.com")
-            .setPassword("password"));
     final long roleKey = 11L;
-    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName("foo");
+    final String roleId = String.valueOf(roleKey);
+    final String roleName = "foo";
+    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName(roleName);
     roleState.create(roleRecord);
-    roleRecord.setEntityKey(1L).setEntityType(EntityType.USER);
-    roleEntityAddedApplier.applyState(roleKey, roleRecord);
-    authorizationState.insertOwnerTypeByKey(roleKey, AuthorizationOwnerType.ROLE);
-    authorizationState.createOrAddPermission(
-        roleKey, AuthorizationResourceType.ROLE, PermissionType.DELETE, Set.of("role1", "role2"));
+    authorizationState.create(
+        1L,
+        new AuthorizationRecord()
+            .setAuthorizationKey(1L)
+            .setResourceId("role1")
+            .setResourceType(AuthorizationResourceType.ROLE)
+            .setPermissionTypes(Set.of(PermissionType.DELETE))
+            .setOwnerType(AuthorizationOwnerType.ROLE)
+            .setOwnerId(roleId));
+    authorizationState.create(
+        2L,
+        new AuthorizationRecord()
+            .setAuthorizationKey(2L)
+            .setResourceId("role2")
+            .setResourceType(AuthorizationResourceType.ROLE)
+            .setPermissionTypes(Set.of(PermissionType.DELETE))
+            .setOwnerType(AuthorizationOwnerType.ROLE)
+            .setOwnerId(roleId));
 
     // when
     roleDeletedApplier.applyState(roleKey, roleRecord);
 
     // then
     assertThat(roleState.getRole(roleKey)).isEmpty();
-    final var persistedUser = userState.getUser(1L).get();
-    assertThat(persistedUser.getRoleKeysList()).isEmpty();
-    final var ownerType = authorizationState.getOwnerType(roleKey);
-    assertThat(ownerType).isEmpty();
-    final var resourceIdentifiers =
-        authorizationState.getResourceIdentifiers(
-            roleKey, AuthorizationResourceType.ROLE, PermissionType.DELETE);
-    assertThat(resourceIdentifiers).isEmpty();
   }
 
   @Test
   void shouldRemoveEntityFromRoleWithTypeUser() {
     // given
-    final long entityKey = 1L;
+    final var username = "foo";
+    final var userKey = 123L;
     userState.create(
         new UserRecord()
-            .setUserKey(entityKey)
-            .setUsername("username")
+            .setUserKey(userKey)
+            .setUsername(username)
             .setName("Foo")
             .setEmail("foo@bar.com")
             .setPassword("password"));
     final long roleKey = 11L;
-    userState.addRole(entityKey, roleKey);
+    userState.addRole(username, roleKey);
     final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName("foo");
     roleState.create(roleRecord);
-    roleRecord.setEntityKey(entityKey).setEntityType(EntityType.USER);
+    roleRecord.setEntityKey(userKey).setEntityType(EntityType.USER);
     roleState.addEntity(roleRecord);
 
     // when
@@ -162,7 +160,7 @@ public class RoleAppliersTest {
 
     // then
     assertThat(roleState.getEntitiesByType(roleKey)).isEmpty();
-    final var persistedUser = userState.getUser(entityKey).get();
+    final var persistedUser = userState.getUser(username).get();
     assertThat(persistedUser.getRoleKeysList()).isEmpty();
   }
 

@@ -12,6 +12,7 @@ import static io.camunda.security.configuration.InitializationConfiguration.DEFA
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CredentialsProvider;
+import io.camunda.client.protocol.rest.OwnerTypeEnum;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.search.clients.SearchClients;
@@ -74,39 +75,42 @@ public class AuthorizationsUtil implements CloseableSilently {
             .send()
             .join();
     awaitUserExistsInElasticsearch(username);
-    createPermissions(userCreateResponse.getUserKey(), permissions);
+    createPermissions(username, permissions);
     return userCreateResponse.getUserKey();
   }
 
-  public void createPermissions(final long userKey, final Permissions... permissions) {
+  public void createPermissions(final String username, final Permissions... permissions) {
     for (final Permissions permission : permissions) {
-      client
-          .newAddPermissionsCommand(userKey)
-          .resourceType(permission.resourceType())
-          .permission(permission.permissionType())
-          .resourceIds(permission.resourceIds())
-          .send()
-          .join();
+      for (final String resourceId : permission.resourceIds()) {
+        client
+            .newCreateAuthorizationCommand()
+            .ownerId(username)
+            .ownerType(OwnerTypeEnum.USER)
+            .resourceId(resourceId)
+            .resourceType(permission.resourceType())
+            .permissionTypes(permission.permissionType())
+            .send()
+            .join();
+      }
     }
-    if (permissions != null && permissions.length > 0) {
-      awaitPermissionExistsInElasticsearch(userKey, Arrays.asList(permissions).getLast());
+    if (permissions.length > 0) {
+      awaitPermissionExistsInElasticsearch(username, Arrays.asList(permissions).getLast());
     }
   }
 
-  public long createTenant(final String tenantId, final String tenantName, final long... userKeys) {
-    final long tenantKey =
-        client
-            .newCreateTenantCommand()
-            .tenantId(tenantId)
-            .name(tenantName)
-            .send()
-            .join()
-            .getTenantKey();
-    for (final long userKey : userKeys) {
-      client.newAssignUserToTenantCommand(tenantKey).userKey(userKey).send().join();
+  public void createTenant(
+      final String tenantId, final String tenantName, final String... usernames) {
+    client
+        .newCreateTenantCommand()
+        .tenantId(tenantId)
+        .name(tenantName)
+        .send()
+        .join()
+        .getTenantKey();
+    for (final var username : usernames) {
+      client.newAssignUserToTenantCommand(tenantId).username(username).send().join();
     }
     awaitTenantExistsInElasticsearch(tenantId);
-    return tenantKey;
   }
 
   public CamundaClient createClient(final String username, final String password) {
@@ -186,7 +190,7 @@ public class AuthorizationsUtil implements CloseableSilently {
   }
 
   private void awaitPermissionExistsInElasticsearch(
-      final long userKey, final Permissions permissions) {
+      final String username, final Permissions permissions) {
     final var resourceType = permissions.resourceType().getValue();
     final var permissionType = PermissionType.valueOf(permissions.permissionType().getValue());
     final var resourceIds = permissions.resourceIds();
@@ -196,9 +200,9 @@ public class AuthorizationsUtil implements CloseableSilently {
             b ->
                 b.filter(
                     f ->
-                        f.ownerKeys(userKey)
+                        f.ownerIds(username)
                             .resourceType(resourceType)
-                            .permissionType(permissionType)
+                            .permissionTypes(permissionType)
                             .resourceIds(resourceIds)));
 
     awaitEntityExistsInElasticsearch(() -> searchClients.searchAuthorizations(permissionQuery));

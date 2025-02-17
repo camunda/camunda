@@ -7,72 +7,36 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.CreationMode;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.EngineAction;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.EngineKeyNames;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
-import io.prometheus.client.Counter;
+import io.camunda.zeebe.util.collection.Map3D;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Objects;
 
 public final class ProcessEngineMetrics {
 
-  private static final String NAMESPACE = "zeebe";
-
-  /**
-   * Metrics that are annotated with this label are vitally important for usage tracking and
-   * data-based decision-making as part of Camunda's SaaS offering.
-   *
-   * <p>DO NOT REMOVE this label from existing metrics without previous discussion within the team.
-   *
-   * <p>At the same time, NEW METRICS MAY NOT NEED THIS label. In that case, it is preferable to not
-   * add this label to a metric as Prometheus best practices warn against using labels with a high
-   * cardinality of possible values.
-   */
-  private static final String ORGANIZATION_ID_LABEL = "organizationId";
-
-  private static final String PARTITION_LABEL = "partition";
-  private static final String ACTION_LABEL = "action";
-  static final Counter EVALUATED_DMN_ELEMENTS =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("evaluated_dmn_elements_total")
-          .help("Number of evaluated DMN elements including required decisions")
-          .labelNames(ORGANIZATION_ID_LABEL, ACTION_LABEL, PARTITION_LABEL)
-          .register();
-  private static final String EVENT_TYPE = "eventType";
-  private static final String TYPE_LABEL = "type";
-  static final Counter EXECUTED_INSTANCES =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("executed_instances_total")
-          .help("Number of executed (root) process instances")
-          .labelNames(ORGANIZATION_ID_LABEL, TYPE_LABEL, ACTION_LABEL, PARTITION_LABEL)
-          .register();
+  public static final String EXECUTED_EVENT_ELEMENT_TYPE_VALUE = "ROOT_PROCESS_INSTANCE";
   private static final String ORGANIZATION_ID =
       System.getenv().getOrDefault("CAMUNDA_CLOUD_ORGANIZATION_ID", "null");
-  private static final String ACTION_ACTIVATED = "activated";
-  private static final String ACTION_COMPLETED = "completed";
-  private static final String ACTION_TERMINATED = "terminated";
-  private static final String ACTION_EVALUATED_SUCCESSFULLY = "evaluated_successfully";
-  private static final String ACTION_EVALUATED_FAILED = "evaluated_failed";
-  private static final Counter ELEMENT_INSTANCE_EVENTS =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("element_instance_events_total")
-          .help("Number of process element instance events")
-          .labelNames(ACTION_LABEL, TYPE_LABEL, PARTITION_LABEL, EVENT_TYPE)
-          .register();
-  private static final String CREATION_MODE_LABEL = "creation_mode";
-  static final Counter CREATED_PROCESS_INSTANCES =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("process_instance_creations_total")
-          .help("Number of created (root) process instances")
-          .labelNames(PARTITION_LABEL, CREATION_MODE_LABEL)
-          .register();
-  private final String partitionIdLabel;
+  private final MeterRegistry registry;
 
-  public ProcessEngineMetrics(final int partitionId) {
-    partitionIdLabel = String.valueOf(partitionId);
+  private final Map<CreationMode, Counter> createdRootProcessInstances =
+      new EnumMap<>(CreationMode.class);
+  private final Map3D<EngineAction, BpmnElementType, BpmnEventType, Counter> elementInstanceEvents =
+      Map3D.ofEnum(EngineAction.class, BpmnElementType.class, BpmnEventType.class, Counter[]::new);
+  private final Map<EngineAction, Counter> executedEvents = new EnumMap<>(EngineAction.class);
+  private final Map<EngineAction, Counter> evaluatedDmnElements = new EnumMap<>(EngineAction.class);
+
+  public ProcessEngineMetrics(final MeterRegistry registry) {
+    this.registry = Objects.requireNonNull(registry, "must specify a registry");
   }
 
   public void processInstanceCreated(final ProcessInstanceCreationRecord instanceCreationRecord) {
@@ -81,51 +45,67 @@ public final class ProcessEngineMetrics {
             ? CreationMode.CREATION_AT_GIVEN_ELEMENT
             : CreationMode.CREATION_AT_DEFAULT_START_EVENT;
 
-    CREATED_PROCESS_INSTANCES.labels(partitionIdLabel, creationMode.toString()).inc();
-  }
-
-  private void elementInstanceEvent(
-      final String action, final BpmnElementType elementType, final String eventType) {
-    ELEMENT_INSTANCE_EVENTS.labels(action, elementType.name(), partitionIdLabel, eventType).inc();
-  }
-
-  private void increaseRootProcessInstance(final String action) {
-    EXECUTED_INSTANCES
-        .labels(ORGANIZATION_ID, "ROOT_PROCESS_INSTANCE", action, partitionIdLabel)
-        .inc();
+    createdRootProcessInstances
+        .computeIfAbsent(creationMode, this::registerCreatedRootProcessInstanceCounter)
+        .increment();
   }
 
   public void elementInstanceActivated(
       final BpmnElementContext context, final BpmnEventType eventType) {
     final var elementType = context.getBpmnElementType();
-    final String eventTypeName = extractEventTypeName(eventType);
-    elementInstanceEvent(ACTION_ACTIVATED, elementType, eventTypeName);
+    final var eventTypeName = extractEventTypeName(eventType);
+    elementInstanceEvent(EngineAction.ACTIVATED, elementType, eventTypeName);
 
     if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
-      increaseRootProcessInstance(ACTION_ACTIVATED);
+      increaseRootProcessInstance(EngineAction.ACTIVATED);
     }
   }
 
   public void elementInstanceCompleted(
       final BpmnElementContext context, final BpmnEventType eventType) {
     final var elementType = context.getBpmnElementType();
-    final String eventTypeName = extractEventTypeName(eventType);
-    elementInstanceEvent(ACTION_COMPLETED, elementType, eventTypeName);
+    final var eventTypeName = extractEventTypeName(eventType);
+    elementInstanceEvent(EngineAction.COMPLETED, elementType, eventTypeName);
 
     if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
-      increaseRootProcessInstance(ACTION_COMPLETED);
+      increaseRootProcessInstance(EngineAction.COMPLETED);
     }
   }
 
   public void elementInstanceTerminated(
       final BpmnElementContext context, final BpmnEventType eventType) {
     final var elementType = context.getBpmnElementType();
-    final String eventTypeName = extractEventTypeName(eventType);
-    elementInstanceEvent(ACTION_TERMINATED, elementType, eventTypeName);
+    final var eventTypeName = extractEventTypeName(eventType);
+    elementInstanceEvent(EngineAction.TERMINATED, elementType, eventTypeName);
 
     if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
-      increaseRootProcessInstance(ACTION_TERMINATED);
+      increaseRootProcessInstance(EngineAction.TERMINATED);
     }
+  }
+
+  public void increaseSuccessfullyEvaluatedDmnElements(final int amount) {
+    increaseEvaluatedDmnElements(EngineAction.EVALUATED_SUCCESSFULLY, amount);
+  }
+
+  public void increaseFailedEvaluatedDmnElements(final int amount) {
+    increaseEvaluatedDmnElements(EngineAction.EVALUATED_FAILED, amount);
+  }
+
+  private void elementInstanceEvent(
+      final EngineAction action, final BpmnElementType elementType, final BpmnEventType eventType) {
+    elementInstanceEvents
+        .computeIfAbsent(action, elementType, eventType, this::registerElementInstanceEventCounter)
+        .increment();
+  }
+
+  private void increaseRootProcessInstance(final EngineAction action) {
+    executedEvents.computeIfAbsent(action, this::registerExecutedEventCounter).increment();
+  }
+
+  private void increaseEvaluatedDmnElements(final EngineAction action, final int amount) {
+    evaluatedDmnElements
+        .computeIfAbsent(action, this::registerEvaluatedDmnElementCounter)
+        .increment(amount);
   }
 
   private boolean isProcessInstance(final BpmnElementType elementType) {
@@ -137,29 +117,48 @@ public final class ProcessEngineMetrics {
     return isProcessInstance(elementType) && parentProcessInstanceKey == -1;
   }
 
-  public void increaseSuccessfullyEvaluatedDmnElements(final int amount) {
-    increaseEvaluatedDmnElements(ACTION_EVALUATED_SUCCESSFULLY, amount);
+  private BpmnEventType extractEventTypeName(final BpmnEventType eventType) {
+    return eventType != null ? eventType : BpmnEventType.UNSPECIFIED;
   }
 
-  public void increaseFailedEvaluatedDmnElements(final int amount) {
-    increaseEvaluatedDmnElements(ACTION_EVALUATED_FAILED, amount);
+  private Counter registerCreatedRootProcessInstanceCounter(final CreationMode creationMode) {
+    final var meterDoc = EngineMetricsDoc.CREATED_ROOT_PROCESS_INSTANCES;
+    return Counter.builder(meterDoc.getName())
+        .description(meterDoc.getDescription())
+        .tag(EngineKeyNames.CREATION_MODE.asString(), creationMode.toString())
+        .tag(EngineKeyNames.ORGANIZATION_ID.asString(), ORGANIZATION_ID)
+        .register(registry);
   }
 
-  private void increaseEvaluatedDmnElements(final String action, final int amount) {
-    EVALUATED_DMN_ELEMENTS.labels(ORGANIZATION_ID, action, partitionIdLabel).inc(amount);
+  private Counter registerElementInstanceEventCounter(
+      final EngineAction engineAction,
+      final BpmnElementType bpmnElementType,
+      final BpmnEventType bpmnEventType) {
+    final var meterDoc = EngineMetricsDoc.ELEMENT_INSTANCE_EVENTS;
+    return Counter.builder(meterDoc.getName())
+        .description(meterDoc.getDescription())
+        .tag(EngineKeyNames.ACTION.asString(), engineAction.toString())
+        .tag(EngineKeyNames.ELEMENT_TYPE.asString(), bpmnElementType.name())
+        .tag(EngineKeyNames.EVENT_TYPE.asString(), bpmnEventType.name())
+        .register(registry);
   }
 
-  private String extractEventTypeName(final BpmnEventType eventType) {
-    return eventType != null ? eventType.name() : BpmnEventType.UNSPECIFIED.name();
+  private Counter registerExecutedEventCounter(final EngineAction engineAction) {
+    final var meterDoc = EngineMetricsDoc.EXECUTED_EVENTS;
+    return Counter.builder(meterDoc.getName())
+        .description(meterDoc.getDescription())
+        .tag(EngineKeyNames.ACTION.asString(), engineAction.toString())
+        .tag(EngineKeyNames.ELEMENT_TYPE.asString(), EXECUTED_EVENT_ELEMENT_TYPE_VALUE)
+        .tag(EngineKeyNames.ORGANIZATION_ID.asString(), ORGANIZATION_ID)
+        .register(registry);
   }
 
-  private enum CreationMode {
-    CREATION_AT_DEFAULT_START_EVENT,
-    CREATION_AT_GIVEN_ELEMENT;
-
-    @Override
-    public String toString() {
-      return name().toLowerCase();
-    }
+  private Counter registerEvaluatedDmnElementCounter(final EngineAction engineAction) {
+    final var meterDoc = EngineMetricsDoc.EVALUATED_DMN_ELEMENTS;
+    return Counter.builder(meterDoc.getName())
+        .description(meterDoc.getDescription())
+        .tag(EngineKeyNames.ACTION.asString(), engineAction.toString())
+        .tag(EngineKeyNames.ORGANIZATION_ID.asString(), ORGANIZATION_ID)
+        .register(registry);
   }
 }

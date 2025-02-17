@@ -11,11 +11,13 @@ import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import java.io.IOException;
+import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
@@ -47,7 +49,9 @@ public class ManagementIdentityConnector {
     final var restTemplate =
         builder
             .rootUri(properties.getBaseUrl())
-            .interceptors(new M2MTokenInterceptor(identity, properties.getAudience()))
+            .interceptors(
+                new M2MTokenInterceptor(identity, properties.getAudience()),
+                new EndpointUnavailableInterceptor())
             .defaultHeader("Content-Type", "application/json")
             .defaultHeader("Accept", "application/json")
             .build();
@@ -73,6 +77,21 @@ public class ManagementIdentityConnector {
       final HttpHeaders headers = request.getHeaders();
       headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + token);
       return execution.execute(request, body);
+    }
+  }
+
+  public class EndpointUnavailableInterceptor implements ClientHttpRequestInterceptor {
+
+    @Override
+    public ClientHttpResponse intercept(
+        final HttpRequest request, final byte[] body, final ClientHttpRequestExecution execution)
+        throws IOException {
+      final var result = execution.execute(request, body);
+      if (result.getStatusCode() == HttpStatus.NOT_FOUND) {
+        throw new NotImplementedException(
+            "Endpoint is not implemented", request.getURI().toString());
+      }
+      return result;
     }
   }
 }

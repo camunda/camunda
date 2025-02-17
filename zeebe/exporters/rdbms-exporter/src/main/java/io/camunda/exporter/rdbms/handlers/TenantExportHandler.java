@@ -49,19 +49,19 @@ public class TenantExportHandler implements RdbmsExportHandler<TenantRecordValue
     switch (record.getIntent()) {
       case TenantIntent.CREATED -> tenantWriter.create(map(value));
       case TenantIntent.UPDATED -> tenantWriter.update(map(value));
-      case TenantIntent.DELETED -> tenantWriter.delete(value.getTenantKey());
+      case TenantIntent.DELETED -> tenantWriter.delete(map(value));
       case TenantIntent.ENTITY_ADDED ->
           tenantWriter.addMember(
               new TenantMemberDbModel.Builder()
-                  .tenantKey(value.getTenantKey())
-                  .entityKey(value.getEntityKey())
+                  .tenantId(value.getTenantId())
+                  .entityId(value.getEntityId())
                   .entityType(value.getEntityType().name())
                   .build());
       case TenantIntent.ENTITY_REMOVED ->
           tenantWriter.removeMember(
               new TenantMemberDbModel.Builder()
-                  .tenantKey(value.getTenantKey())
-                  .entityKey(value.getEntityKey())
+                  .tenantId(value.getTenantId())
+                  .entityId(value.getEntityId())
                   .entityType(value.getEntityType().name())
                   .build());
       default -> LOG.warn("Unexpected intent {} for tenant record", record.getIntent());
@@ -73,6 +73,7 @@ public class TenantExportHandler implements RdbmsExportHandler<TenantRecordValue
         .tenantKey(recordValue.getTenantKey())
         .tenantId(recordValue.getTenantId())
         .name(recordValue.getName())
+        .description(recordValue.getDescription())
         .build();
   }
 }

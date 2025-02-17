@@ -18,7 +18,6 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
-import io.camunda.zeebe.gateway.protocol.rest.UserChangeset;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -76,7 +75,17 @@ public class UserControllerTest extends RestControllerTest {
         .bodyValue(dto)
         .exchange()
         .expectStatus()
-        .isCreated();
+        .isCreated()
+        .expectBody()
+        .json(
+            """
+          {
+            "userKey": "-1",
+            "username": "foo",
+            "name": "Foo Bar",
+            "email": "bar@baz.com"
+          }
+        """);
 
     // then
     verify(userServices, times(1)).createUser(dto);
@@ -293,49 +302,70 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldRejectUserCreationWithTooLongUsername() {
+    // given
+    final var username = "x".repeat(257);
+    final var request = validUserWithPasswordRequest().username(username);
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided username exceeds the limit of 256 characters.",
+              "instance": "%s"
+            }"""
+            .formatted(USER_BASE_URL));
+    verifyNoInteractions(userServices);
+  }
+
+  @Test
   void deleteUserShouldReturnNoContent() {
     // given
-    final long key = 1234L;
+    final String username = "tester";
 
-    final var userRecord = new UserRecord().setUserKey(key);
+    final var userRecord = new UserRecord().setUsername(username);
 
-    when(userServices.deleteUser(key)).thenReturn(CompletableFuture.completedFuture(userRecord));
+    when(userServices.deleteUser(username))
+        .thenReturn(CompletableFuture.completedFuture(userRecord));
 
     // when
     webClient
         .delete()
-        .uri(USER_BASE_URL + "/{key}", key)
+        .uri("%s/%s".formatted(USER_BASE_URL, username))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
         .isNoContent();
 
     // then
-    verify(userServices, times(1)).deleteUser(key);
+    verify(userServices, times(1)).deleteUser(username);
   }
 
   @Test
   void updateUserShouldReturnNoContent() {
     // given
-    final UserDTO user = new UserDTO(100L, "", "Alice", "test+alice@camunda.com", null);
+    final String username = "alice-test";
+    final UserDTO user = new UserDTO(username, "Alice", "test+alice@camunda.com", null);
     when(userServices.updateUser(any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new UserRecord()
-                    .setUserKey(user.userKey())
                     .setName(user.name())
                     .setUsername(user.username())
                     .setEmail(user.email())));
 
     // when / then
     webClient
-        .patch()
-        .uri("%s/%s".formatted(USER_BASE_URL, user.userKey()))
+        .put()
+        .uri("%s/%s".formatted(USER_BASE_URL, user.username()))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(
-            new UserUpdateRequest()
-                .changeset(new UserChangeset().name(user.name()).email(user.email())))
+            new UserUpdateRequest().name(user.name()).email(user.email()).password(user.password()))
         .exchange()
         .expectStatus()
         .isNoContent();
@@ -344,7 +374,7 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   private UserDTO validCreateUserRequest() {
-    return new UserDTO(null, "foo", "Foo Bar", "bar@baz.com", "zabraboof");
+    return new UserDTO("foo", "Foo Bar", "bar@baz.com", "zabraboof");
   }
 
   private UserRequest validUserWithPasswordRequest() {

@@ -9,9 +9,9 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.service.DecisionInstanceServices;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceGetQueryResponse;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceGetQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
@@ -31,14 +31,14 @@ public class DecisionInstanceController {
   @Autowired private DecisionInstanceServices decisionInstanceServices;
 
   @CamundaPostMapping(path = "/search")
-  public ResponseEntity<DecisionInstanceSearchQueryResponse> searchDecisionInstances(
-      @RequestBody(required = false) final DecisionInstanceSearchQueryRequest query) {
+  public ResponseEntity<DecisionInstanceSearchQueryResult> searchDecisionInstances(
+      @RequestBody(required = false) final DecisionInstanceSearchQuery query) {
     return SearchQueryRequestMapper.toDecisionInstanceQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
   @CamundaGetMapping(path = "/{decisionInstanceKey}")
-  public ResponseEntity<DecisionInstanceGetQueryResponse> getDecisionInstanceById(
+  public ResponseEntity<DecisionInstanceGetQueryResult> getDecisionInstanceById(
       @PathVariable("decisionInstanceKey") final String decisionInstanceId) {
     try {
       return ResponseEntity.ok(
@@ -51,7 +51,7 @@ public class DecisionInstanceController {
     }
   }
 
-  private ResponseEntity<DecisionInstanceSearchQueryResponse> search(
+  private ResponseEntity<DecisionInstanceSearchQueryResult> search(
       final DecisionInstanceQuery query) {
     try {
       final var decisionInstances =

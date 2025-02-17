@@ -16,6 +16,7 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.client.api.search.response.UserTaskState;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.UserTaskResult;
 import java.util.List;
@@ -25,7 +26,7 @@ public class UserTaskImpl implements UserTask {
 
   private final Long userTaskKey;
   private final String name;
-  private final String state;
+  private final UserTaskState state;
   private final String assignee;
   private final String elementId;
   private final Long elementInstanceKey;
@@ -48,7 +49,7 @@ public class UserTaskImpl implements UserTask {
   public UserTaskImpl(final UserTaskResult item) {
     userTaskKey = ParseUtil.parseLongOrNull(item.getUserTaskKey());
     name = item.getName();
-    state = item.getState().getValue();
+    state = UserTaskState.fromProtocolState(item.getState());
     assignee = item.getAssignee();
     elementId = item.getElementId();
     elementInstanceKey = ParseUtil.parseLongOrNull(item.getElementInstanceKey());
@@ -80,7 +81,7 @@ public class UserTaskImpl implements UserTask {
   }
 
   @Override
-  public String getState() {
+  public UserTaskState getState() {
     return state;
   }
 

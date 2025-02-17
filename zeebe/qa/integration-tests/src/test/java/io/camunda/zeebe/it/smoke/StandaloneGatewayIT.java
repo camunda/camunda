@@ -15,20 +15,19 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneGateway;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.restassured.http.ContentType;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 
-@AutoCloseResources
 @ZeebeIntegration
 final class StandaloneGatewayIT {
 
   @TestZeebe(awaitReady = false, awaitCompleteTopology = false) // no brokers
-  private final TestStandaloneGateway gateway = new TestStandaloneGateway();
+  private final TestStandaloneGateway gateway =
+      new TestStandaloneGateway().withUnauthenticatedAccess();
 
-  @AutoCloseResource private CamundaClient client;
+  @AutoClose private CamundaClient client;
 
   @BeforeEach
   void beforeEach() {

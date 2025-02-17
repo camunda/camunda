@@ -12,7 +12,7 @@
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.RoleDbQuery">
     SELECT COUNT(*)
-    FROM ROLES r
+    FROM ${prefix}ROLES r
     <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchFilter"/>
   </select>
 
@@ -25,8 +25,8 @@
     rm.ROLE_KEY AS MEMBER_ROLE_KEY,
     rm.ENTITY_KEY AS MEMBER_ENTITY_KEY,
     rm.ENTITY_TYPE AS MEMBER_ENTITY_TYPE
-    FROM ROLES r
-    LEFT JOIN ROLE_MEMBER rm ON r.ROLE_KEY = rm.ROLE_KEY
+    FROM ${prefix}ROLES r
+    LEFT JOIN ${prefix}ROLE_MEMBER rm ON r.ROLE_KEY = rm.ROLE_KEY
     <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -57,7 +57,7 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.RoleDbModel"
     flushCache="true">
-    INSERT INTO ROLES (ROLE_KEY, NAME)
+    INSERT INTO ${prefix}ROLES (ROLE_KEY, NAME)
     VALUES (#{roleKey}, #{name})
   </insert>
 
@@ -65,14 +65,14 @@
     id="update"
     parameterType="io.camunda.db.rdbms.write.domain.RoleDbModel"
     flushCache="true">
-    UPDATE ROLES
+    UPDATE ${prefix}ROLES
     SET NAME = #{name}
     WHERE ROLE_KEY = #{roleKey}
   </update>
 
   <delete id="delete" parameterType="java.lang.Long" flushCache="true">
     DELETE
-    FROM ROLES
+    FROM ${prefix}ROLES
     WHERE ROLE_KEY = #{roleKey}
   </delete>
 
@@ -80,7 +80,7 @@
     id="insertMember"
     parameterType="io.camunda.db.rdbms.write.domain.RoleMemberDbModel"
     flushCache="true">
-    INSERT INTO ROLE_MEMBER (ROLE_KEY, ENTITY_KEY, ENTITY_TYPE)
+    INSERT INTO ${prefix}ROLE_MEMBER (ROLE_KEY, ENTITY_KEY, ENTITY_TYPE)
     VALUES (#{roleKey}, #{entityKey}, #{entityType})
   </insert>
 
@@ -89,7 +89,7 @@
     parameterType="io.camunda.db.rdbms.write.domain.RoleMemberDbModel"
     flushCache="true">
     DELETE
-    FROM ROLE_MEMBER
+    FROM ${prefix}ROLE_MEMBER
     WHERE ROLE_KEY = #{roleKey}
       AND ENTITY_KEY = #{entityKey}
       AND ENTITY_TYPE = #{entityType}
@@ -100,7 +100,7 @@
     parameterType="java.lang.Long"
     flushCache="true">
     DELETE
-    FROM ROLE_MEMBER
+    FROM ${prefix}ROLE_MEMBER
     WHERE ROLE_KEY = #{roleKey}
   </delete>
 

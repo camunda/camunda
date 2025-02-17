@@ -104,7 +104,7 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
           if (monitoredComponent != null) {
             componentHealth.remove(componentName);
             monitoredComponent.component.removeFailureListener(monitoredComponent);
-            graphListener.unregisterRelationship(name, componentName);
+            graphListener.unregisterRelationship(componentName, name);
             graphListener.unregisterNode(monitoredComponent.component);
             log.trace("Unregistered edge {}:{}", name, componentName);
           }

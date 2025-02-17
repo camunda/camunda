@@ -353,11 +353,11 @@ public class VariablesQueryControllerTest extends RestControllerTest {
   private static Stream<Arguments> provideAdvancedSearchParameters() {
     final var streamBuilder = Stream.<Arguments>builder();
 
-    longOperationTestCases(
+    keyOperationTestCases(
         streamBuilder,
         "scopeKey",
         ops -> new VariableFilter.Builder().scopeKeyOperations(ops).build());
-    longOperationTestCases(
+    keyOperationTestCases(
         streamBuilder,
         "processInstanceKey",
         ops -> new VariableFilter.Builder().processInstanceKeyOperations(ops).build());

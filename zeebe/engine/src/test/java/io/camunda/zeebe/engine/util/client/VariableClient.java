@@ -92,10 +92,10 @@ public final class VariableClient {
     return expectation.apply(position);
   }
 
-  public Record<VariableDocumentRecordValue> update(final long userKey) {
+  public Record<VariableDocumentRecordValue> update(final String username) {
     final long position =
         writer.writeCommand(
-            VariableDocumentIntent.UPDATE, variableDocumentRecord, userKey, authorizedTenants);
+            VariableDocumentIntent.UPDATE, username, variableDocumentRecord, authorizedTenants);
     return expectation.apply(position);
   }
 }

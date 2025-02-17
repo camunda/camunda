@@ -12,10 +12,10 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.service.MappingServices;
 import io.camunda.service.MappingServices.MappingDTO;
-import io.camunda.zeebe.gateway.protocol.rest.MappingItem;
+import io.camunda.zeebe.gateway.protocol.rest.MappingResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -67,25 +67,30 @@ public class MappingController {
   }
 
   @CamundaGetMapping(path = "/{mappingKey}")
-  public ResponseEntity<MappingItem> getMapping(@PathVariable final long mappingKey) {
+  public ResponseEntity<MappingResult> getMapping(@PathVariable final long mappingKey) {
     try {
       return ResponseEntity.ok()
-          .body(SearchQueryResponseMapper.toMapping(mappingServices.getMapping(mappingKey)));
+          .body(
+              SearchQueryResponseMapper.toMapping(
+                  mappingServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .getMapping(mappingKey)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
   }
 
   @CamundaPostMapping(path = "/search")
-  public ResponseEntity<MappingSearchQueryResponse> searchMappings(
+  public ResponseEntity<MappingSearchQueryResult> searchMappings(
       @RequestBody(required = false) final MappingSearchQueryRequest query) {
     return SearchQueryRequestMapper.toMappingQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  private ResponseEntity<MappingSearchQueryResponse> search(final MappingQuery query) {
+  private ResponseEntity<MappingSearchQueryResult> search(final MappingQuery query) {
     try {
-      final var result = mappingServices.search(query);
+      final var result =
+          mappingServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toMappingSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);

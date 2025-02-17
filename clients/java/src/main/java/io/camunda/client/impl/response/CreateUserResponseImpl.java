@@ -23,9 +23,20 @@ public class CreateUserResponseImpl implements CreateUserResponse {
 
   private final JsonMapper jsonMapper;
   private long userKey;
+  private String username;
+  private String name;
+  private String email;
 
   public CreateUserResponseImpl(final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
+  }
+
+  public CreateUserResponseImpl setResponse(final UserCreateResult response) {
+    userKey = Long.parseLong(response.getUserKey());
+    username = response.getUsername();
+    name = response.getName();
+    email = response.getEmail();
+    return this;
   }
 
   @Override
@@ -33,8 +44,18 @@ public class CreateUserResponseImpl implements CreateUserResponse {
     return userKey;
   }
 
-  public CreateUserResponseImpl setResponse(final UserCreateResult response) {
-    userKey = Long.parseLong(response.getUserKey());
-    return this;
+  @Override
+  public String getUsername() {
+    return username;
+  }
+
+  @Override
+  public String getName() {
+    return name;
+  }
+
+  @Override
+  public String getEmail() {
+    return email;
   }
 }

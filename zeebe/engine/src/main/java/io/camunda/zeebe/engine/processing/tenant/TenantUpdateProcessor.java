@@ -21,12 +21,12 @@ import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.tenant.PersistedTenant;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import org.apache.commons.lang3.StringUtils;
 
 public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
 
@@ -57,24 +57,15 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
   public void processNewCommand(final TypedRecord<TenantRecord> command) {
 
     final var record = command.getValue();
-    final var tenantKey = record.getTenantKey();
+    final var tenantId = record.getTenantId();
 
-    final var persistedTenant = tenantState.getTenantByKey(tenantKey);
+    final var persistedTenant = tenantState.getTenantById(tenantId);
     if (persistedTenant.isEmpty()) {
       rejectCommand(
           command,
           RejectionType.NOT_FOUND,
-          "Expected to update tenant with key '%s', but no tenant with this key exists."
-              .formatted(tenantKey));
-      return;
-    }
-
-    if (!StringUtils.isEmpty(record.getTenantId())) {
-      rejectCommand(
-          command,
-          RejectionType.INVALID_ARGUMENT,
-          "Tenant ID cannot be updated. Expected no tenant ID, but received '%s'."
-              .formatted(record.getTenantId()));
+          "Expected to update tenant with id '%s', but no tenant with this id exists."
+              .formatted(tenantId));
       return;
     }
 
@@ -112,6 +103,10 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
     if (!updatedName.isEmpty()) {
       existingTenant.setName(updatedName);
     }
+    final var updatedDescription = updateRecord.getDescription();
+    if (!existingTenant.getDescription().equals(updatedDescription)) {
+      existingTenant.setDescription(updatedDescription);
+    }
   }
 
   private void updateStateAndDistribute(
@@ -120,21 +115,22 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
         new TenantRecord()
             .setTenantKey(persistedTenant.getTenantKey())
             .setTenantId(persistedTenant.getTenantId())
-            .setName(persistedTenant.getName());
+            .setName(persistedTenant.getName())
+            .setDescription(persistedTenant.getDescription());
 
     stateWriter.appendFollowUpEvent(
         persistedTenant.getTenantKey(), TenantIntent.UPDATED, updatedRecord);
     responseWriter.writeEventOnCommand(
         persistedTenant.getTenantKey(), TenantIntent.UPDATED, updatedRecord, command);
-    distributeCommand(command);
+    distributeUpdate(updatedRecord);
   }
 
-  private void distributeCommand(final TypedRecord<TenantRecord> command) {
+  private void distributeUpdate(final TenantRecord updatedTenant) {
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior
         .withKey(distributionKey)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
-        .distribute(command);
+        .distribute(ValueType.TENANT, TenantIntent.UPDATE, updatedTenant);
   }
 
   private void rejectCommandWithUnauthorizedError(

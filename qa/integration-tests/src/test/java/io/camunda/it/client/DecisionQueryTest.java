@@ -17,9 +17,7 @@ import io.camunda.client.api.response.DecisionRequirements;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.impl.search.response.DecisionDefinitionImpl;
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.it.utils.MultiDbTest;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -37,24 +35,15 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-@ZeebeIntegration
+@MultiDbTest
 class DecisionQueryTest {
   private static final List<Decision> DEPLOYED_DECISIONS = new ArrayList<>();
   private static final List<DecisionRequirements> DEPLOYED_DECISION_REQUIREMENTS =
       new ArrayList<>();
   private static CamundaClient camundaClient;
 
-  @TestZeebe(initMethod = "initTestStandaloneCamunda")
-  private static TestStandaloneCamunda testStandaloneCamunda;
-
-  @SuppressWarnings("unused")
-  static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda();
-  }
-
   @BeforeAll
   static void beforeAll() {
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     Stream.of(
             "decisions/decision_model.dmn",
             "decisions/decision_model_1.dmn",
@@ -297,7 +286,7 @@ class DecisionQueryTest {
     final var result =
         camundaClient
             .newDecisionRequirementsQuery()
-            .filter(f -> f.name(decisionRequirementName))
+            .filter(f -> f.decisionRequirementsName(decisionRequirementName))
             .send()
             .join();
 
@@ -396,9 +385,17 @@ class DecisionQueryTest {
   void shouldSortByDecisionRequirementsName() {
     // when
     final var resultAsc =
-        camundaClient.newDecisionRequirementsQuery().sort(s -> s.name().asc()).send().join();
+        camundaClient
+            .newDecisionRequirementsQuery()
+            .sort(s -> s.decisionRequirementsName().asc())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newDecisionRequirementsQuery().sort(s -> s.name().desc()).send().join();
+        camundaClient
+            .newDecisionRequirementsQuery()
+            .sort(s -> s.decisionRequirementsName().desc())
+            .send()
+            .join();
 
     // Extract unique names from the results
     final List<String> uniqueAscNames =

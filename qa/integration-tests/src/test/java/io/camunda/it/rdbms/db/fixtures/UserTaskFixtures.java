@@ -28,8 +28,8 @@ public final class UserTaskFixtures extends CommonFixtures {
     final var builder =
         new Builder()
             .userTaskKey(nextKey())
-            .elementId("flowNodeBpmnId-" + RANDOM.nextInt(1000))
-            .processDefinitionId("processDefinitionId-" + RANDOM.nextInt(1000))
+            .elementId(generateRandomString("flowNodeBpmnId"))
+            .processDefinitionId(generateRandomString("processDefinitionId"))
             .processInstanceKey(nextKey())
             .creationDate(NOW)
             .completionDate(NOW.plusDays(1))
@@ -39,13 +39,12 @@ public final class UserTaskFixtures extends CommonFixtures {
             .processDefinitionKey(nextKey())
             .processInstanceKey(nextKey())
             .elementInstanceKey(nextKey())
-            .tenantId("tenant-" + RANDOM.nextInt(1000))
+            .tenantId(generateRandomString("tenant"))
             .dueDate(NOW.plusDays(3))
             .followUpDate(NOW.plusDays(2))
-            .candidateGroups(
-                List.of("group" + RANDOM.nextInt(1000), "group" + RANDOM.nextInt(1000)))
-            .candidateUsers(List.of("user" + RANDOM.nextInt(1000), "user" + RANDOM.nextInt(1000)))
-            .externalFormReference("externalFormReference-" + RANDOM.nextInt(1000))
+            .candidateGroups(generateRandomStrings("group", 2))
+            .candidateUsers(generateRandomStrings("user", 2))
+            .externalFormReference(generateRandomString("externalFormReference"))
             .processDefinitionVersion(RANDOM.nextInt(100))
             .customHeaders(Map.of("key", "value"))
             .priority(RANDOM.nextInt(100));

@@ -7,19 +7,21 @@
  */
 package io.camunda.zeebe.engine.processing.usertask;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
-import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.function.Consumer;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -28,6 +30,7 @@ import org.junit.Test;
 public class ClaimUserTaskTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
+  private static final String DEFAULT_ACTION = "claim";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -47,7 +50,7 @@ public class ClaimUserTaskTest {
   }
 
   @Test
-  public void shouldEmitClaimingEventForClaimedUserTask() {
+  public void shouldEmitClaimAndAssigningEventsUponClaimingUserTask() {
     // given
     ENGINE.deployment().withXmlResource(process()).deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -58,24 +61,33 @@ public class ClaimUserTaskTest {
             .getKey();
 
     // when
-    final Record<UserTaskRecordValue> claimedRecord =
-        ENGINE.userTask().withKey(userTaskKey).withAssignee("foo").claim();
+    final var claimingRecord = ENGINE.userTask().withKey(userTaskKey).withAssignee("foo").claim();
 
     // then
-    final UserTaskRecordValue recordValue = claimedRecord.getValue();
-
-    Assertions.assertThat(claimedRecord)
+    Assertions.assertThat(claimingRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.CLAIMING);
 
-    Assertions.assertThat(recordValue)
-        .hasUserTaskKey(userTaskKey)
-        .hasAction("claim")
-        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    final var claimingRecordValue = claimingRecord.getValue();
+    final var assignedRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED).getFirst().getValue();
+
+    assertThat(List.of(claimingRecordValue, assignedRecordValue))
+        .describedAs(
+            "Ensure CLAIMING and ASSIGNED records have consistent attribute values "
+                + "as dependent applications will rely on them to update user task data internally")
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .hasUserTaskKey(userTaskKey)
+                    .hasAction(DEFAULT_ACTION)
+                    .hasAssignee("foo")
+                    .hasOnlyChangedAttributes(UserTaskRecord.ASSIGNEE)
+                    .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
 
   @Test
-  public void shouldTrackCustomActionInClaimingEvent() {
+  public void shouldEmitClaimAndAssigningEventsUponClaimingUserTaskWithCustomAction() {
     // given
     ENGINE.deployment().withXmlResource(process()).deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -86,7 +98,7 @@ public class ClaimUserTaskTest {
             .getKey();
 
     // when
-    final Record<UserTaskRecordValue> claimedRecord =
+    final var claimingRecord =
         ENGINE
             .userTask()
             .withKey(userTaskKey)
@@ -95,33 +107,26 @@ public class ClaimUserTaskTest {
             .claim();
 
     // then
-    final UserTaskRecordValue recordValue = claimedRecord.getValue();
-
-    Assertions.assertThat(claimedRecord)
+    Assertions.assertThat(claimingRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.CLAIMING);
 
-    Assertions.assertThat(recordValue)
-        .hasUserTaskKey(userTaskKey)
-        .hasAction("customAction")
-        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  }
+    final var claimingRecordValue = claimingRecord.getValue();
+    final var assignedRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED).getFirst().getValue();
 
-  @Test
-  public void shouldClaimUserTaskForAssignee() {
-    // given
-    ENGINE.deployment().withXmlResource(process()).deploy();
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    // when
-    final Record<UserTaskRecordValue> claimedRecord =
-        ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("foo").claim();
-
-    // then
-    Assertions.assertThat(claimedRecord)
-        .hasRecordType(RecordType.EVENT)
-        .hasIntent(UserTaskIntent.CLAIMING);
-    Assertions.assertThat(claimedRecord.getValue()).hasAssignee("foo");
+    assertThat(List.of(claimingRecordValue, assignedRecordValue))
+        .describedAs(
+            "Ensure CLAIMING and ASSIGNED records have consistent attribute values "
+                + "as dependent applications will rely on them to update user task data internally")
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .hasUserTaskKey(userTaskKey)
+                    .hasAction("customAction")
+                    .hasAssignee("foo")
+                    .hasOnlyChangedAttributes(UserTaskRecord.ASSIGNEE)
+                    .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
 
   @Test
@@ -131,11 +136,16 @@ public class ClaimUserTaskTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    final Record<UserTaskRecordValue> claimedRecord =
-        ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("").expectRejection().claim();
+    final var claimingRecord =
+        ENGINE
+            .userTask()
+            .ofInstance(processInstanceKey)
+            .withoutAssignee()
+            .expectRejection()
+            .claim();
 
     // then
-    Assertions.assertThat(claimedRecord).hasRejectionType(RejectionType.INVALID_STATE);
+    Assertions.assertThat(claimingRecord).hasRejectionType(RejectionType.INVALID_STATE);
   }
 
   @Test
@@ -144,11 +154,11 @@ public class ClaimUserTaskTest {
     final int key = 123;
 
     // when
-    final Record<UserTaskRecordValue> claimedRecord =
+    final var claimingRecord =
         ENGINE.userTask().withKey(key).withAssignee("foo").expectRejection().claim();
 
     // then
-    Assertions.assertThat(claimedRecord).hasRejectionType(RejectionType.NOT_FOUND);
+    Assertions.assertThat(claimingRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -163,7 +173,7 @@ public class ClaimUserTaskTest {
             .getKey();
 
     // when
-    final Record<UserTaskRecordValue> claimedRecord =
+    final var claimingRecord =
         ENGINE
             .userTask()
             .withKey(userTaskKey)
@@ -172,7 +182,7 @@ public class ClaimUserTaskTest {
             .claim();
 
     // then
-    Assertions.assertThat(claimedRecord).hasRejectionType(RejectionType.INVALID_STATE);
+    Assertions.assertThat(claimingRecord).hasRejectionType(RejectionType.INVALID_STATE);
   }
 
   @Test
@@ -187,17 +197,18 @@ public class ClaimUserTaskTest {
             .getKey();
 
     // when
-    final Record<UserTaskRecordValue> claimedRecord =
-        ENGINE.userTask().withKey(userTaskKey).withAssignee("").expectRejection().claim();
+    final var claimingRecord =
+        ENGINE.userTask().withKey(userTaskKey).withoutAssignee().expectRejection().claim();
 
     // then
-    Assertions.assertThat(claimedRecord).hasRejectionType(RejectionType.INVALID_STATE);
+    Assertions.assertThat(claimingRecord).hasRejectionType(RejectionType.INVALID_STATE);
   }
 
   @Test
   public void shouldClaimUserTaskWithAssigneeSelf() {
     // given
-    ENGINE.deployment().withXmlResource(process(b -> b.zeebeAssignee("foo"))).deploy();
+    final var initialAssignee = "samwise";
+    ENGINE.deployment().withXmlResource(process(b -> b.zeebeAssignee(initialAssignee))).deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     final long userTaskKey =
         RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
@@ -206,14 +217,37 @@ public class ClaimUserTaskTest {
             .getKey();
 
     // when
-    final Record<UserTaskRecordValue> claimedRecord =
-        ENGINE.userTask().withKey(userTaskKey).withAssignee("foo").claim();
+    final var claimingRecord =
+        ENGINE.userTask().withKey(userTaskKey).withAssignee(initialAssignee).claim();
 
     // then
-    Assertions.assertThat(claimedRecord)
+    Assertions.assertThat(claimingRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.CLAIMING);
-    Assertions.assertThat(claimedRecord.getValue()).hasAssignee("foo");
+
+    final var claimingRecordValue = claimingRecord.getValue();
+    final var assignedRecordValue =
+        // querying for the first `ASSIGNED` record right after `CLAIMING` record
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+            .filter(r -> r.getPosition() > claimingRecord.getPosition())
+            .getFirst()
+            .getValue();
+
+    assertThat(List.of(claimingRecordValue, assignedRecordValue))
+        .describedAs(
+            "Ensure CLAIMING and ASSIGNED records have consistent attribute values "
+                + "as dependent applications will rely on them to update user task data internally")
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .hasUserTaskKey(userTaskKey)
+                    .hasAction(DEFAULT_ACTION)
+                    .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+                    .hasAssignee(initialAssignee)
+                    .describedAs(
+                        "Expect that the `changedAttributes` field is empty because the task was "
+                            + "claimed by the same user and the `assignee` value did not change")
+                    .hasNoChangedAttributes());
   }
 
   @Test
@@ -225,11 +259,11 @@ public class ClaimUserTaskTest {
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
     // when
-    final Record<UserTaskRecordValue> claimedRecord =
+    final var claimingRecord =
         ENGINE.userTask().ofInstance(processInstanceKey).expectRejection().claim();
 
     // then
-    Assertions.assertThat(claimedRecord).hasRejectionType(RejectionType.NOT_FOUND);
+    Assertions.assertThat(claimingRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -241,7 +275,7 @@ public class ClaimUserTaskTest {
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
 
     // when
-    final Record<UserTaskRecordValue> claimedRecord =
+    final var claimingRecord =
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
@@ -250,13 +284,24 @@ public class ClaimUserTaskTest {
             .claim();
 
     // then
-    final UserTaskRecordValue recordValue = claimedRecord.getValue();
-
-    Assertions.assertThat(claimedRecord)
+    Assertions.assertThat(claimingRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.CLAIMING);
 
-    Assertions.assertThat(recordValue).hasTenantId(tenantId);
+    final var claimingRecordValue = claimingRecord.getValue();
+    final var assignedRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED).getFirst().getValue();
+
+    assertThat(List.of(claimingRecordValue, assignedRecordValue))
+        .describedAs(
+            "Ensure CLAIMING and ASSIGNED records have consistent attribute values "
+                + "as dependent applications will rely on them to update user task data internally")
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .hasAction(DEFAULT_ACTION)
+                    .hasAssignee("foo")
+                    .hasTenantId(tenantId));
   }
 
   @Test
@@ -269,7 +314,7 @@ public class ClaimUserTaskTest {
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
 
     // when
-    final Record<UserTaskRecordValue> claimedRecord =
+    final var claimingRecord =
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
@@ -278,6 +323,6 @@ public class ClaimUserTaskTest {
             .claim();
 
     // then
-    Assertions.assertThat(claimedRecord).hasRejectionType(RejectionType.NOT_FOUND);
+    Assertions.assertThat(claimingRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 }

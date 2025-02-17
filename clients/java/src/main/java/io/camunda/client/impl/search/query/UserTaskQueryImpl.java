@@ -29,29 +29,28 @@ import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.sort.UserTaskSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.impl.search.SearchRequestPageImpl;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.search.sort.UserTaskSortImpl;
-import io.camunda.client.protocol.rest.UserTaskFilterRequest;
-import io.camunda.client.protocol.rest.UserTaskSearchQueryRequest;
+import io.camunda.client.protocol.rest.UserTaskSearchQuery;
 import io.camunda.client.protocol.rest.UserTaskSearchQueryResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class UserTaskQueryImpl
-    extends TypedSearchRequestPropertyProvider<UserTaskSearchQueryRequest>
+public class UserTaskQueryImpl extends TypedSearchRequestPropertyProvider<UserTaskSearchQuery>
     implements UserTaskQuery {
 
-  private final UserTaskSearchQueryRequest request;
+  private final UserTaskSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
   public UserTaskQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
-    request = new UserTaskSearchQueryRequest();
+    request = new UserTaskSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -78,7 +77,8 @@ public class UserTaskQueryImpl
 
   @Override
   public UserTaskQuery filter(final UserTaskFilter value) {
-    final UserTaskFilterRequest filter = provideSearchRequestProperty(value);
+    final io.camunda.client.protocol.rest.UserTaskFilter filter =
+        provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
@@ -91,7 +91,9 @@ public class UserTaskQueryImpl
   @Override
   public UserTaskQuery sort(final UserTaskSort value) {
     final UserTaskSortImpl sorting = (UserTaskSortImpl) value;
-    request.setSort(sorting.getSearchRequestProperty());
+    request.setSort(
+        SearchQuerySortRequestMapper.toUserTaskSearchQuerySortRequest(
+            sorting.getSearchRequestProperty()));
     return this;
   }
 
@@ -113,7 +115,7 @@ public class UserTaskQueryImpl
   }
 
   @Override
-  protected UserTaskSearchQueryRequest getSearchRequestProperty() {
+  protected UserTaskSearchQuery getSearchRequestProperty() {
     return request;
   }
 }

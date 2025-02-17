@@ -27,27 +27,27 @@ import org.junit.jupiter.api.Test;
 
 public class DeleteTenantTest extends ClientRestTest {
 
-  private static final long TENANT_KEY = 123L;
+  private static final String TENANT_ID = "my-tenant-id";
 
   @Test
   void shouldDeleteTenant() {
     // when
-    client.newDeleteTenantCommand(TENANT_KEY).send().join();
+    client.newDeleteTenantCommand(TENANT_ID).send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
-    assertThat(requestPath).isEqualTo(REST_API_PATH + "/tenants/" + TENANT_KEY);
+    assertThat(requestPath).isEqualTo(REST_API_PATH + "/tenants/" + TENANT_ID);
   }
 
   @Test
   void shouldRaiseExceptionOnNotFoundTenant() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID,
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
-    assertThatThrownBy(() -> client.newDeleteTenantCommand(TENANT_KEY).send().join())
+    assertThatThrownBy(() -> client.newDeleteTenantCommand(TENANT_ID).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -56,11 +56,11 @@ public class DeleteTenantTest extends ClientRestTest {
   void shouldHandleServerError() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID,
         () -> new ProblemDetail().title("Internal Server Error").status(500));
 
     // when / then
-    assertThatThrownBy(() -> client.newDeleteTenantCommand(TENANT_KEY).send().join())
+    assertThatThrownBy(() -> client.newDeleteTenantCommand(TENANT_ID).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 500: 'Internal Server Error'");
   }
@@ -69,11 +69,11 @@ public class DeleteTenantTest extends ClientRestTest {
   void shouldRaiseExceptionOnForbiddenRequest() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID,
         () -> new ProblemDetail().title("Forbidden").status(403));
 
     // when / then
-    assertThatThrownBy(() -> client.newDeleteTenantCommand(TENANT_KEY).send().join())
+    assertThatThrownBy(() -> client.newDeleteTenantCommand(TENANT_ID).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 403: 'Forbidden'");
   }

@@ -24,9 +24,9 @@ public interface AssignUserToTenantCommandStep1
   /**
    * Sets the user key for the assignment.
    *
-   * @param userKey the key of the user
+   * @param username the unique identifier for the user
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  AssignUserToTenantCommandStep1 userKey(long userKey);
+  AssignUserToTenantCommandStep1 username(String username);
 }

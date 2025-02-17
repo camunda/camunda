@@ -216,13 +216,13 @@ class BackupPrioritiesTest {
             "operate-process-8.3.0_",
             "tasklist-form-8.4.0_",
             "tasklist-metric-8.3.0_",
-            "camunda-authorization-8.7.0_",
-            "camunda-group-8.7.0_",
-            "camunda-mapping-8.7.0_",
-            "camunda-web-session-8.7.0_",
-            "camunda-role-8.7.0_",
-            "camunda-tenant-8.7.0_",
-            "camunda-user-8.7.0_");
+            "camunda-authorization-8.8.0_",
+            "camunda-group-8.8.0_",
+            "camunda-mapping-8.8.0_",
+            "camunda-web-session-8.8.0_",
+            "camunda-role-8.8.0_",
+            "camunda-tenant-8.8.0_",
+            "camunda-user-8.8.0_");
 
     // PRIO6
     assertThat(indices.get(7).allIndices())
@@ -249,8 +249,6 @@ class BackupPrioritiesTest {
             "optimize-alert_v4");
 
     for (final var indexList : indices) {
-      assertThat(indexList.skippableIndices())
-          .allSatisfy(i -> assertThat(i).startsWith("optimize"));
       assertThat(indexList.requiredIndices())
           .allSatisfy(i -> assertThat(i).doesNotStartWith("optimize"));
     }

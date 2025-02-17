@@ -118,7 +118,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
       final ExecutableUserTask element, final BpmnElementContext context) {
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
-    if (element.hasExecutionListeners()) {
+    if (element.hasExecutionListeners() || element.hasTaskListeners()) {
       jobBehavior.cancelJob(context);
     }
 

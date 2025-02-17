@@ -9,7 +9,6 @@ package io.camunda.zeebe.broker.client.api.dto;
 
 import io.camunda.zeebe.broker.client.api.UnsupportedBrokerResponseException;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
-import io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandRequest;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandResponse;
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder;
@@ -18,6 +17,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.transport.RequestType;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -66,9 +66,8 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
   }
 
   @Override
-  public void setAuthorization(final String authorizationToken) {
-    request.setAuthorization(
-        new AuthInfo().setFormatProp(AuthDataFormat.JWT).setAuthData(authorizationToken));
+  public void setAuthorization(final Map<String, Object> claims) {
+    request.setAuthorization(new AuthInfo().setClaims(claims));
   }
 
   @Override

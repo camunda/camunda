@@ -40,16 +40,15 @@ public class UpdateTenantMultiPartitionTest {
   public void shouldDistributeTenantUpdateCommand() {
     // when
     final var tenantId = UUID.randomUUID().toString();
-    final var tenantKey =
-        engine
-            .tenant()
-            .newTenant()
-            .withTenantId(tenantId)
-            .withName("Tenant 1")
-            .create()
-            .getValue()
-            .getTenantKey();
-    engine.tenant().updateTenant(tenantKey).withName("Tenant 2").update();
+    engine
+        .tenant()
+        .newTenant()
+        .withTenantId(tenantId)
+        .withName("Tenant 1")
+        .create()
+        .getValue()
+        .getTenantKey();
+    engine.tenant().updateTenant(tenantId).withName("Tenant 2").update();
 
     RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
         .withDistributionIntent(TenantIntent.CREATE)
@@ -105,9 +104,8 @@ public class UpdateTenantMultiPartitionTest {
   public void shouldDistributeInIdentityQueue() {
     // when
     final var tenantId = UUID.randomUUID().toString();
-    final var tenantRecord =
-        engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create();
-    engine.tenant().updateTenant(tenantRecord.getKey()).withName("Tenant 2").update();
+    engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create();
+    engine.tenant().updateTenant(tenantId).withName("Tenant 2").update();
 
     // then
     assertThat(
@@ -126,16 +124,15 @@ public class UpdateTenantMultiPartitionTest {
     }
     final var tenantId = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
-    final var tenantKey =
-        engine
-            .tenant()
-            .newTenant()
-            .withTenantId(tenantId)
-            .withName(name)
-            .create()
-            .getValue()
-            .getTenantKey();
-    engine.tenant().updateTenant(tenantKey).withName(name + "-updated").update();
+    engine
+        .tenant()
+        .newTenant()
+        .withTenantId(tenantId)
+        .withName(name)
+        .create()
+        .getValue()
+        .getTenantKey();
+    engine.tenant().updateTenant(tenantId).withName(name + "-updated").update();
 
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));

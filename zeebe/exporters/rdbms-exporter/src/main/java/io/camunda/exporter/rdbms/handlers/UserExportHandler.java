@@ -44,7 +44,7 @@ public class UserExportHandler implements RdbmsExportHandler<UserRecordValue> {
     } else if (record.getIntent() == UserIntent.UPDATED) {
       userWriter.update(map(value));
     } else if (record.getIntent() == UserIntent.DELETED) {
-      userWriter.delete(value.getUserKey());
+      userWriter.delete(value.getUsername());
     } else {
       LOG.warn("Unexpected intent {} for user record", record.getIntent());
     }

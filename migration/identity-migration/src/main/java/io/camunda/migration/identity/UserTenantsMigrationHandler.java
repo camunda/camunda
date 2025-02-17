@@ -21,7 +21,7 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 @Component
-public class UserTenantsMigrationHandler implements MigrationHandler {
+public class UserTenantsMigrationHandler extends MigrationHandler<UserTenants> {
   private static final String USERNAME_CLAIM = "sub";
   private final ManagementIdentityClient managementIdentityClient;
   private final ManagementIdentityTransformer managementIdentityTransformer;
@@ -40,23 +40,25 @@ public class UserTenantsMigrationHandler implements MigrationHandler {
   }
 
   @Override
-  public void migrate() {
-    List<UserTenants> userTenants;
-    do {
-      userTenants = managementIdentityClient.fetchUserTenants(SIZE);
-      managementIdentityClient.updateMigrationStatus(
-          userTenants.stream().map(this::createTenantUser).toList());
-    } while (!userTenants.isEmpty());
+  protected List<UserTenants> fetchBatch() {
+    return managementIdentityClient.fetchUserTenants(SIZE);
   }
 
-  private MigrationStatusUpdateRequest createTenantUser(final UserTenants userTenants) {
+  @Override
+  protected void process(final List<UserTenants> batch) {
+    managementIdentityClient.updateMigrationStatus(batch.stream().map(this::processTask).toList());
+  }
 
+  public MigrationStatusUpdateRequest processTask(final UserTenants userTenants) {
     try {
       final var mapping =
           new MappingDTO(
-              USERNAME_CLAIM, userTenants.username(), userTenants.username() + "_mapping");
+              USERNAME_CLAIM,
+              userTenants.username(),
+              userTenants.username() + "_mapping",
+              userTenants.username() + "_mapping");
 
-      final var mappingKey =
+      final long mappingKey =
           mappingServices
               .findMapping(mapping)
               .map(MappingEntity::mappingKey)

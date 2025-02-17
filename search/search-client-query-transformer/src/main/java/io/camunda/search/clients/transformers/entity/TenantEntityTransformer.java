@@ -9,7 +9,6 @@ package io.camunda.search.clients.transformers.entity;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.entities.TenantEntity;
-import java.util.Set;
 
 public class TenantEntityTransformer
     implements ServiceTransformer<
@@ -19,9 +18,6 @@ public class TenantEntityTransformer
   public TenantEntity apply(
       final io.camunda.webapps.schema.entities.usermanagement.TenantEntity source) {
     return new TenantEntity(
-        source.getKey(),
-        source.getTenantId(),
-        source.getName(),
-        source.getJoin().parent() != null ? Set.of(source.getJoin().parent()) : Set.of());
+        source.getKey(), source.getTenantId(), source.getName(), source.getDescription());
   }
 }

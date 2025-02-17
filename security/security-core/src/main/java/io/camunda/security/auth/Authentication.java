@@ -15,29 +15,30 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public final class Authentication {
-  private final Long authenticatedUserKey;
+  private final String authenticatedUsername;
   private final List<Long> authenticatedGroupKeys;
   private final List<Long> authenticatedRoleKeys;
   private final List<String> authenticatedTenantIds;
-  private final String token;
+  private final Map<String, Object> claims;
 
   @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
   public Authentication(
-      final @JsonProperty("authenticated_user_key") Long authenticatedUserKey,
+      final @JsonProperty("authenticated_username") String authenticatedUsername,
       final @JsonProperty("authenticated_group_keys") List<Long> authenticatedGroupKeys,
       final @JsonProperty("authenticated_role_keys") List<Long> authenticatedRoleKeys,
       final @JsonProperty("authenticated_tenant_ids") List<String> authenticatedTenantIds,
-      final @JsonProperty("token") String token) {
-    this.authenticatedUserKey = authenticatedUserKey;
+      final @JsonProperty("claims") Map<String, Object> claims) {
+    this.authenticatedUsername = authenticatedUsername;
     this.authenticatedGroupKeys = authenticatedGroupKeys;
     this.authenticatedRoleKeys = authenticatedRoleKeys;
     this.authenticatedTenantIds = authenticatedTenantIds;
-    this.token = token;
+    this.claims = claims;
   }
 
   public static Authentication none() {
@@ -48,8 +49,8 @@ public final class Authentication {
     return builderFunction.apply(new Builder()).build();
   }
 
-  public Long authenticatedUserKey() {
-    return authenticatedUserKey;
+  public String authenticatedUsername() {
+    return authenticatedUsername;
   }
 
   public List<Long> authenticatedGroupKeys() {
@@ -64,18 +65,18 @@ public final class Authentication {
     return authenticatedTenantIds;
   }
 
-  public String token() {
-    return token;
+  public Map<String, Object> claims() {
+    return claims;
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
-        authenticatedUserKey,
+        authenticatedUsername,
         authenticatedGroupKeys,
         authenticatedRoleKeys,
         authenticatedTenantIds,
-        token);
+        claims);
   }
 
   @Override
@@ -87,18 +88,18 @@ public final class Authentication {
       return false;
     }
     final Authentication that = (Authentication) obj;
-    return Objects.equals(authenticatedUserKey, that.authenticatedUserKey)
+    return Objects.equals(authenticatedUsername, that.authenticatedUsername)
         && Objects.equals(authenticatedGroupKeys, that.authenticatedGroupKeys)
         && Objects.equals(authenticatedRoleKeys, that.authenticatedRoleKeys)
         && Objects.equals(authenticatedTenantIds, that.authenticatedTenantIds)
-        && Objects.equals(token, that.token);
+        && Objects.equals(claims, that.claims);
   }
 
   @Override
   public String toString() {
     return "Authentication["
         + "authenticatedUserKey="
-        + authenticatedUserKey
+        + authenticatedUsername
         + ", "
         + "authenticatedGroupKeys="
         + authenticatedGroupKeys
@@ -109,21 +110,21 @@ public final class Authentication {
         + "authenticatedTenantIds="
         + authenticatedTenantIds
         + ", "
-        + "token="
-        + token
+        + "claims="
+        + claims
         + ']';
   }
 
   public static final class Builder {
 
-    private Long userKey;
+    private String username;
     private final List<Long> groupKeys = new ArrayList<>();
     private final List<Long> roleKeys = new ArrayList<>();
     private final List<String> tenants = new ArrayList<>();
-    private String token;
+    private Map<String, Object> claims;
 
-    public Builder user(final Long value) {
-      userKey = value;
+    public Builder user(final String value) {
+      username = value;
       return this;
     }
 
@@ -160,18 +161,18 @@ public final class Authentication {
       return this;
     }
 
-    public Builder token(final String value) {
-      token = value;
+    public Builder claims(final Map<String, Object> value) {
+      claims = value;
       return this;
     }
 
     public Authentication build() {
       return new Authentication(
-          userKey,
+          username,
           unmodifiableList(groupKeys),
           unmodifiableList(roleKeys),
           unmodifiableList(tenants),
-          token);
+          claims);
     }
   }
 }

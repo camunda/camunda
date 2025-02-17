@@ -11,12 +11,10 @@ import io.camunda.db.rdbms.read.domain.TenantDbQuery;
 import io.camunda.db.rdbms.sql.TenantMapper;
 import io.camunda.db.rdbms.sql.columns.TenantSearchColumn;
 import io.camunda.db.rdbms.write.domain.TenantDbModel;
-import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,13 +29,13 @@ public class TenantReader extends AbstractEntityReader<TenantEntity> {
     this.tenantMapper = tenantMapper;
   }
 
-  public Optional<TenantEntity> findOne(final long tenantKey) {
-    final var result = search(TenantQuery.of(b -> b.filter(f -> f.key(tenantKey))));
+  public Optional<TenantEntity> findOne(final String tenantId) {
+    final var result = search(TenantQuery.of(b -> b.filter(f -> f.tenantId(tenantId))));
     return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
   }
 
   public SearchQueryResult<TenantEntity> search(final TenantQuery query) {
-    final var dbSort = convertSort(query.sort(), TenantSearchColumn.TENANT_KEY);
+    final var dbSort = convertSort(query.sort(), TenantSearchColumn.TENANT_ID);
     final var dbQuery =
         TenantDbQuery.of(
             b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
@@ -49,10 +47,6 @@ public class TenantReader extends AbstractEntityReader<TenantEntity> {
   }
 
   private TenantEntity map(final TenantDbModel model) {
-    return new TenantEntity(
-        model.tenantKey(),
-        model.tenantId(),
-        model.name(),
-        model.members().stream().map(TenantMemberDbModel::entityKey).collect(Collectors.toSet()));
+    return new TenantEntity(model.tenantKey(), model.tenantId(), model.name(), model.description());
   }
 }

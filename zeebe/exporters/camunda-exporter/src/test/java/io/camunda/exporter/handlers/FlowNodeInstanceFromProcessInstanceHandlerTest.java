@@ -110,7 +110,7 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
   }
 
   @Test
-  public void shouldNotHandleNotProcessRecord() {
+  public void shouldNotHandleProcessRecord() {
     // given
     final ProcessInstanceRecordValue processInstanceRecordValue =
         ImmutableProcessInstanceRecordValue.builder()
@@ -122,6 +122,24 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
             ValueType.PROCESS_INSTANCE,
             r ->
                 r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                    .withValue(processInstanceRecordValue));
+    // when - then
+    assertThat(underTest.handlesRecord(processInstanceRecord)).isFalse();
+  }
+
+  @Test
+  public void shouldNotHandleSequenceFlowRecord() {
+    // given
+    final ProcessInstanceRecordValue processInstanceRecordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.SEQUENCE_FLOW)
+            .build();
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withIntent(ProcessInstanceIntent.ELEMENT_MIGRATED)
                     .withValue(processInstanceRecordValue));
     // when - then
     assertThat(underTest.handlesRecord(processInstanceRecord)).isFalse();

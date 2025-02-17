@@ -17,7 +17,9 @@ package io.camunda.client.decision;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.protocol.rest.DecisionRequirementsSearchQueryRequest;
+import io.camunda.client.protocol.rest.DecisionRequirementsSearchQuery;
+import io.camunda.client.protocol.rest.DecisionRequirementsSearchQuerySortRequest;
+import io.camunda.client.protocol.rest.DecisionRequirementsSearchQuerySortRequest.FieldEnum;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
@@ -30,8 +32,8 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
     client.newDecisionRequirementsQuery().send().join();
 
     // then
-    final DecisionRequirementsSearchQueryRequest request =
-        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
+    final DecisionRequirementsSearchQuery request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQuery.class);
     assertThat(request.getFilter()).isNull();
   }
 
@@ -41,8 +43,8 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
     client.newDecisionRequirementsQuery().filter(f -> f.version(1)).send().join();
 
     // then
-    final DecisionRequirementsSearchQueryRequest request =
-        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
+    final DecisionRequirementsSearchQuery request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQuery.class);
     assertThat(request.getFilter().getVersion()).isEqualTo(1);
   }
 
@@ -52,31 +54,39 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
     client.newDecisionRequirementsQuery().filter(f -> f.decisionRequirementsKey(0L)).send().join();
 
     // then
-    final DecisionRequirementsSearchQueryRequest request =
-        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
-    assertThat(request.getFilter().getDecisionRequirementsKey()).isEqualTo(0L);
+    final DecisionRequirementsSearchQuery request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQuery.class);
+    assertThat(request.getFilter().getDecisionRequirementsKey()).isEqualTo("0");
   }
 
   @Test
   void shouldSearchDecisionRequirementsByName() {
     // when
-    client.newDecisionRequirementsQuery().filter(f -> f.name("name")).send().join();
+    client
+        .newDecisionRequirementsQuery()
+        .filter(f -> f.decisionRequirementsName("name"))
+        .send()
+        .join();
 
     // then
-    final DecisionRequirementsSearchQueryRequest request =
-        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
-    assertThat(request.getFilter().getName()).isEqualTo("name");
+    final DecisionRequirementsSearchQuery request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQuery.class);
+    assertThat(request.getFilter().getDecisionRequirementsName()).isEqualTo("name");
   }
 
   @Test
   void shouldSearchDecisionRequirementsBynameAndVersion() {
     // when
-    client.newDecisionRequirementsQuery().filter(f -> f.name("name").version(1)).send().join();
+    client
+        .newDecisionRequirementsQuery()
+        .filter(f -> f.decisionRequirementsName("name").version(1))
+        .send()
+        .join();
 
     // then
-    final DecisionRequirementsSearchQueryRequest request =
-        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
-    assertThat(request.getFilter().getName()).isEqualTo("name");
+    final DecisionRequirementsSearchQuery request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQuery.class);
+    assertThat(request.getFilter().getDecisionRequirementsName()).isEqualTo("name");
     assertThat(request.getFilter().getVersion()).isEqualTo(1);
   }
 
@@ -92,7 +102,7 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
                     .desc()
                     .version()
                     .asc()
-                    .name()
+                    .decisionRequirementsName()
                     .asc()
                     .decisionRequirementsId()
                     .asc()
@@ -102,23 +112,27 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
         .join();
 
     // then
-    final DecisionRequirementsSearchQueryRequest request =
-        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
+    final DecisionRequirementsSearchQuery request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQuery.class);
     assertThat(request.getSort()).hasSize(5);
 
-    assertThat(request.getSort().get(0).getField()).isEqualTo("decisionRequirementsKey");
+    assertThat(request.getSort().get(0).getField())
+        .isEqualTo(DecisionRequirementsSearchQuerySortRequest.FieldEnum.DECISION_REQUIREMENTS_KEY);
     assertThat(request.getSort().get(0).getOrder()).isEqualTo(SortOrderEnum.DESC);
 
-    assertThat(request.getSort().get(1).getField()).isEqualTo("version");
+    assertThat(request.getSort().get(1).getField())
+        .isEqualTo(DecisionRequirementsSearchQuerySortRequest.FieldEnum.VERSION);
     assertThat(request.getSort().get(1).getOrder()).isEqualTo(SortOrderEnum.ASC);
 
-    assertThat(request.getSort().get(2).getField()).isEqualTo("name");
+    assertThat(request.getSort().get(2).getField()).isEqualTo(FieldEnum.DECISION_REQUIREMENTS_NAME);
     assertThat(request.getSort().get(2).getOrder()).isEqualTo(SortOrderEnum.ASC);
 
-    assertThat(request.getSort().get(3).getField()).isEqualTo("decisionRequirementsId");
+    assertThat(request.getSort().get(3).getField())
+        .isEqualTo(DecisionRequirementsSearchQuerySortRequest.FieldEnum.DECISION_REQUIREMENTS_ID);
     assertThat(request.getSort().get(3).getOrder()).isEqualTo(SortOrderEnum.ASC);
 
-    assertThat(request.getSort().get(4).getField()).isEqualTo("tenantId");
+    assertThat(request.getSort().get(4).getField())
+        .isEqualTo(DecisionRequirementsSearchQuerySortRequest.FieldEnum.TENANT_ID);
     assertThat(request.getSort().get(4).getOrder()).isEqualTo(SortOrderEnum.DESC);
   }
 }

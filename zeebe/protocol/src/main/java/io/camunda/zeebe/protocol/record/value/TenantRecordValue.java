@@ -33,8 +33,13 @@ public interface TenantRecordValue extends RecordValue {
   /** Name of the tenant. */
   String getName();
 
+  String getDescription();
+
   /** Key of the entity associated with this tenant. */
   long getEntityKey();
+
+  /** Identifier of the entity associated with this tenant. */
+  String getEntityId();
 
   /** The type of the entity to assign/remove from a tenant. */
   EntityType getEntityType();

@@ -99,8 +99,8 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
     switch (record.getIntent()) {
       case UserTaskIntent.CREATED -> createTaskEntity(entity, record);
-      case UserTaskIntent.ASSIGNED -> handleAssignment(record, entity);
-      case UserTaskIntent.UPDATED -> updateChangedAttributes(record, entity);
+      case UserTaskIntent.ASSIGNED, UserTaskIntent.UPDATED ->
+          updateChangedAttributes(record, entity);
       case UserTaskIntent.COMPLETED -> handleCompletion(record, entity);
       case UserTaskIntent.CANCELED -> handleCancellation(record, entity);
       case UserTaskIntent.MIGRATED -> handleMigration(record, entity);
@@ -185,10 +185,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     entity
         .setImplementation(TaskImplementation.ZEEBE_USER_TASK)
         .setState(TaskState.CREATED)
-        .setAssignee(
-            ExporterUtil.isEmpty(record.getValue().getAssignee())
-                ? null
-                : record.getValue().getAssignee())
+        .setAssignee(getAssigneeOrNull(record))
         .setDueDate(ExporterUtil.toOffsetDateTime(record.getValue().getDueDate()))
         .setFollowUpDate(ExporterUtil.toOffsetDateTime(record.getValue().getFollowUpDate()))
         .setFlowNodeInstanceId(String.valueOf(record.getValue().getElementInstanceKey()))
@@ -230,18 +227,15 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
   }
 
   private boolean refersToPreviousVersionRecord(final long key) {
-    return key < exporterMetadata.getFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK);
+    return exporterMetadata.getFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK) == -1
+        || key < exporterMetadata.getFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK);
   }
 
-  private void handleAssignment(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
-    entity.getChangedAttributes().add("assignee");
+  private static String getAssigneeOrNull(final Record<UserTaskRecordValue> record) {
     if (ExporterUtil.isEmpty(record.getValue().getAssignee())) {
-      entity.setAssignee(null);
-    } else {
-      entity.setAssignee(record.getValue().getAssignee());
+      return null;
     }
-
-    updateChangedAttributes(record, entity);
+    return record.getValue().getAssignee();
   }
 
   /**
@@ -266,7 +260,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
       entity.getChangedAttributes().add(attribute);
 
       switch (attribute) {
-        case "assignee" -> entity.setAssignee(value.getAssignee());
+        case "assignee" -> entity.setAssignee(getAssigneeOrNull(record));
         case "candidateGroupsList" ->
             entity.setCandidateGroups(value.getCandidateGroupsList().toArray(new String[0]));
         case "candidateUsersList" ->

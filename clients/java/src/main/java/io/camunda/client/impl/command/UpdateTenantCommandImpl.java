@@ -34,20 +34,26 @@ public final class UpdateTenantCommandImpl implements UpdateTenantCommandStep1 {
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private final long tenantKey;
+  private final String tenantId;
 
   public UpdateTenantCommandImpl(
-      final HttpClient httpClient, final JsonMapper jsonMapper, final long tenantKey) {
+      final HttpClient httpClient, final JsonMapper jsonMapper, final String tenantId) {
     request = new TenantUpdateRequest();
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     httpRequestConfig = httpClient.newRequestConfig();
-    this.tenantKey = tenantKey;
+    this.tenantId = tenantId;
   }
 
   @Override
   public UpdateTenantCommandStep1 name(final String name) {
     request.setName(name);
+    return this;
+  }
+
+  @Override
+  public UpdateTenantCommandStep1 description(final String description) {
+    request.setDescription(description);
     return this;
   }
 
@@ -59,12 +65,11 @@ public final class UpdateTenantCommandImpl implements UpdateTenantCommandStep1 {
 
   @Override
   public CamundaFuture<UpdateTenantResponse> send() {
-    ArgumentUtil.ensureNotNull("name", request.getName());
     final HttpCamundaFuture<UpdateTenantResponse> result = new HttpCamundaFuture<>();
     final UpdateTenantResponseImpl response = new UpdateTenantResponseImpl();
 
     httpClient.patch(
-        "/tenants/" + tenantKey,
+        "/tenants/" + tenantId,
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         TenantUpdateResult.class,

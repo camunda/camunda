@@ -10,14 +10,15 @@ package io.camunda.exporter.rdbms.handlers;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
-import io.camunda.operate.zeebeimport.util.XMLUtil;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
+import io.camunda.zeebe.util.modelreader.ProcessModelReader;
+import io.camunda.zeebe.util.modelreader.ProcessModelReader.StartFormLink;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,28 +46,28 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
   }
 
   private ProcessDefinitionDbModel map(final Process value) {
-    Optional<ProcessEntity> processEntity = Optional.empty();
+    final Optional<ProcessModelReader> processModelReader =
+        ProcessModelReader.of(value.getResource(), value.getBpmnProcessId());
 
-    try {
-      processEntity =
-          new XMLUtil().extractDiagramData(value.getResource(), value.getBpmnProcessId());
-    } catch (final Exception e) {
-      // skip
-      LOG.warn(
-          "Unable to parse XML diagram for process {}: {}",
-          value.getBpmnProcessId(),
-          e.getMessage());
+    String processName = null;
+    String formId = null;
+    if (processModelReader.isPresent()) {
+      final var reader = processModelReader.get();
+      processName = reader.extractProcessName();
+      formId = reader.extractStartFormLink().map(StartFormLink::formId).orElse(null);
+    } else {
+      LOG.warn("Failed to read process model for process with key '{}'", value.getBpmnProcessId());
     }
 
     return new ProcessDefinitionDbModel(
         value.getProcessDefinitionKey(),
         value.getBpmnProcessId(),
         value.getResourceName(),
-        processEntity.map(ProcessEntity::getName).orElse(null),
+        processName,
         value.getTenantId(),
-        value.getVersionTag(),
+        StringUtils.defaultIfEmpty(value.getVersionTag(), null),
         value.getVersion(),
         new String(value.getResource(), StandardCharsets.UTF_8),
-        processEntity.map(ProcessEntity::getFormId).orElse(null));
+        formId);
   }
 }

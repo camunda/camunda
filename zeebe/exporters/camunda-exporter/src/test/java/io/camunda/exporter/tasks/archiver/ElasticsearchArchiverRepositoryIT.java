@@ -25,8 +25,6 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -43,6 +41,7 @@ import org.apache.http.HttpHost;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -54,7 +53,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SuppressWarnings("resource")
 @Testcontainers
-@AutoCloseResources
 final class ElasticsearchArchiverRepositoryIT {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchArchiverRepositoryIT.class);
@@ -63,7 +61,7 @@ final class ElasticsearchArchiverRepositoryIT {
   private static final ElasticsearchContainer ELASTIC =
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
-  @AutoCloseResource private final RestClientTransport transport = createRestClient();
+  @AutoClose private final RestClientTransport transport = createRestClient();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final ArchiverConfiguration config = new ArchiverConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();

@@ -9,7 +9,9 @@ package io.camunda.optimize.tomcat;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
 import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
@@ -20,9 +22,15 @@ import java.io.IOException;
 public class CCSaasRequestAdjustmentFilter implements Filter {
 
   private final String clusterId;
+  private ServletContext servletContext;
 
   public CCSaasRequestAdjustmentFilter(final String clusterId) {
     this.clusterId = clusterId == null ? "" : clusterId;
+  }
+
+  @Override
+  public void init(final FilterConfig filterConfig) throws ServletException {
+    this.servletContext = filterConfig.getServletContext();
   }
 
   @Override
@@ -46,10 +54,16 @@ public class CCSaasRequestAdjustmentFilter implements Filter {
       shallForward = true;
     }
 
-    /* transform /external/api -> /api/external */
+    /* transform /external/api -> /api/external (Optimize only) */
     if (requestURI.startsWith("/external/api/")) {
       requestURI = requestURI.replaceFirst("/external/api/", "/api/external/");
       shallForward = true;
+    }
+
+    /* serve static external resource (Optimize only) */
+    if (ExternalResourcesUtil.shouldServeStaticResource(httpRequest)) {
+      ExternalResourcesUtil.serveStaticResource(httpRequest, httpResponse, servletContext);
+      shallForward = false;
     }
 
     if (shallForward) {

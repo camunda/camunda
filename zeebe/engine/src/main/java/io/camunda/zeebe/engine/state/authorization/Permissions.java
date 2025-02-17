@@ -56,6 +56,13 @@ public class Permissions extends UnpackedObject implements DbValue {
     setPermissions(permissions);
   }
 
+  public void addResourceIdentifier(
+      final PermissionType permissionType, final String resourceIdentifier) {
+    final var permissions = getPermissions();
+    permissions.computeIfAbsent(permissionType, ignored -> new HashSet<>()).add(resourceIdentifier);
+    setPermissions(permissions);
+  }
+
   @Override
   public boolean isEmpty() {
     return getPermissions().isEmpty();

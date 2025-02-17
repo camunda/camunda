@@ -11,36 +11,24 @@ import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.ws.rs.DefaultValue;
-import jakarta.ws.rs.QueryParam;
 
 public class PaginationScrollableRequestDto {
-
-  public static final String QUERY_LIMIT_PARAM = "limit";
-  public static final String QUERY_SCROLL_ID_PARAM = "searchRequestId";
-  public static final String QUERY_SCROLL_TIMEOUT_PARAM = "paginationTimeout";
-
-  @QueryParam(QUERY_LIMIT_PARAM)
   @Min(0)
-  @DefaultValue("1000")
   @Max(MAX_RESPONSE_SIZE_LIMIT)
-  protected Integer limit;
+  protected Integer limit = 1000;
 
-  @QueryParam(QUERY_SCROLL_ID_PARAM)
-  protected String scrollId;
+  protected String searchRequestId;
 
-  @QueryParam(QUERY_SCROLL_TIMEOUT_PARAM)
   @Min(60)
-  @DefaultValue("120")
-  protected Integer scrollTimeout;
+  protected Integer paginationTimeout = 120;
 
   public PaginationScrollableRequestDto(
       @Min(0) @Max(MAX_RESPONSE_SIZE_LIMIT) final Integer limit,
       final String scrollId,
       @Min(60) final Integer scrollTimeout) {
     this.limit = limit;
-    this.scrollId = scrollId;
-    this.scrollTimeout = scrollTimeout;
+    searchRequestId = scrollId;
+    paginationTimeout = scrollTimeout;
   }
 
   public PaginationScrollableRequestDto() {}
@@ -53,20 +41,20 @@ public class PaginationScrollableRequestDto {
     this.limit = limit;
   }
 
-  public String getScrollId() {
-    return scrollId;
+  public String getSearchRequestId() {
+    return searchRequestId;
   }
 
-  public void setScrollId(final String scrollId) {
-    this.scrollId = scrollId;
+  public void setSearchRequestId(final String searchRequestId) {
+    this.searchRequestId = searchRequestId;
   }
 
-  public @Min(60) Integer getScrollTimeout() {
-    return scrollTimeout;
+  public @Min(60) Integer getPaginationTimeout() {
+    return paginationTimeout;
   }
 
-  public void setScrollTimeout(@Min(60) final Integer scrollTimeout) {
-    this.scrollTimeout = scrollTimeout;
+  public void setPaginationTimeout(@Min(60) final Integer paginationTimeout) {
+    this.paginationTimeout = paginationTimeout;
   }
 
   protected boolean canEqual(final Object other) {
@@ -87,10 +75,10 @@ public class PaginationScrollableRequestDto {
   public String toString() {
     return "PaginationScrollableRequestDto(limit="
         + getLimit()
-        + ", scrollId="
-        + getScrollId()
-        + ", scrollTimeout="
-        + getScrollTimeout()
+        + ", searchRequestId="
+        + getSearchRequestId()
+        + ", paginationTimeout="
+        + getPaginationTimeout()
         + ")";
   }
 }

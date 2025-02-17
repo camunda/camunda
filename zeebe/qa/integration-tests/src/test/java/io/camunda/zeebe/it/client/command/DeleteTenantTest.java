@@ -16,21 +16,21 @@ import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
-@AutoCloseResources
 class DeleteTenantTest {
 
+  private static final String TENANT_ID = "tenant-id";
+
   @TestZeebe
-  private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+  private final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
-  @AutoCloseResource private CamundaClient client;
-
+  @AutoClose private CamundaClient client;
   private long tenantKey;
 
   @BeforeEach
@@ -39,7 +39,7 @@ class DeleteTenantTest {
     tenantKey =
         client
             .newCreateTenantCommand()
-            .tenantId("tenant-id")
+            .tenantId(TENANT_ID)
             .name("Tenant Name")
             .send()
             .join()
@@ -49,7 +49,7 @@ class DeleteTenantTest {
   @Test
   void shouldDeleteTenant() {
     // when
-    client.newDeleteTenantCommand(tenantKey).send().join();
+    client.newDeleteTenantCommand(TENANT_ID).send().join();
 
     // then
     ZeebeAssertHelper.assertTenantDeleted(
@@ -59,14 +59,14 @@ class DeleteTenantTest {
   @Test
   void shouldRejectIfTenantDoesNotExist() {
     // given
-    final long nonExistentTenantKey = 999999L;
+    final var nonExistentTenantId = "does-not-exist";
 
     // when / then
-    assertThatThrownBy(() -> client.newDeleteTenantCommand(nonExistentTenantKey).send().join())
+    assertThatThrownBy(() -> client.newDeleteTenantCommand(nonExistentTenantId).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to delete tenant with key '%d', but no tenant with this key exists."
-                .formatted(nonExistentTenantKey));
+            "Expected to delete tenant with id '%s', but no tenant with this id exists."
+                .formatted(nonExistentTenantId));
   }
 }

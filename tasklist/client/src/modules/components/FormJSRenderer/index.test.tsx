@@ -15,7 +15,7 @@ function noop() {
   return Promise.resolve();
 }
 
-describe('<FormJSRenderer />', async () => {
+describe('<FormJSRenderer />', () => {
   beforeEach(() => {
     global.IntersectionObserver = vi.fn(() => ({
       observe: vi.fn(),

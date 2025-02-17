@@ -14,7 +14,7 @@ import (
 )
 
 func (w *UnixC8Run) OpenBrowser(protocol string, port int) error {
-	operateUrl := protocol + "://localhost:" + strconv.Itoa(port) + "/operate/login"
+	operateUrl := protocol + "://localhost:" + strconv.Itoa(port) + "/operate"
 	var openBrowserCmdString string
 	if runtime.GOOS == "darwin" {
 		openBrowserCmdString = "open"

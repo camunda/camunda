@@ -13,8 +13,9 @@ import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.zeebe.engine.processing.clock.ClockProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationAddPermissionProcessor;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationRemovePermissionProcessor;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCreateProcessor;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationDeleteProcessor;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationUpdateProcessor;
 import io.camunda.zeebe.engine.processing.identity.GroupAddEntityProcessor;
 import io.camunda.zeebe.engine.processing.identity.GroupCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.GroupDeleteProcessor;
@@ -131,40 +132,71 @@ public class CommandDistributionIdempotencyTest {
     return Arrays.asList(
         new Object[][] {
           {
-            "Authorization.ADD_PERMISSION is idempotent",
+            "Authorization.CREATE is idempotent",
             new Scenario(
                 ValueType.AUTHORIZATION,
-                AuthorizationIntent.ADD_PERMISSION,
+                AuthorizationIntent.CREATE,
                 () -> {
                   final var user = createUser();
                   ENGINE
                       .authorization()
-                      .permission()
-                      .withOwnerKey(user.getKey())
+                      .newAuthorization()
+                      .withOwnerId(user.getValue().getUsername())
+                      .withResourceId("*")
                       .withResourceType(AuthorizationResourceType.USER)
-                      .withPermission(PermissionType.READ, "*")
-                      .add();
+                      .withPermissions(PermissionType.READ)
+                      .create();
                 },
                 2),
-            AuthorizationAddPermissionProcessor.class
+            AuthorizationCreateProcessor.class
           },
           {
-            "Authorization.REMOVE_PERMISSION is idempotent",
+            "Authorization.DELETE is idempotent",
             new Scenario(
                 ValueType.AUTHORIZATION,
-                AuthorizationIntent.REMOVE_PERMISSION,
+                AuthorizationIntent.DELETE,
                 () -> {
                   final var user = createUser();
-                  ENGINE
-                      .authorization()
-                      .permission()
-                      .withOwnerKey(user.getKey())
-                      .withResourceType(AuthorizationResourceType.USER)
-                      .withPermission(PermissionType.READ, user.getValue().getUsername())
-                      .remove();
+                  final var key =
+                      ENGINE
+                          .authorization()
+                          .newAuthorization()
+                          .withOwnerId(user.getValue().getUsername())
+                          .withResourceId("*")
+                          .withResourceType(AuthorizationResourceType.USER)
+                          .withPermissions(PermissionType.READ)
+                          .create()
+                          .getValue()
+                          .getAuthorizationKey();
+
+                  ENGINE.authorization().deleteAuthorization(key).delete();
                 },
-                2),
-            AuthorizationRemovePermissionProcessor.class
+                4),
+            AuthorizationDeleteProcessor.class
+          },
+          {
+            "Authorization.UPDATE is idempotent",
+            new Scenario(
+                ValueType.AUTHORIZATION,
+                AuthorizationIntent.UPDATE,
+                () -> {
+                  final var user = createUser();
+                  final var key =
+                      ENGINE
+                          .authorization()
+                          .newAuthorization()
+                          .withOwnerId(user.getValue().getUsername())
+                          .withResourceId("*")
+                          .withResourceType(AuthorizationResourceType.USER)
+                          .withPermissions(PermissionType.READ)
+                          .create()
+                          .getValue()
+                          .getAuthorizationKey();
+
+                  ENGINE.authorization().updateAuthorization(key).update();
+                },
+                4),
+            AuthorizationUpdateProcessor.class
           },
           {
             "Clock.RESET is idempotent",
@@ -232,7 +264,7 @@ public class CommandDistributionIdempotencyTest {
                       .withEntityType(EntityType.USER)
                       .add();
                 },
-                3),
+                4),
             GroupAddEntityProcessor.class
           },
           {
@@ -256,7 +288,7 @@ public class CommandDistributionIdempotencyTest {
                       .withEntityType(EntityType.USER)
                       .remove();
                 },
-                4),
+                5),
             GroupRemoveEntityProcessor.class
           },
           {
@@ -352,7 +384,7 @@ public class CommandDistributionIdempotencyTest {
                       .withEntityType(EntityType.USER)
                       .add();
                 },
-                3),
+                4),
             RoleAddEntityProcessor.class
           },
           {
@@ -376,7 +408,7 @@ public class CommandDistributionIdempotencyTest {
                       .withEntityType(EntityType.USER)
                       .remove();
                 },
-                4),
+                5),
             RoleRemoveEntityProcessor.class
           },
           {
@@ -404,7 +436,7 @@ public class CommandDistributionIdempotencyTest {
                 TenantIntent.DELETE,
                 () -> {
                   final var tenant = createTenant();
-                  ENGINE.tenant().deleteTenant(tenant.getKey()).delete();
+                  ENGINE.tenant().deleteTenant(tenant.getValue().getTenantId()).delete();
                 },
                 2),
             TenantDeleteProcessor.class
@@ -418,7 +450,7 @@ public class CommandDistributionIdempotencyTest {
                   final var tenant = createTenant();
                   ENGINE
                       .tenant()
-                      .updateTenant(tenant.getKey())
+                      .updateTenant(tenant.getValue().getTenantId())
                       .withName(UUID.randomUUID().toString())
                       .update();
                 },
@@ -435,12 +467,12 @@ public class CommandDistributionIdempotencyTest {
                   final var user = createUser();
                   ENGINE
                       .tenant()
-                      .addEntity(tenant.getKey())
-                      .withEntityKey(user.getKey())
+                      .addEntity(tenant.getValue().getTenantId())
+                      .withEntityId(user.getValue().getUsername())
                       .withEntityType(EntityType.USER)
                       .add();
                 },
-                3),
+                4),
             TenantAddEntityProcessor.class
           },
           {
@@ -453,18 +485,18 @@ public class CommandDistributionIdempotencyTest {
                   final var user = createUser();
                   ENGINE
                       .tenant()
-                      .addEntity(tenant.getKey())
-                      .withEntityKey(user.getKey())
+                      .addEntity(tenant.getValue().getTenantId())
+                      .withEntityId(user.getValue().getUsername())
                       .withEntityType(EntityType.USER)
                       .add();
                   ENGINE
                       .tenant()
-                      .removeEntity(tenant.getKey())
-                      .withEntityKey(user.getKey())
+                      .removeEntity(tenant.getValue().getTenantId())
+                      .withEntityId(user.getValue().getUsername())
                       .withEntityType(EntityType.USER)
                       .remove();
                 },
-                4),
+                5),
             TenantRemoveEntityProcessor.class
           },
           {
@@ -483,13 +515,9 @@ public class CommandDistributionIdempotencyTest {
                 UserIntent.DELETE,
                 () -> {
                   final var user = createUser();
-                  ENGINE
-                      .user()
-                      .deleteUser(user.getKey())
-                      .withUsername(UUID.randomUUID().toString())
-                      .delete();
+                  ENGINE.user().deleteUser(user.getValue().getUsername()).delete();
                 },
-                2),
+                3),
             UserDeleteProcessor.class,
           },
           {
@@ -506,7 +534,7 @@ public class CommandDistributionIdempotencyTest {
                       .withName(UUID.randomUUID().toString())
                       .update();
                 },
-                2),
+                3),
             UserUpdateProcessor.class
           },
           {
@@ -543,6 +571,7 @@ public class CommandDistributionIdempotencyTest {
                         .withMapping(
                             new MappingRecord()
                                 .setMappingKey(4)
+                                .setId("id")
                                 .setClaimName("claimName")
                                 .setClaimValue("claimValue"))
                         .initialize(),
@@ -644,6 +673,7 @@ public class CommandDistributionIdempotencyTest {
         .mapping()
         .newMapping(UUID.randomUUID().toString())
         .withClaimValue(UUID.randomUUID().toString())
+        .withId(UUID.randomUUID().toString())
         .create();
   }
 

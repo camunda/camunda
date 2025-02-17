@@ -7,12 +7,15 @@
  */
 package io.camunda.it.exporter;
 
+import static io.camunda.client.api.search.response.IncidentState.ACTIVE;
+import static io.camunda.client.api.search.response.IncidentState.RESOLVED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.IncidentState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.it.utils.BrokerITInvocationProvider;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -47,10 +50,10 @@ final class IncidentUpdateIT {
 
     // when
     final var incidents =
-        waitForIncident(client, f -> f.processInstanceKey(childInstanceKey).state("ACTIVE"));
+        waitForIncident(client, f -> f.processInstanceKey(childInstanceKey).state(ACTIVE));
 
     // then
-    assertIncidentState(client, incidents.getIncidentKey(), "ACTIVE");
+    assertIncidentState(client, incidents.getIncidentKey(), ACTIVE);
     assertProcessInstanceIncidentState(client, parentInstanceKey, true);
     assertProcessInstanceIncidentState(client, childInstanceKey, true);
     assertFlowNodeInstanceIncidentState(client, parentInstanceKey, CALL_ACTIVITY_ID, true);
@@ -66,11 +69,11 @@ final class IncidentUpdateIT {
 
     // when
     final var incident =
-        waitForIncident(client, f -> f.processInstanceKey(childInstanceKey).state("ACTIVE"));
+        waitForIncident(client, f -> f.processInstanceKey(childInstanceKey).state(ACTIVE));
     client.newResolveIncidentCommand(incident.getIncidentKey()).send().join();
 
     // then
-    assertIncidentState(client, incident.getIncidentKey(), "RESOLVED");
+    assertIncidentState(client, incident.getIncidentKey(), RESOLVED);
     assertProcessInstanceIncidentState(client, parentInstanceKey, false);
     assertProcessInstanceIncidentState(client, childInstanceKey, false);
     assertFlowNodeInstanceIncidentState(client, parentInstanceKey, CALL_ACTIVITY_ID, false);
@@ -78,7 +81,7 @@ final class IncidentUpdateIT {
   }
 
   private void assertIncidentState(
-      final CamundaClient client, final long key, final String expected) {
+      final CamundaClient client, final long key, final IncidentState expected) {
     Awaitility.await("until incident %d state is = %s".formatted(key, expected))
         .ignoreExceptions()
         .untilAsserted(

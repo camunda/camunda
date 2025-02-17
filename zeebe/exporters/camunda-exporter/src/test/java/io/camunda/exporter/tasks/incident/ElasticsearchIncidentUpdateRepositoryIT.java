@@ -14,18 +14,24 @@ import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.camunda.exporter.utils.SearchDBExtension;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
+import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 
+@DisabledIfSystemProperty(
+    named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+    matches = "^(?=\\s*\\S).*$",
+    disabledReason = "Excluding from AWS OS IT CI")
 final class ElasticsearchIncidentUpdateRepositoryIT extends IncidentUpdateRepositoryIT {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchIncidentUpdateRepositoryIT.class);
@@ -34,7 +40,7 @@ final class ElasticsearchIncidentUpdateRepositoryIT extends IncidentUpdateReposi
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
-  @AutoCloseResource private final RestClientTransport transport = createTransport();
+  @AutoClose private final RestClientTransport transport = createTransport();
   private final ElasticsearchAsyncClient client = new ElasticsearchAsyncClient(transport);
 
   public ElasticsearchIncidentUpdateRepositoryIT() {
@@ -48,6 +54,7 @@ final class ElasticsearchIncidentUpdateRepositoryIT extends IncidentUpdateReposi
         postImporterQueueTemplate.getAlias(),
         incidentTemplate.getAlias(),
         listViewTemplate.getAlias(),
+        listViewTemplate.getFullQualifiedName(),
         flowNodeInstanceTemplate.getAlias(),
         operationTemplate.getAlias(),
         client,

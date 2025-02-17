@@ -32,7 +32,7 @@ public class AuthenticationInterceptor implements ServerInterceptor {
 
   public static final Context.Key<Map<String, Object>> USER_CLAIMS =
       Context.key("io.camunda.zeebe:user_claim");
-  public static final Context.Key<Long> USER_KEY = Context.key("io.camunda.zeebe:user_key");
+  public static final Context.Key<String> USERNAME = Context.key("io.camunda.zeebe:username");
   private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticationInterceptor.class);
   private static final Metadata.Key<String> AUTH_KEY =
       Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
@@ -114,7 +114,7 @@ public class AuthenticationInterceptor implements ServerInterceptor {
                 .withCause(new IllegalArgumentException("Invalid credentials")));
       }
 
-      final var context = Context.current().withValue(USER_KEY, user.userKey());
+      final var context = Context.current().withValue(USERNAME, user.username());
       return Contexts.interceptCall(context, call, headers, next);
     } catch (final RuntimeException e) {
       LOGGER.debug(

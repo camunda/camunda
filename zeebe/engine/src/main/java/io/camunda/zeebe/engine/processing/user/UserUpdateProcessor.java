@@ -53,13 +53,15 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
 
   @Override
   public void processNewCommand(final TypedRecord<UserRecord> command) {
-    final long userKey = command.getValue().getUserKey();
-    final var persistedUserOptional = userState.getUser(userKey);
+    final var user = command.getValue();
+    final long userKey = user.getUserKey();
+    final String username = user.getUsername();
+    final var persistedUserOptional = userState.getUser(username);
 
     if (persistedUserOptional.isEmpty()) {
       final var rejectionMessage =
           "Expected to update user with username %s, but a user with this username does not exist"
-              .formatted(command.getValue().getUsername());
+              .formatted(username);
 
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, rejectionMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, rejectionMessage);

@@ -67,4 +67,7 @@ public interface TenantState {
    * visited.
    */
   void forEachTenant(final Function<String, Boolean> callback);
+
+  /** Retrieves a tenant record by its ID. */
+  Optional<PersistedTenant> getTenantById(String tenantId);
 }

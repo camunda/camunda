@@ -12,13 +12,14 @@ import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.ExporterPurgeException;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.micrometer.core.instrument.MeterRegistry;
 
-public class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
+public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
 
   private final ConcurrencyControl concurrencyControl;
   private final ExporterRepository exporterRepository;
@@ -35,22 +36,18 @@ public class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
 
   @Override
   public ActorFuture<Void> deleteHistory() {
-    return purgeExporters();
+    final ActorFuture<Void> result = concurrencyControl.createFuture();
+    concurrencyControl.run(() -> purgeExporters(result));
+    return result;
   }
 
-  private ActorFuture<Void> purgeExporters() {
-    final ActorFuture<Void> result = concurrencyControl.createFuture();
-    concurrencyControl.run(
-        () -> {
-          try {
-            exporterRepository.getExporters().forEach(this::purgeExporter);
-            result.complete(null);
-          } catch (final Exception e) {
-            result.completeExceptionally(e);
-          }
-        });
-
-    return result;
+  private void purgeExporters(final ActorFuture<Void> result) {
+    try {
+      exporterRepository.getExporters().forEach(this::purgeExporter);
+      result.complete(null);
+    } catch (final Exception e) {
+      result.completeExceptionally(e);
+    }
   }
 
   private void purgeExporter(final String id, final ExporterDescriptor descriptor) {
@@ -69,7 +66,10 @@ public class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
       exporter.purge();
       exporter.close();
     } catch (final Exception e) {
-      throw new RuntimeException(e);
+      throw new ExporterPurgeException(
+          "Failed to purge C8 data from exporter %s of type %s; operation will be retried."
+              .formatted(id, exporter.getClass()),
+          e);
     }
   }
 }

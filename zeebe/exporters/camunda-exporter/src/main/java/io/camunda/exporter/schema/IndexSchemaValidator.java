@@ -48,7 +48,12 @@ import org.slf4j.LoggerFactory;
  */
 public class IndexSchemaValidator {
   private static final Logger LOGGER = LoggerFactory.getLogger(IndexSchemaValidator.class);
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+
+  private final ObjectMapper objectMapper;
+
+  public IndexSchemaValidator(final ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
 
   /**
    * Validates existing indices mappings against index/index template mappings defined.
@@ -112,7 +117,7 @@ public class IndexSchemaValidator {
 
   private IndexMappingDifference getIndexMappingDifference(
       final IndexDescriptor indexDescriptor, final Map<String, IndexMapping> indexMappingsGroup) {
-    final IndexMapping indexMappingMustBe = IndexMapping.from(indexDescriptor, MAPPER);
+    final IndexMapping indexMappingMustBe = IndexMapping.from(indexDescriptor, objectMapper);
 
     final var differences =
         indexMappingsGroup.values().stream()

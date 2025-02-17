@@ -25,8 +25,6 @@ import io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.grpc.Status;
 import io.grpc.Status.Code;
@@ -46,21 +44,21 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-@AutoCloseResources
 @ZeebeIntegration
 final class StreamJobsTest {
   @TestZeebe(initMethod = "initTestStandaloneBroker")
   private static TestStandaloneBroker zeebe;
 
-  @AutoCloseResource private final CamundaClient client = zeebe.newClientBuilder().build();
+  @AutoClose private final CamundaClient client = zeebe.newClientBuilder().build();
 
   @SuppressWarnings("unused")
   static void initTestStandaloneBroker() {
-    zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+    zeebe = new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
   }
 
   @Test

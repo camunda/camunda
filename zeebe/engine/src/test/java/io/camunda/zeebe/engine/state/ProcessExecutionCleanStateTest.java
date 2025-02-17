@@ -49,14 +49,16 @@ public final class ProcessExecutionCleanStateTest {
           ZbColumnFamilies.MIGRATIONS_STATE,
           ZbColumnFamilies.DEPLOYMENT_RAW,
           ZbColumnFamilies.USERS,
-          ZbColumnFamilies.USER_KEY_BY_USERNAME,
+          ZbColumnFamilies.USERNAME_BY_USER_KEY,
           ZbColumnFamilies.PERMISSIONS,
           ZbColumnFamilies.OWNER_TYPE_BY_OWNER_KEY,
           ZbColumnFamilies.ROLES,
           ZbColumnFamilies.ENTITY_BY_ROLE,
           ZbColumnFamilies.ROLE_BY_NAME,
           ZbColumnFamilies.TENANTS,
-          ZbColumnFamilies.TENANT_BY_ID);
+          ZbColumnFamilies.TENANT_BY_ID,
+          ZbColumnFamilies.AUTHORIZATIONS,
+          ZbColumnFamilies.AUTHORIZATION_KEYS_BY_OWNER);
 
   @Rule public EngineRule engineRule = EngineRule.singlePartition();
 

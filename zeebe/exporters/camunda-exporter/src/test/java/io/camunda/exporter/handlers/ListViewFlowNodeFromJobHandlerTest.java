@@ -30,7 +30,7 @@ public class ListViewFlowNodeFromJobHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-list-view";
   private final ListViewFlowNodeFromJobHandler underTest =
-      new ListViewFlowNodeFromJobHandler(indexName, false);
+      new ListViewFlowNodeFromJobHandler(indexName);
 
   @Test
   public void testGetHandledValueType() {
@@ -45,9 +45,37 @@ public class ListViewFlowNodeFromJobHandlerTest {
   @Test
   public void shouldHandlesRecord() {
     // given
-    final Record<JobRecordValue> jobRecord = factory.generateRecord(ValueType.JOB);
+    final Record<JobRecordValue> jobRecord =
+        factory.generateRecord(
+            r ->
+                r.withValueType(ValueType.JOB)
+                    .withValue(
+                        ImmutableJobRecordValue.builder()
+                            .withProcessDefinitionKey(1L)
+                            .withElementInstanceKey(111L)
+                            .withProcessInstanceKey(222L)
+                            .build())
+                    .withKey(111L));
     // when - then
     assertThat(underTest.handlesRecord(jobRecord)).isTrue();
+  }
+
+  @Test
+  public void shouldNotHandlesRecord() {
+    // given
+    final Record<JobRecordValue> jobRecord =
+        factory.generateRecord(
+            r ->
+                r.withValueType(ValueType.JOB)
+                    .withValue(
+                        ImmutableJobRecordValue.builder()
+                            .withProcessDefinitionKey(1L)
+                            .withElementInstanceKey(111L)
+                            .withProcessInstanceKey(111L)
+                            .build())
+                    .withKey(111L));
+    // when - then
+    assertThat(underTest.handlesRecord(jobRecord)).isFalse();
   }
 
   @Test
@@ -102,44 +130,6 @@ public class ListViewFlowNodeFromJobHandlerTest {
             indexName,
             inputEntity.getId(),
             inputEntity,
-            expectedUpdateFields,
-            String.valueOf(inputEntity.getProcessInstanceKey()));
-  }
-
-  @Test
-  public void shouldUpsertEntityWithConcurrencyModeOnFlush() {
-    // given
-    final ListViewFlowNodeFromJobHandler underTest =
-        new ListViewFlowNodeFromJobHandler(indexName, true);
-    // given
-    final FlowNodeInstanceForListViewEntity inputEntity =
-        new FlowNodeInstanceForListViewEntity()
-            .setId("111")
-            .setKey(111L)
-            .setPartitionId(3)
-            .setPositionJob(123L)
-            .setActivityId("A")
-            .setProcessInstanceKey(66L)
-            .setTenantId("tenantId")
-            .setJobFailedWithRetriesLeft(true);
-    inputEntity.getJoinRelation().setParent(66L);
-
-    final BatchRequest mockRequest = mock(BatchRequest.class);
-
-    final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
-    expectedUpdateFields.put(JOB_POSITION, 123L);
-    expectedUpdateFields.put(ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT, true);
-
-    // when
-    underTest.flush(inputEntity, mockRequest);
-
-    // then
-    verify(mockRequest, times(1))
-        .upsertWithScriptAndRouting(
-            indexName,
-            inputEntity.getId(),
-            inputEntity,
-            underTest.getFlowNodeInstanceFromJobScript(),
             expectedUpdateFields,
             String.valueOf(inputEntity.getProcessInstanceKey()));
   }

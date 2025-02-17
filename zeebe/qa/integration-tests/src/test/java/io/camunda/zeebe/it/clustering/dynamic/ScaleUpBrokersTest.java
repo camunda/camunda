@@ -21,8 +21,6 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -31,17 +29,17 @@ import java.util.Optional;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 @ZeebeIntegration
-@AutoCloseResources
 final class ScaleUpBrokersTest {
 
   private static final int PARTITIONS_COUNT = 3;
   private static final String JOB_TYPE = "job";
-  @AutoCloseResource CamundaClient camundaClient;
+  @AutoClose CamundaClient camundaClient;
 
   private final List<TestStandaloneBroker> newBrokers = new ArrayList<>();
 

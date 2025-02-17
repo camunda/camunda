@@ -25,12 +25,15 @@ import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.bulk.IndexOperation;
+import co.elastic.clients.elasticsearch.core.bulk.OperationType;
 import io.camunda.exporter.entities.TestExporterEntity;
+import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +45,7 @@ class ElasticsearchBatchRequestTest {
 
   private static final String ID = "id";
   private static final String INDEX = "index";
+  private static final String INDEX_WITH_HANDLER = "indexWithHandler";
   private ElasticsearchBatchRequest batchRequest;
   private ElasticsearchClient elasticsearchClient;
   private Builder requestBuilder;
@@ -439,5 +443,41 @@ class ElasticsearchBatchRequestTest {
     // Then
     assertThatThrownBy(callable).isInstanceOf(PersistenceException.class);
     verify(elasticsearchClient).bulk(any(BulkRequest.class));
+  }
+
+  @Test
+  void shouldUseCustomErrorHandlerIfProvided() throws IOException {
+    // Given
+    final TestExporterEntity entity = new TestExporterEntity().setId(ID);
+    final OperationType operationType = OperationType.Update;
+    final int notFound = 404;
+
+    final BulkResponseItem item = mock(BulkResponseItem.class);
+    when(item.id()).thenReturn(ID);
+    when(item.operationType()).thenReturn(operationType);
+    when(item.index()).thenReturn(INDEX_WITH_HANDLER);
+    when(item.status()).thenReturn(notFound);
+    when(item.error())
+        .thenReturn(
+            new ErrorCause.Builder().reason("error").type("document_missing_exception").build());
+
+    final BulkResponse bulkResponse = mock(BulkResponse.class);
+    when(bulkResponse.items()).thenReturn(List.of(item));
+
+    when(elasticsearchClient.bulk(any(BulkRequest.class))).thenReturn(bulkResponse);
+    final BiConsumer<String, Error> errorHandler = mock(BiConsumer.class);
+
+    final String message =
+        String.format(
+            "%s failed for type [%s] and id [%s]: %s",
+            item.operationType(), item.index(), item.id(), item.error().reason());
+
+    // When
+    batchRequest.add(INDEX_WITH_HANDLER, entity);
+    batchRequest.execute(errorHandler);
+
+    // Then
+    verify(errorHandler)
+        .accept(INDEX_WITH_HANDLER, new Error(message, item.error().type(), notFound));
   }
 }

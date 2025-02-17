@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
@@ -56,6 +57,7 @@ public class MappingAppliersTest {
   void shouldDeleteMapping() {
     // given
     final long mappingKey = 1L;
+    final String mappingId = String.valueOf(mappingKey);
     final String claimName = "foo";
     final String claimValue = "bar";
     final var mappingRecord =
@@ -97,25 +99,21 @@ public class MappingAppliersTest {
             .setEntityType(EntityType.MAPPING);
     groupState.create(groupKey, group);
     groupState.addEntity(groupKey, group);
-    // create owner
-    authorizationState.insertOwnerTypeByKey(mappingKey, AuthorizationOwnerType.MAPPING);
     // create authorization
-    authorizationState.createOrAddPermission(
-        mappingKey,
-        AuthorizationResourceType.PROCESS_DEFINITION,
-        PermissionType.READ,
-        Set.of("process"));
+    authorizationState.create(
+        5L,
+        new AuthorizationRecord()
+            .setPermissionTypes(Set.of(PermissionType.READ))
+            .setResourceId("process")
+            .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .setOwnerType(AuthorizationOwnerType.MAPPING)
+            .setOwnerId(mappingId));
 
     // when
     mappingDeletedApplier.applyState(mappingKey, mappingRecord);
 
     // then
     assertThat(mappingState.get(mappingKey)).isEmpty();
-    assertThat(authorizationState.getOwnerType(mappingKey)).isEmpty();
-    assertThat(
-            authorizationState.getResourceIdentifiers(
-                mappingKey, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.READ))
-        .isEmpty();
   }
 
   @Test

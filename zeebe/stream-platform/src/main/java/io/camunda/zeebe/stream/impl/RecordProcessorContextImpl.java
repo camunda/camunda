@@ -16,6 +16,7 @@ import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.stream.api.state.KeyGeneratorControls;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -30,6 +31,7 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   private final InterPartitionCommandSender partitionCommandSender;
   private final KeyGenerator keyGenerator;
   private final ControllableStreamClock clock;
+  private final MeterRegistry meterRegistry;
 
   public RecordProcessorContextImpl(
       final int partitionId,
@@ -38,14 +40,16 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
       final TransactionContext transactionContext,
       final InterPartitionCommandSender partitionCommandSender,
       final KeyGeneratorControls keyGeneratorControls,
-      final ControllableStreamClock clock) {
+      final ControllableStreamClock clock,
+      final MeterRegistry meterRegistry) {
     this.partitionId = partitionId;
     this.scheduleService = scheduleService;
     this.zeebeDb = zeebeDb;
     this.transactionContext = transactionContext;
     this.partitionCommandSender = partitionCommandSender;
     keyGenerator = keyGeneratorControls;
-    this.clock = Objects.requireNonNull(clock);
+    this.clock = Objects.requireNonNull(clock, "must specify a stream clock");
+    this.meterRegistry = Objects.requireNonNull(meterRegistry, "must specify a metrics registry");
   }
 
   @Override
@@ -91,5 +95,10 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   @Override
   public ControllableStreamClock getClock() {
     return clock;
+  }
+
+  @Override
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
   }
 }

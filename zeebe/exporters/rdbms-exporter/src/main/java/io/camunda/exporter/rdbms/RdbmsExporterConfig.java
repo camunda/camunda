@@ -8,7 +8,6 @@
 package io.camunda.exporter.rdbms;
 
 import io.camunda.db.rdbms.write.RdbmsWriter;
-import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -18,28 +17,26 @@ import java.util.Map;
 import java.util.function.Function;
 
 public record RdbmsExporterConfig(
-    long partitionId,
+    int partitionId,
     Duration flushInterval,
     int maxQueueSize,
-    Controller controller,
     RdbmsWriter rdbmsWriter,
     Map<ValueType, List<RdbmsExportHandler>> handlers) {
 
-  public static RdbmsExporterConfig of(Function<Builder, Builder> builderFunction) {
+  public static RdbmsExporterConfig of(final Function<Builder, Builder> builderFunction) {
     return builderFunction.apply(new Builder()).build();
   }
 
   // create a static builder for this record. Also create methods to add handlers to the map
   public static final class Builder {
 
-    private long partitionId;
+    private int partitionId;
     private Duration flushInterval;
     private int maxQueueSize;
-    private Controller controller;
     private RdbmsWriter rdbmsWriter;
     private Map<ValueType, List<RdbmsExportHandler>> handlers = new HashMap<>();
 
-    public Builder partitionId(final long value) {
+    public Builder partitionId(final int value) {
       partitionId = value;
       return this;
     }
@@ -54,11 +51,6 @@ public record RdbmsExporterConfig(
       return this;
     }
 
-    public Builder controller(final Controller value) {
-      controller = value;
-      return this;
-    }
-
     public Builder rdbmsWriter(final RdbmsWriter value) {
       rdbmsWriter = value;
       return this;
@@ -69,7 +61,7 @@ public record RdbmsExporterConfig(
       return this;
     }
 
-    public Builder withHandler(final ValueType valueType, RdbmsExportHandler handler) {
+    public Builder withHandler(final ValueType valueType, final RdbmsExportHandler handler) {
       if (!handlers.containsKey(valueType)) {
         handlers.put(valueType, new ArrayList<>());
       }
@@ -80,7 +72,7 @@ public record RdbmsExporterConfig(
 
     public RdbmsExporterConfig build() {
       return new RdbmsExporterConfig(
-          partitionId, flushInterval, maxQueueSize, controller, rdbmsWriter, handlers);
+          partitionId, flushInterval, maxQueueSize, rdbmsWriter, handlers);
     }
   }
 }

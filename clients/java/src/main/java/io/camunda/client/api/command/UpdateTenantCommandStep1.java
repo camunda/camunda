@@ -26,4 +26,7 @@ public interface UpdateTenantCommandStep1 extends FinalCommandStep<UpdateTenantR
    * @return the builder for this command
    */
   UpdateTenantCommandStep1 name(String name);
+
+  /** Set the new description for the tenant. */
+  UpdateTenantCommandStep1 description(String description);
 }

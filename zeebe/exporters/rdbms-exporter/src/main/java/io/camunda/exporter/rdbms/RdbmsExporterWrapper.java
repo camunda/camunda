@@ -29,8 +29,6 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/ */
 public class RdbmsExporterWrapper implements Exporter {
@@ -40,15 +38,8 @@ public class RdbmsExporterWrapper implements Exporter {
 
   private static final int DEFAULT_FLUSH_INTERVAL = 500;
   private static final int DEFAULT_MAX_QUEUE_SIZE = 1000;
-  private static final Logger LOG = LoggerFactory.getLogger(RdbmsExporterWrapper.class);
 
-  private long partitionId;
   private final RdbmsService rdbmsService;
-  private RdbmsWriter rdbmsWriter;
-
-  // configuration
-  private Duration flushInterval;
-  private int maxQueueSize;
 
   private RdbmsExporter exporter;
 
@@ -58,37 +49,24 @@ public class RdbmsExporterWrapper implements Exporter {
 
   @Override
   public void configure(final Context context) {
-    if (context.getConfiguration().getArguments() != null) {
-      final var arguments = context.getConfiguration().getArguments();
-      final var flushIntervalMillis =
-          (Integer) arguments.getOrDefault("flushInterval", DEFAULT_FLUSH_INTERVAL);
-      flushInterval = Duration.ofMillis(flushIntervalMillis);
-      maxQueueSize = (Integer) arguments.getOrDefault("maxQueueSize", DEFAULT_MAX_QUEUE_SIZE);
-    } else {
-      flushInterval = Duration.ofMillis(DEFAULT_FLUSH_INTERVAL);
-      maxQueueSize = DEFAULT_MAX_QUEUE_SIZE;
-    }
+    final var maxQueueSize = readMaxQueueSize(context);
+    final int partitionId = context.getPartitionId();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(partitionId, maxQueueSize);
 
-    LOG.info(
-        "[RDBMS Exporter] Configuration: flushInterval={}, maxQueueSize={}",
-        flushInterval,
-        maxQueueSize);
-    partitionId = context.getPartitionId();
+    final var builder =
+        new RdbmsExporterConfig.Builder()
+            .partitionId(partitionId)
+            .flushInterval(readFlushInterval(context))
+            .maxQueueSize(maxQueueSize)
+            .rdbmsWriter(rdbmsWriter);
+    createHandlers(partitionId, rdbmsWriter, builder);
 
-    rdbmsWriter = rdbmsService.createWriter(partitionId, maxQueueSize);
+    exporter = new RdbmsExporter(builder.build());
   }
 
   @Override
   public void open(final Controller controller) {
-    final var builder =
-        new RdbmsExporterConfig.Builder()
-            .partitionId(partitionId)
-            .flushInterval(flushInterval)
-            .maxQueueSize(maxQueueSize)
-            .controller(controller)
-            .rdbmsWriter(rdbmsWriter);
-    createHandlers(partitionId, rdbmsWriter, builder);
-    exporter = new RdbmsExporter(builder.build());
+    exporter.open(controller);
   }
 
   @Override
@@ -104,6 +82,26 @@ public class RdbmsExporterWrapper implements Exporter {
   @Override
   public void purge() throws Exception {
     exporter.purge();
+  }
+
+  private Duration readFlushInterval(final Context context) {
+    final var arguments = context.getConfiguration().getArguments();
+    if (arguments != null) {
+      final var flushIntervalMillis =
+          (Integer) arguments.getOrDefault("flushInterval", DEFAULT_FLUSH_INTERVAL);
+      return Duration.ofMillis(flushIntervalMillis);
+    } else {
+      return Duration.ofMillis(DEFAULT_FLUSH_INTERVAL);
+    }
+  }
+
+  private int readMaxQueueSize(final Context context) {
+    final var arguments = context.getConfiguration().getArguments();
+    if (arguments != null) {
+      return (Integer) arguments.getOrDefault("maxQueueSize", DEFAULT_MAX_QUEUE_SIZE);
+    } else {
+      return DEFAULT_MAX_QUEUE_SIZE;
+    }
   }
 
   private static void createHandlers(

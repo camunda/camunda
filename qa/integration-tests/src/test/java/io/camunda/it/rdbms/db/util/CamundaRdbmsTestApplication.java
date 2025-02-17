@@ -45,10 +45,9 @@ public final class CamundaRdbmsTestApplication
 
   public CamundaRdbmsTestApplication withH2() {
     super.withProperty(
-            "spring.datasource.url", "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL")
-        .withProperty("spring.datasource.driver-class-name", "org.h2.Driver")
-        .withProperty("spring.datasource.username", "sa")
-        .withProperty("spring.datasource.password", "");
+            "camunda.database.url", "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL")
+        .withProperty("camunda.database.username", "sa")
+        .withProperty("camunda.database.password", "");
     return this;
   }
 
@@ -59,9 +58,9 @@ public final class CamundaRdbmsTestApplication
       databaseContainer.start();
 
       if (databaseContainer instanceof final JdbcDatabaseContainer<?> jdbcDatabaseContainer) {
-        super.withProperty("spring.datasource.url", jdbcDatabaseContainer.getJdbcUrl())
-            .withProperty("spring.datasource.username", jdbcDatabaseContainer.getUsername())
-            .withProperty("spring.datasource.password", jdbcDatabaseContainer.getPassword());
+        super.withProperty("camunda.database.url", jdbcDatabaseContainer.getJdbcUrl())
+            .withProperty("camunda.database.username", jdbcDatabaseContainer.getUsername())
+            .withProperty("camunda.database.password", jdbcDatabaseContainer.getPassword());
       }
     }
 
@@ -74,7 +73,7 @@ public final class CamundaRdbmsTestApplication
 
   @Override
   public void close() {
-    LOGGER.info("Stop spring application ...");
+    LOGGER.info("Resource closed - Stop spring application ...");
     super.stop();
     if (databaseContainer != null) {
       LOGGER.info("Stop database container '{}'...", databaseContainer.getContainerInfo());
@@ -103,6 +102,9 @@ public final class CamundaRdbmsTestApplication
   }
 
   public RdbmsService getRdbmsService() {
+    if (!isStarted()) {
+      throw new IllegalStateException("Application is not started");
+    }
     return super.bean(RdbmsService.class);
   }
 }

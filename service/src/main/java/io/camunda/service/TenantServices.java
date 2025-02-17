@@ -11,7 +11,6 @@ import io.camunda.search.clients.TenantSearchClient;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.NotFoundException;
-import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.Authentication;
@@ -27,6 +26,8 @@ import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantUpdateReq
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public class TenantServices extends SearchQueryService<TenantServices, TenantQuery, TenantEntity> {
@@ -51,6 +52,14 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
         .searchTenants(query);
   }
 
+  public List<TenantEntity> findAll(final TenantQuery query) {
+    return tenantSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.tenant().read())))
+        .findAllTenants(query);
+  }
+
   @Override
   public TenantServices withAuthentication(final Authentication authentication) {
     return new TenantServices(
@@ -59,19 +68,21 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
 
   public CompletableFuture<TenantRecord> createTenant(final TenantDTO request) {
     return sendBrokerRequest(
-        new BrokerTenantCreateRequest().setTenantId(request.tenantId()).setName(request.name()));
+        new BrokerTenantCreateRequest()
+            .setTenantId(request.tenantId())
+            .setName(request.name())
+            .setDescription(request.description()));
   }
 
   public CompletableFuture<TenantRecord> updateTenant(final TenantDTO request) {
-    return sendBrokerRequest(new BrokerTenantUpdateRequest(request.key()).setName(request.name()));
+    return sendBrokerRequest(
+        new BrokerTenantUpdateRequest(request.tenantId())
+            .setName(request.name())
+            .setDescription(request.description()));
   }
 
-  public CompletableFuture<TenantRecord> deleteTenant(final long key) {
-    return sendBrokerRequest(new BrokerTenantDeleteRequest(key));
-  }
-
-  public TenantEntity getByKey(final Long tenantKey) {
-    return getSingle(TenantQuery.of(q -> q.filter(f -> f.key(tenantKey))));
+  public CompletableFuture<TenantRecord> deleteTenant(final String tenantId) {
+    return sendBrokerRequest(new BrokerTenantDeleteRequest(tenantId));
   }
 
   public CompletableFuture<TenantRecord> addMember(
@@ -82,6 +93,14 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
             .setEntity(entityType, entityKey));
   }
 
+  public CompletableFuture<TenantRecord> addMember(
+      final String tenantId, final EntityType entityType, final String entityId) {
+    return sendBrokerRequest(
+        BrokerTenantEntityRequest.createAddRequest()
+            .setTenantId(tenantId)
+            .setEntity(entityType, entityId));
+  }
+
   public CompletableFuture<TenantRecord> removeMember(
       final Long tenantKey, final EntityType entityType, final long entityKey) {
     return sendBrokerRequest(
@@ -90,16 +109,20 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
             .setEntity(entityType, entityKey));
   }
 
+  public CompletableFuture<TenantRecord> removeMember(
+      final String tenantId, final EntityType entityType, final String entityId) {
+    return sendBrokerRequest(
+        BrokerTenantEntityRequest.createRemoveRequest()
+            .setTenantId(tenantId)
+            .setEntity(entityType, entityId));
+  }
+
   public Collection<TenantEntity> getTenantsByMemberKey(final long memberKey) {
-    return search(
-            TenantQuery.of(
-                queryBuilder ->
-                    queryBuilder
-                        .filter(filterBuilder -> filterBuilder.memberKey(memberKey))
-                        // FIXME: we don't have an easy way to fetch all results, so we use a large
-                        //        limit – 10k tenants ought to be enough for anybody …
-                        .page(SearchQueryPage.of(b -> b.size(10_000)))))
-        .items();
+    return getTenantsByMemberKeys(Set.of(memberKey));
+  }
+
+  public List<TenantEntity> getTenantsByMemberKeys(final Set<Long> memberKeys) {
+    return findAll(TenantQuery.of(q -> q.filter(b -> b.memberKeys(memberKeys))));
   }
 
   public TenantEntity getById(final String tenantId) {
@@ -126,5 +149,9 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
     return tenantEntity;
   }
 
-  public record TenantDTO(Long key, String tenantId, String name) {}
+  public record TenantDTO(Long key, String tenantId, String name, String description) {
+    public static TenantDTO fromEntity(final TenantEntity entity) {
+      return new TenantDTO(entity.key(), entity.tenantId(), entity.name(), entity.description());
+    }
+  }
 }

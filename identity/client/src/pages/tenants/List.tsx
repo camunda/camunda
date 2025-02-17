@@ -6,6 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 import { FC, useState } from "react";
+import { Edit, TrashCan } from "@carbon/react/icons";
+import { Stack } from "@carbon/react";
+import { spacing06 } from "@carbon/elements";
+import { C3EmptyState } from "@camunda/camunda-composite-components";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
 import Page, { PageTitle } from "src/components/layout/Page";
@@ -23,8 +27,6 @@ import useModal, { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "src/pages/tenants/modals/AddModal";
 import EditModal from "src/pages/tenants/modals/EditModal";
 import DeleteModal from "src/pages/tenants/modals/DeleteModal";
-import { C3EmptyState } from "@camunda/camunda-composite-components";
-import { Edit, TrashCan } from "@carbon/react/icons";
 
 const List: FC = () => {
   const { t, Translate } = useTranslate();
@@ -46,23 +48,25 @@ const List: FC = () => {
   if (success && !tenantSearchResults?.items.length) {
     return (
       <Page>
-        <PageTitle>
-          <Translate>Tenants</Translate>
-        </PageTitle>
-        <C3EmptyState
-          heading={t("You don’t have any tenants yet")}
-          description={t(
-            "Create isolated environments with their own assigned users, groups, and applications.",
-          )}
-          button={{
-            label: t("Create a tenant"),
-            onClick: addTenant,
-          }}
-          link={{
-            href: documentationHref("/concepts/multi-tenancy/", ""),
-            label: t("Learn more about tenants"),
-          }}
-        />
+        <Stack gap={spacing06}>
+          <PageTitle>
+            <Translate>Tenants</Translate>
+          </PageTitle>
+          <C3EmptyState
+            heading={t("You don’t have any tenants yet")}
+            description={t(
+              "Create isolated environments with their own assigned users, groups, and applications.",
+            )}
+            button={{
+              label: t("Create a tenant"),
+              onClick: addTenant,
+            }}
+            link={{
+              href: documentationHref("/concepts/multi-tenancy/", ""),
+              label: t("Learn more about tenants"),
+            }}
+          />
+        </Stack>
         {addTenantModal}
       </Page>
     );
@@ -88,14 +92,22 @@ const List: FC = () => {
             label: t("Rename"),
             icon: Edit,
             onClick: (tenant) =>
-              editTenant({ tenantKey: tenant.tenantKey, name: tenant.name }),
+              editTenant({
+                tenantId: tenant.tenantId,
+                name: tenant.name,
+                description: tenant.description,
+              }),
           },
           {
             label: t("Delete"),
             icon: TrashCan,
             isDangerous: true,
             onClick: (tenant) =>
-              deleteTenant({ tenantKey: tenant.tenantKey, name: tenant.name }),
+              deleteTenant({
+                tenantId: tenant.tenantId,
+                name: tenant.name,
+                description: tenant.description,
+              }),
           },
         ]}
       />

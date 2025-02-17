@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
@@ -49,7 +50,8 @@ import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.slf4j.Logger;
 
-public final class OpenSearchArchiverRepository implements ArchiverRepository {
+public final class OpenSearchArchiverRepository extends OpensearchRepository
+    implements ArchiverRepository {
   private static final String DATES_AGG = "datesAgg";
   private static final String INSTANCES_AGG = "instancesAgg";
   private static final String DATES_SORTED_AGG = "datesSortedAgg";
@@ -63,10 +65,7 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
   private final String indexPrefix;
   private final String processInstanceIndex;
   private final String batchOperationIndex;
-  private final OpenSearchAsyncClient client;
-  private final Executor executor;
   private final CamundaExporterMetrics metrics;
-  private final Logger logger;
   private final OpenSearchGenericClient genericClient;
   private final CalendarInterval rolloverInterval;
 
@@ -81,16 +80,14 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
       final Executor executor,
       final CamundaExporterMetrics metrics,
       final Logger logger) {
+    super(client, executor, logger);
     this.partitionId = partitionId;
     this.config = config;
     this.retention = retention;
     this.indexPrefix = indexPrefix;
     this.processInstanceIndex = processInstanceIndex;
     this.batchOperationIndex = batchOperationIndex;
-    this.client = client;
-    this.executor = executor;
     this.metrics = metrics;
-    this.logger = logger;
 
     genericClient = new OpenSearchGenericClient(client._transport(), client._transportOptions());
     rolloverInterval = mapCalendarInterval(config.getRolloverInterval());
@@ -234,11 +231,6 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
               return CompletableFuture.completedFuture(null);
             },
             executor);
-  }
-
-  @Override
-  public void close() throws Exception {
-    client._transport().close();
   }
 
   private SearchRequest createFinishedBatchOperationsSearchRequest(final Aggregation aggregation) {

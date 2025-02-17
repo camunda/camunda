@@ -37,26 +37,24 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.hc.core5.http.HttpStatus;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
-@AutoCloseResources
 public class UserTaskListenersTest {
 
   @TestZeebe
   private static final TestStandaloneBroker ZEEBE =
-      new TestStandaloneBroker().withRecordingExporter(true);
+      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
-  @AutoCloseResource private CamundaClient client;
+  @AutoClose private CamundaClient client;
 
   private ZeebeResourcesHelper resourcesHelper;
 
@@ -127,6 +125,48 @@ public class UserTaskListenersTest {
         (userTask) -> {
           assertThat(userTask.getAssignee()).isEqualTo(assignee);
           assertThat(userTask.getVariables()).isEmpty();
+          assertThat(userTask.getAction()).isEqualTo(action);
+        });
+  }
+
+  @Test
+  void shouldUpdateUserTaskAfterCompletingUpdatingTaskListener() {
+    // given
+    final var action = "my_update_action";
+    final var userTaskKey =
+        resourcesHelper.createSingleUserTask(
+            t -> t.zeebeTaskListener(l -> l.updating().type("my_listener")));
+
+    final JobHandler completeJobHandler =
+        (jobClient, job) -> client.newCompleteCommand(job).send().join();
+    client.newWorker().jobType("my_listener").handler(completeJobHandler).open();
+
+    // when: invoke `UPDATE` user task command
+    final var updateUserTaskFuture =
+        client
+            .newUserTaskUpdateCommand(userTaskKey)
+            .candidateUsers("frodo", "samwise")
+            .priority(88)
+            .action(action)
+            .send();
+
+    // wait for successful `UPDATE` user task command completion
+    assertThatCode(updateUserTaskFuture::join).doesNotThrowAnyException();
+
+    // then
+    ZeebeAssertHelper.assertUserTaskUpdated(
+        userTaskKey,
+        (userTask) -> {
+          assertThat(userTask.getAssignee()).isEmpty();
+          assertThat(userTask.getCandidateGroupsList()).isEmpty();
+          assertThat(userTask.getDueDate()).isEmpty();
+          assertThat(userTask.getFollowUpDate()).isEmpty();
+          assertThat(userTask.getVariables()).isEmpty();
+          // updated properties
+          assertThat(userTask.getCandidateUsersList()).containsExactly("frodo", "samwise");
+          assertThat(userTask.getPriority()).isEqualTo(88);
+          assertThat(userTask.getChangedAttributes())
+              .containsExactly(UserTaskRecord.CANDIDATE_USERS, UserTaskRecord.PRIORITY);
           assertThat(userTask.getAction()).isEqualTo(action);
         });
   }

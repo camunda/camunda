@@ -43,6 +43,8 @@ import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +53,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -68,6 +71,7 @@ final class ClusterConfigurationManagementApiTest {
   private final MemberId id3 = MemberId.from("3");
   private final ClusterConfiguration initialTopology =
       ClusterConfiguration.init().addMember(id0, MemberState.initializeAsActive(Map.of()));
+  @AutoClose private final MeterRegistry registry = new SimpleMeterRegistry();
 
   private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
 
@@ -110,7 +114,7 @@ final class ClusterConfigurationManagementApiTest {
   }
 
   private AtomixCluster createClusterNode(final Node localNode, final Collection<Node> nodes) {
-    return AtomixCluster.builder()
+    return AtomixCluster.builder(registry)
         .withAddress(localNode.address())
         .withMemberId(localNode.id().id())
         .withMembershipProvider(new BootstrapDiscoveryProvider(nodes))
@@ -190,7 +194,7 @@ final class ClusterConfigurationManagementApiTest {
 
     // then
     assertThat(changeStatus.plannedChanges())
-        .containsExactly(new PartitionLeaveOperation(id1, 1, false));
+        .containsExactly(new PartitionLeaveOperation(id1, 1, 1));
   }
 
   @Test
@@ -218,7 +222,7 @@ final class ClusterConfigurationManagementApiTest {
     // then
     assertThat(changeStatus.plannedChanges())
         .containsExactly(
-            new PartitionJoinOperation(id2, 2, 1), new PartitionLeaveOperation(id1, 2, false));
+            new PartitionJoinOperation(id2, 2, 1), new PartitionLeaveOperation(id1, 2, 1));
   }
 
   @Test
@@ -240,7 +244,7 @@ final class ClusterConfigurationManagementApiTest {
         .containsExactly(
             new MemberJoinOperation(id1),
             new PartitionJoinOperation(id1, 2, 1),
-            new PartitionLeaveOperation(id0, 2, false));
+            new PartitionLeaveOperation(id0, 2, 1));
   }
 
   @Test
@@ -309,8 +313,8 @@ final class ClusterConfigurationManagementApiTest {
     // then
     assertThat(changeStatus.plannedChanges())
         .containsExactlyInAnyOrder(
-            new PartitionLeaveOperation(id0, 2, false),
-            new PartitionLeaveOperation(id1, 1, false),
+            new PartitionLeaveOperation(id0, 2, 1),
+            new PartitionLeaveOperation(id1, 1, 1),
             new PartitionReconfigurePriorityOperation(id0, 1, 1),
             new PartitionReconfigurePriorityOperation(id1, 2, 1));
   }
@@ -363,7 +367,7 @@ final class ClusterConfigurationManagementApiTest {
         .containsExactly(
             new MemberJoinOperation(id1),
             new PartitionJoinOperation(id1, 2, 1),
-            new PartitionLeaveOperation(id0, 2, false),
+            new PartitionLeaveOperation(id0, 2, 1),
             new PartitionBootstrapOperation(id0, 3, 1));
   }
 
@@ -387,7 +391,7 @@ final class ClusterConfigurationManagementApiTest {
         .containsExactly(
             new MemberJoinOperation(id1),
             new PartitionJoinOperation(id1, 2, 1),
-            new PartitionLeaveOperation(id0, 2, false),
+            new PartitionLeaveOperation(id0, 2, 1),
             new PartitionBootstrapOperation(id0, 3, 1));
   }
 

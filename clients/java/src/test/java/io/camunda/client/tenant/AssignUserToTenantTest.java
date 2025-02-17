@@ -24,23 +24,24 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 public class AssignUserToTenantTest extends ClientRestTest {
 
-  private static final long TENANT_KEY = 123L;
-  private static final long USER_KEY = 456L;
+  private static final String TENANT_ID = UUID.randomUUID().toString();
+  private static final String USER_NAME = UUID.randomUUID().toString();
 
   @Test
   void shouldAssignUserToTenant() {
     // when
-    client.newAssignUserToTenantCommand(TENANT_KEY).userKey(USER_KEY).send().join();
+    client.newAssignUserToTenantCommand(TENANT_ID).username(USER_NAME).send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
     final RequestMethod method = RestGatewayService.getLastRequest().getMethod();
     assertThat(requestPath)
-        .isEqualTo(REST_API_PATH + "/tenants/" + TENANT_KEY + "/users/" + USER_KEY);
+        .isEqualTo(REST_API_PATH + "/tenants/" + TENANT_ID + "/users/" + USER_NAME);
     assertThat(method).isEqualTo(RequestMethod.PUT);
   }
 
@@ -48,12 +49,12 @@ public class AssignUserToTenantTest extends ClientRestTest {
   void shouldRaiseExceptionOnNotFoundTenant() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_KEY + "/users/" + USER_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/users/" + USER_NAME,
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToTenantCommand(TENANT_KEY).userKey(USER_KEY).send().join())
+            () -> client.newAssignUserToTenantCommand(TENANT_ID).username(USER_NAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -62,12 +63,12 @@ public class AssignUserToTenantTest extends ClientRestTest {
   void shouldRaiseExceptionOnNotFoundUser() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_KEY + "/users/" + USER_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/users/" + USER_NAME,
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToTenantCommand(TENANT_KEY).userKey(USER_KEY).send().join())
+            () -> client.newAssignUserToTenantCommand(TENANT_ID).username(USER_NAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -76,12 +77,12 @@ public class AssignUserToTenantTest extends ClientRestTest {
   void shouldHandleServerError() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_KEY + "/users/" + USER_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/users/" + USER_NAME,
         () -> new ProblemDetail().title("Internal Server Error").status(500));
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToTenantCommand(TENANT_KEY).userKey(USER_KEY).send().join())
+            () -> client.newAssignUserToTenantCommand(TENANT_ID).username(USER_NAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 500: 'Internal Server Error'");
   }
@@ -90,12 +91,12 @@ public class AssignUserToTenantTest extends ClientRestTest {
   void shouldRaiseExceptionOnForbiddenRequest() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_KEY + "/users/" + USER_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/users/" + USER_NAME,
         () -> new ProblemDetail().title("Forbidden").status(403));
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToTenantCommand(TENANT_KEY).userKey(USER_KEY).send().join())
+            () -> client.newAssignUserToTenantCommand(TENANT_ID).username(USER_NAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 403: 'Forbidden'");
   }

@@ -12,7 +12,7 @@
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.DecisionRequirementsDbQuery">
     SELECT COUNT(*)
-    FROM DECISION_REQUIREMENTS
+    FROM ${prefix}DECISION_REQUIREMENTS
     <include refid="io.camunda.db.rdbms.sql.DecisionRequirementsMapper.searchFilter"/>
   </select>
 
@@ -27,7 +27,7 @@
     <if test="resultConfig.includeXml">XML,</if>
     <if test="!resultConfig.includeXml">NULL AS XML,</if>
     RESOURCE_NAME
-    FROM DECISION_REQUIREMENTS
+    FROM ${prefix}DECISION_REQUIREMENTS
     <include refid="io.camunda.db.rdbms.sql.DecisionRequirementsMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -85,7 +85,8 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.DecisionRequirementsDbModel"
     flushCache="true">
-    INSERT INTO DECISION_REQUIREMENTS (DECISION_REQUIREMENTS_KEY, DECISION_REQUIREMENTS_ID, NAME, TENANT_ID, VERSION, RESOURCE_NAME, XML)
+    INSERT INTO ${prefix}DECISION_REQUIREMENTS (DECISION_REQUIREMENTS_KEY, DECISION_REQUIREMENTS_ID,
+                                                NAME, TENANT_ID, VERSION, RESOURCE_NAME, XML)
     VALUES (#{decisionRequirementsKey}, #{decisionRequirementsId}, #{name},
             #{tenantId}, #{version}, #{resourceName}, #{xml})
   </insert>

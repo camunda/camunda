@@ -16,18 +16,21 @@ public class TenantDbModel implements DbModel<TenantDbModel> {
   private Long tenantKey;
   private String tenantId;
   private String name;
+  private String description;
   private List<TenantMemberDbModel> members;
 
   public TenantDbModel() {}
 
   private TenantDbModel(
-      final Long tenantKey,
       final String tenantId,
+      final Long tenantKey,
       final String name,
+      final String description,
       final List<TenantMemberDbModel> members) {
     this.tenantKey = tenantKey;
     this.tenantId = tenantId;
     this.name = name;
+    this.description = description;
     this.members = members;
   }
 
@@ -35,7 +38,12 @@ public class TenantDbModel implements DbModel<TenantDbModel> {
   public TenantDbModel copy(
       final Function<ObjectBuilder<TenantDbModel>, ObjectBuilder<TenantDbModel>> builderFunction) {
     return builderFunction
-        .apply(new Builder().tenantKey(tenantKey).tenantId(tenantId).name(name))
+        .apply(
+            new Builder()
+                .tenantKey(tenantKey)
+                .tenantId(tenantId)
+                .name(name)
+                .description(description))
         .build();
   }
 
@@ -63,6 +71,14 @@ public class TenantDbModel implements DbModel<TenantDbModel> {
     this.name = name;
   }
 
+  public String description() {
+    return description;
+  }
+
+  public void description(final String description) {
+    this.description = description;
+  }
+
   public List<TenantMemberDbModel> members() {
     return members;
   }
@@ -76,6 +92,7 @@ public class TenantDbModel implements DbModel<TenantDbModel> {
     private Long tenantKey;
     private String tenantId;
     private String name;
+    private String description;
     private List<TenantMemberDbModel> members;
 
     // Public constructor to initialize the builder
@@ -97,6 +114,11 @@ public class TenantDbModel implements DbModel<TenantDbModel> {
       return this;
     }
 
+    public Builder description(final String description) {
+      this.description = description;
+      return this;
+    }
+
     public Builder members(final List<TenantMemberDbModel> members) {
       this.members = members;
       return this;
@@ -104,7 +126,7 @@ public class TenantDbModel implements DbModel<TenantDbModel> {
 
     @Override
     public TenantDbModel build() {
-      return new TenantDbModel(tenantKey, tenantId, name, members);
+      return new TenantDbModel(tenantId, tenantKey, name, description, members);
     }
   }
 }

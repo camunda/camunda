@@ -60,14 +60,6 @@ public class ImportPositionHolder {
     scheduleImportPositionUpdateTask();
   }
 
-  public boolean getConcurrencyMode() {
-    return importStore.getConcurrencyMode();
-  }
-
-  public void setConcurrencyMode(final boolean concurrencyMode) {
-    importStore.setConcurrencyMode(concurrencyMode);
-  }
-
   public void scheduleImportPositionUpdateTask() {
     final var interval = operateProperties.getImporter().getImportPositionUpdateInterval();
     scheduledImportPositionUpdateTask =

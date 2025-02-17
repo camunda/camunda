@@ -16,20 +16,22 @@ import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled(
+    "Disabled while groups are not fully supported yet: https://github.com/camunda/camunda/issues/26961 ")
 @ZeebeIntegration
-@AutoCloseResources
 class UnassignGroupFromTenantTest {
 
   @TestZeebe
-  private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+  private final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
-  @AutoCloseResource private CamundaClient client;
+  @AutoClose private CamundaClient client;
 
   private long tenantKey;
   private long groupKey;
@@ -49,13 +51,13 @@ class UnassignGroupFromTenantTest {
     groupKey = client.newCreateGroupCommand().name("group").send().join().getGroupKey();
 
     // Assign group to tenant to set up test scenario
-    client.newAssignGroupToTenantCommand(tenantKey, groupKey).send().join();
+    client.newAssignGroupToTenantCommand(tenantKey).groupKey(groupKey).send().join();
   }
 
   @Test
   void shouldUnassignGroupFromTenant() {
     // when
-    client.newUnassignGroupFromTenantCommand(tenantKey, groupKey).send().join();
+    client.newUnassignGroupFromTenantCommand(tenantKey).groupKey(groupKey).send().join();
 
     // then
     ZeebeAssertHelper.assertGroupUnassignedFromTenant(
@@ -75,7 +77,8 @@ class UnassignGroupFromTenantTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignGroupFromTenantCommand(nonExistentTenantKey, groupKey)
+                    .newUnassignGroupFromTenantCommand(nonExistentTenantKey)
+                    .groupKey(groupKey)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -94,7 +97,8 @@ class UnassignGroupFromTenantTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignGroupFromTenantCommand(tenantKey, nonExistentGroupKey)
+                    .newUnassignGroupFromTenantCommand(tenantKey)
+                    .groupKey(nonExistentGroupKey)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -111,7 +115,8 @@ class UnassignGroupFromTenantTest {
             () ->
                 client
                     // Group key is not assigned
-                    .newUnassignGroupFromTenantCommand(tenantKey, groupKey + 1)
+                    .newUnassignGroupFromTenantCommand(tenantKey)
+                    .groupKey(groupKey + 1)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)

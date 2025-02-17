@@ -8,9 +8,11 @@
 package io.camunda.webapps.backup;
 
 import io.camunda.webapps.backup.BackupException.*;
+import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
 import io.camunda.webapps.schema.descriptors.backup.SnapshotIndexCollection;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -32,8 +34,6 @@ public class BackupServiceImpl implements BackupService {
 
   private final BackupRepository repository;
 
-  private final List<SnapshotIndexCollection> indexPatternsOrdered;
-
   public BackupServiceImpl(
       final Executor threadPoolTaskExecutor,
       final BackupPriorities backupPriorities,
@@ -42,7 +42,6 @@ public class BackupServiceImpl implements BackupService {
       final DynamicIndicesProvider dynamicIndicesProvider) {
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
     this.backupPriorities = backupPriorities;
-    indexPatternsOrdered = backupPriorities.indicesSplitBySnapshot().toList();
     this.repository = repository;
     this.backupProps = backupProps;
     this.dynamicIndicesProvider = dynamicIndicesProvider;
@@ -52,13 +51,17 @@ public class BackupServiceImpl implements BackupService {
   public void deleteBackup(final Long backupId) {
     repository.validateRepositoryExists(backupProps.repositoryName());
     final String repositoryName = backupProps.repositoryName();
-    final int count = indexPatternsOrdered.size();
-    final String version = getCurrentVersion();
-    for (int index = 0; index < count; index++) {
+    // the number of parts can be dynamic
+    final var backupMetadataOpt = repository.getMetadata(repositoryName, backupId);
+    if (backupMetadataOpt.isEmpty()) {
+      throw new ResourceNotFoundException(
+          "Expected to find backup with ID '%d', but no metadata for it found".formatted(backupId));
+    }
+    final var backupMetadata = backupMetadataOpt.get();
+    final int partCount = backupMetadata.partCount();
+    for (int partIdx = 1; partIdx <= partCount; partIdx++) {
       final String snapshotName =
-          repository
-              .snapshotNameProvider()
-              .getSnapshotName(new Metadata(backupId, version, index + 1, count));
+          repository.snapshotNameProvider().getSnapshotName(backupMetadata.withPart(partIdx));
       repository.deleteSnapshot(repositoryName, snapshotName);
     }
   }
@@ -90,15 +93,17 @@ public class BackupServiceImpl implements BackupService {
 
   TakeBackupResponseDto scheduleSnapshots(final TakeBackupRequestDto request) {
     final String repositoryName = backupProps.repositoryName();
+    final var indexPatternsOrdered = getValidIndexPatterns();
     final int count = indexPatternsOrdered.size();
     final List<String> snapshotNames = new ArrayList<>();
     final String version = getCurrentVersion();
-    var index = 0;
-    for (var indexCollection : indexPatternsOrdered) {
-      final Metadata metadata = new Metadata(request.getBackupId(), version, index++, count);
+    for (int index = 0; index < indexPatternsOrdered.size(); index++) {
+      SnapshotIndexCollection indexCollection = indexPatternsOrdered.get(index);
+      final var partNum = index + 1;
+      final Metadata metadata = new Metadata(request.getBackupId(), version, partNum, count);
       final String snapshotName = repository.snapshotNameProvider().getSnapshotName(metadata);
       // Add all the dynamic indices in the last step
-      if (index == count) {
+      if (partNum == count) {
         indexCollection =
             indexCollection.addSkippableIndices(dynamicIndicesProvider.getAllDynamicIndices());
       }
@@ -106,6 +111,8 @@ public class BackupServiceImpl implements BackupService {
       final SnapshotRequest snapshotRequest =
           new SnapshotRequest(repositoryName, snapshotName, indexCollection, metadata);
 
+      LOGGER.debug(
+          "Snapshot part {} contains indices {}", metadata.partNo(), indexCollection.allIndices());
       requestsQueue.offer(snapshotRequest);
       LOGGER.debug("Snapshot scheduled: {}", snapshotName);
       snapshotNames.add(snapshotName);
@@ -121,9 +128,37 @@ public class BackupServiceImpl implements BackupService {
       threadPoolTaskExecutor.execute(
           () ->
               repository.executeSnapshotting(
-                  nextRequest, false, this::scheduleNextSnapshot, requestsQueue::clear));
+                  nextRequest, this::scheduleNextSnapshot, requestsQueue::clear));
       LOGGER.debug("Snapshot picked for execution: {}", nextRequest);
     }
+  }
+
+  @VisibleForTesting
+  List<SnapshotIndexCollection> getValidIndexPatterns() {
+    final var list = new ArrayList<SnapshotIndexCollection>();
+    final var missingIndicesList = new ArrayList<String>();
+    for (final var indices : backupPriorities.indicesSplitBySnapshot().toList()) {
+      final var foundIndices = repository.checkAllIndicesExist(indices.allIndices());
+      final var missingNonRequiredIndices =
+          indices.skippableIndices().stream().filter(idx -> !foundIndices.contains(idx)).toList();
+      final var missingRequiredIndices =
+          indices.requiredIndices().stream().filter(idx -> !foundIndices.contains(idx)).toList();
+      if (!missingRequiredIndices.isEmpty()) {
+        missingIndicesList.addAll(missingRequiredIndices);
+        LOGGER.warn(
+            "Missing required indices:{}. All indices found are {}",
+            missingRequiredIndices,
+            foundIndices);
+      }
+      // skip this part if there is no index, but they are not required
+      if (!foundIndices.isEmpty()) {
+        list.add(indices.removeSkippableIndices(missingNonRequiredIndices));
+      }
+    }
+    if (!missingIndicesList.isEmpty()) {
+      throw new IndexNotFoundException(missingIndicesList);
+    }
+    return list;
   }
 
   // TODO Keep in mind this bug: https://github.com/camunda/camunda/issues/20458

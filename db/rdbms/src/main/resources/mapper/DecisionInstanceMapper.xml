@@ -12,8 +12,8 @@
 
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)
-    FROM DECISION_INSTANCE di
-    LEFT JOIN DECISION_DEFINITION dd ON (di.DECISION_DEFINITION_KEY = dd.DECISION_DEFINITION_KEY)
+    FROM ${prefix}DECISION_INSTANCE di
+    LEFT JOIN ${prefix}DECISION_DEFINITION dd ON (di.DECISION_DEFINITION_KEY = dd.DECISION_DEFINITION_KEY)
     <include refid="io.camunda.db.rdbms.sql.DecisionInstanceMapper.searchFilter"/>
   </select>
 
@@ -38,8 +38,8 @@
     NULL AS EVALUATED_OUTPUTS,
     dd.NAME AS DECISION_DEFINITION_NAME,
     dd.VERSION AS DECISION_DEFINITION_VERSION
-    FROM DECISION_INSTANCE di
-    LEFT JOIN DECISION_DEFINITION dd ON (di.DECISION_DEFINITION_KEY = dd.DECISION_DEFINITION_KEY)
+    FROM ${prefix}DECISION_INSTANCE di
+    LEFT JOIN ${prefix}DECISION_DEFINITION dd ON (di.DECISION_DEFINITION_KEY = dd.DECISION_DEFINITION_KEY)
     <include refid="io.camunda.db.rdbms.sql.DecisionInstanceMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -167,7 +167,7 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel"
     flushCache="true">
-    INSERT INTO DECISION_INSTANCE (DECISION_INSTANCE_ID,
+    INSERT INTO ${prefix}DECISION_INSTANCE (DECISION_INSTANCE_ID,
                                    DECISION_INSTANCE_KEY,
                                    PROCESS_INSTANCE_KEY,
                                    PROCESS_DEFINITION_KEY,
@@ -183,7 +183,9 @@
                                    STATE,
                                    EVALUATION_DATE,
                                    RESULT,
-                                   EVALUATION_FAILURE)
+                                            EVALUATION_FAILURE,
+                                            TENANT_ID,
+                                            PARTITION_ID)
     VALUES (#{decisionInstanceId}, #{decisionInstanceKey}, #{processInstanceKey},
             #{processDefinitionKey}, #{processDefinitionId},
             #{decisionDefinitionKey}, #{decisionDefinitionId},
@@ -191,14 +193,15 @@
             #{flowNodeInstanceKey}, #{flowNodeId},
             #{rootDecisionDefinitionKey},
             #{decisionType}, #{state},
-            #{evaluationDate, jdbcType=TIMESTAMP}, #{result}, #{evaluationFailure})
+            #{evaluationDate, jdbcType=TIMESTAMP}, #{result}, #{evaluationFailure},
+            #{tenantId}, #{partitionId})
   </insert>
 
   <insert
     id="insertInput"
     parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel"
     flushCache="true">
-    INSERT INTO DECISION_INSTANCE_INPUT (DECISION_INSTANCE_ID, INPUT_ID, INPUT_NAME, INPUT_VALUE)
+    INSERT INTO ${prefix}DECISION_INSTANCE_INPUT (DECISION_INSTANCE_ID, INPUT_ID, INPUT_NAME, INPUT_VALUE)
     VALUES
     <foreach collection="evaluatedInputs" item="item" separator=", ">
       (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value})
@@ -213,7 +216,7 @@
     INPUT_ID,
     INPUT_NAME,
     INPUT_VALUE
-    FROM DECISION_INSTANCE_INPUT
+    FROM ${prefix}DECISION_INSTANCE_INPUT
     WHERE DECISION_INSTANCE_ID IN (<foreach collection="list" item="id" separator=", ">
     #{id}</foreach>)
   </select>
@@ -232,7 +235,7 @@
     id="insertOutput"
     parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel"
     flushCache="true">
-    INSERT INTO DECISION_INSTANCE_OUTPUT
+    INSERT INTO ${prefix}DECISION_INSTANCE_OUTPUT
     (DECISION_INSTANCE_ID, OUTPUT_ID, OUTPUT_NAME, OUTPUT_VALUE, RULE_ID, RULE_INDEX) VALUES
     <foreach collection="evaluatedOutputs" item="item" separator=", ">
       (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value}, #{item.ruleId},
@@ -249,7 +252,7 @@
     OUTPUT_VALUE,
     RULE_ID,
     RULE_INDEX
-    FROM DECISION_INSTANCE_OUTPUT
+    FROM ${prefix}DECISION_INSTANCE_OUTPUT
     WHERE DECISION_INSTANCE_ID IN (<foreach collection="list" item="id" separator=", ">
     #{id}</foreach>)
   </select>

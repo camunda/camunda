@@ -11,15 +11,19 @@ import Redirect from "src/components/router/Redirect";
 
 type PageRoutesProps = {
   indexElement: ReactElement;
-  detailElement: ReactElement;
+  detailElement?: ReactElement;
 };
 
 const PageRoutes: FC<PageRoutesProps> = ({ indexElement, detailElement }) => {
   return (
     <Routes>
       <Route index element={indexElement} />
-      <Route path=":id" element={detailElement} />
-      <Route path=":id/:tab" element={detailElement} />
+      {detailElement && (
+        <>
+          <Route path=":id" element={detailElement} />
+          <Route path=":id/:tab" element={detailElement} />
+        </>
+      )}
       <Route path="*" element={<Redirect to=".." />} />
     </Routes>
   );

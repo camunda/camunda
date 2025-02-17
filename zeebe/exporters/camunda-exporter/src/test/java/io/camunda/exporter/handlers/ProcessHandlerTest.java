@@ -15,7 +15,6 @@ import static org.mockito.Mockito.verify;
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -34,8 +33,7 @@ public class ProcessHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-process";
   private final TestProcessCache processCache = new TestProcessCache();
-  private final ProcessHandler underTest =
-      new ProcessHandler(indexName, new XMLUtil(), processCache);
+  private final ProcessHandler underTest = new ProcessHandler(indexName, processCache);
 
   @Test
   void testGetHandledValueType() {

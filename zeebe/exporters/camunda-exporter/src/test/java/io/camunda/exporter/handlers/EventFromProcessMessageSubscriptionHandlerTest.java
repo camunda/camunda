@@ -40,7 +40,7 @@ final class EventFromProcessMessageSubscriptionHandlerTest {
   private final String indexName = EventTemplate.INDEX_NAME;
 
   private final EventFromProcessMessageSubscriptionHandler underTest =
-      new EventFromProcessMessageSubscriptionHandler(indexName, false);
+      new EventFromProcessMessageSubscriptionHandler(indexName);
 
   @Test
   void testGetHandledValueType() {

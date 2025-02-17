@@ -24,10 +24,5 @@ public interface BackupService {
       String repositoryName,
       String snapshotName,
       SnapshotIndexCollection indices,
-      Metadata metadata) {
-
-    public List<String> indices(final boolean onlyRequired) {
-      return onlyRequired ? indices().requiredIndices() : indices().allIndices();
-    }
-  }
+      Metadata metadata) {}
 }

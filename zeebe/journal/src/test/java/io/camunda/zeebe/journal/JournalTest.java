@@ -20,6 +20,8 @@ import io.camunda.zeebe.journal.record.RecordMetadata;
 import io.camunda.zeebe.journal.util.MockJournalMetastore;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -30,6 +32,7 @@ import java.util.function.Consumer;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -38,6 +41,7 @@ final class JournalTest {
 
   @TempDir Path directory;
   final JournalMetaStore metaStore = new MockJournalMetastore();
+  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private byte[] entry;
   private final DirectBufferWriter recordDataWriter = new DirectBufferWriter();
   private final DirectBufferWriter otherRecordDataWriter = new DirectBufferWriter();
@@ -575,7 +579,7 @@ final class JournalTest {
 
   private SegmentedJournal openJournal(final Consumer<SegmentedJournalBuilder> option) {
     final var builder =
-        SegmentedJournal.builder()
+        SegmentedJournal.builder(meterRegistry)
             .withDirectory(directory.resolve("data").toFile())
             .withMaxSegmentSize(1024 * 1024) // speeds up certain tests, e.g. shouldCompact
             .withMetaStore(metaStore)

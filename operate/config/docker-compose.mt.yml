@@ -2,7 +2,7 @@ version: "3.6"
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.1
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -34,7 +34,7 @@ services:
     depends_on:
       - postgres
     container_name: keycloak
-    image: bitnami/keycloak:26.0.7
+    image: bitnami/keycloak:26.1.0
     volumes:
       - keycloak-theme:/opt/bitnami/keycloak/themes/identity
     ports:

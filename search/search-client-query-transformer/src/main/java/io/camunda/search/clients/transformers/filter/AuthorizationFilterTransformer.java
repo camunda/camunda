@@ -8,14 +8,12 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.OWNER_KEY;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.OWNER_ID;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.OWNER_TYPE;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.PERMISSIONS;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.PERMISSIONS_RESOURCEIDS;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.PERMISSIONS_TYPE;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.PERMISSIONS_RESOURCEID;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.PERMISSIONS_TYPES;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.RESOURCE_TYPE;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -32,13 +30,13 @@ public final class AuthorizationFilterTransformer
   @Override
   public SearchQuery toSearchQuery(final AuthorizationFilter filter) {
     return and(
-        longTerms(OWNER_KEY, filter.ownerKeys()),
+        stringTerms(OWNER_ID, filter.ownerIds()),
         filter.ownerType() == null ? null : term(OWNER_TYPE, filter.ownerType()),
-        stringTerms("%s.%s".formatted(PERMISSIONS, PERMISSIONS_RESOURCEIDS), filter.resourceIds()),
+        stringTerms(PERMISSIONS_RESOURCEID, filter.resourceIds()),
         filter.resourceType() == null ? null : term(RESOURCE_TYPE, filter.resourceType()),
-        filter.permissionType() == null
+        filter.permissionTypes() == null
             ? null
-            : term(
-                "%s.%s".formatted(PERMISSIONS, PERMISSIONS_TYPE), filter.permissionType().name()));
+            : stringTerms(
+                PERMISSIONS_TYPES, filter.permissionTypes().stream().map(Enum::name).toList()));
   }
 }

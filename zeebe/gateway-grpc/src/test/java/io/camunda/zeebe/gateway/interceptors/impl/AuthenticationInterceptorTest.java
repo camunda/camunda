@@ -27,8 +27,8 @@ import io.grpc.Status;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import org.assertj.core.api.LongAssert;
 import org.assertj.core.api.MapAssert;
+import org.assertj.core.api.StringAssert;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -217,10 +217,10 @@ public class AuthenticationInterceptorTest {
     }
   }
 
-  private static LongAssert assertUserKey() {
+  private static StringAssert assertUserKey() {
     try {
-      return (LongAssert)
-          assertThat(Context.current().call(() -> AuthenticationInterceptor.USER_KEY.get()));
+      return (StringAssert)
+          assertThat(Context.current().call(() -> AuthenticationInterceptor.USERNAME.get()));
     } catch (final Exception e) {
       throw new RuntimeException("Unable to retrieve user key from context", e);
     }

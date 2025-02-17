@@ -12,7 +12,6 @@ import static java.util.concurrent.Executors.newThreadPerTaskExecutor;
 import com.google.rpc.Code;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.health.GatewayHealthManager;
@@ -40,6 +39,7 @@ import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.TlsConfigUtil;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -50,6 +50,9 @@ import io.grpc.StatusException;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.protobuf.StatusProto;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.binder.grpc.MetricCollectingServerInterceptor;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.ssl.SslContextBuilder;
 import java.io.IOException;
@@ -67,9 +70,8 @@ import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
-import me.dinowernli.grpc.prometheus.Configuration;
-import me.dinowernli.grpc.prometheus.MonitoringServerInterceptor;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -81,8 +83,6 @@ public final class Gateway implements CloseableSilently {
       msg -> grpcStatusException(Code.CANCELLED_VALUE, msg);
 
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
-  private static final MonitoringServerInterceptor MONITORING_SERVER_INTERCEPTOR =
-      MonitoringServerInterceptor.create(Configuration.allMetrics());
   private static final Duration DEFAULT_SHUTDOWN_TIMEOUT = Duration.ofSeconds(30);
 
   private final GatewayCfg gatewayCfg;
@@ -97,6 +97,7 @@ public final class Gateway implements CloseableSilently {
   private final BrokerClient brokerClient;
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
+  private final MeterRegistry meterRegistry;
 
   public Gateway(
       final GatewayCfg gatewayCfg,
@@ -105,7 +106,8 @@ public final class Gateway implements CloseableSilently {
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer,
       final UserServices userServices,
-      final PasswordEncoder passwordEncoder) {
+      final PasswordEncoder passwordEncoder,
+      final MeterRegistry meterRegistry) {
     this(
         DEFAULT_SHUTDOWN_TIMEOUT,
         gatewayCfg,
@@ -114,7 +116,8 @@ public final class Gateway implements CloseableSilently {
         actorSchedulingService,
         jobStreamer,
         userServices,
-        passwordEncoder);
+        passwordEncoder,
+        meterRegistry);
   }
 
   public Gateway(
@@ -125,7 +128,8 @@ public final class Gateway implements CloseableSilently {
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer,
       final UserServices userServices,
-      final PasswordEncoder passwordEncoder) {
+      final PasswordEncoder passwordEncoder,
+      final MeterRegistry meterRegistry) {
     shutdownTimeout = shutdownDuration;
     this.gatewayCfg = gatewayCfg;
     this.securityConfiguration = securityConfiguration;
@@ -134,6 +138,8 @@ public final class Gateway implements CloseableSilently {
     this.jobStreamer = jobStreamer;
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
+    this.meterRegistry = meterRegistry;
+
     healthManager = new GatewayHealthManagerImpl();
   }
 
@@ -211,8 +217,6 @@ public final class Gateway implements CloseableSilently {
   }
 
   private void applyExecutorConfiguration(final NettyServerBuilder builder) {
-    final var config = gatewayCfg.getThreads();
-
     // the default boss and worker event loop groups defined by the library are good enough; they
     // will appropriately select epoll or nio based on availability, and the boss loop gets 1
     // thread, while the worker gets the number of cores
@@ -238,11 +242,17 @@ public final class Gateway implements CloseableSilently {
 
   private Server buildServer(
       final ServerBuilder<?> serverBuilder, final BindableService interceptorService) {
+    final var metricsInterceptor =
+        new MetricCollectingServerInterceptor(
+            meterRegistry,
+            UnaryOperator.identity(),
+            // for backwards compatibility, keep the old Prometheus buckets
+            b -> b.serviceLevelObjectives(MicrometerUtil.defaultPrometheusBuckets()));
     return serverBuilder
-        .addService(applyInterceptors(interceptorService))
         .addService(
-            ServerInterceptors.intercept(
-                healthManager.getHealthService(), MONITORING_SERVER_INTERCEPTOR))
+            ServerInterceptors.intercept(applyInterceptors(interceptorService), metricsInterceptor))
+        .addService(
+            ServerInterceptors.intercept(healthManager.getHealthService(), metricsInterceptor))
         .build();
   }
 
@@ -361,6 +371,10 @@ public final class Gateway implements CloseableSilently {
 
   private LongPollingActivateJobsHandler<ActivateJobsResponse> buildLongPollingHandler(
       final BrokerClient brokerClient) {
+    final var grpcRegistry = new CompositeMeterRegistry();
+    grpcRegistry.add(meterRegistry);
+    grpcRegistry.config().commonTags("gateway", "grpc");
+
     return LongPollingActivateJobsHandler.<ActivateJobsResponse>newBuilder()
         .setBrokerClient(brokerClient)
         .setMaxMessageSize(gatewayCfg.getNetwork().getMaxMessageSize().toBytes())
@@ -370,6 +384,7 @@ public final class Gateway implements CloseableSilently {
         .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
         .setNoJobsReceivedExceptionProvider(NO_JOBS_RECEIVED_EXCEPTION_PROVIDER)
         .setRequestCanceledExceptionProvider(REQUEST_CANCELED_EXCEPTION_PROVIDER)
+        .setMeterRegistry(grpcRegistry)
         .build();
   }
 
@@ -384,11 +399,10 @@ public final class Gateway implements CloseableSilently {
     // chain
     Collections.reverse(interceptors);
     interceptors.add(new ContextInjectingInterceptor(queryApi));
-    interceptors.add(MONITORING_SERVER_INTERCEPTOR);
-    if (!securityConfiguration.getAuthentication().getMethod().equals(AuthenticationMethod.NONE)) {
+
+    if (!securityConfiguration.isUnauthenticatedApiAccessAllowed()) {
       interceptors.add(new AuthenticationInterceptor(userServices, passwordEncoder));
     }
-
     return ServerInterceptors.intercept(service, interceptors);
   }
 

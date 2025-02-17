@@ -78,13 +78,13 @@ jobs:
           project_name: e2e
           additional_flags: "--profile self-managed"
 
-      - name: Build backend
-        run: ./mvnw clean install -T1C -DskipTests -Dskip.docker -pl optimize/backend -am -P skipFrontendBuild
+      - name: Build dist
+        run: ./mvnw clean install -T1C -DskipTests -Dskip.docker -pl dist -am -P skipFrontendBuild
 
       - name: Create backend logs file
         run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
 
-      - name: Start back-end
+      - name: Start backend
         working-directory: ./optimize/client
         run: |
           yarn run start-backend ci &> ./build/backendLogs.log &
@@ -109,7 +109,7 @@ jobs:
         run: yarn run e2e:ci:sm:headless
 
       - name: Upload logs
-        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4
         if: always()
         with:
           name: logs

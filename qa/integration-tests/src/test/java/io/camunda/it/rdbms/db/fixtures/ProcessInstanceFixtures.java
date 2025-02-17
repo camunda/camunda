@@ -10,6 +10,7 @@ package io.camunda.it.rdbms.db.fixtures;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
+import io.camunda.search.entities.ProcessInstanceEntity;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.function.Function;
@@ -28,6 +29,7 @@ public final class ProcessInstanceFixtures extends CommonFixtures {
             .processDefinitionId("process-" + RANDOM.nextInt(10000))
             .parentProcessInstanceKey(nextKey())
             .parentElementInstanceKey(nextKey())
+            .state(randomEnum(ProcessInstanceEntity.ProcessInstanceState.class))
             .startDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .endDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .version(RANDOM.nextInt(10000))
@@ -51,6 +53,20 @@ public final class ProcessInstanceFixtures extends CommonFixtures {
     }
 
     rdbmsWriter.flush();
+  }
+
+  public static ProcessInstanceDbModel createAndSaveRandomProcessInstance(
+      final RdbmsWriter rdbmsWriter,
+      final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder>
+          builderFunction) {
+
+    final ProcessInstanceDbModel processInstance =
+        ProcessInstanceFixtures.createRandomized(builderFunction);
+    rdbmsWriter.getProcessInstanceWriter().create(processInstance);
+
+    rdbmsWriter.flush();
+
+    return processInstance;
   }
 
   public static void createAndSaveProcessInstance(

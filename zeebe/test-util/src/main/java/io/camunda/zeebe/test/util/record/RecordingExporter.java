@@ -149,6 +149,16 @@ public final class RecordingExporter implements Exporter {
     }
   }
 
+  @Override
+  public void purge() throws Exception {
+    LOCK.lock();
+    try {
+      RECORDS.clear();
+    } finally {
+      LOCK.unlock();
+    }
+  }
+
   public static Collection<Record<?>> getRecords() {
     return RECORDS.values();
   }

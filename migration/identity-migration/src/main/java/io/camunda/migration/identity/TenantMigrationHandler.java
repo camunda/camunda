@@ -15,14 +15,11 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-public class TenantMigrationHandler implements MigrationHandler {
+public class TenantMigrationHandler extends MigrationHandler<Tenant> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(TenantMigrationHandler.class);
   private final ManagementIdentityClient managementIdentityClient;
   private final ManagementIdentityTransformer managementIdentityTransformer;
   private final TenantServices tenantServices;
@@ -38,20 +35,20 @@ public class TenantMigrationHandler implements MigrationHandler {
   }
 
   @Override
-  public void migrate() {
-    LOG.debug("Migrating tenants");
-    List<Tenant> tenants;
-    do {
-      tenants = managementIdentityClient.fetchTenants(SIZE);
-      managementIdentityClient.updateMigrationStatus(
-          tenants.stream().map(this::createTenant).toList());
-    } while (!tenants.isEmpty());
-    LOG.debug("Finished migrating tenants");
+  protected List<Tenant> fetchBatch() {
+    return managementIdentityClient.fetchTenants(SIZE);
   }
 
-  private MigrationStatusUpdateRequest createTenant(final Tenant tenant) {
+  @Override
+  protected void process(final List<Tenant> batch) {
+    managementIdentityClient.updateMigrationStatus(batch.stream().map(this::processTask).toList());
+  }
+
+  protected MigrationStatusUpdateRequest processTask(final Tenant tenant) {
     try {
-      tenantServices.createTenant(new TenantDTO(null, tenant.tenantId(), tenant.name())).join();
+      tenantServices
+          .createTenant(new TenantDTO(null, tenant.tenantId(), tenant.name(), null))
+          .join();
     } catch (final Exception e) {
       if (!isConflictError(e)) {
         return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenant, e);

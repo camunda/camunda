@@ -16,15 +16,13 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 
-@AutoCloseResources
 final class FixedPartitionDistributionIT {
-  @AutoCloseResource private TestCluster cluster;
+  @AutoClose private TestCluster cluster;
 
   @Test
   void shouldDistributePartitions() {

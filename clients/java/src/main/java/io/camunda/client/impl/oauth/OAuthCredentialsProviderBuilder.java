@@ -15,7 +15,22 @@
  */
 package io.camunda.client.impl.oauth;
 
-import io.camunda.client.impl.util.Environment;
+import static io.camunda.client.impl.BuilderUtils.applyEnvironmentValueIfNotNull;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_AUTHORIZATION_SERVER;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CACHE_PATH;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CONNECT_TIMEOUT;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_READ_TIMEOUT;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_KEY_SECRET;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_PATH;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_SECRET;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_PATH;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_SECRET;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_AUDIENCE;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_SCOPE;
+
+import io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -26,23 +41,6 @@ import java.util.Objects;
 
 public final class OAuthCredentialsProviderBuilder {
   public static final String INVALID_ARGUMENT_MSG = "Expected valid %s but none was provided.";
-  public static final String OAUTH_ENV_CLIENT_ID = "ZEEBE_CLIENT_ID";
-  public static final String OAUTH_ENV_CLIENT_SECRET = "ZEEBE_CLIENT_SECRET";
-  public static final String OAUTH_ENV_TOKEN_AUDIENCE = "ZEEBE_TOKEN_AUDIENCE";
-  public static final String OAUTH_ENV_TOKEN_SCOPE = "ZEEBE_TOKEN_SCOPE";
-  public static final String OAUTH_ENV_AUTHORIZATION_SERVER = "ZEEBE_AUTHORIZATION_SERVER_URL";
-  public static final String OAUTH_ENV_SSL_CLIENT_KEYSTORE_PATH = "ZEEBE_SSL_CLIENT_KEYSTORE_PATH";
-  public static final String OAUTH_ENV_SSL_CLIENT_KEYSTORE_SECRET =
-      "ZEEBE_SSL_CLIENT_KEYSTORE_SECRET";
-  public static final String OAUTH_ENV_SSL_CLIENT_KEYSTORE_KEY_SECRET =
-      "ZEEBE_SSL_CLIENT_KEYSTORE_KEY_SECRET";
-  public static final String OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_PATH =
-      "ZEEBE_SSL_CLIENT_TRUSTSTORE_PATH";
-  public static final String OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_SECRET =
-      "ZEEBE_SSL_CLIENT_TRUSTSTORE_SECRET";
-  public static final String OAUTH_ENV_CACHE_PATH = "ZEEBE_CLIENT_CONFIG_PATH";
-  public static final String OAUTH_ENV_CONNECT_TIMEOUT = "ZEEBE_AUTH_CONNECT_TIMEOUT";
-  public static final String OAUTH_ENV_READ_TIMEOUT = "ZEEBE_AUTH_READ_TIMEOUT";
   private static final String DEFAULT_AUTHZ_SERVER = "https://login.cloud.camunda.io/oauth/token/";
   private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
   private static final Duration DEFAULT_READ_TIMEOUT = DEFAULT_CONNECT_TIMEOUT;
@@ -62,6 +60,7 @@ public final class OAuthCredentialsProviderBuilder {
   private File credentialsCache;
   private Duration connectTimeout;
   private Duration readTimeout;
+  private boolean applyEnvironmentOverrides = true;
 
   /** Client id to be used when requesting access token from OAuth authorization server. */
   public OAuthCredentialsProviderBuilder clientId(final String clientId) {
@@ -135,6 +134,13 @@ public final class OAuthCredentialsProviderBuilder {
     return this;
   }
 
+  private OAuthCredentialsProviderBuilder keystorePath(final String keystorePath) {
+    if (keystorePath != null) {
+      return keystorePath(Paths.get(keystorePath));
+    }
+    return this;
+  }
+
   /**
    * @see OAuthCredentialsProviderBuilder#keystorePath(Path)
    */
@@ -171,6 +177,13 @@ public final class OAuthCredentialsProviderBuilder {
   /** Path to truststore used for OAuth identity provider */
   public OAuthCredentialsProviderBuilder truststorePath(final Path truststorePath) {
     this.truststorePath = truststorePath;
+    return this;
+  }
+
+  private OAuthCredentialsProviderBuilder truststorePath(final String truststorePath) {
+    if (truststorePath != null) {
+      return truststorePath(Paths.get(truststorePath));
+    }
     return this;
   }
 
@@ -219,6 +232,13 @@ public final class OAuthCredentialsProviderBuilder {
     return this;
   }
 
+  private OAuthCredentialsProviderBuilder connectTimeout(final String connectTimeout) {
+    if (connectTimeout != null) {
+      return connectTimeout(Duration.ofMillis(Long.parseLong(connectTimeout)));
+    }
+    return this;
+  }
+
   /**
    * @see #connectTimeout(Duration)
    */
@@ -235,6 +255,13 @@ public final class OAuthCredentialsProviderBuilder {
     return this;
   }
 
+  private OAuthCredentialsProviderBuilder readTimeout(final String readTimeout) {
+    if (readTimeout != null) {
+      return readTimeout(Duration.ofMillis(Long.parseLong(readTimeout)));
+    }
+    return this;
+  }
+
   /**
    * @see #readTimeout(Duration)
    */
@@ -242,11 +269,19 @@ public final class OAuthCredentialsProviderBuilder {
     return readTimeout;
   }
 
+  public OAuthCredentialsProviderBuilder applyEnvironmentOverrides(
+      final boolean applyEnvironmentOverrides) {
+    this.applyEnvironmentOverrides = applyEnvironmentOverrides;
+    return this;
+  }
+
   /**
    * @return a new {@link OAuthCredentialsProvider} with the provided configuration options.
    */
   public OAuthCredentialsProvider build() {
-    checkEnvironmentOverrides();
+    if (applyEnvironmentOverrides) {
+      checkEnvironmentOverrides();
+    }
     applyDefaults();
 
     validate();
@@ -254,74 +289,54 @@ public final class OAuthCredentialsProviderBuilder {
   }
 
   private void checkEnvironmentOverrides() {
-    final String envClientId = Environment.system().get(OAUTH_ENV_CLIENT_ID);
-    final String envClientSecret = Environment.system().get(OAUTH_ENV_CLIENT_SECRET);
-    final String envAudience = Environment.system().get(OAUTH_ENV_TOKEN_AUDIENCE);
-    final String envScope = Environment.system().get(OAUTH_ENV_TOKEN_SCOPE);
-    final String envAuthorizationUrl = Environment.system().get(OAUTH_ENV_AUTHORIZATION_SERVER);
-    final String envKeystorePath = Environment.system().get(OAUTH_ENV_SSL_CLIENT_KEYSTORE_PATH);
-    final String envKeystorePassword =
-        Environment.system().get(OAUTH_ENV_SSL_CLIENT_KEYSTORE_SECRET);
-    final String envKeystoreKeyPassword =
-        Environment.system().get(OAUTH_ENV_SSL_CLIENT_KEYSTORE_KEY_SECRET);
-    final String envTruststorePath = Environment.system().get(OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_PATH);
-    final String envTruststorePassword =
-        Environment.system().get(OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_SECRET);
-    final String envCachePath = Environment.system().get(OAUTH_ENV_CACHE_PATH);
-    final String envReadTimeout = Environment.system().get(OAUTH_ENV_READ_TIMEOUT);
-    final String envConnectTimeout = Environment.system().get(OAUTH_ENV_CONNECT_TIMEOUT);
-
-    if (envClientId != null) {
-      clientId = envClientId;
-    }
-
-    if (envClientSecret != null) {
-      clientSecret = envClientSecret;
-    }
-
-    if (envAudience != null) {
-      audience = envAudience;
-    }
-
-    if (envScope != null) {
-      scope = envScope;
-    }
-
-    if (envAuthorizationUrl != null) {
-      authorizationServerUrl = envAuthorizationUrl;
-    }
-
-    if (envKeystorePath != null) {
-      keystorePath = Paths.get(envKeystorePath);
-    }
-
-    if (envKeystorePassword != null) {
-      keystorePassword = envKeystorePassword;
-    }
-
-    if (envKeystoreKeyPassword != null) {
-      keystoreKeyPassword = envKeystoreKeyPassword;
-    }
-
-    if (envTruststorePath != null) {
-      truststorePath = Paths.get(envTruststorePath);
-    }
-
-    if (envTruststorePassword != null) {
-      truststorePassword = envTruststorePassword;
-    }
-
-    if (envCachePath != null) {
-      credentialsCachePath = envCachePath;
-    }
-
-    if (envConnectTimeout != null) {
-      connectTimeout = Duration.ofMillis(Long.parseLong(envConnectTimeout));
-    }
-
-    if (envReadTimeout != null) {
-      readTimeout = Duration.ofMillis(Long.parseLong(envReadTimeout));
-    }
+    applyEnvironmentValueIfNotNull(
+        this::clientId, OAUTH_ENV_CLIENT_ID, ZeebeClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID);
+    applyEnvironmentValueIfNotNull(
+        this::clientSecret,
+        OAUTH_ENV_CLIENT_SECRET,
+        ZeebeClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET);
+    applyEnvironmentValueIfNotNull(
+        this::audience,
+        OAUTH_ENV_TOKEN_AUDIENCE,
+        ZeebeClientEnvironmentVariables.OAUTH_ENV_TOKEN_AUDIENCE);
+    applyEnvironmentValueIfNotNull(
+        this::scope, OAUTH_ENV_TOKEN_SCOPE, ZeebeClientEnvironmentVariables.OAUTH_ENV_TOKEN_SCOPE);
+    applyEnvironmentValueIfNotNull(
+        this::authorizationServerUrl,
+        OAUTH_ENV_AUTHORIZATION_SERVER,
+        ZeebeClientEnvironmentVariables.OAUTH_ENV_AUTHORIZATION_SERVER);
+    applyEnvironmentValueIfNotNull(
+        this::keystorePath,
+        OAUTH_ENV_SSL_CLIENT_KEYSTORE_PATH,
+        ZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_PATH);
+    applyEnvironmentValueIfNotNull(
+        this::keystorePassword,
+        OAUTH_ENV_SSL_CLIENT_KEYSTORE_SECRET,
+        ZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_SECRET);
+    applyEnvironmentValueIfNotNull(
+        this::keystoreKeyPassword,
+        OAUTH_ENV_SSL_CLIENT_KEYSTORE_KEY_SECRET,
+        ZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_KEY_SECRET);
+    applyEnvironmentValueIfNotNull(
+        this::truststorePath,
+        OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_PATH,
+        ZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_PATH);
+    applyEnvironmentValueIfNotNull(
+        this::truststorePassword,
+        OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_SECRET,
+        ZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_SECRET);
+    applyEnvironmentValueIfNotNull(
+        this::credentialsCachePath,
+        OAUTH_ENV_CACHE_PATH,
+        ZeebeClientEnvironmentVariables.OAUTH_ENV_CACHE_PATH);
+    applyEnvironmentValueIfNotNull(
+        this::readTimeout,
+        OAUTH_ENV_READ_TIMEOUT,
+        ZeebeClientEnvironmentVariables.OAUTH_ENV_READ_TIMEOUT);
+    applyEnvironmentValueIfNotNull(
+        this::connectTimeout,
+        OAUTH_ENV_CONNECT_TIMEOUT,
+        ZeebeClientEnvironmentVariables.OAUTH_ENV_CONNECT_TIMEOUT);
   }
 
   private void applyDefaults() {

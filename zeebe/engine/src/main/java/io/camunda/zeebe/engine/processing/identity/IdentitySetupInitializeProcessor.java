@@ -26,7 +26,6 @@ import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -40,7 +39,6 @@ import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.agrona.collections.MutableBoolean;
@@ -92,7 +90,7 @@ public final class IdentitySetupInitializeProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<IdentitySetupRecord> command) {
-    createDistributedEntities(command.getKey(), command.getValue());
+    createDistributedEntities(command.getValue());
     stateWriter.appendFollowUpEvent(
         command.getKey(), IdentitySetupIntent.INITIALIZED, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
@@ -169,7 +167,7 @@ public final class IdentitySetupInitializeProcessor
     return createdNewEntities.get();
   }
 
-  private void createDistributedEntities(final long commandKey, final IdentitySetupRecord record) {
+  private void createDistributedEntities(final IdentitySetupRecord record) {
     final var role = record.getDefaultRole();
     if (roleState.getRole(role.getRoleKey()).isEmpty()) {
       createRole(role);
@@ -239,17 +237,23 @@ public final class IdentitySetupInitializeProcessor
   private void addAllPermissions(final long roleKey) {
 
     for (final AuthorizationResourceType resourceType : AuthorizationResourceType.values()) {
-      final var record =
-          new AuthorizationRecord().setOwnerKey(roleKey).setOwnerType(AuthorizationOwnerType.ROLE);
-      record.setResourceType(resourceType);
-
-      for (final PermissionType permissionType : PermissionType.values()) {
-        final var permission =
-            new Permission().setPermissionType(permissionType).addResourceId(WILDCARD_PERMISSION);
-        record.addPermission(permission);
+      if (resourceType == AuthorizationResourceType.UNSPECIFIED) {
+        // We shouldn't add empty permissions for an unspecified resource type
+        continue;
       }
 
-      stateWriter.appendFollowUpEvent(roleKey, AuthorizationIntent.PERMISSION_ADDED, record);
+      // TODO: refactor when Roles use String IDs as unique identifiers
+      final var authorizationKey = keyGenerator.nextKey();
+      final var record =
+          new AuthorizationRecord()
+              .setAuthorizationKey(authorizationKey)
+              .setOwnerId(String.valueOf(roleKey))
+              .setOwnerType(AuthorizationOwnerType.ROLE)
+              .setResourceType(resourceType)
+              .setResourceId(WILDCARD_PERMISSION)
+              .setPermissionTypes(resourceType.getSupportedPermissionTypes());
+
+      stateWriter.appendFollowUpEvent(authorizationKey, AuthorizationIntent.CREATED, record);
     }
   }
 }

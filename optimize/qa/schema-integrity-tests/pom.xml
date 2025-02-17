@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda.optimize</groupId>
     <artifactId>optimize-qa</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>optimize-schema-integrity-tests</artifactId>
@@ -14,6 +14,9 @@
   <properties>
     <old.database.port>9250</old.database.port>
     <new.database.port>9200</new.database.port>
+    <!-- In order to allow the build to keep working, we need to specify an already released -->
+    <!-- previous version-->
+    <temporary.previous.version>8.6.0</temporary.previous.version>
   </properties>
 
   <!-- this is necessary. Dependency:analyze error suppressed -->
@@ -77,6 +80,26 @@
     </dependency>
 
     <dependency>
+      <groupId>org.glassfish.jersey.core</groupId>
+      <artifactId>jersey-client</artifactId>
+      <version>3.1.9</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.glassfish.jersey.media</groupId>
+      <artifactId>jersey-media-json-jackson</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+      <version>${version.spring}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda.optimize</groupId>
       <artifactId>optimize-commons</artifactId>
       <version>${project.version}</version>
@@ -119,7 +142,7 @@
     <dependency>
       <groupId>org.jetbrains</groupId>
       <artifactId>annotations</artifactId>
-      <version>26.0.1</version>
+      <version>26.0.2</version>
       <scope>test</scope>
     </dependency>
 
@@ -171,7 +194,7 @@
           <redirectTestOutputToFile>false</redirectTestOutputToFile>
           <failIfNoTests>true</failIfNoTests>
           <systemPropertyVariables>
-            <previousVersion>${project.previousVersion}</previousVersion>
+            <previousVersion>${temporary.previous.version}</previousVersion>
             <currentVersion>${project.version}</currentVersion>
             <buildDirectory>${project.build.directory}</buildDirectory>
             <oldDatabasePort>${old.database.port}</oldDatabasePort>
@@ -200,14 +223,14 @@
                 <artifactItem>
                   <groupId>io.camunda.optimize</groupId>
                   <artifactId>camunda-optimize</artifactId>
-                  <version>${project.previousVersion}</version>
+                  <version>${temporary.previous.version}</version>
                   <type>tar.gz</type>
                   <classifier>production</classifier>
                   <!-- we want to use environment variables as present in the internal service-config -->
                   <!-- thus excluding the default environment-config -->
                   <excludes>**/environment-config.yaml</excludes>
                   <overWrite>true</overWrite>
-                  <outputDirectory>${project.build.directory}/${project.previousVersion}</outputDirectory>
+                  <outputDirectory>${project.build.directory}/${temporary.previous.version}</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>io.camunda.optimize</groupId>

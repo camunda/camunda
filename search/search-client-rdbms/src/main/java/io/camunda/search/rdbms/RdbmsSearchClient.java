@@ -8,7 +8,6 @@
 package io.camunda.search.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.domain.UserTaskDbQuery;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
@@ -155,6 +154,22 @@ public class RdbmsSearchClient
   }
 
   @Override
+  public List<MappingEntity> findAllMappings(final MappingQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for all mappings: {}", query);
+
+    // search without size boundary to find all items
+    return rdbmsService
+        .getMappingReader()
+        .search(
+            MappingQuery.of(
+                b ->
+                    b.filter(query.filter())
+                        .sort(query.sort())
+                        .page(p -> p.size(Integer.MAX_VALUE))))
+        .items();
+  }
+
+  @Override
   public SearchQueryResult<DecisionDefinitionEntity> searchDecisionDefinitions(
       final DecisionDefinitionQuery query) {
     LOG.debug("[RDBMS Search Client] Search for decisionDefinition: {}", query);
@@ -197,8 +212,10 @@ public class RdbmsSearchClient
   }
 
   @Override
-  public SearchQueryResult<UserEntity> searchUsers(final UserQuery filter) {
-    return null;
+  public SearchQueryResult<UserEntity> searchUsers(final UserQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for users: {}", query);
+
+    return rdbmsService.getUserReader().search(query);
   }
 
   @Override
@@ -209,15 +226,27 @@ public class RdbmsSearchClient
   }
 
   @Override
-  public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery query) {
-    final var searchResult =
-        rdbmsService
-            .getUserTaskReader()
-            .search(
-                UserTaskDbQuery.of(
-                    b -> b.filter(query.filter()).sort(query.sort()).page(query.page())));
+  public List<GroupEntity> findAllGroups(final GroupQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for all groups: {}", query);
 
-    return new SearchQueryResult<>(searchResult.total(), searchResult.hits(), null, null);
+    // search without size boundary to find all items
+    return rdbmsService
+        .getGroupReader()
+        .search(
+            GroupQuery.of(
+                b ->
+                    b.filter(query.filter())
+                        .sort(query.sort())
+                        .page(p -> p.size(Integer.MAX_VALUE))))
+        .items();
+  }
+
+  @Override
+  public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery query) {
+    return rdbmsService
+        .getUserTaskReader()
+        .search(
+            UserTaskQuery.of(b -> b.filter(query.filter()).sort(query.sort()).page(query.page())));
   }
 
   @Override
@@ -244,6 +273,22 @@ public class RdbmsSearchClient
     LOG.debug("[RDBMS Search Client] Search for tenants: {}", query);
 
     return rdbmsService.getTenantReader().search(query);
+  }
+
+  @Override
+  public List<TenantEntity> findAllTenants(final TenantQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for all tenants: {}", query);
+
+    // search without size boundary to find all items
+    return rdbmsService
+        .getTenantReader()
+        .search(
+            TenantQuery.of(
+                b ->
+                    b.filter(query.filter())
+                        .sort(query.sort())
+                        .page(p -> p.size(Integer.MAX_VALUE))))
+        .items();
   }
 
   @Override

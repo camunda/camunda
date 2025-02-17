@@ -13,20 +13,18 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import io.camunda.exporter.tasks.archiver.ArchiverRepository.NoopArchiverRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.NoopBatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NoopIncidentUpdateRepository;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import org.agrona.collections.MutableInteger;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.slf4j.LoggerFactory;
 
-@AutoCloseResources
 final class BackgroundTaskManagerTest {
-  @AutoCloseResource(closeMethod = "shutdownNow")
+  @AutoClose("shutdownNow")
   private final ScheduledThreadPoolExecutor executor =
       Mockito.spy(new ScheduledThreadPoolExecutor(1));
 

@@ -7,12 +7,12 @@
  */
 package io.camunda.exporter.tasks.incident;
 
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import org.apache.http.HttpHost;
+import org.junit.jupiter.api.AutoClose;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.testcontainers.OpensearchContainer;
@@ -28,7 +28,7 @@ final class OpensearchIncidentUpdateRepositoryIT extends IncidentUpdateRepositor
   private static final OpensearchContainer<?> CONTAINER =
       TestSearchContainers.createDefaultOpensearchContainer();
 
-  @AutoCloseResource
+  @AutoClose
   private final org.opensearch.client.transport.rest_client.RestClientTransport transport =
       createTransport();
 
@@ -45,6 +45,7 @@ final class OpensearchIncidentUpdateRepositoryIT extends IncidentUpdateRepositor
         postImporterQueueTemplate.getAlias(),
         incidentTemplate.getAlias(),
         listViewTemplate.getAlias(),
+        listViewTemplate.getFullQualifiedName(),
         flowNodeInstanceTemplate.getAlias(),
         operationTemplate.getAlias(),
         client,

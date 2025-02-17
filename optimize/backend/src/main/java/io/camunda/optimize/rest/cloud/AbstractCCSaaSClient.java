@@ -13,7 +13,6 @@ import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import io.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
 import io.camunda.optimize.service.util.configuration.users.CloudUsersConfiguration;
 import jakarta.annotation.PreDestroy;
-import jakarta.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import org.apache.http.client.config.RequestConfig;
@@ -22,6 +21,7 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 
 @Component

@@ -8,11 +8,10 @@
 package io.camunda.migration.identity;
 
 import io.camunda.migration.identity.dto.UserResourceAuthorization;
+import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
-import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Collection;
@@ -26,82 +25,78 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-public class AuthorizationMigrationHandler {
+public class AuthorizationMigrationHandler extends MigrationHandler<UserResourceAuthorization> {
 
   private static final Logger LOG = LoggerFactory.getLogger(AuthorizationMigrationHandler.class);
   private final AuthorizationServices authorizationService;
-  private final ManagementIdentityProxy managementIdentityProxy;
+  private final ManagementIdentityClient managementIdentityClient;
 
   public AuthorizationMigrationHandler(
       final Authentication authentication,
       final AuthorizationServices authorizationService,
-      final ManagementIdentityProxy managementIdentityProxy) {
+      final ManagementIdentityClient managementIdentityClient) {
+    this.managementIdentityClient = managementIdentityClient;
     this.authorizationService = authorizationService.withAuthentication(authentication);
-    this.managementIdentityProxy = managementIdentityProxy;
   }
 
-  public void migrate() {
-    LOG.debug("Migrating authorizations");
-    UserResourceAuthorization lastRecord = null;
-    while (true) {
-      final List<UserResourceAuthorization> authorizations =
-          managementIdentityProxy.fetchUserResourceAuthorizations(lastRecord, 100);
-      if (authorizations.isEmpty()) {
-        LOG.debug("Finished migrating authorizations");
-        return;
-      }
-      lastRecord = authorizations.getLast();
-      final Map<String, Map<String, Map<String, List<String>>>> authorizationMap =
-          authorizations.stream()
-              .collect(
-                  Collectors.groupingBy(
-                      UserResourceAuthorization::username,
-                      Collectors.groupingBy(
-                          UserResourceAuthorization::resourceType,
-                          Collectors.groupingBy(
-                              UserResourceAuthorization::permission,
-                              Collectors.mapping(
-                                  UserResourceAuthorization::resourceId, Collectors.toList())))));
+  @Override
+  protected List<UserResourceAuthorization> fetchBatch() {
+    return managementIdentityClient.fetchUserResourceAuthorizations(SIZE);
+  }
 
-      authorizationMap.forEach(
-          (owner, value) -> {
-            value.forEach(
-                (resourceType, permissionAndResources) -> {
-                  final Map<PermissionType, Set<String>> permissions =
-                      permissionAndResources.entrySet().stream()
-                          .flatMap(
-                              e ->
-                                  convertPermission(e).stream()
-                                      .map(entry -> new SimpleEntry<>(entry, e.getValue())))
-                          .collect(
-                              Collectors.groupingBy(
-                                  SimpleEntry::getKey,
-                                  Collectors.flatMapping(
-                                      e -> e.getValue().stream(), Collectors.toSet())));
-                  final long ownerKey = getOwnerKeyForUsername(owner);
-                  authorizationService
-                      .patchAuthorization(
-                          new PatchAuthorizationRequest(
-                              ownerKey,
-                              PermissionAction.ADD,
-                              convertResourceType(resourceType),
-                              permissions))
-                      .join();
+  @Override
+  protected void process(final List<UserResourceAuthorization> authorizations) {
+    final Map<String, Map<String, Map<String, List<String>>>> authorizationMap =
+        authorizations.stream()
+            .collect(
+                Collectors.groupingBy(
+                    UserResourceAuthorization::username,
+                    Collectors.groupingBy(
+                        UserResourceAuthorization::resourceType,
+                        Collectors.groupingBy(
+                            UserResourceAuthorization::permission,
+                            Collectors.mapping(
+                                UserResourceAuthorization::resourceId, Collectors.toList())))));
 
-                  final Collection<UserResourceAuthorization> migrated =
-                      permissionAndResources.entrySet().stream()
-                          .flatMap(
-                              entry ->
-                                  entry.getValue().stream()
-                                      .map(
-                                          resourceId ->
-                                              new UserResourceAuthorization(
-                                                  owner, resourceId, resourceType, entry.getKey())))
-                          .toList();
-                  managementIdentityProxy.markAsMigrated(migrated);
-                });
-          });
-    }
+    authorizationMap.forEach(
+        (owner, value) -> {
+          value.forEach(
+              (resourceType, permissionAndResources) -> {
+                final Map<PermissionType, Set<String>> permissions =
+                    permissionAndResources.entrySet().stream()
+                        .flatMap(
+                            e ->
+                                convertPermission(e).stream()
+                                    .map(entry -> new SimpleEntry<>(entry, e.getValue())))
+                        .collect(
+                            Collectors.groupingBy(
+                                SimpleEntry::getKey,
+                                Collectors.flatMapping(
+                                    e -> e.getValue().stream(), Collectors.toSet())));
+                final long ownerKey = getOwnerKeyForUsername(owner);
+                // TODO: this part needs to be revisited
+                //                authorizationService
+                //                    .patchAuthorization(
+                //                        new PatchAuthorizationRequest(
+                //                            ownerKey,
+                //                            PermissionAction.ADD,
+                //                            convertResourceType(resourceType),
+                //                            permissions))
+                //                    .join();
+
+                final Collection<UserResourceAuthorization> migrated =
+                    permissionAndResources.entrySet().stream()
+                        .flatMap(
+                            entry ->
+                                entry.getValue().stream()
+                                    .map(
+                                        resourceId ->
+                                            new UserResourceAuthorization(
+                                                owner, resourceId, resourceType, entry.getKey())))
+                        .toList();
+                managementIdentityClient.markAuthorizationsAsMigrated(migrated);
+              });
+        });
   }
 
   private static AuthorizationResourceType convertResourceType(final String resourceType) {
@@ -114,6 +109,7 @@ public class AuthorizationMigrationHandler {
     throw new IllegalArgumentException("Unsupported resource type: " + resourceType);
   }
 
+  // TODO verify the correct permissions are set here
   private static List<PermissionType> convertPermission(final Entry<String, List<String>> e) {
     if (e.getKey().startsWith("read")) {
       return List.of(PermissionType.READ);

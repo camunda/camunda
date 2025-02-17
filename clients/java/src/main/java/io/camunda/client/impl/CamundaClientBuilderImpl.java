@@ -24,7 +24,6 @@ import static io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS;
 import static io.camunda.client.ClientProperties.DEFAULT_MESSAGE_TIME_TO_LIVE;
 import static io.camunda.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
 import static io.camunda.client.ClientProperties.DEFAULT_TENANT_ID;
-import static io.camunda.client.ClientProperties.GATEWAY_ADDRESS;
 import static io.camunda.client.ClientProperties.GRPC_ADDRESS;
 import static io.camunda.client.ClientProperties.JOB_WORKER_EXECUTION_THREADS;
 import static io.camunda.client.ClientProperties.JOB_WORKER_MAX_JOBS_ACTIVE;
@@ -37,6 +36,21 @@ import static io.camunda.client.ClientProperties.REST_ADDRESS;
 import static io.camunda.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
 import static io.camunda.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
+import static io.camunda.client.impl.BuilderUtils.applyEnvironmentValueIfNotNull;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CA_CERTIFICATE_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_TENANT_ID_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.GRPC_ADDRESS_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.KEEP_ALIVE_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PREFER_REST_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.REST_ADDRESS_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR;
+import static io.camunda.client.impl.util.ClientPropertiesValidationUtils.checkIfUriIsAbsolute;
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_KB;
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_MB;
 
@@ -49,6 +63,7 @@ import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.util.DataSizeUtil;
 import io.camunda.client.impl.util.Environment;
+import io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables;
 import io.grpc.ClientInterceptor;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -64,24 +79,11 @@ import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 public final class CamundaClientBuilderImpl
     implements CamundaClientBuilder, CamundaClientConfiguration {
 
-  public static final String PLAINTEXT_CONNECTION_VAR = "ZEEBE_INSECURE_CONNECTION";
-  public static final String CA_CERTIFICATE_VAR = "ZEEBE_CA_CERTIFICATE_PATH";
-  public static final String KEEP_ALIVE_VAR = "ZEEBE_KEEP_ALIVE";
-  public static final String OVERRIDE_AUTHORITY_VAR = "ZEEBE_OVERRIDE_AUTHORITY";
-  public static final String CAMUNDA_CLIENT_WORKER_STREAM_ENABLED =
-      "ZEEBE_CLIENT_WORKER_STREAM_ENABLED";
   public static final String DEFAULT_GATEWAY_ADDRESS = "0.0.0.0:26500";
   public static final URI DEFAULT_GRPC_ADDRESS =
       getURIFromString("https://" + DEFAULT_GATEWAY_ADDRESS);
   public static final URI DEFAULT_REST_ADDRESS = getURIFromString("https://0.0.0.0:8080");
-  public static final String REST_ADDRESS_VAR = "ZEEBE_REST_ADDRESS";
-  public static final String GRPC_ADDRESS_VAR = "ZEEBE_GRPC_ADDRESS";
-  public static final String PREFER_REST_VAR = "ZEEBE_PREFER_REST";
-  public static final String DEFAULT_TENANT_ID_VAR = "ZEEBE_DEFAULT_TENANT_ID";
-  public static final String DEFAULT_JOB_WORKER_TENANT_IDS_VAR =
-      "ZEEBE_DEFAULT_JOB_WORKER_TENANT_IDS";
   public static final String DEFAULT_JOB_WORKER_NAME_VAR = "default";
-  public static final String USE_DEFAULT_RETRY_POLICY_VAR = "ZEEBE_CLIENT_USE_DEFAULT_RETRY_POLICY";
   private static final String TENANT_ID_LIST_SEPARATOR = ",";
   private static final boolean DEFAULT_PREFER_REST_OVER_GRPC = false;
 
@@ -254,69 +256,86 @@ public final class CamundaClientBuilderImpl
 
   @Override
   public CamundaClientBuilder withProperties(final Properties properties) {
-    BuilderUtils.applyIfNotNull(
+    BuilderUtils.applyPropertyValueIfNotNull(
         properties,
+        value -> applyEnvironmentVariableOverrides(Boolean.parseBoolean(value)),
         APPLY_ENVIRONMENT_VARIABLES_OVERRIDES,
-        value -> applyEnvironmentVariableOverrides(Boolean.parseBoolean(value)));
+        io.camunda.zeebe.client.ClientProperties.APPLY_ENVIRONMENT_VARIABLES_OVERRIDES);
 
-    BuilderUtils.applyIfNotNull(
-        properties, GRPC_ADDRESS, value -> grpcAddress(getURIFromString(value)));
-
-    BuilderUtils.applyIfNotNull(
-        properties, REST_ADDRESS, value -> restAddress(getURIFromString(value)));
-
-    BuilderUtils.applyIfNotNull(properties, GATEWAY_ADDRESS, this::gatewayAddress);
-
-    BuilderUtils.applyIfNotNull(
+    BuilderUtils.applyPropertyValueIfNotNull(
         properties,
+        value -> grpcAddress(getURIFromString(value)),
+        GRPC_ADDRESS,
+        io.camunda.zeebe.client.ClientProperties.GRPC_ADDRESS);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties,
+        value -> restAddress(getURIFromString(value)),
+        REST_ADDRESS,
+        io.camunda.zeebe.client.ClientProperties.REST_ADDRESS);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties, this::gatewayAddress, io.camunda.zeebe.client.ClientProperties.GATEWAY_ADDRESS);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties,
+        value -> preferRestOverGrpc(Boolean.parseBoolean(value)),
         PREFER_REST_OVER_GRPC,
-        value -> preferRestOverGrpc(Boolean.parseBoolean(value)));
+        io.camunda.zeebe.client.ClientProperties.PREFER_REST_OVER_GRPC);
 
-    BuilderUtils.applyIfNotNull(properties, DEFAULT_TENANT_ID, this::defaultTenantId);
-
-    BuilderUtils.applyIfNotNull(
+    BuilderUtils.applyPropertyValueIfNotNull(
         properties,
+        this::defaultTenantId,
+        DEFAULT_TENANT_ID,
+        io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties,
+        value -> defaultJobWorkerTenantIds(Arrays.asList(value.split(TENANT_ID_LIST_SEPARATOR))),
         DEFAULT_JOB_WORKER_TENANT_IDS,
-        value -> {
-          final List<String> tenantIds = Arrays.asList(value.split(TENANT_ID_LIST_SEPARATOR));
-          defaultJobWorkerTenantIds(tenantIds);
-        });
+        io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS);
 
-    BuilderUtils.applyIfNotNull(
+    BuilderUtils.applyPropertyValueIfNotNull(
         properties,
+        value -> numJobWorkerExecutionThreads(Integer.parseInt(value)),
         JOB_WORKER_EXECUTION_THREADS,
-        value -> numJobWorkerExecutionThreads(Integer.parseInt(value)));
+        io.camunda.zeebe.client.ClientProperties.JOB_WORKER_EXECUTION_THREADS);
 
-    BuilderUtils.applyIfNotNull(
+    BuilderUtils.applyPropertyValueIfNotNull(
         properties,
+        value -> defaultJobWorkerMaxJobsActive(Integer.parseInt(value)),
         JOB_WORKER_MAX_JOBS_ACTIVE,
-        value -> defaultJobWorkerMaxJobsActive(Integer.parseInt(value)));
+        io.camunda.zeebe.client.ClientProperties.JOB_WORKER_MAX_JOBS_ACTIVE);
 
-    BuilderUtils.applyIfNotNull(properties, DEFAULT_JOB_WORKER_NAME, this::defaultJobWorkerName);
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties, this::defaultJobWorkerName, DEFAULT_JOB_WORKER_NAME);
 
-    BuilderUtils.applyIfNotNull(
+    BuilderUtils.applyPropertyValueIfNotNull(
         properties,
+        value -> defaultJobTimeout(Duration.ofMillis(Long.parseLong(value))),
         DEFAULT_JOB_TIMEOUT,
-        value -> defaultJobTimeout(Duration.ofMillis(Long.parseLong(value))));
+        io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_TIMEOUT);
 
-    BuilderUtils.applyIfNotNull(
+    BuilderUtils.applyPropertyValueIfNotNull(
         properties,
+        value -> defaultJobPollInterval(Duration.ofMillis(Long.parseLong(value))),
         DEFAULT_JOB_POLL_INTERVAL,
-        value -> defaultJobPollInterval(Duration.ofMillis(Long.parseLong(value))));
+        io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_POLL_INTERVAL);
 
-    BuilderUtils.applyIfNotNull(
+    BuilderUtils.applyPropertyValueIfNotNull(
         properties,
+        value -> defaultMessageTimeToLive(Duration.ofMillis(Long.parseLong(value))),
         DEFAULT_MESSAGE_TIME_TO_LIVE,
-        value -> defaultMessageTimeToLive(Duration.ofMillis(Long.parseLong(value))));
+        io.camunda.zeebe.client.ClientProperties.DEFAULT_MESSAGE_TIME_TO_LIVE);
 
-    BuilderUtils.applyIfNotNull(
+    BuilderUtils.applyPropertyValueIfNotNull(
         properties,
+        value -> defaultRequestTimeout(Duration.ofMillis(Long.parseLong(value))),
         DEFAULT_REQUEST_TIMEOUT,
-        value -> defaultRequestTimeout(Duration.ofMillis(Long.parseLong(value))));
+        io.camunda.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT);
 
-    BuilderUtils.applyIfNotNull(
+    BuilderUtils.applyPropertyValueIfNotNull(
         properties,
-        USE_PLAINTEXT_CONNECTION,
         value -> {
           /**
            * The following condition is phrased in this particular way in order to be backwards
@@ -329,29 +348,47 @@ public final class CamundaClientBuilderImpl
           if (!"false".equalsIgnoreCase(value)) {
             usePlaintext();
           }
-        });
+        },
+        USE_PLAINTEXT_CONNECTION,
+        io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION);
 
-    BuilderUtils.applyIfNotNull(properties, CA_CERTIFICATE_PATH, this::caCertificatePath);
-
-    BuilderUtils.applyIfNotNull(properties, KEEP_ALIVE, this::keepAlive);
-
-    BuilderUtils.applyIfNotNull(properties, OVERRIDE_AUTHORITY, this::overrideAuthority);
-
-    BuilderUtils.applyIfNotNull(
-        properties, MAX_MESSAGE_SIZE, value -> maxMessageSize(DataSizeUtil.parse(value)));
-
-    BuilderUtils.applyIfNotNull(
-        properties, MAX_METADATA_SIZE, value -> maxMetadataSize(DataSizeUtil.parse(value)));
-
-    BuilderUtils.applyIfNotNull(
+    BuilderUtils.applyPropertyValueIfNotNull(
         properties,
+        this::caCertificatePath,
+        CA_CERTIFICATE_PATH,
+        io.camunda.zeebe.client.ClientProperties.CA_CERTIFICATE_PATH);
+
+    BuilderUtils.applyPropertyValueIfNotNull(properties, this::keepAlive, KEEP_ALIVE);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties,
+        this::overrideAuthority,
+        OVERRIDE_AUTHORITY,
+        io.camunda.zeebe.client.ClientProperties.OVERRIDE_AUTHORITY);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties,
+        value -> maxMessageSize(DataSizeUtil.parse(value)),
+        MAX_MESSAGE_SIZE,
+        io.camunda.zeebe.client.ClientProperties.MAX_MESSAGE_SIZE);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties,
+        value -> maxMetadataSize(DataSizeUtil.parse(value)),
+        MAX_METADATA_SIZE,
+        io.camunda.zeebe.client.ClientProperties.MAX_METADATA_SIZE);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties,
+        value -> defaultJobWorkerStreamEnabled(Boolean.parseBoolean(value)),
         STREAM_ENABLED,
-        value -> defaultJobWorkerStreamEnabled(Boolean.parseBoolean(value)));
+        io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED);
 
-    BuilderUtils.applyIfNotNull(
+    BuilderUtils.applyPropertyValueIfNotNull(
         properties,
+        value -> useDefaultRetryPolicy(Boolean.parseBoolean(value)),
         USE_DEFAULT_RETRY_POLICY,
-        value -> useDefaultRetryPolicy(Boolean.parseBoolean(value)));
+        io.camunda.zeebe.client.ClientProperties.USE_DEFAULT_RETRY_POLICY);
 
     return this;
   }
@@ -371,12 +408,14 @@ public final class CamundaClientBuilderImpl
 
   @Override
   public CamundaClientBuilder restAddress(final URI restAddress) {
+    checkIfUriIsAbsolute(restAddress, "restAddress");
     this.restAddress = restAddress;
     return this;
   }
 
   @Override
   public CamundaClientBuilder grpcAddress(final URI grpcAddress) {
+    checkIfUriIsAbsolute(grpcAddress, "grpcAddress");
     this.grpcAddress = grpcAddress;
     grpcAddressUsed = true;
     return this;
@@ -448,8 +487,7 @@ public final class CamundaClientBuilderImpl
 
   @Override
   public CamundaClientBuilder usePlaintext() {
-    usePlaintextConnection = true;
-    return this;
+    return usePlaintext(true);
   }
 
   @Override
@@ -542,49 +580,61 @@ public final class CamundaClientBuilderImpl
     return new CamundaClientImpl(this);
   }
 
+  private CamundaClientBuilder usePlaintext(final boolean usePlaintext) {
+    usePlaintextConnection = usePlaintext;
+    return this;
+  }
+
   private void keepAlive(final String keepAlive) {
     keepAlive(Duration.ofMillis(Long.parseUnsignedLong(keepAlive)));
   }
 
   private void applyOverrides() {
-    BuilderUtils.applyIfNotNull(
-        PLAINTEXT_CONNECTION_VAR, value -> usePlaintextConnection = Boolean.parseBoolean(value));
-
-    BuilderUtils.applyIfNotNull(CA_CERTIFICATE_VAR, this::caCertificatePath);
-
-    BuilderUtils.applyIfNotNull(KEEP_ALIVE_VAR, this::keepAlive);
-
-    BuilderUtils.applyIfNotNull(OVERRIDE_AUTHORITY_VAR, this::overrideAuthority);
-
+    applyEnvironmentValueIfNotNull(
+        value -> usePlaintext(Boolean.parseBoolean(value)),
+        PLAINTEXT_CONNECTION_VAR,
+        ZeebeClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR);
+    applyEnvironmentValueIfNotNull(
+        this::caCertificatePath,
+        CA_CERTIFICATE_VAR,
+        ZeebeClientEnvironmentVariables.CA_CERTIFICATE_VAR);
+    applyEnvironmentValueIfNotNull(
+        this::keepAlive, KEEP_ALIVE_VAR, ZeebeClientEnvironmentVariables.KEEP_ALIVE_VAR);
+    applyEnvironmentValueIfNotNull(
+        this::overrideAuthority,
+        OVERRIDE_AUTHORITY_VAR,
+        ZeebeClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR);
     if (shouldUseDefaultCredentialsProvider()) {
       credentialsProvider = createDefaultCredentialsProvider();
     }
-
-    BuilderUtils.applyIfNotNull(GRPC_ADDRESS_VAR, value -> grpcAddress(getURIFromString(value)));
-
-    BuilderUtils.applyIfNotNull(REST_ADDRESS_VAR, value -> restAddress(getURIFromString(value)));
-
-    BuilderUtils.applyIfNotNull(
-        PREFER_REST_VAR, value -> preferRestOverGrpc(Boolean.parseBoolean(value)));
-
-    if (Environment.system().isDefined(DEFAULT_TENANT_ID_VAR)) {
-      defaultTenantId(Environment.system().get(DEFAULT_TENANT_ID_VAR));
-    }
-    BuilderUtils.applyIfNotNull(DEFAULT_TENANT_ID_VAR, this::defaultTenantId);
-
-    BuilderUtils.applyIfNotNull(
+    applyEnvironmentValueIfNotNull(
+        value -> grpcAddress(getURIFromString(value)),
+        GRPC_ADDRESS_VAR,
+        ZeebeClientEnvironmentVariables.GRPC_ADDRESS_VAR);
+    applyEnvironmentValueIfNotNull(
+        value -> restAddress(getURIFromString(value)),
+        REST_ADDRESS_VAR,
+        ZeebeClientEnvironmentVariables.REST_ADDRESS_VAR);
+    applyEnvironmentValueIfNotNull(
+        value -> preferRestOverGrpc(Boolean.parseBoolean(value)),
+        PREFER_REST_VAR,
+        ZeebeClientEnvironmentVariables.PREFER_REST_VAR);
+    applyEnvironmentValueIfNotNull(
+        this::defaultTenantId,
+        DEFAULT_TENANT_ID_VAR,
+        ZeebeClientEnvironmentVariables.DEFAULT_TENANT_ID_VAR);
+    applyEnvironmentValueIfNotNull(
+        value -> defaultJobWorkerTenantIds(Arrays.asList(value.split(TENANT_ID_LIST_SEPARATOR))),
         DEFAULT_JOB_WORKER_TENANT_IDS_VAR,
-        value -> {
-          final List<String> tenantIds = Arrays.asList(value.split(TENANT_ID_LIST_SEPARATOR));
-          defaultJobWorkerTenantIds(tenantIds);
-        });
-
-    BuilderUtils.applyIfNotNull(
+        ZeebeClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_IDS_VAR);
+    applyEnvironmentValueIfNotNull(
+        value -> defaultJobWorkerStreamEnabled(Boolean.parseBoolean(value)),
         CAMUNDA_CLIENT_WORKER_STREAM_ENABLED,
-        value -> defaultJobWorkerStreamEnabled(Boolean.parseBoolean(value)));
-
-    BuilderUtils.applyIfNotNull(
-        USE_DEFAULT_RETRY_POLICY_VAR, value -> useDefaultRetryPolicy(Boolean.parseBoolean(value)));
+        ZeebeClientEnvironmentVariables.ZEEBE_CLIENT_WORKER_STREAM_ENABLED);
+    applyEnvironmentValueIfNotNull(
+        value -> useDefaultRetryPolicy(Boolean.parseBoolean(value)),
+        USE_DEFAULT_RETRY_POLICY_VAR,
+        ZeebeClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR);
   }
 
   @Override
@@ -615,9 +665,11 @@ public final class CamundaClientBuilderImpl
 
   private boolean shouldUseDefaultCredentialsProvider() {
     return credentialsProvider == null
-        && Environment.system().get(OAuthCredentialsProviderBuilder.OAUTH_ENV_CLIENT_ID) != null
-        && Environment.system().get(OAuthCredentialsProviderBuilder.OAUTH_ENV_CLIENT_SECRET)
-            != null;
+        && (Environment.system().isDefined(OAUTH_ENV_CLIENT_ID)
+            || Environment.system().isDefined(ZeebeClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID))
+        && (Environment.system().isDefined(OAUTH_ENV_CLIENT_SECRET)
+            || Environment.system()
+                .isDefined(ZeebeClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET));
   }
 
   private CredentialsProvider createDefaultCredentialsProvider() {

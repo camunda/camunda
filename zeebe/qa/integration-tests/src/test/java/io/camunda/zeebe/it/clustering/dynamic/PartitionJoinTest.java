@@ -13,6 +13,7 @@ import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
+import java.time.Duration;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -46,6 +47,7 @@ final class PartitionJoinTest {
       final var join = runOperation(cluster, scenario.operation());
       assertChangeIsPlanned(join);
       Awaitility.await("Requested change is completed in time")
+          .atMost(Duration.ofSeconds(30))
           .untilAsserted(() -> ClusterActuatorAssert.assertThat(cluster).hasCompletedChanges(join));
       ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(join);
       // when

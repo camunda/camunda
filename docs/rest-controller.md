@@ -21,7 +21,7 @@ Define the endpoint you want to create.
 
 1. Consider the (🔒 currently internal) [REST API guidelines](https://docs.google.com/document/d/1G9AmmNac-4QLGZ0LXQXa3FyeCrSJdIboaPt3-R6dWNw/).
 2. Consider the [existing endpoints](https://docs.camunda.io/docs/next/apis-tools/camunda-api-rest/specifications/camunda-8-rest-api/) to create consistent endpoints.
-3. Share and validate your endpoint design with peers, for example in the [#prj-camunda-8-rest-api](https://camunda.slack.com/archives/C06UKS51QV9).
+3. Share and validate your endpoint design with peers, for example in the [#prj-c8-rest-api](https://camunda.slack.com/archives/C06UKS51QV9).
 
 ### OpenAPI extension
 
@@ -49,7 +49,7 @@ You can extend an existing controller if there is one for your resource, e.g. th
 
 1. (optional) Generate the data models locally before implementing controllers by running `mvn clean install -Dquickly` on the `zeebe/gateway-rest` module.
 2. Consider the existing controllers for best practices around structuring your controller, e.g. using the `RequestMapper` and `ResponseMapper` for input conversion and collecting REST error messages in `ErrorMessages`.
-3. The controllers are Spring `RestController`s, marked as such by adding the appropriate Camunda annotation (refer to the other controllers). There is a separate Camunda annotation for Query endpoint controllers as used by the `ProcessInstanceQueryController`.
+3. The controllers are Spring `RestController`s, marked as such by adding the appropriate Camunda annotation (refer to the other controllers).
 4. Controllers should only take care of the following tasks:
    1. Mapping and potentially validating user input, e.g. using the `RequestMapper` and `RequestValidator`.
    2. Invoking the respective `Services` method to execute the desired action, e.g. `UserTaskServices::completeUserTask` or `UserTaskServices::search`. The `RequestMapper` also provides helpers for invoking service methods.
@@ -65,7 +65,7 @@ Implement or extend the respective `Services` your controller invokes in the `se
 3. Services map actions to broker commands or search requests, depending on the invoked method.
 4. If your service wants to provide new search capabilities for a resource, provide the following:
    1. Create an implementation of the `TypedSearchQuery` and related classes for your resource like the `ProcessInstanceQuery` and the related `ProcessInstanceFilter` and `ProcessInstanceSort`.
-   2. Create a Java `record` for the expected entity response like the [ProcessInstanceEntity](../service/src/main/java/io/camunda/service/entities/ProcessInstanceEntity.java).
+   2. Create a Java `record` for the expected entity response like the [ProcessInstanceEntity](../search/search-domain/src/main/java/io/camunda/search/entities/ProcessInstanceEntity.java).
    3. Use the query and entity classes as the generics when extending the `SearchQueryService`.
 5. If your service wants to issue Zeebe broker requests, provide the following:
    1. Reuse the [existing requests](../zeebe/gateway/src/main/java/io/camunda/zeebe/gateway/impl/broker/request) if possible or create new ones consistent with them.
@@ -77,7 +77,7 @@ Implement or extend the respective `Services` your controller invokes in the `se
 
 Extend the Camunda Client with the new command you added to the REST API.
 
-1. In the [ZeebeClient](../clients/java/src/main/java/io/camunda/zeebe/client/ZeebeClient.java), add a new command method for your purpose.
+1. In the [CamundaClient](../clients/java/src/main/java/io/camunda/client/CamundaClient.java), add a new command method for your purpose.
 2. If you provide new search capabilities for a resource, implement the `TypedSearchQueryRequest` for your resource. This is similar to the interface you provided for the REST gateway part.
 3. If you provide new Zeebe broker commands, consider providing multiple steps guiding the user from required input to optional attributes step by step. The command chain ends in a `FinalCommandStep`.
 4. Implement the command chain or query interface accordingly, like the `ProcessInstanceQueryImpl` or `CompleteUserTaskCommandImpl` do.
@@ -85,9 +85,13 @@ Extend the Camunda Client with the new command you added to the REST API.
 
 ### Integration testing
 
-Create integration tests for your new command. This is optional since not every use case requires this.
-If you write new endpoints that either create new Zeebe broker functionality or make existing functionality available via a new protocol (e.g. REST),
-consider adding [integration test cases](../zeebe/qa/integration-tests) using the Camunda Client. Refer to existing integration tests for setup.
+Create integration tests (ITs) for your new command. This is optional given not every use case requires this. The following types of ITs exist:
+
+- If you write new endpoints that either create new Zeebe broker functionality or make existing functionality available via a new protocol (REST, for example),
+  consider adding [engine integration test cases](../zeebe/qa/integration-tests) using the Camunda Client.
+- [End-to-end integration tests](../qa/integration-tests) are a great way to test your feature works on all supported data layers alike.
+
+Refer to existing integration tests for setup.
 
 ### Documentation generation
 

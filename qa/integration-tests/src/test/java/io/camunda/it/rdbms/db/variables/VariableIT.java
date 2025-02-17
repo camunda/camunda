@@ -7,7 +7,6 @@
  */
 package io.camunda.it.rdbms.db.variables;
 
-import static io.camunda.db.rdbms.write.domain.VariableDbModel.DEFAULT_VARIABLE_SIZE_THRESHOLD;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.generateRandomString;
 import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.createAndSaveVariable;
 import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.prepareRandomVariablesAndReturnOne;
@@ -73,7 +72,7 @@ public class VariableIT {
   public void shouldSaveAndFindBigVariableByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
-    final String bigValue = generateRandomString(DEFAULT_VARIABLE_SIZE_THRESHOLD + 1);
+    final String bigValue = generateRandomString(9000);
     final VariableDbModel randomizedVariable =
         VariableFixtures.createRandomized(b -> b.value(bigValue));
     createAndSaveVariable(rdbmsService, randomizedVariable);
@@ -81,8 +80,9 @@ public class VariableIT {
     final var instance = rdbmsService.getVariableReader().findOne(randomizedVariable.variableKey());
 
     assertThat(instance).isNotNull();
-    assertVariableDbModelEqualToEntity(randomizedVariable, instance);
+    assertThat(instance.isPreview()).isTrue();
     assertThat(instance.fullValue()).isEqualTo(bigValue);
+    assertThat(instance.value()).hasSizeLessThan(instance.fullValue().length());
     assertThat(instance.isPreview()).isTrue();
   }
 

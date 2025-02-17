@@ -24,6 +24,7 @@ import io.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionRespon
 import io.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import io.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefinitionExportDto;
 import io.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.reader.InstantDashboardMetadataReader;
 import io.camunda.optimize.service.db.writer.InstantDashboardMetadataWriter;
@@ -32,7 +33,6 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.util.FilenameValidatorUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;

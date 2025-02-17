@@ -13,16 +13,16 @@ import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -37,25 +37,14 @@ public class JobBatchActivateAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
-  private static long defaultUserKey = -1L;
 
   @Rule
   public final EngineRule engine =
       EngineRule.singlePartition()
-          .withoutAwaitingIdentitySetup()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
-
-  @Before
-  public void beforeEach() {
-    defaultUserKey =
-        RecordingExporter.userRecords(UserIntent.CREATED)
-            .withUsername(DEFAULT_USER.getUsername())
-            .getFirst()
-            .getKey();
-  }
 
   @Test
   public void shouldBeAuthorizedToActivateAllJobsWithDefaultUser() {
@@ -66,7 +55,11 @@ public class JobBatchActivateAuthorizationTest {
 
     // when
     final var response =
-        engine.jobs().withType(JOB_TYPE).withMaxJobsToActivate(2).activate(defaultUserKey);
+        engine
+            .jobs()
+            .withType(JOB_TYPE)
+            .withMaxJobsToActivate(2)
+            .activate(DEFAULT_USER.getUsername());
 
     // then
     assertThat(response.getValue().getJobs())
@@ -81,9 +74,9 @@ public class JobBatchActivateAuthorizationTest {
     final var processId1 = Strings.newRandomValidBpmnId();
     final var processId2 = Strings.newRandomValidBpmnId();
     createJobs(processId1, processId2);
-    final var userKey = createUser();
+    final var user = createUser();
     addPermissionsToUser(
-        userKey,
+        user,
         AuthorizationResourceType.PROCESS_DEFINITION,
         PermissionType.UPDATE_PROCESS_INSTANCE,
         processId1,
@@ -91,7 +84,7 @@ public class JobBatchActivateAuthorizationTest {
 
     // when
     final var response =
-        engine.jobs().withType(JOB_TYPE).withMaxJobsToActivate(2).activate(userKey);
+        engine.jobs().withType(JOB_TYPE).withMaxJobsToActivate(2).activate(user.getUsername());
 
     // then
     assertThat(response.getValue().getJobs())
@@ -106,16 +99,16 @@ public class JobBatchActivateAuthorizationTest {
     final var processId1 = Strings.newRandomValidBpmnId();
     final var processId2 = Strings.newRandomValidBpmnId();
     createJobs(processId1, processId2);
-    final var userKey = createUser();
+    final var user = createUser();
     addPermissionsToUser(
-        userKey,
+        user,
         AuthorizationResourceType.PROCESS_DEFINITION,
         PermissionType.UPDATE_PROCESS_INSTANCE,
         processId1);
 
     // when
     final var response =
-        engine.jobs().withType(JOB_TYPE).withMaxJobsToActivate(2).activate(userKey);
+        engine.jobs().withType(JOB_TYPE).withMaxJobsToActivate(2).activate(user.getUsername());
 
     // then
     assertThat(response.getValue().getJobs())
@@ -130,17 +123,17 @@ public class JobBatchActivateAuthorizationTest {
     final var processId1 = Strings.newRandomValidBpmnId();
     final var processId2 = Strings.newRandomValidBpmnId();
     createJobs(processId1, processId2);
-    final var userKey = createUser();
+    final var user = createUser();
 
     // when
     final var response =
-        engine.jobs().withType(JOB_TYPE).withMaxJobsToActivate(2).activate(userKey);
+        engine.jobs().withType(JOB_TYPE).withMaxJobsToActivate(2).activate(user.getUsername());
 
     // then
     assertThat(response.getValue().getJobs()).isEmpty();
   }
 
-  private long createUser() {
+  private UserRecordValue createUser() {
     return engine
         .user()
         .newUser(UUID.randomUUID().toString())
@@ -148,21 +141,25 @@ public class JobBatchActivateAuthorizationTest {
         .withName(UUID.randomUUID().toString())
         .withEmail(UUID.randomUUID().toString())
         .create()
-        .getKey();
+        .getValue();
   }
 
   private void addPermissionsToUser(
-      final long userKey,
+      final UserRecordValue user,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType,
       final String... resourceIds) {
-    engine
-        .authorization()
-        .permission()
-        .withOwnerKey(userKey)
-        .withResourceType(authorization)
-        .withPermission(permissionType, resourceIds)
-        .add(defaultUserKey);
+    for (final String resourceId : resourceIds) {
+      engine
+          .authorization()
+          .newAuthorization()
+          .withPermissions(permissionType)
+          .withOwnerId(user.getUsername())
+          .withOwnerType(AuthorizationOwnerType.USER)
+          .withResourceType(authorization)
+          .withResourceId(resourceId)
+          .create(DEFAULT_USER.getUsername());
+    }
   }
 
   private void createJobs(final String... processIds) {
@@ -176,9 +173,9 @@ public class JobBatchActivateAuthorizationTest {
                   .serviceTask("serviceTask", t -> t.zeebeJobType(JOB_TYPE))
                   .endEvent()
                   .done())
-          .deploy(defaultUserKey);
+          .deploy(DEFAULT_USER.getUsername());
 
-      engine.processInstance().ofBpmnProcessId(processId).create(defaultUserKey);
+      engine.processInstance().ofBpmnProcessId(processId).create(DEFAULT_USER.getUsername());
     }
 
     RecordingExporter.jobRecords(JobIntent.CREATED).limit(processIds.length).await();

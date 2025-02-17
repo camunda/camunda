@@ -8,14 +8,13 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.zeebe.gateway.impl.job.ResponseObserver;
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 
-public class JobActivationRequestResponseObserver
-    implements ResponseObserver<JobActivationResponse> {
-  protected JobActivationResponse response = new JobActivationResponse();
+public class JobActivationRequestResponseObserver implements ResponseObserver<JobActivationResult> {
+  protected JobActivationResult response = new JobActivationResult();
   protected CompletableFuture<ResponseEntity<Object>> result;
 
   private Runnable cancelationHandler;
@@ -31,7 +30,7 @@ public class JobActivationRequestResponseObserver
   }
 
   @Override
-  public void onNext(final JobActivationResponse element) {
+  public void onNext(final JobActivationResult element) {
     if (element.getJobs() != null && !element.getJobs().isEmpty()) {
       element.getJobs().forEach(response::addJobsItem);
     }

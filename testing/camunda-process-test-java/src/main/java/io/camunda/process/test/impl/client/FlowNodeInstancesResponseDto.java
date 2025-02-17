@@ -15,15 +15,17 @@
  */
 package io.camunda.process.test.impl.client;
 
+import io.camunda.client.api.search.response.FlowNodeInstance;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class FlowNodeInstancesResponseDto {
 
   private List<FlowNodeInstanceDto> items;
   private long total;
 
-  public List<FlowNodeInstanceDto> getItems() {
-    return items;
+  public List<FlowNodeInstance> getItems() {
+    return items.stream().map(FlowNodeInstance.class::cast).collect(Collectors.toList());
   }
 
   public void setItems(final List<FlowNodeInstanceDto> items) {

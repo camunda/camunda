@@ -45,7 +45,7 @@ public class UserCreatedUpdatedHandler implements ExportHandler<UserEntity, User
 
   @Override
   public List<String> generateIds(final Record<UserRecordValue> record) {
-    return List.of(String.valueOf(record.getKey()));
+    return List.of(record.getValue().getUsername());
   }
 
   @Override

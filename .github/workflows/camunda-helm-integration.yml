@@ -3,6 +3,9 @@ name: Camunda Helm Chart Integration Test
 on:
   schedule:
     - cron: "0 5 * * *"
+  pull_request:
+    paths:
+      - ".github/workflows/camunda-helm-integration.yml"
   workflow_dispatch:
 
 jobs:
@@ -12,7 +15,7 @@ jobs:
     secrets: inherit
     with:
       identifier: camunda-helm-int
-      camunda-helm-dir: camunda-platform-alpha
+      camunda-helm-dir: camunda-platform-alpha-8.8
       test-enabled: true
       caller-git-ref: main
       extra-values: |

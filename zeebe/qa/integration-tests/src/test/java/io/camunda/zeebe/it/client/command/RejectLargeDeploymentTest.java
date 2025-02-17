@@ -23,7 +23,8 @@ import java.util.concurrent.Future;
 @ZeebeIntegration
 public class RejectLargeDeploymentTest {
   @TestZeebe
-  private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+  private final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   @RegressionTest("https://github.com/camunda/camunda/issues/15989")
   void shouldExportLargeDeploymentRejection() {

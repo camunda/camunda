@@ -23,8 +23,11 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled(
+    "Disabled while groups are not fully supported yet: https://github.com/camunda/camunda/issues/26961 ")
 public class UnassignGroupFromTenantTest extends ClientRestTest {
 
   private static final long TENANT_KEY = 123L;
@@ -33,7 +36,7 @@ public class UnassignGroupFromTenantTest extends ClientRestTest {
   @Test
   void shouldUnassignGroupFromTenant() {
     // when
-    client.newUnassignGroupFromTenantCommand(TENANT_KEY, GROUP_KEY).send().join();
+    client.newUnassignGroupFromTenantCommand(TENANT_KEY).groupKey(GROUP_KEY).send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
@@ -50,7 +53,12 @@ public class UnassignGroupFromTenantTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newUnassignGroupFromTenantCommand(TENANT_KEY, GROUP_KEY).send().join())
+            () ->
+                client
+                    .newUnassignGroupFromTenantCommand(TENANT_KEY)
+                    .groupKey(GROUP_KEY)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -64,7 +72,12 @@ public class UnassignGroupFromTenantTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newUnassignGroupFromTenantCommand(TENANT_KEY, GROUP_KEY).send().join())
+            () ->
+                client
+                    .newUnassignGroupFromTenantCommand(TENANT_KEY)
+                    .groupKey(GROUP_KEY)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -78,7 +91,12 @@ public class UnassignGroupFromTenantTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newUnassignGroupFromTenantCommand(TENANT_KEY, GROUP_KEY).send().join())
+            () ->
+                client
+                    .newUnassignGroupFromTenantCommand(TENANT_KEY)
+                    .groupKey(GROUP_KEY)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 500: 'Internal Server Error'");
   }
@@ -92,7 +110,12 @@ public class UnassignGroupFromTenantTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newUnassignGroupFromTenantCommand(TENANT_KEY, GROUP_KEY).send().join())
+            () ->
+                client
+                    .newUnassignGroupFromTenantCommand(TENANT_KEY)
+                    .groupKey(GROUP_KEY)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 403: 'Forbidden'");
   }

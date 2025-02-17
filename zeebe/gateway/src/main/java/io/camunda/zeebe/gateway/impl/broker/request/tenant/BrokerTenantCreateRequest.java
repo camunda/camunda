@@ -33,6 +33,11 @@ public class BrokerTenantCreateRequest extends BrokerExecuteCommand<TenantRecord
     return this;
   }
 
+  public BrokerTenantCreateRequest setDescription(final String description) {
+    requestDto.setDescription(description);
+    return this;
+  }
+
   @Override
   public TenantRecord getRequestWriter() {
     return requestDto;

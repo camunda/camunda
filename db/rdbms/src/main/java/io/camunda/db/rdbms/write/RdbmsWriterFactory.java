@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.write;
 
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.write.queue.DefaultExecutionQueue;
@@ -17,22 +18,30 @@ public class RdbmsWriterFactory {
 
   private final SqlSessionFactory sqlSessionFactory;
   private final ExporterPositionMapper exporterPositionMapper;
+  private final VendorDatabaseProperties vendorDatabaseProperties;
   private final PurgeMapper purgeMapper;
+  private final RdbmsWriterMetrics metrics;
 
   public RdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
       final ExporterPositionMapper exporterPositionMapper,
-      final PurgeMapper purgeMapper) {
+      final VendorDatabaseProperties vendorDatabaseProperties,
+      final PurgeMapper purgeMapper,
+      final RdbmsWriterMetrics metrics) {
     this.sqlSessionFactory = sqlSessionFactory;
     this.exporterPositionMapper = exporterPositionMapper;
+    this.vendorDatabaseProperties = vendorDatabaseProperties;
     this.purgeMapper = purgeMapper;
+    this.metrics = metrics;
   }
 
   public RdbmsWriter createWriter(final long partitionId, final int queueSize) {
-    final var executionQueue = new DefaultExecutionQueue(sqlSessionFactory, partitionId, queueSize);
+    final var executionQueue =
+        new DefaultExecutionQueue(sqlSessionFactory, partitionId, queueSize, metrics);
     return new RdbmsWriter(
         executionQueue,
         new ExporterPositionService(executionQueue, exporterPositionMapper),
-        purgeMapper);
+        purgeMapper,
+        vendorDatabaseProperties);
   }
 }
