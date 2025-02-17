@@ -5008,24 +5008,6 @@ bpmn-js@18.1.2:
     min-dom "^4.2.1"
     tiny-svg "^3.1.2"
 
-bpmn-moddle@^8.1.0:
-  version "8.1.0"
-  resolved "https://registry.yarnpkg.com/bpmn-moddle/-/bpmn-moddle-8.1.0.tgz#80d70e88c78347c95184ce6044160658970613d7"
-  integrity sha512-yI5OAFfYVJwViKTsTsonVfCBPtB3MlefADUORwNIxxBOMp21vnoxuxsdgUWlPH/dvAEZh/+mr8UtqOBNu8NC5Q==
-  dependencies:
-    min-dash "^4.0.0"
-    moddle "^6.2.3"
-    moddle-xml "^10.1.0"
-
-bpmn-moddle@^9.0.1:
-  version "9.0.1"
-  resolved "https://registry.yarnpkg.com/bpmn-moddle/-/bpmn-moddle-9.0.1.tgz#3b36883fd6151d8067372e3fe5c7769e427246cc"
-  integrity sha512-jO2P5RBx0cZCCd+imqhpNE5anttaYuGd71u76NEA/qMZwJSW1t5ETAtw9/E2InfiPU2w0TR8oxPyopJXRc9VQg==
-  dependencies:
-    min-dash "^4.2.1"
-    moddle "^7.0.0"
-    moddle-xml "^11.0.0"
-
 bpmn-moddle@^9.0.1:
   version "9.0.1"
   resolved "https://registry.yarnpkg.com/bpmn-moddle/-/bpmn-moddle-9.0.1.tgz#3b36883fd6151d8067372e3fe5c7769e427246cc"
@@ -6453,14 +6435,6 @@ dezalgo@^1.0.0:
     asap "^2.0.0"
     wrappy "1"
 
-diagram-js-direct-editing@^3.0.1:
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/diagram-js-direct-editing/-/diagram-js-direct-editing-3.1.0.tgz#ac6da849ad70a6b734530bd1a9e28f768f16982d"
-  integrity sha512-rBo60hhwUT7XwB1v8UEHHwLgcoz/KmeTKkVGWwkWz9/56XA7EvJkg9UDL758eon1IF6HbSkpk0oZm/qLl7Nvfg==
-  dependencies:
-    min-dash "^4.0.0"
-    min-dom "^4.2.1"
-
 diagram-js-direct-editing@^3.2.0:
   version "3.2.0"
   resolved "https://registry.yarnpkg.com/diagram-js-direct-editing/-/diagram-js-direct-editing-3.2.0.tgz#63502c6929a624f44a2959efc95e75f01b293c15"
@@ -6468,21 +6442,6 @@ diagram-js-direct-editing@^3.2.0:
   dependencies:
     min-dash "^4.0.0"
     min-dom "^4.2.1"
-
-diagram-js@^14.10.0:
-  version "14.11.3"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-14.11.3.tgz#13ac06a415627880d2ae343c1e9600868428562a"
-  integrity sha512-Seq9BHAXfzKS60L4v4Gvgvv72wOtvrfJQAyyPm9pntSZDMzjoodPSXnEUPud1G2zVCMGEUUW++s0reEdaWgkXA==
-  dependencies:
-    "@bpmn-io/diagram-js-ui" "^0.2.3"
-    clsx "^2.1.0"
-    didi "^10.2.2"
-    inherits-browser "^0.1.0"
-    min-dash "^4.1.0"
-    min-dom "^4.2.1"
-    object-refs "^0.4.0"
-    path-intersection "^3.0.0"
-    tiny-svg "^3.1.2"
 
 diagram-js@^15.2.4:
   version "15.2.4"
@@ -11475,21 +11434,6 @@ moddle-xml@^11.0.0:
     min-dash "^4.0.0"
     saxen "^10.0.0"
 
-moddle-xml@^11.0.0:
-  version "11.0.0"
-  resolved "https://registry.yarnpkg.com/moddle-xml/-/moddle-xml-11.0.0.tgz#4f6084e7bc09181844f292b795e8752eac93eb9a"
-  integrity sha512-L3Sseepfcq9Uy0iIfqEDTXSoYLva1Y/JGbN/4AMOeQ6cqbu8Ma/SDJIdOFm7smsAa64j2z3SwCGG3FIilQVnUg==
-  dependencies:
-    min-dash "^4.0.0"
-    saxen "^10.0.0"
-
-moddle@^7.0.0:
-  version "7.2.0"
-  resolved "https://registry.yarnpkg.com/moddle/-/moddle-7.2.0.tgz#7b7d6ba2d4c9196d898ded8d13540e30a8db025b"
-  integrity sha512-x1+JREThy7JBOBR3g2hbOnOfrlC/YAWXX9RzrSZS5HhqeuBly9H/PCtOBtcQs+Y2sjRAXF+WTNSgHvn8Uq+6Yw==
-  dependencies:
-    min-dash "^4.2.1"
-
 moddle@^7.0.0:
   version "7.2.0"
   resolved "https://registry.yarnpkg.com/moddle/-/moddle-7.2.0.tgz#7b7d6ba2d4c9196d898ded8d13540e30a8db025b"
@@ -14218,11 +14162,6 @@ saxen@^10.0.0:
   version "10.0.0"
   resolved "https://registry.yarnpkg.com/saxen/-/saxen-10.0.0.tgz#d7d235bcea1b461c6aab8cb413e0e115304f1c9c"
   integrity sha512-RXsmWok/SAWqOG/f5ADEz51DN9WtZEzqih3e08ranldcaXekxjx8NBKjGh/y5hlowjo0JH/LekBu6gtPFD1G6g==
-
-saxen@^8.1.2:
-  version "8.1.2"
-  resolved "https://registry.yarnpkg.com/saxen/-/saxen-8.1.2.tgz#e677b32afe93667c9d939d3f3de02e09df108e54"
-  integrity sha512-xUOiiFbc3Ow7p8KMxwsGICPx46ZQvy3+qfNVhrkwfz3Vvq45eGt98Ft5IQaA1R/7Tb5B5MKh9fUR9x3c3nDTxw==
 
 saxes@^5.0.1:
   version "5.0.1"
