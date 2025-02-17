@@ -35,6 +35,7 @@ import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
+import io.camunda.zeebe.engine.processing.resource.ResourceFetchProcessor;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -56,6 +57,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -224,6 +226,8 @@ public final class EngineProcessors {
 
     AuthorizationProcessors.addAuthorizationProcessors(
         keyGenerator, typedRecordProcessors, processingState, writers, commandDistributionBehavior);
+
+    addResourceFetchProcessors(typedRecordProcessors, writers, processingState);
 
     return typedRecordProcessors;
   }
@@ -400,6 +404,15 @@ public final class EngineProcessors {
             bpmnBehaviors);
     typedRecordProcessors.onCommand(
         ValueType.RESOURCE_DELETION, ResourceDeletionIntent.DELETE, resourceDeletionProcessor);
+  }
+
+  private static void addResourceFetchProcessors(
+      final TypedRecordProcessors typedRecordProcessors,
+      final Writers writers,
+      final ProcessingState processingState) {
+    final var resourceFetchProcessor = new ResourceFetchProcessor(writers, processingState);
+    typedRecordProcessors.onCommand(
+        ValueType.RESOURCE, ResourceIntent.FETCH, resourceFetchProcessor);
   }
 
   private static void addSignalBroadcastProcessors(
