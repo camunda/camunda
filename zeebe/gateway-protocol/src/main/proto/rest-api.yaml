@@ -24,6 +24,7 @@ servers:
         description: The schema of the Camunda 8 REST API server.
 
 tags:
+  - name: Ad-hoc subprocess
   - name: Authentication
   - name: Authorization
   - name: Clock
@@ -1819,6 +1820,43 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /ad-hoc-activities/activatable:
+    post:
+      tags:
+        - Ad-hoc subprocess
+      operationId: findAdHocSubprocessActivities
+      summary: Query activatable activities within an ad-hoc subprocess
+      description: |
+        Search for activities which can be activated within an ad-hoc subprocess.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdHocSubprocessActivitySearchQuery"
+      responses:
+        "200":
+          description: >
+            The ad-hoc subprocess activities search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdHocSubprocessActivitySearchQueryResult"
+        "400":
+          description: >
+            The ad-hoc subprocess activities search query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -4796,6 +4834,60 @@ components:
         incidentKey:
           description: Incident key associated with this flow node instance.
           type: string
+    AdHocSubprocessActivitySearchQuery:
+      description: Ad-hoc subprocess activities search request.
+      type: object
+      required:
+        - processDefinitionKey
+        - adHocSubprocessId
+      properties:
+        processDefinitionKey:
+          description: The process definition key.
+          type: string
+        adHocSubprocessId:
+          description: The ad-hoc subprocess process element ID.
+          type: string
+    AdHocSubprocessActivitySearchQueryResult:
+      type: object
+      properties:
+        items:
+          description: The matching ad-hoc subprocess activities.
+          type: array
+          items:
+            $ref: "#/components/schemas/AdHocSubprocessActivityResult"
+    AdHocSubprocessActivityResult:
+      type: object
+      properties:
+        processDefinitionKey:
+          description: The process definition key associated to this activity within the ad-hoc subprocess.
+          type: string
+        adHocSubprocessId:
+          description: The ad-hoc subprocess process element ID.
+          type: string
+        flowNodeId:
+          description: The flow node ID for this activity within the ad-hoc subprocess.
+          type: string
+        flowNodeName:
+          description: The flow node name for this activity within the ad-hoc subprocess.
+          type: string
+        documentation:
+          description: The documentation for this activity within the ad-hoc subprocess.
+          type: string
+        # TODO which types do we need to support here? e.g. (sub-)process?
+        type:
+          description: Type of activity as defined set of values.
+          type: string
+          enum:
+            - BUSINESS_RULE_TASK
+            - MANUAL_TASK
+            - RECEIVE_TASK
+            - SCRIPT_TASK
+            - SEND_TASK
+            - SERVICE_TASK
+            - TASK
+            - UNKNOWN
+            - UNSPECIFIED
+            - USER_TASK
     DecisionDefinitionSearchQuerySortRequest:
       type: object
       properties:
