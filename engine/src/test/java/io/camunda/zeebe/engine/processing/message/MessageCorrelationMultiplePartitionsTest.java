@@ -17,12 +17,16 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient.ProcessInstanceCreationClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractEndEventBuilder;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.ProcessInstances;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -236,6 +240,88 @@ public final class MessageCorrelationMultiplePartitionsTest {
                 START_PARTITION_ID + 2,
                 CORRELATION_KEYS.get(START_PARTITION_ID + 2),
                 TENANT_IDS.get(START_PARTITION_ID + 2)));
+  }
+
+  @Test
+  public void shouldCorrelateMessagesIdempotent() {
+    final var processId = Strings.newRandomValidBpmnId();
+    final var messageName = "event_message";
+    final var correlationKey = CORRELATION_KEYS.get(START_PARTITION_ID);
+    final var eventSubProcessStartId = "eventSubProcessStart";
+
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .eventSubProcess(
+                    "subprocess",
+                    s ->
+                        s.startEvent(eventSubProcessStartId)
+                            .interrupting(false)
+                            .message(
+                                m ->
+                                    m.name(messageName)
+                                        .zeebeCorrelationKeyExpression("correlationKey"))
+                            .userTask()
+                            .endEvent())
+                .startEvent()
+                .serviceTask("wait", t -> t.zeebeJobType("wait"))
+                .endEvent("terminate_instance", AbstractEndEventBuilder::terminate)
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariable("correlationKey", correlationKey)
+            .onPartition(2)
+            .create();
+
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    engine.pauseProcessing(2);
+
+    // when
+    for (int i = 0; i < 10; i++) {
+      engine
+          .message()
+          .withName(messageName)
+          .withCorrelationKey(correlationKey)
+          .withTimeToLive(Duration.ofMinutes(30))
+          .onPartition(1)
+          .publish();
+    }
+
+    // increase the time to retry the inter-partition correlation several times
+    engine.increaseTime(MessageObserver.SUBSCRIPTION_CHECK_INTERVAL);
+    engine.increaseTime(MessageObserver.SUBSCRIPTION_CHECK_INTERVAL);
+    engine.increaseTime(MessageObserver.SUBSCRIPTION_CHECK_INTERVAL);
+    engine.resumeProcessing(2);
+
+    // await for all 10 messages to be correlated
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(eventSubProcessStartId)
+                .limit(10)
+                .toList())
+        .hasSize(10);
+
+    // complete the task to complete the process instance, for easy record stream limiting
+    engine.job().ofInstance(processInstanceKey).withType("wait").complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementId(eventSubProcessStartId)
+                .count())
+        .describedAs("Expected to correlate 10 messages exactly")
+        .isEqualTo(10);
   }
 
   private int getPartitionId(final String correlationKey) {
