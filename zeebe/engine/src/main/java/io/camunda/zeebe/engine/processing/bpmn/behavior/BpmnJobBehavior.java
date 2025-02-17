@@ -23,9 +23,12 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.deployment.PersistedResource;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
+import io.camunda.zeebe.engine.state.immutable.ResourceState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
@@ -47,7 +50,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -68,6 +70,7 @@ public final class BpmnJobBehavior {
   private final JobState jobState;
   private final ExpressionProcessor expressionBehavior;
   private final BpmnStateBehavior stateBehavior;
+  private final ResourceState resourceState;
   private final BpmnIncidentBehavior incidentBehavior;
   private final JobMetrics jobMetrics;
   private final BpmnJobActivationBehavior jobActivationBehavior;
@@ -79,6 +82,7 @@ public final class BpmnJobBehavior {
       final Writers writers,
       final ExpressionProcessor expressionBehavior,
       final BpmnStateBehavior stateBehavior,
+      final ResourceState resourceState,
       final BpmnIncidentBehavior incidentBehavior,
       final BpmnJobActivationBehavior jobActivationBehavior,
       final JobMetrics jobMetrics,
@@ -88,6 +92,7 @@ public final class BpmnJobBehavior {
     this.expressionBehavior = expressionBehavior;
     stateWriter = writers.state();
     this.stateBehavior = stateBehavior;
+    this.resourceState = resourceState;
     this.incidentBehavior = incidentBehavior;
     this.jobMetrics = jobMetrics;
     this.jobActivationBehavior = jobActivationBehavior;
@@ -100,7 +105,8 @@ public final class BpmnJobBehavior {
     return Either.<Failure, JobProperties>right(new JobProperties())
         .flatMap(p -> evalTypeExp(jobWorkerProps.getType(), scopeKey).map(p::type))
         .flatMap(p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey).map(p::retries))
-        .flatMap(p -> evalLinkedResourceProps(jobWorkerProps, scopeKey).map(p::linkedResources))
+        .flatMap(
+            p -> evalLinkedResourceProps(jobWorkerProps, context, scopeKey).map(p::linkedResources))
         .flatMap(
             p ->
                 userTaskBehavior
@@ -143,7 +149,7 @@ public final class BpmnJobBehavior {
   }
 
   private Either<Failure, List<LinkedResourceProps>> evalLinkedResourceProps(
-      final JobWorkerProperties props, final long scopeKey) {
+      final JobWorkerProperties props, final BpmnElementContext context, final long scopeKey) {
     final List<LinkedResource> linkedResources = props.getLinkedResources();
     if (linkedResources == null || linkedResources.isEmpty()) {
       return Either.right(null);
@@ -151,7 +157,7 @@ public final class BpmnJobBehavior {
     final List<LinkedResourceProps> linkedResourceProps = new ArrayList<>();
     for (final LinkedResource linkedResource : linkedResources) {
       final LinkedResourceProps resourceProps = new LinkedResourceProps();
-      resourceProps.setResourceKey(resolveLinkedResourceKey(linkedResource, scopeKey));
+      resourceProps.setResourceKey(resolveLinkedResourceKey(linkedResource, context, scopeKey));
       resourceProps.setResourceType(linkedResource.getResourceType());
       resourceProps.setLinkName(linkedResource.getLinkName());
       linkedResourceProps.add(resourceProps);
@@ -160,9 +166,98 @@ public final class BpmnJobBehavior {
   }
 
   private String resolveLinkedResourceKey(
-      final LinkedResource linkedResource, final long scopeKey) {
-    // TODO Add implementation in the next PR
-    return "";
+      final LinkedResource linkedResource, final BpmnElementContext context, final long scopeKey) {
+    return findLinkedResource(
+            linkedResource.getResourceId(),
+            linkedResource.getBindingType(),
+            linkedResource.getVersionTag(),
+            context,
+            scopeKey)
+        .map(PersistedResource::getResourceKey)
+        .get()
+        .toString();
+  }
+
+  private Either<Failure, PersistedResource> findLinkedResource(
+      final String resourceId,
+      final ZeebeBindingType bindingType,
+      final String versionTag,
+      final BpmnElementContext context,
+      final long scopeKey) {
+    return switch (bindingType) {
+      case deployment -> findResourceByIdInSameDeployment(resourceId, context, scopeKey);
+      case latest -> findLatestResourceById(resourceId, context.getTenantId(), scopeKey);
+      case versionTag ->
+          findResourceByIdAndVersionTag(resourceId, versionTag, context.getTenantId(), scopeKey);
+    };
+  }
+
+  private Either<Failure, PersistedResource> findResourceByIdInSameDeployment(
+      final String resourceId, final BpmnElementContext context, final long scopeKey) {
+    return stateBehavior
+        .getDeploymentKey(context.getProcessDefinitionKey(), context.getTenantId())
+        .flatMap(
+            deploymentKey ->
+                resourceState
+                    .findResourceByIdAndDeploymentKey(
+                        resourceId, deploymentKey, context.getTenantId())
+                    .<Either<Failure, PersistedResource>>map(Either::right)
+                    .orElseGet(
+                        () ->
+                            Either.left(
+                                new Failure(
+                                    String.format(
+                                        """
+                                        Expected to use a resource with id '%s' with binding type 'deployment', \
+                                        but no such resource found in the deployment with key %s which contained the current process. \
+                                        To resolve this incident, migrate the process instance to a process definition \
+                                        that is deployed together with the intended resource to use.\
+                                        """,
+                                        resourceId, deploymentKey),
+                                    ErrorType.RESOURCE_NOT_FOUND,
+                                    scopeKey))));
+  }
+
+  private Either<Failure, PersistedResource> findLatestResourceById(
+      final String resourceId, final String tenantId, final long scopeKey) {
+    return resourceState
+        .findLatestResourceById(resourceId, tenantId)
+        .<Either<Failure, PersistedResource>>map(Either::right)
+        .orElseGet(
+            () ->
+                Either.left(
+                    new Failure(
+                        String.format(
+                            """
+                            Expected to find a resource with id '%s', but no resource with this id is found, \
+                            at least a resource with this id should be available. \
+                            To resolve the Incident please deploy a resource with the same id.
+                            """,
+                            resourceId),
+                        ErrorType.RESOURCE_NOT_FOUND,
+                        scopeKey)));
+  }
+
+  private Either<Failure, PersistedResource> findResourceByIdAndVersionTag(
+      final String resourceId,
+      final String versionTag,
+      final String tenantId,
+      final long scopeKey) {
+    return resourceState
+        .findResourceByIdAndVersionTag(resourceId, versionTag, tenantId)
+        .<Either<Failure, PersistedResource>>map(Either::right)
+        .orElseGet(
+            () ->
+                Either.left(
+                    new Failure(
+                        String.format(
+                            """
+                            Expected to use a resource with id '%s' and version tag '%s', but no such resource found. \
+                            To resolve the incident, deploy a resource with the given id and version tag.
+                            """,
+                            resourceId, versionTag),
+                        ErrorType.RESOURCE_NOT_FOUND,
+                        scopeKey)));
   }
 
   private static String asListLiteralOrNull(final List<String> list) {
