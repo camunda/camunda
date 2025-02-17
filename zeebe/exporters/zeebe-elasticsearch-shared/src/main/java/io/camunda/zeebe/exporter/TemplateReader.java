@@ -92,7 +92,7 @@ final class TemplateReader {
 
   private Template getTemplateFromClasspath(final String filename) {
     try (final InputStream inputStream =
-        ElasticsearchExporter.class.getResourceAsStream(filename)) {
+        getClass().getClassLoader().getResourceAsStream(filename)) {
       return MAPPER.readValue(inputStream, Template.class);
     } catch (final IOException e) {
       throw new ElasticsearchExporterException(

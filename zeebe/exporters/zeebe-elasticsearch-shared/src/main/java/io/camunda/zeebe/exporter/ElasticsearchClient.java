@@ -36,7 +36,7 @@ import org.apache.http.entity.EntityTemplate;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
 
-class ElasticsearchClient implements AutoCloseable {
+public class ElasticsearchClient implements AutoCloseable {
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private final RestClient client;

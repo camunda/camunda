@@ -60,6 +60,8 @@
     <module>backup-stores/common</module>
     <module>restore</module>
     <module>dynamic-config</module>
+    <module>exporters/zeebe-elasticsearch-initializer</module>
+    <module>exporters/zeebe-elasticsearch-shared</module>
   </modules>
 
   <profiles>
