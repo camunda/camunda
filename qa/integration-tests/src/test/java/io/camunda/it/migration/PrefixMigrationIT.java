@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Base64;
-import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
@@ -94,8 +93,6 @@ public class PrefixMigrationIT {
                 "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME",
                 "io.camunda.exporter.CamundaExporter")
             .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX", newPrefix);
-
-    container.setPortBindings(List.of("9600:9600", "8080:8080", "26500:26500"));
 
     return container;
   }
