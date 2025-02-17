@@ -39,6 +39,11 @@ public class CredentialsProviderConfiguration {
   @ConditionalOnMissingBean
   public CredentialsProvider camundaClientCredentialsProvider(
       final CamundaClientProperties camundaClientProperties) {
+    return buildOAuthCredentialsProvider(camundaClientProperties);
+  }
+
+  private CredentialsProvider buildOAuthCredentialsProvider(
+      final CamundaClientProperties camundaClientProperties) {
     final OAuthCredentialsProviderBuilder credBuilder =
         CredentialsProvider.newCredentialsProviderBuilder()
             .applyEnvironmentOverrides(false)
