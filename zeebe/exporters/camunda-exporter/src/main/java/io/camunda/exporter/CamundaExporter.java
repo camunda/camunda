@@ -31,6 +31,7 @@ import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
@@ -67,7 +68,8 @@ public class CamundaExporter implements Exporter {
   private CamundaExporterMetrics metrics;
   private BackgroundTaskManager taskManager;
   private ExporterMetadata metadata;
-  private boolean importersCompleted = false;
+  private boolean exporterCanFlush = false;
+  private boolean zeebeIndicesExist = false;
   private SearchEngineClient searchEngineClient;
   private int partitionId;
 
@@ -180,7 +182,7 @@ public class CamundaExporter implements Exporter {
       return;
     }
 
-    if (configuration.getIndex().shouldWaitForImporters() && !importersCompleted) {
+    if (configuration.getIndex().shouldWaitForImporters() && !exporterCanFlush) {
       ensureCachedRecordsLessThanBulkSize(record);
 
       writer.addRecord(record);
@@ -280,7 +282,7 @@ public class CamundaExporter implements Exporter {
       scheduleDelayedFlush();
       return;
     }
-    if (!importersCompleted) {
+    if (!exporterCanFlush) {
       scheduleImportersCompletedCheck();
     }
     try {
@@ -290,13 +292,22 @@ public class CamundaExporter implements Exporter {
                   d -> d instanceof ImportPositionIndex || d instanceof TasklistImportPositionIndex)
               .toList();
 
-      importersCompleted =
-          searchEngineClient.importersCompleted(partitionId, importPositionIndices);
+      if (!zeebeIndicesExist) {
+        zeebeIndicesExist =
+            !searchEngineClient
+                .getMappings(
+                    configuration.getIndex().getZeebeIndexPrefix() + "*", MappingSource.INDEX)
+                .isEmpty();
+      }
+
+      exporterCanFlush =
+          !zeebeIndicesExist
+              || searchEngineClient.importersCompleted(partitionId, importPositionIndices);
     } catch (final Exception e) {
       LOG.warn("Unexpected exception occurred checking importers completed, will retry later.", e);
     }
 
-    if (importersCompleted) {
+    if (exporterCanFlush) {
       scheduleDelayedFlush();
     }
   }

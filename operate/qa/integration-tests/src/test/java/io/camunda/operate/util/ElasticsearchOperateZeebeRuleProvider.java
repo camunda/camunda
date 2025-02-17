@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.util;
 
-import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
+import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -141,7 +141,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   public void startZeebe() {
 
     final String zeebeVersion =
-        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_PROPERTY_NAME);
+        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME);
     zeebeContainer =
         testContainerUtil.startZeebe(
             zeebeVersion,

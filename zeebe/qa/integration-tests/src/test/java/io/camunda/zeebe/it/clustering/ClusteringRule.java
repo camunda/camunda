@@ -356,7 +356,8 @@ public class ClusteringRule extends ExternalResource {
         new ActorSchedulerConfiguration(
                 brokerSpringConfig.schedulerConfiguration(),
                 IdleStrategySupplier.ofDefault(),
-                actorClockConfiguration)
+                actorClockConfiguration,
+                meterRegistry)
             .scheduler();
 
     final var dynamicClusterServices =
@@ -483,7 +484,10 @@ public class ClusteringRule extends ExternalResource {
 
     final ActorScheduler actorScheduler =
         new ActorSchedulerConfiguration(
-                actorConfig, IdleStrategySupplier.ofDefault(), actorClockConfiguration)
+                actorConfig,
+                IdleStrategySupplier.ofDefault(),
+                actorClockConfiguration,
+                meterRegistry)
             .scheduler();
 
     final var clusterConfiguration =

@@ -9,6 +9,7 @@ package io.camunda.it.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import feign.FeignException.NotFound;
 import io.camunda.client.CamundaClient;
 import io.camunda.it.utils.MultiDbConfigurator;
 import io.camunda.management.backups.TakeBackupHistoryResponse;
@@ -48,7 +49,6 @@ public class BackupRestoreIT {
   private String dbUrl;
   private GenericContainer<?> searchContainer;
   private DataGenerator generator;
-  private BackupRestoreTestConfig config;
   private HistoryBackupClient historyBackupClient;
 
   @AfterEach
@@ -68,8 +68,6 @@ public class BackupRestoreIT {
                     .withStartupTimeout(Duration.ofMinutes(5))
                     // location of the repository that will be used for snapshots
                     .withEnv("path.repo", "~/");
-            // container.addFileSystemBind(
-            // repositoryDir.toString(), "~/", BindMode.READ_WRITE, SelinuxContext.SHARED);
             container.start();
             dbUrl = "http://" + container.getHttpHostAddress();
 
@@ -97,7 +95,6 @@ public class BackupRestoreIT {
     configurator.getOperateProperties().getBackup().setRepositoryName(REPOSITORY_NAME);
     configurator.getTasklistProperties().getBackup().setRepositoryName(REPOSITORY_NAME);
 
-    this.config = config;
     testStandaloneApplication.start().awaitCompleteTopology();
 
     camundaClient = testStandaloneApplication.newClientBuilder().build();
@@ -136,9 +133,14 @@ public class BackupRestoreIT {
         .atMost(Duration.ofSeconds(600))
         .untilAsserted(
             () -> {
-              final var backupResponse = historyBackupClient.getBackup(1L);
-              assertThat(backupResponse.getState()).isEqualTo(BackupStateDto.COMPLETED);
-              assertThat(backupResponse.getDetails()).allMatch(d -> d.getState().equals("SUCCESS"));
+              try {
+                final var backupResponse = historyBackupClient.getBackup(1L);
+                assertThat(backupResponse.getState()).isEqualTo(BackupStateDto.COMPLETED);
+                assertThat(backupResponse.getDetails())
+                    .allMatch(d -> d.getState().equals("SUCCESS"));
+              } catch (final NotFound e) {
+                throw new AssertionError("Backup not found:", e);
+              }
             });
 
     // when

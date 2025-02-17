@@ -202,7 +202,10 @@ final class StandaloneGatewaySecurityTest {
     atomixCluster = clusterConfiguration.atomixCluster();
     final ActorSchedulerConfiguration actorSchedulerConfiguration =
         new ActorSchedulerConfiguration(
-            schedulerConfig, IdleStrategySupplier.ofDefault(), new ActorClockConfiguration(false));
+            schedulerConfig,
+            IdleStrategySupplier.ofDefault(),
+            new ActorClockConfiguration(false),
+            meterRegistry);
 
     actorScheduler = actorSchedulerConfiguration.scheduler();
     final var topologyServices =
