@@ -116,6 +116,8 @@ public interface IncidentUpdateRepository extends AutoCloseable {
   CompletionStage<Collection<ActiveIncident>> getActiveIncidentsByTreePaths(
       final Collection<String> treePathTerms);
 
+  CompletionStage<Map<String, IncidentDocument>> getIncidentDocumentsBefore(final long timestamp);
+
   /**
    * Represents an incident document: the source identity and its ID and index.
    *
@@ -222,6 +224,12 @@ public interface IncidentUpdateRepository extends AutoCloseable {
     public CompletionStage<Collection<ActiveIncident>> getActiveIncidentsByTreePaths(
         final Collection<String> treePathTerms) {
       return CompletableFuture.completedFuture(List.of());
+    }
+
+    @Override
+    public CompletionStage<Map<String, IncidentDocument>> getIncidentDocumentsBefore(
+        final long timestamp) {
+      return null;
     }
 
     @Override

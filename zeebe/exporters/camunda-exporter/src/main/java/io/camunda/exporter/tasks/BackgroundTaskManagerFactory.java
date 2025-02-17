@@ -14,6 +14,9 @@ import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.alerts.AlertDefinitionRepository;
+import io.camunda.exporter.tasks.alerts.AlertDefinitionRepository.NoopAlertDefinitionRepository;
+import io.camunda.exporter.tasks.alerts.ElasticsearchAlertDefinitionRepository;
 import io.camunda.exporter.tasks.archiver.ApplyRolloverPeriodJob;
 import io.camunda.exporter.tasks.archiver.ArchiverRepository;
 import io.camunda.exporter.tasks.archiver.BatchOperationArchiverJob;
@@ -25,11 +28,13 @@ import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
 import io.camunda.exporter.tasks.batchoperations.ElasticsearchBatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.batchoperations.OpensearchBatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.incident.ElasticsearchIncidentUpdateRepository;
+import io.camunda.exporter.tasks.incident.IncidentAlertTask;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
 import io.camunda.exporter.tasks.incident.OpenSearchIncidentUpdateRepository;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.webapps.schema.descriptors.AlertDefinitionIndex;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
@@ -57,6 +62,7 @@ public final class BackgroundTaskManagerFactory {
   private ArchiverRepository archiverRepository;
   private IncidentUpdateRepository incidentRepository;
   private BatchOperationUpdateRepository batchOperationUpdateRepository;
+  private AlertDefinitionRepository alertDefinitionRepository;
 
   public BackgroundTaskManagerFactory(
       final int partitionId,
@@ -80,7 +86,7 @@ public final class BackgroundTaskManagerFactory {
     archiverRepository = buildArchiverRepository();
     incidentRepository = buildIncidentRepository();
     batchOperationUpdateRepository = buildBatchOperationUpdateRepository();
-
+    alertDefinitionRepository = buildAlertDefinitionRepository();
     final List<Runnable> tasks = buildTasks();
 
     return new BackgroundTaskManager(
@@ -98,6 +104,7 @@ public final class BackgroundTaskManagerFactory {
     int threadCount = 1;
 
     tasks.add(buildIncidentMarkerTask());
+    tasks.add(buildAlertTask());
 
     if (config.getArchiver().isRolloverEnabled()) {
       threadCount = 2;
@@ -114,6 +121,16 @@ public final class BackgroundTaskManagerFactory {
 
     executor.setCorePoolSize(threadCount);
     return tasks;
+  }
+
+  private ReschedulingTask buildAlertTask() {
+    return new ReschedulingTask(
+        new IncidentAlertTask(incidentRepository, alertDefinitionRepository, config.getConnect()),
+        1,
+        5000,
+        5000,
+        executor,
+        logger);
   }
 
   private ReschedulingTask buildIncidentMarkerTask() {
@@ -301,6 +318,22 @@ public final class BackgroundTaskManagerFactory {
             operationTemplate.getFullQualifiedName(),
             logger);
       }
+    };
+  }
+
+  private AlertDefinitionRepository buildAlertDefinitionRepository() {
+    final var alertDefinitionIndex =
+        resourceProvider.getIndexDescriptor(AlertDefinitionIndex.class);
+    return switch (ConnectionTypes.from(config.getConnect().getType())) {
+      case ELASTICSEARCH -> {
+        final var connector = new ElasticsearchConnector(config.getConnect());
+        yield new ElasticsearchAlertDefinitionRepository(
+            alertDefinitionIndex.getFullQualifiedName(),
+            connector.createAsyncClient(),
+            executor,
+            logger);
+      }
+      case OPENSEARCH -> new NoopAlertDefinitionRepository();
     };
   }
 }

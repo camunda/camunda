@@ -18,6 +18,9 @@ import {
   DescriptionTitle,
   DescriptionData,
 } from './styled';
+import {Button} from '@carbon/react';
+import {IncidentAlertingModal} from 'modules/components/IncidentAlertingModal';
+import {useState} from 'react';
 
 type ProcessDetails = {
   bpmnProcessId?: string;
@@ -45,6 +48,8 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
     const {processName, bpmnProcessId, version, versionTag} = processDetails;
     const hasVersionTag = !isNil(versionTag);
     const hasSelectedProcess = bpmnProcessId !== undefined;
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     return (
       <PanelHeader
@@ -93,6 +98,20 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
                 processVersion={version}
               />
             )}
+
+            <Button
+              kind="ghost"
+              size="sm"
+              onClick={() => setIsModalOpen(true)}
+              title="Setup alert about incidents"
+              aria-label="Setup alert about incidents"
+            >
+              Setup alert about incidents
+            </Button>
+            <IncidentAlertingModal
+              isOpen={isModalOpen}
+              onClose={() => setIsModalOpen(false)}
+            />
           </Restricted>
         )}
       </PanelHeader>

@@ -255,6 +255,12 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
         request, IncidentEntity.class, h -> new ActiveIncident(h.id(), h.source().getTreePath()));
   }
 
+  @Override
+  public CompletionStage<Map<String, IncidentDocument>> getIncidentDocumentsBefore(
+      final long timestamp) {
+    return null;
+  }
+
   private Query createProcessInstanceDeletedQuery(final long processInstanceKey) {
     final var piKeyQ =
         QueryBuilders.term()

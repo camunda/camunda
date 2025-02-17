@@ -301,6 +301,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   }
 
   @Override
+  public <T extends IndexDescriptor> T getIndexDescriptor(final Class<T> descriptorClass) {
+    return indexDescriptors.get(descriptorClass);
+  }
+
+  @Override
   public Set<ExportHandler<?, ?>> getExportHandlers() {
     // Register all handlers here
     return exportHandlers;

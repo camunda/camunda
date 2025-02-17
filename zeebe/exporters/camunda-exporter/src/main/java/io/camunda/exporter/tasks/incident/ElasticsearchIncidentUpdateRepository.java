@@ -7,15 +7,19 @@
  */
 package io.camunda.exporter.tasks.incident;
 
+import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.CREATION_TIME;
+
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
+import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.UpdateOperation;
@@ -34,6 +38,9 @@ import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForLis
 import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -223,6 +230,38 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
 
     return fetchUnboundedDocumentCollection(
         request, IncidentEntity.class, h -> new ActiveIncident(h.id(), h.source().getTreePath()));
+  }
+
+  @Override
+  public CompletionStage<Map<String, IncidentDocument>> getIncidentDocumentsBefore(
+      final long timestamp) {
+    final Query rangeQuery =
+        RangeQuery.of(
+                r ->
+                    r.field(CREATION_TIME)
+                        .gte(
+                            JsonData.of(
+                                OffsetDateTime.ofInstant(
+                                    Instant.ofEpochMilli(timestamp - 5000), ZoneOffset.UTC)))
+                        .lte(
+                            JsonData.of(
+                                OffsetDateTime.ofInstant(
+                                    Instant.ofEpochMilli(timestamp), ZoneOffset.UTC))))
+            ._toQuery();
+    final var partitionQ =
+        QueryBuilders.term(t -> t.field(IncidentTemplate.PARTITION_ID).value(partitionId));
+    final SearchRequest request =
+        new Builder()
+            .index(incidentAlias)
+            .query(q -> q.bool(b -> b.must(rangeQuery, partitionQ)))
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .sort(s -> s.field(f -> f.field(IncidentTemplate.KEY)))
+            .build();
+
+    return client
+        .search(request, IncidentEntity.class)
+        .thenApplyAsync(this::createIncidentDocuments, executor);
   }
 
   private Query createProcessInstanceDeletedQuery(final long processInstanceKey) {

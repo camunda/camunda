@@ -9,10 +9,15 @@ package io.camunda.application.commons.service;
 
 import io.camunda.document.store.EnvironmentConfigurationLoader;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
+import io.camunda.exporter.config.ConnectionTypes;
+import io.camunda.search.clients.AlertDefinitionClient;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
+import io.camunda.search.clients.DocumentBasedSearchClient;
+import io.camunda.search.clients.DocumentBasedWriteClient;
+import io.camunda.search.clients.ElasticSearchAlertDefinitionClient;
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.clients.FormSearchClient;
 import io.camunda.search.clients.GroupSearchClient;
@@ -26,8 +31,10 @@ import io.camunda.search.clients.UsageMetricsSearchClient;
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
+import io.camunda.service.AlertDefinitionServices;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.ClockServices;
 import io.camunda.service.DecisionDefinitionServices;
@@ -53,6 +60,7 @@ import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.VariableServices;
 import io.camunda.service.security.SecurityContextProvider;
+import io.camunda.webapps.schema.descriptors.AlertDefinitionIndex;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
@@ -285,5 +293,31 @@ public class CamundaServicesConfiguration {
   public AuthorizationChecker authorizationChecker(
       final AuthorizationSearchClient authorizationSearchClient) {
     return new AuthorizationChecker(authorizationSearchClient);
+  }
+
+  @Bean
+  AlertDefinitionClient alertDefinitionClient(
+      final DocumentBasedWriteClient writeClient,
+      final DocumentBasedSearchClient readClient,
+      final AlertDefinitionIndex alertDefinitionIndex) {
+    return new ElasticSearchAlertDefinitionClient(writeClient, readClient, alertDefinitionIndex);
+  }
+
+  @Bean
+  public AlertDefinitionIndex alertDefinitionIndex(
+      final ConnectConfiguration connectConfiguration) {
+    final var indexPrefix = connectConfiguration.getIndexPrefix();
+    final var isElasticsearch =
+        ConnectionTypes.from(connectConfiguration.getType()).equals(ConnectionTypes.ELASTICSEARCH);
+    return new AlertDefinitionIndex(indexPrefix, isElasticsearch);
+  }
+
+  @Bean
+  public AlertDefinitionServices alertDefinitionServices(
+      final AlertDefinitionClient alertDefinitionClient,
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider) {
+    return new AlertDefinitionServices(
+        alertDefinitionClient, brokerClient, securityContextProvider, null);
   }
 }

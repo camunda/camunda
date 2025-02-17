@@ -52,6 +52,13 @@ public interface ExporterResourceProvider {
   <T extends IndexTemplateDescriptor> T getIndexTemplateDescriptor(Class<T> descriptorClass);
 
   /**
+   * @param descriptorClass the expected descriptor type
+   * @return the index descriptor instance for the given class.
+   * @param <T> the expected descriptor type
+   */
+  <T extends IndexDescriptor> T getIndexDescriptor(Class<T> descriptorClass);
+
+  /**
    * @return A {@link Set} of {@link ExportHandler} to be registered with the exporter
    */
   Set<ExportHandler<?, ?>> getExportHandlers();
