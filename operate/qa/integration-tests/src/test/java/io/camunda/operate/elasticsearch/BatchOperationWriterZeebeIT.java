@@ -29,6 +29,7 @@ import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -319,7 +320,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
 
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(any()))
+    when(permissionsService.getProcessesWithPermission(any(PermissionType.class)))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
     final ListViewQueryDto query = createGetAllProcessInstancesQuery();
     final CreateBatchOperationRequestDto request =
