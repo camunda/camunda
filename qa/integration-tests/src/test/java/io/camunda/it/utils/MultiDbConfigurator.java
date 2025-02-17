@@ -148,9 +148,14 @@ public class MultiDbConfigurator {
           cfg.setClassName(OpensearchExporter.class.getName());
           cfg.setArgs(
               Map.of(
-                  "url", opensearchUrl,
-                  "index", Map.of("prefix", indexPrefix),
-                  "bulk", Map.of("size", 1)));
+                  "url",
+                  opensearchUrl,
+                  "index",
+                  Map.of("prefix", indexPrefix),
+                  "bulk",
+                  Map.of("size", 1),
+                  "authentication",
+                  Map.of("username", userName, "password", userPassword)));
         });
 
     testApplication.withProperty(
