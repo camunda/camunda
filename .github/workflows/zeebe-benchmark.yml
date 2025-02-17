@@ -142,6 +142,7 @@ jobs:
           push: true
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
           distball: ${{ steps.build-zeebe.outputs.distball }}
+          dockerfile: 'camunda.Dockerfile'
 
   build-operate-image:
     name: Build + Push Operate Docker image
