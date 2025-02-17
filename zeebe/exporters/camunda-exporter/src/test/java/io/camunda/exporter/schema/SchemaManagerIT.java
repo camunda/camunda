@@ -361,8 +361,8 @@ public class SchemaManagerIT {
       final ExporterConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws IOException {
     config.setCreateSchema(true);
-    config.getRetention().setEnabled(true);
-    config.getRetention().setPolicyName("policy_name");
+    config.getArchiver().getRetention().setEnabled(true);
+    config.getArchiver().getRetention().setPolicyName("policy_name");
 
     final var schemaManager =
         new SchemaManager(

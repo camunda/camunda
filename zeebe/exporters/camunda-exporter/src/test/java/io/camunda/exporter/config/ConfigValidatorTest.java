@@ -58,7 +58,7 @@ public class ConfigValidatorTest {
   @ValueSource(strings = {"1", "-1", "1ms"})
   void shouldNotAllowInvalidMinimumAge(final String invalidMinAge) {
     // given
-    config.getRetention().setMinimumAge(invalidMinAge);
+    config.getArchiver().getRetention().setMinimumAge(invalidMinAge);
 
     // when - then
     assertThatCode(() -> ConfigValidator.validate(config))
