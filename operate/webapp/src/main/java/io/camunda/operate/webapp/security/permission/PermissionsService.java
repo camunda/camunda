@@ -148,6 +148,16 @@ public class PermissionsService {
   }
 
   /**
+   * getProcessesWithPermission
+   *
+   * @return processes for which the user has the given permission; the result matches either all
+   *     processes, or a list of bpmnProcessId
+   */
+  public ResourcesAllowed getProcessesWithPermission(final PermissionType permissionType) {
+    return getResourcesWithPermission(AuthorizationResourceType.PROCESS_DEFINITION, permissionType);
+  }
+
+  /**
    * getDecisionsWithPermission
    *
    * @return decisions for which the user has the given permission; the result matches either all
@@ -166,6 +176,18 @@ public class PermissionsService {
    */
   private ResourcesAllowed getResourcesWithPermission(
       final AuthorizationResourceType resourceType, final IdentityPermission identityPermission) {
+    final PermissionType permissionType = getPermission(identityPermission);
+    return getResourcesWithPermission(resourceType, permissionType);
+  }
+
+  /**
+   * getResourcesWithPermission
+   *
+   * @return resources for which the user has the given permission; the result matches either all
+   *     resources, or a list of resourceIds
+   */
+  private ResourcesAllowed getResourcesWithPermission(
+      final AuthorizationResourceType resourceType, final PermissionType permissionType) {
     if (!permissionsEnabled()) {
       return ResourcesAllowed.all();
     }
@@ -173,7 +195,6 @@ public class PermissionsService {
       return ResourcesAllowed.withIds(Set.of());
     }
 
-    final PermissionType permissionType = getPermission(identityPermission);
     final Authorization authorization = new Authorization(resourceType, permissionType);
     final SecurityContext securityContext = getSecurityContext(authorization);
     final List<String> ids = authorizationChecker.retrieveAuthorizedResourceKeys(securityContext);
