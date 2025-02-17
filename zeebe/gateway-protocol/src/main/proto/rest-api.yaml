@@ -1860,6 +1860,54 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /ad-hoc-activities/{adHocSubprocessInstanceKey}/activate:
+    post:
+      tags:
+        - Ad-hoc subprocess
+      operationId: activateAdHocSubprocessActivities
+      summary: Activate activities within an ad-hoc subprocess
+      description: |
+        Activates selected activities within an ad-hoc subprocess identified by flowNodeId.
+
+        The provided flowNodeIds must be within the ad-hoc subprocess instance identified by the
+        provider adHocSubprocessInstanceKey.
+      parameters:
+        - name: adHocSubprocessInstanceKey
+          in: path
+          required: true
+          description: The key of the ad-hoc subprocess instance that contains the activities.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdHocSubprocessActivateActivitiesInstruction"
+      responses:
+        "204":
+          description: The ad-hoc subprocess instance is modified.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: |
+            The ad-hoc subprocess instance is not found or the provided key does not identify an
+            ad-hoc subprocess.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /decision-definitions/search:
     post:
       tags:
@@ -4888,6 +4936,24 @@ components:
             - UNKNOWN
             - UNSPECIFIED
             - USER_TASK
+    AdHocSubprocessActivateActivitiesInstruction:
+      type: object
+      properties:
+        flowNodes:
+          description: Flow nodes to activate.
+          type: array
+          items:
+            $ref: "#/components/schemas/AdHocSubprocessActivateActivityReference"
+      required:
+        - flowNodes
+    AdHocSubprocessActivateActivityReference:
+      type: object
+      properties:
+        flowNodeId:
+          description: ID of the activity to activate
+          type: string
+      required:
+        - flowNodeId
     DecisionDefinitionSearchQuerySortRequest:
       type: object
       properties:

@@ -146,9 +146,16 @@ public class CamundaServicesConfiguration {
   public AdHocSubprocessActivityServices adHocSubprocessActivityServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final ProcessDefinitionServices processDefinitionServices) {
+      final ProcessDefinitionServices processDefinitionServices,
+      final ProcessInstanceServices processInstanceServices,
+      final FlowNodeInstanceServices flowNodeInstanceServices) {
     return new AdHocSubprocessActivityServices(
-        brokerClient, securityContextProvider, processDefinitionServices, null);
+        brokerClient,
+        securityContextProvider,
+        processDefinitionServices,
+        processInstanceServices,
+        flowNodeInstanceServices,
+        null);
   }
 
   @Bean

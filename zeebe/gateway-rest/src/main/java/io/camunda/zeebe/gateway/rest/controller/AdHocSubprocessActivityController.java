@@ -11,12 +11,16 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.service.AdHocSubprocessActivityServices;
 import io.camunda.service.AdHocSubprocessActivityServices.AdHocSubprocessActivity;
+import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivateActivitiesInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivateActivityReference;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivityResult;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivitySearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivitySearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -48,6 +52,22 @@ public class AdHocSubprocessActivityController {
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
+  }
+
+  @CamundaPostMapping(path = "/{adHocSubprocessInstanceKey}/activate")
+  public CompletableFuture<ResponseEntity<Object>> activateActivities(
+      @PathVariable("adHocSubprocessInstanceKey") final Long adHocSubprocessInstanceKey,
+      @RequestBody final AdHocSubprocessActivateActivitiesInstruction request) {
+    final var flowNodeIds =
+        request.getFlowNodes().stream()
+            .map(AdHocSubprocessActivateActivityReference::getFlowNodeId)
+            .toList();
+
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            adHocSubprocessActivityServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .activateActivities(adHocSubprocessInstanceKey, flowNodeIds));
   }
 
   private AdHocSubprocessActivityResult toAdHocActivity(final AdHocSubprocessActivity activity) {
