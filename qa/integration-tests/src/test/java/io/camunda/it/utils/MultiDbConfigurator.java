@@ -176,14 +176,15 @@ public class MultiDbConfigurator {
     testApplication.withProperty("spring.datasource.driver-class-name", "org.h2.Driver");
     testApplication.withProperty("spring.datasource.username", "sa");
     testApplication.withProperty("spring.datasource.password", "");
-    testApplication.withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");
-    testApplication.withProperty("logging.level.org.mybatis", "DEBUG");
+    testApplication.withProperty("zeebe.broker.exporters.rdbms.args.flushInterval", "0");
+    testApplication.withProperty("zeebe.broker.exporters.rdbms.args.defaultHistoryTTL", "PT2S");
+    testApplication.withProperty("zeebe.broker.exporters.rdbms.args.minHistoryCleanupInterval", "PT2S");
+    testApplication.withProperty("zeebe.broker.exporters.rdbms.args.maxHistoryCleanupInterval", "PT5S");
     testApplication.withExporter(
         "rdbms",
-        cfg -> {
-          cfg.setClassName("-");
-          cfg.setArgs(Map.of("flushInterval", "0"));
-        });
+        cfg -> {cfg.setClassName("-");});
+    testApplication.withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");
+    testApplication.withProperty("logging.level.org.mybatis", "DEBUG");
   }
 
   public OperateProperties getOperateProperties() {

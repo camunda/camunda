@@ -88,6 +88,11 @@ zeebe:
         args:
           flushInterval: 500
           maxQueueSize: 1000
+          cleanupBatchSize: 1000
+          defaultHistoryTTL: 60000
+          minHistoryCleanupInterval: 30000
+          maxHistoryCleanupInterval: 30000
+          historyCleanupBatchSize: 1000
       #elasticsearch:
       #  className: io.camunda.zeebe.exporter.ElasticsearchExporter
       #  args:

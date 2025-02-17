@@ -78,7 +78,7 @@ public class HistoryCleanupIT {
     rdbmsWriter.flush();
 
     // THEN
-    final var expectedDate = historyCleanupService.calculateHistoryCleanupDate(now);
+    final var expectedDate = now.plus(historyCleanupService.getHistoryCleanupInterval());
     getHistoryCleanupDates(processInstanceKey)
         .forEach(
             (tableName, historyCleanupDate) -> {

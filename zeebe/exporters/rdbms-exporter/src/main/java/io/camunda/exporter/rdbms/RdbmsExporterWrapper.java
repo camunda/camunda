@@ -9,15 +9,19 @@ package io.camunda.exporter.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.exporter.rdbms.handlers.DecisionDefinitionExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionInstanceExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionRequirementsExportHandler;
 import io.camunda.exporter.rdbms.handlers.FlowNodeExportHandler;
+import io.camunda.exporter.rdbms.handlers.FlowNodeInstanceIncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.FormExportHandler;
 import io.camunda.exporter.rdbms.handlers.GroupExportHandler;
+import io.camunda.exporter.rdbms.handlers.IncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.MappingExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessInstanceExportHandler;
+import io.camunda.exporter.rdbms.handlers.ProcessInstanceIncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.RoleExportHandler;
 import io.camunda.exporter.rdbms.handlers.TenantExportHandler;
 import io.camunda.exporter.rdbms.handlers.UserExportHandler;
@@ -30,14 +34,19 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
 
-/** https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/ */
+/**
+ * https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/
+ */
 public class RdbmsExporterWrapper implements Exporter {
 
-  /** The partition on which all process deployments are published */
+  /**
+   * The partition on which all process deployments are published
+   */
   public static final long PROCESS_DEFINITION_PARTITION = 1L;
 
   private static final int DEFAULT_FLUSH_INTERVAL = 500;
   private static final int DEFAULT_MAX_QUEUE_SIZE = 1000;
+  private static final int DEFAULT_CLEANUP_BATCH_SIZE = 1000;
 
   private final RdbmsService rdbmsService;
 
@@ -51,7 +60,14 @@ public class RdbmsExporterWrapper implements Exporter {
   public void configure(final Context context) {
     final var maxQueueSize = readMaxQueueSize(context);
     final int partitionId = context.getPartitionId();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(partitionId, maxQueueSize);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(new RdbmsWriterConfig.Builder()
+        .partitionId(partitionId)
+        .maxQueueSize(maxQueueSize)
+        .historyCleanupBatchSize(readCleanupBatchSize(context))
+        .defaultHistoryTTL(readHistoryTTL(context))
+        .minHistoryCleanupInterval(readMinHistoryCleanupInterval(context))
+        .maxHistoryCleanupInterval(readMaxHistoryCleanupInterval(context))
+        .build());
 
     final var builder =
         new RdbmsExporterConfig.Builder()
@@ -85,22 +101,51 @@ public class RdbmsExporterWrapper implements Exporter {
   }
 
   private Duration readFlushInterval(final Context context) {
-    final var arguments = context.getConfiguration().getArguments();
-    if (arguments != null) {
-      final var flushIntervalMillis =
-          (Integer) arguments.getOrDefault("flushInterval", DEFAULT_FLUSH_INTERVAL);
-      return Duration.ofMillis(flushIntervalMillis);
-    } else {
-      return Duration.ofMillis(DEFAULT_FLUSH_INTERVAL);
-    }
+    return readDuration(context, "flushInterval", Duration.ofMillis(DEFAULT_FLUSH_INTERVAL));
+  }
+
+  private Duration readHistoryTTL(final Context context) {
+    return readDuration(context, "defaultHistoryTTL", RdbmsWriterConfig.DEFAULT_HISTORY_TTL);
+  }
+
+  private Duration readMinHistoryCleanupInterval(final Context context) {
+    return readDuration(context, "minHistoryCleanupInterval",
+        RdbmsWriterConfig.DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL);
+  }
+
+  private Duration readMaxHistoryCleanupInterval(final Context context) {
+    return readDuration(context, "maxHistoryCleanupInterval",
+        RdbmsWriterConfig.DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL);
   }
 
   private int readMaxQueueSize(final Context context) {
+    return readInt(context, "maxQueueSize", DEFAULT_MAX_QUEUE_SIZE);
+  }
+
+  private int readCleanupBatchSize(final Context context) {
+    return readInt(context, "historyCleanupBatchSize", DEFAULT_CLEANUP_BATCH_SIZE);
+  }
+
+  private Duration readDuration(final Context context, final String property,
+      final Duration defaultValue) {
     final var arguments = context.getConfiguration().getArguments();
-    if (arguments != null) {
-      return (Integer) arguments.getOrDefault("maxQueueSize", DEFAULT_MAX_QUEUE_SIZE);
+    if (arguments != null && arguments.containsKey(property)) {
+<<<<<<< Updated upstream
+      return DateUtil.toDuration((String)arguments.get(property));
+=======
+      return Duration.parse((String) arguments.get(property));
+>>>>>>> Stashed changes
     } else {
-      return DEFAULT_MAX_QUEUE_SIZE;
+      return defaultValue;
+    }
+  }
+
+  private int readInt(final Context context, final String property, final int defaultValue) {
+    final var arguments = context.getConfiguration().getArguments();
+    if (arguments != null && arguments.containsKey(property)) {
+      return (Integer) arguments.get(property);
+    } else {
+      return defaultValue;
     }
   }
 
