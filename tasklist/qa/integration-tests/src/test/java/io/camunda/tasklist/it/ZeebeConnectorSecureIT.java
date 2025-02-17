@@ -9,7 +9,6 @@ package io.camunda.tasklist.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -71,8 +70,6 @@ public class ZeebeConnectorSecureIT {
                     "ZEEBE_BROKER_GATEWAY_SECURITY_PRIVATEKEYPATH",
                     "/usr/local/zeebe/certs/" + PRIVATE_KEY_FILE,
                     "ZEEBE_BROKER_GATEWAY_SECURITY_ENABLED",
-                    "true",
-                    AuthenticationProperties.getAllowUnauthenticatedApiAccessEnvVar(),
                     "true"))
             // Can't use connection wait strategy because of TLS
             .waitingFor(
