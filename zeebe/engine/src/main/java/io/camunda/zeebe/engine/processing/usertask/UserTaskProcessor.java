@@ -35,7 +35,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.List;
 import java.util.Optional;
 
 @ExcludeAuthorizationCheck
@@ -115,9 +114,13 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
     findNextTaskListener(listenerEventType, userTaskElement, userTaskElementInstance)
         .ifPresentOrElse(
-            listener ->
-                jobBehavior.createNewTaskListenerJob(
-                    context, intermediateUserTaskRecord, listener, List.of()),
+            listener -> {
+              final var currentUserTask = userTaskState.getUserTask(command.getKey());
+              final var changedAttributes =
+                  intermediateUserTaskRecord.determineChangedAttributes(currentUserTask);
+              jobBehavior.createNewTaskListenerJob(
+                  context, intermediateUserTaskRecord, listener, changedAttributes);
+            },
             () -> finalizeCommand(command, lifecycleState, intermediateUserTaskRecord));
   }
 
