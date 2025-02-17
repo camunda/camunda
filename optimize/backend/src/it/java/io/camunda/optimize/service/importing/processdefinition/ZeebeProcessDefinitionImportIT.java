@@ -9,6 +9,8 @@ package io.camunda.optimize.service.importing.processdefinition;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
+import static io.camunda.optimize.util.ZeebeBpmnModels.ACTIVATE_ELEMENTS;
+import static io.camunda.optimize.util.ZeebeBpmnModels.ADHOC_SUB_PROCESS;
 import static io.camunda.optimize.util.ZeebeBpmnModels.END_EVENT;
 import static io.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_CATCH;
 import static io.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_GATEWAY_CATCH;
@@ -20,7 +22,9 @@ import static io.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_START_INT_SUB_PROC
 import static io.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_START_NON_INT_SUB_PROCESS;
 import static io.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_THROW;
 import static io.camunda.optimize.util.ZeebeBpmnModels.START_EVENT;
+import static io.camunda.optimize.util.ZeebeBpmnModels.TASK;
 import static io.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
+import static io.camunda.optimize.util.ZeebeBpmnModels.createAdHocSubProcess;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createProcessWith83SignalEvents;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createSimpleUserTaskProcess;
@@ -296,6 +300,31 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
                         SIGNAL_INTERRUPTING_BOUNDARY,
                         SIGNAL_NON_INTERRUPTING_BOUNDARY,
                         SIGNAL_PROCESS_END));
+  }
+
+  @Test
+  public void importZeebeProcess_processContainsAdHocSubProcess() {
+    // given
+    final BpmnModelInstance adHocSubProcessModel =
+        createAdHocSubProcess(
+            "someProcess",
+            process ->
+                process.zeebeActiveElementsCollectionExpression(ACTIVATE_ELEMENTS).task(TASK));
+    zeebeExtension.deployProcess(adHocSubProcessModel).getBpmnProcessId();
+
+    // when
+    waitUntilNumberOfDefinitionsExported(1);
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
+        .singleElement()
+        .extracting(ProcessDefinitionOptimizeDto::getFlowNodeData)
+        .satisfies(
+            flowNodeDataDtos ->
+                assertThat(flowNodeDataDtos)
+                    .extracting(FlowNodeDataDto::getId)
+                    .contains(START_EVENT, ADHOC_SUB_PROCESS, TASK, END_EVENT));
   }
 
   // Test backwards compatibility for default tenantID applied when importing records pre multi
