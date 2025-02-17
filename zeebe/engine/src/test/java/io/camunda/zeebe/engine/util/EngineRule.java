@@ -30,6 +30,7 @@ import io.camunda.zeebe.engine.util.client.MessageCorrelationClient;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
 import io.camunda.zeebe.engine.util.client.PublishMessageClient;
 import io.camunda.zeebe.engine.util.client.ResourceDeletionClient;
+import io.camunda.zeebe.engine.util.client.ResourceFetchClient;
 import io.camunda.zeebe.engine.util.client.SignalClient;
 import io.camunda.zeebe.engine.util.client.UserClient;
 import io.camunda.zeebe.engine.util.client.UserTaskClient;
@@ -337,6 +338,10 @@ public final class EngineRule extends ExternalResource {
 
   public ResourceDeletionClient resourceDeletion() {
     return new ResourceDeletionClient(environmentRule);
+  }
+
+  public ResourceFetchClient resourceFetch() {
+    return new ResourceFetchClient(environmentRule);
   }
 
   public SignalClient signal() {
