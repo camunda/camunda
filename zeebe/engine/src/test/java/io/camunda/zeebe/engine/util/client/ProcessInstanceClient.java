@@ -37,6 +37,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
@@ -75,9 +76,11 @@ public final class ProcessInstanceClient {
                     .withIntent(ProcessInstanceCreationIntent.CREATE)
                     .withSourceRecordPosition(position)
                     .getFirst();
+    private static final int DEFAULT_PARTITION = 1;
 
     private final CommandWriter writer;
     private final ProcessInstanceCreationRecord processInstanceCreationRecord;
+    private int partition = DEFAULT_PARTITION;
 
     private Function<Long, Record<ProcessInstanceCreationRecordValue>> expectation =
         SUCCESS_EXPECTATION;
@@ -86,6 +89,11 @@ public final class ProcessInstanceClient {
       this.writer = writer;
       processInstanceCreationRecord = new ProcessInstanceCreationRecord();
       processInstanceCreationRecord.setBpmnProcessId(bpmnProcessId);
+    }
+
+    public ProcessInstanceCreationClient onPartition(final int partition) {
+      this.partition = partition;
+      return this;
     }
 
     public ProcessInstanceCreationClient withVersion(final int version) {
@@ -125,7 +133,13 @@ public final class ProcessInstanceClient {
 
     public long create() {
       final long position =
-          writer.writeCommand(ProcessInstanceCreationIntent.CREATE, processInstanceCreationRecord);
+          writer.writeCommandOnPartition(
+              partition,
+              r ->
+                  r.intent(ProcessInstanceCreationIntent.CREATE)
+                      .event(processInstanceCreationRecord)
+                      .requestId(new Random().nextLong())
+                      .requestStreamId(new Random().nextInt()));
 
       final var resultingRecord = expectation.apply(position);
       return resultingRecord.getValue().getProcessInstanceKey();
