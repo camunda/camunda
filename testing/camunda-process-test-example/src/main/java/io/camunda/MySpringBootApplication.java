@@ -16,8 +16,14 @@
 package io.camunda;
 
 import io.camunda.spring.client.annotation.Deployment;
+import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 @Deployment(resources = "classpath*:/bpmn/**/*.bpmn")
-public class MySpringBootApplication {}
+public class MySpringBootApplication {
+
+  public static void main(final String[] args) {
+    SpringApplication.run(MySpringBootApplication.class, args);
+  }
+}
