@@ -110,9 +110,9 @@ public class PermissionsService {
    * @return true if the user has the given permission for the decision
    */
   public boolean hasPermissionForDecision(
-      final String decisionId, final IdentityPermission identityPermission) {
+      final String decisionId, final PermissionType permissionType) {
     return hasPermissionForResource(
-        decisionId, AuthorizationResourceType.DECISION_DEFINITION, identityPermission);
+        decisionId, AuthorizationResourceType.DECISION_DEFINITION, permissionType);
   }
 
   /**

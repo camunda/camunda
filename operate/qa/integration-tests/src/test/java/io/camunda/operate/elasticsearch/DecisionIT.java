@@ -20,7 +20,6 @@ import io.camunda.operate.webapp.rest.DecisionRestService;
 import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
@@ -428,7 +427,8 @@ public class DecisionIT extends OperateAbstractIT {
     searchTestRule.persistNew(
         decision111, decisionReq1, decision112, decisionReq2, decision2, decision3);
 
-    when(permissionsService.hasPermissionForDecision(decisionId1, IdentityPermission.READ))
+    when(permissionsService.hasPermissionForDecision(
+            decisionId1, PermissionType.READ_DECISION_DEFINITION))
         .thenReturn(true);
 
     // when
