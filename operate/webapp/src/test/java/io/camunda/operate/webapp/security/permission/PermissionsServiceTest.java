@@ -124,7 +124,7 @@ public class PermissionsServiceTest {
   @Test
   public void testGetProcessesWithPermissionWithNullAuthentication() {
     final ResourcesAllowed res =
-        permissionsService.getProcessesWithPermission(IdentityPermission.READ);
+        permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION);
     final Set<String> resourceIds = res.getIds();
     assertThat(resourceIds.isEmpty()).isTrue();
   }

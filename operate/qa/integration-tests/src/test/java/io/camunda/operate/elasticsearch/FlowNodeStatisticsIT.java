@@ -24,7 +24,6 @@ import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
@@ -32,6 +31,7 @@ import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -167,7 +167,7 @@ public class FlowNodeStatisticsIT extends OperateAbstractIT {
 
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(IdentityPermission.READ))
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
 
     final MvcResult mvcResult = postRequest(QUERY_PROCESS_STATISTICS_URL, queryRequest);
@@ -197,7 +197,7 @@ public class FlowNodeStatisticsIT extends OperateAbstractIT {
 
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(IdentityPermission.READ))
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
 
     // then

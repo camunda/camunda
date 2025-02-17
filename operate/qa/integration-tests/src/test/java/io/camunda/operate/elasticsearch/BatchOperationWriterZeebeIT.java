@@ -67,7 +67,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
 
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(UPDATE))
+    when(permissionsService.getProcessesWithPermission(PermissionType.UPDATE_PROCESS_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
     final MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
 
@@ -80,7 +80,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void testBatchUpdateWithPermisssionWhenNotAllowed() throws Exception {
+  public void testBatchUpdateWithPermissionWhenNotAllowed() throws Exception {
     // given
     createData();
     final ListViewQueryDto query = createGetAllProcessInstancesQuery();
@@ -91,7 +91,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
 
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(UPDATE))
+    when(permissionsService.getProcessesWithPermission(PermissionType.UPDATE_PROCESS_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
     final MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
 
@@ -104,7 +104,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void testBatchUpdateWithPermisssionWhenSomeAllowed() throws Exception {
+  public void testBatchUpdateWithPermissionWhenSomeAllowed() throws Exception {
     // given
     createData();
     final ListViewQueryDto query = createGetAllProcessInstancesQuery();
@@ -115,7 +115,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
 
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(UPDATE))
+    when(permissionsService.getProcessesWithPermission(PermissionType.UPDATE_PROCESS_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(bpmnProcessId1)));
 
     final MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
@@ -129,7 +129,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void testBatchDeleteWithPermisssionWhenAllowed() throws Exception {
+  public void testBatchDeleteWithPermissionWhenAllowed() throws Exception {
     // given
     createData();
     final ListViewQueryDto query = createGetAllProcessInstancesQuery();
@@ -140,7 +140,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
 
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(DELETE))
+    when(permissionsService.getProcessesWithPermission(PermissionType.DELETE_PROCESS_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
 
     final MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
@@ -154,7 +154,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void testBatchDeleteWithPermisssionWhenNotAllowed() throws Exception {
+  public void testBatchDeleteWithPermissionWhenNotAllowed() throws Exception {
     // given
     createData();
     final ListViewQueryDto query = createGetAllProcessInstancesQuery();
@@ -165,7 +165,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
 
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(DELETE))
+    when(permissionsService.getProcessesWithPermission(PermissionType.DELETE_PROCESS_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
     final MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
 
@@ -178,7 +178,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void testBatchDeleteWithPermisssionWhenSomeAllowed() throws Exception {
+  public void testBatchDeleteWithPermissionWhenSomeAllowed() throws Exception {
     // given
     createData();
     final ListViewQueryDto query = createGetAllProcessInstancesQuery();
@@ -189,7 +189,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
 
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(DELETE))
+    when(permissionsService.getProcessesWithPermission(PermissionType.DELETE_PROCESS_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(bpmnProcessId1)));
     final MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
 

@@ -29,12 +29,12 @@ import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.time.format.DateTimeFormatter;
 import org.apache.commons.lang3.ArrayUtils;
 import org.elasticsearch.action.search.SearchRequest;
@@ -113,7 +113,8 @@ public class QueryHelper {
     if (!permissionsService.permissionsEnabled()) {
       return null;
     }
-    final var allowed = permissionsService.getProcessesWithPermission(IdentityPermission.READ);
+    final var allowed =
+        permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION);
     if (allowed == null) {
       return null;
     }

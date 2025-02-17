@@ -13,11 +13,11 @@ import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,7 +95,7 @@ public class ProcessInstanceReader {
     final Map<String, Long> statistics;
     if (permissionsService.permissionsEnabled()) {
       final PermissionsService.ResourcesAllowed allowed =
-          permissionsService.getProcessesWithPermission(IdentityPermission.READ);
+          permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION);
       statistics =
           processStore.getCoreStatistics(
               (allowed == null || allowed.isAll()) ? null : allowed.getIds());

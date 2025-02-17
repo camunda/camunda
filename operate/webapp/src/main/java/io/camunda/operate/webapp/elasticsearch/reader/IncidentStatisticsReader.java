@@ -24,13 +24,13 @@ import io.camunda.operate.webapp.rest.dto.ProcessRequestDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentByProcessStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -116,7 +116,8 @@ public class IncidentStatisticsReader extends AbstractReader
     if (permissionsService.permissionsEnabled()) {
       query =
           joinWithAnd(
-              ACTIVE_INCIDENT_QUERY, createQueryForProcessesByPermission(IdentityPermission.READ));
+              ACTIVE_INCIDENT_QUERY,
+              createQueryForProcessesByPermission(PermissionType.READ_PROCESS_DEFINITION));
     }
 
     final SearchRequest searchRequest =
@@ -275,7 +276,7 @@ public class IncidentStatisticsReader extends AbstractReader
    *
    * @return query that matches the processes for which the user has the given permission
    */
-  private QueryBuilder createQueryForProcessesByPermission(final IdentityPermission permission) {
+  private QueryBuilder createQueryForProcessesByPermission(final PermissionType permission) {
     final PermissionsService.ResourcesAllowed allowed =
         permissionsService.getProcessesWithPermission(permission);
     if (allowed == null) {

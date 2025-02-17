@@ -17,7 +17,6 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
@@ -25,6 +24,7 @@ import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForLi
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import io.camunda.webapps.schema.entities.operate.listview.VariableForListViewEntity;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
@@ -371,7 +371,7 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
   @Test
   public void testQueryProcessInstancesWithPermissions() {
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(IdentityPermission.READ))
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
         .thenReturn(
             PermissionsService.ResourcesAllowed.withIds(Set.of(activeProcess.getBpmnProcessId())));
 

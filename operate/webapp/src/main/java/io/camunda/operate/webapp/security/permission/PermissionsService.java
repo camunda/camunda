@@ -142,17 +142,6 @@ public class PermissionsService {
    * @return processes for which the user has the given permission; the result matches either all
    *     processes, or a list of bpmnProcessId
    */
-  public ResourcesAllowed getProcessesWithPermission(final IdentityPermission identityPermission) {
-    return getResourcesWithPermission(
-        AuthorizationResourceType.PROCESS_DEFINITION, identityPermission);
-  }
-
-  /**
-   * getProcessesWithPermission
-   *
-   * @return processes for which the user has the given permission; the result matches either all
-   *     processes, or a list of bpmnProcessId
-   */
   public ResourcesAllowed getProcessesWithPermission(final PermissionType permissionType) {
     return getResourcesWithPermission(AuthorizationResourceType.PROCESS_DEFINITION, permissionType);
   }
