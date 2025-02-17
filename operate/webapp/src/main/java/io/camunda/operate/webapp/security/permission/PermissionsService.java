@@ -9,8 +9,6 @@ package io.camunda.operate.webapp.security.permission;
 
 import io.camunda.authentication.entity.CamundaPrincipal;
 import io.camunda.authentication.entity.CamundaUser;
-import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.Authorization;
@@ -88,9 +86,9 @@ public class PermissionsService {
    * @return true if the user has the given permission for the process
    */
   public boolean hasPermissionForResource(
-      final Long deploymentKey, final IdentityPermission identityPermission) {
+      final Long deploymentKey, final PermissionType permissionType) {
     return hasPermissionForResource(
-        deploymentKey.toString(), AuthorizationResourceType.RESOURCE, identityPermission);
+        deploymentKey.toString(), AuthorizationResourceType.RESOURCE, permissionType);
   }
 
   /**
@@ -113,27 +111,6 @@ public class PermissionsService {
       final String decisionId, final PermissionType permissionType) {
     return hasPermissionForResource(
         decisionId, AuthorizationResourceType.DECISION_DEFINITION, permissionType);
-  }
-
-  /**
-   * hasPermissionForResource
-   *
-   * @return true if the user has the given permission for the resource
-   */
-  private boolean hasPermissionForResource(
-      final String resourceId,
-      final AuthorizationResourceType resourceType,
-      final IdentityPermission identityPermission) {
-    if (!permissionsEnabled()) {
-      return true;
-    }
-    if (!isAuthorized()) {
-      return false;
-    }
-
-    final PermissionType permissionType = getPermission(identityPermission);
-
-    return isAuthorizedFor(resourceId, resourceType, permissionType);
   }
 
   /**
@@ -265,15 +242,6 @@ public class PermissionsService {
         .roleKeys(authenticatedRoleKeys)
         .tenants(authorizedTenants)
         .build();
-  }
-
-  private PermissionType getPermission(final IdentityPermission permission) {
-    try {
-      return PermissionType.valueOf(permission.name());
-    } catch (final Exception ex) {
-      throw new OperateRuntimeException(
-          String.format("No PermissionType found for IdentityPermission [%s]", permission));
-    }
   }
 
   /** ResourcesAllowed */

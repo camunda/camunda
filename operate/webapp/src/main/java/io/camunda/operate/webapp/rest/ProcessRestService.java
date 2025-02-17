@@ -18,7 +18,6 @@ import io.camunda.operate.webapp.rest.dto.ProcessDto;
 import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
 import io.camunda.operate.webapp.rest.dto.ProcessRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
@@ -97,7 +96,7 @@ public class ProcessRestService extends InternalAPIErrorController {
   private void checkIdentityDeletePermission(final Long processDefinitionKey) {
     if (permissionsService.permissionsEnabled()
         && !permissionsService.hasPermissionForResource(
-            processDefinitionKey, IdentityPermission.DELETE_PROCESS)) {
+            processDefinitionKey, PermissionType.DELETE_PROCESS)) {
       throw new NotAuthorizedException(
           String.format("No delete permission for process definition %s", processDefinitionKey));
     }

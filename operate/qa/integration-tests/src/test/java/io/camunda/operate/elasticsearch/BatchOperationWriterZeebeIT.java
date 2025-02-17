@@ -20,7 +20,6 @@ import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
@@ -45,8 +44,6 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
 
   private static final String QUERY_CREATE_BATCH_OPERATIONS_URL =
       ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/batch-operation";
-  private static final IdentityPermission UPDATE = IdentityPermission.UPDATE_PROCESS_INSTANCE;
-  private static final IdentityPermission DELETE = IdentityPermission.DELETE_PROCESS_INSTANCE;
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
   private final String bpmnProcessId1 = "bpmnProcessId1";
   private final String bpmnProcessId2 = "bpmnProcessId2";
