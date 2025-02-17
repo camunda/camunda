@@ -23,6 +23,7 @@ import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -87,7 +88,7 @@ public class ProcessRestService extends InternalAPIErrorController {
   private void checkIdentityReadPermission(final String bpmnProcessId) {
     if (permissionsService.permissionsEnabled()
         && !permissionsService.hasPermissionForProcess(
-            bpmnProcessId, IdentityPermission.READ_PROCESS_DEFINITION)) {
+            bpmnProcessId, PermissionType.READ_PROCESS_DEFINITION)) {
       throw new NotAuthorizedException(
           String.format("No read permission for process %s", bpmnProcessId));
     }

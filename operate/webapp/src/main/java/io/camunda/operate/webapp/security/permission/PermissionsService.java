@@ -99,9 +99,9 @@ public class PermissionsService {
    * @return true if the user has the given permission for the process
    */
   public boolean hasPermissionForProcess(
-      final String bpmnProcessId, final IdentityPermission identityPermission) {
+      final String bpmnProcessId, final PermissionType permissionType) {
     return hasPermissionForResource(
-        bpmnProcessId, AuthorizationResourceType.PROCESS_DEFINITION, identityPermission);
+        bpmnProcessId, AuthorizationResourceType.PROCESS_DEFINITION, permissionType);
   }
 
   /**
@@ -137,6 +137,24 @@ public class PermissionsService {
   }
 
   /**
+   * hasPermissionForResource
+   *
+   * @return true if the user has the given permission for the resource
+   */
+  private boolean hasPermissionForResource(
+      final String resourceId,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType) {
+    if (!permissionsEnabled()) {
+      return true;
+    }
+    if (!isAuthorized()) {
+      return false;
+    }
+    return isAuthorizedFor(resourceId, resourceType, permissionType);
+  }
+
+  /**
    * getProcessesWithPermission
    *
    * @return processes for which the user has the given permission; the result matches either all
@@ -155,18 +173,6 @@ public class PermissionsService {
   public ResourcesAllowed getDecisionsWithPermission(final PermissionType permissionType) {
     return getResourcesWithPermission(
         AuthorizationResourceType.DECISION_DEFINITION, permissionType);
-  }
-
-  /**
-   * getResourcesWithPermission
-   *
-   * @return resources for which the user has the given permission; the result matches either all
-   *     resources, or a list of resourceIds
-   */
-  private ResourcesAllowed getResourcesWithPermission(
-      final AuthorizationResourceType resourceType, final IdentityPermission identityPermission) {
-    final PermissionType permissionType = getPermission(identityPermission);
-    return getResourcesWithPermission(resourceType, permissionType);
   }
 
   /**

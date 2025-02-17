@@ -25,9 +25,9 @@ import io.camunda.operate.webapp.rest.FlowNodeInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,7 +72,7 @@ public class FlowNodeInstanceRestServiceIT extends OperateAbstractIT {
 
     when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, IdentityPermission.READ_PROCESS_INSTANCE))
+            bpmnProcessId, PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(false);
     final MvcResult mvcResult =
         postRequestShouldFailWithNoAuthorization(FLOW_NODE_INSTANCE_URL, requestDto);
@@ -98,7 +98,7 @@ public class FlowNodeInstanceRestServiceIT extends OperateAbstractIT {
         .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
     when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, IdentityPermission.READ_PROCESS_INSTANCE))
+            bpmnProcessId, PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(true);
     when(flowNodeInstanceReader.getFlowNodeInstances(requestDto)).thenReturn(new LinkedHashMap<>());
     final MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, requestDto);
