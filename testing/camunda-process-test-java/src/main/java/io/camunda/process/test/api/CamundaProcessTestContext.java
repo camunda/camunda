@@ -44,9 +44,9 @@ public interface CamundaProcessTestContext {
   CamundaClient createClient(final Consumer<CamundaClientBuilder> modifier);
 
   /**
-   * Creates a new preconfigured Camunda client that is managed by the runtime.
+   * Creates a new preconfigured Zeebe client that is managed by the runtime.
    *
-   * @return a new Camunda client
+   * @return a new Zeebe client
    * @deprecated used to keep compatibility with the Zeebe client injection
    */
   @Deprecated
