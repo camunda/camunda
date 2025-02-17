@@ -27,6 +27,7 @@ import {
   TableToolbarContent,
   TableToolbarSearch,
   Pagination,
+  Tooltip,
 } from "@carbon/react";
 import useDebounce from "react-debounced";
 import styled from "styled-components";
@@ -44,6 +45,10 @@ const ToolbarMultiSelect = styled(MultiSelect)`
 
 const StyledTableCell = styled(TableCell)<{ $isClickable?: boolean }>`
   cursor: ${({ $isClickable }) => ($isClickable ? "pointer" : "auto")};
+`;
+
+const TooltipTrigger = styled.button`
+  all: unset;
 `;
 
 type HandleExpand = (event: unknown, shouldExpand: boolean) => void;
@@ -133,6 +138,7 @@ type EntityListProps<D extends EntityData> = (
 const MAX_ICON_ACTIONS = 2;
 const PAGINATION_HIDE_LIMIT = 25;
 const PAGINATION_MAX_PAGE_SIZE = 15;
+const MAX_DISPLAY_CELL_LENGTH = 20;
 
 const EntityList = <D extends EntityData>({
   title,
@@ -377,19 +383,44 @@ const EntityList = <D extends EntityData>({
                             }}
                           />
                         )}
-                        {cells.map(({ id: cellId, value }, index) => (
-                          <StyledTableCell
-                            key={cellId}
-                            onClick={handleEntityClick(rowId)}
-                            $isClickable={isEntityClickable}
-                          >
-                            {index === 0 && isEntityClickable ? (
-                              <Link>{value}</Link>
+                        {cells.map(({ id: cellId, value }, index) => {
+                          const displayValue = Array.isArray(value)
+                            ? value.join(", ")
+                            : value;
+
+                          const truncatedValue =
+                            displayValue &&
+                            displayValue.toString().length >
+                              MAX_DISPLAY_CELL_LENGTH ? (
+                              <Tooltip
+                                label={displayValue}
+                                autoAlign
+                                align="bottom"
+                              >
+                                <TooltipTrigger>
+                                  {displayValue
+                                    .substring(0, MAX_DISPLAY_CELL_LENGTH)
+                                    .concat("…")}
+                                </TooltipTrigger>
+                              </Tooltip>
                             ) : (
-                              value
-                            )}
-                          </StyledTableCell>
-                        ))}
+                              displayValue
+                            );
+
+                          return (
+                            <StyledTableCell
+                              key={cellId}
+                              onClick={handleEntityClick(rowId)}
+                              $isClickable={isEntityClickable}
+                            >
+                              {index === 0 && isEntityClickable ? (
+                                <Link>{displayValue}</Link>
+                              ) : (
+                                truncatedValue
+                              )}
+                            </StyledTableCell>
+                          );
+                        })}
                         {hasMenu && (
                           <TableCell>
                             {menuItems?.length > MAX_ICON_ACTIONS ? (
