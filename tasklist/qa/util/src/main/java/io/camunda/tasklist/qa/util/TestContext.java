@@ -17,7 +17,6 @@ public class TestContext<T extends TestContext<T>> {
 
   private File zeebeDataFolder;
   private Network network;
-  private boolean allowUnauthenticatedApiAccess;
 
   private String internalPostgresHost;
   private Integer internalPostgresPort;
@@ -342,15 +341,5 @@ public class TestContext<T extends TestContext<T>> {
 
   public String getExternalIdentityBaseUrl() {
     return String.format("http://%s:%d", externalIdentityHost, externalIdentityPort);
-  }
-
-  public boolean getAllowUnauthenticatedApiAccess() {
-    return allowUnauthenticatedApiAccess;
-  }
-
-  public TestContext<T> setAllowUnauthenticatedApiAccess(
-      final boolean allowUnauthenticatedApiAccess) {
-    this.allowUnauthenticatedApiAccess = allowUnauthenticatedApiAccess;
-    return this;
   }
 }

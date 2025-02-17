@@ -45,7 +45,7 @@ public class StartupIT {
 
   @Test
   public void testDockerWithNonRootUser() {
-    testContext = new TestContext().setAllowUnauthenticatedApiAccess(true);
+    testContext = new TestContext();
     testContainerUtil.startElasticsearch(testContext);
 
     testContainerUtil.startZeebe(
