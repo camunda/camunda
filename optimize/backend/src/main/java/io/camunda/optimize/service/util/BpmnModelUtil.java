@@ -9,6 +9,13 @@ package io.camunda.optimize.service.util;
 
 import io.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.BaseElement;
+import io.camunda.zeebe.model.bpmn.instance.FlowNode;
+import io.camunda.zeebe.model.bpmn.instance.Process;
+import io.camunda.zeebe.model.bpmn.instance.SubProcess;
+import io.camunda.zeebe.model.bpmn.instance.UserTask;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -27,13 +34,6 @@ import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.bpmn.instance.BaseElement;
-import org.camunda.bpm.model.bpmn.instance.FlowNode;
-import org.camunda.bpm.model.bpmn.instance.Process;
-import org.camunda.bpm.model.bpmn.instance.SubProcess;
-import org.camunda.bpm.model.bpmn.instance.UserTask;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
