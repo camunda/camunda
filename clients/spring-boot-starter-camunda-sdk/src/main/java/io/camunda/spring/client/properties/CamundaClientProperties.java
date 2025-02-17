@@ -325,6 +325,7 @@ public class CamundaClientProperties {
 
   public enum ClientMode {
     selfManaged,
-    saas
+    saas,
+    basic
   }
 }
