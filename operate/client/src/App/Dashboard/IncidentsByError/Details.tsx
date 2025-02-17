@@ -20,12 +20,13 @@ import {observer} from 'mobx-react';
 
 type Props = {
   errorMessage: string;
+  incidentErrorHashCode: number;
   processes: ProcessDto[];
   tabIndex?: number;
 };
 
 const Details: React.FC<Props> = observer(
-  ({errorMessage, processes, tabIndex}) => {
+  ({errorMessage, incidentErrorHashCode, processes, tabIndex}) => {
     const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
     return (
       <ul>
@@ -43,6 +44,7 @@ const Details: React.FC<Props> = observer(
                   process: item.bpmnProcessId,
                   version: item.version.toString(),
                   errorMessage: truncateErrorMessage(errorMessage),
+                  incidentErrorHashCode,
                   incidents: true,
                   ...(isMultiTenancyEnabled
                     ? {
