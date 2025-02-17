@@ -41,6 +41,7 @@ public class LinkedResourcesTransformer {
     linkedResource.setLinkName(zeebeLinkedResource.getLinkName());
     linkedResource.setResourceType(zeebeLinkedResource.getResourceType());
     linkedResource.setBindingType(zeebeLinkedResource.getBindingType());
+    linkedResource.setVersionTag(zeebeLinkedResource.getVersionTag());
     return linkedResource;
   }
 }
