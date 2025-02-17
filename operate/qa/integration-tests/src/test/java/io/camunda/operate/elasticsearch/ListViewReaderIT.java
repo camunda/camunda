@@ -371,7 +371,7 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
   @Test
   public void testQueryProcessInstancesWithPermissions() {
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(
             PermissionsService.ResourcesAllowed.withIds(Set.of(activeProcess.getBpmnProcessId())));
 
