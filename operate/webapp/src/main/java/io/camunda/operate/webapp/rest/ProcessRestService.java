@@ -47,7 +47,8 @@ public class ProcessRestService extends InternalAPIErrorController {
   public String getProcessDiagram(@PathVariable("id") final String processId) {
     final Long processDefinitionKey = Long.valueOf(processId);
     final ProcessEntity processEntity = processReader.getProcess(processDefinitionKey);
-    checkIdentityReadPermission(processEntity.getBpmnProcessId());
+    checkIdentityReadPermission(
+        processEntity.getBpmnProcessId(), PermissionType.READ_PROCESS_DEFINITION);
     return processReader.getDiagram(processDefinitionKey);
   }
 
@@ -55,7 +56,8 @@ public class ProcessRestService extends InternalAPIErrorController {
   @GetMapping(path = "/{id}")
   public ProcessDto getProcess(@PathVariable("id") final String processId) {
     final ProcessEntity processEntity = processReader.getProcess(Long.valueOf(processId));
-    checkIdentityReadPermission(processEntity.getBpmnProcessId());
+    checkIdentityReadPermission(
+        processEntity.getBpmnProcessId(), PermissionType.READ_PROCESS_INSTANCE);
     return DtoCreator.create(processEntity, ProcessDto.class);
   }
 
@@ -84,10 +86,10 @@ public class ProcessRestService extends InternalAPIErrorController {
     return batchOperationWriter.scheduleDeleteProcessDefinition(processEntity);
   }
 
-  private void checkIdentityReadPermission(final String bpmnProcessId) {
+  private void checkIdentityReadPermission(
+      final String bpmnProcessId, final PermissionType permissionType) {
     if (permissionsService.permissionsEnabled()
-        && !permissionsService.hasPermissionForProcess(
-            bpmnProcessId, PermissionType.READ_PROCESS_DEFINITION)) {
+        && !permissionsService.hasPermissionForProcess(bpmnProcessId, permissionType)) {
       throw new NotAuthorizedException(
           String.format("No read permission for process %s", bpmnProcessId));
     }

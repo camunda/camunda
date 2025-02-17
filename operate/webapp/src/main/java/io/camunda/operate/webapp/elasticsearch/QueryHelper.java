@@ -114,7 +114,7 @@ public class QueryHelper {
       return null;
     }
     final var allowed =
-        permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION);
+        permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE);
     if (allowed == null) {
       return null;
     }

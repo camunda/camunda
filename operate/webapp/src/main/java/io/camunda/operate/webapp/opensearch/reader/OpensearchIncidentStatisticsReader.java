@@ -98,7 +98,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
             ? ACTIVE_INCIDENT_QUERY
             : and(
                 ACTIVE_INCIDENT_QUERY,
-                createQueryForProcessesByPermission(PermissionType.READ_PROCESS_DEFINITION));
+                createQueryForProcessesByPermission(PermissionType.READ_PROCESS_INSTANCE));
 
     final var uniqueProcessInstances =
         cardinalityAggregation(IncidentTemplate.PROCESS_INSTANCE_KEY);

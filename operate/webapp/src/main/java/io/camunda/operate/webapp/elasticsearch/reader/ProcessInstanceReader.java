@@ -95,7 +95,7 @@ public class ProcessInstanceReader {
     final Map<String, Long> statistics;
     if (permissionsService.permissionsEnabled()) {
       final PermissionsService.ResourcesAllowed allowed =
-          permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION);
+          permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE);
       statistics =
           processStore.getCoreStatistics(
               (allowed == null || allowed.isAll()) ? null : allowed.getIds());

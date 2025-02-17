@@ -117,7 +117,7 @@ public class IncidentStatisticsReader extends AbstractReader
       query =
           joinWithAnd(
               ACTIVE_INCIDENT_QUERY,
-              createQueryForProcessesByPermission(PermissionType.READ_PROCESS_DEFINITION));
+              createQueryForProcessesByPermission(PermissionType.READ_PROCESS_INSTANCE));
     }
 
     final SearchRequest searchRequest =
