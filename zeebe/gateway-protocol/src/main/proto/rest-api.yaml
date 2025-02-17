@@ -7397,8 +7397,8 @@ components:
         tenantId:
           description: The tenant ID of the form.
           type: string
-        bpmnId:
-          description: The BPMN ID of the form.
+        formId:
+          description: The user-provided identifier of the form.
           type: string
         schema:
           description: The form content.
@@ -7408,7 +7408,7 @@ components:
           type: integer
           format: int64
         formKey:
-          description: The key of the form.
+          description: The assigned key, which acts as a unique identifier for this form.
           type: string
   responses:
     InternalServerError:
