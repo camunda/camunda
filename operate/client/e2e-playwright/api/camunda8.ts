@@ -12,7 +12,7 @@ const camunda8 = new Camunda8({
   CAMUNDA_OAUTH_DISABLED: true,
   CAMUNDA_SECURE_CONNECTION: false,
   ZEEBE_REST_ADDRESS:
-    process.env.ZEEBE_REST_GATEWAY_ADDRESS || 'http://localhost:8086',
+    process.env.ZEEBE_REST_GATEWAY_ADDRESS || 'http://localhost:8080',
   ZEEBE_ADDRESS: process.env.ZEEBE_GATEWAY_ADDRESS || 'localhost:26500',
 });
 
