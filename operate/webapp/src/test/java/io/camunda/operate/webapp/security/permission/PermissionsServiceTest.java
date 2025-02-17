@@ -13,7 +13,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.CamundaUser;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService.ResourcesAllowed;
 import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.search.entities.RoleEntity;
@@ -132,7 +131,7 @@ public class PermissionsServiceTest {
   @Test
   public void testGetDecisionsWithPermissionWithNullAuthentication() {
     final ResourcesAllowed res =
-        permissionsService.getDecisionsWithPermission(IdentityPermission.READ);
+        permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE);
     final Set<String> resourceIds = res.getIds();
     assertThat(resourceIds.isEmpty()).isTrue();
   }

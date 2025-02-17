@@ -152,9 +152,9 @@ public class PermissionsService {
    * @return decisions for which the user has the given permission; the result matches either all
    *     decisions, or a list of decisionId
    */
-  public ResourcesAllowed getDecisionsWithPermission(final IdentityPermission identityPermission) {
+  public ResourcesAllowed getDecisionsWithPermission(final PermissionType permissionType) {
     return getResourcesWithPermission(
-        AuthorizationResourceType.DECISION_DEFINITION, identityPermission);
+        AuthorizationResourceType.DECISION_DEFINITION, permissionType);
   }
 
   /**
