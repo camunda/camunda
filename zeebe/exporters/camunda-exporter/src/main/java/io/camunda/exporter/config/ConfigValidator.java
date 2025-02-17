@@ -67,7 +67,7 @@ public final class ConfigValidator {
               numberOfReplicas));
     }
 
-    final String minimumAge = configuration.getRetention().getMinimumAge();
+    final String minimumAge = configuration.getArchiver().getRetention().getMinimumAge();
     if (minimumAge != null && !CHECKER_MIN_AGE.test(minimumAge)) {
       throw new ExporterException(
           String.format(

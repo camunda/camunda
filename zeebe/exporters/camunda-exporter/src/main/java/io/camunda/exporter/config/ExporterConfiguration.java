@@ -16,7 +16,6 @@ public class ExporterConfiguration {
   private ConnectConfiguration connect = new ConnectConfiguration();
   private IndexSettings index = new IndexSettings();
   private BulkConfiguration bulk = new BulkConfiguration();
-  private RetentionConfiguration retention = new RetentionConfiguration();
   private ArchiverConfiguration archiver = new ArchiverConfiguration();
   private CacheConfiguration processCache = new CacheConfiguration();
   private CacheConfiguration formCache = new CacheConfiguration();
@@ -46,22 +45,6 @@ public class ExporterConfiguration {
 
   public void setBulk(final BulkConfiguration bulk) {
     this.bulk = bulk;
-  }
-
-  public RetentionConfiguration getRetention() {
-    return retention;
-  }
-
-  public void setRetention(final RetentionConfiguration retention) {
-    this.retention = retention;
-  }
-
-  public ArchiverConfiguration getArchiver() {
-    return archiver;
-  }
-
-  public void setArchiver(final ArchiverConfiguration archiver) {
-    this.archiver = archiver;
   }
 
   public CacheConfiguration getProcessCache() {
@@ -104,6 +87,14 @@ public class ExporterConfiguration {
     this.notifier = notifier;
   }
 
+  public ArchiverConfiguration getArchiver() {
+    return archiver;
+  }
+
+  public void setArchiver(final ArchiverConfiguration archiver) {
+    this.archiver = archiver;
+  }
+
   @Override
   public String toString() {
     return "ExporterConfiguration{"
@@ -113,12 +104,10 @@ public class ExporterConfiguration {
         + index
         + ", bulk="
         + bulk
-        + ", retention="
-        + retention
-        + ", createSchema="
-        + createSchema
         + ", archiver="
         + archiver
+        + ", createSchema="
+        + createSchema
         + ", processCache="
         + processCache
         + ", formCache="
@@ -298,6 +287,7 @@ public class ExporterConfiguration {
     private String waitPeriodBeforeArchiving = "1h";
     private int delayBetweenRuns = 2000;
     private int maxDelayBetweenRuns = 60000;
+    private RetentionConfiguration retention = new RetentionConfiguration();
 
     public boolean isRolloverEnabled() {
       return rolloverEnabled;
@@ -333,6 +323,14 @@ public class ExporterConfiguration {
 
     public void setRolloverBatchSize(final int rolloverBatchSize) {
       this.rolloverBatchSize = rolloverBatchSize;
+    }
+
+    public RetentionConfiguration getRetention() {
+      return retention;
+    }
+
+    public void setRetention(final RetentionConfiguration retention) {
+      this.retention = retention;
     }
 
     public String getWaitPeriodBeforeArchiving() {
@@ -379,6 +377,8 @@ public class ExporterConfiguration {
           + delayBetweenRuns
           + ", maxDelayBetweenRuns="
           + maxDelayBetweenRuns
+          + ", retention="
+          + retention
           + '}';
     }
   }
