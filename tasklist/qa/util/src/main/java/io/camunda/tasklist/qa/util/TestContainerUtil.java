@@ -8,7 +8,6 @@
 package io.camunda.tasklist.qa.util;
 
 import com.github.dockerjava.api.model.Bind;
-import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.util.RetryOperation;
 import io.zeebe.containers.ZeebeContainer;
@@ -532,10 +531,6 @@ public class TestContainerUtil {
             "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX",
             testContext.getZeebeIndexPrefix());
       }
-    }
-    if (testContext.getAllowUnauthenticatedApiAccess()) {
-      zeebeBroker.withEnv(
-          AuthenticationProperties.getAllowUnauthenticatedApiAccessEnvVar(), "true");
     }
   }
 

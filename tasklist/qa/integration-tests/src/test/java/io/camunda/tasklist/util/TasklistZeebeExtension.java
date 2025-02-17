@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.util;
 
-import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.client.CamundaClient;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -143,7 +142,6 @@ public abstract class TasklistZeebeExtension
             .withEnv("ZEEBE_CLOCK_CONTROLLED", "true")
             .withEnv("ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", "2")
             .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
-            .withEnv(AuthenticationProperties.getAllowUnauthenticatedApiAccessEnvVar(), "true")
             .withEnv(
                 "JAVA_OPTS",
                 "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005");
