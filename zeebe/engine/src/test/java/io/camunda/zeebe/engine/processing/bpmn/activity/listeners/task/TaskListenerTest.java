@@ -2270,14 +2270,14 @@ public class TaskListenerTest {
     // when
     ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("merry").assign();
 
-    // then
+    // then: the first listener job receives `changedAttributes` header with only "assignee"
     assertActivatedJob(
         processInstanceKey,
         listenerType,
         job ->
             assertThat(job.getCustomHeaders())
                 .describedAs(
-                    "Expect the first listener job to receive `changedAttributes` header containing only 'assignee' as the only changed attribute at this stage.")
+                    "Expect first listener job to receive `changedAttributes` header containing only 'assignee' since it is the only field changed by the ASSIGN command.")
                 .containsEntry(
                     Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME, "[\"assignee\"]"));
 
@@ -2289,12 +2289,23 @@ public class TaskListenerTest {
         .withResult(
             new JobResult()
                 .setCorrections(
-                    new JobResultCorrections()
-                        .setAssignee("pippin")
-                        .setDueDate("corrected_due_date")
-                        .setPriority(84))
-                .setCorrectedAttributes(List.of("assignee", "dueDate", "priority")))
+                    new JobResultCorrections().setDueDate("corrected_due_date").setPriority(84))
+                .setCorrectedAttributes(List.of("dueDate", "priority")))
         .complete();
+
+    // then: the second listener job receives cumulative changes from assignment and corrections
+    assertActivatedJob(
+        processInstanceKey,
+        listenerType + "_2",
+        job ->
+            assertThat(job.getCustomHeaders())
+                .describedAs(
+                    "Expect second listener job to receive `changedAttributes` header reflecting "
+                        + "cumulative changes from the assignment transition ('assignee') and first listener "
+                        + "corrections ('dueDate' and 'priority').")
+                .containsEntry(
+                    Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME,
+                    "[\"assignee\",\"dueDate\",\"priority\"]"));
 
     // when: second listener resets the `assignee` and `priority` to their initial user task values
     // before the task assignment
@@ -2310,6 +2321,18 @@ public class TaskListenerTest {
                         .setPriority(initialPriority))
                 .setCorrectedAttributes(List.of("assignee", "priority")))
         .complete();
+
+    // then: the third listener job sees only `dueDate` as changed after 2nd listener resets fields
+    assertActivatedJob(
+        processInstanceKey,
+        listenerType + "_3",
+        job ->
+            assertThat(job.getCustomHeaders())
+                .describedAs(
+                    "Expect third listener job to receive `changedAttributes` header containing "
+                        + "only 'dueDate' because the second listener reset 'assignee' and 'priority' "
+                        + "back to their original values, leaving 'dueDate' as the only remaining change.")
+                .containsEntry(Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME, "[\"dueDate\"]"));
 
     // when: third listener corrects the `candidateGroupsList`
     ENGINE
@@ -2335,9 +2358,8 @@ public class TaskListenerTest {
             tuple(UserTaskIntent.CREATED, List.of()),
             tuple(UserTaskIntent.ASSIGN, List.of()),
             tuple(UserTaskIntent.ASSIGNING, List.of("assignee")),
-            tuple(
-                UserTaskIntent.COMPLETE_TASK_LISTENER, List.of("assignee", "dueDate", "priority")),
-            tuple(UserTaskIntent.CORRECTED, List.of("assignee", "dueDate", "priority")),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, List.of("dueDate", "priority")),
+            tuple(UserTaskIntent.CORRECTED, List.of("dueDate", "priority")),
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, List.of("assignee", "priority")),
             tuple(UserTaskIntent.CORRECTED, List.of("assignee", "priority")),
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, List.of("candidateGroupsList")),
@@ -2415,16 +2437,33 @@ public class TaskListenerTest {
                     // without `candidateUsersList` as it was updated to the same as initial value
                     "[\"candidateGroupsList\",\"dueDate\",\"priority\"]"));
 
-    // when: first listener corrects `dueDate`
+    // when: first listener corrects `dueDate` and `followUpDate` attributes
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
         .withType(listenerType)
         .withResult(
             new JobResult()
-                .setCorrections(new JobResultCorrections().setDueDate("corrected_due_date"))
-                .setCorrectedAttributes(List.of("dueDate")))
+                .setCorrections(
+                    new JobResultCorrections()
+                        .setDueDate("corrected_due_date")
+                        .setFollowUpDate("corrected_follow_up_date"))
+                .setCorrectedAttributes(List.of("dueDate", "followUpDate")))
         .complete();
+
+    // then: the second listener job receives cumulative changes from update and listener correction
+    assertActivatedJob(
+        processInstanceKey,
+        listenerType + "_2",
+        job ->
+            assertThat(job.getCustomHeaders())
+                .describedAs(
+                    "Expect second listener job to receive `changedAttributes` header reflecting "
+                        + "cumulative changes from the UPDATE command ('candidateGroupsList', 'dueDate', 'priority') "
+                        + "and first listener correction ('dueDate', 'followUpDate').")
+                .containsEntry(
+                    Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME,
+                    "[\"candidateGroupsList\",\"dueDate\",\"followUpDate\",\"priority\"]"));
 
     // when: second listener resets `priority` back to the initial user task value
     ENGINE
@@ -2436,6 +2475,19 @@ public class TaskListenerTest {
                 .setCorrections(new JobResultCorrections().setPriority(initialPriority))
                 .setCorrectedAttributes(List.of("priority")))
         .complete();
+
+    // then: the third listener job sees only `candidateGroupsList` and `assignee` as changed
+    assertActivatedJob(
+        processInstanceKey,
+        listenerType + "_3",
+        job ->
+            assertThat(job.getCustomHeaders())
+                .describedAs(
+                    "Expect third listener job to receive `changedAttributes` header without "
+                        + "'priority' because the second listener reset it to its initial value.")
+                .containsEntry(
+                    Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME,
+                    "[\"candidateGroupsList\",\"dueDate\",\"followUpDate\"]"));
 
     // when: third listener corrects `candidateGroupsList` and `assignee`
     ENGINE
@@ -2464,18 +2516,20 @@ public class TaskListenerTest {
                 UserTaskIntent.UPDATE,
                 List.of("candidateGroupsList", "candidateUsersList", "dueDate", "priority")),
             tuple(UserTaskIntent.UPDATING, List.of("candidateGroupsList", "dueDate", "priority")),
-            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, List.of("dueDate")),
-            tuple(UserTaskIntent.CORRECTED, List.of("dueDate")),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, List.of("dueDate", "followUpDate")),
+            tuple(UserTaskIntent.CORRECTED, List.of("dueDate", "followUpDate")),
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, List.of("priority")),
             tuple(UserTaskIntent.CORRECTED, List.of("priority")),
             tuple(
                 UserTaskIntent.COMPLETE_TASK_LISTENER, List.of("candidateGroupsList", "assignee")),
             tuple(UserTaskIntent.CORRECTED, List.of("candidateGroupsList", "assignee")),
-            // As a result, `changedAttributes` in UPDATED record contains only `assignee`,
-            // `dueDate` and `candidateGroupsList` because these are the only properties that differ
-            // from the user task values before update. All other properties were either unchanged
-            // or reset to their initial values before finalizing update transition.
-            tuple(UserTaskIntent.UPDATED, List.of("assignee", "candidateGroupsList", "dueDate")));
+            // As a result, `changedAttributes` in UPDATED record contains `assignee`, `dueDate`,
+            // `followUpDate` and `candidateGroupsList` because these are the only properties that
+            // differ from the user task values before update. All other properties were either
+            // unchanged or reset to their initial values before finalizing update transition.
+            tuple(
+                UserTaskIntent.UPDATED,
+                List.of("assignee", "candidateGroupsList", "dueDate", "followUpDate")));
 
     final var updatedUserTaskValue =
         RecordingExporter.userTaskRecords(UserTaskIntent.UPDATED)
@@ -2484,17 +2538,16 @@ public class TaskListenerTest {
             .getValue();
 
     Assertions.assertThat(updatedUserTaskValue)
-        .describedAs("Expect to be unchanged")
-        .hasFollowUpDate("")
-        .describedAs("Expect to be reset to the initial value")
+        .describedAs("Expect to be unchanged as `priority` was reset to the initial value")
         .hasPriority(initialPriority)
         .describedAs("Expect to be updated or corrected")
         .hasAssignee("frodo")
         .hasDueDate("corrected_due_date")
+        .hasFollowUpDate("corrected_follow_up_date")
         .hasCandidateGroupsList("hobbits")
         .describedAs(
             "Expect only attributes that were updated or corrected and remain different from pre-update task values")
-        .hasOnlyChangedAttributes("assignee", "candidateGroupsList", "dueDate")
+        .hasOnlyChangedAttributes("assignee", "candidateGroupsList", "dueDate", "followUpDate")
         .hasAction("update");
   }
 
@@ -2537,6 +2590,19 @@ public class TaskListenerTest {
                 .setCorrectedAttributes(List.of("candidateGroupsList", "priority")))
         .complete();
 
+    // then: the second listener job receives cumulative changes from first listener correction
+    assertActivatedJob(
+        processInstanceKey,
+        listenerType + "_2",
+        job ->
+            assertThat(job.getCustomHeaders())
+                .describedAs(
+                    "Expect second listener job to receive `changedAttributes` header reflecting "
+                        + "changes from first listener correction ('candidateGroupsList', 'priority').")
+                .containsEntry(
+                    Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME,
+                    "[\"candidateGroupsList\",\"priority\"]"));
+
     // when: second listener clears `assignee`
     ENGINE
         .job()
@@ -2547,6 +2613,20 @@ public class TaskListenerTest {
                 .setCorrections(new JobResultCorrections().setAssignee("")) // unassign task
                 .setCorrectedAttributes(List.of("assignee")))
         .complete();
+
+    // then: the third listener job receives cumulative changes from 2 listener corrections
+    assertActivatedJob(
+        processInstanceKey,
+        listenerType + "_3",
+        job ->
+            assertThat(job.getCustomHeaders())
+                .describedAs(
+                    "Expect third listener job to receive `changedAttributes` header containing "
+                        + "'assignee', 'candidateGroupsList', and 'priority' as cumulative changes "
+                        + "from first and second listener corrections.")
+                .containsEntry(
+                    Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME,
+                    "[\"assignee\",\"candidateGroupsList\",\"priority\"]"));
 
     // when: third listener modifies `dueDate` and resets `priority` to the default value
     ENGINE
