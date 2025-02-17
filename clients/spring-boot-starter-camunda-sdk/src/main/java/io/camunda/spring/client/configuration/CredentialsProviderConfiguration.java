@@ -22,7 +22,6 @@ import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.spring.client.properties.CamundaClientProperties;
-import io.camunda.spring.client.properties.CamundaClientProperties.ClientMode;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,11 +40,10 @@ public class CredentialsProviderConfiguration {
   @ConditionalOnMissingBean
   public CredentialsProvider camundaClientCredentialsProvider(
       final CamundaClientProperties camundaClientProperties) {
-    if (camundaClientProperties.getMode() == ClientMode.basic) {
-      return buildBasicAuthCredentialsProvider(camundaClientProperties);
-    } else {
-      return buildOAuthCredentialsProvider(camundaClientProperties);
-    }
+    return switch (camundaClientProperties.getMode()) {
+      case basic -> buildBasicAuthCredentialsProvider(camundaClientProperties);
+      case saas, selfManaged -> buildOAuthCredentialsProvider(camundaClientProperties);
+    };
   }
 
   private CredentialsProvider buildBasicAuthCredentialsProvider(
