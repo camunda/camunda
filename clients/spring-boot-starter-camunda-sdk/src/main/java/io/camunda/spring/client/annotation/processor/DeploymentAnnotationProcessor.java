@@ -20,6 +20,7 @@ import static io.camunda.spring.client.annotation.AnnotationUtil.isDeployment;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
+import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.spring.client.annotation.value.DeploymentValue;
 import io.camunda.spring.client.bean.ClassInfo;
@@ -72,55 +73,39 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
             .flatMap(r -> Arrays.stream(getResources(r)))
             .distinct()
             .toList();
+    if (resources.isEmpty()) {
+      if (deploymentValues.isEmpty()) {
+        return;
+      }
+      throw new IllegalArgumentException("No resources found to deploy");
+    }
 
-    final List<DeploymentEvent> list =
-        deploymentValues.stream()
+    final DeployResourceCommandStep1 command = client.newDeployResourceCommand();
+    final DeployResourceCommandStep2 commandStep2 =
+        resources.stream()
             .map(
-                deployment -> {
-                  final DeployResourceCommandStep1 deployResourceCommand =
-                      client.newDeployResourceCommand();
-
-                  final DeploymentEvent deploymentResult =
-                      deployment.getResources().stream()
-                          .flatMap(resource -> Stream.of(getResources(resource)))
-                          .map(
-                              resource -> {
-                                try (final InputStream inputStream = resource.getInputStream()) {
-                                  return deployResourceCommand.addResourceStream(
-                                      inputStream, resource.getFilename());
-                                } catch (final IOException e) {
-                                  throw new RuntimeException(e.getMessage());
-                                }
-                              })
-                          .filter(Objects::nonNull)
-                          .reduce((first, second) -> second)
-                          .orElseThrow(
-                              () ->
-                                  new IllegalArgumentException(
-                                      "Requires at least one resource to deploy"))
-                          .send()
-                          .join();
-
-                  LOGGER.info(
-                      "Deployed: {}",
-                      Stream.concat(
-                              deploymentResult.getDecisionRequirements().stream()
-                                  .map(
-                                      wf ->
-                                          String.format(
-                                              "<%s:%d>",
-                                              wf.getDmnDecisionRequirementsId(), wf.getVersion())),
-                              deploymentResult.getProcesses().stream()
-                                  .map(
-                                      wf ->
-                                          String.format(
-                                              "<%s:%d>", wf.getBpmnProcessId(), wf.getVersion())))
-                          .collect(Collectors.joining(",")));
-                  return deploymentResult;
+                resource -> {
+                  try (final InputStream inputStream = resource.getInputStream()) {
+                    return command.addResourceStream(inputStream, resource.getFilename());
+                  } catch (final IOException e) {
+                    throw new RuntimeException(e.getMessage());
+                  }
                 })
-            .toList();
-
-    publisher.publishEvent(new CamundaPostDeploymentEvent(list));
+            .reduce((c1, c2) -> c2)
+            .orElseThrow(() -> new IllegalStateException("Unexpected absence of builder"));
+    final DeploymentEvent deploymentEvent = commandStep2.send().join();
+    LOGGER.info(
+        "Deployed: {}",
+        Stream.concat(
+                deploymentEvent.getDecisionRequirements().stream()
+                    .map(
+                        wf ->
+                            String.format(
+                                "<%s:%d>", wf.getDmnDecisionRequirementsId(), wf.getVersion())),
+                deploymentEvent.getProcesses().stream()
+                    .map(wf -> String.format("<%s:%d>", wf.getBpmnProcessId(), wf.getVersion())))
+            .collect(Collectors.joining(",")));
+    publisher.publishEvent(new CamundaPostDeploymentEvent(deploymentEvent));
   }
 
   @Override

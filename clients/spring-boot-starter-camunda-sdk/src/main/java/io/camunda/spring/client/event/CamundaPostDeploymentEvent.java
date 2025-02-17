@@ -16,16 +16,15 @@
 package io.camunda.spring.client.event;
 
 import io.camunda.client.api.response.DeploymentEvent;
-import java.util.List;
 
 public class CamundaPostDeploymentEvent {
-  private final List<DeploymentEvent> deployments;
+  private final DeploymentEvent deployment;
 
-  public CamundaPostDeploymentEvent(final List<DeploymentEvent> deployments) {
-    this.deployments = deployments;
+  public CamundaPostDeploymentEvent(final DeploymentEvent deployment) {
+    this.deployment = deployment;
   }
 
-  public List<DeploymentEvent> getDeployments() {
-    return deployments;
+  public DeploymentEvent getDeployment() {
+    return deployment;
   }
 }
