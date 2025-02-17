@@ -38,7 +38,7 @@ test.beforeAll(async ({request}) => {
             },
           );
           const instances = await response.json();
-          console.log(instances)
+          console.log(instances);
           return instances.totalCount;
         },
         {timeout: SETUP_WAITING_TIME},
