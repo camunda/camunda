@@ -15,6 +15,8 @@ import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.Builder;
 import io.micrometer.core.instrument.Timer.Sample;
 import java.time.Duration;
+import java.time.temporal.TemporalUnit;
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
 
@@ -94,6 +96,35 @@ public final class MicrometerUtil {
   public static void closeRegistry(final MeterRegistry registry) {
     registry.clear();
     registry.close();
+  }
+
+  /**
+   * Produce an array with exponentially spaced values by a factor. Used to create similar buckets
+   * to the prometheus function on Histograms "exponentialBuckets"
+   *
+   * @param start the initial value of the array
+   * @param factor the factor by which it's multiplied
+   * @param count the length of the array (if no overflow happen)
+   * @param unit the unit of start
+   * @return an array of duration exponentially spaced by factor
+   */
+  public static Duration[] exponentialBucketDuration(
+      final long start, final long factor, final int count, final TemporalUnit unit) {
+    if (count < 1) {
+      throw new IllegalArgumentException("count must be greater than 0");
+    }
+    final var buckets = new ArrayList<Duration>(count);
+    var value = start;
+    for (int i = 0; i < count; i++) {
+      final var duration = Duration.of(value, unit);
+      buckets.add(duration);
+      if (Long.MAX_VALUE / factor < value) {
+        // stop here, we are already close to LONG.MAX_VALUE for unit
+        break;
+      }
+      value *= factor;
+    }
+    return buckets.toArray(Duration[]::new);
   }
 
   private record CloseableTimer(Timer timer, Timer.Sample sample) implements CloseableSilently {
