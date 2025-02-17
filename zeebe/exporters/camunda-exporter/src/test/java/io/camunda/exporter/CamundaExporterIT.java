@@ -869,10 +869,13 @@ final class CamundaExporterIT {
       // given
       assertThat(config.getBulk().getSize()).isEqualTo(1);
 
+      // Simulate existing zeebe index so it will not skip the wait for importers
+      clientAdapter.index("1", "zeebe-record-decision", Map.of("key", "12345"));
+
       // if schemas are never created then import position indices do not exist and all checks about
       // whether the importers are completed will return false.
       config.setCreateSchema(false);
-      config.getIndex().setPrefix(RandomStringUtils.randomAlphabetic(10));
+      config.getIndex().setPrefix(RandomStringUtils.randomAlphabetic(10).toLowerCase());
       final var context = getContextFromConfig(config);
       camundaExporter.configure(context);
       camundaExporter.open(controller);
