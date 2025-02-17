@@ -20,9 +20,9 @@ import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -287,51 +287,63 @@ public final class IncidentUpdateTask implements BackgroundTask {
     final var bulkUpdate = new IncidentBulkUpdate();
     return mapActiveIncidentsToAffectedInstances(data)
         .thenComposeAsync(
-            ignored -> {
-              for (final var incident : data.incidents().values()) {
-                final var processInstanceKey = incident.incident().getProcessInstanceKey();
-                final var treePath = data.incidentTreePaths().get(incident.id());
-                final var newState = batch.newIncidentStates().get(incident.incident().getKey());
+            ignored ->
+                FuturesUtil.traverseIgnoring(
+                    data.incidents().values(),
+                    incident -> processIncidentInBatch(data, incident, batch, bulkUpdate),
+                    executor),
+            executor)
+        .thenComposeAsync(
+            unused -> repository.bulkUpdate(bulkUpdate).toCompletableFuture(), executor);
+  }
 
-                if (!data.processInstanceTreePaths().containsKey(processInstanceKey)) {
-                  if (!ignoreMissingData) {
-                    return CompletableFuture.failedFuture(
-                        new ExporterException(
-                            """
-              Failed to apply incident update for incident '%s'; related process instance '%d' is \
-              not visible yet, but may be later."""
-                                .formatted(incident.id(), processInstanceKey)));
-                  }
+  private CompletableFuture<Void> processIncidentInBatch(
+      final AdditionalData data,
+      final IncidentDocument incident,
+      final IncidentUpdateRepository.PendingIncidentUpdateBatch batch,
+      final IncidentBulkUpdate bulkUpdate) {
+    final var processInstanceKey = incident.incident().getProcessInstanceKey();
+    final var treePath = data.incidentTreePaths().get(incident.id());
+    final var newState = batch.newIncidentStates().get(incident.incident().getKey());
 
-                  logger.warn(
-                      """
+    final CompletableFuture<?> future;
+    if (!data.processInstanceTreePaths().containsKey(processInstanceKey)) {
+      if (!ignoreMissingData) {
+        return CompletableFuture.failedFuture(
+            new ExporterException(
+                "Failed to apply incident update for incident '%s'; related process instance '%d' is not visible yet, but may be later."
+                    .formatted(incident.id(), processInstanceKey)));
+      }
+
+      logger.warn(
+          """
             Failed to apply incident update for incident '{}'; related process instance '{}' is \
             not visible. As ignoreMissingData is on, we will skip updating the process instance or \
             flow node instances, and only update the incident.""",
-                      incident.id(),
-                      processInstanceKey);
-                } else {
-                  final var parsedTreePath = new TreePath(treePath);
-                  final var piIds = parsedTreePath.extractProcessInstanceIds();
-                  final var fniIds = parsedTreePath.extractFlowNodeInstanceIds();
+          incident.id(),
+          processInstanceKey);
+      future = CompletableFuture.completedFuture(null);
+    } else {
+      final var parsedTreePath = new TreePath(treePath);
+      final var piIds = parsedTreePath.extractProcessInstanceIds();
+      final var fniIds = parsedTreePath.extractFlowNodeInstanceIds();
 
-                  createProcessInstanceUpdates(data, incident, newState, piIds, bulkUpdate)
-                      .thenComposeAsync(
-                          unused ->
-                              createFlowNodeInstanceUpdates(
-                                  data, incident, newState, fniIds, bulkUpdate),
-                          executor)
-                      .join();
-                }
+      future =
+          createProcessInstanceUpdates(data, incident, newState, piIds, bulkUpdate)
+              .thenComposeAsync(
+                  unused ->
+                      createFlowNodeInstanceUpdates(data, incident, newState, fniIds, bulkUpdate),
+                  executor);
+    }
 
-                bulkUpdate
-                    .incidentRequests()
-                    .put(incident.id(), newIncidentUpdate(incident, newState, treePath));
-              }
-
-              return repository.bulkUpdate(bulkUpdate).toCompletableFuture();
-            },
-            executor);
+    return future.thenApplyAsync(
+        unused -> {
+          bulkUpdate
+              .incidentRequests()
+              .put(incident.id(), newIncidentUpdate(incident, newState, treePath));
+          return null;
+        },
+        executor);
   }
 
   private CompletableFuture<Void> createFlowNodeInstanceUpdates(
@@ -539,19 +551,13 @@ public final class IncidentUpdateTask implements BackgroundTask {
   }
 
   private CompletableFuture<Void> mapActiveIncidentsToAffectedInstances(final AdditionalData data) {
-    final CompletableFuture<String>[] treePathTermsFutures =
-        data.incidentTreePaths().values().stream()
-            .map(repository::analyzeTreePath)
-            .map(CompletionStage::toCompletableFuture)
-            .toArray(CompletableFuture[]::new);
-    final CompletableFuture<List<String>> treePathTermsFuture =
-        CompletableFuture.allOf(treePathTermsFutures)
-            .thenApplyAsync(
-                ignored ->
-                    // they are already completed, it's ok to join on them
-                    Arrays.stream(treePathTermsFutures).map(CompletableFuture::join).toList());
+    final CompletableFuture<List<String>> treePathTermsFutures =
+        FuturesUtil.parTraverse(
+                data.incidentTreePaths().values(),
+                treePath -> repository.analyzeTreePath(treePath).toCompletableFuture())
+            .thenApply(lists -> lists.stream().flatMap(List::stream).collect(Collectors.toList()));
 
-    return treePathTermsFuture
+    return treePathTermsFutures
         .thenComposeAsync(
             treePathTerms ->
                 repository.getActiveIncidentsByTreePaths(treePathTerms).toCompletableFuture(),
