@@ -10,6 +10,7 @@ package io.camunda.application.commons.actor;
 import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,15 +22,18 @@ public final class ActorSchedulerConfiguration {
   private final SchedulerConfiguration schedulerConfiguration;
   private final IdleStrategySupplier idleStrategySupplier;
   private final ActorClockConfiguration actorClockConfiguration;
+  private final MeterRegistry registry;
 
   @Autowired
   public ActorSchedulerConfiguration(
       final SchedulerConfiguration schedulerConfiguration,
       final IdleStrategySupplier idleStrategySupplier,
-      final ActorClockConfiguration actorClockConfiguration) {
+      final ActorClockConfiguration actorClockConfiguration,
+      final MeterRegistry registry) {
     this.schedulerConfiguration = schedulerConfiguration;
     this.idleStrategySupplier = idleStrategySupplier;
     this.actorClockConfiguration = actorClockConfiguration;
+    this.registry = registry;
   }
 
   @Bean(destroyMethod = "close")
@@ -45,7 +49,7 @@ public final class ActorSchedulerConfiguration {
             .setActorClock(actorClockConfiguration.getClock().orElse(null))
             .setCpuBoundActorThreadCount(cpuThreads)
             .setIoBoundActorThreadCount(ioThreads)
-            .setMetricsEnabled(metricsEnabled)
+            .setMeterRegistry(metricsEnabled ? registry : null)
             .setSchedulerName(String.format("%s-%s", prefix, nodeId))
             .setIdleStrategySupplier(idleStrategySupplier)
             .build();

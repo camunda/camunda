@@ -469,6 +469,18 @@ jobs:
           version: current-test
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
+      - name: Build Camunda Docker Image
+        if: matrix.group == 'root'
+        uses: ./.github/actions/build-platform-docker
+        id: build-camunda-docker
+        with:
+          repository: localhost:5000/camunda/camunda
+          version: current-test
+          distball: ${{ steps.build-zeebe.outputs.distball }}
+          platforms: ${{ env.DOCKER_PLATFORMS }}
+          dockerfile: camunda.Dockerfile
+          # push is needed for multi-arch images as buildkit does not support loading them locally
+          push: true
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
