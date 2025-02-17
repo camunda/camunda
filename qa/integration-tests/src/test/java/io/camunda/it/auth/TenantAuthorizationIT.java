@@ -14,7 +14,6 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
 import io.camunda.it.utils.BrokerITInvocationProvider;
 import io.camunda.it.utils.CamundaClientTestFactory.Authenticated;
@@ -69,7 +68,7 @@ class TenantAuthorizationIT {
   static final BrokerITInvocationProvider PROVIDER =
       new BrokerITInvocationProvider()
           .withoutRdbmsExporter()
-          .withAdditionalProfiles(Profile.AUTH_BASIC)
+          .withBasicAuth()
           .withAuthorizationsEnabled()
           .withUsers(ADMIN_USER, RESTRICTED_USER, UNAUTHORIZED_USER);
 
