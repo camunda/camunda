@@ -14,7 +14,9 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -56,7 +58,9 @@ public final class ProcessInstanceMigrationPreconditions {
           BpmnElementType.BUSINESS_RULE_TASK,
           BpmnElementType.SCRIPT_TASK,
           BpmnElementType.SEND_TASK,
-          BpmnElementType.MULTI_INSTANCE_BODY);
+          BpmnElementType.MULTI_INSTANCE_BODY,
+          BpmnElementType.PARALLEL_GATEWAY,
+          BpmnElementType.INCLUSIVE_GATEWAY);
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       EnumSet.complementOf(SUPPORTED_ELEMENT_TYPES);
   private static final Set<BpmnEventType> SUPPORTED_INTERMEDIATE_CATCH_EVENT_TYPES =
@@ -167,6 +171,27 @@ public final class ProcessInstanceMigrationPreconditions {
       but active element with id '%s' has a different loop characteristics \
       than the target element with id '%s'. \
       Both elements must have either sequential or parallel loop characteristics.""";
+
+  private static final String ERROR_GATEWAY_NOT_MAPPED =
+      """
+      Expected to migrate process instance '%s' \
+      but gateway '%s' has at least one incoming sequence flow taken. \
+      Joining gateways with at least one incoming sequence flow taken must be mapped \
+      to a gateway of the same type in the target process definition.""";
+
+  private static final String ERROR_SEQUENCE_FLOW_NOT_CONNECTED_TO_TARGET_GATEWAY =
+      """
+      Expected to migrate process instance '%s' \
+      but gateway with id '%s' has a taken incoming sequence flow mismatch. \
+      Taken sequence flow with id '%s' must connect to the mapped target gateway \
+      with id '%s' in the target process definition.""";
+
+  private static final String ERROR_TARGET_GATEWAY_HAS_LESS_INCOMING_SEQUENCE_FLOWS =
+      """
+      Expected to migrate process instance '%s' \
+      but target gateway with id '%s' has less incoming sequence flows \
+      than the source gateway with id '%s'. \
+      Target gateway must have at least the same number of incoming sequence flows as the source gateway.""";
 
   private static final String ZEEBE_USER_TASK_IMPLEMENTATION = "zeebe user task";
   private static final String JOB_WORKER_IMPLEMENTATION = "job worker";
@@ -836,11 +861,13 @@ public final class ProcessInstanceMigrationPreconditions {
    * migration in between.
    *
    * @param eventScopeInstanceState event scope instance state to retrieve the event trigger
+   * @param elementInstanceState element instance state to retrieve taken sequence flows count
    * @param elementInstance element instance to do the check active sequence flows
    * @param processInstanceKey process instance key to be logged
    */
   public static void requireNoConcurrentCommand(
       final EventScopeInstanceState eventScopeInstanceState,
+      final ElementInstanceState elementInstanceState,
       final ElementInstance elementInstance,
       final long processInstanceKey) {
     final EventTrigger eventTrigger =
@@ -851,10 +878,129 @@ public final class ProcessInstanceMigrationPreconditions {
     // or
     // An active sequence flow indicates a concurrent command. It is created when taking a
     // sequence flow and writing an ACTIVATE command for the next element.
-    if (eventTrigger != null || elementInstance.getActiveSequenceFlows() > 0) {
+    // We allow migrating joining parallel gateway with at least one incoming sequence flow is taken
+    if (eventTrigger != null) {
       final String reason = String.format(ERROR_CONCURRENT_COMMAND, processInstanceKey);
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
+    }
+
+    final long activeSequenceFlows = elementInstance.getActiveSequenceFlows();
+    if (activeSequenceFlows > 0) {
+      final int takenSequenceFlowsToGateways =
+          elementInstanceState.getNumberOfTakenSequenceFlows(elementInstance.getKey());
+      // if there is a sequence flow that is flowing to an element rather than parallel or inclusive
+      // gateway
+      if (takenSequenceFlowsToGateways < activeSequenceFlows) {
+        final String reason = String.format(ERROR_CONCURRENT_COMMAND, processInstanceKey);
+        throw new ProcessInstanceMigrationPreconditionFailedException(
+            reason, RejectionType.INVALID_STATE);
+      }
+    }
+  }
+
+  /**
+   * While processing commands, `ACTIVATE_ELEMENT` command for the source gateway might not fit into
+   * the existing command batch and can be deferred to be processed later. In the meantime, if an
+   * instance migration command is executed, the migrate command will end up changing the instance
+   * that is not stable. E.g. the gateway should be activated/completed but the execution is
+   * deferred.
+   *
+   * <p>If we do not prevent such migration execution, it will lead process instance records will be
+   * written to the log stream and processed with wrong process definition key, bpmn process id or
+   * other process related information. That breaks the data integrity of the log stream.
+   *
+   * <p>To prevent that, we need to make sure the joining parallel gateway is in a stable state.
+   * E.g. incoming sequence flows to it is only partially taken, so valid for migration.
+   *
+   * @param elementInstanceState element instance state to retrieve the taken sequence flow count
+   * @param sourceGateway source gateway to check the number of taken sequence flows
+   * @param flowScopeKey flow scope key of the source gateway
+   * @param processInstanceKey process instance key to be logged
+   */
+  public static void requireNoConcurrentCommandForGateway(
+      final ElementInstanceState elementInstanceState,
+      final ExecutableFlowNode sourceGateway,
+      final long flowScopeKey,
+      final long processInstanceKey) {
+    final int numberOfTakenSequenceFlows =
+        elementInstanceState.getNumberOfTakenSequenceFlows(flowScopeKey, sourceGateway.getId());
+
+    if (numberOfTakenSequenceFlows == sourceGateway.getIncoming().size()) {
+      final String reason = String.format(ERROR_CONCURRENT_COMMAND, processInstanceKey);
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_STATE);
+    }
+  }
+
+  public static void requireValidGatewayMapping(
+      final ExecutableFlowNode sourceGateway,
+      final String targetGatewayId,
+      final DeployedProcess targetProcessDefinition,
+      final long processInstanceKey) {
+    if (targetGatewayId == null) {
+      final var reason =
+          String.format(
+              ERROR_GATEWAY_NOT_MAPPED,
+              processInstanceKey,
+              BufferUtil.bufferAsString(sourceGateway.getId()));
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_ARGUMENT);
+    }
+
+    // no need to check if the target gateway exists because it is already validated
+    final var targetGateway = targetProcessDefinition.getProcess().getElementById(targetGatewayId);
+
+    if (targetGateway.getElementType() != sourceGateway.getElementType()) {
+      final var reason =
+          String.format(
+              ERROR_ELEMENT_TYPE_CHANGED,
+              processInstanceKey,
+              BufferUtil.bufferAsString(sourceGateway.getId()),
+              sourceGateway.getElementType(),
+              targetGatewayId,
+              targetGateway.getElementType());
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_ARGUMENT);
+    }
+  }
+
+  public static void requireSequenceFlowExistsInTarget(
+      final DirectBuffer activeSequenceFlowId,
+      final ExecutableFlowNode sourceGateway,
+      final ExecutableFlowNode targetGateway,
+      final long processInstanceKey) {
+    final boolean sequenceFLowExistsInTarget =
+        targetGateway.getIncoming().stream()
+            .map(ExecutableSequenceFlow::getId)
+            .anyMatch(activeSequenceFlowId::equals);
+
+    if (!sequenceFLowExistsInTarget) {
+      final var reason =
+          String.format(
+              ERROR_SEQUENCE_FLOW_NOT_CONNECTED_TO_TARGET_GATEWAY,
+              processInstanceKey,
+              BufferUtil.bufferAsString(sourceGateway.getId()),
+              BufferUtil.bufferAsString(activeSequenceFlowId),
+              BufferUtil.bufferAsString(targetGateway.getId()));
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_ARGUMENT);
+    }
+  }
+
+  public static void requireValidTargetIncomingFlowCount(
+      final ExecutableFlowNode sourceGateway,
+      final ExecutableFlowNode targetGateway,
+      final long processInstanceKey) {
+    if (targetGateway.getIncoming().size() < sourceGateway.getIncoming().size()) {
+      final var reason =
+          String.format(
+              ERROR_TARGET_GATEWAY_HAS_LESS_INCOMING_SEQUENCE_FLOWS,
+              processInstanceKey,
+              BufferUtil.bufferAsString(targetGateway.getId()),
+              BufferUtil.bufferAsString(sourceGateway.getId()));
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_ARGUMENT);
     }
   }
 

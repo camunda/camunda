@@ -1,4 +1,4 @@
-import { helperText01, textSecondary } from "@carbon/themes";
+import { helperText01, textSecondary } from "@carbon/elements";
 import styled from "styled-components";
 
 export const PrimaryText = styled.p`

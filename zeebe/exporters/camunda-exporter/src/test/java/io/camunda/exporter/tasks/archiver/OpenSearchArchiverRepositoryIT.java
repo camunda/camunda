@@ -14,10 +14,11 @@ import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
+import io.camunda.exporter.utils.TestObjectMapper;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -26,12 +27,20 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.UUID;
 import org.apache.http.HttpHost;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
@@ -39,7 +48,9 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.generic.Body;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
+import org.opensearch.client.opensearch.generic.Request;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
 import org.opensearch.testcontainers.OpensearchContainer;
@@ -50,7 +61,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SuppressWarnings("resource")
 @Testcontainers
-@AutoCloseResources
 final class OpenSearchArchiverRepositoryIT {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(OpenSearchArchiverRepositoryIT.class);
@@ -59,14 +69,29 @@ final class OpenSearchArchiverRepositoryIT {
   private static final OpensearchContainer<?> OPENSEARCH =
       TestSearchContainers.createDefaultOpensearchContainer();
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
-  @AutoCloseResource private final RestClientTransport transport = createRestClient();
+  private static final ObjectMapper MAPPER = TestObjectMapper.objectMapper();
+  @AutoClose private final RestClientTransport transport = createRestClient();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final ArchiverConfiguration config = new ArchiverConfiguration();
+  private final ConnectConfiguration connectConfiguration = new ConnectConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
   private final String processInstanceIndex = "process-instance-" + UUID.randomUUID();
   private final String batchOperationIndex = "batch-operation-" + UUID.randomUUID();
   private final OpenSearchClient testClient = new OpenSearchClient(transport);
+
+  @AfterEach
+  void afterEach() throws IOException {
+    // wipes all data in OS between tests
+    testClient.generic().execute(new DeleteRequest("_all"));
+
+    // however the above does not delete ISM policies, so we need to do that in a separate request
+    // unlike with ES
+    if (retention.getPolicyName() != null && !retention.getPolicyName().isEmpty()) {
+      testClient
+          .generic()
+          .execute(new DeleteRequest("_plugins/_ism/policies/" + retention.getPolicyName()));
+    }
+  }
 
   @Test
   void shouldDeleteDocuments() throws IOException {
@@ -117,6 +142,61 @@ final class OpenSearchArchiverRepositoryIT {
     Awaitility.await("until the policy has been visibly applied")
         .untilAsserted(
             () -> assertThat(fetchPolicyForIndex(indexName)).isEqualTo(retention.getPolicyName()));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"", "test"})
+  void shouldSetIndexLifeCycleOnAllValidIndexes(final String prefix) throws IOException {
+    // given
+    final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(prefix);
+    final var expectedIndices =
+        List.of(
+            formattedPrefix + "operate-record-8.2.1_2024-01-02",
+            formattedPrefix + "tasklist-record-8.3.0_2024-01");
+    final var untouchedIndices =
+        new ArrayList<>(
+            List.of(
+                formattedPrefix + "operate-record-8.2.1_", "other-" + "tasklist-record-8.3.0_"));
+
+    // we cannot test the case with multiple different prefixes when no prefix is given, since it
+    // will just match everything from the other prefixes...
+    if (!prefix.isEmpty()) {
+      untouchedIndices.add("other-" + "tasklist-record-8.3.0_2024-01-02");
+    }
+
+    connectConfiguration.setIndexPrefix(prefix);
+    final var repository = createRepository();
+    final var indices = new ArrayList<>(expectedIndices);
+    indices.addAll(untouchedIndices);
+
+    retention.setEnabled(true);
+    retention.setPolicyName("operate_delete_archived_indices");
+
+    createLifeCyclePolicy();
+    for (final var index : indices) {
+      testClient.indices().create(r -> r.index(index));
+    }
+
+    // when
+    final var result = repository.setLifeCycleToAllIndexes();
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    for (final var index : expectedIndices) {
+      // In OS, it takes a little while for the policy to be visibly applied, and flushing seems to
+      // have no effect on that
+      Awaitility.await("until the policy has been visibly applied")
+          .untilAsserted(
+              () ->
+                  assertThat(fetchPolicyForIndex(index))
+                      .as("policy applied for %s", index)
+                      .isNotNull()
+                      .isEqualTo("operate_delete_archived_indices"));
+    }
+
+    for (final var index : untouchedIndices) {
+      assertThat(fetchPolicyForIndex(index)).as("no policy applied to %s", index).isEqualTo("null");
+    }
   }
 
   @Test
@@ -290,7 +370,7 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   private void createLifeCyclePolicy() {
-    final var engineClient = new OpensearchEngineClient(testClient);
+    final var engineClient = new OpensearchEngineClient(testClient, MAPPER);
     try {
       engineClient.putIndexLifeCyclePolicy(retention.getPolicyName(), retention.getMinimumAge());
     } catch (final Exception e) {
@@ -329,6 +409,7 @@ final class OpenSearchArchiverRepositoryIT {
         1,
         config,
         retention,
+        connectConfiguration.getIndexPrefix(),
         processInstanceIndex,
         batchOperationIndex,
         client,
@@ -368,6 +449,34 @@ final class OpenSearchArchiverRepositoryIT {
 
   private record TestProcessInstance(
       String id, String endDate, String joinRelation, int partitionId) implements TDocument {}
+
+  private record DeleteRequest(String endpoint) implements Request {
+
+    @Override
+    public String getMethod() {
+      return "DELETE";
+    }
+
+    @Override
+    public String getEndpoint() {
+      return endpoint;
+    }
+
+    @Override
+    public Map<String, String> getParameters() {
+      return Map.of();
+    }
+
+    @Override
+    public Collection<Entry<String, String>> getHeaders() {
+      return List.of();
+    }
+
+    @Override
+    public Optional<Body> getBody() {
+      return Optional.empty();
+    }
+  }
 
   private interface TDocument {
     String id();

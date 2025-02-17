@@ -318,4 +318,22 @@ public class DbTenantStateTest {
     assertThat(entities.get(EntityType.USER)).containsExactly(100L);
     assertThat(entities.get(EntityType.MAPPING)).containsExactly(200L);
   }
+
+  @Test
+  void shouldFindTenantById() {
+    // given
+    final long tenantKey = 1L;
+    final String tenantId = "tenant-1";
+    final var tenantRecord =
+        new TenantRecord().setTenantKey(tenantKey).setTenantId(tenantId).setName("Tenant One");
+
+    tenantState.createTenant(tenantRecord);
+
+    // when
+    final var tenant = tenantState.getTenantById(tenantId);
+
+    // then
+    assertThat(tenant).isPresent();
+    assertThat(tenant.get().getTenantKey()).isEqualTo(tenantKey);
+  }
 }

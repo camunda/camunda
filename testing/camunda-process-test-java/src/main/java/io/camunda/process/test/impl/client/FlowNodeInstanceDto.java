@@ -15,7 +15,11 @@
  */
 package io.camunda.process.test.impl.client;
 
-public class FlowNodeInstanceDto {
+import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.FlowNodeInstanceState;
+import io.camunda.client.api.search.response.FlowNodeInstanceType;
+
+public class FlowNodeInstanceDto implements FlowNodeInstance {
 
   private long key;
   private long processInstanceKey;
@@ -25,10 +29,115 @@ public class FlowNodeInstanceDto {
   private String flowNodeId;
   private String flowNodeName;
   private long incidentKey;
-  private String type;
+  private FlowNodeInstanceType type;
   private FlowNodeInstanceState state;
   private boolean incident;
   private String tenantId;
+
+  @Override
+  public Long getFlowNodeInstanceKey() {
+    return key;
+  }
+
+  @Override
+  public Long getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  @Override
+  public String getProcessDefinitionId() {
+    return "";
+  }
+
+  @Override
+  public Long getProcessInstanceKey() {
+    return processInstanceKey;
+  }
+
+  public void setProcessInstanceKey(final long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
+  }
+
+  @Override
+  public String getFlowNodeId() {
+    return flowNodeId;
+  }
+
+  public void setFlowNodeId(final String flowNodeId) {
+    this.flowNodeId = flowNodeId;
+  }
+
+  @Override
+  public String getFlowNodeName() {
+    return flowNodeName;
+  }
+
+  @Override
+  public String getStartDate() {
+    return startDate;
+  }
+
+  public void setStartDate(final String startDate) {
+    this.startDate = startDate;
+  }
+
+  @Override
+  public String getEndDate() {
+    return endDate;
+  }
+
+  @Override
+  public Boolean getIncident() {
+    return incident;
+  }
+
+  @Override
+  public Long getIncidentKey() {
+    return incidentKey;
+  }
+
+  public void setIncidentKey(final long incidentKey) {
+    this.incidentKey = incidentKey;
+  }
+
+  @Override
+  public FlowNodeInstanceState getState() {
+    return state;
+  }
+
+  public void setState(final FlowNodeInstanceState state) {
+    this.state = state;
+  }
+
+  @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  @Override
+  public FlowNodeInstanceType getType() {
+    return type;
+  }
+
+  public void setType(final FlowNodeInstanceType type) {
+    this.type = type;
+  }
+
+  public void setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
+  }
+
+  public void setEndDate(final String endDate) {
+    this.endDate = endDate;
+  }
+
+  public void setFlowNodeName(final String flowNodeName) {
+    this.flowNodeName = flowNodeName;
+  }
+
+  public void setProcessDefinitionKey(final long processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+  }
 
   public long getKey() {
     return key;
@@ -38,91 +147,11 @@ public class FlowNodeInstanceDto {
     this.key = key;
   }
 
-  public long getProcessInstanceKey() {
-    return processInstanceKey;
-  }
-
-  public void setProcessInstanceKey(final long processInstanceKey) {
-    this.processInstanceKey = processInstanceKey;
-  }
-
-  public long getProcessDefinitionKey() {
-    return processDefinitionKey;
-  }
-
-  public void setProcessDefinitionKey(final long processDefinitionKey) {
-    this.processDefinitionKey = processDefinitionKey;
-  }
-
-  public String getStartDate() {
-    return startDate;
-  }
-
-  public void setStartDate(final String startDate) {
-    this.startDate = startDate;
-  }
-
-  public String getEndDate() {
-    return endDate;
-  }
-
-  public void setEndDate(final String endDate) {
-    this.endDate = endDate;
-  }
-
-  public String getFlowNodeId() {
-    return flowNodeId;
-  }
-
-  public void setFlowNodeId(final String flowNodeId) {
-    this.flowNodeId = flowNodeId;
-  }
-
-  public String getFlowNodeName() {
-    return flowNodeName;
-  }
-
-  public void setFlowNodeName(final String flowNodeName) {
-    this.flowNodeName = flowNodeName;
-  }
-
-  public long getIncidentKey() {
-    return incidentKey;
-  }
-
-  public void setIncidentKey(final long incidentKey) {
-    this.incidentKey = incidentKey;
-  }
-
-  public String getType() {
-    return type;
-  }
-
-  public void setType(final String type) {
-    this.type = type;
-  }
-
-  public FlowNodeInstanceState getState() {
-    return state;
-  }
-
-  public void setState(final FlowNodeInstanceState state) {
-    this.state = state;
-  }
-
   public boolean isIncident() {
     return incident;
   }
 
   public void setIncident(final boolean incident) {
     this.incident = incident;
-  }
-
-  public String getTenantId() {
-    return tenantId;
-  }
-
-  public void setTenantId(final String tenantId) {
-    this.tenantId = tenantId;
   }
 }

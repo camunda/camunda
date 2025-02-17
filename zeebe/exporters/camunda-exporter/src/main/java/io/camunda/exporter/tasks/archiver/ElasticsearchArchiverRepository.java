@@ -28,11 +28,14 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.json.JsonData;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.util.ElasticsearchRepository;
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.micrometer.core.instrument.Timer;
@@ -40,13 +43,18 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.regex.Pattern;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
 
-public final class ElasticsearchArchiverRepository implements ArchiverRepository {
+public final class ElasticsearchArchiverRepository extends ElasticsearchRepository
+    implements ArchiverRepository {
   private static final String DATES_AGG = "datesAgg";
   private static final String INSTANCES_AGG = "instancesAgg";
   private static final String DATES_SORTED_AGG = "datesSortedAgg";
+  private static final String ALL_INDICES = "*";
+  private static final String INDEX_WILDCARD = ".+-\\d+\\.\\d+\\.\\d+_.+$";
+
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final Slices AUTO_SLICES =
       Slices.of(slices -> slices.computed(SlicesCalculation.Auto));
@@ -54,12 +62,10 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
   private final int partitionId;
   private final ArchiverConfiguration config;
   private final RetentionConfiguration retention;
+  private final String indexPrefix;
   private final String processInstanceIndex;
   private final String batchOperationIndex;
-  private final ElasticsearchAsyncClient client;
-  private final Executor executor;
   private final CamundaExporterMetrics metrics;
-  private final Logger logger;
 
   private final CalendarInterval rolloverInterval;
 
@@ -67,21 +73,21 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
       final int partitionId,
       final ArchiverConfiguration config,
       final RetentionConfiguration retention,
+      final String indexPrefix,
       final String processInstanceIndex,
       final String batchOperationIndex,
       @WillCloseWhenClosed final ElasticsearchAsyncClient client,
       final Executor executor,
       final CamundaExporterMetrics metrics,
       final Logger logger) {
+    super(client, executor, logger);
     this.partitionId = partitionId;
     this.config = config;
     this.retention = retention;
+    this.indexPrefix = indexPrefix;
     this.processInstanceIndex = processInstanceIndex;
     this.batchOperationIndex = batchOperationIndex;
-    this.client = client;
-    this.executor = executor;
     this.metrics = metrics;
-    this.logger = logger;
 
     rolloverInterval = mapCalendarInterval(config.getRolloverInterval());
   }
@@ -113,27 +119,23 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
   }
 
   @Override
-  public CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName) {
+  public CompletableFuture<Void> setIndexLifeCycle(final String... destinationIndexName) {
     if (!retention.isEnabled()) {
       return CompletableFuture.completedFuture(null);
     }
 
-    final var settingsRequest =
-        new PutIndicesSettingsRequest.Builder()
-            .settings(
-                settings ->
-                    settings.lifecycle(lifecycle -> lifecycle.name(retention.getPolicyName())))
-            .index(destinationIndexName)
-            .allowNoIndices(true)
-            .ignoreUnavailable(true)
-            .build();
-
-    return client.indices().putSettings(settingsRequest).thenApplyAsync(ok -> null, executor);
+    return setIndexLifeCycleToMatchingIndices(List.of(destinationIndexName));
   }
 
   @Override
   public CompletableFuture<Void> setLifeCycleToAllIndexes() {
-    return CompletableFuture.completedFuture(null);
+    if (!retention.isEnabled()) {
+      return CompletableFuture.completedFuture(null);
+    }
+    final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(indexPrefix);
+    final var indexWildcard = "^" + formattedPrefix + INDEX_WILDCARD;
+    return fetchMatchingIndexes(indexWildcard)
+        .thenComposeAsync(this::setIndexLifeCycleToMatchingIndices, executor);
   }
 
   @Override
@@ -185,9 +187,17 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
         .thenApplyAsync(ignored -> null, executor);
   }
 
-  @Override
-  public void close() throws Exception {
-    client._transport().close();
+  private CompletableFuture<List<String>> fetchMatchingIndexes(final String indexWildcard) {
+    final Pattern indexNamePattern = Pattern.compile(indexWildcard);
+    return client
+        .indices()
+        .get(new GetIndexRequest.Builder().index(ALL_INDICES).build())
+        .thenApplyAsync(
+            response ->
+                response.result().keySet().stream()
+                    .filter(indexName -> indexNamePattern.matcher(indexName).matches())
+                    .toList(),
+            executor);
   }
 
   private SearchRequest createFinishedInstancesSearchRequest(final Aggregation aggregation) {
@@ -208,6 +218,25 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
 
     return createSearchRequest(
         processInstanceIndex, combinedQuery, aggregation, ListViewTemplate.END_DATE);
+  }
+
+  private CompletableFuture<Void> setIndexLifeCycleToMatchingIndices(
+      final List<String> destinationIndexNames) {
+    if (destinationIndexNames.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    final var settingsRequest =
+        new PutIndicesSettingsRequest.Builder()
+            .settings(
+                settings ->
+                    settings.lifecycle(lifecycle -> lifecycle.name(retention.getPolicyName())))
+            .index(destinationIndexNames)
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .build();
+
+    return client.indices().putSettings(settingsRequest).thenApplyAsync(ok -> null, executor);
   }
 
   private ArchiveBatch createArchiveBatch(final SearchResponse<?> search) {

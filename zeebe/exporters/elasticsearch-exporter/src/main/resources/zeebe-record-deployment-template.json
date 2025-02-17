@@ -158,6 +158,37 @@
                 }
               }
             },
+            "resourceMetadata": {
+              "properties": {
+                "resourceId": {
+                  "type": "keyword"
+                },
+                "version": {
+                  "type": "long"
+                },
+                "resourceKey": {
+                  "type": "long"
+                },
+                "resourceName": {
+                  "type": "text"
+                },
+                "checksum": {
+                  "enabled": false
+                },
+                "duplicate": {
+                  "type": "boolean"
+                },
+                "tenantId": {
+                  "type": "keyword"
+                },
+                "deploymentKey": {
+                  "type": "long"
+                },
+                "versionTag": {
+                  "type": "keyword"
+                }
+              }
+            },
             "tenantId": {
               "type": "keyword"
             },

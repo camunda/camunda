@@ -19,8 +19,8 @@ import static org.mockito.Mockito.verify;
 
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
-import io.camunda.zeebe.gateway.rest.util.XmlUtil;
-import io.camunda.zeebe.gateway.rest.util.XmlUtil.ProcessFlowNode;
+import io.camunda.zeebe.gateway.rest.util.ProcessFlowNodeProvider;
+import io.camunda.zeebe.gateway.rest.util.ProcessFlowNodeProvider.ProcessFlowNode;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Arrays;
 import java.util.Set;
@@ -36,13 +36,13 @@ class ProcessCacheTest {
 
   private ProcessCache processCache;
   private GatewayRestConfiguration configuration;
-  private XmlUtil xmlUtil;
+  private ProcessFlowNodeProvider processFlowNodeProvider;
 
   @BeforeEach
   public void setUp() {
     configuration = new GatewayRestConfiguration();
-    xmlUtil = mock(XmlUtil.class);
-    processCache = new ProcessCache(configuration, xmlUtil);
+    processFlowNodeProvider = mock(ProcessFlowNodeProvider.class);
+    processCache = new ProcessCache(configuration, processFlowNodeProvider);
     mockLoad(Tuple.of(1L, new ProcessFlowNode("id1", "Name 1")));
   }
 
@@ -64,7 +64,9 @@ class ProcessCacheTest {
 
   @SafeVarargs
   private void mockLoad(final Tuple<Long, ProcessFlowNode>... nodes) {
-    doAnswer(mockLoadAnswer(nodes)).when(xmlUtil).extractFlowNodeNames(anyLong(), any());
+    doAnswer(mockLoadAnswer(nodes))
+        .when(processFlowNodeProvider)
+        .extractFlowNodeNames(anyLong(), any());
   }
 
   @SafeVarargs
@@ -87,7 +89,7 @@ class ProcessCacheTest {
     processCache.getCacheItem(1L);
 
     // then - extractFlowNodeNames not called again
-    verify(xmlUtil).extractFlowNodeNames(eq(1L), any());
+    verify(processFlowNodeProvider).extractFlowNodeNames(eq(1L), any());
   }
 
   @Test
@@ -101,7 +103,7 @@ class ProcessCacheTest {
     final var actual = processCache.getCacheItem(1L);
 
     // then
-    verify(xmlUtil).extractFlowNodeNames(eq(1L), any());
+    verify(processFlowNodeProvider).extractFlowNodeNames(eq(1L), any());
     assertThat(actual.flowNodeIdNameMap()).hasSize(2);
     assertThat(actual.flowNodeIdNameMap())
         .containsOnly(entry("id1", "Name 1"), entry("id2", "Name 2"));
@@ -121,14 +123,14 @@ class ProcessCacheTest {
                 Tuple.of(2L, new ProcessFlowNode("id21", "Name 21")),
                 Tuple.of(2L, new ProcessFlowNode("id22", "Name 22")),
                 Tuple.of(3L, new ProcessFlowNode("id3", "Name 3"))))
-        .when(xmlUtil)
+        .when(processFlowNodeProvider)
         .extractFlowNodeNames(anySet(), any());
 
     // when
     final var actual = processCache.getCacheItems(Set.of(1L, 2L, 3L));
 
     // then
-    verify(xmlUtil).extractFlowNodeNames(eq(Set.of(1L, 2L, 3L)), any());
+    verify(processFlowNodeProvider).extractFlowNodeNames(eq(Set.of(1L, 2L, 3L)), any());
     assertThat(actual).hasSize(3);
     assertThat(actual.keySet()).containsOnly(1L, 2L, 3L);
     assertThat(actual.get(1L).flowNodeIdNameMap()).containsOnly(entry("id1", "Name 1"));
@@ -162,7 +164,7 @@ class ProcessCacheTest {
   void shouldRemoveExpiredItem() throws InterruptedException {
     // given
     configuration.getProcessCache().setExpirationIdleMillis(10L);
-    processCache = new ProcessCache(configuration, xmlUtil);
+    processCache = new ProcessCache(configuration, processFlowNodeProvider);
     processCache.getCacheItem(1L);
     getCache().cleanUp();
     assertThat(getCacheMap()).hasSize(1);
@@ -179,7 +181,7 @@ class ProcessCacheTest {
   void shouldRefreshReadItemAndRemoveLeastRecentlyUsed() {
     // given
     configuration.getProcessCache().setMaxSize(2);
-    processCache = new ProcessCache(configuration, xmlUtil);
+    processCache = new ProcessCache(configuration, processFlowNodeProvider);
     processCache.getCacheItem(1L);
     processCache.getCacheItem(2L);
     getCache().cleanUp();

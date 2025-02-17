@@ -34,10 +34,6 @@
 # This setting can also be overridden using the environment variable CAMUNDA_REST_ENABLED.
 # camunda.rest.enabled: true
 
-# Enable the Camunda REST Query API to start on gateway startup.
-# This setting can also be overridden using the environment variable CAMUNDA_REST_QUERY_ENABLED.
-# camunda.rest.query.enabled: false
-
 # zeebe:
   # gateway:
     # network:
@@ -208,34 +204,6 @@
           # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_SECURITY_KEYSTORE_PASSWORD
           # password:
 
-
-        # authentication:
-          # Controls which authentication mode is active, supported modes are 'none' and 'identity'.
-          # If 'identity' is set, authentication will be done using camunda-identity, which needs to
-          # be configured in the corresponding subsection. See also https://docs.camunda.io/docs/self-managed/identity/what-is-identity/ .
-          # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE.
-          # mode: none
-
-          # WARNING: These settings are deprecated! Please use the corresponding Camunda Identity
-          # properties or the environment variables defined here: https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/
-          # identity:
-            # The URL to the auth provider backend, used to validate tokens.
-            # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL.
-            # issuerBackendUrl: http://keycloak:8080/auth/realms/camunda-platform
-
-            # The required audience of the auth token.
-            # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE.
-            # audience: zeebe-api
-
-            # The identity auth type to apply, one of `keycloak` or `auth0`.
-            # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_TYPE.
-            # type: keycloak
-
-            # The URL to the Identity instance. Must be defined when multi-tenancy is enabled and authentication mode is set to 'identity'.
-            # This is used to retrieve the authorized tenants for requests based on the token.
-            # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_BASEURL.
-            # baseUrl:
-
       # Configure compression algorithm for all messages sent between the gateway and
       # the brokers. Available options are NONE, GZIP and SNAPPY.
       # This feature is useful when the network latency between the nodes is very high (for example when nodes are deployed in different data centers).
@@ -286,10 +254,6 @@
       # When enabled, the gateway enhances requests with the authorized tenant ids of the requester.
       # It also rejects requests that specify a tenant id that the requester is not authorized to access.
       # When disabled, the gateway enhances requests with the default tenant id '<default>'.
-      #
-      # The authorized tenants are retrieved from the configured tenant authorization provider.
-      # For now, only Identity is supported as tenant authorization provider.
-      # It is used when ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE is set to 'identity'.
       #
       # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_MULTITENANCY_ENABLED.
       enabled: false

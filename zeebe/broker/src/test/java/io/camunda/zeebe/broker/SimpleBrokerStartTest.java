@@ -14,6 +14,7 @@ import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -25,6 +26,8 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.time.Duration;
 import java.util.Collections;
@@ -33,6 +36,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 public final class SimpleBrokerStartTest {
 
@@ -40,6 +44,7 @@ public final class SimpleBrokerStartTest {
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private File newTemporaryFolder;
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @Before
   public void setup() throws Exception {
@@ -64,7 +69,9 @@ public final class SimpleBrokerStartTest {
                       mock(ActorScheduler.class),
                       mock(AtomixCluster.class),
                       mock(BrokerClient.class),
-                      new SecurityConfiguration());
+                      new SecurityConfiguration(),
+                      mock(UserServices.class),
+                      mock(PasswordEncoder.class));
               new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE, emptyList());
             });
 
@@ -79,14 +86,20 @@ public final class SimpleBrokerStartTest {
     assignSocketAddresses(brokerCfg);
     brokerCfg.init(newTemporaryFolder.getAbsolutePath());
 
-    final var atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg);
+    final var atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg, meterRegistry);
     final var actorScheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg);
     final var brokerClient =
         TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
 
     final var systemContext =
         new SystemContext(
-            brokerCfg, actorScheduler, atomixCluster, brokerClient, new SecurityConfiguration());
+            brokerCfg,
+            actorScheduler,
+            atomixCluster,
+            brokerClient,
+            new SecurityConfiguration(),
+            mock(UserServices.class),
+            mock(PasswordEncoder.class));
 
     final var leaderLatch = new CountDownLatch(1);
     final var listener =

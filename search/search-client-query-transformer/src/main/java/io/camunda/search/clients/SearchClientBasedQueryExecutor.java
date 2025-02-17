@@ -7,12 +7,14 @@
  */
 package io.camunda.search.clients;
 
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+
 import io.camunda.search.clients.auth.AuthorizationQueryStrategy;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.clients.transformers.ServiceTransformers;
-import io.camunda.search.clients.transformers.filter.AuthenticationTransformer;
 import io.camunda.search.clients.transformers.query.SearchQueryResultTransformer;
 import io.camunda.search.clients.transformers.query.TypedSearchQueryTransformer;
 import io.camunda.search.exception.SearchQueryExecutionException;
@@ -21,6 +23,8 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.sort.SortOption;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.List;
 import java.util.function.Function;
 
@@ -47,7 +51,10 @@ public final class SearchClientBasedQueryExecutor {
     final SearchQueryResultTransformer<T, R> responseTransformer =
         (SearchQueryResultTransformer<T, R>) getSearchResultTransformer(documentClass);
     return executeSearch(
-        query, q -> responseTransformer.apply(searchClient.search(q, documentClass)));
+        query,
+        q ->
+            responseTransformer.apply(
+                searchClient.search(q, documentClass), !query.page().isNextPage()));
   }
 
   public <F extends FilterBase, S extends SortOption, T, R> List<R> findAll(
@@ -62,22 +69,36 @@ public final class SearchClientBasedQueryExecutor {
                 .toList());
   }
 
-  private <T extends FilterBase, S extends SortOption, R> R executeSearch(
+  @VisibleForTesting
+  <T extends FilterBase, S extends SortOption, R> R executeSearch(
       final TypedSearchQuery<T, S> query, final Function<SearchQueryRequest, R> searchExecutor) {
-    final var authenticationCheck = getAuthenticationCheckIfPresent();
     final var transformer = getSearchQueryRequestTransformer(query);
-    final var searchRequest = transformer.applyWithAuthentication(query, authenticationCheck);
+    final var searchRequest = transformer.apply(query);
+    final var authenticatedSearchRequest = applyTenantFilter(searchRequest, query);
     final var authorizedSearchRequest =
         authorizationQueryStrategy.applyAuthorizationToQuery(
-            searchRequest, securityContext, query.getClass());
+            authenticatedSearchRequest, securityContext, query.getClass());
     return searchExecutor.apply(authorizedSearchRequest);
   }
 
-  private SearchQuery getAuthenticationCheckIfPresent() {
-    if (securityContext.authentication() != null) {
-      return AuthenticationTransformer.INSTANCE.toSearchQuery(securityContext.authentication());
+  private SearchQueryRequest applyTenantFilter(
+      final SearchQueryRequest request, final TypedSearchQuery<?, ?> query) {
+    if (securityContext.authentication() == null) {
+      return request;
     }
-    return null;
+    final var tenantIds = securityContext.authentication().authenticatedTenantIds();
+    final IndexDescriptor indexDescriptor =
+        transformers.getFilterTransformer(query.filter().getClass()).getIndex();
+    return indexDescriptor
+        .getTenantIdField()
+        .map(
+            tenantField -> {
+              final SearchQuery tenantQuery = stringTerms(tenantField, tenantIds);
+              return request.toBuilder()
+                  .query(SearchQueryBuilders.and(request.query(), tenantQuery))
+                  .build();
+            })
+        .orElse(request);
   }
 
   private <T extends FilterBase, S extends SortOption>

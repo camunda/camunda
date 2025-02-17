@@ -27,7 +27,7 @@ public class RdbmsExporterFactory implements ExporterFactory {
 
   @Override
   public Exporter newInstance() throws ExporterInstantiationException {
-    return new RdbmsExporter(rdbmsService);
+    return new RdbmsExporterWrapper(rdbmsService);
   }
 
   @Override

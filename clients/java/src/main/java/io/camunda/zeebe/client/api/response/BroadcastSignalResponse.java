@@ -15,6 +15,11 @@
  */
 package io.camunda.zeebe.client.api.response;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.response.BroadcastSignalResponse}
+ */
+@Deprecated
 public interface BroadcastSignalResponse {
   /**
    * Returns the unique key of the signal that was broadcasted.

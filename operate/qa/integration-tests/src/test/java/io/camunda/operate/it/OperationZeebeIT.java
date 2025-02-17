@@ -101,11 +101,11 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   @Before
   public void before() {
     super.before();
-    cancelProcessInstanceHandler.setZeebeClient(super.getClient());
-    updateRetriesHandler.setZeebeClient(super.getClient());
-    updateVariableHandler.setZeebeClient(super.getClient());
-    deleteProcessDefinitionHandler.setZeebeClient(super.getClient());
-    deleteDecisionDefinitionHandler.setZeebeClient(super.getClient());
+    cancelProcessInstanceHandler.setCamundaClient(super.getClient());
+    updateRetriesHandler.setCamundaClient(super.getClient());
+    updateVariableHandler.setCamundaClient(super.getClient());
+    deleteProcessDefinitionHandler.setCamundaClient(super.getClient());
+    deleteDecisionDefinitionHandler.setCamundaClient(super.getClient());
 
     mockMvc = mockMvcTestRule.getMockMvc();
     initialBatchOperationMaxSize = operateProperties.getBatchOperationMaxSize();
@@ -890,7 +890,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     // resolve the incident before the operation is executed
     final IncidentEntity incident =
         incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey).get(0);
-    ZeebeTestUtil.resolveIncident(zeebeClient, incident.getJobKey(), incident.getKey());
+    ZeebeTestUtil.resolveIncident(camundaClient, incident.getJobKey(), incident.getKey());
 
     // when
     // and execute the operation

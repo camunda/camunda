@@ -70,20 +70,16 @@ public class TenantAwareUpdateVariablesTest {
   @Test
   public void shouldRejectUpdateVariablesForUnauthorizedTenant() {
     // given
-    final var userKey = ENGINE.user().newUser("username").create().getValue().getUserKey();
+    final var tenantId = "another-tenant";
+    final var username = "username";
+    final var user = ENGINE.user().newUser(username).create().getValue();
     final var tenantKey =
-        ENGINE
-            .tenant()
-            .newTenant()
-            .withTenantId("another-tenant")
-            .create()
-            .getValue()
-            .getTenantKey();
+        ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     ENGINE
         .tenant()
-        .addEntity(tenantKey)
+        .addEntity(tenantId)
         .withEntityType(EntityType.USER)
-        .withEntityKey(userKey)
+        .withEntityId(username)
         .add();
 
     ENGINE
@@ -107,7 +103,7 @@ public class TenantAwareUpdateVariablesTest {
             .ofScope(processInstanceKey)
             .withDocument(Map.of("foo", "bar"))
             .expectRejection()
-            .update(userKey);
+            .update(user.getUsername());
 
     // then
     assertThat(rejection)

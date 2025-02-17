@@ -7,6 +7,8 @@
  */
 package io.camunda.webapps.schema.descriptors;
 
+import java.util.Optional;
+
 public interface IndexDescriptor {
 
   String TENANT_ID = "tenantId";
@@ -32,4 +34,8 @@ public interface IndexDescriptor {
   String getAllVersionsIndexNameRegexPattern();
 
   String getVersion();
+
+  default Optional<String> getTenantIdField() {
+    return Optional.empty();
+  }
 }

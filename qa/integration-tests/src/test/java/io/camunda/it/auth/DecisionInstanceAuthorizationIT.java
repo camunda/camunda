@@ -7,24 +7,23 @@
  */
 package io.camunda.it.auth;
 
-import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.CREATE;
-import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.CREATE_DECISION_INSTANCE;
-import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.READ_DECISION_INSTANCE;
-import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.DECISION_DEFINITION;
-import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.DEPLOYMENT;
+import static io.camunda.client.protocol.rest.PermissionTypeEnum.CREATE;
+import static io.camunda.client.protocol.rest.PermissionTypeEnum.CREATE_DECISION_INSTANCE;
+import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ_DECISION_INSTANCE;
+import static io.camunda.client.protocol.rest.ResourceTypeEnum.DECISION_DEFINITION;
+import static io.camunda.client.protocol.rest.ResourceTypeEnum.RESOURCE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.camunda.application.Profile;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.EvaluateDecisionResponse;
+import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.it.utils.BrokerITInvocationProvider;
-import io.camunda.it.utils.ZeebeClientTestFactory.Authenticated;
-import io.camunda.it.utils.ZeebeClientTestFactory.Permissions;
-import io.camunda.it.utils.ZeebeClientTestFactory.User;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.client.api.response.DeploymentEvent;
-import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
-import io.camunda.zeebe.client.api.search.response.DecisionInstance;
+import io.camunda.it.utils.CamundaClientTestFactory.Authenticated;
+import io.camunda.it.utils.CamundaClientTestFactory.Permissions;
+import io.camunda.it.utils.CamundaClientTestFactory.User;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
@@ -47,7 +46,7 @@ class DecisionInstanceAuthorizationIT {
           ADMIN,
           "password",
           List.of(
-              new Permissions(DEPLOYMENT, CREATE, List.of("*")),
+              new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(DECISION_DEFINITION, CREATE_DECISION_INSTANCE, List.of("*")),
               new Permissions(DECISION_DEFINITION, READ_DECISION_INSTANCE, List.of("*"))));
   private static final User RESTRICTED_USER =
@@ -62,14 +61,14 @@ class DecisionInstanceAuthorizationIT {
   static final BrokerITInvocationProvider PROVIDER =
       new BrokerITInvocationProvider()
           .withoutRdbmsExporter()
-          .withAdditionalProfiles(Profile.AUTH_BASIC)
+          .withBasicAuth()
           .withAuthorizationsEnabled()
           .withUsers(ADMIN_USER, RESTRICTED_USER);
 
   private boolean initialized;
 
   @BeforeEach
-  void setUp(@Authenticated(ADMIN) final ZeebeClient adminClient) {
+  void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
     if (!initialized) {
       final List<String> decisions = List.of("decision_model.dmn", "decision_model_1.dmn");
       decisions.stream()
@@ -86,7 +85,7 @@ class DecisionInstanceAuthorizationIT {
 
   @TestTemplate
   void searchShouldReturnAuthorizedDecisionInstances(
-      @Authenticated(RESTRICTED) final ZeebeClient userClient) {
+      @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // when
     final var decisionInstances = userClient.newDecisionInstanceQuery().send().join().items();
 
@@ -98,8 +97,8 @@ class DecisionInstanceAuthorizationIT {
 
   @TestTemplate
   void getByIdShouldReturnForbiddenForUnauthorizedDecisionInstance(
-      @Authenticated(ADMIN) final ZeebeClient adminClient,
-      @Authenticated(RESTRICTED) final ZeebeClient userClient) {
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // given
     final var decisionInstanceId = getDecisionInstanceId(adminClient, DECISION_DEFINITION_ID_2);
 
@@ -117,8 +116,8 @@ class DecisionInstanceAuthorizationIT {
 
   @TestTemplate
   void getByIdShouldReturnAuthorizedDecisionDefinition(
-      @Authenticated(ADMIN) final ZeebeClient adminClient,
-      @Authenticated(RESTRICTED) final ZeebeClient userClient) {
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // given
     final var decisionInstanceId = getDecisionInstanceId(adminClient, DECISION_DEFINITION_ID_1);
 
@@ -132,7 +131,7 @@ class DecisionInstanceAuthorizationIT {
   }
 
   private String getDecisionInstanceId(
-      final ZeebeClient client, final String decisionDefinitionId) {
+      final CamundaClient client, final String decisionDefinitionId) {
     return client
         .newDecisionInstanceQuery()
         .filter(f -> f.decisionDefinitionId(decisionDefinitionId))
@@ -143,8 +142,9 @@ class DecisionInstanceAuthorizationIT {
         .getDecisionInstanceId();
   }
 
-  private DeploymentEvent deployResource(final ZeebeClient zeebeClient, final String resourceName) {
-    return zeebeClient
+  private DeploymentEvent deployResource(
+      final CamundaClient camundaClient, final String resourceName) {
+    return camundaClient
         .newDeployResourceCommand()
         .addResourceFromClasspath(resourceName)
         .send()
@@ -152,8 +152,8 @@ class DecisionInstanceAuthorizationIT {
   }
 
   private static EvaluateDecisionResponse evaluateDecision(
-      final ZeebeClient zeebeClient, final long decisionKey) {
-    return zeebeClient
+      final CamundaClient camundaClient, final long decisionKey) {
+    return camundaClient
         .newEvaluateDecisionCommand()
         .decisionKey(decisionKey)
         .variables("{\"input1\": \"A\"}")
@@ -162,13 +162,13 @@ class DecisionInstanceAuthorizationIT {
   }
 
   private void waitForDecisionsToBeEvaluated(
-      final ZeebeClient zeebeClient, final int expectedCount) {
+      final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should deploy decision definitions and import in Operate")
         .atMost(Duration.ofSeconds(15))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = zeebeClient.newDecisionInstanceQuery().send().join();
+              final var result = camundaClient.newDecisionInstanceQuery().send().join();
               assertThat(result.items().size()).isEqualTo(expectedCount);
             });
   }

@@ -225,24 +225,6 @@ public final class IncidentQueryTransformerTest extends AbstractTransformerTest 
   }
 
   @Test
-  public void shouldQueryByTreePath() {
-    final var filter = FilterBuilders.incident(f -> f.treePaths("/"));
-
-    // when
-    final var searchRequest = transformQuery(filter);
-
-    // then
-    final var queryVariant = searchRequest.queryOption();
-    assertThat(queryVariant)
-        .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            t -> {
-              assertThat(t.field()).isEqualTo("treePath");
-              assertThat(t.value().stringValue()).isEqualTo("/");
-            });
-  }
-
-  @Test
   public void shouldQueryByTenantId() {
     final var filter = FilterBuilders.incident(f -> f.tenantIds("Homer"));
 

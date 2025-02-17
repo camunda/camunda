@@ -10,30 +10,32 @@ package io.camunda.zeebe.it.client.command;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ProblemException;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
-@AutoCloseResources
 class AssignMappingToTenantTest {
 
   private static final String TENANT_ID = "tenant-id";
   private static final String CLAIM_NAME = "claimName";
   private static final String CLAIM_VALUE = "claimValue";
+  private static final String NAME = "name";
+  private static final String ID = "id";
 
   @TestZeebe
-  private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+  private final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
-  @AutoCloseResource private ZeebeClient client;
+  @AutoClose private CamundaClient client;
 
   private long tenantKey;
   private long mappingKey;
@@ -58,6 +60,8 @@ class AssignMappingToTenantTest {
             .newCreateMappingCommand()
             .claimName(CLAIM_NAME)
             .claimValue(CLAIM_VALUE)
+            .name(NAME)
+            .id(ID)
             .send()
             .join()
             .getMappingKey();
@@ -74,7 +78,7 @@ class AssignMappingToTenantTest {
         mappingKey,
         tenant -> {
           assertThat(tenant.getTenantKey()).isEqualTo(tenantKey);
-          assertThat(tenant.getEntityKey()).isEqualTo(mappingKey);
+          assertThat(tenant.getEntityType()).isEqualTo(EntityType.MAPPING);
         });
   }
 
@@ -114,7 +118,7 @@ class AssignMappingToTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to add entity with key '%d' to tenant with key '%d', but the entity doesn't exist."
-                .formatted(invalidMappingKey, tenantKey));
+            "Expected to add entity with key '%d' to tenant with tenantId '%s', but the entity doesn't exist."
+                .formatted(invalidMappingKey, TENANT_ID));
   }
 }

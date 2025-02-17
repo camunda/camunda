@@ -10,12 +10,12 @@ package io.camunda.operate.util.j5templates;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.operate.util.SearchTestRuleProvider;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
-import io.camunda.zeebe.client.ZeebeClient;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -36,17 +36,17 @@ public class OperateJ5Tester {
 
   @Autowired protected SearchTestRuleProvider searchTestRuleProvider;
   @Autowired protected OperationExecutor operationExecutor;
-  private final ZeebeClient zeebeClient;
+  private final CamundaClient camundaClient;
   @Autowired private SearchCheckPredicatesHolder searchPredicates;
 
   @Autowired private MockMvcManager mockMvcManager;
 
-  public OperateJ5Tester(final ZeebeClient zeebeClient) {
-    this.zeebeClient = zeebeClient;
+  public OperateJ5Tester(final CamundaClient camundaClient) {
+    this.camundaClient = camundaClient;
   }
 
   public Long deployProcess(final String classpathResource) {
-    return ZeebeTestUtil.deployProcess(zeebeClient, null, classpathResource);
+    return ZeebeTestUtil.deployProcess(camundaClient, null, classpathResource);
   }
 
   public void waitForProcessDeployed(final Long processDefinitionKey) {
@@ -55,7 +55,7 @@ public class OperateJ5Tester {
   }
 
   public Long startProcess(final String bpmnProcessId, final String payload) {
-    return ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, payload);
+    return ZeebeTestUtil.startProcessInstance(camundaClient, bpmnProcessId, payload);
   }
 
   public void waitForProcessInstanceStarted(final Long processInstanceKey) {
@@ -91,7 +91,7 @@ public class OperateJ5Tester {
       final String activityId,
       final String jobKey,
       final String payload) {
-    ZeebeTestUtil.completeTask(zeebeClient, jobKey, TestUtil.createRandomString(10), payload);
+    ZeebeTestUtil.completeTask(camundaClient, jobKey, TestUtil.createRandomString(10), payload);
     searchTestRuleProvider.processAllRecordsAndWait(
         searchPredicates.getFlowNodeIsCompletedCheck(), processInstanceKey, activityId);
     searchTestRuleProvider.processAllRecordsAndWait(
@@ -99,7 +99,7 @@ public class OperateJ5Tester {
   }
 
   public OperateJ5Tester completeJob(final String jobKey) {
-    ZeebeTestUtil.completeTask(zeebeClient, jobKey, TestUtil.createRandomString(10), null);
+    ZeebeTestUtil.completeTask(camundaClient, jobKey, TestUtil.createRandomString(10), null);
     return this;
   }
 
@@ -129,7 +129,7 @@ public class OperateJ5Tester {
   // Deprecated
   public Long startProcessAndWait(final String bpmnProcessId) {
     final Long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, null);
+        ZeebeTestUtil.startProcessInstance(camundaClient, bpmnProcessId, null);
     searchTestRuleProvider.processAllRecordsAndWait(
         searchPredicates.getProcessInstanceExistsCheck(), Arrays.asList(processInstanceKey));
     return processInstanceKey;
@@ -138,7 +138,7 @@ public class OperateJ5Tester {
   // Deprecated
   public Long deployProcessAndWait(final String classpathResource) {
     final Long processDefinitionKey =
-        ZeebeTestUtil.deployProcess(zeebeClient, null, classpathResource);
+        ZeebeTestUtil.deployProcess(camundaClient, null, classpathResource);
 
     searchTestRuleProvider.processAllRecordsAndWait(
         searchPredicates.getProcessIsDeployedCheck(), processDefinitionKey);

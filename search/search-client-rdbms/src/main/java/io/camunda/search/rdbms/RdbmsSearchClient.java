@@ -8,7 +8,6 @@
 package io.camunda.search.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.domain.UserTaskDbQuery;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
@@ -22,6 +21,7 @@ import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.clients.TenantSearchClient;
+import io.camunda.search.clients.UsageMetricsSearchClient;
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
@@ -55,6 +55,7 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
+import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
@@ -79,7 +80,8 @@ public class RdbmsSearchClient
         RoleSearchClient,
         TenantSearchClient,
         MappingSearchClient,
-        GroupSearchClient {
+        GroupSearchClient,
+        UsageMetricsSearchClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsSearchClient.class);
 
@@ -127,10 +129,44 @@ public class RdbmsSearchClient
   }
 
   @Override
+  public Long countAssignees(final UsageMetricsQuery query) {
+    throw new UnsupportedOperationException(
+        "UsageMetricsClient countAssignees not implemented yet.");
+  }
+
+  @Override
+  public Long countProcessInstances(final UsageMetricsQuery query) {
+    throw new UnsupportedOperationException(
+        "UsageMetricsClient countProcessInstances not implemented yet.");
+  }
+
+  @Override
+  public Long countDecisionInstances(final UsageMetricsQuery query) {
+    throw new UnsupportedOperationException(
+        "UsageMetricsClient countDecisionInstances not implemented yet.");
+  }
+
+  @Override
   public SearchQueryResult<MappingEntity> searchMappings(final MappingQuery filter) {
     LOG.debug("[RDBMS Search Client] Search for mappings: {}", filter);
 
     return rdbmsService.getMappingReader().search(filter);
+  }
+
+  @Override
+  public List<MappingEntity> findAllMappings(final MappingQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for all mappings: {}", query);
+
+    // search without size boundary to find all items
+    return rdbmsService
+        .getMappingReader()
+        .search(
+            MappingQuery.of(
+                b ->
+                    b.filter(query.filter())
+                        .sort(query.sort())
+                        .page(p -> p.size(Integer.MAX_VALUE))))
+        .items();
   }
 
   @Override
@@ -176,8 +212,10 @@ public class RdbmsSearchClient
   }
 
   @Override
-  public SearchQueryResult<UserEntity> searchUsers(final UserQuery filter) {
-    return null;
+  public SearchQueryResult<UserEntity> searchUsers(final UserQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for users: {}", query);
+
+    return rdbmsService.getUserReader().search(query);
   }
 
   @Override
@@ -188,15 +226,27 @@ public class RdbmsSearchClient
   }
 
   @Override
-  public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery query) {
-    final var searchResult =
-        rdbmsService
-            .getUserTaskReader()
-            .search(
-                UserTaskDbQuery.of(
-                    b -> b.filter(query.filter()).sort(query.sort()).page(query.page())));
+  public List<GroupEntity> findAllGroups(final GroupQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for all groups: {}", query);
 
-    return new SearchQueryResult<>(searchResult.total(), searchResult.hits(), null);
+    // search without size boundary to find all items
+    return rdbmsService
+        .getGroupReader()
+        .search(
+            GroupQuery.of(
+                b ->
+                    b.filter(query.filter())
+                        .sort(query.sort())
+                        .page(p -> p.size(Integer.MAX_VALUE))))
+        .items();
+  }
+
+  @Override
+  public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery query) {
+    return rdbmsService
+        .getUserTaskReader()
+        .search(
+            UserTaskQuery.of(b -> b.filter(query.filter()).sort(query.sort()).page(query.page())));
   }
 
   @Override
@@ -214,10 +264,31 @@ public class RdbmsSearchClient
   }
 
   @Override
+  public List<RoleEntity> findAllRoles(final RoleQuery filter) {
+    return List.of();
+  }
+
+  @Override
   public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery query) {
     LOG.debug("[RDBMS Search Client] Search for tenants: {}", query);
 
     return rdbmsService.getTenantReader().search(query);
+  }
+
+  @Override
+  public List<TenantEntity> findAllTenants(final TenantQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for all tenants: {}", query);
+
+    // search without size boundary to find all items
+    return rdbmsService
+        .getTenantReader()
+        .search(
+            TenantQuery.of(
+                b ->
+                    b.filter(query.filter())
+                        .sort(query.sort())
+                        .page(p -> p.size(Integer.MAX_VALUE))))
+        .items();
   }
 
   @Override

@@ -19,6 +19,11 @@ import io.camunda.zeebe.client.api.response.BroadcastSignalResponse;
 import java.io.InputStream;
 import java.util.Map;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.BroadcastSignalCommandStep1}
+ */
+@Deprecated
 public interface BroadcastSignalCommandStep1
     extends CommandWithCommunicationApiStep<BroadcastSignalCommandStep1> {
 
@@ -30,6 +35,11 @@ public interface BroadcastSignalCommandStep1
    */
   BroadcastSignalCommandStep2 signalName(String signalName);
 
+  /**
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+   *     io.camunda.client.api.command.BroadcastSignalCommandStep1.BroadcastSignalCommandStep2}
+   */
+  @Deprecated
   interface BroadcastSignalCommandStep2
       extends CommandWithTenantStep<BroadcastSignalCommandStep2>,
           FinalCommandStep<BroadcastSignalResponse> {

@@ -16,13 +16,11 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateOpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
+import io.camunda.operate.schema.util.camunda.exporter.SchemaWithExporter;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReader;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
-import io.camunda.operate.zeebeimport.ZeebeImporter;
-import io.camunda.operate.zeebeimport.ZeebePostImporter;
-import io.camunda.operate.zeebeimport.post.PostImportAction;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
@@ -50,6 +48,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -77,8 +76,6 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   protected OpenSearchClient zeebeOsClient;
 
   @Autowired protected OperateProperties operateProperties;
-  @Autowired protected ZeebeImporter zeebeImporter;
-  @Autowired protected ZeebePostImporter zeebePostImporter;
   @Autowired protected RecordsReaderHolder recordsReaderHolder;
   protected boolean failed = false;
   Map<Class<? extends ExporterEntity>, String> entityToAliasMap;
@@ -99,7 +96,6 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
   @Autowired private DecisionIndex decisionIndex;
   @Autowired private SchemaManager schemaManager;
-  @Autowired private TestImportListener testImportListener;
   @Autowired private IndexPrefixHolder indexPrefixHolder;
   private String indexPrefix;
 
@@ -110,12 +106,15 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Override
   public void starting(final Description description) {
-    if (indexPrefix == null) {
-      indexPrefix = indexPrefixHolder.createNewIndexPrefix();
+    indexPrefix = operateProperties.getOpensearch().getIndexPrefix();
+    if (indexPrefix.isBlank()) {
+      indexPrefix =
+          Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(indexPrefix);
+      operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
     }
-    operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
     if (operateProperties.getOpensearch().isCreateSchema()) {
-      schemaManager.createSchema();
+      final var schemaExporterHelper = new SchemaWithExporter(indexPrefix, false);
+      schemaExporterHelper.createSchema();
       assertThat(areIndicesCreatedAfterChecks(indexPrefix, 5, 5 * 60 /*sec*/))
           .describedAs("Opensearch %s (min %d) indices are created", indexPrefix, 5)
           .isTrue();
@@ -131,7 +130,6 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
     operateProperties
         .getOpensearch()
         .setIndexPrefix(OperateOpensearchProperties.DEFAULT_INDEX_PREFIX);
-    zeebePostImporter.getPostImportActions().stream().forEach(PostImportAction::clearCache);
     assertMaxOpenScrollContexts(15);
   }
 
@@ -177,12 +175,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
       final Predicate<Object[]> predicate,
       final Object... arguments) {
     processRecordsAndWaitFor(
-        recordsReaderHolder.getAllRecordsReaders(),
-        maxWaitingRounds,
-        true,
-        predicate,
-        null,
-        arguments);
+        recordsReaderHolder.getAllRecordsReaders(), maxWaitingRounds, predicate, null, arguments);
   }
 
   @Override
@@ -197,22 +190,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
       final Supplier<Object> supplier,
       final Object... arguments) {
     processRecordsAndWaitFor(
-        recordsReaderHolder.getAllRecordsReaders(), 50, true, predicate, supplier, arguments);
-  }
-
-  @Override
-  public void processAllRecordsAndWait(
-      final boolean runPostImport,
-      final Predicate<Object[]> predicate,
-      final Supplier<Object> supplier,
-      final Object... arguments) {
-    processRecordsAndWaitFor(
-        recordsReaderHolder.getAllRecordsReaders(),
-        50,
-        runPostImport,
-        predicate,
-        supplier,
-        arguments);
+        recordsReaderHolder.getAllRecordsReaders(), 50, predicate, supplier, arguments);
   }
 
   @Override
@@ -220,25 +198,13 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
       final ImportValueType importValueType,
       final Predicate<Object[]> predicate,
       final Object... arguments) {
-    processRecordsAndWaitFor(
-        getRecordsReaders(importValueType), 50, true, predicate, null, arguments);
-  }
-
-  @Override
-  public void processRecordsWithTypeAndWait(
-      final ImportValueType importValueType,
-      final boolean runPostImport,
-      final Predicate<Object[]> predicate,
-      final Object... arguments) {
-    processRecordsAndWaitFor(
-        getRecordsReaders(importValueType), 50, runPostImport, predicate, null, arguments);
+    processRecordsAndWaitFor(getRecordsReaders(importValueType), 50, predicate, null, arguments);
   }
 
   @Override
   public void processRecordsAndWaitFor(
       final Collection<RecordsReader> readers,
       final Integer maxWaitingRounds,
-      final boolean runPostImport,
       final Predicate<Object[]> predicate,
       final Supplier<Object> supplier,
       final Object... arguments) {
@@ -247,48 +213,19 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
     boolean found = predicate.test(arguments);
     final long start = System.currentTimeMillis();
     while (!found && waitingRound < maxRounds) {
-      testImportListener.resetCounters();
       try {
         if (supplier != null) {
           supplier.get();
         }
         refreshSearchIndices();
-        zeebeImporter.performOneRoundOfImportFor(readers);
         refreshOperateSearchIndices();
-        if (runPostImport) {
-          runPostImportActions();
-        }
-
       } catch (final Exception e) {
         LOGGER.error(e.getMessage(), e);
-      }
-      int waitForImports = 0;
-      // Wait for imports max 30 sec (60 * 500 ms)
-      while (testImportListener.getImportedCount() < testImportListener.getScheduledCount()
-          && waitForImports < 60) {
-        waitForImports++;
-        try {
-          sleepFor(2000);
-          zeebeImporter.performOneRoundOfImportFor(readers);
-          refreshOperateSearchIndices();
-          if (runPostImport) {
-            runPostImportActions();
-          }
-
-        } catch (final Exception e) {
-          waitingRound = 0;
-          testImportListener.resetCounters();
-          LOGGER.error(e.getMessage(), e);
-        }
-        LOGGER.debug(
-            " {} of {} imports processed",
-            testImportListener.getImportedCount(),
-            testImportListener.getScheduledCount());
       }
       refreshOperateSearchIndices();
       found = predicate.test(arguments);
       if (!found) {
-        sleepFor(2000);
+        sleepFor(500);
         waitingRound++;
       }
     }
@@ -299,20 +236,6 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
     } else {
       LOGGER.debug("Conditions not met after {} rounds ({} ms).", waitingRound, finishedTime);
       //      throw new TestPrerequisitesFailedException("Conditions not met.");
-    }
-  }
-
-  @Override
-  public void runPostImportActions() {
-    if (zeebePostImporter.getPostImportActions().size() == 0) {
-      zeebePostImporter.initPostImporters();
-    }
-    for (final PostImportAction action : zeebePostImporter.getPostImportActions()) {
-      try {
-        action.performOneRound();
-      } catch (final IOException e) {
-        throw new RuntimeException(e);
-      }
     }
   }
 

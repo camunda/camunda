@@ -14,6 +14,15 @@ public final class SortOptionBuilders {
 
   private SortOptionBuilders() {}
 
+  public static UsageMetricsSort.Builder usageMetrics() {
+    return new UsageMetricsSort.Builder();
+  }
+
+  public static UsageMetricsSort usageMetrics(
+      final Function<UsageMetricsSort.Builder, ObjectBuilder<UsageMetricsSort>> fn) {
+    return fn.apply(usageMetrics()).build();
+  }
+
   public static ProcessDefinitionSort.Builder processDefinition() {
     return new ProcessDefinitionSort.Builder();
   }

@@ -14,11 +14,11 @@ import static io.camunda.optimize.service.db.schema.index.SettingsIndex.SHARING_
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.SettingsDto;
+import io.camunda.optimize.rest.exceptions.BadRequestException;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.schema.index.SettingsIndex;
 import io.camunda.optimize.service.db.writer.SettingsWriter;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import jakarta.ws.rs.BadRequestException;
 import java.util.HashSet;
 import java.util.Set;
 import org.opensearch.client.opensearch._types.Refresh;

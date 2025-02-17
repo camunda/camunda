@@ -19,6 +19,11 @@ import io.camunda.zeebe.client.api.response.UpdateJobResponse;
 import io.camunda.zeebe.client.protocol.rest.JobChangeset;
 import java.time.Duration;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.UpdateJobCommandStep1}
+ */
+@Deprecated
 public interface UpdateJobCommandStep1 {
 
   /**
@@ -89,6 +94,11 @@ public interface UpdateJobCommandStep1 {
    */
   UpdateJobCommandStep2 updateTimeout(Duration timeout);
 
+  /**
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+   *     io.camunda.client.api.command.UpdateJobCommandStep1.UpdateJobCommandStep2}
+   */
+  @Deprecated
   interface UpdateJobCommandStep2 extends FinalCommandStep<UpdateJobResponse> {
     // the place for new optional parameters
   }

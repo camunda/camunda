@@ -63,16 +63,12 @@ public class StartupIT {
     final String elsHost = testContext.getInternalElsHost();
     final Integer elsPort = testContext.getInternalElsPort();
 
+    final String elasticSearchUrl = String.format("http://%s:%s", elsHost, elsPort);
     tasklistContainer
-        .withEnv(
-            "CAMUNDA_TASKLIST_ELASTICSEARCH_URL", String.format("http://%s:%s", elsHost, elsPort))
-        .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_HOST", elsHost)
-        .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_PORT", String.valueOf(elsPort))
-        .withEnv(
-            "CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL",
-            String.format("http://%s:%s", elsHost, elsPort))
-        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_HOST", elsHost)
-        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort));
+        .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", elasticSearchUrl)
+        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", elasticSearchUrl)
+        .withEnv("CAMUNDA_DATABASE_URL", elasticSearchUrl)
+        .withEnv("CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED", "true");
 
     testContainerUtil.startTasklistContainer(tasklistContainer, VERSION, testContext);
     LOGGER.info("************ Tasklist started  ************");

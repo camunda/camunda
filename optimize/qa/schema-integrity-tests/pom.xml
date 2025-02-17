@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda.optimize</groupId>
     <artifactId>optimize-qa</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>optimize-schema-integrity-tests</artifactId>
@@ -14,9 +14,19 @@
   <properties>
     <old.database.port>9250</old.database.port>
     <new.database.port>9200</new.database.port>
+    <!-- In order to allow the build to keep working, we need to specify an already released -->
+    <!-- previous version-->
+    <temporary.previous.version>8.6.0</temporary.previous.version>
   </properties>
 
+  <!-- this is necessary. Dependency:analyze error suppressed -->
   <dependencies>
+    <dependency>
+      <groupId>io.github.netmikey.logunit</groupId>
+      <artifactId>logunit-log4j2</artifactId>
+      <version>2.0.0</version>
+    </dependency>
+
     <dependency>
       <groupId>co.elastic.clients</groupId>
       <artifactId>elasticsearch-java</artifactId>
@@ -32,7 +42,6 @@
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-java</artifactId>
-      <version>${opensearch.client.version}</version>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -71,9 +80,22 @@
     </dependency>
 
     <dependency>
-      <groupId>co.elastic.clients</groupId>
-      <artifactId>elasticsearch-java</artifactId>
-      <version>8.13.4</version>
+      <groupId>org.glassfish.jersey.core</groupId>
+      <artifactId>jersey-client</artifactId>
+      <version>3.1.9</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.glassfish.jersey.media</groupId>
+      <artifactId>jersey-media-json-jackson</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+      <version>${version.spring}</version>
       <scope>test</scope>
     </dependency>
 
@@ -94,7 +116,6 @@
     <dependency>
       <groupId>org.apache.httpcomponents.core5</groupId>
       <artifactId>httpcore5</artifactId>
-      <version>5.3.1</version>
       <scope>runtime</scope>
     </dependency>
 
@@ -107,7 +128,7 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
-      <version>${httpclient.version}</version>
+      <version>${version.httpclient}</version>
       <scope>runtime</scope>
     </dependency>
 
@@ -121,7 +142,7 @@
     <dependency>
       <groupId>org.jetbrains</groupId>
       <artifactId>annotations</artifactId>
-      <version>17.0.0</version>
+      <version>26.0.2</version>
       <scope>test</scope>
     </dependency>
 
@@ -135,7 +156,7 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
+      <version>${version.slf4j}</version>
       <scope>runtime</scope>
     </dependency>
   </dependencies>
@@ -153,10 +174,10 @@
         <executions>
           <execution>
             <id>copy-test-resources</id>
-            <phase>process-test-resources</phase>
             <goals>
               <goal>testResources</goal>
             </goals>
+            <phase>process-test-resources</phase>
           </execution>
         </executions>
       </plugin>
@@ -173,7 +194,7 @@
           <redirectTestOutputToFile>false</redirectTestOutputToFile>
           <failIfNoTests>true</failIfNoTests>
           <systemPropertyVariables>
-            <previousVersion>${project.previousVersion}</previousVersion>
+            <previousVersion>${temporary.previous.version}</previousVersion>
             <currentVersion>${project.version}</currentVersion>
             <buildDirectory>${project.build.directory}</buildDirectory>
             <oldDatabasePort>${old.database.port}</oldDatabasePort>
@@ -192,24 +213,24 @@
         <executions>
           <execution>
             <id>unpack-previous-and-current-optimize</id>
-            <phase>pre-integration-test</phase>
             <goals>
               <goal>unpack</goal>
             </goals>
+            <phase>pre-integration-test</phase>
             <configuration>
               <skip>${skipTests}</skip>
               <artifactItems>
                 <artifactItem>
                   <groupId>io.camunda.optimize</groupId>
                   <artifactId>camunda-optimize</artifactId>
-                  <version>${project.previousVersion}</version>
+                  <version>${temporary.previous.version}</version>
                   <type>tar.gz</type>
                   <classifier>production</classifier>
                   <!-- we want to use environment variables as present in the internal service-config -->
                   <!-- thus excluding the default environment-config -->
                   <excludes>**/environment-config.yaml</excludes>
                   <overWrite>true</overWrite>
-                  <outputDirectory>${project.build.directory}/${project.previousVersion}</outputDirectory>
+                  <outputDirectory>${project.build.directory}/${temporary.previous.version}</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>io.camunda.optimize</groupId>
@@ -227,18 +248,6 @@
             </configuration>
           </execution>
         </executions>
-        <configuration>
-          <ignoredUnusedDeclaredDependencies>
-            <!-- test dependencies -->
-            <dep>io.camunda.optimize:optimize-backend</dep>
-            <dep>io.camunda.optimize:upgrade-optimize</dep>
-            <dep>org.springframework.boot:spring-boot-starter-test</dep>
-            <dep>io.netty:netty-codec-http</dep>
-          </ignoredUnusedDeclaredDependencies>
-          <ignoredNonTestScopedDependencies>
-            <dep>org.opensearch.client:opensearch-java</dep>
-          </ignoredNonTestScopedDependencies>
-        </configuration>
       </plugin>
     </plugins>
   </build>
@@ -266,17 +275,17 @@
               <!-- Starting old and new ES through docker-compose -->
               <execution>
                 <id>docker-compose-start</id>
-                <phase>pre-integration-test</phase>
                 <goals>
                   <goal>up</goal>
                 </goals>
+                <phase>pre-integration-test</phase>
               </execution>
               <execution>
                 <id>docker-compose-stop</id>
-                <phase>post-integration-test</phase>
                 <goals>
                   <goal>down</goal>
                 </goals>
+                <phase>post-integration-test</phase>
               </execution>
             </executions>
           </plugin>

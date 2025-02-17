@@ -12,7 +12,7 @@ import static io.camunda.zeebe.it.clustering.dynamic.Utils.createInstanceWithAJo
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.scaleAndWait;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -21,8 +21,6 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -31,17 +29,17 @@ import java.util.Optional;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 @ZeebeIntegration
-@AutoCloseResources
 final class ScaleUpBrokersTest {
 
   private static final int PARTITIONS_COUNT = 3;
   private static final String JOB_TYPE = "job";
-  @AutoCloseResource ZeebeClient zeebeClient;
+  @AutoClose CamundaClient camundaClient;
 
   private final List<TestStandaloneBroker> newBrokers = new ArrayList<>();
 
@@ -57,7 +55,7 @@ final class ScaleUpBrokersTest {
 
   @BeforeEach
   void createClient() {
-    zeebeClient = cluster.availableGateway().newClientBuilder().build();
+    camundaClient = cluster.availableGateway().newClientBuilder().build();
   }
 
   @AfterEach
@@ -74,7 +72,7 @@ final class ScaleUpBrokersTest {
     final int newBrokerId = newClusterSize - 1;
 
     final var processInstanceKeys =
-        createInstanceWithAJobOnAllPartitions(zeebeClient, JOB_TYPE, PARTITIONS_COUNT);
+        createInstanceWithAJobOnAllPartitions(camundaClient, JOB_TYPE, PARTITIONS_COUNT);
 
     // when
     createNewBroker(newClusterSize, newBrokerId);
@@ -91,12 +89,12 @@ final class ScaleUpBrokersTest {
     Awaitility.await()
         .untilAsserted(
             () ->
-                TopologyAssert.assertThat(zeebeClient.newTopologyRequest().send().join())
+                TopologyAssert.assertThat(camundaClient.newTopologyRequest().send().join())
                     .hasLeaderForPartition(2, 1));
     cluster.awaitCompleteTopology(newClusterSize, 3, 1, Duration.ofSeconds(10));
 
     // then - verify the cluster can still process
-    assertThatAllJobsCanBeCompleted(processInstanceKeys, zeebeClient, JOB_TYPE);
+    assertThatAllJobsCanBeCompleted(processInstanceKeys, camundaClient, JOB_TYPE);
   }
 
   @Test
@@ -123,7 +121,7 @@ final class ScaleUpBrokersTest {
     Awaitility.await()
         .untilAsserted(
             () ->
-                TopologyAssert.assertThat(zeebeClient.newTopologyRequest().send().join())
+                TopologyAssert.assertThat(camundaClient.newTopologyRequest().send().join())
                     .hasLeaderForPartition(3, 2));
     cluster.awaitCompleteTopology(finalClusterSize, 3, 1, Duration.ofSeconds(10));
   }
@@ -135,7 +133,7 @@ final class ScaleUpBrokersTest {
     final int newClusterSize = currentClusterSize + 2;
 
     final var processInstanceKeys =
-        createInstanceWithAJobOnAllPartitions(zeebeClient, JOB_TYPE, PARTITIONS_COUNT);
+        createInstanceWithAJobOnAllPartitions(camundaClient, JOB_TYPE, PARTITIONS_COUNT);
 
     // when
     createNewBroker(newClusterSize, currentClusterSize);
@@ -147,13 +145,13 @@ final class ScaleUpBrokersTest {
     Awaitility.await()
         .untilAsserted(
             () ->
-                TopologyAssert.assertThat(zeebeClient.newTopologyRequest().send().join())
+                TopologyAssert.assertThat(camundaClient.newTopologyRequest().send().join())
                     .hasLeaderForPartition(2, 1)
                     .hasLeaderForPartition(3, 2));
     cluster.awaitCompleteTopology(newClusterSize, 3, 1, Duration.ofSeconds(10));
 
     // then - verify the cluster can still process
-    assertThatAllJobsCanBeCompleted(processInstanceKeys, zeebeClient, JOB_TYPE);
+    assertThatAllJobsCanBeCompleted(processInstanceKeys, camundaClient, JOB_TYPE);
   }
 
   @Test

@@ -11,6 +11,7 @@ import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
 import org.springframework.boot.actuate.autoconfigure.health.HealthContributorAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,7 +28,7 @@ public class PartitionLeaderAwarenessHealthIndicatorAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean(name = "gatewayPartitionLeaderHealthIndicator")
   public PartitionLeaderAwarenessHealthIndicator gatewayPartitionLeaderAwarenessHealthIndicator(
-      SpringGatewayBridge gatewayBridge) {
+      final SpringGatewayBridge gatewayBridge) {
     // Here we effectively chain two suppliers to decouple their creation in time.
     return new PartitionLeaderAwarenessHealthIndicator(gatewayBridge::getClusterState);
   }

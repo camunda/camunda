@@ -14,7 +14,6 @@ import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.UserDetails;
 import io.camunda.identity.sdk.authentication.exception.TokenDecodeException;
 import io.camunda.identity.sdk.impl.rest.exception.RestException;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.tenant.OperateTenant;
@@ -204,7 +203,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   }
 
   private void retrieveTenants() {
-    if (getOperateProperties().getMultiTenancy().isEnabled()) {
+    if (getSecurityConfiguration().getMultiTenancy().isEnabled()) {
       try {
         final var accessToken = tokens.getAccessToken();
         final var identityTenants = getIdentity().tenants().forToken(accessToken);
@@ -295,10 +294,6 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
 
   private Identity getIdentity() {
     return SpringContextHolder.getBean(Identity.class);
-  }
-
-  private OperateProperties getOperateProperties() {
-    return SpringContextHolder.getBean(OperateProperties.class);
   }
 
   private IdentityRetryService getIdentityRetryService() {

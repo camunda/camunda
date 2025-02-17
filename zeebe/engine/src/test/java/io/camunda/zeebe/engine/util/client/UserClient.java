@@ -34,8 +34,8 @@ public final class UserClient {
     return new UpdateUserClient(writer, userKey, userRecord);
   }
 
-  public DeleteUserClient deleteUser(final Long userKey) {
-    return new DeleteUserClient(writer, userKey);
+  public DeleteUserClient deleteUser(final String username) {
+    return new DeleteUserClient(writer, username);
   }
 
   public static class UserCreationClient {
@@ -86,6 +86,11 @@ public final class UserClient {
 
     public Record<UserRecordValue> create() {
       final long position = writer.writeCommand(UserIntent.CREATE, userCreationRecord);
+      return expectation.apply(position);
+    }
+
+    public Record<UserRecordValue> create(final String username) {
+      final long position = writer.writeCommand(UserIntent.CREATE, username, userCreationRecord);
       return expectation.apply(position);
     }
 
@@ -177,14 +182,14 @@ public final class UserClient {
     private final UserRecord userRecord;
     private Function<Long, Record<UserRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public DeleteUserClient(final CommandWriter writer, final long userKey) {
+    public DeleteUserClient(final CommandWriter writer, final String username) {
       this.writer = writer;
       userRecord = new UserRecord();
-      userRecord.setUserKey(userKey);
+      userRecord.setUsername(username);
     }
 
-    public DeleteUserClient withUsername(final String username) {
-      userRecord.setUsername(username);
+    public DeleteUserClient withUserKey(final long userKey) {
+      userRecord.setUserKey(userKey);
       return this;
     }
 

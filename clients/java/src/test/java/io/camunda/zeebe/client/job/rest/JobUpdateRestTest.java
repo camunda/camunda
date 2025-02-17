@@ -17,9 +17,9 @@ package io.camunda.zeebe.client.job.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.protocol.rest.JobChangeset;
-import io.camunda.zeebe.client.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;

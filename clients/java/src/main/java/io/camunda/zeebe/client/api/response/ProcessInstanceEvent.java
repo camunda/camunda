@@ -17,6 +17,11 @@ package io.camunda.zeebe.client.api.response;
 
 import io.camunda.zeebe.client.api.ExperimentalApi;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.response.ProcessInstanceEvent}
+ */
+@Deprecated
 public interface ProcessInstanceEvent {
 
   /** Key of the process which this instance was created for */

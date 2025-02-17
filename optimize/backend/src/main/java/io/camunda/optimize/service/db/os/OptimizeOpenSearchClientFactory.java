@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.service.db.os;
 
-import static io.camunda.optimize.service.util.DatabaseVersionChecker.checkOSVersionSupport;
 import static io.camunda.optimize.upgrade.os.OpenSearchClientBuilder.buildOpenSearchAsyncClientFromConfig;
 import static io.camunda.optimize.upgrade.os.OpenSearchClientBuilder.buildOpenSearchClientFromConfig;
 
@@ -86,7 +85,6 @@ public final class OptimizeOpenSearchClientFactory {
         }
       }
     }
-    checkOSVersionSupport(osClient);
   }
 
   private static int getNumberOfClusterNodes(final OpenSearchClient openSearchClient)

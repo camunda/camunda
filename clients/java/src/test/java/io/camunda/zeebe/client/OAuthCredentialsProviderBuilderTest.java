@@ -18,11 +18,8 @@ package io.camunda.zeebe.client;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import java.io.IOException;
 import java.net.MalformedURLException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -134,46 +131,6 @@ public final class OAuthCredentialsProviderBuilderTest {
         .hasMessageContaining(
             "ReadTimeout timeout is 86400000000000 milliseconds, "
                 + "expected timeout to be a positive number of milliseconds smaller than 2147483647.")
-        .isInstanceOf(IllegalArgumentException.class);
-  }
-
-  @Test
-  void shouldFailWhenTrustStoreCannotBeLocated() throws IOException {
-    // given
-    final OAuthCredentialsProviderBuilder builder = new OAuthCredentialsProviderBuilder();
-
-    // when
-    builder
-        .audience("a")
-        .clientId("b")
-        .clientSecret("c")
-        .authorizationServerUrl("http://some.url")
-        .truststorePath(Paths.get("/does/not/exist"))
-        .keystorePath(Files.createTempFile("test-", ".jks").toAbsolutePath());
-
-    // then
-    assertThatCode(builder::build)
-        .hasMessageContaining("Truststore path does not exist")
-        .isInstanceOf(IllegalArgumentException.class);
-  }
-
-  @Test
-  void shouldFailWhenKeyStoreCannotBeLocated() throws IOException {
-    // given
-    final OAuthCredentialsProviderBuilder builder = new OAuthCredentialsProviderBuilder();
-
-    // when
-    builder
-        .audience("a")
-        .clientId("b")
-        .clientSecret("c")
-        .authorizationServerUrl("http://some.url")
-        .keystorePath(Paths.get("/does/not/exist"))
-        .truststorePath(Files.createTempFile("test-", ".jks").toAbsolutePath());
-
-    // then
-    assertThatCode(builder::build)
-        .hasMessageContaining("Keystore path does not exist")
         .isInstanceOf(IllegalArgumentException.class);
   }
 }

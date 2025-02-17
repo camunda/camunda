@@ -69,3 +69,12 @@ jobs:
           project-url: https://github.com/orgs/camunda/projects/101
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: component/optimize
+      - id: add-to-connectors
+        name: Add to Connectors project
+        uses: actions/add-to-project@v1.0.2
+        if: ${{ steps.has-project.outputs.result == 'false' }}
+        with:
+          project-url: https://github.com/orgs/camunda/projects/23
+          github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
+          labeled: component/connectors
+

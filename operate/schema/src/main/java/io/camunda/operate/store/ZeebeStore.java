@@ -11,4 +11,6 @@ public interface ZeebeStore {
   void refreshIndex(String indexPattern);
 
   boolean zeebeIndicesExists(String indexPattern);
+
+  String getZeebeIndexPrefix();
 }

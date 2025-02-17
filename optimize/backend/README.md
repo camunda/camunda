@@ -72,7 +72,7 @@ info("TEST")
         ┌───────────┐      ┌───────────┐    ┌─────────────────┐       │                  │
         │ Import    │ <──> │ Import    │    │ Import handlers │──────>│                  │
         │ scheduler │      │ mediator  │    │ (state storage) │       │                  │
-        └───────────┘      └───────────┘    └─────────────────┘       │                  │       
+        └───────────┘      └───────────┘    └─────────────────┘       │                  │
                                             ┌─────────────────┐       │                  │
                                             │ Import fetchers │       │                  │
                                             │ (data fetching) │       │                  │
@@ -162,7 +162,7 @@ In order to run API you have to run
 io.camunda.optimize.Main
 ```
 
-class as a normal class, which will start up embedded Jetty server with listener on port 8080 and
+class as a normal class, which will start up embedded Tomcat server with listener on port 8080 and
 endpoints providing basic operations
 
 to run from command line please execute following from root folder of the project
@@ -198,7 +198,6 @@ which will reply with something like
 <pre>    Unauthorized</pre>
 </p>
 <hr/>
-<i><small>Powered by Jetty://</small></i>
 </body>
 </html>
 ```

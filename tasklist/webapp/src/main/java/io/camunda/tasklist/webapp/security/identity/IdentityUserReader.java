@@ -12,7 +12,7 @@ import static io.camunda.tasklist.webapp.security.TasklistProfileService.IDENTIT
 
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
-import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.security.oauth.IdentityTenantAwareJwtAuthenticationToken;
@@ -33,7 +33,7 @@ public class IdentityUserReader implements UserReader {
 
   @Override
   public Optional<UserDTO> getCurrentUserBy(final Authentication authentication) {
-    if (authentication instanceof IdentityAuthentication identityAuthentication) {
+    if (authentication instanceof final IdentityAuthentication identityAuthentication) {
       return Optional.of(
           new UserDTO()
               // For testing assignee migration locally use 'identityAuthentication.getId()'
@@ -43,7 +43,7 @@ public class IdentityUserReader implements UserReader {
               .setTenants(identityAuthentication.getTenants())
               .setGroups(identityAuthentication.getGroups()));
     } else if (authentication
-        instanceof IdentityTenantAwareJwtAuthenticationToken identityTenantAwareToken) {
+        instanceof final IdentityTenantAwareJwtAuthenticationToken identityTenantAwareToken) {
       final AccessToken accessToken =
           identity
               .authentication()
@@ -60,7 +60,6 @@ public class IdentityUserReader implements UserReader {
           new UserDTO()
               .setUserId(identityTenantAwareToken.getName())
               .setDisplayName(userDisplayName)
-              .setApiUser(true)
               .setPermissions(permissions)
               .setTenants(identityTenantAwareToken.getTenants()));
     } else {

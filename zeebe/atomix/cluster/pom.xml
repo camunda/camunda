@@ -22,7 +22,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-atomix-parent</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>zeebe-atomix-cluster</artifactId>
@@ -134,8 +134,13 @@
     </dependency>
 
     <dependency>
-      <groupId>io.prometheus</groupId>
-      <artifactId>simpleclient</artifactId>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-commons</artifactId>
     </dependency>
 
     <dependency>
@@ -271,6 +276,11 @@
       <groupId>io.netty</groupId>
       <artifactId>netty-resolver</artifactId>
     </dependency>
+    <dependency>
+      <groupId>net.jcip</groupId>
+      <artifactId>jcip-annotations</artifactId>
+      <scope>provided</scope>
+    </dependency>
 
   </dependencies>
 
@@ -307,6 +317,7 @@
               <arguments>
                 <argument>${project.build.resources[0].directory}/snapshot-schema.xml</argument>
                 <argument>${project.build.resources[0].directory}/raft-entry-schema.xml</argument>
+                <argument>${project.build.resources[0].directory}/cluster-messaging.xml</argument>
               </arguments>
             </configuration>
           </execution>

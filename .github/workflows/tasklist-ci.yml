@@ -8,23 +8,7 @@ on:
     branches:
       - "main"
       - "stable/**"
-    paths:
-      - ".github/actions/**"
-      - ".github/workflows/tasklist-*"
-      - "bom/*"
-      - "parent/*"
-      - "pom.xml"
-      - "tasklist/**"
-      - "tasklist.Dockerfile"
   pull_request:
-    paths:
-      - ".github/actions/**"
-      - ".github/workflows/tasklist-*"
-      - "bom/*"
-      - "parent/*"
-      - "pom.xml"
-      - "tasklist/**"
-      - "tasklist.Dockerfile"
 
 # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
 # Exception for main branch: complete builds for every commit needed for confidenence
@@ -33,16 +17,34 @@ concurrency:
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
 jobs:
+  detect-changes:
+    outputs:
+      tasklist-backend-changes: ${{ steps.filter.outputs.tasklist-backend-changes }}
+      tasklist-frontend-changes: ${{ steps.filter.outputs.tasklist-frontend-changes }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+      # Detect changes against the base branch
+      - name: Detect changes
+        uses: ./.github/actions/paths-filter
+        id: filter
   run-build:
     name: run-build
+    needs: [detect-changes]
     uses: ./.github/workflows/tasklist-ci-build-reusable.yml
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
+    if: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.tasklist-frontend-changes == 'true' }}
 
   run-tests:
     name: run-tests
+    needs: [detect-changes]
     uses: ./.github/workflows/tasklist-ci-test-reusable.yml
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
+    if: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' }}

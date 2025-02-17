@@ -16,28 +16,31 @@
  */
 package io.atomix.raft.metrics;
 
-import io.prometheus.client.Histogram;
-import io.prometheus.client.Histogram.Timer;
+import static io.atomix.raft.metrics.RaftServiceMetricsDoc.COMPACTION_TIME;
+
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 
 public final class RaftServiceMetrics extends RaftMetrics {
 
-  private static final Histogram COMPACTION_TIME =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("compaction_time_ms")
-          .help("Time spend to compact")
-          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
-          .register();
+  private final Timer compactionTime;
+  private final MeterRegistry registry;
 
-  private final Histogram.Child compactionTime;
-
-  public RaftServiceMetrics(final String partitionName) {
+  public RaftServiceMetrics(final String partitionName, final MeterRegistry registry) {
     super(partitionName);
 
-    compactionTime = COMPACTION_TIME.labels(partitionGroupName, partition);
+    compactionTime =
+        Timer.builder(COMPACTION_TIME.getName())
+            .description(COMPACTION_TIME.getDescription())
+            .serviceLevelObjectives(COMPACTION_TIME.getTimerSLOs())
+            .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
+            .register(registry);
+    this.registry = registry;
   }
 
-  public Timer compactionTime() {
-    return compactionTime.startTimer();
+  public CloseableSilently compactionTime() {
+    return MicrometerUtil.timer(compactionTime, Timer.start(registry.config().clock()));
   }
 }

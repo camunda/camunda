@@ -47,8 +47,8 @@ public class ProcessCacheIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void testProcessNameAndTaskNameReturnedAndReused() {
-    final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process.bpmn");
-    final String processId2 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process_2.bpmn");
+    final String processId1 = ZeebeTestUtil.deployProcess(camundaClient, "simple_process.bpmn");
+    final String processId2 = ZeebeTestUtil.deployProcess(camundaClient, "simple_process_2.bpmn");
 
     databaseTestExtension.processAllRecordsAndWait(processIsDeployedCheck, processId1);
     databaseTestExtension.processAllRecordsAndWait(processIsDeployedCheck, processId2);

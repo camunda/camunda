@@ -41,8 +41,6 @@ public class ProcessInstanceSortTest extends AbstractSortTransformerTest {
         new ProcessInstanceSortTest.TestArguments(
             "parentFlowNodeInstanceKey", SortOrder.DESC, s -> s.parentFlowNodeInstanceKey().desc()),
         new ProcessInstanceSortTest.TestArguments(
-            "treePath", SortOrder.DESC, s -> s.treePath().desc()),
-        new ProcessInstanceSortTest.TestArguments(
             "startDate", SortOrder.ASC, s -> s.startDate().asc()),
         new ProcessInstanceSortTest.TestArguments(
             "endDate", SortOrder.DESC, s -> s.endDate().desc()),

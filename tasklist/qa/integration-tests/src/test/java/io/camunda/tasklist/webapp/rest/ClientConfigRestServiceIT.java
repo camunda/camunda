@@ -39,6 +39,7 @@ import org.springframework.web.context.WebApplicationContext;
     properties = {
       TasklistProperties.PREFIX + ".enterprise=true",
       TasklistProperties.PREFIX + ".multiTenancy.enabled=true",
+      TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true",
       "CAMUNDA_TASKLIST_CLOUD_ORGANIZATIONID=organizationId",
       // CAMUNDA_TASKLIST_CLOUD_CLUSTERID=clusterId  -- leave out to test for null values
       "CAMUNDA_TASKLIST_CLOUD_STAGE=stage",
@@ -85,6 +86,7 @@ public class ClientConfigRestServiceIT {
                 + "\"mixpanelToken\":\"i-am-a-token\","
                 + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","
                 + "\"isResourcePermissionsEnabled\":false,"
-                + "\"isUserAccessRestrictionsEnabled\":true};");
+                + "\"isUserAccessRestrictionsEnabled\":true,"
+                + "\"maxRequestSize\":4194304};");
   }
 }

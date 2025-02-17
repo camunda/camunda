@@ -66,6 +66,7 @@ final class OpenSearchArchiverRepositoryTest {
         1,
         new ArchiverConfiguration(),
         retention,
+        "testPrefix",
         "instance",
         "batch",
         client,

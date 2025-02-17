@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.service;
 
-import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
+import static io.camunda.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,9 +31,9 @@ import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.webapp.CommonUtils;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
+import io.camunda.tasklist.webapp.dto.VariableDTO;
+import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.es.TaskValidator;
-import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
-import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
@@ -75,7 +75,8 @@ class VariableServiceTest {
   @Test
   void persistDraftTaskVariablesWhenValidInputShouldPersistVariables() {
     // given
-    final String taskId = "taskId_123";
+    final var taskId = 123L;
+    final var taskIdAsString = String.valueOf(taskId);
     final var flowNodeInstanceId = 456L;
     final List<VariableInputDTO> draftTaskVariables =
         List.of(
@@ -89,11 +90,12 @@ class VariableServiceTest {
                 .setValue("\"valueF_value_that_exceeds_variableSizeThreshold_limit\""));
     final TaskEntity task =
         new TaskEntity()
-            .setId(taskId)
+            .setId(taskIdAsString)
+            .setKey(taskId)
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceId))
             .setProcessInstanceId("123")
             .setTenantId("tenant_a");
-    when(taskStore.getTask(taskId)).thenReturn(task);
+    when(taskStore.getTask(taskIdAsString)).thenReturn(task);
     final ImportProperties importProperties = mock(ImportProperties.class);
     when(tasklistProperties.getImporter()).thenReturn(importProperties);
     final int variableSizeThreshold = 30;
@@ -105,11 +107,11 @@ class VariableServiceTest {
             createVariableEntity(flowNodeInstanceId, "varD", "\"valueD\"", variableSizeThreshold)));
 
     // when
-    instance.persistDraftTaskVariables(taskId, draftTaskVariables);
+    instance.persistDraftTaskVariables(taskIdAsString, draftTaskVariables);
 
     // then
     verify(taskValidator).validateCanPersistDraftTaskVariables(task);
-    verify(draftVariableStore).deleteAllByTaskId(taskId);
+    verify(draftVariableStore).deleteAllByTaskId(taskIdAsString);
     verify(draftVariableStore).createOrUpdate(draftTaskVariableCaptor.capture());
 
     final Collection<DraftTaskVariableEntity> variablesToPersist =
@@ -117,17 +119,17 @@ class VariableServiceTest {
     assertThat(variablesToPersist)
         .extracting("id", "name", "value", "isPreview", "fullValue", "tenantId")
         .containsExactlyInAnyOrder(
-            tuple("taskId_123-varB", "varB", "\"valueB\"", false, "\"valueB\"", "tenant_a"),
+            tuple("123-varB", "varB", "\"valueB\"", false, "\"valueB\"", "tenant_a"),
             tuple("456-varC", "varC", "\"updateValueC\"", false, "\"updateValueC\"", "tenant_a"),
             tuple(
-                "taskId_123-varE",
+                "123-varE",
                 "varE",
                 "\"valueE_duplicate2\"",
                 false,
                 "\"valueE_duplicate2\"",
                 "tenant_a"),
             tuple(
-                "taskId_123-varF",
+                "123-varF",
                 "varF",
                 "\"valueF_value_that_exceeds_var",
                 true,

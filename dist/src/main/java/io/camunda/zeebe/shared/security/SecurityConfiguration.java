@@ -93,7 +93,7 @@ public final class SecurityConfiguration {
       final Authentication authentication)
       throws IOException, ServletException {
     if (authentication instanceof final IdentityAuthentication identity) {
-      TenantAttributeHolder.withTenantIds(identity.tenantIds());
+      TenantAttributeHolder.setTenantIds(identity.tenantIds());
     }
   }
 

@@ -7,11 +7,11 @@
  */
 package io.camunda.operate.webapp.zeebe.operation.process.modify;
 
+import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
-import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;

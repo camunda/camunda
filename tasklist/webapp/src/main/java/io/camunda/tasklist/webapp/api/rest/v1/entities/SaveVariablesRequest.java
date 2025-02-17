@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
-import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
+import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
@@ -23,7 +23,7 @@ public class SaveVariablesRequest {
     return variables;
   }
 
-  public SaveVariablesRequest setVariables(List<VariableInputDTO> variables) {
+  public SaveVariablesRequest setVariables(final List<VariableInputDTO> variables) {
     this.variables = variables;
     return this;
   }

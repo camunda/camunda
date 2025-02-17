@@ -48,9 +48,9 @@ public class SequenceFlowZeebeImportIT extends OperateZeebeAbstractIT {
 
     final Long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(
-            zeebeClient, processId, "{\"var1\": \"initialValue\", \"otherVar\": 123}");
+            camundaClient, processId, "{\"var1\": \"initialValue\", \"otherVar\": 123}");
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task1");
-    ZeebeTestUtil.completeTask(zeebeClient, "task1", getWorkerName(), null);
+    ZeebeTestUtil.completeTask(camundaClient, "task1", getWorkerName(), null);
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task2");
 
     // when

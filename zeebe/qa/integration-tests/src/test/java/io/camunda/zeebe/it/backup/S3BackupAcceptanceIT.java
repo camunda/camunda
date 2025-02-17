@@ -15,7 +15,7 @@ import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
+import io.camunda.zeebe.test.testcontainers.MinioContainer;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import java.time.Duration;
 import java.util.Map;

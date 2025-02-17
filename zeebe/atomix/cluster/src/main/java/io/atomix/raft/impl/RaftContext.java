@@ -83,6 +83,7 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -163,6 +164,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private long lastHeartbeat;
   private final RaftPartitionConfig partitionConfig;
   private final int partitionId;
+  private final MeterRegistry meterRegistry;
 
   // after firstCommitIndex is set it will be null
   private AwaitingReadyCommitListener awaitingReadyCommitListener;
@@ -177,16 +179,18 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       final RaftThreadContextFactory threadContextFactory,
       final Supplier<Random> randomFactory,
       final RaftElectionConfig electionConfig,
-      final RaftPartitionConfig partitionConfig) {
+      final RaftPartitionConfig partitionConfig,
+      final MeterRegistry meterRegistry) {
     this.name = checkNotNull(name, "name cannot be null");
     this.membershipService = checkNotNull(membershipService, "membershipService cannot be null");
     this.protocol = checkNotNull(protocol, "protocol cannot be null");
     this.storage = checkNotNull(storage, "storage cannot be null");
     random = randomFactory.get();
     this.partitionId = partitionId;
+    this.meterRegistry = checkNotNull(meterRegistry, "meterRegistry cannot be null");
     health = HealthReport.healthy(this);
 
-    raftRoleMetrics = new RaftRoleMetrics(name);
+    raftRoleMetrics = new RaftRoleMetrics(name, meterRegistry);
 
     log =
         ContextualLoggerFactory.getLogger(
@@ -243,7 +247,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
             threadContext,
             raftLog,
             partitionConfig.getPreferSnapshotReplicationThreshold(),
-            new RaftServiceMetrics(name),
+            new RaftServiceMetrics(name, meterRegistry),
             ContextualLoggerFactory.getLogger(
                 LogCompactor.class, LoggerContext.builder(getClass()).addValue(name).build()));
 
@@ -252,7 +256,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     this.partitionConfig = partitionConfig;
     cluster = new RaftClusterContext(localMemberId, this);
 
-    replicationMetrics = new RaftReplicationMetrics(name);
+    replicationMetrics = new RaftReplicationMetrics(name, meterRegistry);
     replicationMetrics.setAppendIndex(raftLog.getLastIndex());
     lastHeartbeat = System.currentTimeMillis();
 
@@ -751,6 +755,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         completeTransition();
       }
     }
+  }
+
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
   }
 
   private void startTransition() {

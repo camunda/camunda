@@ -6,10 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import NavigatedViewer, {type BpmnElement} from 'bpmn-js/lib/NavigatedViewer';
+import NavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
+import OutlineModule from 'bpmn-js/lib/features/outline';
+import type Canvas from 'diagram-js/lib/core/Canvas';
+import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
+import type ZoomScroll from 'diagram-js/lib/navigation/zoomscroll/ZoomScroll';
+import type {RootLike} from 'diagram-js/lib/model/Types';
 // @ts-expect-error Could not find a declaration file for module '@bpmn-io/element-templates-icons-renderer'
 import ElementTemplatesIconsRenderer from '@bpmn-io/element-template-icon-renderer';
 import {bpmnRendererColors} from './styles';
+
+type ServiceMap = {
+  canvas: Canvas;
+  elementRegistry: ElementRegistry;
+  zoomScroll: ZoomScroll;
+};
 
 type RenderOptions = {
   container: HTMLElement;
@@ -17,11 +28,11 @@ type RenderOptions = {
 };
 
 class BpmnJS {
-  #navigatedViewer: NavigatedViewer | null = null;
+  #navigatedViewer: NavigatedViewer<ServiceMap> | null = null;
   #xml: string | null = null;
   onViewboxChange?: (isChanging: boolean) => void;
   onRootChange?: (rootElementId: string) => void;
-  #rootElement?: BpmnElement;
+  #rootElement?: RootLike;
 
   import = async (xml: string) => {
     // Cleanup before importing
@@ -77,7 +88,7 @@ class BpmnJS {
       container,
       bpmnRenderer: bpmnRendererColors,
       canvas: {deferUpdate: true},
-      additionalModules: [ElementTemplatesIconsRenderer],
+      additionalModules: [ElementTemplatesIconsRenderer, OutlineModule],
     });
   };
 
@@ -121,7 +132,7 @@ class BpmnJS {
 
     if (canvas !== undefined) {
       canvas.resized();
-      canvas.zoom('fit-viewport', 'auto');
+      canvas.zoom('fit-viewport');
     }
   };
 

@@ -19,6 +19,11 @@ import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.client.api.search.sort.ProcessInstanceSort;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.search.query.ProcessInstanceQuery}
+ */
+@Deprecated
 public interface ProcessInstanceQuery
     extends TypedSearchQueryRequest<
             ProcessInstanceFilter, ProcessInstanceSort, ProcessInstanceQuery>,

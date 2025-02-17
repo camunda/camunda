@@ -7,8 +7,8 @@
  */
 
 import fs from 'node:fs/promises';
-import path, {dirname} from 'path';
-import {fileURLToPath} from 'url';
+import path, {dirname} from 'node:path';
+import {fileURLToPath} from 'node:url';
 
 const oldPath = path.join(
   dirname(fileURLToPath(import.meta.url)),

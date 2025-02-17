@@ -13,6 +13,9 @@
       },
       "claimValue": {
         "type": "keyword"
+      },
+      "name": {
+        "type": "keyword"
       }
     }
   }

@@ -49,16 +49,16 @@ public class AuthorizationQueryTransformerTest extends AbstractTransformerTest {
   public static Stream<Arguments> queryFilterParameters() {
     return Stream.of(
         Arguments.of(
-            (Function<Builder, ObjectBuilder<AuthorizationFilter>>) f -> f.ownerKeys(1234L),
-            "ownerKey",
-            1234L),
+            (Function<Builder, ObjectBuilder<AuthorizationFilter>>) f -> f.ownerIds("foo"),
+            "ownerId",
+            "foo"),
         Arguments.of(
             (Function<Builder, ObjectBuilder<AuthorizationFilter>>) f -> f.ownerType("user"),
             "ownerType",
             "user"),
         Arguments.of(
             (Function<Builder, ObjectBuilder<AuthorizationFilter>>) f -> f.resourceIds("456"),
-            "permissions.resourceIds",
+            "resourceId",
             "456"),
         Arguments.of(
             (Function<Builder, ObjectBuilder<AuthorizationFilter>>)
@@ -67,8 +67,8 @@ public class AuthorizationQueryTransformerTest extends AbstractTransformerTest {
             "process-definition"),
         Arguments.of(
             (Function<Builder, ObjectBuilder<AuthorizationFilter>>)
-                f -> f.permissionType(PermissionType.READ),
-            "permissions.type",
+                f -> f.permissionTypes(PermissionType.READ),
+            "permissionTypes",
             PermissionType.READ.name()));
   }
 }

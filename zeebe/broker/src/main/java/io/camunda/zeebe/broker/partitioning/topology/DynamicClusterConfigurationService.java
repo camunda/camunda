@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
+import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -27,6 +28,11 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   private ClusterConfiguration initialClusterConfiguration;
 
   private ClusterConfigurationManagerService clusterConfigurationManagerService;
+  private final ClusterChangeExecutor clusterChangeExecutor;
+
+  public DynamicClusterConfigurationService(final ClusterChangeExecutor clusterChangeExecutor) {
+    this.clusterChangeExecutor = clusterChangeExecutor;
+  }
 
   @Override
   public PartitionDistribution getPartitionDistribution() {
@@ -34,11 +40,11 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   }
 
   @Override
-  public void registerChangeExecutors(
+  public void registerPartitionChangeExecutors(
       final PartitionChangeExecutor partitionChangeExecutor,
       final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
     if (clusterConfigurationManagerService != null) {
-      clusterConfigurationManagerService.registerChangeExecutors(
+      clusterConfigurationManagerService.registerPartitionChangeExecutors(
           partitionChangeExecutor, partitionScalingChangeExecutor);
     } else {
       throw new IllegalStateException(
@@ -117,6 +123,11 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   }
 
   @Override
+  public ClusterChangeExecutor getClusterChangeExecutor() {
+    return clusterChangeExecutor;
+  }
+
+  @Override
   public ActorFuture<Void> closeAsync() {
     partitionDistribution = null;
     if (clusterConfigurationManagerService != null) {
@@ -153,6 +164,8 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
             .getBrokerConfiguration()
             .getExperimental()
             .getFeatures()
-            .isEnablePartitionScaling());
+            .isEnablePartitionScaling(),
+        clusterChangeExecutor,
+        brokerStartupContext.getMeterRegistry());
   }
 }

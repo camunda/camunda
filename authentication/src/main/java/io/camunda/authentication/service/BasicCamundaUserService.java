@@ -7,36 +7,47 @@
  */
 package io.camunda.authentication.service;
 
+import io.camunda.authentication.ConditionalOnAuthenticationMethod;
+import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.authentication.entity.CamundaUserDTO;
-import org.springframework.context.annotation.Profile;
+import io.camunda.search.entities.RoleEntity;
+import io.camunda.security.entity.AuthenticationMethod;
+import java.util.Optional;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-@Profile("auth-basic")
+@ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
 @Service
 public class BasicCamundaUserService implements CamundaUserService {
+  private Optional<CamundaUser> getCurrentCamundaUser() {
+    return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+        .map(Authentication::getPrincipal)
+        .map(principal -> principal instanceof final CamundaUser user ? user : null);
+  }
 
   @Override
   public CamundaUserDTO getCurrentUser() {
-    final var authenticatedUser =
-        (CamundaUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-    return new CamundaUserDTO(
-        authenticatedUser.getUserId(),
-        authenticatedUser.getUserKey(),
-        authenticatedUser.getDisplayName(),
-        authenticatedUser
-            .getDisplayName(), // migrated for historical purposes username -> displayName
-        authenticatedUser.getEmail(),
-        authenticatedUser.getAuthorizedApplications(),
-        authenticatedUser.getTenants(),
-        authenticatedUser.getGroups(),
-        authenticatedUser.getRoles(),
-        authenticatedUser.getSalesPlanType(),
-        authenticatedUser.getC8Links(),
-        authenticatedUser.canLogout(),
-        authenticatedUser.isApiUser());
+    return getCurrentCamundaUser()
+        .map(
+            user -> {
+              final AuthenticationContext auth = user.getAuthenticationContext();
+              return new CamundaUserDTO(
+                  user.getUserId(),
+                  user.getUserKey(),
+                  user.getDisplayName(),
+                  user.getDisplayName(), // migrated for historical purposes username -> displayName
+                  user.getEmail(),
+                  auth.authorizedApplications(),
+                  auth.tenants(),
+                  auth.groups(),
+                  auth.roles().stream().map(RoleEntity::name).toList(),
+                  user.getSalesPlanType(),
+                  user.getC8Links(),
+                  user.canLogout());
+            })
+        .orElse(null);
   }
 
   @Override

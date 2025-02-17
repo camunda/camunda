@@ -7,10 +7,13 @@
  */
 package io.camunda.zeebe.gateway.api.util;
 
+import static org.mockito.Mockito.mock;
+
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.EndpointManager;
 import io.camunda.zeebe.gateway.Gateway;
@@ -57,6 +60,7 @@ import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 public final class StubbedGateway {
 
@@ -68,6 +72,8 @@ public final class StubbedGateway {
   private final GatewayCfg config;
   private final SecurityConfiguration securityConfiguration;
   private Server server;
+  private final UserServices services;
+  private final PasswordEncoder passwordEncoder;
 
   public StubbedGateway(
       final ActorScheduler actorScheduler,
@@ -80,6 +86,8 @@ public final class StubbedGateway {
     this.jobStreamer = jobStreamer;
     this.config = config;
     this.securityConfiguration = securityConfiguration;
+    services = mock(UserServices.class);
+    passwordEncoder = mock(PasswordEncoder.class);
   }
 
   public void start() throws IOException {
@@ -95,7 +103,8 @@ public final class StubbedGateway {
     final InProcessServerBuilder serverBuilder =
         InProcessServerBuilder.forName(SERVER_NAME)
             .addService(
-                ServerInterceptors.intercept(gatewayGrpcService, new AuthenticationInterceptor()));
+                ServerInterceptors.intercept(
+                    gatewayGrpcService, new AuthenticationInterceptor(services, passwordEncoder)));
     server = serverBuilder.build();
     server.start();
   }

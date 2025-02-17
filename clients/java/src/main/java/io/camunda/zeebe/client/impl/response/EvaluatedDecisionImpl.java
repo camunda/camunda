@@ -16,11 +16,12 @@
 package io.camunda.zeebe.client.impl.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.client.impl.util.ParseUtil;
+import io.camunda.client.protocol.rest.EvaluatedDecisionResult;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.EvaluatedDecision;
 import io.camunda.zeebe.client.api.response.EvaluatedDecisionInput;
 import io.camunda.zeebe.client.api.response.MatchedDecisionRule;
-import io.camunda.zeebe.client.protocol.rest.EvaluatedDecisionItem;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,10 +41,10 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
   private final String tenantId;
 
   public EvaluatedDecisionImpl(
-      final EvaluatedDecisionItem evaluatedDecisionItem, final JsonMapper jsonMapper) {
+      final EvaluatedDecisionResult evaluatedDecisionItem, final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
     decisionId = evaluatedDecisionItem.getDecisionDefinitionId();
-    decisionKey = evaluatedDecisionItem.getDecisionDefinitionKey();
+    decisionKey = ParseUtil.parseLongOrEmpty(evaluatedDecisionItem.getDecisionDefinitionKey());
     decisionVersion = evaluatedDecisionItem.getDecisionDefinitionVersion();
     decisionName = evaluatedDecisionItem.getDecisionDefinitionName();
     decisionType = evaluatedDecisionItem.getDecisionDefinitionType();
@@ -74,7 +75,7 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
         .forEach(matchedRules::add);
   }
 
-  private void buildEvaluatedDecisionInput(final EvaluatedDecisionItem evaluatedDecisionItem) {
+  private void buildEvaluatedDecisionInput(final EvaluatedDecisionResult evaluatedDecisionItem) {
     if (evaluatedDecisionItem.getEvaluatedInputs() == null) {
       return;
     }
@@ -84,7 +85,7 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
             .collect(Collectors.toList()));
   }
 
-  private void buildMatchedRules(final EvaluatedDecisionItem evaluatedDecisionItem) {
+  private void buildMatchedRules(final EvaluatedDecisionResult evaluatedDecisionItem) {
     if (evaluatedDecisionItem.getMatchedRules() == null) {
       return;
     }

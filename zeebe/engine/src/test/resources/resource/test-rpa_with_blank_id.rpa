@@ -1,0 +1,7 @@
+{
+  "type": "default",
+  "id": "  ",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.1.0",
+  "schemaVersion": 7
+}

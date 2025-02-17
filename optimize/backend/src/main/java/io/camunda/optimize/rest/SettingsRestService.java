@@ -7,22 +7,26 @@
  */
 package io.camunda.optimize.rest;
 
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
+
 import io.camunda.optimize.dto.optimize.SettingsDto;
 import io.camunda.optimize.service.SettingsService;
 import io.camunda.optimize.service.security.SessionService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotNull;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.PUT;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
-import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-@Path("/settings")
-@Component
+@Validated
+@RestController
+@RequestMapping(REST_API_PATH + SettingsRestService.SETTINGS_PATH)
 public class SettingsRestService {
+
+  public static final String SETTINGS_PATH = "/settings";
 
   private final SessionService sessionService;
   private final SettingsService settingsService;
@@ -33,18 +37,15 @@ public class SettingsRestService {
     this.settingsService = settingsService;
   }
 
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
+  @GetMapping
   public SettingsDto getSettings() {
     return settingsService.getSettings();
   }
 
-  @PUT
-  @Produces(MediaType.APPLICATION_JSON)
+  @PutMapping
   public void setSettings(
-      @Context final ContainerRequestContext requestContext,
-      @NotNull final SettingsDto settingsDto) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @NotNull @RequestBody final SettingsDto settingsDto, final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     settingsService.setSettings(userId, settingsDto);
   }
 }

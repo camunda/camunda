@@ -15,8 +15,9 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.client.impl.util.ParseUtil;
+import io.camunda.client.protocol.rest.MessagePublicationResult;
 import io.camunda.zeebe.client.api.response.PublishMessageResponse;
-import io.camunda.zeebe.client.protocol.rest.MessagePublicationResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 
 public final class PublishMessageResponseImpl implements PublishMessageResponse {
@@ -29,8 +30,8 @@ public final class PublishMessageResponseImpl implements PublishMessageResponse 
     tenantId = response.getTenantId();
   }
 
-  public PublishMessageResponseImpl(final MessagePublicationResponse response) {
-    key = response.getMessageKey();
+  public PublishMessageResponseImpl(final MessagePublicationResult response) {
+    key = ParseUtil.parseLongOrEmpty(response.getMessageKey());
     tenantId = response.getTenantId();
   }
 

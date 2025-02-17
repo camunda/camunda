@@ -8,22 +8,16 @@
 package io.camunda.webapps.backup;
 
 import io.camunda.webapps.backup.BackupException.*;
+import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
-import io.camunda.webapps.schema.descriptors.backup.BackupPriority;
-import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
-import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
-import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
-import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
-import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
-import io.camunda.webapps.schema.descriptors.backup.Prio6Backup;
+import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
+import io.camunda.webapps.schema.descriptors.backup.SnapshotIndexCollection;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,56 +27,41 @@ public class BackupServiceImpl implements BackupService {
   private final Executor threadPoolTaskExecutor;
   private final Queue<SnapshotRequest> requestsQueue = new ConcurrentLinkedQueue<>();
 
-  private final List<Prio1Backup> prio1BackupIndices;
-
-  private final List<Prio2Backup> prio2BackupTemplates;
-
-  private final List<Prio3Backup> prio3BackupTemplates;
-
-  private final List<Prio4Backup> prio4BackupTemplates;
-
-  private final List<Prio5Backup> prio5BackupIndices;
-
-  private final List<Prio6Backup> prio6BackupIndices;
-
+  private final BackupPriorities backupPriorities;
   private final BackupRepositoryProps backupProps;
+
+  private final DynamicIndicesProvider dynamicIndicesProvider;
 
   private final BackupRepository repository;
 
-  private String[][] indexPatternsOrdered;
-
   public BackupServiceImpl(
       final Executor threadPoolTaskExecutor,
-      final List<Prio1Backup> prio1BackupIndices,
-      final List<Prio2Backup> prio2BackupTemplates,
-      final List<Prio3Backup> prio3BackupTemplates,
-      final List<Prio4Backup> prio4BackupTemplates,
-      final List<Prio5Backup> prio5BackupIndices,
-      final List<Prio6Backup> prio6BackupIndices,
-      final BackupRepositoryProps operateProperties,
-      final BackupRepository repository) {
+      final BackupPriorities backupPriorities,
+      final BackupRepositoryProps backupProps,
+      final BackupRepository repository,
+      final DynamicIndicesProvider dynamicIndicesProvider) {
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
-    this.prio1BackupIndices = prio1BackupIndices;
-    this.prio2BackupTemplates = prio2BackupTemplates;
-    this.prio3BackupTemplates = prio3BackupTemplates;
-    this.prio4BackupTemplates = prio4BackupTemplates;
-    this.prio5BackupIndices = prio5BackupIndices;
-    this.prio6BackupIndices = prio6BackupIndices;
+    this.backupPriorities = backupPriorities;
     this.repository = repository;
-    backupProps = operateProperties;
+    this.backupProps = backupProps;
+    this.dynamicIndicesProvider = dynamicIndicesProvider;
   }
 
   @Override
   public void deleteBackup(final Long backupId) {
     repository.validateRepositoryExists(backupProps.repositoryName());
     final String repositoryName = backupProps.repositoryName();
-    final int count = getIndexPatternsOrdered().length;
-    final String version = getCurrentVersion();
-    for (int index = 0; index < count; index++) {
+    // the number of parts can be dynamic
+    final var backupMetadataOpt = repository.getMetadata(repositoryName, backupId);
+    if (backupMetadataOpt.isEmpty()) {
+      throw new ResourceNotFoundException(
+          "Expected to find backup with ID '%d', but no metadata for it found".formatted(backupId));
+    }
+    final var backupMetadata = backupMetadataOpt.get();
+    final int partCount = backupMetadata.partCount();
+    for (int partIdx = 1; partIdx <= partCount; partIdx++) {
       final String snapshotName =
-          repository
-              .snapshotNameProvider()
-              .getSnapshotName(new Metadata(backupId, version, index + 1, count));
+          repository.snapshotNameProvider().getSnapshotName(backupMetadata.withPart(partIdx));
       repository.deleteSnapshot(repositoryName, snapshotName);
     }
   }
@@ -114,16 +93,26 @@ public class BackupServiceImpl implements BackupService {
 
   TakeBackupResponseDto scheduleSnapshots(final TakeBackupRequestDto request) {
     final String repositoryName = backupProps.repositoryName();
-    final int count = getIndexPatternsOrdered().length;
+    final var indexPatternsOrdered = getValidIndexPatterns();
+    final int count = indexPatternsOrdered.size();
     final List<String> snapshotNames = new ArrayList<>();
     final String version = getCurrentVersion();
-    for (int index = 0; index < count; index++) {
-      final List<String> indexPattern = Arrays.asList(getIndexPatternsOrdered()[index]);
-      final Metadata metadata = new Metadata(request.getBackupId(), version, index + 1, count);
+    for (int index = 0; index < indexPatternsOrdered.size(); index++) {
+      SnapshotIndexCollection indexCollection = indexPatternsOrdered.get(index);
+      final var partNum = index + 1;
+      final Metadata metadata = new Metadata(request.getBackupId(), version, partNum, count);
       final String snapshotName = repository.snapshotNameProvider().getSnapshotName(metadata);
-      final SnapshotRequest snapshotRequest =
-          new SnapshotRequest(repositoryName, snapshotName, indexPattern, metadata);
+      // Add all the dynamic indices in the last step
+      if (partNum == count) {
+        indexCollection =
+            indexCollection.addSkippableIndices(dynamicIndicesProvider.getAllDynamicIndices());
+      }
 
+      final SnapshotRequest snapshotRequest =
+          new SnapshotRequest(repositoryName, snapshotName, indexCollection, metadata);
+
+      LOGGER.debug(
+          "Snapshot part {} contains indices {}", metadata.partNo(), indexCollection.allIndices());
       requestsQueue.offer(snapshotRequest);
       LOGGER.debug("Snapshot scheduled: {}", snapshotName);
       snapshotNames.add(snapshotName);
@@ -144,47 +133,36 @@ public class BackupServiceImpl implements BackupService {
     }
   }
 
-  private String[][] getIndexPatternsOrdered() {
-    if (indexPatternsOrdered == null) {
-      indexPatternsOrdered =
-          new String[][] {
-            fullQualifiedName(prio1BackupIndices),
-            fullQualifiedName(prio2BackupTemplates),
-            // dated indices
-            fullQualifiedNameWithMatcher(prio2BackupTemplates),
-            fullQualifiedName(prio3BackupTemplates),
-            fullQualifiedName(prio4BackupTemplates),
-            // dated indices
-            fullQualifiedNameWithMatcher(prio4BackupTemplates),
-            fullQualifiedName(prio5BackupIndices),
-            fullQualifiedName(prio6BackupIndices)
-          };
+  @VisibleForTesting
+  List<SnapshotIndexCollection> getValidIndexPatterns() {
+    final var list = new ArrayList<SnapshotIndexCollection>();
+    final var missingIndicesList = new ArrayList<String>();
+    for (final var indices : backupPriorities.indicesSplitBySnapshot().toList()) {
+      final var foundIndices = repository.checkAllIndicesExist(indices.allIndices());
+      final var missingNonRequiredIndices =
+          indices.skippableIndices().stream().filter(idx -> !foundIndices.contains(idx)).toList();
+      final var missingRequiredIndices =
+          indices.requiredIndices().stream().filter(idx -> !foundIndices.contains(idx)).toList();
+      if (!missingRequiredIndices.isEmpty()) {
+        missingIndicesList.addAll(missingRequiredIndices);
+        LOGGER.warn(
+            "Missing required indices:{}. All indices found are {}",
+            missingRequiredIndices,
+            foundIndices);
+      }
+      // skip this part if there is no index, but they are not required
+      if (!foundIndices.isEmpty()) {
+        list.add(indices.removeSkippableIndices(missingNonRequiredIndices));
+      }
     }
-    return indexPatternsOrdered;
-  }
-
-  private <A extends BackupPriority> String[] fullQualifiedName(final Collection<A> backups) {
-    return backups.stream().map(this::getFullQualifiedName).toArray(String[]::new);
-  }
-
-  private <A extends BackupPriority> String[] fullQualifiedNameWithMatcher(
-      final Collection<A> backups) {
-    return backups.stream()
-        .map(this::getFullQualifiedName)
-        .flatMap(name -> Stream.of(name + "*", "-" + name))
-        .toArray(String[]::new);
+    if (!missingIndicesList.isEmpty()) {
+      throw new IndexNotFoundException(missingIndicesList);
+    }
+    return list;
   }
 
   // TODO Keep in mind this bug: https://github.com/camunda/camunda/issues/20458
   private String getCurrentVersion() {
     return backupProps.version().toLowerCase();
-  }
-
-  private String getFullQualifiedName(final BackupPriority index) {
-    if (index != null) {
-      return index.getFullQualifiedName();
-    } else {
-      throw new BackupException("Can't find out index name for backup.");
-    }
   }
 }

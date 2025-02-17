@@ -12,12 +12,13 @@ import {get} from 'request';
 import {withErrorHandling} from 'HOC';
 import {addNotification} from 'notifications';
 import {t} from 'translation';
+import { getFullURL } from '../modules/api';
 
 export function Logout({mightFail, history}) {
   useEffect(() => {
     (async () => {
       await mightFail(
-        get('api/authentication/logout'),
+        get(getFullURL('api/authentication/logout')),
         () => addNotification({text: t('navigation.logoutSuccess')}),
         () => addNotification({text: t('navigation.logoutFailed'), type: 'error'})
       );

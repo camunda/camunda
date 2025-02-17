@@ -108,7 +108,7 @@ public class GroupIT {
     final var instance = searchResult.items().getFirst();
 
     assertThat(instance).isNotNull();
-    assertThat(instance.key()).isEqualTo(group.groupKey());
+    assertThat(instance.groupKey()).isEqualTo(group.groupKey());
     assertThat(instance.name()).isEqualTo(group.name());
   }
 
@@ -151,7 +151,7 @@ public class GroupIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
-    assertThat(searchResult.items().getFirst().key()).isEqualTo(group.groupKey());
+    assertThat(searchResult.items().getFirst().groupKey()).isEqualTo(group.groupKey());
   }
 
   @TestTemplate
@@ -179,7 +179,7 @@ public class GroupIT {
                                 p.size(5)
                                     .searchAfter(
                                         new Object[] {
-                                          instanceAfter.name(), instanceAfter.key()
+                                          instanceAfter.name(), instanceAfter.groupKey()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);
@@ -189,7 +189,7 @@ public class GroupIT {
 
   private static void compareGroups(final GroupEntity instance, final GroupDbModel group) {
     assertThat(instance).isNotNull();
-    assertThat(instance.key()).isEqualTo(group.groupKey());
+    assertThat(instance.groupKey()).isEqualTo(group.groupKey());
     assertThat(instance.name()).isEqualTo(group.name());
   }
 }

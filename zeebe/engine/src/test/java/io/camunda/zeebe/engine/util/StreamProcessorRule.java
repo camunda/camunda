@@ -14,12 +14,15 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFa
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTestFactory;
+import io.camunda.zeebe.engine.util.TestStreams.FluentLogWriter;
 import io.camunda.zeebe.engine.util.client.CommandWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.TestLogStream;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
@@ -32,11 +35,13 @@ import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
@@ -56,7 +61,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   private final TemporaryFolder tempFolder;
   private final AutoCloseableRule closeables = new AutoCloseableRule();
   private final ControlledActorClock clock = new ControlledActorClock();
-  private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(clock);
+  private final ActorSchedulerRule actorSchedulerRule;
   private final ZeebeDbFactory zeebeDbFactory;
   private final int startPartitionId;
   private final int partitionCount;
@@ -99,6 +104,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final TemporaryFolder temporaryFolder) {
     this.startPartitionId = startPartitionId;
     this.partitionCount = partitionCount;
+    actorSchedulerRule = new ActorSchedulerRule(partitionCount, clock);
 
     final SetupRule rule = new SetupRule(startPartitionId, partitionCount);
 
@@ -171,6 +177,10 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
     return streamProcessingComposite.getStreamClock(partitionId);
   }
 
+  public MeterRegistry getMeterRegistry(final int partitionId) {
+    return streamProcessingComposite.getMeterRegistry(partitionId);
+  }
+
   public TestLogStream getLogStream(final int partitionId) {
     return streamProcessingComposite.getLogStream(partitionId);
   }
@@ -221,15 +231,21 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   @Override
   public long writeCommand(
       final Intent intent,
+      final String username,
       final UnifiedRecordValue recordValue,
-      final long userKey,
       final String... authorizedTenants) {
-    return streamProcessingComposite.writeCommand(intent, recordValue, userKey, authorizedTenants);
+    return streamProcessingComposite.writeCommand(intent, username, recordValue, authorizedTenants);
   }
 
   @Override
   public long writeCommand(final long key, final Intent intent, final UnifiedRecordValue value) {
     return streamProcessingComposite.writeCommand(key, intent, value);
+  }
+
+  @Override
+  public long writeCommand(
+      final Intent intent, final UnifiedRecordValue recordValue, final AuthInfo authorizations) {
+    return streamProcessingComposite.writeCommand(intent, recordValue, authorizations);
   }
 
   @Override
@@ -245,11 +261,36 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   public long writeCommand(
       final long key,
       final Intent intent,
+      final String username,
       final UnifiedRecordValue recordValue,
-      final long userKey,
       final String... authorizedTenants) {
     return streamProcessingComposite.writeCommand(
-        key, intent, recordValue, userKey, authorizedTenants);
+        key, intent, username, recordValue, authorizedTenants);
+  }
+
+  @Override
+  public long writeCommand(
+      final long key,
+      final int requestStreamId,
+      final long requestId,
+      final Intent intent,
+      final UnifiedRecordValue recordValue,
+      final String... authorizedTenants) {
+    return streamProcessingComposite.writeCommand(
+        key, requestStreamId, requestId, intent, recordValue, authorizedTenants);
+  }
+
+  @Override
+  public long writeCommand(
+      final long key,
+      final int requestStreamId,
+      final long requestId,
+      final Intent intent,
+      final String username,
+      final UnifiedRecordValue recordValue,
+      final String... authorizedTenants) {
+    return streamProcessingComposite.writeCommand(
+        key, requestStreamId, requestId, intent, username, recordValue, authorizedTenants);
   }
 
   @Override
@@ -259,6 +300,23 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final Intent intent,
       final UnifiedRecordValue value) {
     return streamProcessingComposite.writeCommand(requestStreamId, requestId, intent, value);
+  }
+
+  @Override
+  public long writeCommand(
+      final int requestStreamId,
+      final long requestId,
+      final Intent intent,
+      final UnifiedRecordValue value,
+      final String username) {
+    return streamProcessingComposite.writeCommand(
+        requestStreamId, requestId, intent, value, username);
+  }
+
+  @Override
+  public long writeCommandOnPartition(
+      final int partitionId, final UnaryOperator<FluentLogWriter> builder) {
+    return streamProcessingComposite.writeCommandOnPartition(partitionId, builder);
   }
 
   @Override
@@ -272,15 +330,26 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final int partitionId,
       final Intent intent,
       final UnifiedRecordValue recordValue,
-      final long userKey) {
+      final String username) {
     return streamProcessingComposite.writeCommandOnPartition(
-        partitionId, intent, recordValue, userKey);
+        partitionId, intent, recordValue, username);
   }
 
   @Override
   public long writeCommandOnPartition(
       final int partition, final long key, final Intent intent, final UnifiedRecordValue value) {
     return streamProcessingComposite.writeCommandOnPartition(partition, key, intent, value);
+  }
+
+  @Override
+  public long writeCommandOnPartition(
+      final int partition,
+      final long key,
+      final Intent intent,
+      final UnifiedRecordValue value,
+      final AuthInfo authorizations) {
+    return streamProcessingComposite.writeCommandOnPartition(
+        partition, key, intent, value, authorizations);
   }
 
   @Override
@@ -299,11 +368,11 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final int partitionId,
       final long key,
       final Intent intent,
+      final String username,
       final UnifiedRecordValue recordValue,
-      final long userKey,
       final String... authorizedTenants) {
     return streamProcessingComposite.writeCommandOnPartition(
-        partitionId, key, intent, recordValue, userKey, authorizedTenants);
+        partitionId, key, intent, username, recordValue, authorizedTenants);
   }
 
   public void snapshot() {
@@ -313,6 +382,10 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
 
   public void maxCommandsInBatch(final int maxCommandsInBatch) {
     this.maxCommandsInBatch = maxCommandsInBatch;
+  }
+
+  public ActorScheduler getActorScheduler() {
+    return actorSchedulerRule.get();
   }
 
   private class SetupRule extends ExternalResource {

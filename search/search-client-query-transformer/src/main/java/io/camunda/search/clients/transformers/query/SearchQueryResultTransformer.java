@@ -12,34 +12,47 @@ import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
+import io.camunda.search.query.TypedSearchQuery;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public final class SearchQueryResultTransformer<T, R>
-    implements ServiceTransformer<SearchQueryResponse<T>, SearchQueryResult<R>> {
+public final class SearchQueryResultTransformer<T, R> {
   final ServiceTransformer<T, R> documentToEntityMapper;
 
   public SearchQueryResultTransformer(final ServiceTransformer<T, R> documentToEntityMapper) {
     this.documentToEntityMapper = documentToEntityMapper;
   }
 
-  @Override
-  public SearchQueryResult<R> apply(final SearchQueryResponse<T> value) {
-    final var hits = value.hits();
+  /**
+   * Applies the transformation to the search query response.
+   *
+   * @param value The value to be transformed.
+   * @param reverse Indicates whether to reverse the order of the hits. This is required when the
+   *     query requests a previous page (see {@link
+   *     TypedSearchQueryTransformer#apply(TypedSearchQuery)}). In such cases, the search query is
+   *     executed with reverse sorting, and the response hits must be reversed again to restore the
+   *     correct order.
+   * @return The transformed search query result.
+   */
+  public SearchQueryResult<R> apply(final SearchQueryResponse<T> value, final boolean reverse) {
+    final var hits = reverse ? value.hits().reversed() : value.hits();
     final var items = of(hits);
     final var size = hits.size();
-    final Object[] sortValues;
+    final Object[] firstSortValues;
+    final Object[] lastSortValues;
     if (size > 0) {
-      final var lastItem = hits.get(size - 1);
-      sortValues = lastItem.sortValues();
+      firstSortValues = hits.getFirst().sortValues();
+      lastSortValues = hits.getLast().sortValues();
     } else {
-      sortValues = null;
+      firstSortValues = null;
+      lastSortValues = null;
     }
 
     return new Builder<R>()
         .total(value.totalHits())
-        .sortValues(sortValues)
+        .firstSortValues(firstSortValues)
+        .lastSortValues(lastSortValues)
         .items(items.stream().map(documentToEntityMapper::apply).toList())
         .build();
   }

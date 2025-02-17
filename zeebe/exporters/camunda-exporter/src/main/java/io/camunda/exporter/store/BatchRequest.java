@@ -7,9 +7,11 @@
  */
 package io.camunda.exporter.store;
 
+import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 /** A {@link BatchRequest} contains updates to one or more {@link ExporterEntity} */
 @SuppressWarnings("rawtypes")
@@ -60,9 +62,16 @@ public interface BatchRequest {
   /**
    * Applies all updates in this batch.
    *
+   * @param customErrorHandlers possible custom error handlers to be used if certain indices threw
+   *     persistence errors. The first parameter is the index name and the second is the error
+   *     detail if not passed, a PersistenceException will be thrown by default in case of error
    * @throws PersistenceException if an error occurs during the execution
    */
-  void execute() throws PersistenceException;
+  void execute(final BiConsumer<String, Error> customErrorHandlers) throws PersistenceException;
+
+  default void execute() throws PersistenceException {
+    execute(null);
+  }
 
   void executeWithRefresh() throws PersistenceException;
 }

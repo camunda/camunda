@@ -8,7 +8,7 @@
 package io.camunda.application.commons.backup;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.application.commons.conditions.WebappEnabledCondition;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
@@ -22,23 +22,20 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 /** Note that the condition used refers to operate ElasticSearchCondition */
-@Conditional(ElasticsearchCondition.class)
+@Conditional({ElasticsearchCondition.class, WebappEnabledCondition.class})
 @Configuration
 @Profile("operate")
 public class ElasticsearchBackupRepository {
 
   private final ElasticsearchClient esClient;
-  private final ObjectMapper objectMapper;
   private final BackupRepositoryProps backupRepositoryProps;
   private final Executor threadPoolTaskExecutor;
 
   public ElasticsearchBackupRepository(
       @Qualifier("elasticsearchClient") final ElasticsearchClient esClient,
-      final ObjectMapper objectMapper,
       final BackupRepositoryProps backupRepositoryProps,
       @Qualifier("backupThreadPoolExecutor") final ThreadPoolTaskExecutor threadPoolTaskExecutor) {
     this.esClient = esClient;
-    this.objectMapper = objectMapper;
     this.backupRepositoryProps = backupRepositoryProps;
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
   }
@@ -46,10 +43,6 @@ public class ElasticsearchBackupRepository {
   @Bean
   public BackupRepository backupRepository() {
     return new io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository(
-        esClient,
-        objectMapper,
-        backupRepositoryProps,
-        new WebappsSnapshotNameProvider(),
-        threadPoolTaskExecutor);
+        esClient, backupRepositoryProps, new WebappsSnapshotNameProvider(), threadPoolTaskExecutor);
   }
 }

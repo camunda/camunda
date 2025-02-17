@@ -9,8 +9,11 @@ package io.camunda.zeebe.engine.util.client;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
@@ -37,6 +40,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
@@ -75,9 +79,11 @@ public final class ProcessInstanceClient {
                     .withIntent(ProcessInstanceCreationIntent.CREATE)
                     .withSourceRecordPosition(position)
                     .getFirst();
+    private static final int DEFAULT_PARTITION = 1;
 
     private final CommandWriter writer;
     private final ProcessInstanceCreationRecord processInstanceCreationRecord;
+    private int partition = DEFAULT_PARTITION;
 
     private Function<Long, Record<ProcessInstanceCreationRecordValue>> expectation =
         SUCCESS_EXPECTATION;
@@ -86,6 +92,11 @@ public final class ProcessInstanceClient {
       this.writer = writer;
       processInstanceCreationRecord = new ProcessInstanceCreationRecord();
       processInstanceCreationRecord.setBpmnProcessId(bpmnProcessId);
+    }
+
+    public ProcessInstanceCreationClient onPartition(final int partition) {
+      this.partition = partition;
+      return this;
     }
 
     public ProcessInstanceCreationClient withVersion(final int version) {
@@ -124,11 +135,27 @@ public final class ProcessInstanceClient {
     }
 
     public long create() {
+      return create(
+          AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
+    }
+
+    public long create(final AuthInfo authorizations) {
       final long position =
-          writer.writeCommand(ProcessInstanceCreationIntent.CREATE, processInstanceCreationRecord);
+          writer.writeCommandOnPartition(
+              partition,
+              r ->
+                  r.intent(ProcessInstanceCreationIntent.CREATE)
+                      .event(processInstanceCreationRecord)
+                      .authorizations(authorizations)
+                      .requestId(new Random().nextLong())
+                      .requestStreamId(new Random().nextInt()));
 
       final var resultingRecord = expectation.apply(position);
       return resultingRecord.getValue().getProcessInstanceKey();
+    }
+
+    public long create(final String username) {
+      return create(AuthorizationUtil.getAuthInfo(username));
     }
 
     public ProcessInstanceCreationClient expectRejection() {
@@ -182,12 +209,38 @@ public final class ProcessInstanceClient {
           .getProcessInstanceKey();
     }
 
+    public long create(final String username) {
+      final long position =
+          writer.writeCommand(
+              requestStreamId,
+              requestId,
+              ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
+              record,
+              username);
+
+      return RecordingExporter.processInstanceCreationRecords()
+          .withIntent(ProcessInstanceCreationIntent.CREATED)
+          .withSourceRecordPosition(position)
+          .getFirst()
+          .getValue()
+          .getProcessInstanceKey();
+    }
+
     public void asyncCreate() {
       writer.writeCommand(
           requestStreamId,
           requestId,
           ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
           record);
+    }
+
+    public void asyncCreate(final String username) {
+      writer.writeCommand(
+          requestStreamId,
+          requestId,
+          ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
+          record,
+          username);
     }
   }
 
@@ -243,8 +296,8 @@ public final class ProcessInstanceClient {
       return expectation.apply(processInstanceKey);
     }
 
-    public Record<ProcessInstanceRecordValue> cancel(final long userKey) {
-      writeCancelCommandWithUserKey(userKey);
+    public Record<ProcessInstanceRecordValue> cancel(final String username) {
+      writeCancelCommandWithUserKey(username);
       return expectation.apply(processInstanceKey);
     }
 
@@ -270,7 +323,7 @@ public final class ProcessInstanceClient {
           authorizedTenants);
     }
 
-    private void writeCancelCommandWithUserKey(final long userKey) {
+    private void writeCancelCommandWithUserKey(final String username) {
       if (partition == DEFAULT_PARTITION) {
         partition =
             RecordingExporter.processInstanceRecords()
@@ -283,8 +336,8 @@ public final class ProcessInstanceClient {
           partition,
           processInstanceKey,
           ProcessInstanceIntent.CANCEL,
+          username,
           new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey),
-          userKey,
           authorizedTenants);
     }
 
@@ -426,7 +479,7 @@ public final class ProcessInstanceClient {
       }
     }
 
-    public Record<ProcessInstanceModificationRecordValue> modify(final long userKey) {
+    public Record<ProcessInstanceModificationRecordValue> modify(final String username) {
       record.setProcessInstanceKey(processInstanceKey);
       activateInstructions.forEach(record::addActivateInstruction);
 
@@ -434,8 +487,8 @@ public final class ProcessInstanceClient {
           writer.writeCommand(
               processInstanceKey,
               ProcessInstanceModificationIntent.MODIFY,
+              username,
               record,
-              userKey,
               authorizedTenants);
 
       if (expectation == REJECTION_EXPECTATION) {
@@ -634,6 +687,25 @@ public final class ProcessInstanceClient {
           writer.writeCommand(
               processInstanceKey,
               ProcessInstanceMigrationIntent.MIGRATE,
+              record,
+              authorizedTenants);
+
+      if (expectation == REJECTION_EXPECTATION) {
+        return expectation.apply(processInstanceKey);
+      } else {
+        return expectation.apply(position);
+      }
+    }
+
+    public Record<ProcessInstanceMigrationRecordValue> migrate(final String username) {
+      record.setProcessInstanceKey(processInstanceKey);
+      mappingInstructions.forEach(record::addMappingInstruction);
+
+      final var position =
+          writer.writeCommand(
+              processInstanceKey,
+              ProcessInstanceMigrationIntent.MIGRATE,
+              username,
               record,
               authorizedTenants);
 

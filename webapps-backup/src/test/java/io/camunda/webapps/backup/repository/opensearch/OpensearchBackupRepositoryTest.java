@@ -10,8 +10,12 @@ package io.camunda.webapps.backup.repository.opensearch;
 import static io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository.REPOSITORY_MISSING_EXCEPTION_TYPE;
 import static io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository.SNAPSHOT_MISSING_EXCEPTION_TYPE;
 import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.AssertionsForClassTypes.fail;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.webapps.backup.BackupException;
@@ -21,7 +25,8 @@ import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.Metadata;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
-import io.camunda.webapps.backup.repository.elasticsearch.TestSnapshotProvider;
+import io.camunda.webapps.backup.repository.TestSnapshotProvider;
+import io.camunda.webapps.schema.descriptors.backup.SnapshotIndexCollection;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.time.Instant;
@@ -39,6 +44,8 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.ErrorResponse;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch.indices.GetIndexRequest;
+import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.opensearch.client.opensearch.snapshot.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -55,6 +62,7 @@ class OpensearchBackupRepositoryTest {
   private final long incompleteCheckTimeoutLength =
       BackupRepositoryProps.defaultIncompleteCheckTimeoutInSeconds() * 1000;
   private long now;
+  private final TestSnapshotProvider snapshotNameProvider = new TestSnapshotProvider();
 
   @BeforeEach
   public void setUp() {
@@ -84,8 +92,7 @@ class OpensearchBackupRepositoryTest {
                         .snapshot("test-snapshot")
                         .state(SnapshotState.STARTED.name())
                         .startTimeInMillis("23")));
-    final var response =
-        GetSnapshotResponse.of(b -> defaultFields(b).total(1).snapshots(snapshotInfos));
+    final var response = GetSnapshotResponse.of(b -> defaultFields(b).snapshots(snapshotInfos));
 
     when(openSearchClient.snapshot().get((GetSnapshotRequest) any())).thenReturn(response);
 
@@ -112,7 +119,7 @@ class OpensearchBackupRepositoryTest {
         new BackupService.SnapshotRequest(
             "repo",
             "camunda_operate_1_2",
-            List.of("index-1", "index-2"),
+            new SnapshotIndexCollection(List.of("index-1", "index-2"), List.of("index-3")),
             new Metadata(1L, "1", 1, 1));
     final Runnable onSuccess = () -> {};
     final Runnable onFailure = () -> fail("Should execute snapshot successfully.");
@@ -123,7 +130,7 @@ class OpensearchBackupRepositoryTest {
                 new SnapshotInfo.Builder()
                     .snapshot("snapshot")
                     .dataStreams(List.of())
-                    .indices(List.of("index-1", "index-2"))
+                    .indices(List.of("index-1", "index-2", "index-3"))
                     .uuid("uuid")
                     .state(SnapshotState.SUCCESS.toString())
                     .build())
@@ -140,7 +147,7 @@ class OpensearchBackupRepositoryTest {
         new SnapshotRequest(
             "repo",
             "camunda_operate_1_2",
-            List.of("index-1", "index-2"),
+            new SnapshotIndexCollection(List.of("index-1", "index-2"), List.of("index-3")),
             new Metadata(1L, "1", 1, 1));
     final Runnable onSuccess = () -> fail("Should execute snapshot with failures.");
     final Runnable onFailure = () -> {};
@@ -229,8 +236,7 @@ class OpensearchBackupRepositoryTest {
                         // end time was double the timeout from now
                         .endTimeInMillis(Long.toString(endtime))));
     when(openSearchClient.snapshot().get((GetSnapshotRequest) any()))
-        .thenReturn(
-            GetSnapshotResponse.of(b -> defaultFields(b).total(1).snapshots(snapshotInfos)));
+        .thenReturn(GetSnapshotResponse.of(b -> defaultFields(b).snapshots(snapshotInfos)));
 
     final var response = repository.getBackupState("repo", 5L);
 
@@ -286,7 +292,6 @@ class OpensearchBackupRepositoryTest {
             GetSnapshotResponse.of(
                 b ->
                     defaultFields(b)
-                        .total(1)
                         .snapshots(
                             List.of(
                                 SnapshotInfo.of(
@@ -409,6 +414,21 @@ class OpensearchBackupRepositoryTest {
     assertThat(backupState.getState()).isEqualTo(BackupStateDto.FAILED);
   }
 
+  @Test
+  void shouldReturnAvailableIndices() throws IOException {
+    // given
+    when(openSearchClient.indices().get((GetIndexRequest) any()))
+        .thenReturn(GetIndexResponse.of(b -> b));
+
+    // when
+    final var result = repository.checkAllIndicesExist(List.of("missingIndex"));
+
+    // then
+    assertThat(result.size()).isEqualTo(0);
+    verify(openSearchClient.indices(), atLeastOnce())
+        .get((GetIndexRequest) argThat(r -> ((GetIndexRequest) r).ignoreUnavailable()));
+  }
+
   private SnapshotInfo.Builder defaultFields(final SnapshotInfo.Builder b) {
     return defaultFields(b, new Metadata(1L, "1", 1, 1));
   }
@@ -423,7 +443,7 @@ class OpensearchBackupRepositoryTest {
   }
 
   private GetSnapshotResponse.Builder defaultFields(final GetSnapshotResponse.Builder b) {
-    return b.total(0).remaining(0);
+    return b.snapshots(List.of());
   }
 
   private GetSnapshotResponse emptyResponse() {

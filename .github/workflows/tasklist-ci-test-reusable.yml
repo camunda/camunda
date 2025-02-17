@@ -41,23 +41,30 @@ jobs:
   integration-tests:
     name: Test
     runs-on: gcp-perf-core-16-default
-    if: ${{ !startsWith(inputs.branch, 'fe-') && !startsWith(inputs.branch, 'renovate/') }}
     strategy:
       fail-fast: false
       matrix:
         database: [ elasticsearch, opensearch ]
-
         include:
           - database: elasticsearch
             testProfile: docker-es
             url: http://localhost:9200
           - database: opensearch
             testProfile: docker-os
-            url: http://localhost:9205
+            url: http://localhost:9200
+    env:
+      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe
+      ZEEBE_TEST_DOCKER_IMAGE_TAG: current-test
+    services:
+      # local registry is used as this job needs to push its docker image to be used by IT
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
-        uses: actions/checkout@cbb722410c2e876e24abbe8de2cc27693e501dcb
+        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2
         with:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags
@@ -72,14 +79,34 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-
-      - name: Build backend
-        run: ./mvnw -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild
+      - uses: ./.github/actions/build-platform-docker
+        id: build-camunda-docker
+        with:
+          # we use a local registry for pushing
+          repository: ${{ env.ZEEBE_TEST_DOCKER_IMAGE }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          version: ${{ env.ZEEBE_TEST_DOCKER_IMAGE_TAG }}
+          dockerfile: camunda.Dockerfile
+          # push is needed to make accessible for integration tests
+          push: true
 
       # Run integration tests in parallel
       - name: Run Integration Tests
         run: |
-          ./mvnw -f tasklist -T${{ env.LIMITS_CPU }} verify -P ${{ matrix.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ matrix.database }} -Dcamunda.database.url=${{ matrix.url }}
+          ./mvnw verify \
+            -f tasklist \
+            -T${{ env.LIMITS_CPU }} \
+            -P ${{ matrix.testProfile }},skipFrontendBuild \
+            -B --fail-at-end \
+            -Dfailsafe.rerunFailingTestsCount=2 \
+            -Dcamunda.tasklist.database=${{ matrix.database }} \
+            -Dcamunda.database.url=${{ matrix.url }} \
+            -Dzeebe.currentVersion.docker.tag=${{ env.ZEEBE_TEST_DOCKER_IMAGE_TAG }} \
+            -Dzeebe.currentVersion.docker.repo=${{ env.ZEEBE_TEST_DOCKER_IMAGE }}
 
       # Sanitize the branch name to replace non alphanumeric characters with `-`
       - id: sanitize

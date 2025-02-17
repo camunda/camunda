@@ -34,7 +34,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(value = IncidentQueryController.class, properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = IncidentController.class)
 public class IncidentQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -42,24 +42,23 @@ public class IncidentQueryControllerTest extends RestControllerTest {
           {
               "items": [
                   {
-                      "incidentKey": 5,
-                      "processDefinitionKey": 23,
+                      "incidentKey": "5",
+                      "processDefinitionKey": "23",
                       "processDefinitionId": "complexProcess",
-                      "processInstanceKey": 42,
+                      "processInstanceKey": "42",
                       "errorType": "JOB_NO_RETRIES",
                       "errorMessage": "No retries left.",
                       "flowNodeId": "flowNodeId",
-                      "flowNodeInstanceKey": 17,
+                      "flowNodeInstanceKey": "17",
                       "creationTime": "2024-05-23T23:05:00.000Z",
                       "state": "ACTIVE",
-                      "jobKey": 101,
-                      "treePath":"PI_42/FN_flowNodeId/FNI_17",
+                      "jobKey": "101",
                       "tenantId": "tenantId"
                   }
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": ["v"],
+                  "firstSortValues": ["f"],
                   "lastSortValues": [
                       "v"
                   ]
@@ -83,26 +82,25 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                       OffsetDateTime.parse("2024-05-23T23:05:00.000Z"),
                       IncidentState.ACTIVE,
                       101L,
-                      "PI_42/FN_flowNodeId/FNI_17",
                       "tenantId")))
-          .sortValues(new Object[] {"v"})
+          .firstSortValues(new Object[] {"f"})
+          .lastSortValues(new Object[] {"v"})
           .build();
 
   static final String EXPECTED_GET_RESPONSE =
       """
             {
-                          "incidentKey": 5,
-                          "processDefinitionKey": 23,
+                          "incidentKey": "5",
+                          "processDefinitionKey": "23",
                           "processDefinitionId": "complexProcess",
-                          "processInstanceKey": 42,
+                          "processInstanceKey": "42",
                           "errorType": "JOB_NO_RETRIES",
                           "errorMessage": "No retries left.",
                           "flowNodeId": "flowNodeId",
-                          "flowNodeInstanceKey": 17,
+                          "flowNodeInstanceKey": "17",
                           "creationTime": "2024-05-23T23:05:00.000Z",
                           "state": "ACTIVE",
-                          "jobKey": 101,
-                          "treePath":"PI_42/FN_flowNodeId/FNI_17",
+                          "jobKey": "101",
                           "tenantId": "tenantId"
                       }
           """;
@@ -120,7 +118,6 @@ public class IncidentQueryControllerTest extends RestControllerTest {
           OffsetDateTime.parse("2024-05-23T23:05:00.000Z"),
           IncidentState.ACTIVE,
           101L,
-          "PI_42/FN_flowNodeId/FNI_17",
           "tenantId");
 
   static final String INCIDENT_URL = "/v2/incidents/";
@@ -194,7 +191,6 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                 "creationTime": "2024-05-23T23:05:00.000Z",
                 "state": "ACTIVE",
                 "jobKey": 101,
-                "treePath":"PI_42/FN_flowNodeId/FNI_17",
                 "tenantId": "tenantId"
               }
             }
@@ -237,7 +233,6 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                                 .build())
                         .states(IncidentState.ACTIVE)
                         .jobKeys(101L)
-                        .treePaths("PI_42/FN_flowNodeId/FNI_17")
                         .tenantIds("tenantId")
                         .build())
                 .build());
@@ -252,7 +247,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "incidentKey",
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }

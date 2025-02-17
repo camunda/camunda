@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
-
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
@@ -28,8 +26,11 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class MappingCreateProcessor implements DistributedTypedRecordProcessor<MappingRecord> {
 
-  private static final String MAPPING_ALREADY_EXISTS_ERROR_MESSAGE =
+  private static final String MAPPING_SAME_CLAIM_ALREADY_EXISTS_ERROR_MESSAGE =
       "Expected to create mapping with claimName '%s' and claimValue '%s', but a mapping with this claim already exists.";
+  private static final String MAPPING_SAME_ID_ALREADY_EXISTS_ERROR_MESSAGE =
+      "Expected to create mapping with id '%s', but a mapping with this id already exists.";
+
   private final MappingState mappingState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -58,21 +59,30 @@ public class MappingCreateProcessor implements DistributedTypedRecordProcessor<M
     final var authorizationRequest =
         new AuthorizationRequest(
             command, AuthorizationResourceType.MAPPING_RULE, PermissionType.CREATE);
-    if (authCheckBehavior.isAuthorized(authorizationRequest).isLeft()) {
-      final var errorMessage =
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
-      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
+    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
     final var record = command.getValue();
-    final var persistedMapping = mappingState.get(record.getClaimName(), record.getClaimValue());
-    if (persistedMapping.isPresent()) {
+    final var persistedMappingWithSameClaim =
+        mappingState.get(record.getClaimName(), record.getClaimValue());
+    if (persistedMappingWithSameClaim.isPresent()) {
       final var errorMessage =
-          MAPPING_ALREADY_EXISTS_ERROR_MESSAGE.formatted(
+          MAPPING_SAME_CLAIM_ALREADY_EXISTS_ERROR_MESSAGE.formatted(
               record.getClaimName(), record.getClaimValue());
+      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
+      return;
+    }
+
+    final var persistedMappingWithSameId = mappingState.get(record.getId());
+    if (persistedMappingWithSameId.isPresent()) {
+      final var errorMessage =
+          MAPPING_SAME_ID_ALREADY_EXISTS_ERROR_MESSAGE.formatted(record.getId());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
@@ -94,12 +104,11 @@ public class MappingCreateProcessor implements DistributedTypedRecordProcessor<M
   public void processDistributedCommand(final TypedRecord<MappingRecord> command) {
     final var record = command.getValue();
     mappingState
-        .get(record.getMappingKey())
+        .get(record.getId())
         .ifPresentOrElse(
             existingMapping -> {
               final var errorMessage =
-                  MAPPING_ALREADY_EXISTS_ERROR_MESSAGE.formatted(
-                      existingMapping.getClaimName(), existingMapping.getClaimValue());
+                  MAPPING_SAME_ID_ALREADY_EXISTS_ERROR_MESSAGE.formatted(existingMapping.getId());
               rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
             },
             () -> stateWriter.appendFollowUpEvent(command.getKey(), MappingIntent.CREATED, record));

@@ -50,7 +50,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       JacksonConfig.class
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({"tasklist", "test"})
+@ActiveProfiles({"tasklist", "test", "standalone"})
 public class HealthCheckIT {
 
   @Autowired private TestRestTemplate testRestTemplate;

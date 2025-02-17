@@ -20,6 +20,11 @@ import io.camunda.zeebe.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.zeebe.client.api.search.response.DecisionRequirements;
 import io.camunda.zeebe.client.api.search.sort.DecisionRequirementsSort;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.search.query.DecisionRequirementsQuery}
+ */
+@Deprecated
 public interface DecisionRequirementsQuery
     extends TypedSearchQueryRequest<
             DecisionRequirementsFilter, DecisionRequirementsSort, DecisionRequirementsQuery>,

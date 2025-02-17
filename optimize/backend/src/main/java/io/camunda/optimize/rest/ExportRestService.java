@@ -10,6 +10,7 @@ package io.camunda.optimize.rest;
 import static io.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
 import static io.camunda.optimize.service.export.CSVUtils.extractAllPrefixedCountKeys;
 import static io.camunda.optimize.service.export.CSVUtils.extractAllProcessInstanceDtoFieldKeys;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import com.google.common.collect.Sets;
 import io.camunda.optimize.dto.optimize.ReportType;
@@ -26,31 +27,35 @@ import io.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import io.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
 import io.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import io.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
+import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import io.camunda.optimize.service.entities.EntityExportService;
 import io.camunda.optimize.service.export.CsvExportService;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.security.SessionService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.springframework.stereotype.Component;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-@Path("/export")
-@Component
+@Validated
+@RestController
+@RequestMapping(REST_API_PATH + ExportRestService.EXPORT_PATH)
 public class ExportRestService {
+
+  public static final String EXPORT_PATH = "/export";
 
   private final CsvExportService csvExportService;
   private final EntityExportService entityExportService;
@@ -68,14 +73,12 @@ public class ExportRestService {
     this.identityService = identityService;
   }
 
-  @GET
-  @Produces(value = {MediaType.APPLICATION_JSON})
-  @Path("report/json/{reportId}/{fileName}")
-  public Response getJsonReport(
-      @Context final ContainerRequestContext requestContext,
-      @PathParam("reportId") final String reportId,
-      @PathParam("fileName") final String fileName) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+  @GetMapping("report/json/{reportId}/{fileName}")
+  public ResponseEntity<List<ReportDefinitionExportDto>> getJsonReport(
+      @PathVariable("reportId") final String reportId,
+      @PathVariable("fileName") final String fileName,
+      final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
 
     final List<ReportDefinitionExportDto> jsonReports =
         entityExportService.getReportExportDtosAsUser(userId, Sets.newHashSet(reportId));
@@ -83,14 +86,12 @@ public class ExportRestService {
     return createJsonResponse(fileName, jsonReports);
   }
 
-  @GET
-  @Produces(value = {MediaType.APPLICATION_JSON})
-  @Path("dashboard/json/{dashboardId}/{fileName}")
-  public Response getJsonDashboard(
-      @Context final ContainerRequestContext requestContext,
-      @PathParam("dashboardId") final String dashboardId,
-      @PathParam("fileName") final String fileName) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+  @GetMapping("dashboard/json/{dashboardId}/{fileName}")
+  public ResponseEntity<List<OptimizeEntityExportDto>> getJsonDashboard(
+      @PathVariable("dashboardId") final String dashboardId,
+      @PathVariable("fileName") final String fileName,
+      final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
 
     final List<OptimizeEntityExportDto> jsonDashboards =
         entityExportService.getCompleteDashboardExportAsUser(userId, dashboardId);
@@ -98,24 +99,24 @@ public class ExportRestService {
     return createJsonResponse(fileName, jsonDashboards);
   }
 
-  @GET
-  // octet stream on success, json on potential error
-  @Produces(value = {MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON})
-  @Path("csv/{reportId}/{fileName}")
-  public Response getCsvReport(
-      @Context final ContainerRequestContext requestContext,
-      @PathParam("reportId") final String reportId,
-      @PathParam("fileName") final String fileName) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+  @GetMapping(
+      path = "csv/{reportId}/{fileName}",
+      produces = {MediaType.APPLICATION_OCTET_STREAM_VALUE, MediaType.APPLICATION_JSON_VALUE})
+  // Produces octet stream on success, json on potential error
+  public ResponseEntity<byte[]> getCsvReport(
+      @PathVariable("reportId") final String reportId,
+      @PathVariable("fileName") final String fileName,
+      final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     validateAuthorization();
-    final ZoneId timezone = extractTimezone(requestContext);
+    final ZoneId timezone = extractTimezone(request);
 
     final Optional<byte[]> csvForReport =
         csvExportService.getCsvBytesForEvaluatedReportResult(userId, reportId, timezone);
 
     return csvForReport
         .map(csvBytes -> createOctetStreamResponse(fileName, csvBytes))
-        .orElse(Response.status(Response.Status.NOT_FOUND).build());
+        .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
   }
 
   /**
@@ -123,17 +124,17 @@ public class ExportRestService {
    * All other columns (dto fields, new and existing variables not in includedColumns) are to be
    * excluded. It is used for example to return process instance Ids in the branch analysis export.
    */
-  @POST
-  // octet stream on success, json on potential error
-  @Produces(value = {MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON})
-  @Path("csv/process/rawData/{fileName}")
-  public Response getRawDataCsv(
-      @Context final ContainerRequestContext requestContext,
-      @PathParam("fileName") final String fileName,
-      @Valid final ProcessRawDataCsvExportRequestDto request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+  // Produces octet stream on success, json on potential error
+  @PostMapping(
+      path = "csv/process/rawData/{fileName}",
+      produces = {MediaType.APPLICATION_OCTET_STREAM_VALUE, MediaType.APPLICATION_JSON_VALUE})
+  public ResponseEntity<byte[]> getRawDataCsv(
+      @PathVariable("fileName") final String fileName,
+      @Valid @RequestBody final ProcessRawDataCsvExportRequestDto request,
+      final HttpServletRequest servletRequest) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(servletRequest);
     validateAuthorization();
-    final ZoneId timezone = extractTimezone(requestContext);
+    final ZoneId timezone = extractTimezone(servletRequest);
 
     final SingleProcessReportDefinitionRequestDto reportDefinitionDto =
         SingleProcessReportDefinitionRequestDto.builder()
@@ -185,18 +186,20 @@ public class ExportRestService {
     return excludedFields;
   }
 
-  private Response createOctetStreamResponse(
+  private ResponseEntity<byte[]> createOctetStreamResponse(
       final String fileName, final byte[] csvBytesForEvaluatedReportResult) {
-    return Response.ok(csvBytesForEvaluatedReportResult, MediaType.APPLICATION_OCTET_STREAM)
+    return ResponseEntity.ok()
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
         .header("Content-Disposition", "attachment; filename=" + createFileName(fileName, ".csv"))
-        .build();
+        .body(csvBytesForEvaluatedReportResult);
   }
 
-  private Response createJsonResponse(
-      final String fileName, final List<? extends OptimizeEntityExportDto> jsonEntities) {
-    return Response.ok(jsonEntities, MediaType.APPLICATION_JSON)
+  private <A extends OptimizeEntityExportDto> ResponseEntity<List<A>> createJsonResponse(
+      final String fileName, final List<A> jsonEntities) {
+    return ResponseEntity.ok()
+        .contentType(MediaType.APPLICATION_JSON)
         .header("Content-Disposition", "attachment; filename=" + createFileName(fileName, ".json"))
-        .build();
+        .body(jsonEntities);
   }
 
   private String createFileName(final String fileName, final String extension) {

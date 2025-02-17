@@ -8,16 +8,18 @@
 package io.camunda.zeebe.gateway.interceptors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.utils.net.Address;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ClientStatusException;
+import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.security.configuration.SecurityConfigurations;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ClientStatusException;
-import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
@@ -29,19 +31,22 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.grpc.StatusRuntimeException;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.util.NetUtil;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 final class InterceptorIT {
 
   private final GatewayCfg config = new GatewayCfg();
-  private final SecurityConfiguration securityConfiguration = new SecurityConfiguration();
   private final ActorScheduler scheduler =
       ActorScheduler.newActorScheduler()
           .setCpuBoundActorThreadCount(1)
@@ -53,6 +58,7 @@ final class InterceptorIT {
   private JobStreamClient jobStreamClient;
   private Gateway gateway;
   private BrokerTopologyManagerImpl topologyManager;
+  @AutoClose private MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @BeforeEach
   void beforeEach() {
@@ -67,7 +73,7 @@ final class InterceptorIT {
     config.init();
 
     cluster =
-        AtomixCluster.builder()
+        AtomixCluster.builder(meterRegistry)
             .withAddress(Address.from(clusterAddress.getHostName(), clusterAddress.getPort()))
             .build();
     topologyManager =
@@ -85,7 +91,14 @@ final class InterceptorIT {
     jobStreamClient = new JobStreamClientImpl(scheduler, cluster.getCommunicationService());
     gateway =
         new Gateway(
-            config, securityConfiguration, brokerClient, scheduler, jobStreamClient.streamer());
+            config,
+            SecurityConfigurations.unauthenticated(),
+            brokerClient,
+            scheduler,
+            jobStreamClient.streamer(),
+            mock(UserServices.class),
+            mock(PasswordEncoder.class),
+            new SimpleMeterRegistry());
 
     cluster.start().join();
     scheduler.start();
@@ -119,7 +132,7 @@ final class InterceptorIT {
 
     // when
     gateway.start().join();
-    try (final var client = createZeebeClient()) {
+    try (final var client = createCamundaClient()) {
       final Future<DeploymentEvent> result =
           client
               .newDeployResourceCommand()
@@ -146,7 +159,7 @@ final class InterceptorIT {
 
     // when
     gateway.start().join();
-    try (final var client = createZeebeClient()) {
+    try (final var client = createCamundaClient()) {
       try {
         client.newTopologyRequest().send().join();
       } catch (final ClientStatusException ignored) {
@@ -158,8 +171,8 @@ final class InterceptorIT {
     assertThat(ContextInspectingInterceptor.CONTEXT_QUERY_API.get()).isNotNull();
   }
 
-  private ZeebeClient createZeebeClient() {
-    return ZeebeClient.newClientBuilder()
+  private CamundaClient createCamundaClient() {
+    return CamundaClient.newClientBuilder()
         .gatewayAddress(
             NetUtil.toSocketAddressString(gateway.getGatewayCfg().getNetwork().toSocketAddress()))
         .usePlaintext()

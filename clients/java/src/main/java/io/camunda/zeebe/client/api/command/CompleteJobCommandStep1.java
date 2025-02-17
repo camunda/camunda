@@ -19,6 +19,11 @@ import io.camunda.zeebe.client.api.response.CompleteJobResponse;
 import java.io.InputStream;
 import java.util.Map;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.CompleteJobCommandStep1}
+ */
+@Deprecated
 public interface CompleteJobCommandStep1
     extends CommandWithCommunicationApiStep<CompleteJobCommandStep1>,
         FinalCommandStep<CompleteJobResponse> {
@@ -68,26 +73,4 @@ public interface CompleteJobCommandStep1
    *     to the broker.
    */
   CompleteJobCommandStep1 variable(String key, Object value);
-
-  /**
-   * The result of the completed job as determined by the worker.
-   *
-   * @return the builder for this command.
-   */
-  CompleteJobCommandStep2 result();
-
-  interface CompleteJobCommandStep2 extends FinalCommandStep<CompleteJobResponse> {
-
-    /**
-     * Indicates whether the worker denies the work, i.e. explicitly doesn't approve it. For
-     * example, a Task Listener can deny the completion of a task by setting this flag to true. In
-     * this example, the completion of a task is represented by a job that the worker can complete
-     * as denied. As a result, the completion request is rejected and the task remains active.
-     * Defaults to false.
-     *
-     * @param denied indicates if the worker has denied the reason for the job
-     * @return the builder for this command.
-     */
-    CompleteJobCommandStep2 denied(boolean denied);
-  }
 }

@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.impl.broker.request.group;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
@@ -22,7 +21,6 @@ public class BrokerGroupUpdateRequest extends BrokerExecuteCommand<GroupRecord> 
     super(ValueType.GROUP, GroupIntent.UPDATE);
     request.setKey(groupKey);
     requestDto.setGroupKey(groupKey);
-    setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
   public BrokerGroupUpdateRequest setName(final String name) {

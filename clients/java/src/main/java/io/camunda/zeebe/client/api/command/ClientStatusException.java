@@ -18,6 +18,11 @@ package io.camunda.zeebe.client.api.command;
 import io.grpc.Status;
 import io.grpc.Status.Code;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.ClientStatusException}
+ */
+@Deprecated
 public final class ClientStatusException extends ClientException {
 
   private static final long serialVersionUID = -6130332019397045094L;

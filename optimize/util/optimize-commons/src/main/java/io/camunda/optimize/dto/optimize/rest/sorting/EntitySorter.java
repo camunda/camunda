@@ -16,7 +16,7 @@ import static java.util.Comparator.nullsFirst;
 import com.google.common.collect.ImmutableMap;
 import io.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import jakarta.ws.rs.BadRequestException;
+import io.camunda.optimize.rest.exceptions.BadRequestException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;

@@ -16,7 +16,7 @@ describe('<TurnOnNotificationPermission/>', () => {
 
     render(<TurnOnNotificationPermission />);
 
-    const dialog = screen.getByRole('alertdialog', {
+    const dialog = screen.getByRole('status', {
       name: /^Don't miss new assignments$/i,
     });
 
@@ -37,7 +37,7 @@ describe('<TurnOnNotificationPermission/>', () => {
     render(<TurnOnNotificationPermission />);
 
     expect(
-      screen.queryByRole('alertdialog', {
+      screen.queryByRole('status', {
         name: /^Don't miss new assignments$/i,
       }),
     ).not.toBeInTheDocument();
@@ -49,7 +49,7 @@ describe('<TurnOnNotificationPermission/>', () => {
     render(<TurnOnNotificationPermission />);
 
     expect(
-      screen.queryByRole('alertdialog', {
+      screen.queryByRole('status', {
         name: /^Don't miss new assignments$/i,
       }),
     ).not.toBeInTheDocument();
@@ -61,7 +61,7 @@ describe('<TurnOnNotificationPermission/>', () => {
     const {user} = render(<TurnOnNotificationPermission />);
 
     expect(
-      screen.getByRole('alertdialog', {
+      screen.getByRole('status', {
         name: /^Don't miss new assignments$/i,
       }),
     ).toBeInTheDocument();
@@ -69,7 +69,7 @@ describe('<TurnOnNotificationPermission/>', () => {
     await user.click(screen.getByRole('button', {name: /close notification/i}));
 
     expect(
-      screen.queryByRole('alertdialog', {
+      screen.queryByRole('status', {
         name: /^Don't miss new assignments$/i,
       }),
     ).not.toBeInTheDocument();
@@ -83,9 +83,43 @@ describe('<TurnOnNotificationPermission/>', () => {
     render(<TurnOnNotificationPermission />);
 
     expect(
-      screen.queryByRole('alertdialog', {
+      screen.queryByRole('status', {
         name: /^Don't miss new assignments$/i,
       }),
     ).not.toBeInTheDocument();
+  });
+
+  it('should disable the focus trap when the dialog is open', async () => {
+    vi.stubGlobal('Notification', {permission: 'default'});
+
+    const {unmount} = render(
+      <>
+        <TurnOnNotificationPermission />
+        <input type="text" aria-label="Mock input" />
+      </>,
+    );
+
+    expect(
+      screen.getByRole('button', {
+        name: /turn on notifications/i,
+      }),
+    ).toHaveFocus();
+    expect(screen.getByLabelText(/mock input/i)).not.toHaveFocus();
+
+    unmount();
+
+    render(
+      <>
+        <TurnOnNotificationPermission />
+        <input type="text" aria-label="Mock input" autoFocus />
+      </>,
+    );
+
+    expect(
+      screen.getByRole('button', {
+        name: /turn on notifications/i,
+      }),
+    ).not.toHaveFocus();
+    expect(screen.getByLabelText(/mock input/i)).toHaveFocus();
   });
 });

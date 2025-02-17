@@ -17,6 +17,11 @@ package io.camunda.zeebe.client.api.search.filter;
 
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.search.filter.VariableValueFilter}
+ */
+@Deprecated
 public interface VariableValueFilter extends SearchRequestFilter {
 
   /** Filter by variable name */

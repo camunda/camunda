@@ -7,19 +7,19 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.buffer.BufferUtil;
-import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 
 public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
@@ -27,6 +27,7 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
   private static final String DEFAULT_ACTION = "update";
 
   private final StateWriter stateWriter;
+  private final UserTaskState userTaskState;
   private final TypedResponseWriter responseWriter;
   private final UserTaskCommandPreconditionChecker preconditionChecker;
 
@@ -35,6 +36,7 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
       final Writers writers,
       final AuthorizationCheckBehavior authCheckBehavior) {
     stateWriter = writers.state();
+    userTaskState = state.getUserTaskState();
     responseWriter = writers.response();
     preconditionChecker =
         new UserTaskCommandPreconditionChecker(
@@ -42,7 +44,7 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
   }
 
   @Override
-  public Either<Tuple<RejectionType, String>, UserTaskRecord> validateCommand(
+  public Either<Rejection, UserTaskRecord> validateCommand(
       final TypedRecord<UserTaskRecord> command) {
     return preconditionChecker.check(command);
   }
@@ -52,13 +54,33 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
 
-    final UserTaskRecord updateRecord = new UserTaskRecord();
-    updateRecord.wrap(BufferUtil.createCopy(userTaskRecord));
-    updateRecord.wrapChangedAttributes(command.getValue(), true);
-    updateRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
+    userTaskRecord.wrapChangedAttributesIfValueChanged(command.getValue());
+    userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
 
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATING, updateRecord);
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, updateRecord);
-    responseWriter.writeEventOnCommand(userTaskKey, UserTaskIntent.UPDATED, updateRecord, command);
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATING, userTaskRecord);
+  }
+
+  @Override
+  public void onFinalizeCommand(
+      final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
+    final long userTaskKey = command.getKey();
+
+    if (command.hasRequestMetadata()) {
+      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
+      responseWriter.writeEventOnCommand(
+          userTaskKey, UserTaskIntent.UPDATED, userTaskRecord, command);
+    } else {
+      final var recordRequestMetadata = userTaskState.findRecordRequestMetadata(userTaskKey);
+      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
+      recordRequestMetadata.ifPresent(
+          metadata ->
+              responseWriter.writeResponse(
+                  userTaskKey,
+                  UserTaskIntent.UPDATED,
+                  userTaskRecord,
+                  ValueType.USER_TASK,
+                  metadata.getRequestId(),
+                  metadata.getRequestStreamId()));
+    }
   }
 }

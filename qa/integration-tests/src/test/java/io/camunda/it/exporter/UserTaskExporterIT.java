@@ -7,13 +7,14 @@
  */
 package io.camunda.it.exporter;
 
+import static io.camunda.client.api.search.response.UserTaskState.COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.filter.UserTaskFilter;
+import io.camunda.client.api.search.response.UserTask;
+import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.it.utils.BrokerITInvocationProvider;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
-import io.camunda.zeebe.client.api.search.response.UserTask;
-import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -26,14 +27,10 @@ import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestTemplate;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(BrokerITInvocationProvider.class)
 public class UserTaskExporterIT {
-
-  // RDBMS doesn't support query for task variables up to now
-  @RegisterExtension
-  static final BrokerITInvocationProvider PROVIDER =
-      new BrokerITInvocationProvider().withoutRdbmsExporter();
 
   @TestTemplate
   void shouldExportUserTask(final TestStandaloneBroker testBroker) {
@@ -59,13 +56,12 @@ public class UserTaskExporterIT {
 
     ExporterTestUtil.waitForProcessTasks(client, processInstanceId);
 
-    final var userTasks = fetchUserTasks(client, Long.parseLong(processInstanceId));
+    final var userTasks = fetchUserTasks(client, processInstanceId);
     // then
     assertThat(userTasks).hasSize(1);
     assertThat(userTasks.getFirst().getPriority()).isEqualTo(50);
     assertThat(userTasks.getFirst().getUserTaskKey()).isGreaterThan(0);
-    assertThat(userTasks.getFirst().getProcessInstanceKey())
-        .isEqualTo(Long.parseLong(processInstanceId));
+    assertThat(userTasks.getFirst().getProcessInstanceKey()).isEqualTo(processInstanceId);
     assertThat(userTasks.getFirst().getProcessDefinitionKey())
         .isEqualTo(Long.valueOf(processDefinitionId));
     assertThat(userTasks.getFirst().getCreationDate()).isNotNull();
@@ -81,7 +77,7 @@ public class UserTaskExporterIT {
     assertThat(userTasks.getFirst().getElementInstanceKey()).isGreaterThan(0);
   }
 
-  private List<UserTask> fetchUserTasks(final ZeebeClient client, final long processInstanceId) {
+  private List<UserTask> fetchUserTasks(final CamundaClient client, final long processInstanceId) {
     return client
         .newUserTaskQuery()
         .filter(f -> f.processInstanceKey(processInstanceId))
@@ -90,8 +86,8 @@ public class UserTaskExporterIT {
         .items();
   }
 
-  private String startZeebeUserTaskProcess(
-      final ZeebeClient client, final Consumer<UserTaskBuilder> taskParams) {
+  private Long startZeebeUserTaskProcess(
+      final CamundaClient client, final Consumer<UserTaskBuilder> taskParams) {
     if (taskParams != null) {
       ExporterTestUtil.createAndDeployUserTaskProcess(
           client,
@@ -103,15 +99,15 @@ public class UserTaskExporterIT {
       ExporterTestUtil.createAndDeployUserTaskProcess(
           client, "test-process-id", "zeebe-task", AbstractUserTaskBuilder::zeebeUserTask);
     }
-    final var processInstanceId = ExporterTestUtil.startProcessInstance(client, "test-process-id");
+    final var processInstanceKey = ExporterTestUtil.startProcessInstance(client, "test-process-id");
 
-    ExporterTestUtil.waitForProcessTasks(client, processInstanceId);
+    ExporterTestUtil.waitForProcessTasks(client, processInstanceKey);
 
-    return processInstanceId;
+    return processInstanceKey;
   }
 
   private void waitForTask(
-      final ZeebeClient client, final Consumer<UserTaskFilter> filterConsumer) {
+      final CamundaClient client, final Consumer<UserTaskFilter> filterConsumer) {
     Awaitility.await()
         .ignoreExceptions()
         .timeout(Duration.ofSeconds(30))
@@ -229,7 +225,7 @@ public class UserTaskExporterIT {
       // when
       final var processInstanceId = startZeebeUserTaskProcess(client, null);
 
-      var userTasks = fetchUserTasks(client, Long.parseLong(processInstanceId));
+      var userTasks = fetchUserTasks(client, processInstanceId);
 
       client
           .newUserTaskUpdateCommand(userTasks.getFirst().getUserTaskKey())
@@ -245,11 +241,11 @@ public class UserTaskExporterIT {
       waitForTask(
           client,
           f -> {
-            f.processInstanceKey(Long.parseLong(processInstanceId));
+            f.processInstanceKey(processInstanceId);
             f.candidateUser("demoUsers");
           });
 
-      userTasks = fetchUserTasks(client, Long.parseLong(processInstanceId));
+      userTasks = fetchUserTasks(client, processInstanceId);
       assertThat(userTasks).hasSize(1);
       assertThat(userTasks.getFirst().getPriority()).isEqualTo(99);
       assertThat(userTasks.getFirst().getCandidateUsers()).containsExactly("demoUsers");
@@ -267,7 +263,7 @@ public class UserTaskExporterIT {
       // when
       final var processInstanceId = startZeebeUserTaskProcess(client, null);
 
-      var userTasks = fetchUserTasks(client, Long.parseLong(processInstanceId));
+      var userTasks = fetchUserTasks(client, processInstanceId);
 
       client
           .newUserTaskAssignCommand(userTasks.getFirst().getUserTaskKey())
@@ -279,11 +275,11 @@ public class UserTaskExporterIT {
       waitForTask(
           client,
           f -> {
-            f.processInstanceKey(Long.parseLong(processInstanceId));
+            f.processInstanceKey(processInstanceId);
             f.assignee("demo");
           });
 
-      userTasks = fetchUserTasks(client, Long.parseLong(processInstanceId));
+      userTasks = fetchUserTasks(client, processInstanceId);
       assertThat(userTasks).hasSize(1);
       assertThat(userTasks.getFirst().getAssignee()).isEqualTo("demo");
     }
@@ -296,7 +292,7 @@ public class UserTaskExporterIT {
       // when
       final var processInstanceId = startZeebeUserTaskProcess(client, t -> t.zeebeAssignee("demo"));
 
-      final var userTasks = fetchUserTasks(client, Long.parseLong(processInstanceId));
+      final var userTasks = fetchUserTasks(client, processInstanceId);
 
       client.newUserTaskUnassignCommand(userTasks.getFirst().getUserTaskKey()).send().join();
 
@@ -309,14 +305,14 @@ public class UserTaskExporterIT {
                 final var tasks =
                     client
                         .newUserTaskQuery()
-                        .filter(f -> f.processInstanceKey(Long.valueOf(processInstanceId)))
+                        .filter(f -> f.processInstanceKey(processInstanceId))
                         .send()
                         .join()
                         .items();
                 return tasks.getFirst().getAssignee() == null;
               });
 
-      final var unassignedTasks = fetchUserTasks(client, Long.parseLong(processInstanceId));
+      final var unassignedTasks = fetchUserTasks(client, processInstanceId);
       assertThat(unassignedTasks).hasSize(1);
       assertThat(unassignedTasks.getFirst().getAssignee()).isNull();
     }
@@ -333,26 +329,27 @@ public class UserTaskExporterIT {
       // when
       final var processInstanceId = startZeebeUserTaskProcess(client, null);
 
-      var userTasks = fetchUserTasks(client, Long.parseLong(processInstanceId));
+      var userTasks = fetchUserTasks(client, processInstanceId);
 
       client.newUserTaskCompleteCommand(userTasks.getFirst().getUserTaskKey()).send().join();
       // then
       waitForTask(
           client,
           f -> {
-            f.processInstanceKey(Long.parseLong(processInstanceId));
-            f.state("COMPLETED");
+            f.processInstanceKey(processInstanceId);
+            f.state(COMPLETED);
           });
 
-      userTasks = fetchUserTasks(client, Long.parseLong(processInstanceId));
+      userTasks = fetchUserTasks(client, processInstanceId);
       assertThat(userTasks).hasSize(1);
-      assertThat(userTasks.getFirst().getState()).isEqualTo("COMPLETED");
+      assertThat(userTasks.getFirst().getState()).isEqualTo(COMPLETED);
       assertThat(userTasks.getFirst().getCompletionDate()).isNotNull();
     }
   }
 
   @Nested
   class UserTaskWithFormsIT {
+
     @TestTemplate
     void shouldExportUserTaskWithExternalFormReference(final TestStandaloneBroker testBroker) {
       // given
@@ -370,7 +367,7 @@ public class UserTaskExporterIT {
 
       ExporterTestUtil.waitForProcessTasks(client, processInstanceId);
 
-      final var userTasks = fetchUserTasks(client, Long.parseLong(processInstanceId));
+      final var userTasks = fetchUserTasks(client, processInstanceId);
 
       // then
       assertThat(userTasks).hasSize(1);
@@ -403,7 +400,7 @@ public class UserTaskExporterIT {
 
       ExporterTestUtil.waitForProcessTasks(client, processInstanceId);
 
-      final var userTasks = fetchUserTasks(client, Long.parseLong(processInstanceId));
+      final var userTasks = fetchUserTasks(client, processInstanceId);
 
       // then
       assertThat(userTasks).hasSize(1);

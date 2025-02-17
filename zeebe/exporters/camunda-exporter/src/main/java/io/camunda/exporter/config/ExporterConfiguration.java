@@ -21,6 +21,7 @@ public class ExporterConfiguration {
   private CacheConfiguration processCache = new CacheConfiguration();
   private CacheConfiguration formCache = new CacheConfiguration();
   private PostExportConfiguration postExport = new PostExportConfiguration();
+  private IncidentNotifierConfiguration notifier = new IncidentNotifierConfiguration();
   private boolean createSchema = true;
 
   public ConnectConfiguration getConnect() {
@@ -93,6 +94,14 @@ public class ExporterConfiguration {
 
   public void setPostExport(final PostExportConfiguration postExport) {
     this.postExport = postExport;
+  }
+
+  public IncidentNotifierConfiguration getNotifier() {
+    return notifier;
+  }
+
+  public void setNotifier(final IncidentNotifierConfiguration notifier) {
+    this.notifier = notifier;
   }
 
   @Override
@@ -288,6 +297,7 @@ public class ExporterConfiguration {
     private int rolloverBatchSize = 100;
     private String waitPeriodBeforeArchiving = "1h";
     private int delayBetweenRuns = 2000;
+    private int maxDelayBetweenRuns = 60000;
 
     public boolean isRolloverEnabled() {
       return rolloverEnabled;
@@ -341,27 +351,34 @@ public class ExporterConfiguration {
       this.delayBetweenRuns = delayBetweenRuns;
     }
 
+    public int getMaxDelayBetweenRuns() {
+      return maxDelayBetweenRuns;
+    }
+
+    public void setMaxDelayBetweenRuns(final int maxDelayBetweenRuns) {
+      this.maxDelayBetweenRuns = maxDelayBetweenRuns;
+    }
+
     @Override
     public String toString() {
-      return "RetentionConfiguration{"
+      return "ArchiverConfiguration{"
           + "rolloverEnabled="
           + rolloverEnabled
-          + '\''
           + ", elsRolloverDateFormat='"
           + elsRolloverDateFormat
           + '\''
           + ", rolloverInterval='"
           + rolloverInterval
           + '\''
-          + ", rolloverBatchSize='"
+          + ", rolloverBatchSize="
           + rolloverBatchSize
-          + '\''
           + ", waitPeriodBeforeArchiving='"
           + waitPeriodBeforeArchiving
           + '\''
-          + ", delayBetweenRuns='"
+          + ", delayBetweenRuns="
           + delayBetweenRuns
-          + '\''
+          + ", maxDelayBetweenRuns="
+          + maxDelayBetweenRuns
           + '}';
     }
   }
@@ -386,6 +403,7 @@ public class ExporterConfiguration {
   public static final class PostExportConfiguration {
     private int batchSize = 100;
     private int delayBetweenRuns = 2000;
+    private int maxDelayBetweenRuns = 60000;
     private boolean ignoreMissingData = false;
 
     public int getBatchSize() {
@@ -404,6 +422,14 @@ public class ExporterConfiguration {
       this.delayBetweenRuns = delayBetweenRuns;
     }
 
+    public int getMaxDelayBetweenRuns() {
+      return maxDelayBetweenRuns;
+    }
+
+    public void setMaxDelayBetweenRuns(final int maxDelayBetweenRuns) {
+      this.maxDelayBetweenRuns = maxDelayBetweenRuns;
+    }
+
     public boolean isIgnoreMissingData() {
       return ignoreMissingData;
     }
@@ -419,9 +445,65 @@ public class ExporterConfiguration {
           + batchSize
           + ", delayBetweenRuns="
           + delayBetweenRuns
+          + ", maxDelayBetweenRuns="
+          + maxDelayBetweenRuns
           + ", ignoreMissingData="
           + ignoreMissingData
           + '}';
+    }
+  }
+
+  public static final class IncidentNotifierConfiguration {
+
+    private String webhook;
+
+    /** Defines the domain which the user always sees */
+    private String auth0Domain;
+
+    private String m2mClientId;
+
+    private String m2mClientSecret;
+
+    private String m2mAudience;
+
+    public String getWebhook() {
+      return webhook;
+    }
+
+    public void setWebhook(final String webhook) {
+      this.webhook = webhook;
+    }
+
+    public String getAuth0Domain() {
+      return auth0Domain;
+    }
+
+    public void setAuth0Domain(final String auth0Domain) {
+      this.auth0Domain = auth0Domain;
+    }
+
+    public String getM2mClientId() {
+      return m2mClientId;
+    }
+
+    public void setM2mClientId(final String m2mClientId) {
+      this.m2mClientId = m2mClientId;
+    }
+
+    public String getM2mClientSecret() {
+      return m2mClientSecret;
+    }
+
+    public void setM2mClientSecret(final String m2mClientSecret) {
+      this.m2mClientSecret = m2mClientSecret;
+    }
+
+    public String getM2mAudience() {
+      return m2mAudience;
+    }
+
+    public void setM2mAudience(final String m2mAudience) {
+      this.m2mAudience = m2mAudience;
     }
   }
 }

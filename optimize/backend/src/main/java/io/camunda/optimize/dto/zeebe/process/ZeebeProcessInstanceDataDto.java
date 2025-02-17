@@ -12,6 +12,8 @@ import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DE
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 
 public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
@@ -27,11 +29,16 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
   private long processInstanceKey;
   private String tenantId;
 
-  public ZeebeProcessInstanceDataDto() {}
+  private BpmnEventType bpmnEventType;
+  private List<List<Long>> elementInstancePath;
+  private List<Long> processDefinitionPath;
+  private List<Integer> callingElementPath;
 
-  @Override
-  public String toJson() {
-    throw new UnsupportedOperationException("Operation not supported");
+  public ZeebeProcessInstanceDataDto() {
+    bpmnEventType = BpmnEventType.UNSPECIFIED;
+    elementInstancePath = new ArrayList<>();
+    processDefinitionPath = new ArrayList<>();
+    callingElementPath = new ArrayList<>();
   }
 
   @Override
@@ -90,7 +97,22 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
 
   @Override
   public BpmnEventType getBpmnEventType() {
-    throw new UnsupportedOperationException("Operation not supported");
+    return bpmnEventType;
+  }
+
+  @Override
+  public List<List<Long>> getElementInstancePath() {
+    return elementInstancePath;
+  }
+
+  @Override
+  public List<Long> getProcessDefinitionPath() {
+    return processDefinitionPath;
+  }
+
+  @Override
+  public List<Integer> getCallingElementPath() {
+    return callingElementPath;
   }
 
   public void setParentElementInstanceKey(final long parentElementInstanceKey) {

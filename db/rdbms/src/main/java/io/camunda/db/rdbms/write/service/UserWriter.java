@@ -31,24 +31,29 @@ public class UserWriter {
   public void update(final UserDbModel user) {
     final boolean wasMerged =
         mergeToQueue(
-            user.userKey(), b -> b.username(user.username()).name(user.name()).email(user.email()));
+            user.username(),
+            b -> b.name(user.name()).email(user.email()).password(user.password()));
 
     if (!wasMerged) {
       executionQueue.executeInQueue(
           new QueueItem(
-              ContextType.USER, user.userKey(), "io.camunda.db.rdbms.sql.UserMapper.update", user));
+              ContextType.USER,
+              user.username(),
+              "io.camunda.db.rdbms.sql.UserMapper.update",
+              user));
     }
   }
 
-  public void delete(final long userKey) {
+  public void delete(final String username) {
     executionQueue.executeInQueue(
         new QueueItem(
-            ContextType.USER, userKey, "io.camunda.db.rdbms.sql.UserMapper.delete", userKey));
+            ContextType.USER, username, "io.camunda.db.rdbms.sql.UserMapper.delete", username));
   }
 
   private boolean mergeToQueue(
-      final long key, final Function<UserDbModel.Builder, UserDbModel.Builder> mergeFunction) {
+      final String username,
+      final Function<UserDbModel.Builder, UserDbModel.Builder> mergeFunction) {
     return executionQueue.tryMergeWithExistingQueueItem(
-        new UpsertMerger<>(ContextType.USER, key, UserDbModel.class, mergeFunction));
+        new UpsertMerger<>(ContextType.USER, username, UserDbModel.class, mergeFunction));
   }
 }

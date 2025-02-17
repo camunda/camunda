@@ -7,6 +7,8 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.client.api.search.response.ProcessInstanceState.ACTIVE;
+import static io.camunda.client.api.search.response.ProcessInstanceState.COMPLETED;
 import static io.camunda.it.client.QueryTest.assertSorted;
 import static io.camunda.it.client.QueryTest.deployResource;
 import static io.camunda.it.client.QueryTest.startProcessInstance;
@@ -18,17 +20,15 @@ import static io.camunda.it.client.QueryTest.waitUntilProcessInstanceHasIncident
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.client.api.response.Process;
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
-import io.camunda.zeebe.client.api.search.response.FlowNodeInstance;
-import io.camunda.zeebe.client.api.search.response.ProcessInstance;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateEnum;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceVariableFilterRequest;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.Process;
+import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
+import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
+import io.camunda.it.utils.MultiDbTest;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -36,31 +36,19 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-@ZeebeIntegration
+@MultiDbTest
 public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
   static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
   static final List<ProcessInstanceEvent> PROCESS_INSTANCES = new ArrayList<>();
 
-  private static ZeebeClient zeebeClient;
-
-  @TestZeebe(initMethod = "initTestStandaloneCamunda")
-  private static TestStandaloneCamunda testStandaloneCamunda;
-
   private static FlowNodeInstance flowNodeInstance;
   private static FlowNodeInstance flowNodeInstanceWithIncident;
-
-  @SuppressWarnings("unused")
-  static void initTestStandaloneCamunda() {
-    testStandaloneCamunda =
-        new TestStandaloneCamunda().withElasticsearchExporter(false).withCamundaExporter();
-  }
+  private static CamundaClient camundaClient;
 
   @BeforeAll
   public static void beforeAll() {
-
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
-
+    Objects.requireNonNull(camundaClient);
     final List<String> processes =
         List.of(
             "service_tasks_v1.bpmn",
@@ -72,24 +60,26 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     processes.forEach(
         process ->
             DEPLOYED_PROCESSES.addAll(
-                deployResource(zeebeClient, String.format("process/%s", process)).getProcesses()));
+                deployResource(camundaClient, String.format("process/%s", process))
+                    .getProcesses()));
 
-    waitForProcessesToBeDeployed(zeebeClient, DEPLOYED_PROCESSES.size());
+    waitForProcessesToBeDeployed(camundaClient, DEPLOYED_PROCESSES.size());
 
     PROCESS_INSTANCES.add(
-        startProcessInstance(zeebeClient, "service_tasks_v1", "{\"xyz\":\"bar\"}"));
-    PROCESS_INSTANCES.add(startProcessInstance(zeebeClient, "service_tasks_v2", "{\"path\":222}"));
-    PROCESS_INSTANCES.add(startProcessInstance(zeebeClient, "manual_process"));
-    PROCESS_INSTANCES.add(startProcessInstance(zeebeClient, "incident_process_v1"));
-    PROCESS_INSTANCES.add(startProcessInstance(zeebeClient, "parent_process_v1"));
+        startProcessInstance(camundaClient, "service_tasks_v1", "{\"xyz\":\"bar\"}"));
+    PROCESS_INSTANCES.add(
+        startProcessInstance(camundaClient, "service_tasks_v2", "{\"path\":222}"));
+    PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "manual_process"));
+    PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "incident_process_v1"));
+    PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "parent_process_v1"));
 
-    waitForProcessInstancesToStart(zeebeClient, 6);
-    waitForFlowNodeInstances(zeebeClient, 20);
-    waitUntilFlowNodeInstanceHasIncidents(zeebeClient, 1);
-    waitUntilProcessInstanceHasIncidents(zeebeClient, 1);
+    waitForProcessInstancesToStart(camundaClient, 6);
+    waitForFlowNodeInstances(camundaClient, 20);
+    waitUntilFlowNodeInstanceHasIncidents(camundaClient, 1);
+    waitUntilProcessInstanceHasIncidents(camundaClient, 1);
     // store flow node instances for querying
     final var allFlowNodeInstances =
-        zeebeClient
+        camundaClient
             .newFlownodeInstanceQuery()
             .page(p -> p.limit(100))
             .sort(s -> s.flowNodeId().asc())
@@ -123,7 +113,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final long processDefinitionKey = processInstanceEvent.getProcessDefinitionKey();
 
     // when
-    final var result = zeebeClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
+    final var result = camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
 
     // then
     assertThat(result).isNotNull();
@@ -132,10 +122,9 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     assertThat(result.getProcessDefinitionName()).isEqualTo("Service tasks v1");
     assertThat(result.getProcessDefinitionVersion()).isEqualTo(1);
     assertThat(result.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
-    assertThat(result.getTreePath()).isEqualTo("PI_" + processInstanceKey);
     assertThat(result.getStartDate()).isNotNull();
     assertThat(result.getEndDate()).isNull();
-    assertThat(result.getState()).isEqualTo("ACTIVE");
+    assertThat(result.getState()).isEqualTo(ACTIVE);
     assertThat(result.getHasIncident()).isFalse();
     assertThat(result.getTenantId()).isEqualTo("<default>");
   }
@@ -150,7 +139,10 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
         assertThrowsExactly(
             ProblemException.class,
             () ->
-                zeebeClient.newProcessInstanceGetRequest(invalidProcessInstanceKey).send().join());
+                camundaClient
+                    .newProcessInstanceGetRequest(invalidProcessInstanceKey)
+                    .send()
+                    .join());
     assertThat(exception.getMessage()).startsWith("Failed with code 404");
     assertThat(exception.details()).isNotNull();
     assertThat(exception.details().getTitle()).isEqualTo("NOT_FOUND");
@@ -168,7 +160,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     expectedBpmnProcessIds.add("child_process_v1");
 
     // when
-    final var result = zeebeClient.newProcessInstanceQuery().send().join();
+    final var result = camundaClient.newProcessInstanceQuery().send().join();
 
     // then
     assertThat(result.page().totalItems()).isEqualTo(expectedBpmnProcessIds.size());
@@ -184,51 +176,9 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .filter(f -> f.processInstanceKey(processInstanceKey))
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
-  }
-
-  @Test
-  void shouldQueryProcessInstancesByKeyFilterGtLt() {
-    // given
-    final long processInstanceKey =
-        PROCESS_INSTANCES.stream().findFirst().orElseThrow().getProcessInstanceKey();
-
-    // when
-    final var result =
-        zeebeClient
-            .newProcessInstanceQuery()
-            .filter(
-                f ->
-                    f.processInstanceKey(
-                        b -> b.gt(processInstanceKey - 1).lt(processInstanceKey + 1)))
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
-  }
-
-  @Test
-  void shouldQueryProcessInstancesByKeyFilterGteLte() {
-    // given
-    final long processInstanceKey =
-        PROCESS_INSTANCES.stream().findFirst().orElseThrow().getProcessInstanceKey();
-
-    // when
-    final var result =
-        zeebeClient
-            .newProcessInstanceQuery()
-            .filter(
-                f -> f.processInstanceKey(b -> b.gte(processInstanceKey).lte(processInstanceKey)))
             .send()
             .join();
 
@@ -247,7 +197,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .filter(f -> f.processInstanceKey(b -> b.in(processInstanceKeys)))
             .send()
@@ -273,7 +223,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .filter(f -> f.processDefinitionId(b -> b.eq(bpmnProcessId)))
             .send()
@@ -297,7 +247,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .filter(f -> f.processDefinitionId(b -> b.in("not-found", bpmnProcessId)))
             .send()
@@ -320,7 +270,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .filter(f -> f.processDefinitionId(b -> b.like(bpmnProcessId.replace("_", "?") + "*")))
             .send()
@@ -337,7 +287,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldRetrieveProcessInstancesByStartDateFilterGtLt() {
     // given
     final var pi =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .page(p -> p.limit(1))
             .send()
@@ -348,7 +298,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .filter(
                 f ->
@@ -366,10 +316,40 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   }
 
   @Test
+  void shouldRetrieveProcessInstancesByExistEndDates() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceQuery()
+            .filter(f -> f.endDate(b -> b.exists(true)))
+            .send()
+            .join();
+
+    // then
+    // validate all end dates are not null
+    assertThat(result.items()).allMatch(p -> p.getEndDate() != null);
+  }
+
+  @Test
+  void shouldRetrieveProcessInstancesByNotExistEndDates() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceQuery()
+            .filter(f -> f.endDate(b -> b.exists(false)))
+            .send()
+            .join();
+
+    // then
+    // validate all end dates are not null
+    assertThat(result.items()).allMatch(p -> p.getEndDate() == null);
+  }
+
+  @Test
   void shouldRetrieveProcessInstancesByEndDateFilterGteLte() {
     // given
     final var pi =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .page(p -> p.limit(1))
             .send()
@@ -380,7 +360,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .filter(f -> f.startDate(b -> b.gte(startDate).lte(startDate)))
             .send()
@@ -406,7 +386,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .filter(f -> f.processDefinitionKey(processDefinitionKey))
             .send()
@@ -421,7 +401,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldQueryProcessInstancesByStateActive() {
     // when
     final var result =
-        zeebeClient.newProcessInstanceQuery().filter(f -> f.state("ACTIVE")).send().join();
+        camundaClient.newProcessInstanceQuery().filter(f -> f.state(ACTIVE)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -433,7 +413,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldQueryProcessInstancesByStateFilterLike() {
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .filter(f -> f.state(b -> b.like("ACT*")))
             .send()
@@ -449,7 +429,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldQueryProcessInstancesByStateFilterNeq() {
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .filter(f -> f.state(b -> b.neq(ProcessInstanceStateEnum.ACTIVE)))
             .send()
@@ -464,7 +444,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldQueryProcessInstancesByStateCompleted() {
     // when
     final var result =
-        zeebeClient.newProcessInstanceQuery().filter(f -> f.state("COMPLETED")).send().join();
+        camundaClient.newProcessInstanceQuery().filter(f -> f.state(COMPLETED)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -476,7 +456,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldQueryProcessInstancesWithIncidents() {
     // when
     final var result =
-        zeebeClient.newProcessInstanceQuery().filter(f -> f.hasIncident(true)).send().join();
+        camundaClient.newProcessInstanceQuery().filter(f -> f.hasIncident(true)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
@@ -496,7 +476,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .filter(f -> f.parentProcessInstanceKey(parentProcessInstanceKey))
             .send()
@@ -519,7 +499,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .sort(s -> s.processDefinitionId().desc())
             .send()
@@ -540,7 +520,26 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
     // when
     final var result =
-        zeebeClient.newProcessInstanceQuery().filter(f -> f.variables(variables)).send().join();
+        camundaClient.newProcessInstanceQuery().filter(f -> f.variables(variables)).send().join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
+        .containsExactlyInAnyOrderElementsOf(expectedBpmnProcessIds);
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByVariableSingleUsingMap() {
+    // given
+    final List<String> expectedBpmnProcessIds = List.of("service_tasks_v1");
+
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceQuery()
+            .filter(f -> f.variables(Map.of("xyz", "\"bar\"")))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
@@ -559,7 +558,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
     // when
     final var result =
-        zeebeClient.newProcessInstanceQuery().filter(f -> f.variables(variables)).send().join();
+        camundaClient.newProcessInstanceQuery().filter(f -> f.variables(variables)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(2);
@@ -571,9 +570,13 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldSortProcessInstancesByProcessInstanceKey() {
     // when
     final var resultAsc =
-        zeebeClient.newProcessInstanceQuery().sort(s -> s.processInstanceKey().asc()).send().join();
+        camundaClient
+            .newProcessInstanceQuery()
+            .sort(s -> s.processInstanceKey().asc())
+            .send()
+            .join();
     final var resultDesc =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .sort(s -> s.processInstanceKey().desc())
             .send()
@@ -586,13 +589,13 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldSortProcessInstancesByProcessDefinitionName() {
     // when
     final var resultAsc =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .sort(s -> s.processDefinitionName().asc())
             .send()
             .join();
     final var resultDesc =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .sort(s -> s.processDefinitionName().desc())
             .send()
@@ -605,13 +608,13 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldSortProcessInstancesByProcessDefinitionKey() {
     // when
     final var resultAsc =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .sort(s -> s.processDefinitionKey().asc())
             .send()
             .join();
     final var resultDesc =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .sort(s -> s.processDefinitionKey().desc())
             .send()
@@ -624,13 +627,13 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldSortProcessInstancesByParentProcessInstanceKey() {
     // when
     final var resultAsc =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .sort(s -> s.parentProcessInstanceKey().asc())
             .send()
             .join();
     final var resultDesc =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .sort(s -> s.parentFlowNodeInstanceKey().desc())
             .send()
@@ -643,9 +646,9 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldSortProcessInstancesByStartDate() {
     // when
     final var resultAsc =
-        zeebeClient.newProcessInstanceQuery().sort(s -> s.startDate().asc()).send().join();
+        camundaClient.newProcessInstanceQuery().sort(s -> s.startDate().asc()).send().join();
     final var resultDesc =
-        zeebeClient.newProcessInstanceQuery().sort(s -> s.startDate().desc()).send().join();
+        camundaClient.newProcessInstanceQuery().sort(s -> s.startDate().desc()).send().join();
 
     assertSorted(resultAsc, resultDesc, ProcessInstance::getStartDate);
   }
@@ -654,21 +657,21 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldSortProcessInstancesByState() {
     // when
     final var resultAsc =
-        zeebeClient.newProcessInstanceQuery().sort(s -> s.state().asc()).send().join();
+        camundaClient.newProcessInstanceQuery().sort(s -> s.state().asc()).send().join();
     final var resultDesc =
-        zeebeClient.newProcessInstanceQuery().sort(s -> s.state().desc()).send().join();
+        camundaClient.newProcessInstanceQuery().sort(s -> s.state().desc()).send().join();
 
     assertSorted(resultAsc, resultDesc, ProcessInstance::getState);
   }
 
   @Test
   public void shouldValidateProcessInstancePagination() {
-    final var result = zeebeClient.newProcessInstanceQuery().page(p -> p.limit(2)).send().join();
+    final var result = camundaClient.newProcessInstanceQuery().page(p -> p.limit(2)).send().join();
     assertThat(result.items().size()).isEqualTo(2);
     final var key = result.items().getFirst().getProcessInstanceKey();
     // apply searchAfter
     final var resultAfter =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .page(p -> p.searchAfter(Collections.singletonList(key)))
             .send()
@@ -678,7 +681,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var keyAfter = resultAfter.items().getFirst().getProcessInstanceKey();
     // apply searchBefore
     final var resultBefore =
-        zeebeClient
+        camundaClient
             .newProcessInstanceQuery()
             .page(p -> p.searchBefore(Collections.singletonList(keyAfter)))
             .send()
@@ -689,12 +692,12 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
   @Test
   public void shouldValidateFlowNodeInstancePagination() {
-    final var result = zeebeClient.newFlownodeInstanceQuery().page(p -> p.limit(2)).send().join();
+    final var result = camundaClient.newFlownodeInstanceQuery().page(p -> p.limit(2)).send().join();
     assertThat(result.items().size()).isEqualTo(2);
     final var key = result.items().getFirst().getFlowNodeInstanceKey();
     // apply searchAfter
     final var resultAfter =
-        zeebeClient
+        camundaClient
             .newFlownodeInstanceQuery()
             .page(p -> p.searchAfter(Collections.singletonList(key)))
             .send()
@@ -704,7 +707,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var keyAfter = resultAfter.items().getFirst().getFlowNodeInstanceKey();
     // apply searchBefore
     final var resultBefore =
-        zeebeClient
+        camundaClient
             .newFlownodeInstanceQuery()
             .page(p -> p.searchBefore(Collections.singletonList(keyAfter)))
             .send()
@@ -719,7 +722,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var key = flowNodeInstance.getFlowNodeInstanceKey();
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newFlownodeInstanceQuery()
             .filter(f -> f.flowNodeInstanceKey(key))
             .send()
@@ -734,13 +737,13 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldSortFlowNodeInstanceByFlowNodeInstanceKey() {
     // when
     final var resultAsc =
-        zeebeClient
+        camundaClient
             .newFlownodeInstanceQuery()
             .sort(s -> s.flowNodeInstanceKey().asc())
             .send()
             .join();
     final var resultDesc =
-        zeebeClient
+        camundaClient
             .newFlownodeInstanceQuery()
             .sort(s -> s.flowNodeInstanceKey().desc())
             .send()
@@ -755,7 +758,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var processInstanceKey = flowNodeInstance.getProcessInstanceKey();
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newFlownodeInstanceQuery()
             .filter(f -> f.processInstanceKey(processInstanceKey))
             .send()
@@ -771,13 +774,13 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldSortFlowNodeInstanceByProcessInstanceKey() {
     // when
     final var resultAsc =
-        zeebeClient
+        camundaClient
             .newFlownodeInstanceQuery()
             .sort(s -> s.processInstanceKey().asc())
             .send()
             .join();
     final var resultDesc =
-        zeebeClient
+        camundaClient
             .newFlownodeInstanceQuery()
             .sort(s -> s.processInstanceKey().desc())
             .send()
@@ -792,7 +795,8 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var flowNodeInstanceKey = flowNodeInstance.getFlowNodeInstanceKey();
 
     // when
-    final var result = zeebeClient.newFlowNodeInstanceGetRequest(flowNodeInstanceKey).send().join();
+    final var result =
+        camundaClient.newFlowNodeInstanceGetRequest(flowNodeInstanceKey).send().join();
 
     // then
     assertThat(result).isNotNull();
@@ -805,21 +809,27 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var flowNodeId = flowNodeInstance.getFlowNodeId();
     // when
     final var result =
-        zeebeClient.newFlownodeInstanceQuery().filter(f -> f.flowNodeId(flowNodeId)).send().join();
+        camundaClient
+            .newFlownodeInstanceQuery()
+            .filter(f -> f.flowNodeId(flowNodeId))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().getFirst().getFlowNodeId()).isEqualTo(flowNodeId);
-    assertThat(result.items().getFirst().getFlowNodeId()).isEqualTo(flowNodeId);
+    assertThat(result.items().getFirst().getProcessDefinitionId()).isNotNull();
+    assertThat(result.items().getFirst().getProcessDefinitionId())
+        .isEqualTo(flowNodeInstance.getProcessDefinitionId());
   }
 
   @Test
   void shouldSortFlowNodeInstanceByFlowNodeId() {
     // when
     final var resultAsc =
-        zeebeClient.newFlownodeInstanceQuery().sort(s -> s.flowNodeId().asc()).send().join();
+        camundaClient.newFlownodeInstanceQuery().sort(s -> s.flowNodeId().asc()).send().join();
     final var resultDesc =
-        zeebeClient.newFlownodeInstanceQuery().sort(s -> s.flowNodeId().desc()).send().join();
+        camundaClient.newFlownodeInstanceQuery().sort(s -> s.flowNodeId().desc()).send().join();
     assertSorted(resultAsc, resultDesc, FlowNodeInstance::getFlowNodeId);
   }
 
@@ -827,7 +837,11 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldHaveCorrectFlowNodeInstanceFlowNodeName() {
     // when
     final var result =
-        zeebeClient.newFlownodeInstanceQuery().filter(f -> f.flowNodeId("noOpTask")).send().join();
+        camundaClient
+            .newFlownodeInstanceQuery()
+            .filter(f -> f.flowNodeId("noOpTask"))
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(1);
     assertThat(result.items().getFirst().getFlowNodeName()).isEqualTo("No Op");
@@ -837,7 +851,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldUseFlowNodeInstanceFlowNodeIdIfNameNotSet() {
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newFlownodeInstanceQuery()
             .filter(f -> f.flowNodeId("Event_1p0nsc7"))
             .send()
@@ -853,7 +867,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var processDefinitionKey = flowNodeInstance.getProcessDefinitionKey();
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newFlownodeInstanceQuery()
             .filter(f -> f.processDefinitionKey(processDefinitionKey))
             .send()
@@ -868,13 +882,13 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldSortFlowNodeInstanceByProcessDefinitionKey() {
     // when
     final var resultAsc =
-        zeebeClient
+        camundaClient
             .newFlownodeInstanceQuery()
             .sort(s -> s.processDefinitionKey().asc())
             .send()
             .join();
     final var resultDesc =
-        zeebeClient
+        camundaClient
             .newFlownodeInstanceQuery()
             .sort(s -> s.processDefinitionKey().desc())
             .send()
@@ -888,7 +902,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var incidentKey = flowNodeInstanceWithIncident.getIncidentKey();
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newFlownodeInstanceQuery()
             .filter(f -> f.incidentKey(incidentKey))
             .send()
@@ -903,9 +917,9 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldSortFlowNodeInstanceByIncidentKey() {
     // when
     final var resultAsc =
-        zeebeClient.newFlownodeInstanceQuery().sort(s -> s.incidentKey().asc()).send().join();
+        camundaClient.newFlownodeInstanceQuery().sort(s -> s.incidentKey().asc()).send().join();
     final var resultDesc =
-        zeebeClient.newFlownodeInstanceQuery().sort(s -> s.incidentKey().desc()).send().join();
+        camundaClient.newFlownodeInstanceQuery().sort(s -> s.incidentKey().desc()).send().join();
 
     assertSorted(resultAsc, resultDesc, FlowNodeInstance::getIncidentKey);
   }
@@ -916,7 +930,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var state = flowNodeInstance.getState();
     // when
     final var result =
-        zeebeClient.newFlownodeInstanceQuery().filter(f -> f.state(state)).send().join();
+        camundaClient.newFlownodeInstanceQuery().filter(f -> f.state(state)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(17);
@@ -927,11 +941,11 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldSortFlowNodeInstanceByState() {
     // when
     final var resultAsc =
-        zeebeClient.newFlownodeInstanceQuery().sort(s -> s.state().asc()).send().join();
+        camundaClient.newFlownodeInstanceQuery().sort(s -> s.state().asc()).send().join();
     final var resultDesc =
-        zeebeClient.newFlownodeInstanceQuery().sort(s -> s.state().desc()).send().join();
+        camundaClient.newFlownodeInstanceQuery().sort(s -> s.state().desc()).send().join();
 
-    assertSorted(resultAsc, resultDesc, FlowNodeInstance::getState);
+    assertSorted(resultAsc, resultDesc, flowNodeInstance -> flowNodeInstance.getState().name());
   }
 
   @Test
@@ -940,7 +954,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var hasIncident = flowNodeInstanceWithIncident.getIncident();
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newFlownodeInstanceQuery()
             .filter(f -> f.hasIncident(hasIncident))
             .send()
@@ -957,7 +971,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var type = flowNodeInstance.getType();
     // when
     final var result =
-        zeebeClient.newFlownodeInstanceQuery().filter(f -> f.type(type)).send().join();
+        camundaClient.newFlownodeInstanceQuery().filter(f -> f.type(type)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -970,34 +984,21 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldSortFlowNodeInstanceByType() {
     // when
     final var resultAsc =
-        zeebeClient
+        camundaClient
             .newFlownodeInstanceQuery()
             .page(p -> p.limit(100))
             .sort(s -> s.type().asc())
             .send()
             .join();
     final var resultDesc =
-        zeebeClient
+        camundaClient
             .newFlownodeInstanceQuery()
             .page(p -> p.limit(100))
             .sort(s -> s.type().desc())
             .send()
             .join();
 
-    assertSorted(resultAsc, resultDesc, FlowNodeInstance::getType);
-  }
-
-  @Test
-  void shouldQueryFlowNodeInstanceByTreePath() {
-    // given
-    final var treePath = flowNodeInstance.getTreePath();
-    // when
-    final var result =
-        zeebeClient.newFlownodeInstanceQuery().filter(f -> f.treePath(treePath)).send().join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().getFirst().getTreePath()).isEqualTo(treePath);
+    assertSorted(resultAsc, resultDesc, flowNodeInstance -> flowNodeInstance.getType().name());
   }
 
   @Test
@@ -1006,7 +1007,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var tenantId = flowNodeInstance.getTenantId();
     // when
     final var result =
-        zeebeClient.newFlownodeInstanceQuery().filter(f -> f.tenantId(tenantId)).send().join();
+        camundaClient.newFlownodeInstanceQuery().filter(f -> f.tenantId(tenantId)).send().join();
 
     // then
     assertThat(result.page().totalItems()).isEqualTo(20);
@@ -1015,12 +1016,12 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
   @Test
   public void shouldQueryFlowNodeInstanceValidatePagination() {
-    final var result = zeebeClient.newFlownodeInstanceQuery().page(p -> p.limit(2)).send().join();
+    final var result = camundaClient.newFlownodeInstanceQuery().page(p -> p.limit(2)).send().join();
     assertThat(result.items().size()).isEqualTo(2);
     final var key = result.items().getFirst().getFlowNodeInstanceKey();
     // apply searchAfter
     final var resultAfter =
-        zeebeClient
+        camundaClient
             .newFlownodeInstanceQuery()
             .page(p -> p.searchAfter(Collections.singletonList(key)))
             .send()
@@ -1030,7 +1031,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var keyAfter = resultAfter.items().getFirst().getFlowNodeInstanceKey();
     // apply searchBefore
     final var resultBefore =
-        zeebeClient
+        camundaClient
             .newFlownodeInstanceQuery()
             .page(p -> p.searchBefore(Collections.singletonList(keyAfter)))
             .send()
@@ -1042,11 +1043,11 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   @Test
   void shouldSearchByFromWithLimit() {
     // when
-    final var resultAll = zeebeClient.newFlownodeInstanceQuery().send().join();
+    final var resultAll = camundaClient.newFlownodeInstanceQuery().send().join();
     final var thirdKey = resultAll.items().get(2).getFlowNodeInstanceKey();
 
     final var resultSearchFrom =
-        zeebeClient.newFlownodeInstanceQuery().page(p -> p.limit(2).from(2)).send().join();
+        camundaClient.newFlownodeInstanceQuery().page(p -> p.limit(2).from(2)).send().join();
 
     // then
     assertThat(resultSearchFrom.items().size()).isEqualTo(2);

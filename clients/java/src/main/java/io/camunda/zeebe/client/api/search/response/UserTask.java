@@ -18,12 +18,14 @@ package io.camunda.zeebe.client.api.search.response;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.search.response.UserTask}
+ */
+@Deprecated
 public interface UserTask {
 
-  Long getUserTaskKey();
-
-  /** Name of the task */
-  String getName();
+  Long getKey();
 
   /** State of the task */
   String getState();
@@ -38,10 +40,10 @@ public interface UserTask {
   Long getElementInstanceKey();
 
   /** Candidate groups for the task */
-  List<String> getCandidateGroups();
+  List<String> getCandidateGroup();
 
   /** Candidate users for the task */
-  List<String> getCandidateUsers();
+  List<String> getCandidateUser();
 
   /** BPMN process id of the process associated with this task */
   String getBpmnProcessId();
@@ -68,7 +70,7 @@ public interface UserTask {
   String getDueDate();
 
   /** Tenant identifiers */
-  String getTenantId();
+  String getTenantIds();
 
   /** External form reference */
   String getExternalFormReference();

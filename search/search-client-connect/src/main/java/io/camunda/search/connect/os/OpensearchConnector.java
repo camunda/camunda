@@ -39,7 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.http.crt.AwsCrtHttpClient;
 import software.amazon.awssdk.regions.Region;
 
 public final class OpensearchConnector {
@@ -89,6 +89,10 @@ public final class OpensearchConnector {
     return new OpenSearchAsyncClient(transport);
   }
 
+  public ObjectMapper objectMapper() {
+    return objectMapper;
+  }
+
   private OpenSearchTransport createTransport(final ConnectConfiguration configuration) {
     if (shouldCreateAWSBasedTransport()) {
       return createAWSBasedTransport(configuration);
@@ -100,7 +104,7 @@ public final class OpensearchConnector {
   private OpenSearchTransport createAWSBasedTransport(final ConnectConfiguration configuration) {
     final var httpHost = getHttpHost(configuration);
     final var region = new DefaultAwsRegionProviderChain().getRegion();
-    final var httpClient = ApacheHttpClient.builder().build();
+    final var httpClient = AwsCrtHttpClient.builder().build();
     return new AwsSdk2Transport(
         httpClient,
         httpHost.getHostName(),

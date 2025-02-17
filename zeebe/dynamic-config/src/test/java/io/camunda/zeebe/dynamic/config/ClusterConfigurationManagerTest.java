@@ -15,6 +15,7 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentC
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.dynamic.config.changes.NoopConfigurationChangeAppliers;
+import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -26,6 +27,8 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.util.Either;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -37,6 +40,7 @@ import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -56,6 +60,8 @@ final class ClusterConfigurationManagerTest {
   private final MemberId localMemberId = MemberId.from("1");
 
   private PersistedClusterConfiguration persistedClusterConfiguration;
+  @AutoClose private MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private final TopologyManagerMetrics topologyMetrics = new TopologyManagerMetrics(meterRegistry);
 
   @BeforeEach
   void init() {
@@ -96,6 +102,7 @@ final class ClusterConfigurationManagerTest {
             new TestConcurrencyControl(),
             localMemberId,
             persistedClusterConfiguration,
+            topologyMetrics,
             Duration.ofMillis(100),
             Duration.ofMillis(200));
     clusterTopologyManager.setConfigurationGossiper(gossipHandler);
@@ -197,7 +204,7 @@ final class ClusterConfigurationManagerTest {
     // when
     final ClusterConfiguration topologyFromOtherMember =
         initialTopology.startConfigurationChange(
-            List.of(new PartitionLeaveOperation(localMemberId, 1)));
+            List.of(new PartitionLeaveOperation(localMemberId, 1, 1)));
     clusterTopologyManager.onGossipReceived(topologyFromOtherMember);
 
     // then
@@ -218,7 +225,7 @@ final class ClusterConfigurationManagerTest {
     // given
     final ClusterConfiguration topologyWithPendingOperation =
         initialTopology.startConfigurationChange(
-            List.of(new PartitionLeaveOperation(localMemberId, 1)));
+            List.of(new PartitionLeaveOperation(localMemberId, 1, 1)));
     final ClusterConfigurationInitializer initializer =
         () -> CompletableActorFuture.completed(topologyWithPendingOperation);
 
@@ -249,7 +256,7 @@ final class ClusterConfigurationManagerTest {
     // when
     final ClusterConfiguration topologyFromOtherMember =
         initialTopology.startConfigurationChange(
-            List.of(new PartitionLeaveOperation(localMemberId, 1)));
+            List.of(new PartitionLeaveOperation(localMemberId, 1, 1)));
     clusterTopologyManager.onGossipReceived(topologyFromOtherMember);
 
     // then

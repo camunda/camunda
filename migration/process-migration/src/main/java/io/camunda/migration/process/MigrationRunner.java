@@ -7,6 +7,7 @@
  */
 package io.camunda.migration.process;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.api.Migrator;
 import io.camunda.migration.process.adapter.Adapter;
@@ -27,6 +28,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -59,7 +61,7 @@ public class MigrationRunner implements Migrator {
   }
 
   @Override
-  public void run() {
+  public Void call() {
     LOG.info("Process Migration started");
     try {
       String lastMigratedProcessDefinitionKey = adapter.readLastMigratedEntity();
@@ -81,10 +83,14 @@ public class MigrationRunner implements Migrator {
       }
     } catch (final Exception e) {
       terminate(scheduler);
-      throw new MigrationException(e.getMessage(), e);
+      if (shouldThrowException(e)) {
+        throw new MigrationException(e.getMessage(), e);
+      }
+      LOG.warn("Process Migration finished with error `{}`", e.getMessage());
     }
     terminate(scheduler);
     LOG.info("Process Migration completed");
+    return null;
   }
 
   private boolean shouldContinue(final List<ProcessEntity> processes) {
@@ -164,5 +170,24 @@ public class MigrationRunner implements Migrator {
     } catch (final IOException e) {
       LOG.error("Failed to close adapter", e);
     }
+  }
+
+  /**
+   * Check if the exception should be rethrown or not. Throwing the exception on this stage will
+   * cause the Spring Boot application to terminate. Some exceptions can be expected when dealing
+   * with Greenfield deployments and these should be ignored.
+   *
+   * @param exception
+   * @return true if the exception should be rethrown, false otherwise
+   */
+  private boolean shouldThrowException(final Exception exception) {
+    if (exception.getCause() instanceof final ElasticsearchException ex) {
+      return ex.error().reason() != null
+          && !MigrationUtil.MIGRATION_REPOSITORY_NOT_EXISTS.matcher(ex.error().reason()).find();
+    } else if (exception.getCause() instanceof final OpenSearchException ex) {
+      return ex.error().reason() != null
+          && !MigrationUtil.MIGRATION_REPOSITORY_NOT_EXISTS.matcher(ex.error().reason()).find();
+    }
+    return true;
   }
 }

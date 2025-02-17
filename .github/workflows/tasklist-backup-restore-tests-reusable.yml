@@ -26,7 +26,7 @@ jobs:
       # Setup: import secrets from vault
       - name: Import Secrets
         id: secrets # important to refer to it in later steps
-        uses: hashicorp/vault-action@c46b8b88227585d3999accc9441c5810fe186a84
+        uses: hashicorp/vault-action@a1b77a09293a4366e48a5067a86692ac6e94fdc0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -77,15 +77,15 @@ jobs:
       # Tests: run backup and restore tests
       - name: Run backup and restore tests
         run: |
-          ./mvnw -B -pl tasklist/qa/backup-restore-tests -DskipChecks -DtasklistDatabase=${{ inputs.database }} -P -skipTests verify
+          ./mvnw -B -pl tasklist/qa/backup-restore-tests -DskipChecks -DtasklistDatabase=${{ inputs.database }} -P-skipTests verify
 
       # Notify: send Slack notification on tests failure
       - name: Send Slack notification on failure
         if: failure()
-        uses: slackapi/slack-github-action@v1.27.1
-        env:
-          SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.TASKLIST_CI_ALERT_WEBHOOK_URL }}
+        uses: slackapi/slack-github-action@v2.0.0
         with:
+          webhook: ${{ steps.secrets.outputs.TASKLIST_CI_ALERT_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
           payload: |
             {
               "workflow_name": "Backup and restore tests",

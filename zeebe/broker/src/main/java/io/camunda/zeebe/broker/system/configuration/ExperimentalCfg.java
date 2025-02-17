@@ -22,6 +22,13 @@ public class ExperimentalCfg implements ConfigurationEntry {
   public static final int DEFAULT_MAX_APPENDS_PER_FOLLOWER = 6;
   public static final DataSize DEFAULT_MAX_APPEND_BATCH_SIZE = DataSize.ofKilobytes(32);
   public static final boolean DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH = false;
+  public static final boolean DEFAULT_VERSION_CHECK_ENABLED = true;
+
+  /**
+   * Allows to enable/disable the version check, that prevents us on migrating to alpha versions,
+   * etc.
+   */
+  private boolean versionCheckRestrictionEnabled = DEFAULT_VERSION_CHECK_ENABLED;
 
   private int maxAppendsPerFollower = DEFAULT_MAX_APPENDS_PER_FOLLOWER;
   private DataSize maxAppendBatchSize = DEFAULT_MAX_APPEND_BATCH_SIZE;
@@ -32,8 +39,15 @@ public class ExperimentalCfg implements ConfigurationEntry {
   private QueryApiCfg queryApi = new QueryApiCfg();
   private ConsistencyCheckCfg consistencyChecks = new ConsistencyCheckCfg();
   private EngineCfg engine = new EngineCfg();
-
   private FeatureFlagsCfg features = new FeatureFlagsCfg();
+
+  public boolean isVersionCheckRestrictionEnabled() {
+    return versionCheckRestrictionEnabled;
+  }
+
+  public void setVersionCheckRestrictionEnabled(final boolean versionCheckRestrictionEnabled) {
+    this.versionCheckRestrictionEnabled = versionCheckRestrictionEnabled;
+  }
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {

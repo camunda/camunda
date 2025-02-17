@@ -54,6 +54,7 @@ public final class ClusterConfigurationGossiper
 
   // The handler which can merge configuration updates and reacts to the changes.
   private final Consumer<ClusterConfiguration> clusterConfigurationUpdateHandler;
+  private final TopologyMetrics topologyMetrics;
 
   public ClusterConfigurationGossiper(
       final ConcurrencyControl executor,
@@ -61,13 +62,15 @@ public final class ClusterConfigurationGossiper
       final ClusterMembershipService membershipService,
       final ClusterConfigurationSerializer serializer,
       final ClusterConfigurationGossiperConfig config,
-      final Consumer<ClusterConfiguration> clusterConfigurationUpdateHandler) {
+      final Consumer<ClusterConfiguration> clusterConfigurationUpdateHandler,
+      final TopologyMetrics topologyMetrics) {
     this.executor = executor;
     this.communicationService = communicationService;
     this.membershipService = membershipService;
     this.config = config;
     this.serializer = serializer;
     this.clusterConfigurationUpdateHandler = clusterConfigurationUpdateHandler;
+    this.topologyMetrics = topologyMetrics;
   }
 
   public CompletableActorFuture<Void> start() {
@@ -177,7 +180,7 @@ public final class ClusterConfigurationGossiper
     LOGGER.trace("Updated local gossipState to {}", updatedConfiguration);
     gossip();
     notifyListeners(updatedConfiguration);
-    TopologyMetrics.updateFromTopology(updatedConfiguration);
+    topologyMetrics.updateFromTopology(updatedConfiguration);
   }
 
   private void notifyListeners(final ClusterConfiguration updatedTopology) {
@@ -243,13 +246,15 @@ public final class ClusterConfigurationGossiper
     final var gossipMembersList =
         membersToSync.subList(0, Math.min(config.gossipFanout(), membersToSync.size()));
     LOGGER.trace("Gossiping {} to {}", gossipState, gossipMembersList);
-    gossipMembersList.forEach(
-        member ->
-            communicationService.unicast(
-                GOSSIP_REQUEST_TOPIC, gossipState, serializer::encode, member, true));
+    gossipMembersList.forEach(this::sendGossipRequest);
     // The list is backed by `membersToSync`. After gossip we remove them from the list so that in
     // the next try it chooses a different set of members
     gossipMembersList.clear();
+  }
+
+  private void sendGossipRequest(final MemberId member) {
+    communicationService.unicast(
+        GOSSIP_REQUEST_TOPIC, gossipState, serializer::encode, member, true);
   }
 
   private void handleGossip(
@@ -283,14 +288,12 @@ public final class ClusterConfigurationGossiper
   public void event(final ClusterMembershipEvent event) {
     switch (event.type()) {
       case MEMBER_ADDED ->
-          // When a new member is added to the cluster, immediately sync with it so that the new
-          // member
-          // receives the latest topology as fast as possible.
-          executor.run(() -> sync(event.subject().id()));
+          // When a new member is added to the cluster, immediately gossip so that the new
+          // member receives the latest topology as fast as possible.
+          executor.run(() -> sendGossipRequest(event.subject().id()));
       case MEMBER_REMOVED ->
           // When a member is removed, remove it from the list of members to sync so that we don't
-          // try
-          // to sync with it in the next round. This is only for optimization.
+          // try to sync with it in the next round. This is only for optimization.
           executor.run(() -> membersToSync.remove(event.subject().id()));
       default -> {
         // ignore

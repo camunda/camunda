@@ -25,6 +25,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListeners;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTask;
@@ -307,9 +308,10 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
   }
 
   private TaskListener toTaskListenerModel(
-      ZeebeTaskListener zeebeTaskListener, final UserTaskProperties userTaskProperties) {
+      final ZeebeTaskListener zeebeTaskListener, final UserTaskProperties userTaskProperties) {
     final TaskListener listener = new TaskListener();
-    listener.setEventType(zeebeTaskListener.getEventType());
+    final var eventType = getZeebeTaskListenerEventType(zeebeTaskListener);
+    listener.setEventType(eventType);
 
     final JobWorkerProperties jobProperties = new JobWorkerProperties();
     jobProperties.wrap(userTaskProperties);
@@ -317,5 +319,17 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     jobProperties.setRetries(expressionLanguage.parseExpression(zeebeTaskListener.getRetries()));
     listener.setJobWorkerProperties(jobProperties);
     return listener;
+  }
+
+  @SuppressWarnings("deprecation")
+  private static ZeebeTaskListenerEventType getZeebeTaskListenerEventType(
+      final ZeebeTaskListener zeebeTaskListener) {
+    return switch (zeebeTaskListener.getEventType()) {
+      case create, creating -> ZeebeTaskListenerEventType.creating;
+      case assignment, assigning -> ZeebeTaskListenerEventType.assigning;
+      case update, updating -> ZeebeTaskListenerEventType.updating;
+      case complete, completing -> ZeebeTaskListenerEventType.completing;
+      case cancel, canceling -> ZeebeTaskListenerEventType.canceling;
+    };
   }
 }

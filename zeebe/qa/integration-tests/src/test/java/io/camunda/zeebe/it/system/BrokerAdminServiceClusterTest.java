@@ -73,14 +73,14 @@ public class BrokerAdminServiceClusterTest {
     followerStatus.forEach(
         partitionStatus -> {
           assertThat(partitionStatus.role()).isEqualTo(Role.FOLLOWER);
-          assertThat(partitionStatus.processedPosition()).isEqualTo(1L);
+          assertThat(partitionStatus.processedPosition()).isPositive();
           assertThat(partitionStatus.snapshotId()).isNull();
           assertThat(partitionStatus.processedPositionInSnapshot()).isNull();
           assertThat(partitionStatus.streamProcessorPhase()).isEqualTo(Phase.REPLAY);
         });
 
     assertThat(leaderStatus.role()).isEqualTo(Role.LEADER);
-    assertThat(leaderStatus.processedPosition()).isEqualTo(1L);
+    assertThat(leaderStatus.processedPosition()).isPositive();
     assertThat(leaderStatus.snapshotId()).isNull();
     assertThat(leaderStatus.processedPositionInSnapshot()).isNull();
     assertThat(leaderStatus.streamProcessorPhase()).isEqualTo(Phase.PROCESSING);

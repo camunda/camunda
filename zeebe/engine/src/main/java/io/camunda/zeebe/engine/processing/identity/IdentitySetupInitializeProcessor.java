@@ -15,31 +15,33 @@ import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecord
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.authorization.PersistedRole;
+import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
-import io.camunda.zeebe.engine.state.tenant.PersistedTenant;
 import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
+import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.Optional;
+import org.agrona.collections.MutableBoolean;
 
 @ExcludeAuthorizationCheck
 public final class IdentitySetupInitializeProcessor
@@ -50,6 +52,7 @@ public final class IdentitySetupInitializeProcessor
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
   private final CommandDistributionBehavior commandDistributionBehavior;
+  private final MappingState mappingState;
   private final TypedRejectionWriter rejectionWriter;
 
   public IdentitySetupInitializeProcessor(
@@ -60,6 +63,7 @@ public final class IdentitySetupInitializeProcessor
     roleState = processingState.getRoleState();
     userState = processingState.getUserState();
     tenantState = processingState.getTenantState();
+    mappingState = processingState.getMappingState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
@@ -69,18 +73,15 @@ public final class IdentitySetupInitializeProcessor
   @Override
   public void processNewCommand(final TypedRecord<IdentitySetupRecord> command) {
     final var setupRecord = command.getValue();
-    final var existingEntityKeys = findExistingDefaultEntityKeys(setupRecord);
-    if (existingEntityKeys.role().isPresent()
-        && existingEntityKeys.user().isPresent()
-        && existingEntityKeys.tenant().isPresent()) {
+
+    if (!createNewEntities(setupRecord)) {
       rejectionWriter.appendRejection(
-          command, RejectionType.ALREADY_EXISTS, "Default entities already exist");
+          command, RejectionType.ALREADY_EXISTS, "Entities already exist");
       return;
     }
 
     final var key = keyGenerator.nextKey();
-    setNewEntityKeys(existingEntityKeys, setupRecord);
-    initializeDefaultEntities(key, existingEntityKeys, setupRecord);
+    stateWriter.appendFollowUpEvent(key, IdentitySetupIntent.INITIALIZED, setupRecord);
     commandDistributionBehavior
         .withKey(key)
         .inQueue(DistributionQueue.IDENTITY)
@@ -89,96 +90,170 @@ public final class IdentitySetupInitializeProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<IdentitySetupRecord> command) {
-    roleState.getRole(command.getValue().getDefaultRole().getRoleKey());
-    final var existingEntities =
-        new DefaultEntityKeys(
-            roleState
-                .getRole(command.getValue().getDefaultRole().getRoleKey())
-                .map(PersistedRole::getRoleKey),
-            userState
-                .getUser(command.getValue().getDefaultUser().getUsername())
-                .map(PersistedUser::getUserKey),
-            tenantState
-                .getTenantByKey(command.getValue().getDefaultTenant().getTenantKey())
-                .map(PersistedTenant::getTenantKey));
-    initializeDefaultEntities(command.getKey(), existingEntities, command.getValue());
+    createDistributedEntities(command.getValue());
+    stateWriter.appendFollowUpEvent(
+        command.getKey(), IdentitySetupIntent.INITIALIZED, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private DefaultEntityKeys findExistingDefaultEntityKeys(final IdentitySetupRecord record) {
-    final var roleKey = roleState.getRoleKeyByName(record.getDefaultRole().getName());
-    final var userKey =
-        userState.getUser(record.getDefaultUser().getUsername()).map(PersistedUser::getUserKey);
-    final var tenantKey = tenantState.getTenantKeyById(record.getDefaultTenant().getTenantId());
-    return new DefaultEntityKeys(roleKey, userKey, tenantKey);
+  private boolean createNewEntities(final IdentitySetupRecord record) {
+    final var createdNewEntities = new MutableBoolean(false);
+    final var role = record.getDefaultRole();
+    roleState
+        .getRoleKeyByName(role.getName())
+        .ifPresentOrElse(
+            role::setRoleKey,
+            () -> {
+              createdNewEntities.set(true);
+              final long roleKey = keyGenerator.nextKey();
+              role.setRoleKey(roleKey);
+              createRole(role);
+            });
+
+    record.getUsers().stream()
+        .map(UserRecord.class::cast)
+        .forEach(
+            user ->
+                userState
+                    .getUser(user.getUsername())
+                    .map(PersistedUser::getUserKey)
+                    .ifPresentOrElse(
+                        userKey -> {
+                          user.setUserKey(userKey);
+                          if (assignEntityToRole(role.getRoleKey(), userKey, EntityType.USER)) {
+                            createdNewEntities.set(true);
+                          }
+                        },
+                        () -> {
+                          createdNewEntities.set(true);
+                          final long userKey = keyGenerator.nextKey();
+                          user.setUserKey(userKey);
+                          createUser(user, role.getRoleKey());
+                        }));
+
+    final var tenant = record.getDefaultTenant();
+    tenantState
+        .getTenantKeyById(tenant.getTenantId())
+        .ifPresentOrElse(
+            tenant::setTenantKey,
+            () -> {
+              createdNewEntities.set(true);
+              final long tenantKey = keyGenerator.nextKey();
+              tenant.setTenantKey(tenantKey);
+              createTenant(tenant);
+            });
+
+    record.getMappings().stream()
+        .map(MappingRecord.class::cast)
+        .forEach(
+            mapping ->
+                mappingState
+                    .get(mapping.getClaimName(), mapping.getClaimValue())
+                    .map(PersistedMapping::getMappingKey)
+                    .ifPresentOrElse(
+                        mappingKey -> {
+                          mapping.setMappingKey(mappingKey);
+                          if (assignEntityToRole(
+                              role.getRoleKey(), mappingKey, EntityType.MAPPING)) {
+                            createdNewEntities.set(true);
+                          }
+                        },
+                        () -> {
+                          createdNewEntities.set(true);
+                          final long mappingKey = keyGenerator.nextKey();
+                          mapping.setMappingKey(mappingKey);
+                          createMapping(mapping, role.getRoleKey());
+                        }));
+    return createdNewEntities.get();
   }
 
-  private void setNewEntityKeys(
-      final DefaultEntityKeys existingEntityKeys, final IdentitySetupRecord setup) {
-    if (existingEntityKeys.role().isEmpty()) {
-      setup.getDefaultRole().setRoleKey(keyGenerator.nextKey());
+  private void createDistributedEntities(final IdentitySetupRecord record) {
+    final var role = record.getDefaultRole();
+    if (roleState.getRole(role.getRoleKey()).isEmpty()) {
+      createRole(role);
     }
-    if (existingEntityKeys.user().isEmpty()) {
-      setup.getDefaultUser().setUserKey(keyGenerator.nextKey());
+
+    record.getUsers().stream()
+        .map(UserRecord.class::cast)
+        .forEach(
+            user ->
+                userState
+                    .getUser(user.getUserKey())
+                    .ifPresentOrElse(
+                        userKey ->
+                            assignEntityToRole(
+                                role.getRoleKey(), userKey.getUserKey(), EntityType.USER),
+                        () -> createUser(user, role.getRoleKey())));
+
+    if (tenantState.getTenantByKey(record.getDefaultTenant().getTenantKey()).isEmpty()) {
+      createTenant(record.getDefaultTenant());
     }
-    if (existingEntityKeys.tenant().isEmpty()) {
-      setup.getDefaultTenant().setTenantKey(keyGenerator.nextKey());
-    }
+
+    record.getMappings().stream()
+        .map(MappingRecord.class::cast)
+        .forEach(
+            mapping ->
+                mappingState
+                    .get(mapping.getClaimName(), mapping.getClaimValue())
+                    .ifPresentOrElse(
+                        mappingKey ->
+                            assignEntityToRole(
+                                role.getRoleKey(), mappingKey.getMappingKey(), EntityType.MAPPING),
+                        () -> createMapping(mapping, role.getRoleKey())));
   }
 
-  private void initializeDefaultEntities(
-      final long commandKey,
-      final DefaultEntityKeys existingDefaultEntities,
-      final IdentitySetupRecord setup) {
-    final var roleRecord = setup.getDefaultRole();
-    final var userRecord = setup.getDefaultUser();
-    final var tenantRecord = setup.getDefaultTenant();
-
-    if (existingDefaultEntities.role().isEmpty()) {
-      stateWriter.appendFollowUpEvent(commandKey, RoleIntent.CREATED, roleRecord);
-      addAllPermissions(roleRecord.getRoleKey());
-    }
-    if (existingDefaultEntities.user().isEmpty()) {
-      stateWriter.appendFollowUpEvent(commandKey, UserIntent.CREATED, userRecord);
-    }
-    if (existingDefaultEntities.tenant().isEmpty()) {
-      stateWriter.appendFollowUpEvent(commandKey, TenantIntent.CREATED, tenantRecord);
-    }
-
-    assignUserToRole(
-        commandKey,
-        existingDefaultEntities.role().orElse(roleRecord.getRoleKey()),
-        existingDefaultEntities.user().orElse(userRecord.getUserKey()));
-    stateWriter.appendFollowUpEvent(commandKey, IdentitySetupIntent.INITIALIZED, setup);
+  private void createRole(final RoleRecord role) {
+    stateWriter.appendFollowUpEvent(role.getRoleKey(), RoleIntent.CREATED, role);
+    addAllPermissions(role.getRoleKey());
   }
 
-  private void assignUserToRole(final long commandKey, final long roleKey, final long userKey) {
-    final var isAlreadyAssigned = roleState.getEntityType(roleKey, userKey).isPresent();
+  private void createUser(final UserRecord user, final long roleKey) {
+    stateWriter.appendFollowUpEvent(user.getUserKey(), UserIntent.CREATED, user);
+    assignEntityToRole(roleKey, user.getUserKey(), EntityType.USER);
+  }
+
+  private void createTenant(final TenantRecord tenant) {
+    stateWriter.appendFollowUpEvent(tenant.getTenantKey(), TenantIntent.CREATED, tenant);
+  }
+
+  private void createMapping(final MappingRecord mapping, final long roleKey) {
+    stateWriter.appendFollowUpEvent(mapping.getMappingKey(), MappingIntent.CREATED, mapping);
+    assignEntityToRole(roleKey, mapping.getMappingKey(), EntityType.MAPPING);
+  }
+
+  private boolean assignEntityToRole(
+      final long roleKey, final long entityKey, final EntityType entityType) {
+    final var isAlreadyAssigned = roleState.getEntityType(roleKey, entityKey).isPresent();
     if (isAlreadyAssigned) {
-      return;
+      return false;
     }
 
     final var record =
-        new RoleRecord().setRoleKey(roleKey).setEntityKey(userKey).setEntityType(EntityType.USER);
-    stateWriter.appendFollowUpEvent(commandKey, RoleIntent.ENTITY_ADDED, record);
+        new RoleRecord().setRoleKey(roleKey).setEntityKey(entityKey).setEntityType(entityType);
+    stateWriter.appendFollowUpEvent(roleKey, RoleIntent.ENTITY_ADDED, record);
+    return true;
   }
 
   private void addAllPermissions(final long roleKey) {
 
     for (final AuthorizationResourceType resourceType : AuthorizationResourceType.values()) {
-      final var record =
-          new AuthorizationRecord().setOwnerKey(roleKey).setOwnerType(AuthorizationOwnerType.ROLE);
-      record.setResourceType(resourceType);
-
-      for (final PermissionType permissionType : PermissionType.values()) {
-        final var permission =
-            new Permission().setPermissionType(permissionType).addResourceId(WILDCARD_PERMISSION);
-        record.addPermission(permission);
+      if (resourceType == AuthorizationResourceType.UNSPECIFIED) {
+        // We shouldn't add empty permissions for an unspecified resource type
+        continue;
       }
 
-      stateWriter.appendFollowUpEvent(roleKey, AuthorizationIntent.PERMISSION_ADDED, record);
+      // TODO: refactor when Roles use String IDs as unique identifiers
+      final var authorizationKey = keyGenerator.nextKey();
+      final var record =
+          new AuthorizationRecord()
+              .setAuthorizationKey(authorizationKey)
+              .setOwnerId(String.valueOf(roleKey))
+              .setOwnerType(AuthorizationOwnerType.ROLE)
+              .setResourceType(resourceType)
+              .setResourceId(WILDCARD_PERMISSION)
+              .setPermissionTypes(resourceType.getSupportedPermissionTypes());
+
+      stateWriter.appendFollowUpEvent(authorizationKey, AuthorizationIntent.CREATED, record);
     }
   }
-
-  record DefaultEntityKeys(Optional<Long> role, Optional<Long> user, Optional<Long> tenant) {}
 }

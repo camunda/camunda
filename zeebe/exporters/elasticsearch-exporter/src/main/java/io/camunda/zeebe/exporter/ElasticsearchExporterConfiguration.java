@@ -138,10 +138,6 @@ public class ElasticsearchExporterConfiguration {
         return index.compensationSubscription;
       case MESSAGE_CORRELATION:
         return index.messageCorrelation;
-      case USER:
-        return index.user;
-      case AUTHORIZATION:
-        return index.authorization;
       default:
         return false;
     }

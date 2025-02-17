@@ -9,6 +9,7 @@ package io.camunda.tasklist.util;
 
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
+import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.tasklist.qa.util.TestUtil;
 import java.io.IOException;
 import java.time.Instant;
@@ -65,22 +66,22 @@ public class TasklistZeebeExtensionElasticSearch extends TasklistZeebeExtension 
 
   @Override
   protected String getZeebeExporterIndexPrefixConfigParameterName() {
-    return "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX";
+    return "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX";
   }
 
   @Override
   protected Map<String, String> getDatabaseEnvironmentVariables(final String indexPrefix) {
     return Map.of(
-        "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL",
+        "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL",
         "http://host.testcontainers.internal:9200",
-        "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY",
+        "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE",
+        ConnectionTypes.ELASTICSEARCH.name(),
+        "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE",
         "1",
-        "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE",
-        "1",
-        "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX",
+        "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX",
         indexPrefix,
-        "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
-        "io.camunda.zeebe.exporter.ElasticsearchExporter");
+        "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME",
+        "io.camunda.exporter.CamundaExporter");
   }
 
   @Override

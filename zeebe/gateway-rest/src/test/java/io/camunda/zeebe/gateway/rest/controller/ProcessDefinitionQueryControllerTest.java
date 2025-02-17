@@ -38,9 +38,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(
-    value = ProcessDefinitionQueryController.class,
-    properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = ProcessDefinitionController.class)
 public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   static final String PROCESS_DEFINITION_URL = "/v2/process-definitions/";
   static final String PROCESS_DEFINITION_SEARCH_URL = PROCESS_DEFINITION_URL + "search";
@@ -59,7 +57,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   static final String PROCESS_DEFINITION_ENTITY_JSON =
       """
       {
-          "processDefinitionKey": 23,
+          "processDefinitionKey": "23",
           "name": "Complex process",
           "processDefinitionId": "complexProcess",
           "resourceName": "complexProcess.bpmn",
@@ -72,7 +70,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
       {
           "items": [
               {
-                  "processDefinitionKey": 1,
+                  "processDefinitionKey": "1",
                   "name": "Complex process",
                   "processDefinitionId": "complexProcess",
                   "resourceName": "complexProcess.bpmn",
@@ -83,7 +81,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
           ],
           "page": {
               "totalItems": 1,
-              "firstSortValues": ["v"],
+              "firstSortValues": ["f"],
               "lastSortValues": [
                   "v"
               ]
@@ -104,12 +102,13 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                       "alpha",
                       "<default>",
                       "formId")))
-          .sortValues(new Object[] {"v"})
+          .firstSortValues(new Object[] {"f"})
+          .lastSortValues(new Object[] {"v"})
           .build();
   private static final String FORM_ITEM_JSON =
       """
       {
-        "formKey": 0,
+        "formKey": "0",
         "tenantId": "tenant-1",
         "bpmnId": "formId",
         "schema": "schema",

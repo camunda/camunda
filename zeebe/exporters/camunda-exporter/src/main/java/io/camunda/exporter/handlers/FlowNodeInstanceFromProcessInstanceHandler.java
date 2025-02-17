@@ -39,6 +39,8 @@ public class FlowNodeInstanceFromProcessInstanceHandler
       LoggerFactory.getLogger(FlowNodeInstanceFromProcessInstanceHandler.class);
   private static final Set<Intent> AI_FINISH_STATES = Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
   private static final Set<Intent> AI_START_STATES = Set.of(ELEMENT_ACTIVATING);
+  private static final Set<BpmnElementType> UNHANDLED_TYPES =
+      Set.of(BpmnElementType.PROCESS, BpmnElementType.SEQUENCE_FLOW);
 
   private final String indexName;
 
@@ -60,7 +62,7 @@ public class FlowNodeInstanceFromProcessInstanceHandler
   public boolean handlesRecord(final Record<ProcessInstanceRecordValue> record) {
     final var processInstanceRecordValue = record.getValue();
     final var intent = record.getIntent();
-    return !isOfType(processInstanceRecordValue, BpmnElementType.PROCESS)
+    return !isOfTypes(processInstanceRecordValue, UNHANDLED_TYPES)
         && (AI_START_STATES.contains(intent)
             || AI_FINISH_STATES.contains(intent)
             || ELEMENT_MIGRATED.equals(intent));
@@ -175,12 +177,12 @@ public class FlowNodeInstanceFromProcessInstanceHandler
     return indexName;
   }
 
-  private boolean isOfType(
-      final ProcessInstanceRecordValue recordValue, final BpmnElementType type) {
+  private boolean isOfTypes(
+      final ProcessInstanceRecordValue recordValue, final Set<BpmnElementType> types) {
     final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();
     if (bpmnElementType == null) {
       return false;
     }
-    return bpmnElementType.equals(type);
+    return types.contains(bpmnElementType);
   }
 }

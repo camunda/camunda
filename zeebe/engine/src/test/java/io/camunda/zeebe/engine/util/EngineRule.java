@@ -47,9 +47,12 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.StreamClock;
@@ -63,6 +66,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -90,6 +94,7 @@ public final class EngineRule extends ExternalResource {
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
   private final int partitionCount;
+  private boolean awaitIdentitySetup = true;
 
   private Consumer<TypedRecord> onProcessedCallback = record -> {};
   private Consumer<LoggedEvent> onSkippedCallback = record -> {};
@@ -134,6 +139,9 @@ public final class EngineRule extends ExternalResource {
   @Override
   protected void before() {
     start();
+    if (awaitIdentitySetup) {
+      awaitIdentitySetup();
+    }
   }
 
   public void start() {
@@ -146,6 +154,11 @@ public final class EngineRule extends ExternalResource {
 
   public void stop() {
     forEachPartition(environmentRule::closeStreamProcessor);
+  }
+
+  public EngineRule withoutAwaitingIdentitySetup() {
+    awaitIdentitySetup = false;
+    return this;
   }
 
   public EngineRule withJobStreamer(final JobStreamer jobStreamer) {
@@ -174,7 +187,7 @@ public final class EngineRule extends ExternalResource {
   }
 
   public EngineRule withSecurityConfig(final Consumer<SecurityConfiguration> modifier) {
-    securityConfigModifier = modifier;
+    securityConfigModifier = securityConfigModifier.andThen(modifier);
     return this;
   }
 
@@ -298,6 +311,14 @@ public final class EngineRule extends ExternalResource {
 
   public StreamClock getStreamClock(final int partitionId) {
     return environmentRule.getStreamClock(partitionId);
+  }
+
+  public MeterRegistry getMeterRegistry() {
+    return getMeterRegistry(PARTITION_ID);
+  }
+
+  public MeterRegistry getMeterRegistry(final int partitionId) {
+    return environmentRule.getMeterRegistry(partitionId);
   }
 
   public long getLastProcessedPosition() {
@@ -465,6 +486,20 @@ public final class EngineRule extends ExternalResource {
                 }));
   }
 
+  public void awaitIdentitySetup() {
+    if (partitionCount > 1) {
+      RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED)
+          .skip(partitionCount - 1)
+          .await();
+      RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
+          .withDistributionIntent(IdentitySetupIntent.INITIALIZE)
+          .await();
+    } else {
+      RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED).await();
+    }
+    RecordingExporter.reset();
+  }
+
   public void awaitProcessingOf(final Record<?> record) {
     final var recordPosition = record.getPosition();
 
@@ -499,6 +534,10 @@ public final class EngineRule extends ExternalResource {
 
   public ClockClient clock() {
     return new ClockClient(environmentRule);
+  }
+
+  public ActorScheduler actorScheduler() {
+    return environmentRule.getActorScheduler();
   }
 
   private static final class VersatileBlob implements DbKey, DbValue {

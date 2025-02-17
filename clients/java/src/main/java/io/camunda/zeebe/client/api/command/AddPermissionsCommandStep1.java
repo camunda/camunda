@@ -15,11 +15,16 @@
  */
 package io.camunda.zeebe.client.api.command;
 
+import io.camunda.client.protocol.rest.PermissionTypeEnum;
+import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.client.api.response.AddPermissionsResponse;
-import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum;
 import java.util.List;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.AddPermissionsCommandStep1}
+ */
+@Deprecated
 public interface AddPermissionsCommandStep1 {
 
   /**
@@ -30,6 +35,11 @@ public interface AddPermissionsCommandStep1 {
    */
   AddPermissionsCommandStep2 resourceType(ResourceTypeEnum resourceType);
 
+  /**
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+   *     io.camunda.client.api.command.AddPermissionsCommandStep1.AddPermissionsCommandStep2}
+   */
+  @Deprecated
   interface AddPermissionsCommandStep2 {
 
     /**
@@ -41,6 +51,10 @@ public interface AddPermissionsCommandStep1 {
     AddPermissionsCommandStep3 permission(PermissionTypeEnum permissionType);
   }
 
+  /**
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+   *     io.camunda.client.api.command.AddPermissionsCommandStep1.AddPermissionsCommandStep3}
+   */
   interface AddPermissionsCommandStep3 {
 
     /**
@@ -60,6 +74,10 @@ public interface AddPermissionsCommandStep1 {
     AddPermissionsCommandStep4 resourceId(String resourceId);
   }
 
+  /**
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+   *     io.camunda.client.api.command.AddPermissionsCommandStep1.AddPermissionsCommandStep4}
+   */
   interface AddPermissionsCommandStep4
       extends AddPermissionsCommandStep2,
           AddPermissionsCommandStep3,

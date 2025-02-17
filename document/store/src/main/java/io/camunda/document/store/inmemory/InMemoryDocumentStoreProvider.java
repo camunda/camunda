@@ -10,11 +10,13 @@ package io.camunda.document.store.inmemory;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
 import io.camunda.document.api.DocumentStoreProvider;
+import java.util.concurrent.ExecutorService;
 
 public class InMemoryDocumentStoreProvider implements DocumentStoreProvider {
 
   @Override
-  public DocumentStore createDocumentStore(final DocumentStoreConfigurationRecord configuration) {
+  public DocumentStore createDocumentStore(
+      final DocumentStoreConfigurationRecord configuration, final ExecutorService executor) {
     return new InMemoryDocumentStore();
   }
 }

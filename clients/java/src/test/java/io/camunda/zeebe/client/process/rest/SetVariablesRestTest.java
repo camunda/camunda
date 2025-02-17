@@ -18,8 +18,8 @@ package io.camunda.zeebe.client.process.rest;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.camunda.client.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.StringUtil;
 import java.io.ByteArrayInputStream;

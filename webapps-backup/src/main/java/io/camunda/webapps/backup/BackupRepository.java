@@ -7,9 +7,12 @@
  */
 package io.camunda.webapps.backup;
 
+import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,10 +30,13 @@ public interface BackupRepository {
 
   GetBackupStateResponseDto getBackupState(String repositoryName, Long backupId);
 
+  Optional<Metadata> getMetadata(String repositoryName, Long backupId);
+
+  Set<String> checkAllIndicesExist(List<String> indices);
+
   List<GetBackupStateResponseDto> getBackups(String repositoryName);
 
-  void executeSnapshotting(
-      BackupService.SnapshotRequest snapshotRequest, Runnable onSuccess, Runnable onFailure);
+  void executeSnapshotting(SnapshotRequest snapshotRequest, Runnable onSuccess, Runnable onFailure);
 
   default boolean isIncompleteCheckTimedOut(
       final long incompleteCheckTimeoutInSeconds, final long lastSnapshotFinishedTime) {

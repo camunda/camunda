@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.it.client.command;
 
-import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_MB;
+import static io.camunda.client.impl.util.DataSizeUtil.ONE_MB;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
@@ -33,8 +33,7 @@ public final class CreateProcessInstanceWithLargeResultTest {
             cfg.getGateway().getNetwork().setMaxMessageSize(DataSize.ofMegabytes(21));
           });
   private static final GrpcClientRule CLIENT_RULE =
-      new GrpcClientRule(
-          BROKER_RULE, zeebeClientBuilder -> zeebeClientBuilder.maxMessageSize(21 * ONE_MB));
+      new GrpcClientRule(BROKER_RULE, clientBuilder -> clientBuilder.maxMessageSize(21 * ONE_MB));
 
   @ClassRule
   public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);

@@ -20,6 +20,7 @@ import co.elastic.clients.elasticsearch.core.IndexRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
@@ -75,6 +76,9 @@ public abstract class AdapterTest {
   private static final OpensearchContainer<?> OS_CONTAINER =
       TestSearchContainers.createDefaultOpensearchContainer();
 
+  private static ObjectMapper esObjectMapper;
+  private static ObjectMapper osObjectMapper;
+
   protected boolean isElasticsearch = true;
 
   @BeforeAll
@@ -87,15 +91,19 @@ public abstract class AdapterTest {
     ES_CONFIGURATION.setUrl("http://localhost:" + ES_CONTAINER.getMappedPort(9200));
     OS_CONFIGURATION.setType("opensearch");
     OS_CONFIGURATION.setUrl("http://localhost:" + OS_CONTAINER.getMappedPort(9200));
-    esClient = new ElasticsearchConnector(ES_CONFIGURATION).createClient();
-    osClient = new OpensearchConnector(OS_CONFIGURATION).createClient();
+    final var esConnector = new ElasticsearchConnector(ES_CONFIGURATION);
+    esObjectMapper = esConnector.objectMapper();
+    esClient = esConnector.createClient();
+    final var osConnector = new OpensearchConnector(OS_CONFIGURATION);
+    osObjectMapper = osConnector.objectMapper();
+    osClient = osConnector.createClient();
     esMigrator = new MigrationRunner(properties, ES_CONFIGURATION, meterRegistry);
     osMigrator = new MigrationRunner(properties, OS_CONFIGURATION, meterRegistry);
     createIndices();
   }
 
   private static void createIndices() {
-    final OpensearchEngineClient osEngine = new OpensearchEngineClient(osClient);
+    final OpensearchEngineClient osEngine = new OpensearchEngineClient(osClient, osObjectMapper);
     processIndex = new ProcessIndex(ES_CONFIGURATION.getIndexPrefix(), false);
     migrationRepositoryIndex =
         new MigrationRepositoryIndex(ES_CONFIGURATION.getIndexPrefix(), false);
@@ -104,7 +112,8 @@ public abstract class AdapterTest {
     osEngine.createIndex(migrationRepositoryIndex, new IndexSettings());
     osEngine.createIndex(importPositionIndex, new IndexSettings());
 
-    final ElasticsearchEngineClient esEngine = new ElasticsearchEngineClient(esClient);
+    final ElasticsearchEngineClient esEngine =
+        new ElasticsearchEngineClient(esClient, esObjectMapper);
     processIndex = new ProcessIndex(ES_CONFIGURATION.getIndexPrefix(), true);
     migrationRepositoryIndex =
         new MigrationRepositoryIndex(ES_CONFIGURATION.getIndexPrefix(), true);
@@ -147,9 +156,9 @@ public abstract class AdapterTest {
 
   protected void runMigration() {
     if (isElasticsearch) {
-      esMigrator.run();
+      esMigrator.call();
     } else {
-      osMigrator.run();
+      osMigrator.call();
     }
   }
 

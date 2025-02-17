@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.es.cache;
 
-import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
+import static io.camunda.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -15,29 +15,29 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.identity.sdk.Identity;
-import io.camunda.identity.sdk.authentication.Authentication;
+import io.camunda.authentication.entity.AuthenticationContext;
+import io.camunda.authentication.entity.CamundaUser;
+import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.impl.AuthorizationChecker;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.property.MultiTenancyProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.elasticsearch.ProcessStoreElasticSearch;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.util.SpringContextHolder;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthentication;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorization;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationServiceImpl;
+import io.camunda.tasklist.webapp.permission.TasklistPermissionServices;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.search.TotalHits;
@@ -49,18 +49,22 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.composite.CompositeAggregation;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedTerms;
 import org.elasticsearch.search.aggregations.metrics.TopHits;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -68,17 +72,33 @@ class ProcessStoreElasticSearchTest {
   @Mock private ProcessIndex processIndex;
   @Mock private TenantAwareElasticsearchClient tenantAwareClient;
   @InjectMocks private ProcessStoreElasticSearch processStore;
-  @InjectMocks private IdentityAuthorizationServiceImpl identityService;
   @Mock private ObjectMapper objectMapper;
   @InjectMocks private SpringContextHolder springContextHolder;
   @Mock private TasklistProperties tasklistProperties;
   @Mock private SecurityConfiguration securityConfiguration;
   @Mock private io.camunda.identity.autoconfigure.IdentityProperties identityProperties;
+  @Mock private SecurityContextProvider securityContextProvider;
+  @Mock private AuthorizationChecker authorizationChecker;
+  @InjectMocks private TasklistPermissionServices permissionServices;
+
+  private MockedStatic<TenantAttributeHolder> tenantAttributeHolder;
 
   @BeforeEach
   public void setup() {
     MockitoAnnotations.initMocks(this);
     when(tasklistProperties.getMultiTenancy()).thenReturn(new MultiTenancyProperties());
+    ReflectionTestUtils.setField(
+        permissionServices, "securityConfiguration", securityConfiguration);
+
+    tenantAttributeHolder = mockStatic(TenantAttributeHolder.class);
+    tenantAttributeHolder
+        .when(TenantAttributeHolder::getTenantIds)
+        .thenReturn(List.of("<default>"));
+  }
+
+  @AfterEach
+  public void tearDown() {
+    tenantAttributeHolder.close();
   }
 
   // ** Test Get Process by BPMN Process Id ** //
@@ -184,7 +204,8 @@ class ProcessStoreElasticSearchTest {
     final var compositeAggregation = mock(CompositeAggregation.class);
     when(aggregations.get("bpmnProcessId_tenantId_buckets")).thenReturn(compositeAggregation);
     when(compositeAggregation.getBuckets()).thenReturn(Collections.emptyList());
-    final List<String> authorizations = identityService.getProcessDefinitionsFromAuthorization();
+    final List<String> authorizations =
+        permissionServices.getProcessDefinitionsWithCreateProcessInstancePermission();
 
     // given
     final List<ProcessEntity> processes =
@@ -202,7 +223,8 @@ class ProcessStoreElasticSearchTest {
     // when
     mockAuthenticationOverIdentity(true);
     mockElasticSearchSuccessWithAggregatedResponse();
-    final List<String> authorizations = identityService.getProcessDefinitionsFromAuthorization();
+    final List<String> authorizations =
+        permissionServices.getProcessDefinitionsWithCreateProcessInstancePermission();
 
     // given
     final List<ProcessEntity> processes =
@@ -223,7 +245,8 @@ class ProcessStoreElasticSearchTest {
     when(securityConfiguration.getAuthorizations().isEnabled()).thenReturn(false);
     mockElasticSearchSuccessWithAggregatedResponse();
 
-    final List<String> authorizations = identityService.getProcessDefinitionsFromAuthorization();
+    final List<String> authorizations =
+        permissionServices.getProcessDefinitionsWithCreateProcessInstancePermission();
 
     // given
     final List<ProcessEntity> processes =
@@ -238,39 +261,32 @@ class ProcessStoreElasticSearchTest {
 
   private void mockAuthenticationOverIdentity(final Boolean isAuthorizated) {
     // Mock IdentityProperties
-    final IdentityProperties tasklistIdentityProperties = mock(IdentityProperties.class);
     springContextHolder.setApplicationContext(mock(ConfigurableApplicationContext.class));
     when(securityConfiguration.getAuthorizations())
         .thenReturn(mock(AuthorizationsConfiguration.class));
     when(securityConfiguration.getAuthorizations().isEnabled()).thenReturn(true);
 
-    // Define behavior of tasklistProperties.getIdentity()
-    when(tasklistProperties.getIdentity()).thenReturn(tasklistIdentityProperties);
-    when(identityProperties.baseUrl()).thenReturn("baseUrl");
-
     // Mock Authentication
     final Authentication auth = mock(Authentication.class);
-
-    // Mock IdentityAuthentication
-    final IdentityAuthentication identityAuthentication = mock(IdentityAuthentication.class);
-
-    // Mock SpringContextHolder
-    final Identity identity = mock(Identity.class);
-    when(SpringContextHolder.getBean(Identity.class)).thenReturn(identity);
-    when(identity.authentication()).thenReturn(auth);
+    final CamundaUser camundaUser = mock(CamundaUser.class);
+    final AuthenticationContext authenticationContext = mock(AuthenticationContext.class);
+    when(auth.getPrincipal()).thenReturn(camundaUser);
+    when(camundaUser.getUserKey()).thenReturn(123L);
+    when(camundaUser.getAuthenticationContext()).thenReturn(authenticationContext);
+    when(authenticationContext.roles()).thenReturn(List.of());
 
     // Mock SecurityContextHolder
     final SecurityContext securityContext = mock(SecurityContext.class);
-    SecurityContextHolder.getContext().setAuthentication(identityAuthentication);
-    when(securityContext.getAuthentication()).thenReturn(identityAuthentication);
+    SecurityContextHolder.getContext().setAuthentication(auth);
+    when(securityContext.getAuthentication()).thenReturn(auth);
 
-    when(identityAuthentication.getAuthorizations()).thenReturn(mock(IdentityAuthorization.class));
+    when(securityContextProvider.provideSecurityContext(any()))
+        .thenReturn(mock(io.camunda.security.auth.SecurityContext.class));
+
     if (isAuthorizated) {
-      when(identityAuthentication.getAuthorizations().getProcessesAllowedToStart())
-          .thenReturn(List.of("*"));
+      when(authorizationChecker.retrieveAuthorizedResourceKeys(any())).thenReturn(List.of("*"));
     } else {
-      when(identityAuthentication.getAuthorizations().getProcessesAllowedToStart())
-          .thenReturn(new ArrayList<>());
+      when(authorizationChecker.retrieveAuthorizedResourceKeys(any())).thenReturn(List.of());
     }
   }
 

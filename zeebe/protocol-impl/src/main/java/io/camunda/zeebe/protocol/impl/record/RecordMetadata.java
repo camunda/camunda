@@ -242,7 +242,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   public RecordMetadata authorization(final AuthInfo authorization) {
-    this.authorization.wrap(authorization);
+    this.authorization.copyFrom(authorization);
     return this;
   }
 

@@ -7,4 +7,5 @@
  */
 package io.camunda.document.api;
 
-public record DocumentReference(String documentId, DocumentMetadataModel metadata) {}
+public record DocumentReference(
+    String documentId, String contentHash, DocumentMetadataModel metadata) {}

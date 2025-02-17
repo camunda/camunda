@@ -18,6 +18,11 @@ package io.camunda.zeebe.client.api.command;
 import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl.MappingInstruction;
 import java.util.List;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.MigrationPlanImpl}
+ */
+@Deprecated
 public final class MigrationPlanImpl implements MigrationPlan {
 
   final long targetProcessDefinitionKey;

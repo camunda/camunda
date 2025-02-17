@@ -19,19 +19,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
+import io.camunda.client.protocol.rest.DeploymentDecision;
+import io.camunda.client.protocol.rest.DeploymentDecisionRequirements;
+import io.camunda.client.protocol.rest.DeploymentForm;
+import io.camunda.client.protocol.rest.DeploymentMetadata;
+import io.camunda.client.protocol.rest.DeploymentProcess;
+import io.camunda.client.protocol.rest.DeploymentResponse;
+import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.impl.command.StreamUtil;
 import io.camunda.zeebe.client.impl.response.DecisionImpl;
 import io.camunda.zeebe.client.impl.response.DecisionRequirementsImpl;
 import io.camunda.zeebe.client.impl.response.FormImpl;
 import io.camunda.zeebe.client.impl.response.ProcessImpl;
-import io.camunda.zeebe.client.protocol.rest.DeploymentDecision;
-import io.camunda.zeebe.client.protocol.rest.DeploymentDecisionRequirements;
-import io.camunda.zeebe.client.protocol.rest.DeploymentForm;
-import io.camunda.zeebe.client.protocol.rest.DeploymentMetadata;
-import io.camunda.zeebe.client.protocol.rest.DeploymentProcess;
-import io.camunda.zeebe.client.protocol.rest.DeploymentResponse;
-import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.resource.DeployResourceTest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.RestGatewayPaths;
@@ -323,7 +323,7 @@ public class DeployResourceRestTest extends ClientRestTest {
                     .decisionRequirements(
                         new DeploymentDecisionRequirements()
                             .decisionRequirementsId(DMN_DECISION_REQUIREMENTS_ID)
-                            .name(DMN_DECISION_REQUIREMENTS_NAME)
+                            .decisionRequirementsName(DMN_DECISION_REQUIREMENTS_NAME)
                             .version(version)
                             .decisionRequirementsKey(decisionRequirementsKey)
                             .resourceName(filename)

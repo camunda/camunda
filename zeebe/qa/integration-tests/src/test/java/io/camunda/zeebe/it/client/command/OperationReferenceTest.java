@@ -9,15 +9,15 @@ package io.camunda.zeebe.it.client.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -27,13 +27,13 @@ public class OperationReferenceTest {
   @TestZeebe(initMethod = "initTestStandaloneBroker")
   private static TestStandaloneBroker zeebe;
 
-  @AutoCloseResource
-  private final ZeebeClient client =
+  @AutoClose
+  private final CamundaClient client =
       zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofMinutes(2)).build();
 
   @SuppressWarnings("unused")
   static void initTestStandaloneBroker() {
-    zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+    zeebe = new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
   }
 
   @Test

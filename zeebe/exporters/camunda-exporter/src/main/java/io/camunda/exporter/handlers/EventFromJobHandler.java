@@ -33,8 +33,8 @@ public class EventFromJobHandler extends AbstractEventHandler<JobRecordValue> {
           JobIntent.CANCELED,
           JobIntent.MIGRATED);
 
-  public EventFromJobHandler(final String indexName, final boolean concurrencyMode) {
-    super(indexName, concurrencyMode);
+  public EventFromJobHandler(final String indexName) {
+    super(indexName);
   }
 
   @Override

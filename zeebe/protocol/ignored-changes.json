@@ -143,6 +143,39 @@
           "code": "java.field.removed",
           "old": "field io.camunda.zeebe.protocol.ZbColumnFamilies.RESOURCE_IDS_BY_OWNER_KEY_RESOURCE_TYPE_AND_PERMISSION",
           "justification": "ColumnFamily was renamed to PERMISSIONS. It was released in 8.6 without any way to insert date into it. We can safely change this"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue.Builder::withUserType(io.camunda.zeebe.protocol.record.value.UserType)",
+          "justification": "Property was released in 8.6, but there was no way to write the record. We don't need it anymore and can safely remove it without breaking backwards compatibility"
+
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.UserType io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue::getUserType()",
+          "justification": "Property was released in 8.6, but there was no way to write the record. We don't need it anymore and can safely remove it without breaking backwards compatibility"
+
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue::withUserType(io.camunda.zeebe.protocol.record.value.UserType)",
+          "justification": "Property was released in 8.6, but there was no way to write the record. We don't need it anymore and can safely remove it without breaking backwards compatibility"
+
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.UserType io.camunda.zeebe.protocol.record.value.UserRecordValue::getUserType()",
+          "justification": "Property was released in 8.6, but there was no way to write the record. We don't need it anymore and can safely remove it without breaking backwards compatibility"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "enum io.camunda.zeebe.protocol.record.value.UserType",
+          "justification": "Enum was released in 8.6, but didn't have any uses."
         }
       ]
     }

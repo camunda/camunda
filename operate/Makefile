@@ -7,6 +7,7 @@ env-up:
 	&& CAMUNDA_OPERATE_IMPORTERENABLED=false \
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter \
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE=1 \
+	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_DELAY=1 \
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE=elasticsearch \
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:9200 \
 	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneCamunda" -Dspring.profiles.active=operate,broker,dev,dev-data,auth
@@ -79,15 +80,20 @@ env-clean: env-down
 .PHONY: start-e2e
 start-e2e:
 	curl --request DELETE --url http://localhost:9200/e2e* \
-	&& docker rm -f zeebe-e2e || true \
-	&& docker compose -f docker-compose.yml up --force-recreate -d zeebe-e2e \
-	&& mvn install -DskipTests=true -Dskip.fe.build=true -DskipQaBuild \
-	&& CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=localhost:26503 \
+	&& mvn install -DskipTests=true -Dskip.fe.build=true -DskipChecks -DskipQaBuild \
+	&& CAMUNDA_OPERATE_IMPORTERENABLED=false \
+	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter \
+	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE=1 \
+	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_DELAY=1 \
+	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE=elasticsearch \
+	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:9200 \
+	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX=e2eoperate \
+	ZEEBE_BROKER_BACKPRESSURE_ENABLED=false \
+	ZEEBE_BROKER_GATEWAY_NETWORK_PORT=26503 \
+	CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=localhost:26503 \
 	CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PREFIX=e2e \
 	CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX=e2eoperate \
-	CAMUNDA_OPERATE_IMPORTER_READERBACKOFF=0 \
-	CAMUNDA_OPERATE_IMPORTER_SCHEDULERBACKOFF=0 \
 	CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED=false \
 	SERVER_PORT=8081 \
-  MANAGEMENT_SERVER_PORT=9601 \
-	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate"
+	MANAGEMENT_SERVER_PORT=9601 \
+	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneCamunda" -Dspring.profiles.active=operate,broker,auth

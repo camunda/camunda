@@ -15,25 +15,24 @@
  */
 package io.camunda.zeebe.client.api.search.response;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.search.response.ProcessInstance}
+ */
+@Deprecated
 public interface ProcessInstance {
 
-  Long getProcessInstanceKey();
+  Long getKey();
 
-  String getProcessDefinitionId();
+  String getProcessName();
 
-  String getProcessDefinitionName();
+  Integer getProcessVersion();
 
-  Integer getProcessDefinitionVersion();
-
-  String getProcessDefinitionVersionTag();
-
-  Long getProcessDefinitionKey();
+  String getBpmnProcessId();
 
   Long getParentProcessInstanceKey();
 
   Long getParentFlowNodeInstanceKey();
-
-  String getTreePath();
 
   String getStartDate();
 
@@ -41,7 +40,13 @@ public interface ProcessInstance {
 
   String getState();
 
-  Boolean getHasIncident();
+  Boolean getIncident();
+
+  Boolean getHasActiveOperation();
+
+  Long getProcessDefinitionKey();
 
   String getTenantId();
+
+  String getRootInstanceId();
 }

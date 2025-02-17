@@ -25,7 +25,7 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
         mergeVariableJson(operation.getVariableName(), operation.getVariableValue());
     final var setVariablesCommand =
         withOperationReference(
-            zeebeClient
+            camundaClient
                 .newSetVariablesCommand(operation.getScopeKey())
                 .variables(updateVariableJson)
                 .local(true),

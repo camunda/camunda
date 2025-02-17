@@ -96,9 +96,6 @@ public class OpensearchSchemaManager implements SchemaManager {
 
   @Override
   public void createSchema() {
-    if (operateProperties.getArchiver().isIlmEnabled()) {
-      createIsmPolicy();
-    }
     createDefaults();
     createTemplates();
     createIndices();
@@ -549,38 +546,5 @@ public class OpensearchSchemaManager implements SchemaManager {
       }
       return Optional.empty();
     }
-  }
-
-  private String loadIsmPolicy() throws IOException {
-    final var policyFilename =
-        format(SCHEMA_OPENSEARCH_CREATE_POLICY_JSON, OPERATE_DELETE_ARCHIVED_INDICES);
-    final var inputStream = OpensearchSchemaManager.class.getResourceAsStream(policyFilename);
-    final var policyContent = StreamUtils.copyToString(inputStream, StandardCharsets.UTF_8);
-    return policyContent.replace(
-        "$MIN_INDEX_AGE", operateProperties.getArchiver().getIlmMinAgeForDeleteArchivedIndices());
-  }
-
-  private void createIsmPolicy() {
-    fetchIsmPolicy()
-        .ifPresentOrElse(
-            ismPolicy ->
-                LOGGER.warn(
-                    "ISM policy {} already exists: {}.",
-                    OPERATE_DELETE_ARCHIVED_INDICES,
-                    ismPolicy),
-            () -> {
-              try {
-                richOpenSearchClient
-                    .ism()
-                    .createPolicy(OPERATE_DELETE_ARCHIVED_INDICES, loadIsmPolicy());
-                LOGGER.info(
-                    "Created ISM policy {} for min age of {}.",
-                    OPERATE_DELETE_ARCHIVED_INDICES,
-                    operateProperties.getArchiver().getIlmMinAgeForDeleteArchivedIndices());
-              } catch (final Exception e) {
-                throw new OperateRuntimeException(
-                    "Failed to create ISM policy " + OPERATE_DELETE_ARCHIVED_INDICES, e);
-              }
-            });
   }
 }

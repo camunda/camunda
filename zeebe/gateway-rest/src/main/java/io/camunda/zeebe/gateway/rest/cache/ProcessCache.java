@@ -13,7 +13,7 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
-import io.camunda.zeebe.gateway.rest.util.XmlUtil;
+import io.camunda.zeebe.gateway.rest.util.ProcessFlowNodeProvider;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -35,10 +35,12 @@ import java.util.stream.Collectors;
 public class ProcessCache {
 
   private final LoadingCache<Long, ProcessCacheItem> cache;
-  private final XmlUtil xmlUtil;
+  private final ProcessFlowNodeProvider processFlowNodeProvider;
 
-  public ProcessCache(final GatewayRestConfiguration configuration, final XmlUtil xmlUtil) {
-    this.xmlUtil = xmlUtil;
+  public ProcessCache(
+      final GatewayRestConfiguration configuration,
+      final ProcessFlowNodeProvider processFlowNodeProvider) {
+    this.processFlowNodeProvider = processFlowNodeProvider;
     final var cacheBuilder =
         Caffeine.newBuilder().maximumSize(configuration.getProcessCache().getMaxSize());
     final var expirationIdle = configuration.getProcessCache().getExpirationIdleMillis();
@@ -81,7 +83,7 @@ public class ProcessCache {
     @Override
     public ProcessCacheItem load(final Long processDefinitionKey) {
       final var flowNodes = new HashMap<String, String>();
-      xmlUtil.extractFlowNodeNames(
+      processFlowNodeProvider.extractFlowNodeNames(
           processDefinitionKey, (pdKey, node) -> flowNodes.put(node.id(), node.name()));
       return new ProcessCacheItem(Collections.unmodifiableMap(flowNodes));
     }
@@ -89,7 +91,7 @@ public class ProcessCache {
     @Override
     public Map<Long, ProcessCacheItem> loadAll(final Set<? extends Long> processDefinitionKeys) {
       final var processMap = new HashMap<Long, Map<String, String>>();
-      xmlUtil.extractFlowNodeNames(
+      processFlowNodeProvider.extractFlowNodeNames(
           (Set<Long>) processDefinitionKeys,
           (pdKey, flowNode) -> {
             final var flowNodeMap = processMap.computeIfAbsent(pdKey, key -> new HashMap<>());

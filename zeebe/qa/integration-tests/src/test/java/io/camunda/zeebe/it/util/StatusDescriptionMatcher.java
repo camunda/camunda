@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.util;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 
-import io.camunda.zeebe.client.api.command.ClientStatusException;
+import io.camunda.client.api.command.ClientStatusException;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;

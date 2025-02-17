@@ -18,18 +18,23 @@ package io.camunda.zeebe.client.api.search.sort;
 
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestSort;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.search.sort.DecisionRequirementsSort}
+ */
+@Deprecated
 public interface DecisionRequirementsSort extends SearchRequestSort<DecisionRequirementsSort> {
-  /** Sort by decision requirements key. */
+  /** Sort by decision requirement key. */
   DecisionRequirementsSort decisionRequirementsKey();
 
-  /** Sort by decision requirements name. */
-  DecisionRequirementsSort name();
+  /** Sort by decision requirement name. */
+  DecisionRequirementsSort dmnDecisionRequirementsName();
 
   /** Sort by decision requirement version. */
   DecisionRequirementsSort version();
 
   /** Sort by decision requirements id. */
-  DecisionRequirementsSort decisionRequirementsId();
+  DecisionRequirementsSort dmnDecisionRequirementsId();
 
   /** Sort by resource name. */
   DecisionRequirementsSort tenantId();

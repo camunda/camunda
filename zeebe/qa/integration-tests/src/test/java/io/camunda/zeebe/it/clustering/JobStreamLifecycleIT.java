@@ -8,8 +8,8 @@
 package io.camunda.zeebe.it.clustering;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.worker.JobWorker;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.worker.JobWorker;
 import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
@@ -19,24 +19,22 @@ import io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 
-@AutoCloseResources
 @ZeebeIntegration
 final class JobStreamLifecycleIT {
   @TestZeebe(initMethod = "initTestCluster")
   private static TestCluster cluster;
 
   private final TestGateway<?> gateway = cluster.availableGateway();
-  @AutoCloseResource private final ZeebeClient client = gateway.newClientBuilder().build();
+  @AutoClose private final CamundaClient client = gateway.newClientBuilder().build();
 
   private final String jobType = Strings.newRandomValidBpmnId();
 

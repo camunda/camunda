@@ -7,15 +7,16 @@
  */
 package io.camunda.operate.util.j5templates;
 
-import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
+import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.response.Topology;
+import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
-import io.camunda.operate.util.TestUtil;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.zeebe.containers.ZeebeContainer;
 import java.time.Duration;
 
@@ -26,31 +27,40 @@ public abstract class ZeebeContainerManager {
   protected final TestContainerUtil testContainerUtil;
   protected String prefix;
   protected ZeebeContainer zeebeContainer;
-  protected ZeebeClient client;
+  protected CamundaClient client;
+  private final SecurityConfiguration securityConfiguration;
 
   public ZeebeContainerManager(
-      final OperateProperties operateProperties, final TestContainerUtil testContainerUtil) {
+      final OperateProperties operateProperties,
+      final SecurityConfiguration securityConfiguration,
+      final TestContainerUtil testContainerUtil,
+      final String indexPrefix) {
     this.operateProperties = operateProperties;
+    this.securityConfiguration = securityConfiguration;
     this.testContainerUtil = testContainerUtil;
+    prefix = indexPrefix;
   }
 
-  public ZeebeClient getClient() {
+  public CamundaClient getClient() {
     return client;
   }
 
   public void startContainer() {
-    prefix = TestUtil.createRandomString(10);
     updatePrefix();
 
     // Start zeebe
     final String zeebeVersion =
-        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_PROPERTY_NAME);
+        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME);
     zeebeContainer =
         testContainerUtil.startZeebe(
-            zeebeVersion, prefix, 2, operateProperties.getMultiTenancy().isEnabled());
+            zeebeVersion,
+            prefix,
+            2,
+            securityConfiguration.getMultiTenancy().isEnabled(),
+            ConnectionTypes.ELASTICSEARCH.getType());
 
     client =
-        ZeebeClient.newClientBuilder()
+        CamundaClient.newClientBuilder()
             .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
             .usePlaintext()
             .defaultRequestTimeout(REQUEST_TIMEOUT)

@@ -23,7 +23,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.cluster.TestClusterBuilder;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
-import io.camunda.zeebe.qa.util.testcontainers.GcsContainer;
+import io.camunda.zeebe.test.testcontainers.GcsContainer;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.time.Duration;
 import java.util.stream.IntStream;

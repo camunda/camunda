@@ -19,18 +19,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import io.camunda.client.protocol.rest.DecisionEvaluationInstruction;
+import io.camunda.client.protocol.rest.EvaluatedDecisionInputItem;
+import io.camunda.client.protocol.rest.EvaluatedDecisionOutputItem;
+import io.camunda.client.protocol.rest.EvaluatedDecisionResult;
+import io.camunda.client.protocol.rest.MatchedDecisionRuleItem;
+import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
 import io.camunda.zeebe.client.api.response.EvaluatedDecision;
 import io.camunda.zeebe.client.api.response.EvaluatedDecisionInput;
 import io.camunda.zeebe.client.api.response.EvaluatedDecisionOutput;
 import io.camunda.zeebe.client.api.response.MatchedDecisionRule;
-import io.camunda.zeebe.client.protocol.rest.EvaluateDecisionRequest;
-import io.camunda.zeebe.client.protocol.rest.EvaluatedDecisionInputItem;
-import io.camunda.zeebe.client.protocol.rest.EvaluatedDecisionItem;
-import io.camunda.zeebe.client.protocol.rest.EvaluatedDecisionOutputItem;
-import io.camunda.zeebe.client.protocol.rest.MatchedDecisionRuleItem;
-import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.RestGatewayPaths;
 import java.io.ByteArrayInputStream;
@@ -43,7 +43,6 @@ import org.junit.jupiter.api.Test;
 public class DecisionEvaluationRestTest extends ClientRestTest {
 
   private static final long DECISION_KEY = 123L;
-  private static final long DECISION_INSTANCE_KEY = 234L;
   private static final String TENANT_ID = "foo";
   private static final EvaluatedDecisionInputItem EVALUATED_INPUT =
       new EvaluatedDecisionInputItem()
@@ -60,10 +59,10 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
           .ruleId("rule-id")
           .ruleIndex(1)
           .addEvaluatedOutputsItem(EVALUATED_OUTPUT);
-  private static final EvaluatedDecisionItem EVALUATED_DECISION =
-      new EvaluatedDecisionItem()
+  private static final EvaluatedDecisionResult EVALUATED_DECISION =
+      new EvaluatedDecisionResult()
           .decisionDefinitionId("my-decision")
-          .decisionDefinitionKey(DECISION_KEY)
+          .decisionDefinitionKey(String.valueOf(DECISION_KEY))
           .decisionDefinitionName("My Decision")
           .decisionDefinitionVersion(1)
           .decisionDefinitionType("TABLE")
@@ -71,20 +70,20 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
           .tenantId(TENANT_ID)
           .addEvaluatedInputsItem(EVALUATED_INPUT)
           .addMatchedRulesItem(MATCHED_RULE);
-  private static final io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResponse
+  private static final io.camunda.client.protocol.rest.EvaluateDecisionResult
       EVALUATE_DECISION_RESPONSE =
-          new io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResponse()
-              .decisionDefinitionKey(DECISION_KEY)
+          new io.camunda.client.protocol.rest.EvaluateDecisionResult()
+              .decisionDefinitionKey(String.valueOf(DECISION_KEY))
               .decisionDefinitionId("my-decision")
               .decisionDefinitionName("My Decision")
               .decisionDefinitionVersion(1)
               .output("testOutput")
               .decisionRequirementsId("decision-requirements-id")
-              .decisionRequirementsKey(124L)
+              .decisionRequirementsKey("124")
               .failedDecisionDefinitionId("my-decision")
               .failureMessage("decision-evaluation-failure")
               .tenantId(TENANT_ID)
-              .decisionInstanceKey(DECISION_INSTANCE_KEY)
+              .decisionInstanceKey("234")
               .addEvaluatedDecisionsItem(EVALUATED_DECISION);
 
   @Test
@@ -124,8 +123,8 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
         .join();
 
     // when
-    final EvaluateDecisionRequest request =
-        gatewayService.getLastRequest(EvaluateDecisionRequest.class);
+    final DecisionEvaluationInstruction request =
+        gatewayService.getLastRequest(DecisionEvaluationInstruction.class);
 
     // then
     assertThat(request.getVariables()).containsOnly(entry("foo", "bar"));
@@ -145,8 +144,8 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
         .join();
 
     // when
-    final EvaluateDecisionRequest request =
-        gatewayService.getLastRequest(EvaluateDecisionRequest.class);
+    final DecisionEvaluationInstruction request =
+        gatewayService.getLastRequest(DecisionEvaluationInstruction.class);
 
     // then
     assertThat(request.getVariables()).containsOnly(entry("foo", "bar"));
@@ -163,8 +162,8 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
         .join();
 
     // when
-    final EvaluateDecisionRequest request =
-        gatewayService.getLastRequest(EvaluateDecisionRequest.class);
+    final DecisionEvaluationInstruction request =
+        gatewayService.getLastRequest(DecisionEvaluationInstruction.class);
 
     // then
     assertThat(request.getVariables()).containsOnly(entry("foo", "bar"));
@@ -181,8 +180,8 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
         .join();
 
     // when
-    final EvaluateDecisionRequest request =
-        gatewayService.getLastRequest(EvaluateDecisionRequest.class);
+    final DecisionEvaluationInstruction request =
+        gatewayService.getLastRequest(DecisionEvaluationInstruction.class);
 
     // then
     assertThat(request.getVariables()).containsOnly(entry("foo", "bar"));
@@ -201,8 +200,8 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
         .join();
 
     // when
-    final EvaluateDecisionRequest request =
-        gatewayService.getLastRequest(EvaluateDecisionRequest.class);
+    final DecisionEvaluationInstruction request =
+        gatewayService.getLastRequest(DecisionEvaluationInstruction.class);
 
     // then
     assertThat(request.getVariables()).containsOnly(entry(key, value));
@@ -245,8 +244,8 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
     client.newEvaluateDecisionCommand().decisionId("dmn").tenantId(tenantId).send().join();
 
     // then
-    final EvaluateDecisionRequest request =
-        gatewayService.getLastRequest(EvaluateDecisionRequest.class);
+    final DecisionEvaluationInstruction request =
+        gatewayService.getLastRequest(DecisionEvaluationInstruction.class);
     assertThat(request.getTenantId()).isEqualTo(tenantId);
   }
 
@@ -259,14 +258,14 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
     client.newEvaluateDecisionCommand().decisionKey(1L).tenantId(tenantId).send().join();
 
     // then
-    final EvaluateDecisionRequest request =
-        gatewayService.getLastRequest(EvaluateDecisionRequest.class);
+    final DecisionEvaluationInstruction request =
+        gatewayService.getLastRequest(DecisionEvaluationInstruction.class);
     assertThat(request.getTenantId()).isEqualTo(tenantId);
   }
 
   private void assertResponse(final EvaluateDecisionResponse response) {
     // assert EvaluateDecisionResponse properties
-    assertThat(response.getDecisionKey())
+    assertThat(String.valueOf(response.getDecisionKey()))
         .isEqualTo(EVALUATE_DECISION_RESPONSE.getDecisionDefinitionKey());
     assertThat(response.getDecisionId())
         .isEqualTo(EVALUATE_DECISION_RESPONSE.getDecisionDefinitionId());
@@ -277,14 +276,14 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
     assertThat(response.getDecisionOutput()).isEqualTo(EVALUATE_DECISION_RESPONSE.getOutput());
     assertThat(response.getDecisionRequirementsId())
         .isEqualTo(EVALUATE_DECISION_RESPONSE.getDecisionRequirementsId());
-    assertThat(response.getDecisionRequirementsKey())
+    assertThat(String.valueOf(response.getDecisionRequirementsKey()))
         .isEqualTo(EVALUATE_DECISION_RESPONSE.getDecisionRequirementsKey());
     assertThat(response.getFailedDecisionId())
         .isEqualTo(EVALUATE_DECISION_RESPONSE.getFailedDecisionDefinitionId());
     assertThat(response.getFailureMessage())
         .isEqualTo(EVALUATE_DECISION_RESPONSE.getFailureMessage());
     assertThat(response.getTenantId()).isEqualTo(EVALUATE_DECISION_RESPONSE.getTenantId());
-    assertThat(response.getDecisionInstanceKey())
+    assertThat(String.valueOf(response.getDecisionInstanceKey()))
         .isEqualTo(EVALUATE_DECISION_RESPONSE.getDecisionInstanceKey());
 
     // assert EvaluatedDecision
@@ -292,7 +291,7 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
     final EvaluatedDecision evaluatedDecisionResponse = response.getEvaluatedDecisions().get(0);
     assertThat(evaluatedDecisionResponse.getDecisionId())
         .isEqualTo(EVALUATED_DECISION.getDecisionDefinitionId());
-    assertThat(evaluatedDecisionResponse.getDecisionKey())
+    assertThat(String.valueOf(evaluatedDecisionResponse.getDecisionKey()))
         .isEqualTo(EVALUATED_DECISION.getDecisionDefinitionKey());
     assertThat(evaluatedDecisionResponse.getDecisionName())
         .isEqualTo(EVALUATED_DECISION.getDecisionDefinitionName());

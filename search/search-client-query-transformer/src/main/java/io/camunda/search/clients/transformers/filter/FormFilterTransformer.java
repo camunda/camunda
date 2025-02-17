@@ -14,26 +14,17 @@ import static io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex.BPM
 import static io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex.KEY;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.FormFilter;
-import java.util.Arrays;
-import java.util.List;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
-public class FormFilterTransformer implements FilterTransformer<FormFilter> {
+public class FormFilterTransformer extends IndexFilterTransformer<FormFilter> {
 
-  private final ServiceTransformers serviceTransformers;
-
-  public FormFilterTransformer(final ServiceTransformers transformers) {
-    serviceTransformers = transformers;
+  public FormFilterTransformer(final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
   }
 
   @Override
   public SearchQuery toSearchQuery(final FormFilter filter) {
     return and(longTerms(KEY, filter.formKeys()), stringTerms(BPMN_ID, filter.formIds()));
-  }
-
-  @Override
-  public List<String> toIndices(final FormFilter filter) {
-    return Arrays.asList("tasklist-form-8.4.0_");
   }
 }

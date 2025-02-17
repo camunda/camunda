@@ -9,7 +9,7 @@
 import { FC } from "react";
 import { useNavigate, useParams } from "react-router";
 import { OverflowMenu, OverflowMenuItem, Section, Stack } from "@carbon/react";
-import { spacing02 } from "@carbon/themes";
+import { spacing02 } from "@carbon/elements";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
 import NotFound from "src/pages/not-found";
@@ -27,12 +27,15 @@ import DeleteModal from "src/pages/groups/modals/DeleteModal";
 const Details: FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslate();
-  const { id = "", tab = "members" } = useParams<{
+  const { id = "" } = useParams<{
     id: string;
-    tab: string;
   }>();
 
-  const { data: group, loading, reload } = useApi(getGroupDetails, { id });
+  const {
+    data: group,
+    loading,
+    reload,
+  } = useApi(getGroupDetails, { groupKey: id });
   const [renameGroup, editModal] = useEntityModal(EditModal, reload);
   const [deleteGroup, deleteModal] = useEntityModal(DeleteModal, () =>
     navigate("..", { replace: true }),
@@ -80,15 +83,10 @@ const Details: FC = () => {
                 {
                   key: "members",
                   label: t("Members"),
-                  content: <Members groupId={group?.id} />,
-                },
-                {
-                  key: "roles",
-                  label: t("Roles"),
-                  content: t("Roles"),
+                  content: <Members groupId={group?.groupKey} />,
                 },
               ]}
-              selectedTabKey={tab}
+              selectedTabKey="members"
               path={`../${id}`}
             />
           </Section>

@@ -70,6 +70,17 @@ public class ClockClient {
     return pinAt(instant.toEpochMilli());
   }
 
+  public Record<ClockRecordValue> pinAt(final Instant instant, final String username) {
+    return pinAt(instant.toEpochMilli(), username);
+  }
+
+  public Record<ClockRecordValue> pinAt(final long timestamp, final String username) {
+    record.pinAt(timestamp);
+
+    final long position = writeCommand(ClockIntent.PIN, username);
+    return Objects.requireNonNullElse(expectation, PIN_SUCCESS_EXPECTATION).apply(position);
+  }
+
   public Record<ClockRecordValue> reset() {
     record.reset();
 
@@ -83,5 +94,9 @@ public class ClockClient {
     }
 
     return writer.writeCommand(intent, record);
+  }
+
+  private long writeCommand(final ClockIntent intent, final String username) {
+    return writer.writeCommand(intent, username, record);
   }
 }

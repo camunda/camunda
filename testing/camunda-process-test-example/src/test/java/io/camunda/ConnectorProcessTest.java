@@ -16,12 +16,13 @@
 package io.camunda;
 
 import static io.camunda.process.test.api.CamundaAssert.assertThat;
+import static io.camunda.process.test.api.assertions.ElementSelectors.byName;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
-import io.camunda.zeebe.client.ZeebeClient;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -45,7 +46,7 @@ public class ConnectorProcessTest {
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
-  @Autowired private ZeebeClient client;
+  @Autowired private CamundaClient client;
   @Autowired private CamundaProcessTestContext processTestContext;
 
   @Test
@@ -61,7 +62,7 @@ public class ConnectorProcessTest {
             .join();
 
     // when
-    assertThat(processInstance).hasActiveElements("Receive weather request");
+    assertThat(processInstance).hasActiveElements(byName("Receive weather request"));
 
     final var inboundAddress =
         new URI(processTestContext.getConnectorsAddress() + "/inbound/" + CONNECTOR_ID);
@@ -91,7 +92,7 @@ public class ConnectorProcessTest {
 
     // then
     assertThat(processInstance)
-        .hasCompletedElements("Receive weather request", "Get weather info")
+        .hasCompletedElements(byName("Receive weather request"), byName("Get weather info"))
         .hasVariableNames("temperature", "rain", "weather_code")
         .isCompleted();
   }

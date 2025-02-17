@@ -16,9 +16,14 @@ import io.camunda.search.clients.core.SearchIndexRequest;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.core.SearchWriteResponse;
+import io.camunda.search.clients.index.IndexAliasRequest;
+import io.camunda.search.clients.index.IndexAliasResponse;
 import io.camunda.search.clients.transformers.SearchTransfomer;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.SearchQueryExecutionException;
 import io.camunda.search.os.transformers.OpensearchTransformers;
+import io.camunda.search.os.transformers.index.IndexAliasRequestTransformer;
+import io.camunda.search.os.transformers.index.IndexAliasResponseTransformer;
 import io.camunda.search.os.transformers.search.SearchDeleteRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchGetRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchGetResponseTransformer;
@@ -41,11 +46,12 @@ import org.opensearch.client.opensearch.core.ScrollResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.indices.GetAliasRequest;
+import org.opensearch.client.opensearch.indices.GetAliasResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OpensearchSearchClient
-    implements DocumentBasedSearchClient, DocumentBasedWriteClient, AutoCloseable {
+public class OpensearchSearchClient implements DocumentBasedSearchClient, DocumentBasedWriteClient {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchSearchClient.class);
   private static final String SCROLL_KEEP_ALIVE_TIME = "1m";
@@ -123,6 +129,18 @@ public class OpensearchSearchClient
   }
 
   @Override
+  public IndexAliasResponse getAlias(final IndexAliasRequest request) {
+    try {
+      final var requestTransformer = getIndexAliasRequestTransformer();
+      final var elasticRequest = requestTransformer.apply(request);
+      final var response = client.indices().getAlias(elasticRequest);
+      return getIndexAliasResponseTransformer().apply(response);
+    } catch (final IOException e) {
+      throw new CamundaSearchException(e);
+    }
+  }
+
+  @Override
   public <T> SearchWriteResponse index(final SearchIndexRequest<T> indexRequest) {
     try {
       final SearchIndexRequestTransformer<T> requestTransformer =
@@ -153,7 +171,8 @@ public class OpensearchSearchClient
 
   private <T> ScrollResponse<T> scroll(final String scrollId, final Class<T> documentClass)
       throws IOException {
-    return client.scroll(r -> r.scrollId(scrollId), documentClass);
+    return client.scroll(
+        r -> r.scrollId(scrollId).scroll(s -> s.time(SCROLL_KEEP_ALIVE_TIME)), documentClass);
   }
 
   private void clearScroll(final String scrollId) {
@@ -206,8 +225,20 @@ public class OpensearchSearchClient
     return (SearchWriteResponseTransformer) transformer;
   }
 
+  private IndexAliasRequestTransformer getIndexAliasRequestTransformer() {
+    final SearchTransfomer<IndexAliasRequest, GetAliasRequest> transformer =
+        transformers.getTransformer(IndexAliasRequest.class);
+    return (IndexAliasRequestTransformer) transformer;
+  }
+
+  private IndexAliasResponseTransformer getIndexAliasResponseTransformer() {
+    final SearchTransfomer<GetAliasResponse, IndexAliasResponse> transformer =
+        transformers.getTransformer(IndexAliasResponse.class);
+    return (IndexAliasResponseTransformer) transformer;
+  }
+
   @Override
-  public void close() throws Exception {
+  public void close() {
     if (client != null) {
       try {
         client._transport().close();

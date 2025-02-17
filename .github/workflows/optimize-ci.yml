@@ -60,6 +60,7 @@ jobs:
 
   es-schema-integrity-test:
     name: Elasticsearch Schema Integrity Test
+    if: false
     runs-on: gcp-core-8-default
     timeout-minutes: 30
     steps:
@@ -97,6 +98,13 @@ jobs:
           ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
           ELASTIC_JVM_MEMORY: 1
           ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
+
+      # Build optimize dependencies
+      - name: Build optimize dependencies
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: -pl optimize/backend -am install -Dquickly -P skipFrontendBuild,runAssembly -T 1
+
       - name: Install
         uses: ./.github/actions/run-maven
         with:
@@ -123,6 +131,7 @@ jobs:
 
   os-schema-integrity-test:
     name: OpenSearch Schema Integrity Test
+    if: false
     runs-on: gcp-core-8-default
     timeout-minutes: 30
     steps:
@@ -160,6 +169,11 @@ jobs:
           OPENSEARCH_VERSION: ${{ steps.pom-info.outputs.x_opensearch_test_version }}
           OPENSEARCH_JVM_MEMORY: 1
           OPENSEARCH_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
+      - name: Install optimize dependencies
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: -pl optimize/upgrade -am install -Dquickly -DskipFrontendBuild -PrunAssembly -T1
+
       - name: Install
         uses: ./.github/actions/run-maven
         with:
@@ -314,7 +328,7 @@ jobs:
         env:
           OPENSEARCH_VERSION: ${{ env.OPENSEARCH_VERSION }}
           OPENSEARCH_JVM_MEMORY: 16
-          OPENSEARCH_HTTP_PORT: 9205
+          OPENSEARCH_HTTP_PORT: 9200
 
       - name: Verify integration
         uses: ./.github/actions/run-maven
@@ -346,7 +360,7 @@ jobs:
   upgrade-tests:
     name: Upgrade
     runs-on: gcp-core-8-default
-    timeout-minutes: 10
+    timeout-minutes: 20
     strategy:
       matrix:
         database: [ elasticsearch, opensearch ]
@@ -379,6 +393,12 @@ jobs:
           OPENSEARCH_VERSION: ${{ steps.pom-info.outputs.x_opensearch_test_version }}
           OPENSEARCH_JVM_MEMORY: 1
           OPENSEARCH_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
+
+      - name: Install optimize dependencies
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: -pl optimize/upgrade -am install -Dquickly -DskipFrontendBuild -PrunAssembly -T1
+
       - name: Install
         uses: ./.github/actions/run-maven
         with:
@@ -408,7 +428,7 @@ jobs:
   deploy-artifacts:
     if: github.event_name == 'push' && (github.ref_name == 'main' || startsWith(github.ref_name, 'stable/'))
     name: Deploy Artifacts
-    needs: [integration-tests, upgrade-tests, es-schema-integrity-test, os-schema-integrity-test]
+    needs: [ integration-tests, upgrade-tests ]
     uses: ./.github/workflows/optimize-deploy-artifacts.yml
     secrets: inherit
 

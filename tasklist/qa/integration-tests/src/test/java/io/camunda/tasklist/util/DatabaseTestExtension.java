@@ -27,17 +27,8 @@ public interface DatabaseTestExtension extends Extension {
 
   void processAllRecordsAndWait(TestCheck testCheck, Object... arguments);
 
-  void processAllRecordsAndWait(
-      TestCheck testCheck, Supplier<Object> supplier, Object... arguments);
-
-  void processRecordsWithTypeAndWait(
-      ImportValueType importValueType, TestCheck testCheck, Object... arguments);
-
   void processRecordsAndWaitFor(
-      Collection<RecordsReader> readers,
-      TestCheck testCheck,
-      Supplier<Object> supplier,
-      Object... arguments);
+      TestCheck testCheck, Supplier<Object> supplier, Object... arguments);
 
   boolean areIndicesCreatedAfterChecks(String indexPrefix, int minCountOfIndices, int maxChecks);
 

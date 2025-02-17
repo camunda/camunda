@@ -14,8 +14,6 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -181,6 +179,41 @@ public class GroupTest {
   }
 
   @Test
+  public void shouldRejectIfEntityIsAlreadyAssigned() {
+    // given
+    final var name = UUID.randomUUID().toString();
+    final var groupRecord = engine.group().newGroup(name).create();
+    final var groupKey = groupRecord.getValue().getGroupKey();
+    final var userKey =
+        engine
+            .user()
+            .newUser("foo")
+            .withEmail("foo@bar")
+            .withName("Foo Bar")
+            .withPassword("zabraboof")
+            .create()
+            .getKey();
+    engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+
+    // when
+    final var notPresentUpdateRecord =
+        engine
+            .group()
+            .addEntity(groupKey)
+            .withEntityKey(userKey)
+            .withEntityType(EntityType.USER)
+            .expectRejection()
+            .add();
+
+    // then
+    assertThat(notPresentUpdateRecord)
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            "Expected to add entity with key '%d' to group with key '%d', but the entity is already assigned to this group."
+                .formatted(userKey, groupKey));
+  }
+
+  @Test
   public void shouldRemoveEntityToGroup() {
     // given
     final var userKey =
@@ -260,13 +293,6 @@ public class GroupTest {
     // given
     final var name = UUID.randomUUID().toString();
     final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
-    engine
-        .authorization()
-        .permission()
-        .withOwnerKey(groupKey)
-        .withOwnerType(AuthorizationOwnerType.ROLE)
-        .withResourceType(AuthorizationResourceType.ROLE)
-        .add();
 
     // when
     final var deletedGroup = engine.group().deleteGroup(groupKey).delete().getValue();

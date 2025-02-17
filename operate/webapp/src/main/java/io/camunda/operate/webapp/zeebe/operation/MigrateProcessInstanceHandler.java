@@ -8,12 +8,12 @@
 package io.camunda.operate.webapp.zeebe.operation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.api.command.MigrationPlan;
+import io.camunda.client.api.command.MigrationPlanBuilderImpl;
+import io.camunda.client.api.command.MigrationPlanImpl;
 import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
-import io.camunda.zeebe.client.api.command.MigrationPlan;
-import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl;
-import io.camunda.zeebe.client.api.command.MigrationPlanImpl;
 import java.util.ArrayList;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -84,7 +84,7 @@ public class MigrateProcessInstanceHandler extends AbstractOperationHandler
 
     final var migrateProcessInstanceCommand =
         withOperationReference(
-            zeebeClient
+            camundaClient
                 .newMigrateProcessInstanceCommand(processInstanceKey)
                 .migrationPlan(migrationPlan),
             operationId);

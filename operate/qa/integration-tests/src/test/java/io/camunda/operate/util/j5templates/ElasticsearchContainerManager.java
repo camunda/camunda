@@ -15,6 +15,7 @@ import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
+import io.camunda.operate.schema.util.camunda.exporter.SchemaWithExporter;
 import io.camunda.operate.util.IndexPrefixHolder;
 import io.camunda.operate.util.TestUtil;
 import java.io.IOException;
@@ -45,13 +46,31 @@ public class ElasticsearchContainerManager extends SearchContainerManager {
 
   protected final RestHighLevelClient esClient;
 
+  private final IndexPrefixHolder indexPrefixHolder;
+
   public ElasticsearchContainerManager(
       @Qualifier("esClient") final RestHighLevelClient esClient,
       final OperateProperties operateProperties,
       final SchemaManager schemaManager,
       final IndexPrefixHolder indexPrefixHolder) {
-    super(operateProperties, schemaManager, indexPrefixHolder);
+    super(operateProperties, schemaManager);
     this.esClient = esClient;
+    this.indexPrefixHolder = indexPrefixHolder;
+  }
+
+  @Override
+  public void startContainer() {
+    if (indexPrefix == null) {
+      indexPrefix = indexPrefixHolder.createNewIndexPrefix();
+    }
+    updatePropertiesIndexPrefix();
+    if (shouldCreateSchema()) {
+      final var schemaExporterHelper = new SchemaWithExporter(indexPrefix, true);
+      schemaExporterHelper.createSchema();
+      assertThat(areIndicesCreatedAfterChecks(indexPrefix, 19, 5 * 60 /*sec*/))
+          .describedAs("Search %s (min %d) indices are created", indexPrefix, 5)
+          .isTrue();
+    }
   }
 
   @Override

@@ -59,7 +59,7 @@ public class DecisionInstanceReader extends AbstractEntityReader<DecisionInstanc
     final var totalHits = decisionInstanceMapper.count(dbQuery);
     final var hits = enhanceEntities(decisionInstanceMapper.search(dbQuery), query.resultConfig());
 
-    return new SearchQueryResult<>(totalHits.intValue(), hits, extractSortValues(hits, dbSort));
+    return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 
   /**

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -17,10 +18,13 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.UpdateJobChangeset;
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Assertions;
@@ -37,7 +41,7 @@ public class JobControllerTest extends RestControllerTest {
 
   static final String JOBS_BASE_URL = "/v2/jobs";
 
-  @MockBean JobServices<JobActivationResponse> jobServices;
+  @MockBean JobServices<JobActivationResult> jobServices;
   @MockBean ResponseObserverProvider responseObserverProvider;
 
   @BeforeEach
@@ -324,7 +328,8 @@ public class JobControllerTest extends RestControllerTest {
         """
           {
             "result": {
-              "denied": true
+              "denied": true,
+              "corrections": {}
             }
           }
         """;
@@ -348,6 +353,170 @@ public class JobControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldCompleteJobWithResultWithCorrections() {
+    // given
+    when(jobServices.completeJob(anyLong(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+          {
+            "result": {
+              "denied": false,
+              "corrections": {
+                "assignee": "Test",
+                "dueDate": "2025-05-23T01:02:03+01:00",
+                "followUpDate": "2025-05-25T01:02:03+01:00",
+                "candidateUsers": ["UserA", "UserB"],
+                "candidateGroups": ["GroupA", "GroupB"],
+                "priority": 20
+              }
+            }
+          }
+        """;
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    final ArgumentCaptor<JobResult> jobResultArgumentCaptor =
+        ArgumentCaptor.forClass(JobResult.class);
+    Mockito.verify(jobServices)
+        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
+
+    assertThat(jobResultArgumentCaptor.getValue().getCorrections())
+        .isEqualTo(
+            new JobResultCorrections()
+                .setAssignee("Test")
+                .setDueDate("2025-05-23T01:02:03+01:00")
+                .setFollowUpDate("2025-05-25T01:02:03+01:00")
+                .setCandidateUsersList(List.of("UserA", "UserB"))
+                .setCandidateGroupsList(List.of("GroupA", "GroupB"))
+                .setPriority(20));
+
+    assertThat(jobResultArgumentCaptor.getValue().getCorrectedAttributes())
+        .containsExactly(
+            UserTaskRecord.ASSIGNEE,
+            UserTaskRecord.DUE_DATE,
+            UserTaskRecord.FOLLOW_UP_DATE,
+            UserTaskRecord.CANDIDATE_USERS,
+            UserTaskRecord.CANDIDATE_GROUPS,
+            UserTaskRecord.PRIORITY);
+  }
+
+  @Test
+  void shouldCompleteJobWithResultWithCorrectionsPartiallySet() {
+    // given
+    when(jobServices.completeJob(anyLong(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+          {
+            "result": {
+              "denied": false,
+              "corrections": {
+                "assignee": "Test",
+                "candidateUsers": ["UserA", "UserB"],
+                "candidateGroups": ["GroupA", "GroupB"],
+                "priority": 20
+              }
+            }
+          }
+        """;
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    final ArgumentCaptor<JobResult> jobResultArgumentCaptor =
+        ArgumentCaptor.forClass(JobResult.class);
+    Mockito.verify(jobServices)
+        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
+
+    assertThat(jobResultArgumentCaptor.getValue().getCorrections())
+        .isEqualTo(
+            new JobResultCorrections()
+                .setAssignee("Test")
+                .setCandidateUsersList(List.of("UserA", "UserB"))
+                .setCandidateGroupsList(List.of("GroupA", "GroupB"))
+                .setPriority(20));
+
+    assertThat(jobResultArgumentCaptor.getValue().getCorrectedAttributes())
+        .containsExactly(
+            UserTaskRecord.ASSIGNEE,
+            UserTaskRecord.CANDIDATE_USERS,
+            UserTaskRecord.CANDIDATE_GROUPS,
+            UserTaskRecord.PRIORITY);
+  }
+
+  @Test
+  void shouldCompleteJobWithResultWithCorrectionsPartiallySetAndDefault() {
+    // given
+    when(jobServices.completeJob(anyLong(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+          {
+            "result": {
+              "denied": false,
+              "corrections": {
+                "assignee": null,
+                "dueDate": "2025-05-23T01:02:03+01:00",
+                "candidateGroups": ["GroupA", "GroupB"],
+                "priority": null
+              }
+            }
+          }
+        """;
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    final var jobResultArgumentCaptor = ArgumentCaptor.forClass(JobResult.class);
+    Mockito.verify(jobServices)
+        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
+
+    assertThat(jobResultArgumentCaptor.getValue().getCorrections())
+        .isEqualTo(
+            new JobResultCorrections()
+                .setDueDate("2025-05-23T01:02:03+01:00")
+                .setCandidateGroupsList(List.of("GroupA", "GroupB"))
+                // The remaining fields have their default non-null values,
+                // as they weren't corrected
+                .setAssignee("")
+                .setFollowUpDate("")
+                .setCandidateUsersList(List.of())
+                .setPriority(-1));
+
+    assertThat(jobResultArgumentCaptor.getValue().getCorrectedAttributes())
+        .containsExactly(UserTaskRecord.DUE_DATE, UserTaskRecord.CANDIDATE_GROUPS);
+  }
+
+  @Test
   void shouldCompleteJobWithResultDeniedFalse() {
     // given
     when(jobServices.completeJob(anyLong(), any(), any()))
@@ -357,7 +526,8 @@ public class JobControllerTest extends RestControllerTest {
         """
           {
             "result": {
-              "denied": false
+              "denied": false,
+              "corrections": {}
             }
           }
         """;
@@ -390,7 +560,8 @@ public class JobControllerTest extends RestControllerTest {
         """
           {
             "result": {
-              "unknownField": true
+              "unknownField": true,
+              "corrections": {}
             }
           }
         """;

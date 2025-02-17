@@ -46,7 +46,7 @@ public final class JobThrowErrorTest {
   private static final String PROCESS_ID = "process";
   private static String jobType;
   private static final String ERROR_CODE = "ERROR";
-  private static long userKey;
+  private static String username;
   private static String tenantId;
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
@@ -54,25 +54,25 @@ public final class JobThrowErrorTest {
   @BeforeClass
   public static void setUp() {
     tenantId = UUID.randomUUID().toString();
-    final var username = UUID.randomUUID().toString();
-    userKey = ENGINE.user().newUser(username).create().getValue().getUserKey();
-    final var tenantKey =
-        ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
+    username = UUID.randomUUID().toString();
+    final var user = ENGINE.user().newUser(username).create().getValue();
+    ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     ENGINE
         .tenant()
-        .addEntity(tenantKey)
+        .addEntity(tenantId)
         .withEntityType(EntityType.USER)
-        .withEntityKey(userKey)
+        .withEntityId(username)
         .add();
 
     ENGINE
         .authorization()
-        .permission()
-        .withPermission(PermissionType.UPDATE_PROCESS_INSTANCE, PROCESS_ID)
+        .newAuthorization()
+        .withPermissions(PermissionType.UPDATE_PROCESS_INSTANCE)
         .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-        .withOwnerKey(userKey)
+        .withResourceId(PROCESS_ID)
+        .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
-        .add();
+        .create();
   }
 
   @Before
@@ -502,7 +502,7 @@ public final class JobThrowErrorTest {
     // given
     final String falseTenantId = "foo";
     final var job = ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
-    ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(userKey);
+    ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(username);
 
     // when
     final Record<JobRecordValue> result =

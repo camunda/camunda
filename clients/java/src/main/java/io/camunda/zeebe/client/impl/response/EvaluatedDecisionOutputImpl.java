@@ -16,9 +16,9 @@
 package io.camunda.zeebe.client.impl.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.client.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.EvaluatedDecisionOutput;
-import io.camunda.zeebe.client.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 
 public class EvaluatedDecisionOutputImpl implements EvaluatedDecisionOutput {
@@ -29,9 +29,9 @@ public class EvaluatedDecisionOutputImpl implements EvaluatedDecisionOutput {
   private final String outputValue;
 
   public EvaluatedDecisionOutputImpl(final EvaluatedDecisionOutputItem item) {
-    this.outputId = item.getOutputId();
-    this.outputName = item.getOutputName();
-    this.outputValue = item.getOutputValue();
+    outputId = item.getOutputId();
+    outputName = item.getOutputName();
+    outputValue = item.getOutputValue();
   }
 
   public EvaluatedDecisionOutputImpl(

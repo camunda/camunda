@@ -21,6 +21,7 @@ import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -32,6 +33,8 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
@@ -40,6 +43,8 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(OpenSearchCondition.class)
 public class FormStoreOpenSearch implements FormStore {
+
+  private static final Logger LOG = LoggerFactory.getLogger(FormStoreOpenSearch.class);
 
   @Autowired private FormIndex formIndex;
 
@@ -85,7 +90,7 @@ public class FormStoreOpenSearch implements FormStore {
                         term ->
                             term.field(FormIndex.PROCESS_DEFINITION_ID)
                                 .value(FieldValue.of(processDefinitionId))))
-            .fields(f -> f.field(TaskTemplate.ID));
+            .fields(f -> f.field(FormIndex.ID));
     try {
       return OpenSearchUtil.scrollIdsToList(searchRequest, osClient);
     } catch (final IOException e) {
@@ -101,12 +106,17 @@ public class FormStoreOpenSearch implements FormStore {
       final GetResponse<FormIdView> response = osClient.get(request, FormIdView.class);
       if (response.found() && response.source() != null) {
         return Optional.of(response.source());
-      } else {
+      }
+    } catch (final OpenSearchException e) {
+      if (e.response().status() == HttpURLConnection.HTTP_NOT_FOUND) {
+        LOG.debug("Form with key {} not found.", formKey, e);
         return Optional.empty();
       }
+      throw new TasklistRuntimeException(e);
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e);
     }
+    return Optional.empty();
   }
 
   private Boolean isFormAssociatedToTask(final String formId, final String processDefinitionId) {

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.test.util.record;
 
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import java.util.stream.Stream;
 
@@ -32,5 +33,9 @@ public class GroupRecordStream extends ExporterRecordStream<GroupRecordValue, Gr
 
   public GroupRecordStream withEntityKey(final long entityKey) {
     return valueFilter(v -> v.getEntityKey() == entityKey);
+  }
+
+  public GroupRecordStream withEntityType(final EntityType entityType) {
+    return valueFilter(v -> v.getEntityType() == entityType);
   }
 }

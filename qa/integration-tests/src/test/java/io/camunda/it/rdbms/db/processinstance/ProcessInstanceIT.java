@@ -7,7 +7,9 @@
  */
 package io.camunda.it.rdbms.db.processinstance;
 
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveProcessInstance;
+import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveRandomProcessInstance;
 import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveRandomProcessInstances;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -19,6 +21,7 @@ import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.sort.ProcessInstanceSort;
@@ -43,7 +46,7 @@ public class ProcessInstanceIT {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
-    final Long processInstanceKey = ProcessInstanceFixtures.nextKey();
+    final Long processInstanceKey = nextKey();
     createAndSaveProcessInstance(
         rdbmsWriter,
         ProcessInstanceFixtures.createRandomized(
@@ -105,7 +108,7 @@ public class ProcessInstanceIT {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
-    final Long processInstanceKey = ProcessInstanceFixtures.nextKey();
+    final Long processInstanceKey = nextKey();
     createAndSaveProcessInstance(
         rdbmsWriter,
         ProcessInstanceFixtures.createRandomized(
@@ -145,6 +148,40 @@ public class ProcessInstanceIT {
   }
 
   @TestTemplate
+  public void shouldFindProcessInstanceWithIncidents(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+
+    final Long processDefinitionKey = nextKey();
+    createAndSaveRandomProcessInstances(
+        rdbmsWriter, b -> b.processDefinitionKey(processDefinitionKey));
+    final var incidentPI1 =
+        createAndSaveRandomProcessInstance(
+            rdbmsWriter, b -> b.processDefinitionKey(processDefinitionKey).numIncidents(1));
+    final var incidentPI2 =
+        createAndSaveRandomProcessInstance(
+            rdbmsWriter, b -> b.processDefinitionKey(processDefinitionKey).numIncidents(2));
+
+    final var searchResult =
+        processInstanceReader.search(
+            ProcessInstanceQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(processDefinitionKey).hasIncident(true))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(10))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+
+    assertThat(searchResult.items().stream().map(ProcessInstanceEntity::processInstanceKey))
+        .containsExactlyInAnyOrder(
+            incidentPI1.processInstanceKey(), incidentPI2.processInstanceKey());
+  }
+
+  @TestTemplate
   public void shouldFindAllProcessInstancePaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
@@ -166,9 +203,16 @@ public class ProcessInstanceIT {
     assertThat(searchResult.total()).isEqualTo(20);
     assertThat(searchResult.items()).hasSize(5);
 
+    final var firstInstance = searchResult.items().getFirst();
+    assertThat(searchResult.firstSortValues()).hasSize(3);
+    assertThat(searchResult.firstSortValues())
+        .containsExactly(
+            firstInstance.startDate(),
+            firstInstance.processDefinitionName(),
+            firstInstance.processInstanceKey());
     final var lastInstance = searchResult.items().getLast();
-    assertThat(searchResult.sortValues()).hasSize(3);
-    assertThat(searchResult.sortValues())
+    assertThat(searchResult.lastSortValues()).hasSize(3);
+    assertThat(searchResult.lastSortValues())
         .containsExactly(
             lastInstance.startDate(),
             lastInstance.processDefinitionName(),
@@ -182,7 +226,7 @@ public class ProcessInstanceIT {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
-    final Long processInstanceKey = ProcessInstanceFixtures.nextKey();
+    final Long processInstanceKey = nextKey();
     createAndSaveRandomProcessInstances(rdbmsWriter);
     createAndSaveProcessInstance(
         rdbmsWriter,

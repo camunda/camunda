@@ -14,7 +14,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.entities.tasklist.EmbeddedFormBatch;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -34,7 +33,7 @@ public class EmbeddedFormHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-form";
-  private final EmbeddedFormHandler underTest = new EmbeddedFormHandler(indexName, new XMLUtil());
+  private final EmbeddedFormHandler underTest = new EmbeddedFormHandler(indexName);
 
   @Test
   void testGetHandledValueType() {

@@ -89,7 +89,7 @@ final class PartitionTransitionProcess {
           final var nextStep = pendingSteps.remove(0);
           currentStep = nextStep;
           stepStartedAtMs = ActorClock.currentTimeMillis();
-          LOG.info(
+          LOG.debug(
               "Transition to {} on term {} - transitioning {}", role, term, nextStep.getName());
           nextStep
               .transitionTo(context, term, role)
@@ -139,7 +139,7 @@ final class PartitionTransitionProcess {
         () -> {
           final var nextPrepareStep = stepsToPrepare.pop();
 
-          LOG.info(
+          LOG.debug(
               MSG_PREPARE_TRANSITION_STEP,
               context.getCurrentRole(),
               context.getCurrentTerm(),

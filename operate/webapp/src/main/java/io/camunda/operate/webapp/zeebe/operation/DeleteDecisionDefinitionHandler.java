@@ -53,7 +53,7 @@ public class DeleteDecisionDefinitionHandler extends AbstractOperationHandler
             operation.getId(), decisionRequirementsKey));
     final var deleteResourceCommand =
         withOperationReference(
-            zeebeClient.newDeleteResourceCommand(decisionRequirementsKey), operation.getId());
+            camundaClient.newDeleteResourceCommand(decisionRequirementsKey), operation.getId());
     deleteResourceCommand.send().join();
     markAsSent(operation);
     LOGGER.info(

@@ -9,28 +9,26 @@ package io.camunda.zeebe.it.client.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.ZeebeFuture;
-import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
-import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
-import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.command.ActivateJobsCommandStep1;
+import io.camunda.client.api.response.ActivateJobsResponse;
+import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @ZeebeIntegration
-@AutoCloseResources
 public class LongPollingActivateJobsTest {
 
-  @AutoCloseResource ZeebeClient client;
+  @AutoClose CamundaClient client;
 
   @TestZeebe
   final TestStandaloneBroker zeebe =
@@ -65,10 +63,8 @@ public class LongPollingActivateJobsTest {
     assertThat(response.getJobs()).hasSize(activateJobs);
   }
 
-  // TODO: the REST use case is currently not working, see
-  // https://github.com/camunda/camunda/issues/19883
   @ParameterizedTest
-  @ValueSource(booleans = {false})
+  @ValueSource(booleans = {false, true})
   public void shouldActivateJobsIfBatchIsTruncated(final boolean useRest, final TestInfo testInfo) {
     // given
     final int availableJobs = 10;
@@ -96,7 +92,7 @@ public class LongPollingActivateJobsTest {
 
     final String jobType = "job-" + testInfo.getDisplayName();
 
-    final ZeebeFuture<ActivateJobsResponse> responseFuture =
+    final CamundaFuture<ActivateJobsResponse> responseFuture =
         getCommand(client, useRest).jobType(jobType).maxJobsToActivate(expectedJobsCount).send();
 
     // when
@@ -131,7 +127,7 @@ public class LongPollingActivateJobsTest {
     assertThat(jobs).hasSize(1).extracting(ActivatedJob::getWorker).contains("open");
   }
 
-  private ActivateJobsCommandStep1 getCommand(final ZeebeClient client, final boolean useRest) {
+  private ActivateJobsCommandStep1 getCommand(final CamundaClient client, final boolean useRest) {
     final ActivateJobsCommandStep1 activateJobsCommandStep1 = client.newActivateJobsCommand();
     return useRest ? activateJobsCommandStep1.useRest() : activateJobsCommandStep1.useGrpc();
   }
@@ -139,7 +135,7 @@ public class LongPollingActivateJobsTest {
   private void sendActivateRequestsAndClose(final boolean useRest, final String jobType)
       throws InterruptedException {
     for (int i = 0; i < 3; i++) {
-      final ZeebeClient tempClient = zeebe.newClientBuilder().usePlaintext().build();
+      final CamundaClient tempClient = zeebe.newClientBuilder().usePlaintext().build();
 
       getCommand(tempClient, useRest)
           .jobType(jobType)

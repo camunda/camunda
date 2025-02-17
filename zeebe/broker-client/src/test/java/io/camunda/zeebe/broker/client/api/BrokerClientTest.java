@@ -33,18 +33,22 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.camunda.zeebe.test.broker.protocol.brokerapi.StubBroker;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -52,17 +56,23 @@ import org.junit.jupiter.api.TestInfo;
 
 public final class BrokerClientTest {
 
-  @AutoCloseResource
   private final ActorScheduler actorScheduler = ActorScheduler.newActorScheduler().build();
 
-  @AutoCloseResource private final StubBroker broker = new StubBroker().start();
-  @AutoCloseResource private BrokerClient client;
-  @AutoCloseResource private AtomixCluster atomixCluster;
+  private final StubBroker broker = new StubBroker().start();
+  private BrokerClient client;
+  private AtomixCluster atomixCluster;
+  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   // keep as field to ensure it gets closed at the end
   @SuppressWarnings({"FieldCanBeLocal", "Unused"})
-  @AutoCloseResource
   private BrokerTopologyManagerImpl topologyManager;
+
+  @AfterEach
+  void afterEach() {
+    // We need to make sure that the Actor is closed last, otherwise we end up in a deadlock
+    // Thus, usage of @AutoClose is not possible, as there are no guarantees about ordering
+    CloseHelper.quietCloseAll(topologyManager, atomixCluster, broker, client, actorScheduler);
+  }
 
   @BeforeEach
   void beforeEach() {
@@ -70,7 +80,7 @@ public final class BrokerClientTest {
         Address.from(broker.getCurrentStubHost(), broker.getCurrentStubPort());
     final var membership = BootstrapDiscoveryProvider.builder().withNodes(brokerAddress).build();
     atomixCluster =
-        AtomixCluster.builder()
+        AtomixCluster.builder(meterRegistry)
             .withPort(SocketUtil.getNextAddress().getPort())
             .withMembershipProvider(membership)
             .withClusterId(broker.clusterId())

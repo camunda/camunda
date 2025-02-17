@@ -35,7 +35,8 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
     },
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false"
+      TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
+      TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true"
     },
     webEnvironment = WebEnvironment.RANDOM_PORT)
 public class UserStoreIT extends TasklistIntegrationTest {

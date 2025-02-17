@@ -64,6 +64,7 @@ public class PropertiesIT {
     assertThat(operateProperties.getIdentity().getAudience()).isEqualTo("operateAudience");
     // assert that it can be set from ${camunda.operate.identity.resourcePermissionsEnabled}
     assertThat(securityConfiguration.getAuthorizations().isEnabled()).isTrue();
-    assertThat(operateProperties.getMultiTenancy().isEnabled()).isTrue();
+    // assert that it can be set from ${camunda.operate.multiTenancy.enabled}
+    assertThat(securityConfiguration.getMultiTenancy().isEnabled()).isTrue();
   }
 }

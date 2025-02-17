@@ -11,9 +11,9 @@ import {
 import styled from "styled-components";
 import useTranslate from "src/utility/localization";
 
-const ModalWrapper = styled.div<{ overflowVisible: boolean }>`
-  ${({ overflowVisible }) =>
-    overflowVisible
+const ModalWrapper = styled.div<{ $overflowVisible: boolean }>`
+  ${({ $overflowVisible }) =>
+    $overflowVisible
       ? `
   & .cds--modal-content,
   & .cds--modal-container {
@@ -123,7 +123,9 @@ const Modal: FC<ModalProps> = ({
       </ComposedModal>
     );
 
-  return <ModalWrapper overflowVisible={overflowVisible}>{modal}</ModalWrapper>;
+  return (
+    <ModalWrapper $overflowVisible={overflowVisible}>{modal}</ModalWrapper>
+  );
 };
 
 export const DeleteModal: FC<

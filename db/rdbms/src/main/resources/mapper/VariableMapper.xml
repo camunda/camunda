@@ -11,7 +11,7 @@
 
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)
-    FROM VARIABLE
+    FROM ${prefix}VARIABLE
     <include refid="io.camunda.db.rdbms.sql.VariableMapper.searchFilter"/>
   </select>
 
@@ -29,7 +29,7 @@
       TENANT_ID,
     IS_PREVIEW,
     PROCESS_DEFINITION_ID
-    FROM VARIABLE
+    FROM ${prefix}VARIABLE
     <include refid="io.camunda.db.rdbms.sql.VariableMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -76,94 +76,10 @@
     <if test="filter.valueOperations != null and !filter.valueOperations.isEmpty()">
       <foreach collection="filter.valueOperations" item="operation">
         AND
-        <include refid="variableOperationCondition"/>
+        <include refid="io.camunda.db.rdbms.sql.Commons.variableOperationCondition"/>
       </foreach>
     </if>
 
-  </sql>
-
-  <sql id="variableOperationCondition">
-    <choose>
-      <when test="operation.operator.name().equals('EQUALS')">
-        <if test="operation.type.toString == 'STRING' or operation.type.toString == 'BOOLEAN'">
-          VAR_VALUE = #{operation.value}
-        </if>
-        <if test="operation.type.toString == 'LONG'">
-          LONG_VALUE = #{operation.value}
-        </if>
-        <if test="operation.type.toString == 'DOUBLE'">
-          DOUBLE_VALUE = #{operation.value}
-        </if>
-      </when>
-      <when test="operation.operator.name().equals('NOT_EQUALS')">
-        <if test="operation.type.toString == 'STRING' or operation.type.toString == 'BOOLEAN'">
-          VAR_VALUE != #{operation.value}
-        </if>
-        <if test="operation.type.toString == 'LONG'">
-          LONG_VALUE != #{operation.value}
-        </if>
-        <if test="operation.type.toString == 'DOUBLE'">
-          DOUBLE_VALUE != #{operation.value}
-        </if>
-      </when>
-      <when test="operation.operator.name().equals('EXISTS')">
-        <!-- can be ignored, doesn't make sence for searching of single variables -->
-        1 = 1
-      </when>
-      <when test="operation.operator.name().equals('NOT_EXISTS')">
-        <!-- can be ignored, doesn't make sence for searching of single variables -->
-        1 = 1
-      </when>
-      <when test="operation.operator.name().equals('GREATER_THAN')">
-        <if test="operation.type.toString == 'LONG'">
-          LONG_VALUE &gt; #{operation.value}
-        </if>
-        <if test="operation.type.toString == 'DOUBLE'">
-          DOUBLE_VALUE &gt; #{operation.value}
-        </if>
-      </when>
-      <when test="operation.operator.name().equals('GREATER_THAN_EQUALS')">
-        <if test="operation.type.toString == 'LONG'">
-          LONG_VALUE &gt;= #{operation.value}
-        </if>
-        <if test="operation.type.toString == 'DOUBLE'">
-          DOUBLE_VALUE &gt;= #{operation.value}
-        </if>
-      </when>
-      <when test="operation.operator.name().equals('LOWER_THAN')">
-        <if test="operation.type.toString == 'LONG'">
-          LONG_VALUE &lt; #{operation.value}
-        </if>
-        <if test="operation.type.toString == 'DOUBLE'">
-          DOUBLE_VALUE &lt; #{operation.value}
-        </if>
-      </when>
-      <when test="operation.operator.name().equals('LOWER_THAN_EQUALS')">
-        <if test="operation.type.toString == 'LONG'">
-          LONG_VALUE &lt;= #{operation.value}
-        </if>
-        <if test="operation.type.toString == 'DOUBLE'">
-          DOUBLE_VALUE &lt;= #{operation.value}
-        </if>
-      </when>
-      <when test="operation.operator.name().equals('IN')">
-        <if test="operation.type.toString == 'STRING'">
-          VAR_VALUE IN
-        </if>
-        <if test="operation.type.toString == 'LONG'">
-          LONG_VALUE IN
-        </if>
-        <if test="operation.type.toString == 'DOUBLE'">
-          DOUBLE_VALUE IN
-        </if>
-        <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
-          #{value}
-        </foreach>
-      </when>
-      <when test="operation.operator.name().equals('LIKE')">
-        VAR_VALUE LIKE #{operation.value} OR VAR_FULL_VALUE LIKE #{operation.value}
-      </when>
-    </choose>
   </sql>
 
   <sql id="variableSortMapper">
@@ -208,12 +124,11 @@
     statementType="PREPARED"
     parameterType="io.camunda.db.rdbms.write.domain.VariableDbModel"
     flushCache="true">
-    INSERT INTO VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, SCOPE_KEY, TYPE, VAR_NAME, DOUBLE_VALUE,
-                          LONG_VALUE,
-                          VAR_VALUE, VAR_FULL_VALUE, TENANT_ID, IS_PREVIEW)
+    INSERT INTO ${prefix}VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, SCOPE_KEY, TYPE, VAR_NAME, DOUBLE_VALUE,
+                                   LONG_VALUE, VAR_VALUE, VAR_FULL_VALUE, TENANT_ID, IS_PREVIEW,
+                                   PARTITION_ID)
     VALUES (#{variableKey}, #{processInstanceKey}, #{processDefinitionId}, #{scopeKey}, #{type}, #{name}, #{doubleValue},
-            #{longValue},
-            #{value}, #{fullValue}, #{tenantId}, #{isPreview})
+            #{longValue}, #{value}, #{fullValue}, #{tenantId}, #{isPreview}, #{partitionId})
   </insert>
 
   <update
@@ -221,13 +136,23 @@
     statementType="PREPARED"
     parameterType="io.camunda.db.rdbms.write.domain.VariableDbModel"
     flushCache="true">
-      UPDATE VARIABLE
+      UPDATE ${prefix}VARIABLE
       SET TYPE         = #{type},
           DOUBLE_VALUE = #{doubleValue},
           LONG_VALUE   = #{longValue},
           VAR_VALUE  = #{value},
           VAR_FULL_VALUE = #{fullValue},
           IS_PREVIEW     = #{isPreview}
+      WHERE VAR_KEY = #{variableKey}
+  </update>
+
+  <update
+    id="migrateToProcess"
+    statementType="PREPARED"
+    parameterType="java.util.Map"
+    flushCache="true">
+      UPDATE VARIABLE
+      SET PROCESS_DEFINITION_ID = #{processDefinitionId}
       WHERE VAR_KEY = #{variableKey}
   </update>
 </mapper>

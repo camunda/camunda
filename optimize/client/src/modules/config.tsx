@@ -8,6 +8,7 @@
 
 import {ReactNode, createContext, useEffect, useState} from 'react';
 import {Loading} from '@carbon/react';
+import { getFullURL } from './api';
 
 import {get, ErrorResponse} from 'request';
 import {showError} from 'notifications';
@@ -81,7 +82,7 @@ export function ConfigProvider({children}: {children: ReactNode}): JSX.Element {
 
   const loadConfig = async () => {
     try {
-      const response = await get('api/ui-configuration');
+      const response = await get(getFullURL('api/ui-configuration'));
       const config = await response.json();
 
       setConfig(config);

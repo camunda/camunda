@@ -27,20 +27,20 @@ import static io.camunda.zeebe.client.ClientProperties.REST_ADDRESS;
 import static io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.zeebe.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_GATEWAY_ADDRESS;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_GRPC_ADDRESS;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_REST_ADDRESS;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_TENANT_ID_VAR;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.GRPC_ADDRESS_VAR;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.KEEP_ALIVE_VAR;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.OVERRIDE_AUTHORITY_VAR;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.PLAINTEXT_CONNECTION_VAR;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.PREFER_REST_VAR;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.REST_ADDRESS_VAR;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.USE_DEFAULT_RETRY_POLICY_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.CA_CERTIFICATE_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.DEFAULT_TENANT_ID_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.GRPC_ADDRESS_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.KEEP_ALIVE_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.PREFER_REST_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.REST_ADDRESS_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_KB;
 import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_MB;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -196,7 +196,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldEnableStreamingWithEnvironmentVariableWhenApplied() {
     // given
-    Environment.system().put(CAMUNDA_CLIENT_WORKER_STREAM_ENABLED, "true");
+    Environment.system().put(ZEEBE_CLIENT_WORKER_STREAM_ENABLED, "true");
 
     final ZeebeClientBuilderImpl builder1 = new ZeebeClientBuilderImpl();
     final ZeebeClientBuilderImpl builder2 = new ZeebeClientBuilderImpl();
@@ -213,7 +213,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void environmentVariableShouldOverrideProperty() {
     // given
-    Environment.system().put(CAMUNDA_CLIENT_WORKER_STREAM_ENABLED, "true");
+    Environment.system().put(ZEEBE_CLIENT_WORKER_STREAM_ENABLED, "true");
     final Properties properties = new Properties();
     properties.putIfAbsent(STREAM_ENABLED, "false");
 
@@ -538,7 +538,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldSetRestAddressFromSetterWithClientBuilder() throws URISyntaxException {
     // given
-    final URI restAddress = new URI("localhost:9090");
+    final URI restAddress = new URI("http://localhost:9090");
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.restAddress(restAddress);
 
@@ -552,7 +552,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldSetRestAddressPortFromPropertyWithClientBuilder() throws URISyntaxException {
     // given
-    final URI restAddress = new URI("localhost:9090");
+    final URI restAddress = new URI("http://localhost:9090");
     final Properties properties = new Properties();
     properties.setProperty(REST_ADDRESS, restAddress.toString());
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
@@ -568,7 +568,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldSetRestAddressPortFromEnvVarWithClientBuilder() throws URISyntaxException {
     // given
-    final URI restAddress = new URI("localhost:9090");
+    final URI restAddress = new URI("http://localhost:9090");
     Environment.system().put(REST_ADDRESS_VAR, restAddress.toString());
 
     // when

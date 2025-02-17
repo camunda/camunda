@@ -17,4 +17,9 @@ package io.camunda.zeebe.client.api.search.response;
 
 import io.camunda.zeebe.client.api.response.Decision;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.search.response.DecisionDefinition}
+ */
+@Deprecated
 public interface DecisionDefinition extends Decision {}

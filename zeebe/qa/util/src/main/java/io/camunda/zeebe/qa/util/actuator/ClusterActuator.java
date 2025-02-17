@@ -199,4 +199,8 @@ public interface ClusterActuator {
       @RequestBody final ClusterConfigPatchRequest request,
       @Param boolean dryRun,
       @Param boolean force);
+
+  @RequestLine("POST /purge?dryRun={dryRun}")
+  @Headers({"Content-Type: application/json"})
+  PlannedOperationsResponse purge(@Param boolean dryRun);
 }

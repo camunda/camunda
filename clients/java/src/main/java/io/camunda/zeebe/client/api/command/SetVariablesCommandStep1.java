@@ -19,6 +19,11 @@ import io.camunda.zeebe.client.api.response.SetVariablesResponse;
 import java.io.InputStream;
 import java.util.Map;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.SetVariablesCommandStep1}
+ */
+@Deprecated
 public interface SetVariablesCommandStep1
     extends CommandWithCommunicationApiStep<SetVariablesCommandStep1> {
   /**
@@ -57,6 +62,11 @@ public interface SetVariablesCommandStep1
    */
   SetVariablesCommandStep2 variables(Object variables);
 
+  /**
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+   *     io.camunda.client.api.command.SetVariablesCommandStep1.SetVariablesCommandStep2}
+   */
+  @Deprecated
   interface SetVariablesCommandStep2
       extends CommandWithOperationReferenceStep<SetVariablesCommandStep2>,
           FinalCommandStep<SetVariablesResponse> {

@@ -15,7 +15,7 @@ import static org.mockito.Mockito.verify;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
-import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
+import io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -36,7 +36,7 @@ public class TenantEntityRemovedHandlerTest {
 
   @Test
   void testGetEntityType() {
-    assertThat(underTest.getEntityType()).isEqualTo(TenantEntity.class);
+    assertThat(underTest.getEntityType()).isEqualTo(TenantMemberEntity.class);
   }
 
   @Test
@@ -61,7 +61,7 @@ public class TenantEntityRemovedHandlerTest {
     // then
     final var value = tenantRecord.getValue();
     assertThat(idList)
-        .containsExactly(TenantEntity.getChildKey(value.getTenantKey(), value.getEntityKey()));
+        .containsExactly(TenantMemberEntity.getChildKey(value.getTenantId(), value.getEntityId()));
   }
 
   @Test
@@ -77,9 +77,9 @@ public class TenantEntityRemovedHandlerTest {
   @Test
   void shouldUpdateTenantEntityOnFlush() throws PersistenceException {
     // given
-    final var joinRelation = TenantIndex.JOIN_RELATION_FACTORY.createChild(111L);
-    final TenantEntity inputEntity =
-        new TenantEntity().setId("111").setMemberKey(222L).setJoin(joinRelation);
+    final var joinRelation = TenantIndex.JOIN_RELATION_FACTORY.createChild("111");
+    final var inputEntity =
+        new TenantMemberEntity().setId("111").setMemberId("member-id-1").setJoin(joinRelation);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

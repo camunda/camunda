@@ -41,7 +41,7 @@ jobs:
     runs-on: gcp-core-4-default
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.16.1
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.17.1
         env:
           discovery.type: single-node
           cluster.name: docker-cluster
@@ -129,6 +129,21 @@ jobs:
           name: Playwright report
           path: operate/client/playwright-report/
           retention-days: 30
+
+      - name: Collect docker logs on failure
+        if: failure()
+        uses: jwalton/gh-docker-logs@v2
+        with:
+          dest: './logs'
+      - name: Tar logs
+        if: failure()
+        run: tar cvzf ./logs.tgz ./logs
+      - name: Upload logs to GitHub
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs.tgz
+          path: ./logs.tgz
 
       - name: Observe build status
         if: always()

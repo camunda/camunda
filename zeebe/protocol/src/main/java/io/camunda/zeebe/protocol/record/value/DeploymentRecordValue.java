@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMet
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.protocol.record.value.deployment.FormMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.ResourceMetadataValue;
 import java.util.List;
 import org.immutables.value.Value;
 
@@ -58,6 +59,11 @@ public interface DeploymentRecordValue extends RecordValue, TenantOwned {
    * @return the deployed forms
    */
   List<FormMetadataValue> getFormMetadata();
+
+  /**
+   * @return the deployed resources
+   */
+  List<ResourceMetadataValue> getResourceMetadata();
 
   /**
    * @return the unique key of the deployment

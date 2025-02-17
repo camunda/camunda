@@ -13,20 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package io.camunda.zeebe.client.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
-import io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1;
-import io.camunda.zeebe.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
-import io.camunda.zeebe.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ClientException;
@@ -35,16 +32,9 @@ import io.camunda.zeebe.client.api.command.ClockResetCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
-import io.camunda.zeebe.client.api.command.CreateDocumentCommandStep1;
-import io.camunda.zeebe.client.api.command.CreateDocumentLinkCommandStep1;
-import io.camunda.zeebe.client.api.command.CreateMappingCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.command.CreateRoleCommandStep1;
-import io.camunda.zeebe.client.api.command.CreateTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
-import io.camunda.zeebe.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
-import io.camunda.zeebe.client.api.command.DeleteTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1;
@@ -52,7 +42,6 @@ import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
 import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
-import io.camunda.zeebe.client.api.command.RemovePermissionsCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1;
@@ -61,58 +50,28 @@ import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
-import io.camunda.zeebe.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
-import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetXmlRequest;
-import io.camunda.zeebe.client.api.fetch.DecisionInstanceGetRequest;
-import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetRequest;
-import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetXmlRequest;
-import io.camunda.zeebe.client.api.fetch.DocumentContentGetRequest;
-import io.camunda.zeebe.client.api.fetch.FlowNodeInstanceGetRequest;
-import io.camunda.zeebe.client.api.fetch.IncidentGetRequest;
-import io.camunda.zeebe.client.api.fetch.ProcessDefinitionGetFormRequest;
-import io.camunda.zeebe.client.api.fetch.ProcessDefinitionGetRequest;
-import io.camunda.zeebe.client.api.fetch.ProcessDefinitionGetXmlRequest;
-import io.camunda.zeebe.client.api.fetch.ProcessInstanceGetRequest;
-import io.camunda.zeebe.client.api.fetch.UserTaskGetFormRequest;
-import io.camunda.zeebe.client.api.fetch.UserTaskGetRequest;
-import io.camunda.zeebe.client.api.fetch.VariableGetRequest;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.api.response.DocumentReferenceResponse;
 import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
-import io.camunda.zeebe.client.api.search.query.DecisionInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.DecisionRequirementsQuery;
 import io.camunda.zeebe.client.api.search.query.FlownodeInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.IncidentQuery;
-import io.camunda.zeebe.client.api.search.query.ProcessDefinitionQuery;
 import io.camunda.zeebe.client.api.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.UserTaskQuery;
-import io.camunda.zeebe.client.api.search.query.UserTaskVariableQuery;
-import io.camunda.zeebe.client.api.search.query.VariableQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
-import io.camunda.zeebe.client.impl.command.AddPermissionsCommandImpl;
-import io.camunda.zeebe.client.impl.command.AssignMappingToTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.AssignUserTaskCommandImpl;
-import io.camunda.zeebe.client.impl.command.AssignUserToTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.BroadcastSignalCommandImpl;
 import io.camunda.zeebe.client.impl.command.CancelProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.ClockPinCommandImpl;
 import io.camunda.zeebe.client.impl.command.ClockResetCommandImpl;
 import io.camunda.zeebe.client.impl.command.CompleteUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.CorrelateMessageCommandImpl;
-import io.camunda.zeebe.client.impl.command.CreateDocumentCommandImpl;
-import io.camunda.zeebe.client.impl.command.CreateDocumentLinkCommandImpl;
-import io.camunda.zeebe.client.impl.command.CreateMappingCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
-import io.camunda.zeebe.client.impl.command.CreateRoleCommandImpl;
-import io.camunda.zeebe.client.impl.command.CreateTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateUserCommandImpl;
-import io.camunda.zeebe.client.impl.command.DeleteDocumentCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteResourceCommandImpl;
-import io.camunda.zeebe.client.impl.command.DeleteTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployProcessCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployResourceCommandImpl;
 import io.camunda.zeebe.client.impl.command.EvaluateDecisionCommandImpl;
@@ -122,41 +81,14 @@ import io.camunda.zeebe.client.impl.command.JobUpdateTimeoutCommandImpl;
 import io.camunda.zeebe.client.impl.command.MigrateProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.ModifyProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.PublishMessageCommandImpl;
-import io.camunda.zeebe.client.impl.command.RemovePermissionsCommandImpl;
 import io.camunda.zeebe.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.zeebe.client.impl.command.SetVariablesCommandImpl;
 import io.camunda.zeebe.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.zeebe.client.impl.command.TopologyRequestImpl;
 import io.camunda.zeebe.client.impl.command.UnassignUserTaskCommandImpl;
-import io.camunda.zeebe.client.impl.command.UpdateTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.UpdateUserTaskCommandImpl;
-import io.camunda.zeebe.client.impl.fetch.DecisionDefinitionGetRequestImpl;
-import io.camunda.zeebe.client.impl.fetch.DecisionDefinitionGetXmlRequestImpl;
-import io.camunda.zeebe.client.impl.fetch.DecisionInstanceGetRequestImpl;
-import io.camunda.zeebe.client.impl.fetch.DecisionRequirementsGetRequestImpl;
-import io.camunda.zeebe.client.impl.fetch.DecisionRequirementsGetXmlRequestImpl;
-import io.camunda.zeebe.client.impl.fetch.DocumentContentGetRequestImpl;
-import io.camunda.zeebe.client.impl.fetch.FlowNodeInstanceGetRequestImpl;
-import io.camunda.zeebe.client.impl.fetch.IncidentGetRequestImpl;
-import io.camunda.zeebe.client.impl.fetch.ProcessDefinitionGetFormRequestImpl;
-import io.camunda.zeebe.client.impl.fetch.ProcessDefinitionGetRequestImpl;
-import io.camunda.zeebe.client.impl.fetch.ProcessDefinitionGetXmlRequestImpl;
-import io.camunda.zeebe.client.impl.fetch.ProcessInstanceGetRequestImpl;
-import io.camunda.zeebe.client.impl.fetch.UserTaskGetFormRequestImpl;
-import io.camunda.zeebe.client.impl.fetch.UserTaskGetRequestImpl;
-import io.camunda.zeebe.client.impl.fetch.VariableGetRequestImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpClientFactory;
-import io.camunda.zeebe.client.impl.search.query.DecisionDefinitionQueryImpl;
-import io.camunda.zeebe.client.impl.search.query.DecisionInstanceQueryImpl;
-import io.camunda.zeebe.client.impl.search.query.DecisionRequirementsQueryImpl;
-import io.camunda.zeebe.client.impl.search.query.FlowNodeInstanceQueryImpl;
-import io.camunda.zeebe.client.impl.search.query.IncidentQueryImpl;
-import io.camunda.zeebe.client.impl.search.query.ProcessDefinitionQueryImpl;
-import io.camunda.zeebe.client.impl.search.query.ProcessInstanceQueryImpl;
-import io.camunda.zeebe.client.impl.search.query.UserTaskQueryImpl;
-import io.camunda.zeebe.client.impl.search.query.UserTaskVariableQueryImpl;
-import io.camunda.zeebe.client.impl.search.query.VariableQueryImpl;
 import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.client.impl.util.VersionUtil;
 import io.camunda.zeebe.client.impl.worker.JobClientImpl;
@@ -183,6 +115,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public final class ZeebeClientImpl implements ZeebeClient {
+
+  private static final String UNSUPPORTED_OPERATION_MSG =
+      String.format(
+          "Not supported with %s. Please use %s.",
+          ZeebeClient.class.getName(), CamundaClient.class.getName());
   private final ZeebeClientConfiguration config;
   private final JsonMapper jsonMapper;
   private final GatewayStub asyncStub;
@@ -612,225 +549,44 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public ProcessDefinitionGetRequest newProcessDefinitionGetRequest(
-      final long processDefinitionKey) {
-    return new ProcessDefinitionGetRequestImpl(httpClient, processDefinitionKey);
-  }
-
-  @Override
-  public ProcessDefinitionGetXmlRequest newProcessDefinitionGetXmlRequest(
-      final long processDefinitionKey) {
-    return new ProcessDefinitionGetXmlRequestImpl(httpClient, processDefinitionKey);
-  }
-
-  @Override
-  public ProcessDefinitionGetFormRequest newProcessDefinitionGetFormRequest(
-      final long processDefinitionKey) {
-    return new ProcessDefinitionGetFormRequestImpl(httpClient, processDefinitionKey);
-  }
-
-  @Override
-  public ProcessDefinitionQuery newProcessDefinitionQuery() {
-    return new ProcessDefinitionQueryImpl(httpClient, jsonMapper);
-  }
-
-  @Override
-  public ProcessInstanceGetRequest newProcessInstanceGetRequest(final long processInstanceKey) {
-    return new ProcessInstanceGetRequestImpl(httpClient, processInstanceKey);
-  }
-
-  @Override
   public ProcessInstanceQuery newProcessInstanceQuery() {
-    return new ProcessInstanceQueryImpl(httpClient, jsonMapper);
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
   }
 
   @Override
   public FlownodeInstanceQuery newFlownodeInstanceQuery() {
-    return new FlowNodeInstanceQueryImpl(httpClient, jsonMapper);
-  }
-
-  @Override
-  public FlowNodeInstanceGetRequest newFlowNodeInstanceGetRequest(final long flowNodeInstanceKey) {
-    return new FlowNodeInstanceGetRequestImpl(httpClient, flowNodeInstanceKey);
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
   }
 
   @Override
   public UserTaskQuery newUserTaskQuery() {
-    return new UserTaskQueryImpl(httpClient, jsonMapper);
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
   }
 
   @Override
   public DecisionRequirementsQuery newDecisionRequirementsQuery() {
-    return new DecisionRequirementsQueryImpl(httpClient, jsonMapper);
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
   }
 
   @Override
   public DecisionDefinitionQuery newDecisionDefinitionQuery() {
-    return new DecisionDefinitionQueryImpl(httpClient, jsonMapper);
-  }
-
-  @Override
-  public DecisionDefinitionGetRequest newDecisionDefinitionGetRequest(
-      final long decisionDefinitionKey) {
-    return new DecisionDefinitionGetRequestImpl(httpClient, decisionDefinitionKey);
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
   }
 
   @Override
   public DecisionDefinitionGetXmlRequest newDecisionDefinitionGetXmlRequest(
       final long decisionKey) {
-    return new DecisionDefinitionGetXmlRequestImpl(httpClient, decisionKey);
-  }
-
-  @Override
-  public DecisionInstanceQuery newDecisionInstanceQuery() {
-    return new DecisionInstanceQueryImpl(httpClient, jsonMapper);
-  }
-
-  @Override
-  public DecisionInstanceGetRequest newDecisionInstanceGetRequest(final String decisionInstanceId) {
-    return new DecisionInstanceGetRequestImpl(httpClient, jsonMapper, decisionInstanceId);
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
   }
 
   @Override
   public IncidentQuery newIncidentQuery() {
-    return new IncidentQueryImpl(httpClient, jsonMapper);
-  }
-
-  @Override
-  public IncidentGetRequest newIncidentGetRequest(final long incidentKey) {
-    return new IncidentGetRequestImpl(httpClient, incidentKey);
-  }
-
-  @Override
-  public CreateRoleCommandStep1 newCreateRoleCommand() {
-    return new CreateRoleCommandImpl(httpClient, jsonMapper);
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
   }
 
   @Override
   public CreateUserCommandStep1 newUserCreateCommand() {
     return new CreateUserCommandImpl(httpClient, jsonMapper);
-  }
-
-  @Override
-  public AddPermissionsCommandStep1 newAddPermissionsCommand(final long ownerKey) {
-    return new AddPermissionsCommandImpl(ownerKey, httpClient, jsonMapper);
-  }
-
-  @Override
-  public RemovePermissionsCommandStep1 newRemovePermissionsCommand(final long ownerKey) {
-    return new RemovePermissionsCommandImpl(ownerKey, httpClient, jsonMapper);
-  }
-
-  @Override
-  public CreateMappingCommandStep1 newCreateMappingCommand() {
-    return new CreateMappingCommandImpl(httpClient, jsonMapper);
-  }
-
-  @Override
-  public DecisionRequirementsGetXmlRequest newDecisionRequirementsGetXmlRequest(
-      final long decisionRequirementsKey) {
-    return new DecisionRequirementsGetXmlRequestImpl(httpClient, decisionRequirementsKey);
-  }
-
-  @Override
-  public DecisionRequirementsGetRequest newDecisionRequirementsGetRequest(
-      final long decisionRequirementsKey) {
-    return new DecisionRequirementsGetRequestImpl(httpClient, decisionRequirementsKey);
-  }
-
-  @Override
-  public UserTaskGetFormRequest newUserTaskGetFormRequest(final long userTaskKey) {
-    return new UserTaskGetFormRequestImpl(httpClient, userTaskKey);
-  }
-
-  @Override
-  public UserTaskGetRequest newUserTaskGetRequest(final long userTaskKey) {
-    return new UserTaskGetRequestImpl(httpClient, userTaskKey);
-  }
-
-  @Override
-  public VariableQuery newVariableQuery() {
-    return new VariableQueryImpl(httpClient, jsonMapper);
-  }
-
-  @Override
-  public VariableGetRequest newVariableGetRequest(final long variableKey) {
-    return new VariableGetRequestImpl(httpClient, variableKey);
-  }
-
-  @Override
-  public UserTaskVariableQuery newUserTaskVariableQuery(final long userTaskKey) {
-    return new UserTaskVariableQueryImpl(httpClient, jsonMapper, userTaskKey);
-  }
-
-  @Override
-  public CreateDocumentCommandStep1 newCreateDocumentCommand() {
-    return new CreateDocumentCommandImpl(jsonMapper, httpClient, config);
-  }
-
-  @Override
-  public DocumentContentGetRequest newDocumentContentGetRequest(final String documentId) {
-    return new DocumentContentGetRequestImpl(httpClient, documentId, null, config);
-  }
-
-  @Override
-  public DocumentContentGetRequest newDocumentContentGetRequest(
-      final DocumentReferenceResponse documentReference) {
-    return new DocumentContentGetRequestImpl(
-        httpClient, documentReference.getDocumentId(), documentReference.getStoreId(), config);
-  }
-
-  @Override
-  public CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(final String documentId) {
-    return new CreateDocumentLinkCommandImpl(documentId, null, jsonMapper, httpClient, config);
-  }
-
-  @Override
-  public CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(
-      final DocumentReferenceResponse documentReference) {
-    return new CreateDocumentLinkCommandImpl(
-        documentReference.getDocumentId(),
-        documentReference.getStoreId(),
-        jsonMapper,
-        httpClient,
-        config);
-  }
-
-  @Override
-  public DeleteDocumentCommandStep1 newDeleteDocumentCommand(final String documentId) {
-    return new DeleteDocumentCommandImpl(documentId, null, httpClient, config);
-  }
-
-  @Override
-  public DeleteDocumentCommandStep1 newDeleteDocumentCommand(
-      final DocumentReferenceResponse documentReference) {
-    return new DeleteDocumentCommandImpl(
-        documentReference.getDocumentId(), documentReference.getStoreId(), httpClient, config);
-  }
-
-  @Override
-  public CreateTenantCommandStep1 newCreateTenantCommand() {
-    return new CreateTenantCommandImpl(httpClient, jsonMapper);
-  }
-
-  @Override
-  public UpdateTenantCommandStep1 newUpdateTenantCommand(final long tenantKey) {
-    return new UpdateTenantCommandImpl(httpClient, jsonMapper, tenantKey);
-  }
-
-  @Override
-  public DeleteTenantCommandStep1 newDeleteTenantCommand(final long tenantKey) {
-    return new DeleteTenantCommandImpl(httpClient).tenantKey(tenantKey);
-  }
-
-  @Override
-  public AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand(final long tenantKey) {
-    return new AssignMappingToTenantCommandImpl(httpClient, tenantKey);
-  }
-
-  @Override
-  public AssignUserToTenantCommandStep1 newAssignUserToTenantCommand(final long tenantKey) {
-    return new AssignUserToTenantCommandImpl(httpClient, tenantKey);
   }
 
   private JobClient newJobClient() {

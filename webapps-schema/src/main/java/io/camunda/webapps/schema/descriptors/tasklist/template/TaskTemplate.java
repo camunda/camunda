@@ -10,6 +10,7 @@ package io.camunda.webapps.schema.descriptors.tasklist.template;
 import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.tasklist.TasklistTemplateDescriptor;
+import java.util.Optional;
 
 public class TaskTemplate extends TasklistTemplateDescriptor
     implements Prio2Backup, ProcessInstanceDependant {
@@ -71,6 +72,11 @@ public class TaskTemplate extends TasklistTemplateDescriptor
   @Override
   public String getIndexName() {
     return INDEX_NAME;
+  }
+
+  @Override
+  public Optional<String> getTenantIdField() {
+    return Optional.of(TENANT_ID);
   }
 
   @Override

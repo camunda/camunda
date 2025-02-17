@@ -86,6 +86,7 @@
       <validValue name="PROCESSING_ERROR">4</validValue>
       <validValue name="EXCEEDED_BATCH_RECORD_SIZE">5</validValue>
       <validValue name="UNAUTHORIZED">6</validValue>
+      <validValue name="FORBIDDEN">7</validValue>
     </enum>
 
     <enum name="PartitionRole" encodingType="uint8">

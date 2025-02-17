@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.exporter;
 import static io.camunda.zeebe.test.StableValuePredicate.hasStableValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -24,8 +24,6 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.List;
@@ -34,13 +32,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 @Timeout(2 * 60) // 2 minutes
 @ZeebeIntegration
-@AutoCloseResources
 final class ExporterEnableTest {
   private static final int PARTITIONS_COUNT = 2;
   private static final String EXPORTER_ID_1 = "exporter-1";
@@ -66,7 +64,7 @@ final class ExporterEnableTest {
                           config -> config.setClassName(TestExporter.class.getName())))
           .build();
 
-  @AutoCloseResource private ZeebeClient client;
+  @AutoClose private CamundaClient client;
   private ExportersActuator actuator;
 
   @BeforeEach

@@ -12,9 +12,14 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.EnumSet;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public final class BrokerTenantEntityRequest extends BrokerExecuteCommand<TenantRecord> {
+  private static final Set<EntityType> ALLOWED_ENTITY_TYPES =
+      EnumSet.of(EntityType.USER, EntityType.MAPPING, EntityType.GROUP);
+
   private final TenantRecord tenantDto = new TenantRecord();
 
   private BrokerTenantEntityRequest(final TenantIntent intent) {
@@ -34,15 +39,28 @@ public final class BrokerTenantEntityRequest extends BrokerExecuteCommand<Tenant
     return this;
   }
 
+  public BrokerTenantEntityRequest setTenantId(final String tenantId) {
+    tenantDto.setTenantId(tenantId);
+    return this;
+  }
+
   public BrokerTenantEntityRequest setEntity(final EntityType entityType, final long entityKey) {
-    if (entityType != EntityType.USER
-        && entityType != EntityType.MAPPING
-        && entityType != EntityType.GROUP) {
+    if (!ALLOWED_ENTITY_TYPES.contains(entityType)) {
       throw new IllegalArgumentException(
-          "For now, tenants can only be assigned to users, groups and mappings");
+          "For now, tenants can only be assigned to %s".formatted(ALLOWED_ENTITY_TYPES));
     }
     tenantDto.setEntityType(entityType);
     tenantDto.setEntityKey(entityKey);
+    return this;
+  }
+
+  public BrokerTenantEntityRequest setEntity(final EntityType entityType, final String entityId) {
+    if (!ALLOWED_ENTITY_TYPES.contains(entityType)) {
+      throw new IllegalArgumentException(
+          "For now, tenants can only be assigned to %s".formatted(ALLOWED_ENTITY_TYPES));
+    }
+    tenantDto.setEntityType(entityType);
+    tenantDto.setEntityId(entityId);
     return this;
   }
 

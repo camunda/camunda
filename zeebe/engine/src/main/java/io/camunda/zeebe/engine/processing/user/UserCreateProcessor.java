@@ -20,7 +20,6 @@ import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
@@ -30,6 +29,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Set;
 
 public class UserCreateProcessor implements DistributedTypedRecordProcessor<UserRecord> {
 
@@ -55,21 +55,20 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
-    commandWriter = writers.command();
     this.distributionBehavior = distributionBehavior;
     this.authCheckBehavior = authCheckBehavior;
+    commandWriter = writers.command();
   }
 
   @Override
   public void processNewCommand(final TypedRecord<UserRecord> command) {
     final var authRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.USER, PermissionType.CREATE);
-    if (authCheckBehavior.isAuthorized(authRequest).isLeft()) {
-      final var message =
-          AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authRequest.getPermissionType(), authRequest.getResourceType());
-      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, message);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, message);
+    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -109,7 +108,6 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
             },
             () -> {
               stateWriter.appendFollowUpEvent(command.getKey(), UserIntent.CREATED, record);
-              addUserPermissions(record.getUserKey(), record.getUsername());
             });
 
     distributionBehavior.acknowledgeCommand(command);
@@ -118,14 +116,12 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
   private void addUserPermissions(final long key, final String username) {
     final var authorizationRecord =
         new AuthorizationRecord()
-            .setOwnerKey(key)
+            .setOwnerId(username)
             .setOwnerType(AuthorizationOwnerType.USER)
             .setResourceType(AuthorizationResourceType.USER)
-            .addPermission(
-                new Permission().setPermissionType(PermissionType.READ).addResourceId(username))
-            .addPermission(
-                new Permission().setPermissionType(PermissionType.UPDATE).addResourceId(username));
+            .setResourceId(username)
+            .setPermissionTypes(Set.of(PermissionType.READ, PermissionType.UPDATE));
 
-    stateWriter.appendFollowUpEvent(key, AuthorizationIntent.PERMISSION_ADDED, authorizationRecord);
+    commandWriter.appendFollowUpCommand(key, AuthorizationIntent.CREATE, authorizationRecord);
   }
 }

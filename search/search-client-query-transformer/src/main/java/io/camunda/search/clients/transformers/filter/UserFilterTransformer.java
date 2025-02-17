@@ -8,6 +8,8 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex.EMAIL;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex.KEY;
@@ -16,9 +18,13 @@ import static io.camunda.webapps.schema.descriptors.usermanagement.index.UserInd
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.UserFilter;
-import java.util.List;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
-public class UserFilterTransformer implements FilterTransformer<UserFilter> {
+public class UserFilterTransformer extends IndexFilterTransformer<UserFilter> {
+
+  public UserFilterTransformer(final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
+  }
 
   @Override
   public SearchQuery toSearchQuery(final UserFilter filter) {
@@ -26,12 +32,12 @@ public class UserFilterTransformer implements FilterTransformer<UserFilter> {
     return and(
         filter.key() == null ? null : term(KEY, filter.key()),
         filter.username() == null ? null : term(USERNAME, filter.username()),
+        filter.usernames() == null
+            ? null
+            : filter.usernames().isEmpty()
+                ? matchNone()
+                : stringTerms(USERNAME, filter.usernames()),
         filter.email() == null ? null : term(EMAIL, filter.email()),
         filter.name() == null ? null : term(NAME, filter.name()));
-  }
-
-  @Override
-  public List<String> toIndices(final UserFilter filter) {
-    return List.of("camunda-user-8.7.0_alias");
   }
 }

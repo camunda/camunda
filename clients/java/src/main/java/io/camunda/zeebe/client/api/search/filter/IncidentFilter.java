@@ -17,6 +17,11 @@ package io.camunda.zeebe.client.api.search.filter;
 
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.search.filter.IncidentFilter}
+ */
+@Deprecated
 public interface IncidentFilter extends SearchRequestFilter {
 
   /**
@@ -25,7 +30,7 @@ public interface IncidentFilter extends SearchRequestFilter {
    * @param value the key of the incidents
    * @return the updated filter
    */
-  IncidentFilter incidentKey(final Long value);
+  IncidentFilter key(final Long value);
 
   /**
    * Filters incidents by the process definition key.
@@ -36,12 +41,12 @@ public interface IncidentFilter extends SearchRequestFilter {
   IncidentFilter processDefinitionKey(final Long value);
 
   /**
-   * Filters incidents by the process definition id.
+   * Filters incidents by the bpmn process id.
    *
    * @param value the bpmn process id of the process definition
    * @return the updated filter
    */
-  IncidentFilter processDefinitionId(final String value);
+  IncidentFilter bpmnProcessId(final String value);
 
   /**
    * Filters incidents by the process instance key.
@@ -52,7 +57,7 @@ public interface IncidentFilter extends SearchRequestFilter {
   IncidentFilter processInstanceKey(final Long value);
 
   /**
-   * Filters incidents by the type.
+   * Filters incidents by the error type.
    *
    * @param errorType the error type of incident
    * @return the updated filter

@@ -22,6 +22,7 @@ import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.clients.TenantSearchClient;
+import io.camunda.search.clients.UsageMetricsSearchClient;
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
@@ -47,13 +48,14 @@ import io.camunda.service.ResourceServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.SignalServices;
 import io.camunda.service.TenantServices;
+import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.VariableServices;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -64,10 +66,19 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class CamundaServicesConfiguration {
 
   @Bean
-  public JobServices<JobActivationResponse> jobServices(
+  public UsageMetricsServices usageMetricsServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final ActivateJobsHandler<JobActivationResponse> activateJobsHandler) {
+      final UsageMetricsSearchClient usageMetricsSearchClient) {
+    return new UsageMetricsServices(
+        brokerClient, securityContextProvider, usageMetricsSearchClient, null);
+  }
+
+  @Bean
+  public JobServices<JobActivationResult> jobServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ActivateJobsHandler<JobActivationResult> activateJobsHandler) {
     return new JobServices<>(brokerClient, securityContextProvider, activateJobsHandler, null);
   }
 

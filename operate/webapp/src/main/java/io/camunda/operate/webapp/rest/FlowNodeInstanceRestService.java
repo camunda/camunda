@@ -83,7 +83,7 @@ public class FlowNodeInstanceRestService extends InternalAPIErrorController {
     if (permissionsService.permissionsEnabled()
         && !permissionsService.hasPermissionForProcess(
             processInstanceReader.getProcessInstanceByKey(processInstanceKey).getBpmnProcessId(),
-            IdentityPermission.READ)) {
+            IdentityPermission.READ_PROCESS_INSTANCE)) {
       throw new NotAuthorizedException(
           String.format("No read permission for process instance %s", processInstanceKey));
     }

@@ -18,10 +18,10 @@ package io.camunda.zeebe.client.impl.http;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.impl.http.ApiEntity.Error;
 import io.camunda.zeebe.client.impl.http.ApiEntity.Response;
 import io.camunda.zeebe.client.impl.http.ApiEntity.Unknown;
-import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -53,6 +53,54 @@ class ApiEntityConsumerTest {
     assertThat(response).isNotNull();
     assertThat(response.getName()).isEqualTo("test");
     assertThat(response.getValue()).isEqualTo(123);
+  }
+
+  @Test
+  void testJsonApiEntityConsumerWithValidJsonOtherTypeResponse() throws IOException {
+    // given
+    final String jsonResponse = "{\"foo\":\"test\",\"bar\":123}";
+    final ByteBuffer byteBuffer = ByteBuffer.wrap(jsonResponse.getBytes());
+    final ApiEntityConsumer<TestEntity> consumer =
+        new ApiEntityConsumer<>(new ObjectMapper(), TestEntity.class, 2048);
+
+    // when
+    // Start the stream with the correct content type
+    consumer.streamStart(ContentType.APPLICATION_JSON);
+    // Feed the data
+    consumer.data(byteBuffer, true);
+    // Generate the content
+    final ApiEntity<TestEntity> entity = consumer.generateContent();
+
+    // then
+    assertThat(entity).isInstanceOf(Error.class);
+    final ProblemDetail response = entity.problem();
+    assertThat(response).isNotNull();
+    assertThat(response.getTitle()).isEqualTo("Unexpected server response");
+    assertThat(response.getDetail()).isEqualTo(jsonResponse);
+  }
+
+  @Test
+  void testJsonApiEntityConsumerWithValidJsonOtherTypeErrorResponse() throws IOException {
+    // given
+    final String jsonResponse = "{\"foo\":\"test\",\"bar\":123}";
+    final ByteBuffer byteBuffer = ByteBuffer.wrap(jsonResponse.getBytes());
+    final ApiEntityConsumer<TestEntity> consumer =
+        new ApiEntityConsumer<>(new ObjectMapper(), TestEntity.class, 2048);
+
+    // when
+    // Start the stream with the correct content type
+    consumer.streamStart(ContentType.APPLICATION_PROBLEM_JSON);
+    // Feed the data
+    consumer.data(byteBuffer, true);
+    // Generate the content
+    final ApiEntity<TestEntity> entity = consumer.generateContent();
+
+    // then
+    assertThat(entity).isInstanceOf(Error.class);
+    final ProblemDetail response = entity.problem();
+    assertThat(response).isNotNull();
+    assertThat(response.getTitle()).isEqualTo("Unexpected server response");
+    assertThat(response.getDetail()).isEqualTo(jsonResponse);
   }
 
   @Test

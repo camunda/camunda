@@ -32,7 +32,7 @@ assignees: ''
 - Operate Version: [e.g. 8.1]
 - Database: [e.g. Elasticsearch X.Y, Opensearch X.Z]
 
-### Rootcause (required on prioritization)
+### Root cause (required on prioritization)
 
 ### Solution ideas
 
@@ -57,7 +57,7 @@ assignees: ''
 ### Links
 
 <!--
-- https://jira.camunda.com/browse/SUPPORT-12398
+- Link to JIRA support case
 -->
 
 ```[tasklist]

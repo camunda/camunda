@@ -7,13 +7,15 @@
  */
 package io.camunda.zeebe.it.health;
 
+import static io.camunda.zeebe.it.util.ZeebeContainerUtil.newClientBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ClientStatusException;
+import io.camunda.authentication.config.AuthenticationProperties;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -50,6 +52,7 @@ final class DiskSpaceRecoveryIT {
   private final ZeebeContainer container =
       new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage())
           .withZeebeData(volume)
+          .withEnv(AuthenticationProperties.getAllowUnauthenticatedApiAccessEnvVar(), "true")
           .withEnv("ZEEBE_BROKER_EXPERIMENTAL_RAFT_PREFERSNAPSHOTREPLICATIONTHRESHOLD", "0")
           .withEnv("ZEEBE_BROKER_DATA_LOGSEGMENTSIZE", "1MB")
           .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "1MB")
@@ -62,7 +65,7 @@ final class DiskSpaceRecoveryIT {
   private final ContainerLogsDumper logsDumper =
       new ContainerLogsDumper(() -> Map.of("broker", container));
 
-  private ZeebeClient client;
+  private CamundaClient client;
 
   @AfterEach
   void afterEach() {
@@ -97,7 +100,7 @@ final class DiskSpaceRecoveryIT {
 
     @BeforeEach
     void beforeEach() {
-      client = engine.createClient();
+      client = newClientBuilder(engine).build();
     }
 
     @Test
@@ -152,7 +155,7 @@ final class DiskSpaceRecoveryIT {
 
     @BeforeEach
     void beforeEach() {
-      client = engine.createClient();
+      client = newClientBuilder(engine).build();
     }
 
     @Test

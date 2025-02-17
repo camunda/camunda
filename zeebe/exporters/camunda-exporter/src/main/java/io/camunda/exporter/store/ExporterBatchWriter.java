@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.store;
 
+import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.webapps.schema.entities.ExporterEntity;
@@ -20,12 +21,14 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 /** Caches exporter entities of different types and provide the method to flush them in a batch. */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class ExporterBatchWriter {
   private final Map<ValueType, List<ExportHandler>> handlers = new HashMap<>();
   private final Map<EntityIdAndEntityType, EntityAndHandlers> cachedEntities = new HashMap<>();
+  private BiConsumer<String, Error> customErrorHandlers;
 
   public void addRecord(final Record<?> record) {
     final ValueType valueType = record.getValueType();
@@ -75,7 +78,7 @@ public class ExporterBatchWriter {
         handler.flush(entity, batchRequest);
       }
     }
-    batchRequest.execute();
+    batchRequest.execute(customErrorHandlers);
     reset();
   }
 
@@ -108,6 +111,10 @@ public class ExporterBatchWriter {
 
     public ExporterBatchWriter build() {
       return writer;
+    }
+
+    public void withCustomErrorHandlers(final BiConsumer<String, Error> customErrorHandlers) {
+      writer.customErrorHandlers = customErrorHandlers;
     }
   }
 

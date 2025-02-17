@@ -10,12 +10,10 @@ package io.camunda.zeebe.protocol.impl.record.value.user;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
-import io.camunda.zeebe.protocol.record.value.UserType;
 import org.agrona.DirectBuffer;
 
 public final class UserRecord extends UnifiedRecordValue implements UserRecordValue {
@@ -24,17 +22,20 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
   private final StringProperty nameProp = new StringProperty("name", "");
   private final StringProperty emailProp = new StringProperty("email", "");
   private final StringProperty passwordProp = new StringProperty("password", "");
-  private final EnumProperty<UserType> userTypeProp =
-      new EnumProperty<>("userType", UserType.class, UserType.REGULAR);
 
   public UserRecord() {
-    super(6);
+    super(5);
     declareProperty(userKeyProp)
         .declareProperty(usernameProp)
         .declareProperty(nameProp)
         .declareProperty(emailProp)
-        .declareProperty(passwordProp)
-        .declareProperty(userTypeProp);
+        .declareProperty(passwordProp);
+  }
+
+  public UserRecord copy() {
+    final UserRecord copy = new UserRecord();
+    copy.copyFrom(this);
+    return copy;
   }
 
   @Override
@@ -95,16 +96,6 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
   @Override
   public String getPassword() {
     return bufferAsString(passwordProp.getValue());
-  }
-
-  @Override
-  public UserType getUserType() {
-    return userTypeProp.getValue();
-  }
-
-  public UserRecord setUserType(final UserType userType) {
-    userTypeProp.setValue(userType);
-    return this;
   }
 
   public UserRecord setPassword(final String password) {

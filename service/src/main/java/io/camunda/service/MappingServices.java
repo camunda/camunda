@@ -10,6 +10,7 @@ package io.camunda.service;
 import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.filter.MappingFilter.Claim;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -21,8 +22,12 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingDeleteRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 
 public class MappingServices
     extends SearchQueryService<MappingServices, MappingQuery, MappingEntity> {
@@ -47,6 +52,14 @@ public class MappingServices
         .searchMappings(query);
   }
 
+  public List<MappingEntity> findAll(final MappingQuery query) {
+    return mappingSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.mapping().read())))
+        .findAllMappings(query);
+  }
+
   @Override
   public MappingServices withAuthentication(final Authentication authentication) {
     return new MappingServices(
@@ -57,7 +70,9 @@ public class MappingServices
     return sendBrokerRequest(
         new BrokerMappingCreateRequest()
             .setClaimName(request.claimName())
-            .setClaimValue(request.claimValue()));
+            .setClaimValue(request.claimValue())
+            .setName(request.name())
+            .setId(request.id()));
   }
 
   public MappingEntity getMapping(final Long mappingKey) {
@@ -76,9 +91,41 @@ public class MappingServices
         .findFirst();
   }
 
+  public Optional<MappingEntity> findMapping(final MappingDTO request) {
+    return search(
+            SearchQueryBuilders.mappingSearchQuery()
+                .filter(f -> f.claimName(request.claimName()).claimValue(request.claimValue()))
+                .page(p -> p.size(1))
+                .build())
+        .items()
+        .stream()
+        .findFirst();
+  }
+
   public CompletableFuture<MappingRecord> deleteMapping(final long mappingKey) {
     return sendBrokerRequest(new BrokerMappingDeleteRequest().setMappingKey(mappingKey));
   }
 
-  public record MappingDTO(String claimName, String claimValue) {}
+  public List<MappingEntity> getMatchingMappings(final Map<String, Object> claims) {
+    final List<Claim> claimFilters =
+        claims.entrySet().stream()
+            .flatMap(
+                claimEntry ->
+                    flattenClaimValue(claimEntry.getValue())
+                        .map(value -> new Claim(claimEntry.getKey(), value)))
+            .toList();
+    return findAll(MappingQuery.of(q -> q.filter(f -> f.claims(claimFilters))));
+  }
+
+  private static Stream<String> flattenClaimValue(final Object value) {
+    if (value == null) {
+      return Stream.of();
+    }
+    if (value instanceof final Collection<?> collection) {
+      return collection.stream().flatMap(MappingServices::flattenClaimValue);
+    }
+    return Stream.of(String.valueOf(value));
+  }
+
+  public record MappingDTO(String claimName, String claimValue, String name, String id) {}
 }

@@ -10,10 +10,12 @@ package io.camunda.search.clients.transformers.filter;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.FilterBase;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 
 public class AbstractTransformerTest {
 
-  private final ServiceTransformers transformers = ServiceTransformers.newInstance("");
+  private final ServiceTransformers transformers =
+      ServiceTransformers.newInstance(new IndexDescriptors("", true));
 
   protected <F extends FilterBase> SearchQuery transformQuery(final F filter) {
     return transformers.getFilterTransformer(filter.getClass()).apply(filter);

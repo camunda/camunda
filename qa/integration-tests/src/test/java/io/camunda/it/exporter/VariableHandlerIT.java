@@ -9,9 +9,9 @@ package io.camunda.it.exporter;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.it.utils.BrokerITInvocationProvider;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.search.filter.VariableFilter;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.Map;
@@ -193,7 +193,8 @@ public class VariableHandlerIT {
     assertThat(updatedVariable.get().isTruncated()).isFalse();
   }
 
-  private void waitForVariables(final ZeebeClient client, final Consumer<VariableFilter> filterFn) {
+  private void waitForVariables(
+      final CamundaClient client, final Consumer<VariableFilter> filterFn) {
     Awaitility.await()
         .ignoreExceptions()
         .timeout(Duration.ofSeconds(30))

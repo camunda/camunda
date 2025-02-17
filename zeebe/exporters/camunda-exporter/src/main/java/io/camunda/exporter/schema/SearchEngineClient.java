@@ -17,6 +17,11 @@ import java.util.Map;
 public interface SearchEngineClient {
   void createIndex(final IndexDescriptor indexDescriptor, final IndexSettings settings);
 
+  /**
+   * @param indexDescriptor indexDescriptor
+   * @param settings settings
+   * @param create If true, this request cannot replace or update existing index templates.
+   */
   void createIndexTemplate(
       final IndexTemplateDescriptor indexDescriptor,
       final IndexSettings settings,

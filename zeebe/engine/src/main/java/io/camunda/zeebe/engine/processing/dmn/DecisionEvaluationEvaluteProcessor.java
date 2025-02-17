@@ -76,17 +76,14 @@ public class DecisionEvaluationEvaluteProcessor
 
       final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
       if (isAuthorized.isLeft()) {
-        final var rejectionType = isAuthorized.getLeft();
+        final var rejection = isAuthorized.getLeft();
         final String errorMessage =
-            RejectionType.UNAUTHORIZED.equals(rejectionType)
-                ? AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-                    authRequest.getPermissionType(),
-                    authRequest.getResourceType(),
-                    "decision id '%s'".formatted(decisionId))
-                : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                    "evaluate a decision", record.getDecisionKey(), "such decision");
-        responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
-        rejectionWriter.appendRejection(command, rejectionType, errorMessage);
+            RejectionType.NOT_FOUND.equals(rejection.type())
+                ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+                    "evaluate a decision", record.getDecisionKey(), "such decision")
+                : rejection.reason();
+        responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
+        rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
         return;
       }
     }

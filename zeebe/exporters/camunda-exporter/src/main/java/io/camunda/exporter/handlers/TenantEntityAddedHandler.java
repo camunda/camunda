@@ -10,15 +10,15 @@ package io.camunda.exporter.handlers;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
-import io.camunda.webapps.schema.entities.usermanagement.GroupEntity;
-import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
+import io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import java.util.List;
 
-public class TenantEntityAddedHandler implements ExportHandler<TenantEntity, TenantRecordValue> {
+public class TenantEntityAddedHandler
+    implements ExportHandler<TenantMemberEntity, TenantRecordValue> {
 
   private final String indexName;
 
@@ -32,8 +32,8 @@ public class TenantEntityAddedHandler implements ExportHandler<TenantEntity, Ten
   }
 
   @Override
-  public Class<TenantEntity> getEntityType() {
-    return TenantEntity.class;
+  public Class<TenantMemberEntity> getEntityType() {
+    return TenantMemberEntity.class;
   }
 
   @Override
@@ -45,26 +45,28 @@ public class TenantEntityAddedHandler implements ExportHandler<TenantEntity, Ten
   public List<String> generateIds(final Record<TenantRecordValue> record) {
     final var tenantRecord = record.getValue();
     return List.of(
-        GroupEntity.getChildKey(tenantRecord.getTenantKey(), tenantRecord.getEntityKey()));
+        TenantMemberEntity.getChildKey(tenantRecord.getTenantId(), tenantRecord.getEntityId()));
   }
 
   @Override
-  public TenantEntity createNewEntity(final String id) {
-    return new TenantEntity().setId(id);
+  public TenantMemberEntity createNewEntity(final String id) {
+    return new TenantMemberEntity().setId(id);
   }
 
   @Override
-  public void updateEntity(final Record<TenantRecordValue> record, final TenantEntity entity) {
+  public void updateEntity(
+      final Record<TenantRecordValue> record, final TenantMemberEntity entity) {
     final TenantRecordValue value = record.getValue();
     entity
-        .setMemberKey(value.getEntityKey())
-        .setJoin(TenantIndex.JOIN_RELATION_FACTORY.createChild(value.getTenantKey()));
+        .setMemberId(value.getEntityId())
+        .setMemberType(value.getEntityType())
+        .setJoin(TenantIndex.JOIN_RELATION_FACTORY.createChild(value.getTenantId()));
   }
 
   @Override
-  public void flush(final TenantEntity entity, final BatchRequest batchRequest)
+  public void flush(final TenantMemberEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.addWithRouting(indexName, entity, String.valueOf(entity.getJoin().parent()));
+    batchRequest.addWithRouting(indexName, entity, entity.getJoin().parent());
   }
 
   @Override

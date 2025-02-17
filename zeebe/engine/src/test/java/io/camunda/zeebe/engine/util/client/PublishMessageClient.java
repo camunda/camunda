@@ -127,6 +127,20 @@ public final class PublishMessageClient {
     return expectation.apply(new Message(partitionId, messageRecord.getCorrelationKey(), position));
   }
 
+  public Record<MessageRecordValue> publish(final String username) {
+
+    if (partitionId == DEFAULT_VALUE) {
+      partitionId =
+          SubscriptionUtil.getSubscriptionPartitionId(
+              messageRecord.getCorrelationKeyBuffer(), partitionCount);
+    }
+
+    final long position =
+        writer.writeCommandOnPartition(partitionId, MessageIntent.PUBLISH, messageRecord, username);
+
+    return expectation.apply(new Message(partitionId, messageRecord.getCorrelationKey(), position));
+  }
+
   private class Message {
 
     final int partitionId;

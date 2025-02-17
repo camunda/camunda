@@ -18,6 +18,8 @@ import co.elastic.clients.elasticsearch.core.ScrollResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.indices.GetAliasRequest;
+import co.elastic.clients.elasticsearch.indices.GetAliasResponse;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.core.SearchDeleteRequest;
@@ -27,8 +29,12 @@ import io.camunda.search.clients.core.SearchIndexRequest;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.core.SearchWriteResponse;
+import io.camunda.search.clients.index.IndexAliasRequest;
+import io.camunda.search.clients.index.IndexAliasResponse;
 import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
+import io.camunda.search.es.transformers.index.IndexAliasRequestTransformer;
+import io.camunda.search.es.transformers.index.IndexAliasResponseTransformer;
 import io.camunda.search.es.transformers.search.SearchDeleteRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchGetRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchGetResponseTransformer;
@@ -36,6 +42,7 @@ import io.camunda.search.es.transformers.search.SearchIndexRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchResponseTransformer;
 import io.camunda.search.es.transformers.search.SearchWriteResponseTransformer;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.SearchQueryExecutionException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,7 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ElasticsearchSearchClient
-    implements DocumentBasedSearchClient, DocumentBasedWriteClient, AutoCloseable {
+    implements DocumentBasedSearchClient, DocumentBasedWriteClient {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchSearchClient.class);
   private static final String SCROLL_KEEP_ALIVE_TIME = "1m";
@@ -123,6 +130,18 @@ public class ElasticsearchSearchClient
   }
 
   @Override
+  public IndexAliasResponse getAlias(final IndexAliasRequest request) {
+    try {
+      final var requestTransformer = getIndexAliasRequestTransformer();
+      final var elasticRequest = requestTransformer.apply(request);
+      final var response = client.indices().getAlias(elasticRequest);
+      return getIndexAliasResponseTransformer().apply(response);
+    } catch (final IOException e) {
+      throw new CamundaSearchException(e);
+    }
+  }
+
+  @Override
   public <T> SearchWriteResponse index(final SearchIndexRequest<T> indexRequest) {
     try {
       final SearchIndexRequestTransformer<T> requestTransformer =
@@ -153,7 +172,8 @@ public class ElasticsearchSearchClient
 
   private <T> ScrollResponse<T> scroll(final String scrollId, final Class<T> documentClass)
       throws IOException {
-    return client.scroll(r -> r.scrollId(scrollId), documentClass);
+    return client.scroll(
+        r -> r.scrollId(scrollId).scroll(t -> t.time(SCROLL_KEEP_ALIVE_TIME)), documentClass);
   }
 
   private void clearScroll(final String scrollId) {
@@ -208,8 +228,20 @@ public class ElasticsearchSearchClient
     return (SearchWriteResponseTransformer) transformer;
   }
 
+  private IndexAliasRequestTransformer getIndexAliasRequestTransformer() {
+    final SearchTransfomer<IndexAliasRequest, GetAliasRequest> transformer =
+        transformers.getTransformer(IndexAliasRequest.class);
+    return (IndexAliasRequestTransformer) transformer;
+  }
+
+  private IndexAliasResponseTransformer getIndexAliasResponseTransformer() {
+    final SearchTransfomer<GetAliasResponse, IndexAliasResponse> transformer =
+        transformers.getTransformer(IndexAliasResponse.class);
+    return (IndexAliasResponseTransformer) transformer;
+  }
+
   @Override
-  public void close() throws Exception {
+  public void close() {
     if (client != null) {
       try {
         client._transport().close();

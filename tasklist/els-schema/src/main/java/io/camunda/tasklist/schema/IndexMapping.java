@@ -10,10 +10,13 @@ package io.camunda.tasklist.schema;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 public class IndexMapping {
@@ -59,7 +62,42 @@ public class IndexMapping {
     return properties.stream()
         .collect(
             Collectors.toMap(
-                IndexMappingProperty::getName, IndexMappingProperty::getTypeDefinition));
+                IndexMappingProperty::getName,
+                property -> convertToOrderedStructures(property.getTypeDefinition())));
+  }
+
+  /**
+   * On Opensearch Schema validation fails when the schema is created by the Exporter (primarility
+   * for tasklist-task index and the `join` field), due to the order of parsed index mapping
+   * properties. Using TreeMap and sorting the Lists present in the properties ensures the order of
+   * properties when comparing the existing mappings with the ones defined in the schema.
+   */
+  private Object convertToOrderedStructures(final Object value) {
+    if (value instanceof Map<?, ?>) {
+      return ((Map<?, ?>) value)
+          .entrySet().stream()
+              .collect(
+                  Collectors.toMap(
+                      Entry::getKey,
+                      item -> {
+                        if (item.getValue() instanceof Map<?, ?>) {
+                          return convertToOrderedStructures(item.getValue());
+                        } else if (item.getValue() instanceof List<?>) {
+                          return ((ArrayList<?>) item.getValue())
+                              .stream().sorted().collect(Collectors.toList());
+                          // Elasticsearch parses true/false as boolean,
+                          // Opensearch parses them as strings.
+                          // The diff we do on the validation expects them to be Strings.
+                        } else if (item.getValue() instanceof Boolean) {
+                          return String.valueOf(item.getValue());
+                        } else {
+                          return item.getValue();
+                        }
+                      },
+                      (e1, e2) -> e1,
+                      TreeMap::new));
+    }
+    return value;
   }
 
   public Map<String, Object> getMetaProperties() {

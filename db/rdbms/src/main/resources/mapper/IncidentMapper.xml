@@ -12,7 +12,7 @@
 
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)
-    FROM INCIDENT i
+    FROM ${prefix}INCIDENT i
     <include refid="io.camunda.db.rdbms.sql.IncidentMapper.searchFilter"/>
   </select>
 
@@ -31,9 +31,8 @@
     i.STATE,
     i.CREATION_DATE,
     i.JOB_KEY,
-    i.TENANT_ID,
-    NULL as TREE_PATH
-    FROM INCIDENT i
+    i.TENANT_ID
+    FROM ${prefix}INCIDENT i
     <include refid="io.camunda.db.rdbms.sql.IncidentMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -112,7 +111,6 @@
       <arg column="CREATION_DATE" javaType="java.time.OffsetDateTime" />
       <arg column="STATE" javaType="io.camunda.search.entities.IncidentEntity$IncidentState"/>
       <arg column="JOB_KEY" javaType="java.lang.Long"/>
-      <arg column="TREE_PATH" javaType="java.lang.String"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
     </constructor>
 
@@ -122,7 +120,7 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.IncidentDbModel"
     flushCache="true">
-    INSERT INTO INCIDENT (INCIDENT_KEY,
+    INSERT INTO ${prefix}INCIDENT (INCIDENT_KEY,
                           FLOW_NODE_INSTANCE_KEY,
                           FLOW_NODE_ID,
                           PROCESS_INSTANCE_KEY,
@@ -133,18 +131,39 @@
                           STATE,
                           CREATION_DATE,
                           JOB_KEY,
-                          TENANT_ID)
+                                   TENANT_ID,
+                                   PARTITION_ID)
     VALUES (#{incidentKey}, #{flowNodeInstanceKey}, #{flowNodeId}, #{processInstanceKey},
             #{processDefinitionId}, #{processDefinitionKey}, #{errorMessage}, #{errorType},
-            #{state},             #{creationDate, jdbcType=TIMESTAMP}, #{jobKey}, #{tenantId})
+            #{state}, #{creationDate, jdbcType=TIMESTAMP}, #{jobKey}, #{tenantId}, #{partitionId})
   </insert>
+
+  <update
+    id="update"
+    statementType="PREPARED"
+    parameterType="io.camunda.db.rdbms.write.domain.IncidentDbModel"
+    flushCache="true">
+    UPDATE INCIDENT
+    SET FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey},
+        FLOW_NODE_ID           = #{flowNodeId},
+        PROCESS_INSTANCE_KEY   = #{processInstanceKey},
+        PROCESS_DEFINITION_ID  = #{processDefinitionId},
+        PROCESS_DEFINITION_KEY = #{processDefinitionKey},
+        ERROR_MESSAGE          = #{errorMessage},
+        ERROR_TYPE             = #{errorType},
+        STATE                  = #{state},
+        CREATION_DATE          = #{creationDate, jdbcType=TIMESTAMP},
+        JOB_KEY                = #{jobKey},
+        TENANT_ID              = #{tenantId}
+    WHERE INCIDENT_KEY = #{incidentKey}
+  </update>
 
   <update
     id="updateState"
     statementType="PREPARED"
     parameterType="io.camunda.db.rdbms.sql.IncidentMapper$IncidentStateDto"
     flushCache="true">
-    UPDATE INCIDENT i
+    UPDATE ${prefix}INCIDENT i
     SET STATE         = #{state},
         ERROR_MESSAGE = #{errorMessage}
     WHERE INCIDENT_KEY = #{incidentKey}

@@ -35,7 +35,8 @@ import org.springframework.test.util.ReflectionTestUtils;
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      TasklistProperties.PREFIX + ".zeebe.gatewayAddress = localhost:55500"
+      TasklistProperties.PREFIX + ".zeebe.gatewayAddress = localhost:55500",
+      TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class ZeebeConnectorIT extends TasklistIntegrationTest {
@@ -95,7 +96,7 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
 
   private void startZeebe() {
     zeebeExtension.beforeEach(null);
-    ReflectionTestUtils.setField(partitionSupplier, "zeebeClient", zeebeExtension.getClient());
+    ReflectionTestUtils.setField(partitionSupplier, "camundaClient", zeebeExtension.getClient());
   }
 
   @Test

@@ -18,7 +18,13 @@ package io.camunda.zeebe.client.api.worker;
 import io.camunda.zeebe.client.api.worker.metrics.MicrometerJobWorkerMetricsBuilder;
 import io.camunda.zeebe.client.impl.worker.metrics.MicrometerJobWorkerMetricsBuilderImpl;
 
-/** Worker metrics API. Allows basic instrumenting of job activation and handling. */
+/**
+ * Worker metrics API. Allows basic instrumenting of job activation and handling.
+ *
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.worker.JobWorkerMetrics}
+ */
+@Deprecated
 public interface JobWorkerMetrics {
 
   /**

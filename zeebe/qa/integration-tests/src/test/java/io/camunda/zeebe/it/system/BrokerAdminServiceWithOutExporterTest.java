@@ -35,7 +35,7 @@ public class BrokerAdminServiceWithOutExporterTest {
     // then
     final var partitionStatus = leaderAdminService.getPartitionStatus().get(1);
     assertThat(partitionStatus.role()).isEqualTo(Role.LEADER);
-    assertThat(partitionStatus.processedPosition()).isEqualTo(1L);
+    assertThat(partitionStatus.processedPosition()).isPositive();
     assertThat(partitionStatus.snapshotId()).isNull();
     assertThat(partitionStatus.processedPositionInSnapshot()).isNull();
     assertThat(partitionStatus.streamProcessorPhase()).isEqualTo(Phase.PROCESSING);

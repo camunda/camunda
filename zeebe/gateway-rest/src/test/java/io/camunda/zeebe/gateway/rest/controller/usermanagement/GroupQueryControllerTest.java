@@ -34,7 +34,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(value = GroupQueryController.class, properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = GroupController.class)
 public class GroupQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -42,25 +42,25 @@ public class GroupQueryControllerTest extends RestControllerTest {
       {
         "items":[
           {
-            "key":111,
+            "groupKey":"111",
             "name":"Group 1",
             "assignedMemberKeys":[]
           },
           {
-            "key":222,
+            "groupKey":"222",
             "name":"Group 2",
             "assignedMemberKeys":[]
           },
           {
-            "key":333,
+            "groupKey":"333",
             "name":"Group 3",
             "assignedMemberKeys":[]
           }
         ],
         "page":{
           "totalItems":3,
-          "firstSortValues":[],
-          "lastSortValues":[]
+          "firstSortValues":["f"],
+          "lastSortValues":["v"]
         }
       }
       """;
@@ -80,12 +80,12 @@ public class GroupQueryControllerTest extends RestControllerTest {
     final var groupKey = 111L;
     final var groupName = "groupName";
     final var group = new GroupEntity(groupKey, groupName, Set.of());
-    when(groupServices.getGroup(group.key())).thenReturn(group);
+    when(groupServices.getGroup(group.groupKey())).thenReturn(group);
 
     // when
     webClient
         .get()
-        .uri("%s/%s".formatted(GROUP_BASE_URL, group.key()))
+        .uri("%s/%s".formatted(GROUP_BASE_URL, group.groupKey()))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -95,12 +95,12 @@ public class GroupQueryControllerTest extends RestControllerTest {
             """
             {
               "name": "%s",
-              "key": %d
+              "groupKey": "%d"
             }"""
                 .formatted(groupName, groupKey));
 
     // then
-    verify(groupServices, times(1)).getGroup(group.key());
+    verify(groupServices, times(1)).getGroup(group.groupKey());
   }
 
   @Test
@@ -147,7 +147,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .thenReturn(
             new SearchQueryResult.Builder<GroupEntity>()
                 .total(3)
-                .sortValues(new Object[] {})
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
                 .items(
                     List.of(
                         new GroupEntity(groupKey1, groupName1, Set.of()),
@@ -173,22 +174,22 @@ public class GroupQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
-                 "key": %d,
+                 "groupKey": "%d",
                  "name": "%s"
                },
                {
-                 "key": %d,
+                 "groupKey": "%d",
                  "name": "%s"
                },
                {
-                 "key": %d,
+                 "groupKey": "%d",
                  "name": "%s"
                }
              ],
              "page": {
                "totalItems": 3,
-               "firstSortValues": [],
-               "lastSortValues": []
+               "firstSortValues": ["f"],
+               "lastSortValues": ["v"]
              }
            }"""
                 .formatted(groupKey1, groupName1, groupKey2, groupName2, groupKey3, groupName3));
@@ -214,6 +215,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
                         new GroupEntity(groupKey1, groupName1, Set.of()),
                         new GroupEntity(groupKey2, groupName2, Set.of()),
                         new GroupEntity(groupKey3, groupName3, Set.of())))
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
                 .build());
 
     // when / then
@@ -225,7 +228,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .bodyValue(
             """
             {
-              "sort":  [{"field": "name", "order":  "asc"}],
+              "sort":  [{"field": "name", "order":  "ASC"}],
               "page":  {"from":  20, "limit":  2}
             }
             """)
@@ -286,9 +289,9 @@ public class GroupQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "INVALID_ARGUMENT",
+                      "title": "Bad Request",
                       "status": 400,
-                      "detail": "Unknown sortOrder: dsc.",
+                      "detail": "Unexpected value 'dsc' for enum field 'order'. Use any of the following values: [ASC, DESC]",
                       "instance": "%s"
                     }""",
                 endpoint)),
@@ -299,7 +302,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
                     "sort": [
                         {
                             "field": "unknownField",
-                            "order": "asc"
+                            "order": "ASC"
                         }
                     ]
                 }""",
@@ -307,9 +310,9 @@ public class GroupQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "INVALID_ARGUMENT",
+                      "title": "Bad Request",
                       "status": 400,
-                      "detail": "Unknown sortBy: unknownField.",
+                      "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [groupKey, name]",
                       "instance": "%s"
                     }""",
                 endpoint)),
@@ -319,7 +322,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
                 {
                     "sort": [
                         {
-                            "order": "asc"
+                            "order": "ASC"
                         }
                     ]
                 }""",

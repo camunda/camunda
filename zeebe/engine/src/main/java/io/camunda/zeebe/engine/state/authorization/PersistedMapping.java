@@ -13,6 +13,7 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,21 +24,25 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
   private final LongProperty mappingKeyProp = new LongProperty("mappingKey", -1L);
   private final StringProperty claimNameProp = new StringProperty("claimName", "");
   private final StringProperty claimValueProp = new StringProperty("claimValue", "");
+  private final StringProperty nameProp = new StringProperty("name", "");
+  private final StringProperty idProp = new StringProperty("id", "");
   private final ArrayProperty<LongValue> roleKeysProp =
       new ArrayProperty<>("roleKeys", LongValue::new);
-  private final ArrayProperty<LongValue> tenantKeysProp =
-      new ArrayProperty<>("tenantKeys", LongValue::new);
+  private final ArrayProperty<StringValue> tenantIdsProp =
+      new ArrayProperty<>("tenantIds", StringValue::new);
   private final ArrayProperty<LongValue> groupKeysProp =
       new ArrayProperty<>("groupKeys", LongValue::new);
 
   public PersistedMapping() {
-    super(6);
+    super(8);
     declareProperty(mappingKeyProp)
         .declareProperty(claimNameProp)
         .declareProperty(claimValueProp)
+        .declareProperty(nameProp)
         .declareProperty(roleKeysProp)
-        .declareProperty(tenantKeysProp)
-        .declareProperty(groupKeysProp);
+        .declareProperty(tenantIdsProp)
+        .declareProperty(groupKeysProp)
+        .declareProperty(idProp);
   }
 
   public long getMappingKey() {
@@ -67,6 +72,24 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
     return this;
   }
 
+  public String getName() {
+    return BufferUtil.bufferAsString(nameProp.getValue());
+  }
+
+  public PersistedMapping setName(final String name) {
+    nameProp.setValue(name);
+    return this;
+  }
+
+  public String getId() {
+    return BufferUtil.bufferAsString(idProp.getValue());
+  }
+
+  public PersistedMapping setId(final String id) {
+    idProp.setValue(id);
+    return this;
+  }
+
   public List<Long> getRoleKeysList() {
     return StreamSupport.stream(roleKeysProp.spliterator(), false)
         .map(LongValue::getValue)
@@ -84,20 +107,21 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public List<Long> getTenantKeysList() {
-    return StreamSupport.stream(tenantKeysProp.spliterator(), false)
-        .map(LongValue::getValue)
+  public List<String> getTenantIdsList() {
+    return StreamSupport.stream(tenantIdsProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
         .collect(Collectors.toList());
   }
 
-  public PersistedMapping setTenantKeysList(final List<Long> tenantKeys) {
-    tenantKeysProp.reset();
-    tenantKeys.forEach(tenantKey -> tenantKeysProp.add().setValue(tenantKey));
+  public PersistedMapping setTenantIdsList(final List<String> tenantIds) {
+    tenantIdsProp.reset();
+    tenantIds.forEach(tenantId -> tenantIdsProp.add().wrap(BufferUtil.wrapString(tenantId)));
     return this;
   }
 
-  public PersistedMapping addTenantKey(final long tenantKey) {
-    tenantKeysProp.add().setValue(tenantKey);
+  public PersistedMapping addTenantId(final String tenantId) {
+    tenantIdsProp.add().wrap(BufferUtil.wrapString(tenantId));
     return this;
   }
 

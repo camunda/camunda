@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.changes;
 
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
@@ -25,14 +26,17 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
   private final PartitionChangeExecutor partitionChangeExecutor;
   private final ClusterMembershipChangeExecutor clusterMembershipChangeExecutor;
   private final PartitionScalingChangeExecutor partitionScalingChangeExecutor;
+  private final ClusterChangeExecutor clusterChangeExecutor;
 
   public ConfigurationChangeAppliersImpl(
       final PartitionChangeExecutor partitionChangeExecutor,
       final ClusterMembershipChangeExecutor clusterMembershipChangeExecutor,
-      final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
+      final PartitionScalingChangeExecutor partitionScalingChangeExecutor,
+      final ClusterChangeExecutor clusterChangeExecutor) {
     this.partitionChangeExecutor = partitionChangeExecutor;
     this.clusterMembershipChangeExecutor = clusterMembershipChangeExecutor;
     this.partitionScalingChangeExecutor = partitionScalingChangeExecutor;
+    this.clusterChangeExecutor = clusterChangeExecutor;
   }
 
   @Override
@@ -46,7 +50,10 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               partitionChangeExecutor);
       case final PartitionLeaveOperation leaveOperation ->
           new PartitionLeaveApplier(
-              leaveOperation.partitionId(), leaveOperation.memberId(), partitionChangeExecutor);
+              leaveOperation.partitionId(),
+              leaveOperation.memberId(),
+              leaveOperation.minimumAllowedReplicas(),
+              partitionChangeExecutor);
       case final MemberJoinOperation memberJoinOperation ->
           new MemberJoinApplier(memberJoinOperation.memberId(), clusterMembershipChangeExecutor);
       case final MemberLeaveOperation memberLeaveOperation ->
@@ -86,7 +93,10 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               bootstrapOperation.partitionId(),
               bootstrapOperation.priority(),
               bootstrapOperation.memberId(),
+              bootstrapOperation.config(),
               partitionChangeExecutor);
+      case final DeleteHistoryOperation deleteHistoryOperation ->
+          new DeleteHistoryApplier(deleteHistoryOperation.memberId(), clusterChangeExecutor);
       case StartPartitionScaleUpOperation(
               final var ignoredMemberId,
               final var desiredPartitionCount) ->

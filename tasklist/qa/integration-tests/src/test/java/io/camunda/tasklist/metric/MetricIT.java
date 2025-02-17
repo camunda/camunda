@@ -13,10 +13,9 @@ import static io.camunda.tasklist.Metrics.TASKLIST_NAMESPACE;
 import static io.camunda.tasklist.util.CollectionUtil.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.tasklist.graphql.TaskIT;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
-import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
-import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
+import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import java.io.IOException;
 import java.util.List;
@@ -30,6 +29,8 @@ import org.springframework.http.ResponseEntity;
 public class MetricIT extends TasklistZeebeIntegrationTest {
 
   public static final String ENDPOINT = "/actuator/prometheus";
+  public static final String BPMN_PROCESS_ID = "testProcess";
+  public static final String ELEMENT_ID = "taskA";
 
   @Autowired private TestRestTemplate testRestTemplate;
   @LocalManagementPort private int managementPort;
@@ -56,23 +57,19 @@ public class MetricIT extends TasklistZeebeIntegrationTest {
   public void providesClaimedTasks() throws IOException {
     // given users: joe, jane and demo
     // create tasks
-    final List<TaskDTO> createdTasks =
+    final List<TaskSearchResponse> createdTasks =
         tester
             .createCreatedAndCompletedTasks("testProcess", "taskA", 5, 0)
             .then()
             .getCreatedTasks();
     // when
     setCurrentUser(joe);
-    tester.claimTask(
-        String.format(TaskIT.CLAIM_TASK_MUTATION_PATTERN, createdTasks.get(2).getId()));
+    tester.assignTask(createdTasks.get(2).getId());
     setCurrentUser(jane);
-    tester.claimTask(
-        String.format(TaskIT.CLAIM_TASK_MUTATION_PATTERN, createdTasks.get(1).getId()));
-    tester.claimTask(
-        String.format(TaskIT.CLAIM_TASK_MUTATION_PATTERN, createdTasks.get(3).getId()));
+    tester.assignTask(createdTasks.get(1).getId());
+    tester.assignTask(createdTasks.get(3).getId());
     setCurrentUser(demo);
-    tester.claimTask(
-        String.format(TaskIT.CLAIM_TASK_MUTATION_PATTERN, createdTasks.get(4).getId()));
+    tester.assignTask(createdTasks.get(4).getId());
 
     tester.waitFor(2000);
     final List<String> claimedTasksMetrics = metricsFor(COUNTER_NAME_CLAIMED_TASKS);
@@ -104,36 +101,24 @@ public class MetricIT extends TasklistZeebeIntegrationTest {
     // given users: joe, jane and demo
     // and
     tester
-        .createAndDeploySimpleProcess(TaskIT.BPMN_PROCESS_ID, TaskIT.ELEMENT_ID)
+        .createAndDeploySimpleProcess(BPMN_PROCESS_ID, ELEMENT_ID)
         .waitUntil()
         .processIsDeployed();
 
-    tester
-        .startProcessInstance(TaskIT.BPMN_PROCESS_ID)
-        .waitUntil()
-        .taskIsCreated(TaskIT.ELEMENT_ID);
+    tester.startProcessInstance(BPMN_PROCESS_ID).waitUntil().taskIsCreated(ELEMENT_ID);
     setCurrentUser(joe);
-    tester.claimAndCompleteHumanTask(TaskIT.ELEMENT_ID);
+    tester.claimAndCompleteHumanTask(ELEMENT_ID);
 
-    tester
-        .startProcessInstance(TaskIT.BPMN_PROCESS_ID)
-        .waitUntil()
-        .taskIsCreated(TaskIT.ELEMENT_ID);
+    tester.startProcessInstance(BPMN_PROCESS_ID).waitUntil().taskIsCreated(ELEMENT_ID);
     setCurrentUser(jane);
-    tester.claimAndCompleteHumanTask(TaskIT.ELEMENT_ID);
+    tester.claimAndCompleteHumanTask(ELEMENT_ID);
 
-    tester
-        .startProcessInstance(TaskIT.BPMN_PROCESS_ID)
-        .waitUntil()
-        .taskIsCreated(TaskIT.ELEMENT_ID);
-    tester.claimAndCompleteHumanTask(TaskIT.ELEMENT_ID);
+    tester.startProcessInstance(BPMN_PROCESS_ID).waitUntil().taskIsCreated(ELEMENT_ID);
+    tester.claimAndCompleteHumanTask(ELEMENT_ID);
 
-    tester
-        .startProcessInstance(TaskIT.BPMN_PROCESS_ID)
-        .waitUntil()
-        .taskIsCreated(TaskIT.ELEMENT_ID);
+    tester.startProcessInstance(BPMN_PROCESS_ID).waitUntil().taskIsCreated(ELEMENT_ID);
     setCurrentUser(demo);
-    tester.claimAndCompleteHumanTask(TaskIT.ELEMENT_ID);
+    tester.claimAndCompleteHumanTask(ELEMENT_ID);
 
     tester.waitFor(2000);
     // when

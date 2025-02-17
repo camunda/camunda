@@ -22,10 +22,9 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -34,12 +33,18 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.http.HttpHost;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -48,7 +53,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SuppressWarnings("resource")
 @Testcontainers
-@AutoCloseResources
 final class ElasticsearchArchiverRepositoryIT {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchArchiverRepositoryIT.class);
@@ -57,13 +61,21 @@ final class ElasticsearchArchiverRepositoryIT {
   private static final ElasticsearchContainer ELASTIC =
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
-  @AutoCloseResource private final RestClientTransport transport = createRestClient();
+  @AutoClose private final RestClientTransport transport = createRestClient();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final ArchiverConfiguration config = new ArchiverConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
+  private String indexPrefix = "testPrefix";
   private final String processInstanceIndex = "process-instance-" + UUID.randomUUID();
   private final String batchOperationIndex = "batch-operation-" + UUID.randomUUID();
   private final ElasticsearchClient testClient = new ElasticsearchClient(transport);
+
+  @AfterEach
+  void afterEach() throws IOException {
+    // wipes all data in ES between tests
+    final var response = transport.restClient().performRequest(new Request("DELETE", "_all"));
+    assertThat(response.getStatusLine().getStatusCode()).isEqualTo(200);
+  }
 
   @Test
   void shouldDeleteDocuments() throws IOException {
@@ -99,13 +111,7 @@ final class ElasticsearchArchiverRepositoryIT {
     final var indexName = UUID.randomUUID().toString();
     final var repository = createRepository();
     testClient.indices().create(r -> r.index(indexName));
-    final var initialLifecycle =
-        testClient
-            .indices()
-            .getSettings(r -> r.index(indexName))
-            .get(indexName)
-            .settings()
-            .lifecycle();
+    final var initialLifecycle = getLifeCycle(indexName);
     assertThat(initialLifecycle).isNull();
     retention.setEnabled(true);
     retention.setPolicyName("operate_delete_archived_indices");
@@ -116,18 +122,86 @@ final class ElasticsearchArchiverRepositoryIT {
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    final var actualLifecycle =
-        testClient
-            .indices()
-            .getSettings(r -> r.index(indexName))
-            .get(indexName)
-            .settings()
-            .index()
-            .lifecycle();
+    final var actualLifecycle = getLifeCycle(indexName);
     assertThat(actualLifecycle)
         .isNotNull()
         .extracting(IndexSettingsLifecycle::name)
         .isEqualTo("operate_delete_archived_indices");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"", "test"})
+  void shouldSetIndexLifeCycleOnAllValidIndexes(final String prefix) throws IOException {
+    // given
+    indexPrefix = prefix;
+    final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(prefix);
+    final var expectedIndices =
+        List.of(
+            formattedPrefix + "operate-record-8.2.1_2024-01-02",
+            formattedPrefix + "tasklist-record-8.3.0_2024-01");
+    final var untouchedIndices =
+        new ArrayList<>(
+            List.of(
+                formattedPrefix + "operate-record-8.2.1_", "other-" + "tasklist-record-8.3.0_"));
+
+    // we cannot test the case with multiple different prefixes when no prefix is given, since it
+    // will just match everything from the other prefixes...
+    if (!prefix.isEmpty()) {
+      untouchedIndices.add("other-" + "tasklist-record-8.3.0_2024-01-02");
+    }
+
+    final var repository = createRepository();
+    final var indices = new ArrayList<>(expectedIndices);
+    indices.addAll(untouchedIndices);
+
+    retention.setEnabled(true);
+    retention.setPolicyName("operate_delete_archived_indices");
+
+    putLifecyclePolicy();
+    for (final var index : indices) {
+      testClient.indices().create(r -> r.index(index));
+    }
+
+    // when
+    final var result = repository.setLifeCycleToAllIndexes();
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    for (final var index : expectedIndices) {
+      assertThat(getLifeCycle(index))
+          .isNotNull()
+          .extracting(IndexSettingsLifecycle::name)
+          .isEqualTo("operate_delete_archived_indices");
+    }
+    for (final var index : untouchedIndices) {
+      assertThat(getLifeCycle(index)).as("no policy applied to %s", index).isNull();
+    }
+  }
+
+  @Test
+  void shouldNotFailSettingILMOnMissingIndex() throws IOException {
+    // given
+    final var repository = createRepository();
+    final var indexName = UUID.randomUUID().toString();
+    retention.setEnabled(true);
+    retention.setPolicyName("operate_delete_archived_indices");
+    putLifecyclePolicy();
+
+    // when
+    final var result = repository.setIndexLifeCycle(indexName);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+  }
+
+  private IndexSettingsLifecycle getLifeCycle(final String indexName) throws IOException {
+    return testClient
+        .indices()
+        .getSettings(r -> r.index(indexName))
+        .get(indexName)
+        .settings()
+        .index()
+        .lifecycle();
   }
 
   @Test
@@ -302,6 +376,7 @@ final class ElasticsearchArchiverRepositoryIT {
         1,
         config,
         retention,
+        indexPrefix,
         processInstanceIndex,
         batchOperationIndex,
         client,

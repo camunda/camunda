@@ -61,8 +61,23 @@ public class MappingClient {
       return this;
     }
 
+    public MappingCreateClient withId(final String id) {
+      mappingRecord.setId(id);
+      return this;
+    }
+
+    public MappingCreateClient withName(final String name) {
+      mappingRecord.setName(name);
+      return this;
+    }
+
     public Record<MappingRecordValue> create() {
       final long position = writer.writeCommand(MappingIntent.CREATE, mappingRecord);
+      return expectation.apply(position);
+    }
+
+    public Record<MappingRecordValue> create(final String username) {
+      final long position = writer.writeCommand(MappingIntent.CREATE, username, mappingRecord);
       return expectation.apply(position);
     }
 

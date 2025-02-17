@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 public interface TenantState {
 
@@ -59,4 +60,14 @@ public interface TenantState {
    *     {@link List} of entity keys associated with that type
    */
   Map<EntityType, List<Long>> getEntitiesByType(long tenantKey);
+
+  /**
+   * Loops over all tenants and applies the provided callback. It stops looping over the tenants,
+   * when the callback function returns false, otherwise it will continue until all tenants are
+   * visited.
+   */
+  void forEachTenant(final Function<String, Boolean> callback);
+
+  /** Retrieves a tenant record by its ID. */
+  Optional<PersistedTenant> getTenantById(String tenantId);
 }

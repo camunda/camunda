@@ -17,6 +17,7 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import java.util.List;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -25,7 +26,9 @@ public interface IdentitySetupRecordValue extends RecordValue {
 
   RoleRecordValue getDefaultRole();
 
-  UserRecordValue getDefaultUser();
+  List<UserRecordValue> getUsers();
 
   TenantRecordValue getDefaultTenant();
+
+  List<MappingRecordValue> getMappings();
 }

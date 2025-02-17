@@ -27,74 +27,79 @@ public class RemoveEntityTenantTest {
   @Test
   public void shouldRemoveEntityFromTenant() {
     final var tenantId = UUID.randomUUID().toString();
-    final var tenantKey =
-        engine
-            .tenant()
-            .newTenant()
-            .withTenantId(tenantId)
-            .withName("name")
-            .create()
-            .getValue()
-            .getTenantKey();
-    final var userKey =
-        engine
-            .user()
-            .newUser("foo")
-            .withEmail("foo@bar")
-            .withName("Foo Bar")
-            .withPassword("zabraboof")
-            .create()
-            .getKey();
     engine
         .tenant()
-        .addEntity(tenantKey)
-        .withEntityKey(userKey)
+        .newTenant()
+        .withTenantId(tenantId)
+        .withName("name")
+        .create()
+        .getValue()
+        .getTenantKey();
+    final var username = "foo";
+    engine
+        .user()
+        .newUser(username)
+        .withEmail("foo@bar")
+        .withName("Foo Bar")
+        .withPassword("zabraboof")
+        .create();
+    engine
+        .tenant()
+        .addEntity(tenantId)
+        .withEntityId(username)
         .withEntityType(EntityType.USER)
         .add();
     final var removedEntity =
         engine
             .tenant()
-            .removeEntity(tenantKey)
-            .withEntityKey(userKey)
+            .removeEntity(tenantId)
+            .withEntityId(username)
             .withEntityType(EntityType.USER)
             .remove()
             .getValue();
 
     Assertions.assertThat(removedEntity)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("tenantKey", tenantKey)
-        .hasFieldOrPropertyWithValue("entityKey", userKey)
+        .hasFieldOrPropertyWithValue("tenantId", tenantId)
+        .hasFieldOrPropertyWithValue("entityId", username)
         .hasFieldOrPropertyWithValue("entityType", EntityType.USER);
   }
 
   @Test
   public void shouldRejectIfTenantIsNotPresentEntityRemoval() {
-    final var notPresentTenantKey = 1L;
+    final var notPresentTenantId = UUID.randomUUID().toString();
     final var notPresentUpdateRecord =
-        engine.tenant().removeEntity(notPresentTenantKey).expectRejection().remove();
+        engine.tenant().removeEntity(notPresentTenantId).expectRejection().remove();
 
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to remove entity from tenant with key '"
-                + notPresentTenantKey
-                + "', but no tenant with this key exists.");
+            "Expected to remove entity from tenant '"
+                + notPresentTenantId
+                + "', but no tenant with this id exists.");
   }
 
   @Test
   public void shouldRejectIfEntityIsNotPresentEntityRemoval() {
     // given
     final var tenantId = UUID.randomUUID().toString();
+    final var username = UUID.randomUUID().toString();
     final var tenantRecord = engine.tenant().newTenant().withTenantId(tenantId).create();
+    engine
+        .user()
+        .newUser(username)
+        .withEmail("foo@bar")
+        .withName("Foo Bar")
+        .withPassword("zabraboof")
+        .create();
 
     // when
     final var createdTenant = tenantRecord.getValue();
-    final var tenantKey = createdTenant.getTenantKey();
     final var notPresentUpdateRecord =
         engine
             .tenant()
-            .removeEntity(tenantKey)
-            .withEntityKey(1L)
+            .removeEntity(tenantId)
+            .withEntityId(username)
             .withEntityType(EntityType.USER)
             .expectRejection()
             .remove();
@@ -106,33 +111,30 @@ public class RemoveEntityTenantTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to remove entity with key '%s' from tenant with key '%s', but the entity does not exist."
-                .formatted(1L, tenantKey));
+            "Expected to remove user '%s' from tenant '%s', but the user is not assigned to this tenant."
+                .formatted(username, tenantId));
   }
 
   @Test
   public void shouldRejectIfEntityIsNotAssigned() {
     // given
     final var tenantId = UUID.randomUUID().toString();
-    final var tenantRecord = engine.tenant().newTenant().withTenantId(tenantId).create();
+    engine.tenant().newTenant().withTenantId(tenantId).create();
 
     // when
-    final var createdTenant = tenantRecord.getValue();
-    final var tenantKey = createdTenant.getTenantKey();
-    final var userKey =
-        engine
-            .user()
-            .newUser("foo")
-            .withEmail("foo@bar")
-            .withName("Foo Bar")
-            .withPassword("zabraboof")
-            .create()
-            .getKey();
+    final var username = "foo";
+    engine
+        .user()
+        .newUser(username)
+        .withEmail("foo@bar")
+        .withName("Foo Bar")
+        .withPassword("zabraboof")
+        .create();
     final var notAssignedUpdateRecord =
         engine
             .tenant()
-            .removeEntity(tenantKey)
-            .withEntityKey(userKey)
+            .removeEntity(tenantId)
+            .withEntityId(username)
             .withEntityType(EntityType.USER)
             .expectRejection()
             .remove();
@@ -140,7 +142,7 @@ public class RemoveEntityTenantTest {
     assertThat(notAssignedUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to remove entity with key '%s' from tenant with key '%s', but the entity is not assigned to this tenant."
-                .formatted(userKey, tenantKey));
+            "Expected to remove user '%s' from tenant '%s', but the user is not assigned to this tenant."
+                .formatted(username, tenantId));
   }
 }

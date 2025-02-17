@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.it.clustering;
 
-import io.camunda.zeebe.client.api.response.BrokerInfo;
+import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;

@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.client.protocol.rest.MessageCorrelationRequest;
+import io.camunda.client.protocol.rest.MessageCorrelationResult;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
@@ -25,8 +27,6 @@ import io.camunda.zeebe.client.api.response.CorrelateMessageResponse;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.CorrelateMessageResponseImpl;
-import io.camunda.zeebe.client.protocol.rest.MessageCorrelationRequest;
-import io.camunda.zeebe.client.protocol.rest.MessageCorrelationResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -85,7 +85,7 @@ public class CorrelateMessageCommandImpl extends CommandWithVariables<CorrelateM
         "/messages/correlation",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        MessageCorrelationResponse.class,
+        MessageCorrelationResult.class,
         response::setResponse,
         result);
     return result;

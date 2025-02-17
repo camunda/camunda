@@ -7,14 +7,11 @@
  */
 package io.camunda.application;
 
-import io.camunda.application.commons.migration.MigrationsModuleConfiguration;
-import io.camunda.application.listeners.ApplicationErrorListener;
+import io.camunda.application.commons.migration.MigrationsRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.context.ApplicationEvent;
-import org.springframework.context.ApplicationListener;
 
 @SpringBootConfiguration(proxyBeanMethods = false)
 public class StandaloneMigration {
@@ -35,40 +32,12 @@ public class StandaloneMigration {
         new SpringApplicationBuilder()
             .logStartupInfo(true)
             .web(WebApplicationType.SERVLET)
-            .sources(MigrationsModuleConfiguration.class)
+            .sources(MigrationsRunner.class)
             .profiles(Profile.MIGRATION.getId())
             .addCommandLineProperties(true)
-            .listeners(new ApplicationErrorListener(), new ApplicationTerminateListener())
             .build(args);
 
-    application.run(args);
-  }
-
-  public static class ApplicationTerminateListener
-      implements ApplicationListener<MigrationFinishedEvent> {
-
-    private int exitCode = 0;
-    private int arrivedEvents = 0;
-
-    @Override
-    public void onApplicationEvent(final MigrationFinishedEvent event) {
-      // Since this will always be running with the full Migration profile we can safely assume that
-      // we await for 2 events
-      final int awaitEvents = 2;
-      final int errorCode = (int) event.getSource();
-      if (errorCode < exitCode) {
-        exitCode = errorCode;
-      }
-      if (++arrivedEvents == awaitEvents) {
-        System.exit(exitCode);
-      }
-    }
-  }
-
-  public static class MigrationFinishedEvent extends ApplicationEvent {
-
-    public MigrationFinishedEvent(final int errorCode) {
-      super(errorCode);
-    }
+    final var context = application.run(args);
+    SpringApplication.exit(context, () -> 0);
   }
 }

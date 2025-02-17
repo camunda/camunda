@@ -15,5 +15,5 @@ public interface ExporterPositionMapper {
 
   void update(ExporterPositionModel variable);
 
-  ExporterPositionModel findOne(Long key);
+  ExporterPositionModel findOne(int key);
 }

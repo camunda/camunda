@@ -19,6 +19,11 @@ import io.camunda.zeebe.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
 import io.camunda.zeebe.client.api.search.sort.DecisionDefinitionSort;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.search.query.DecisionDefinitionQuery}
+ */
+@Deprecated
 public interface DecisionDefinitionQuery
     extends TypedSearchQueryRequest<
             DecisionDefinitionFilter, DecisionDefinitionSort, DecisionDefinitionQuery>,

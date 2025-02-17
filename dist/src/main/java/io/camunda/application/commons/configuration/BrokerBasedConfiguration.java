@@ -34,7 +34,7 @@ import org.springframework.web.filter.CompositeFilter;
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(BrokerBasedProperties.class)
 @Profile(value = {"broker", "restore"})
-public final class BrokerBasedConfiguration {
+public class BrokerBasedConfiguration {
 
   private final WorkingDirectory workingDirectory;
   private final BrokerCfg properties;

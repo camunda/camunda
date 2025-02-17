@@ -17,7 +17,7 @@ servers:
         description: Management server schema
 paths:
   # Runtime backups
-  /backup-runtime:
+  /backupRuntime:
     post:
       summary: Takes a backup of runtime data
       description: Start taking a backup with the given backupId
@@ -67,7 +67,7 @@ paths:
         '504':
           description: Request from gateway to broker timed out
           $ref: '#/components/responses/Error'
-  /backup-runtime/{backupId}:
+  /backupRuntime/{backupId}:
     get:
       summary: Get information of a runtime backup
       description: A detailed information of the backup with the give backup id.
@@ -111,7 +111,7 @@ paths:
           $ref: '#/components/responses/Error'
 
   # Section on historic backups
-  /backup-history:
+  /backupHistory:
     post:
       summary: Takes a backup of history data
       description: Start taking a backup with the given backupId
@@ -152,7 +152,7 @@ paths:
         '502':
           description: Elasticsearch is not accessible, the request can be retried when it is back.
           $ref: '#/components/responses/Error'
-  /backup-history/{backupId}:
+  /backupHistory/{backupId}:
     get:
       summary: Get information of a historic backup
       description: A detailed information of the backup with the give backup id.

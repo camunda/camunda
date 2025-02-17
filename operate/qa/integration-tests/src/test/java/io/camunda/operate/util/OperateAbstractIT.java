@@ -15,7 +15,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.operate.webapp.rest.dto.UserDto;
@@ -27,7 +26,6 @@ import io.camunda.operate.zeebe.PartitionHolder;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
@@ -86,11 +84,12 @@ public abstract class OperateAbstractIT {
         .getAuthenticatedTenants();
   }
 
-  protected MvcResult getRequest(String requestUrl) throws Exception {
+  protected MvcResult getRequest(final String requestUrl) throws Exception {
     return getRequest(requestUrl, mockMvcTestRule.getContentType());
   }
 
-  protected MvcResult getRequest(String requestUrl, MediaType responseMediaType) throws Exception {
+  protected MvcResult getRequest(final String requestUrl, final MediaType responseMediaType)
+      throws Exception {
     final MockHttpServletRequestBuilder request = get(requestUrl).accept(responseMediaType);
     final MvcResult mvcResult =
         mockMvc
@@ -103,7 +102,7 @@ public abstract class OperateAbstractIT {
   }
 
   protected MvcResult getRequestShouldFailWithException(
-      String requestUrl, Class<? extends Exception> exceptionClass) throws Exception {
+      final String requestUrl, final Class<? extends Exception> exceptionClass) throws Exception {
     final MockHttpServletRequestBuilder request =
         get(requestUrl).accept(mockMvcTestRule.getContentType());
 
@@ -115,7 +114,7 @@ public abstract class OperateAbstractIT {
   }
 
   protected MvcResult postRequestShouldFailWithException(
-      String requestUrl, Class<? extends Exception> exceptionClass) throws Exception {
+      final String requestUrl, final Class<? extends Exception> exceptionClass) throws Exception {
     final MockHttpServletRequestBuilder request =
         post(requestUrl)
             .content("{}")
@@ -129,7 +128,7 @@ public abstract class OperateAbstractIT {
         .andReturn();
   }
 
-  protected MvcResult postRequest(String requestUrl, Object query) throws Exception {
+  protected MvcResult postRequest(final String requestUrl, final Object query) throws Exception {
     final MockHttpServletRequestBuilder request =
         post(requestUrl)
             .content(mockMvcTestRule.json(query))
@@ -142,7 +141,8 @@ public abstract class OperateAbstractIT {
         .andReturn();
   }
 
-  protected MvcResult postRequestThatShouldFail(String requestUrl, Object query) throws Exception {
+  protected MvcResult postRequestThatShouldFail(final String requestUrl, final Object query)
+      throws Exception {
     final MockHttpServletRequestBuilder request =
         post(requestUrl)
             .content(mockMvcTestRule.json(query))
@@ -151,7 +151,7 @@ public abstract class OperateAbstractIT {
     return mockMvc.perform(request).andExpect(status().isBadRequest()).andReturn();
   }
 
-  protected MvcResult postRequestThatShouldFail(String requestUrl, String stringContent)
+  protected MvcResult postRequestThatShouldFail(final String requestUrl, final String stringContent)
       throws Exception {
     final MockHttpServletRequestBuilder request =
         post(requestUrl).content(stringContent).contentType(mockMvcTestRule.getContentType());
@@ -159,7 +159,8 @@ public abstract class OperateAbstractIT {
     return mockMvc.perform(request).andExpect(status().isBadRequest()).andReturn();
   }
 
-  protected MvcResult getRequestShouldFailWithNoAuthorization(String requestUrl) throws Exception {
+  protected MvcResult getRequestShouldFailWithNoAuthorization(final String requestUrl)
+      throws Exception {
     final MockHttpServletRequestBuilder request =
         get(requestUrl).accept(mockMvcTestRule.getContentType());
 
@@ -173,8 +174,8 @@ public abstract class OperateAbstractIT {
         .andReturn();
   }
 
-  protected MvcResult postRequestShouldFailWithNoAuthorization(String requestUrl, Object query)
-      throws Exception {
+  protected MvcResult postRequestShouldFailWithNoAuthorization(
+      final String requestUrl, final Object query) throws Exception {
     final MockHttpServletRequestBuilder request =
         post(requestUrl)
             .content(mockMvcTestRule.json(query))
@@ -190,7 +191,7 @@ public abstract class OperateAbstractIT {
         .andReturn();
   }
 
-  protected MvcResult deleteRequestShouldFailWithNoAuthorization(String requestUrl)
+  protected MvcResult deleteRequestShouldFailWithNoAuthorization(final String requestUrl)
       throws Exception {
     final MockHttpServletRequestBuilder request =
         delete(requestUrl).accept(mockMvcTestRule.getContentType());
@@ -205,31 +206,15 @@ public abstract class OperateAbstractIT {
         .andReturn();
   }
 
-  protected void assertErrorMessageContains(MvcResult mvcResult, String text) {
+  protected void assertErrorMessageContains(final MvcResult mvcResult, final String text) {
     assertThat(mvcResult.getResolvedException().getMessage()).contains(text);
   }
 
-  protected void assertErrorMessageIsEqualTo(MvcResult mvcResult, String message) {
+  protected void assertErrorMessageIsEqualTo(final MvcResult mvcResult, final String message) {
     assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo(message);
   }
 
-  protected void runArchiving(
-      ProcessInstancesArchiverJob archiverJob, Callable<Void> esIndexRefresher) {
-    try {
-      int archived;
-      int archivedTotal = 0;
-      do {
-        archived = archiverJob.archiveNextBatch().join();
-        esIndexRefresher.call();
-        archivedTotal += archived;
-      } while (archived > 0);
-      assertThat(archivedTotal).isGreaterThan(0);
-    } catch (Exception e) {
-      throw new RuntimeException("Error while archiving", e);
-    }
-  }
-
-  protected void mockPartitionHolder(PartitionHolder partitionHolder) {
+  protected void mockPartitionHolder(final PartitionHolder partitionHolder) {
     final List<Integer> partitions = new ArrayList<>();
     partitions.add(1);
     when(partitionHolder.getPartitionIds()).thenReturn(partitions);

@@ -21,7 +21,7 @@ import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.UserDetails;
 import io.camunda.tasklist.util.SpringContextHolder;
-import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.oauth.IdentityTenantAwareJwtAuthenticationToken;
 import java.util.Collections;
@@ -104,7 +104,6 @@ class IdentityUserReaderTest {
             new UserDTO()
                 .setUserId("demo")
                 .setDisplayName("demo")
-                .setApiUser(true)
                 .setPermissions(Collections.emptyList())
                 .setC8Links(Collections.emptyList())
                 .setTenants(Collections.emptyList()));

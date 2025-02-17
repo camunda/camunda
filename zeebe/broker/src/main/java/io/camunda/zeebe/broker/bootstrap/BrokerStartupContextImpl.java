@@ -13,6 +13,7 @@ import static java.util.Objects.requireNonNull;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -41,6 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import org.agrona.concurrent.SnowflakeIdGenerator;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 public final class BrokerStartupContextImpl implements BrokerStartupContext {
 
@@ -58,6 +60,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final Duration shutdownTimeout;
   private final MeterRegistry meterRegistry;
   private final SecurityConfiguration securityConfiguration;
+  private final UserServices userServices;
+  private final PasswordEncoder passwordEncoder;
 
   private ConcurrencyControl concurrencyControl;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
@@ -85,7 +89,9 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final List<PartitionListener> additionalPartitionListeners,
       final Duration shutdownTimeout,
       final MeterRegistry meterRegistry,
-      final SecurityConfiguration securityConfiguration) {
+      final SecurityConfiguration securityConfiguration,
+      final UserServices userServices,
+      final PasswordEncoder passwordEncoder) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
     this.configuration = requireNonNull(configuration);
@@ -99,6 +105,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.shutdownTimeout = shutdownTimeout;
     this.meterRegistry = requireNonNull(meterRegistry);
     this.securityConfiguration = requireNonNull(securityConfiguration);
+    this.userServices = userServices;
+    this.passwordEncoder = passwordEncoder;
     partitionListeners.addAll(additionalPartitionListeners);
   }
 
@@ -114,7 +122,9 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final BrokerClient brokerClient,
       final List<PartitionListener> additionalPartitionListeners,
       final Duration shutdownTimeout,
-      final SecurityConfiguration securityConfiguration) {
+      final SecurityConfiguration securityConfiguration,
+      final UserServices userServices,
+      final PasswordEncoder passwordEncoder) {
 
     this(
         brokerInfo,
@@ -129,7 +139,9 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
         additionalPartitionListeners,
         shutdownTimeout,
         new SimpleMeterRegistry(),
-        securityConfiguration);
+        securityConfiguration,
+        userServices,
+        passwordEncoder);
   }
 
   @Override
@@ -345,5 +357,15 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public SecurityConfiguration getSecurityConfiguration() {
     return securityConfiguration;
+  }
+
+  @Override
+  public UserServices getUserServices() {
+    return userServices;
+  }
+
+  @Override
+  public PasswordEncoder getPasswordEncoder() {
+    return passwordEncoder;
   }
 }

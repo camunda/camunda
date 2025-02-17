@@ -18,6 +18,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 
 public class SimpleDocumentStoreRegistry implements DocumentStoreRegistry {
@@ -30,6 +32,7 @@ public class SimpleDocumentStoreRegistry implements DocumentStoreRegistry {
   private final DocumentStoreConfiguration configuration;
   private final Map<String, DocumentStore> stores = new HashMap<>();
   private final String defaultDocumentStoreId;
+  private final ExecutorService executor;
 
   public SimpleDocumentStoreRegistry(final DocumentStoreConfigurationLoader configurationLoader) {
     configuration = configurationLoader.loadConfiguration();
@@ -38,10 +41,16 @@ public class SimpleDocumentStoreRegistry implements DocumentStoreRegistry {
       LOG.warn("No document stores configured. Using fallback in-memory document store.");
       stores.put(FALLBACK_STORE_ID_IN_MEMORY, new InMemoryDocumentStore());
       defaultDocumentStoreId = FALLBACK_STORE_ID_IN_MEMORY;
+      executor = Executors.newFixedThreadPool(5);
       return;
     }
     if (configuration.defaultDocumentStoreId() == null) {
       throw new IllegalArgumentException("No default document store ID configured.");
+    }
+    if (configuration.threadPoolSize() != null) {
+      executor = Executors.newFixedThreadPool(configuration.threadPoolSize());
+    } else {
+      executor = Executors.newFixedThreadPool(5);
     }
     defaultDocumentStoreId = configuration.defaultDocumentStoreId();
     loadDocumentStores(configuration.documentStores());
@@ -77,7 +86,7 @@ public class SimpleDocumentStoreRegistry implements DocumentStoreRegistry {
 
     for (final DocumentStoreConfigurationRecord configuration : configurations) {
       final DocumentStoreProvider provider = findProvider(loader, configuration);
-      final DocumentStore store = provider.createDocumentStore(configuration);
+      final DocumentStore store = provider.createDocumentStore(configuration, executor);
       stores.put(configuration.id(), store);
     }
   }

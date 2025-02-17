@@ -9,19 +9,19 @@ package io.camunda.exporter.adapters;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.cache.form.ElasticSearchFormCacheLoader;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.cache.process.ElasticSearchProcessCacheLoader;
-import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ElasticsearchBatchRequest;
 import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
-import io.camunda.exporter.utils.XMLUtil;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import java.io.IOException;
 
@@ -29,12 +29,19 @@ class ElasticsearchAdapter implements ClientAdapter {
   private final ElasticsearchClient client;
   private final ElasticsearchEngineClient searchEngineClient;
   private final ElasticsearchExporterEntityCacheProvider entityCacheLoader;
+  private final ObjectMapper objectMapper;
 
-  ElasticsearchAdapter(final ExporterConfiguration configuration) {
-    final var connector = new ElasticsearchConnector(configuration.getConnect());
+  ElasticsearchAdapter(final ConnectConfiguration configuration) {
+    final var connector = new ElasticsearchConnector(configuration);
     client = connector.createClient();
-    searchEngineClient = new ElasticsearchEngineClient(client);
+    objectMapper = connector.objectMapper();
+    searchEngineClient = new ElasticsearchEngineClient(client, objectMapper);
     entityCacheLoader = new ElasticsearchExporterEntityCacheProvider(client);
+  }
+
+  @Override
+  public ObjectMapper objectMapper() {
+    return objectMapper;
   }
 
   @Override
@@ -63,8 +70,8 @@ class ElasticsearchAdapter implements ClientAdapter {
 
     @Override
     public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
-        final String processIndexName, final XMLUtil xmlUtil) {
-      return new ElasticSearchProcessCacheLoader(client, processIndexName, xmlUtil);
+        final String processIndexName) {
+      return new ElasticSearchProcessCacheLoader(client, processIndexName);
     }
 
     @Override

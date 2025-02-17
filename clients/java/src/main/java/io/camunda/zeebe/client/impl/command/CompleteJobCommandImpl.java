@@ -15,23 +15,21 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.client.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
-import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1.CompleteJobCommandStep2;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.CompleteJobResponse;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.CompleteJobResponseImpl;
-import io.camunda.zeebe.client.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest.Builder;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResult;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -39,7 +37,7 @@ import java.util.function.Predicate;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJobCommandStep1>
-    implements CompleteJobCommandStep1, CompleteJobCommandStep2 {
+    implements CompleteJobCommandStep1 {
 
   private final GatewayStub asyncStub;
   private final Builder grpcRequestObjectBuilder;
@@ -51,8 +49,6 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   private boolean useRest;
   private final long jobKey;
   private final JsonMapper jsonMapper;
-  private JobResult.Builder resultGrpc;
-  private io.camunda.zeebe.client.protocol.rest.JobResult resultRest;
 
   public CompleteJobCommandImpl(
       final GatewayStub asyncStub,
@@ -90,27 +86,6 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
     } else {
       return sendGrpcRequest();
     }
-  }
-
-  @Override
-  public CompleteJobCommandStep2 result() {
-    resultRest = new io.camunda.zeebe.client.protocol.rest.JobResult();
-    httpRequestObject.setResult(resultRest);
-
-    resultGrpc = JobResult.newBuilder();
-    grpcRequestObjectBuilder.setResult(resultGrpc);
-    return this;
-  }
-
-  @Override
-  public CompleteJobCommandStep2 denied(final boolean denied) {
-    resultRest.setDenied(denied);
-
-    resultGrpc.setDenied(denied);
-    // grpcRequestObjectBuilder.setResult() makes immutable copy of passed value so we need to
-    // refresh it everytime when we need to set another jobResult property
-    grpcRequestObjectBuilder.setResult(resultGrpc);
-    return this;
   }
 
   @Override

@@ -18,14 +18,11 @@ public sealed interface DocumentError {
 
   record OperationNotSupported(String message) implements DocumentError {}
 
+  record DocumentHashMismatch(String documentId, String providedHash) implements DocumentError {}
+
   record UnknownDocumentError(String message, Throwable cause) implements DocumentError {
-
-    public UnknownDocumentError(final String message) {
-      this(message, null);
-    }
-
     public UnknownDocumentError(final Throwable cause) {
-      this(null, cause);
+      this(cause.getMessage(), cause);
     }
   }
 }

@@ -14,7 +14,7 @@ import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.entity.Permission;
+import java.util.HashSet;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,16 +31,13 @@ public class AuthorizationReader extends AbstractEntityReader<AuthorizationEntit
   }
 
   public Optional<AuthorizationEntity> findOne(
-      final long ownerKey, final String ownerType, final String resourceType) {
+      final String ownerId, final String ownerType, final String resourceType) {
     final var result =
         search(
             AuthorizationQuery.of(
                 b ->
                     b.filter(
-                        f ->
-                            f.ownerKeys(ownerKey)
-                                .ownerType(ownerType)
-                                .resourceType(resourceType))));
+                        f -> f.ownerIds(ownerId).ownerType(ownerType).resourceType(resourceType))));
     return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
   }
 
@@ -48,7 +45,7 @@ public class AuthorizationReader extends AbstractEntityReader<AuthorizationEntit
     final var dbSort =
         convertSort(
             query.sort(),
-            AuthorizationSearchColumn.OWNER_KEY,
+            AuthorizationSearchColumn.OWNER_ID,
             AuthorizationSearchColumn.OWNER_TYPE,
             AuthorizationSearchColumn.RESOURCE_TYPE);
     final var dbQuery =
@@ -58,16 +55,16 @@ public class AuthorizationReader extends AbstractEntityReader<AuthorizationEntit
     LOG.trace("[RDBMS DB] Search for authorizations with filter {}", dbQuery);
     final var totalHits = authorizationMapper.count(dbQuery);
     final var hits = authorizationMapper.search(dbQuery).stream().map(this::map).toList();
-    return new SearchQueryResult<>(totalHits.intValue(), hits, extractSortValues(hits, dbSort));
+    return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 
   private AuthorizationEntity map(final AuthorizationDbModel model) {
     return new AuthorizationEntity(
-        model.ownerKey(),
+        model.authorizationKey(),
+        model.ownerId(),
         model.ownerType(),
         model.resourceType(),
-        model.permissions().stream()
-            .map(p -> new Permission(p.permissionType(), p.resourceIds()))
-            .toList());
+        model.resourceId(),
+        new HashSet<>(model.permissionTypes()));
   }
 }

@@ -50,7 +50,7 @@ final class JobHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = JobTemplate.INDEX_NAME;
 
-  private final JobHandler underTest = new JobHandler(indexName, false);
+  private final JobHandler underTest = new JobHandler(indexName);
 
   @Test
   void testGetHandledValueType() {

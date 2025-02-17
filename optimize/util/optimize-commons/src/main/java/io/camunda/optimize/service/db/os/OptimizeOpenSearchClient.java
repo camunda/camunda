@@ -22,6 +22,7 @@ import io.camunda.optimize.dto.optimize.DataImportSourceType;
 import io.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
+import io.camunda.optimize.rest.exceptions.NotSupportedException;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.es.schema.TransportOptionsProvider;
 import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
@@ -33,8 +34,9 @@ import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.upgrade.os.OpenSearchClientBuilder;
+import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.connect.plugin.PluginRepository;
-import jakarta.ws.rs.NotSupportedException;
+import io.camunda.search.os.clients.OpensearchSearchClient;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -107,9 +109,6 @@ import org.opensearch.client.opensearch.indices.RolloverResponse;
 import org.opensearch.client.opensearch.indices.rollover.RolloverConditions;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotResponse;
-import org.opensearch.client.opensearch.snapshot.GetRepositoryRequest;
-import org.opensearch.client.opensearch.snapshot.GetSnapshotRequest;
-import org.opensearch.client.opensearch.snapshot.GetSnapshotResponse;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.opensearch.client.opensearch.tasks.ListRequest;
 import org.opensearch.client.opensearch.tasks.ListResponse;
@@ -123,6 +122,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       org.slf4j.LoggerFactory.getLogger(OptimizeOpenSearchClient.class);
 
   private ExtendedOpenSearchClient openSearchClient;
+  private DocumentBasedSearchClient documentBasedSearchClient;
   private OpenSearchAsyncClient openSearchAsyncClient;
   private RichOpenSearchClient richOpenSearchClient;
   private RestClient restClient;
@@ -150,6 +150,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
         new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
     this.restClient = restClient;
     indexNameServiceOS = new IndexNameServiceOS(indexNameService);
+    documentBasedSearchClient = new OpensearchSearchClient(openSearchClient);
   }
 
   public OptimizeOpenSearchClient(
@@ -164,6 +165,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     richOpenSearchClient =
         new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
     indexNameServiceOS = new IndexNameServiceOS(indexNameService);
+    documentBasedSearchClient = new OpensearchSearchClient(openSearchClient);
   }
 
   public RestClient getRestClient() {
@@ -261,6 +263,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     restClient = OpenSearchClientBuilder.restClient(configurationService);
     transportOptionsProvider = new TransportOptionsProvider(configurationService);
     indexNameServiceOS = new IndexNameServiceOS(indexNameService);
+    documentBasedSearchClient = new OpensearchSearchClient(openSearchClient);
   }
 
   public final <T> GetResponse<T> get(
@@ -436,11 +439,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     getRichOpenSearchClient().index().refresh(indexPattern);
   }
 
-  public long count(final String[] indexNames, final Query query) throws IOException {
-    return count(
-        indexNames, query, "Could not execute count request for " + Arrays.toString(indexNames));
-  }
-
   @Override
   public List<String> getAllIndexNames() throws IOException {
     return new ArrayList<>(getRichOpenSearchClient().index().getIndexNamesWithRetries("*"));
@@ -459,6 +457,11 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   @Override
   public void setDefaultRequestOptions() {
     // Do nothing, CustomerHeaderSupplier not supported for OpenSearch (see #10086)
+  }
+
+  @Override
+  public DocumentBasedSearchClient documentBasedSearchClient() {
+    return documentBasedSearchClient;
   }
 
   @Override
@@ -573,6 +576,11 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     } catch (final IOException e) {
       LOG.warn("There was an error deleting all indexes.", e);
     }
+  }
+
+  public long count(final String[] indexNames, final Query query) throws IOException {
+    return count(
+        indexNames, query, "Could not execute count request for " + Arrays.toString(indexNames));
   }
 
   private boolean exists(final ExistsRequest existsRequest) throws IOException {
@@ -1020,16 +1028,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     }
   }
 
-  public void verifyRepositoryExists(final GetRepositoryRequest getRepositoriesRequest)
-      throws IOException, OpenSearchException {
-    openSearchClient.snapshot().getRepository(getRepositoriesRequest);
-  }
-
-  public GetSnapshotResponse getSnapshots(final GetSnapshotRequest getSnapshotRequest)
-      throws IOException {
-    return openSearchClient.getSnapshots(getSnapshotRequest);
-  }
-
   public CompletableFuture<CreateSnapshotResponse> triggerSnapshotAsync(
       final CreateSnapshotRequest createSnapshotRequest) {
     return safe(
@@ -1040,10 +1038,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
 
   public ExtendedOpenSearchClient getOpenSearchClient() {
     return openSearchClient;
-  }
-
-  public OpenSearchAsyncClient getOpenSearchAsyncClient() {
-    return openSearchAsyncClient;
   }
 
   public RichOpenSearchClient getRichOpenSearchClient() {

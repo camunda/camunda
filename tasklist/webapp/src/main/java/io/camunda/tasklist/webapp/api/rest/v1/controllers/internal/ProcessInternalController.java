@@ -17,7 +17,8 @@ import io.camunda.tasklist.webapp.api.rest.v1.controllers.ApiErrorController;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessPublicEndpointsResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
-import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
+import io.camunda.tasklist.webapp.dto.ProcessInstanceDTO;
+import io.camunda.tasklist.webapp.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
@@ -39,7 +40,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -59,6 +59,7 @@ public class ProcessInternalController extends ApiErrorController {
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private IdentityAuthorizationService identityAuthorizationService;
   @Autowired private TenantService tenantService;
+  @Autowired private TasklistPermissionServices permissionServices;
 
   @Operation(
       summary = "Returns the process by ProcessDefinitionKey",
@@ -121,7 +122,7 @@ public class ProcessInternalController extends ApiErrorController {
         processStore
             .getProcesses(
                 query,
-                identityAuthorizationService.getProcessDefinitionsFromAuthorization(),
+                permissionServices.getProcessDefinitionsWithCreateProcessInstancePermission(),
                 tenantId,
                 isStartedByForm)
             .stream()
@@ -180,7 +181,6 @@ public class ProcessInternalController extends ApiErrorController {
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class)))
       })
-  @PreAuthorize("hasPermission('write')")
   @PatchMapping("{bpmnProcessId}/start")
   public ResponseEntity<ProcessInstanceDTO> startProcessInstance(
       @PathVariable final String bpmnProcessId,

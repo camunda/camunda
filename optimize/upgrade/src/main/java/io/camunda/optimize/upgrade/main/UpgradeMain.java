@@ -40,7 +40,7 @@ public class UpgradeMain {
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(UpgradeMain.class);
 
   static {
-    new LoggingConfigurationReader().defineLogbackLoggingConfiguration();
+    new LoggingConfigurationReader().defineLog4jLoggingConfiguration();
   }
 
   public static void main(final String... args) {

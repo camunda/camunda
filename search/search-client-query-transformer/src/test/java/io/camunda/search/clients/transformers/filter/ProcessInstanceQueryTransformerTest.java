@@ -232,29 +232,6 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   }
 
   @Test
-  public void shouldQueryByTreePath() {
-    // given
-    final var processInstanceFilter = FilterBuilders.processInstance(f -> f.treePaths("PI_12"));
-    final var searchQuery =
-        SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
-
-    // when
-    final var searchRequest = transformQuery(processInstanceFilter);
-
-    // then
-    final var queryVariant = searchRequest.queryOption();
-    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
-    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
-
-    assertIsSearchTermQuery(
-        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
-        "joinRelation",
-        "processInstance");
-    assertIsSearchTermQuery(
-        ((SearchBoolQuery) queryVariant).must().get(1).queryOption(), "treePath", "PI_12");
-  }
-
-  @Test
   public void shouldQueryByStartDateAndEndDate() {
     // given
     final var dateAfter = OffsetDateTime.of(2024, 3, 12, 10, 30, 15, 0, ZoneOffset.UTC);
@@ -379,7 +356,6 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
     assertThat(processInstanceFilter.processDefinitionKeyOperations()).isEmpty();
     assertThat(processInstanceFilter.parentProcessInstanceKeyOperations()).isEmpty();
     assertThat(processInstanceFilter.parentFlowNodeInstanceKeyOperations()).isEmpty();
-    assertThat(processInstanceFilter.treePathOperations()).isEmpty();
     assertThat(processInstanceFilter.startDateOperations()).isEmpty();
     assertThat(processInstanceFilter.endDateOperations()).isEmpty();
     assertThat(processInstanceFilter.stateOperations()).isEmpty();

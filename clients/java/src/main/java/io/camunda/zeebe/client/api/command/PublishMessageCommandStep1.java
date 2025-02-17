@@ -20,6 +20,11 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.Map;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.PublishMessageCommandStep1}
+ */
+@Deprecated
 public interface PublishMessageCommandStep1
     extends CommandWithCommunicationApiStep<PublishMessageCommandStep1> {
 
@@ -31,6 +36,11 @@ public interface PublishMessageCommandStep1
    */
   PublishMessageCommandStep2 messageName(String messageName);
 
+  /**
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+   *     io.camunda.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep2}
+   */
+  @Deprecated
   interface PublishMessageCommandStep2 {
     /**
      * Set the value of the correlation key of the message.
@@ -56,6 +66,11 @@ public interface PublishMessageCommandStep1
     PublishMessageCommandStep3 withoutCorrelationKey();
   }
 
+  /**
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+   *     io.camunda.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep3}
+   */
+  @Deprecated
   interface PublishMessageCommandStep3
       extends CommandWithTenantStep<PublishMessageCommandStep3>,
           FinalCommandStep<PublishMessageResponse> {

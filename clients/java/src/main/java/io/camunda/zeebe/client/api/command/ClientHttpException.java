@@ -15,6 +15,11 @@
  */
 package io.camunda.zeebe.client.api.command;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.ClientHttpException}
+ */
+@Deprecated
 public class ClientHttpException extends ClientException {
   private final int code;
   private final String reason;

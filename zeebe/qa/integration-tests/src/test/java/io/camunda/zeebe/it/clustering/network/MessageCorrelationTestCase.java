@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.clustering.network;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture;
 final class MessageCorrelationTestCase implements AsymmetricNetworkPartitionTestCase {
 
   @Override
-  public void given(final ZeebeClient client) {
+  public void given(final CamundaClient client) {
     final var process =
         Bpmn.createExecutableProcess("process")
             .startEvent()
@@ -44,7 +44,7 @@ final class MessageCorrelationTestCase implements AsymmetricNetworkPartitionTest
   }
 
   @Override
-  public CompletableFuture<?> when(final ZeebeClient client) {
+  public CompletableFuture<?> when(final CamundaClient client) {
     return (CompletableFuture<?>)
         client
             .newCreateInstanceCommand()
@@ -56,7 +56,7 @@ final class MessageCorrelationTestCase implements AsymmetricNetworkPartitionTest
   }
 
   @Override
-  public void then(final ZeebeClient client, final CompletableFuture<?> whenFuture) {
+  public void then(final CamundaClient client, final CompletableFuture<?> whenFuture) {
     whenFuture.join(); // await the process instance completion
   }
 }

@@ -7,19 +7,19 @@
  */
 package io.camunda.exporter.adapters;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.cache.form.OpenSearchFormCacheLoader;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.cache.process.OpenSearchProcessCacheLoader;
-import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.OpensearchBatchRequest;
 import io.camunda.exporter.utils.OpensearchScriptBuilder;
-import io.camunda.exporter.utils.XMLUtil;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.os.OpensearchConnector;
 import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -29,12 +29,19 @@ class OpensearchAdapter implements ClientAdapter {
   private final OpenSearchClient client;
   private final OpensearchEngineClient searchEngineClient;
   private final OpensearchExporterEntityCacheProvider entityCacheLoader;
+  private final ObjectMapper objectMapper;
 
-  OpensearchAdapter(final ExporterConfiguration configuration) {
-    final var connector = new OpensearchConnector(configuration.getConnect());
+  OpensearchAdapter(final ConnectConfiguration configuration) {
+    final var connector = new OpensearchConnector(configuration);
     client = connector.createClient();
-    searchEngineClient = new OpensearchEngineClient(client);
+    objectMapper = connector.objectMapper();
+    searchEngineClient = new OpensearchEngineClient(client, objectMapper);
     entityCacheLoader = new OpensearchExporterEntityCacheProvider(client);
+  }
+
+  @Override
+  public ObjectMapper objectMapper() {
+    return objectMapper;
   }
 
   @Override
@@ -63,8 +70,8 @@ class OpensearchAdapter implements ClientAdapter {
 
     @Override
     public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
-        final String processIndexName, final XMLUtil xmlUtil) {
-      return new OpenSearchProcessCacheLoader(client, processIndexName, xmlUtil);
+        final String processIndexName) {
+      return new OpenSearchProcessCacheLoader(client, processIndexName);
     }
 
     @Override

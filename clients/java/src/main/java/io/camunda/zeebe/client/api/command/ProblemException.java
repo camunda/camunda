@@ -17,6 +17,11 @@ package io.camunda.zeebe.client.api.command;
 
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.ProblemException}
+ */
+@Deprecated
 public class ProblemException extends ClientHttpException {
   private final ProblemDetail details;
 

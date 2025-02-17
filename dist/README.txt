@@ -25,11 +25,21 @@ zeebe:
 
 2. Run bin/camunda (or bin\camunda.bat on Windows)
 
+# With H2:
+
+## Prerequisites:
+
+No prerequisites needed
+
+## Start Camunda:
+
+Run camunda with `rdbmsH2` profile
+
 # With Postgres:
 
 ## Prerequisites:
 
-Start Postgres docker container:
+Start Postgres docker container (docker compose file in db/rdbms):
 
 ```
 docker-compose up -d postgres
@@ -43,7 +53,7 @@ Run camunda with `rdbmsPostgres` profile
 
 ## Prerequisites:
 
-Start Postgres docker container:
+Start Postgres docker container (docker compose file in db/rdbms):
 
 ```
 docker-compose up -d mariadb
@@ -53,11 +63,11 @@ docker-compose up -d mariadb
 
 Run camunda with `rdbmsMariaDB` profile
 
-# With Postgres:
+# With Oracle:
 
 ## Prerequisites:
 
-Start Postgres docker container:
+Start Oracle docker container (docker compose file in db/rdbms):
 
 ```
 docker-compose up -d oracle

@@ -23,6 +23,11 @@ import java.util.List;
 import java.util.function.Consumer;
 
 @ExperimentalApi("https://github.com/camunda/camunda/issues/11231")
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.StreamJobsCommandStep1}
+ */
+@Deprecated
 public interface StreamJobsCommandStep1 {
   /**
    * Set the type of jobs to work on; only jobs of this type will be activated and consumed by this
@@ -33,6 +38,11 @@ public interface StreamJobsCommandStep1 {
    */
   StreamJobsCommandStep2 jobType(String jobType);
 
+  /**
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+   *     io.camunda.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep2}
+   */
+  @Deprecated
   interface StreamJobsCommandStep2 {
 
     /**
@@ -46,6 +56,11 @@ public interface StreamJobsCommandStep1 {
     StreamJobsCommandStep3 consumer(final Consumer<ActivatedJob> consumer);
   }
 
+  /**
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+   *     io.camunda.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3}
+   */
+  @Deprecated
   interface StreamJobsCommandStep3
       extends CommandWithOneOrMoreTenantsStep<StreamJobsCommandStep3>,
           FinalCommandStep<StreamJobsResponse> {

@@ -128,7 +128,7 @@ export class Common {
     const targetBoundingBox = await element.boundingBox();
     if (targetBoundingBox === null) {
       throw new Error(
-        'An error occured when drawing the arrow: target bounding box is null',
+        'An error occurred when drawing the arrow: target bounding box is null',
       );
     }
 
@@ -152,7 +152,7 @@ export class Common {
     const targetBoundingBox = await element.boundingBox();
     if (targetBoundingBox === null) {
       throw new Error(
-        'An error occured when drawing the arrow: target bounding box is null',
+        'An error occurred when drawing the arrow: target bounding box is null',
       );
     }
 
@@ -176,7 +176,7 @@ export class Common {
     const targetBoundingBox = await element.boundingBox();
     if (targetBoundingBox === null) {
       throw new Error(
-        'An error occured when drawing the arrow: target bounding box is null',
+        'An error occurred when drawing the arrow: target bounding box is null',
       );
     }
 
@@ -200,7 +200,7 @@ export class Common {
     const targetBoundingBox = await element.boundingBox();
     if (targetBoundingBox === null) {
       throw new Error(
-        'An error occured when drawing the arrow: target bounding box is null',
+        'An error occurred when drawing the arrow: target bounding box is null',
       );
     }
 

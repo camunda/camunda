@@ -15,10 +15,11 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.client.impl.util.ParseUtil;
+import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
-import io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
 import java.util.Map;
 
@@ -35,12 +36,12 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
   private Map<String, Object> variablesAsMap;
 
   public CreateProcessInstanceWithResultResponseImpl(
-      final JsonMapper jsonMapper, final CreateProcessInstanceResponse response) {
+      final JsonMapper jsonMapper, final CreateProcessInstanceResult response) {
     this.jsonMapper = jsonMapper;
-    processDefinitionKey = response.getProcessDefinitionKey();
+    processDefinitionKey = ParseUtil.parseLongOrEmpty(response.getProcessDefinitionKey());
     bpmnProcessId = response.getProcessDefinitionId();
     version = response.getProcessDefinitionVersion();
-    processInstanceKey = response.getProcessInstanceKey();
+    processInstanceKey = ParseUtil.parseLongOrEmpty(response.getProcessInstanceKey());
     tenantId = response.getTenantId();
     variables = jsonMapper.toJson(response.getVariables());
   }

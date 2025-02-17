@@ -12,6 +12,8 @@ import java.util.Set;
 
 public class OptimizeImportIncorrectIndexVersionException extends OptimizeValidationException {
 
+  public static final String ERROR_CODE = "importDescriptionInvalid";
+
   private final Set<ImportIndexMismatchDto> mismatchingIndices;
 
   public OptimizeImportIncorrectIndexVersionException(

@@ -19,6 +19,11 @@ import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.command.ClientException;
 import java.util.Map;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.response.ProcessInstanceResult}
+ */
+@Deprecated
 public interface ProcessInstanceResult {
   /** Key of the process which this instance was created for */
   long getProcessDefinitionKey();

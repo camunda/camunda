@@ -42,7 +42,7 @@ import org.springframework.test.web.servlet.MvcResult;
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
-      OperateProperties.PREFIX + ".multiTenancy.enabled = true"
+      "camunda.security.multiTenancy.enabled = true"
     })
 public class DecisionIT extends OperateAbstractIT {
 

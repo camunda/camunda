@@ -19,5 +19,5 @@ import org.springframework.context.annotation.Profile;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Inherited
-@Profile("(operate | tasklist | identity | optimize)")
+@Profile("(operate | tasklist | optimize)")
 public @interface ProfileWebApp {}

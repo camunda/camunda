@@ -63,7 +63,7 @@ public class IncidentWithFailingOperationZeebeImportIT extends OperateZeebeAbstr
   @Before
   public void before() {
     super.before();
-    updateRetriesHandler.setZeebeClient(super.getClient());
+    updateRetriesHandler.setCamundaClient(super.getClient());
   }
 
   @Test
@@ -88,10 +88,10 @@ public class IncidentWithFailingOperationZeebeImportIT extends OperateZeebeAbstr
     final String processId = "complexProcess";
     deployProcess("complexProcess_v_3.bpmn");
     final long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"count\":3}");
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"count\":3}");
     final String errorMsg = "some error";
     final String activityId = "alwaysFailingTask";
-    ZeebeTestUtil.failTask(zeebeClient, activityId, getWorkerName(), 3, errorMsg);
+    ZeebeTestUtil.failTask(camundaClient, activityId, getWorkerName(), 3, errorMsg);
     searchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, processInstanceKey, 4);
 
     postOperationWithOKResponse(

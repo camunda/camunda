@@ -7,11 +7,9 @@
  */
 package io.camunda.search.clients.transformers.entity;
 
-import static java.util.Optional.ofNullable;
-
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.entities.AuthorizationEntity;
-import java.util.List;
+import java.util.HashSet;
 
 public class AuthorizationEntityTransformer
     implements ServiceTransformer<
@@ -22,9 +20,11 @@ public class AuthorizationEntityTransformer
   public AuthorizationEntity apply(
       final io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity value) {
     return new AuthorizationEntity(
-        value.getOwnerKey(),
+        value.getAuthorizationKey(),
+        value.getOwnerId(),
         value.getOwnerType(),
         value.getResourceType(),
-        ofNullable(value.getPermissions()).map(List::copyOf).orElse(null));
+        value.getResourceId(),
+        new HashSet<>(value.getPermissionTypes()));
   }
 }

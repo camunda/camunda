@@ -9,13 +9,13 @@ package io.camunda.tasklist.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.property.ZeebeProperties;
 import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.util.CertificateUtil;
 import io.camunda.tasklist.zeebe.ZeebeConnector;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.zeebe.containers.ZeebeContainer;
 import java.io.File;
 import java.time.Duration;
@@ -37,6 +37,7 @@ import org.testcontainers.utility.MountableFile;
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
+      TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true"
     })
 @ExtendWith(SpringExtension.class)
 public class ZeebeConnectorSecureIT {
@@ -50,7 +51,7 @@ public class ZeebeConnectorSecureIT {
                   ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME));
   @Autowired ZeebeConnector zeebeConnector;
   private ZeebeContainer zeebeContainer;
-  private ZeebeClient zeebeClient;
+  private CamundaClient camundaClient;
 
   @Test
   public void shouldConnectWithTLS(@TempDir final File tempDir) throws Exception {
@@ -76,23 +77,23 @@ public class ZeebeConnectorSecureIT {
                     .withRegEx(".*Broker is ready!.*")
                     .withStartupTimeout(Duration.ofSeconds(101)));
     zeebeContainer.start();
-    zeebeClient =
-        zeebeConnector.newZeebeClient(
+    camundaClient =
+        zeebeConnector.newCamundaClient(
             new ZeebeProperties()
                 .setGatewayAddress(zeebeContainer.getExternalGatewayAddress())
                 .setSecure(true)
                 .setCertificatePath(tempDir.getCanonicalPath() + "/" + CERTIFICATE_FILE));
     // when
     final List<BrokerInfo> brokerInfos =
-        zeebeClient.newTopologyRequest().send().join().getBrokers();
+        camundaClient.newTopologyRequest().send().join().getBrokers();
     // then
     assertThat(brokerInfos).isNotEmpty();
   }
 
   @AfterEach
   public void cleanUp() {
-    if (zeebeClient != null) {
-      zeebeClient.close();
+    if (camundaClient != null) {
+      camundaClient.close();
     }
     if (zeebeContainer != null) {
       zeebeContainer.stop();

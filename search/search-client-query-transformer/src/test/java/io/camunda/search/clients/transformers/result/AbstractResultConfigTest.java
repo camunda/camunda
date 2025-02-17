@@ -12,10 +12,12 @@ import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.sort.SortOption;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 
 public class AbstractResultConfigTest {
 
-  private final ServiceTransformers transformers = ServiceTransformers.newInstance("");
+  private final ServiceTransformers transformers =
+      ServiceTransformers.newInstance(new IndexDescriptors("", true));
 
   protected SearchSourceConfig transformRequest(
       final TypedSearchQuery<? extends FilterBase, ? extends SortOption> request) {

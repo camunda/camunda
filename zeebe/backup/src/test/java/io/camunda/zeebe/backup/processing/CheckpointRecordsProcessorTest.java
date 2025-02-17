@@ -34,6 +34,7 @@ import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.impl.RecordProcessorContextImpl;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.InstantSource;
 import java.util.concurrent.atomic.AtomicLong;
@@ -65,7 +66,7 @@ final class CheckpointRecordsProcessorTest {
     final RecordProcessorContextImpl context = createContext(executor, zeebedb);
 
     resultBuilder = new MockProcessingResultBuilder();
-    processor = new CheckpointRecordsProcessor(backupManager, 1);
+    processor = new CheckpointRecordsProcessor(backupManager, 1, context.getMeterRegistry());
     processor.init(context);
 
     state = new DbCheckpointState(zeebedb, zeebedb.createContext());
@@ -81,7 +82,8 @@ final class CheckpointRecordsProcessorTest {
         context,
         null,
         new DbKeyGenerator(1, zeebeDb, context),
-        StreamClock.controllable(InstantSource.system()));
+        StreamClock.controllable(InstantSource.system()),
+        new SimpleMeterRegistry());
   }
 
   @AfterEach
@@ -287,7 +289,7 @@ final class CheckpointRecordsProcessorTest {
   void shouldNotifyListenerOnInit() {
     // given
     final RecordProcessorContextImpl context = createContext(null, zeebedb);
-    processor = new CheckpointRecordsProcessor(backupManager, 1);
+    processor = new CheckpointRecordsProcessor(backupManager, 1, context.getMeterRegistry());
     final long checkpointId = 3;
     final long checkpointPosition = 30;
     state.setCheckpointInfo(checkpointId, checkpointPosition);

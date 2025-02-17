@@ -76,6 +76,33 @@ final class ClusterEndpointIT {
   }
 
   @Test
+  void shouldRequestClusterPurge() {
+    final ClusterActuator actuator;
+    try (final var cluster = createCluster(2)) {
+      // given
+      cluster.awaitCompleteTopology();
+      actuator = ClusterActuator.of(cluster.availableGateway());
+
+      // when -- request a purge
+      final var response = actuator.purge(false);
+
+      // then
+      assertThat(response.getPlannedChanges().stream().map(Operation::getOperation))
+          .containsExactlyElementsOf(
+              List.of(
+                  OperationEnum.PARTITION_LEAVE,
+                  OperationEnum.PARTITION_LEAVE,
+                  OperationEnum.PARTITION_LEAVE,
+                  OperationEnum.PARTITION_LEAVE,
+                  OperationEnum.DELETE_HISTORY,
+                  OperationEnum.PARTITION_BOOTSTRAP,
+                  OperationEnum.PARTITION_BOOTSTRAP,
+                  OperationEnum.PARTITION_JOIN,
+                  OperationEnum.PARTITION_JOIN));
+    }
+  }
+
+  @Test
   void shouldRequestPartitionJoin() {
     try (final var cluster = createCluster(1)) {
       // given

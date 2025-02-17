@@ -10,10 +10,13 @@ package io.camunda.search.clients.transformers.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.MappingFilter;
 import io.camunda.search.filter.MappingFilter.Builder;
+import io.camunda.search.filter.MappingFilter.Claim;
 import io.camunda.util.ObjectBuilder;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -47,6 +50,22 @@ public class MappingQueryTransformerTest extends AbstractTransformerTest {
             SearchQuery.of(q -> q.term(t -> t.field("claimName").value("barfoo")))),
         Arguments.of(
             (Function<Builder, ObjectBuilder<MappingFilter>>) f -> f.claimValue("foobar"),
-            SearchQuery.of(q -> q.term(t -> t.field("claimValue").value("foobar")))));
+            SearchQuery.of(q -> q.term(t -> t.field("claimValue").value("foobar")))),
+        Arguments.of(
+            (Function<Builder, ObjectBuilder<MappingFilter>>) f -> f.name("foobar"),
+            SearchQuery.of(q -> q.term(t -> t.field("name").value("foobar")))),
+        Arguments.of(
+            (Function<Builder, ObjectBuilder<MappingFilter>>)
+                f -> f.claims(List.of(new Claim("c1", "v1"), new Claim("c2", "v2"))),
+            SearchQueryBuilders.or(
+                List.of(
+                    SearchQueryBuilders.and(
+                        List.of(
+                            SearchQueryBuilders.term(MappingIndex.CLAIM_NAME, "c1"),
+                            SearchQueryBuilders.term(MappingIndex.CLAIM_VALUE, "v1"))),
+                    SearchQueryBuilders.and(
+                        List.of(
+                            SearchQueryBuilders.term(MappingIndex.CLAIM_NAME, "c2"),
+                            SearchQueryBuilders.term(MappingIndex.CLAIM_VALUE, "v2")))))));
   }
 }

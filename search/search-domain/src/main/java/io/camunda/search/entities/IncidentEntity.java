@@ -23,7 +23,6 @@ public record IncidentEntity(
     OffsetDateTime creationTime,
     IncidentState state,
     Long jobKey,
-    String treePath,
     String tenantId) {
 
   public enum IncidentState {
@@ -39,6 +38,7 @@ public record IncidentEntity(
     IO_MAPPING_ERROR,
     JOB_NO_RETRIES,
     EXECUTION_LISTENER_NO_RETRIES,
+    TASK_LISTENER_NO_RETRIES,
     CONDITION_ERROR,
     EXTRACT_VALUE_ERROR,
     CALLED_ELEMENT_ERROR,

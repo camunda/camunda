@@ -8,15 +8,14 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.exporter.utils.ProcessModelReader;
-import io.camunda.exporter.utils.ProcessModelReader.EmbeddedForm;
-import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.entities.tasklist.EmbeddedFormBatch;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
+import io.camunda.zeebe.util.modelreader.ProcessModelReader;
+import io.camunda.zeebe.util.modelreader.ProcessModelReader.EmbeddedForm;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,11 +23,9 @@ public class EmbeddedFormHandler implements ExportHandler<EmbeddedFormBatch, Pro
 
   private static final String FORM_ID_PATTERN = "%s_%s";
   private final String indexName;
-  private final XMLUtil xmlUtil;
 
-  public EmbeddedFormHandler(final String indexName, final XMLUtil xmlUtil) {
+  public EmbeddedFormHandler(final String indexName) {
     this.indexName = indexName;
-    this.xmlUtil = xmlUtil;
   }
 
   @Override
@@ -61,8 +58,7 @@ public class EmbeddedFormHandler implements ExportHandler<EmbeddedFormBatch, Pro
     final var value = record.getValue();
     final var resource = value.getResource();
     final var bpmnProcessId = value.getBpmnProcessId();
-    xmlUtil
-        .createProcessModelReader(resource, bpmnProcessId)
+    ProcessModelReader.of(resource, bpmnProcessId)
         .flatMap(ProcessModelReader::extractEmbeddedForms)
         .map(l -> mapToFormEntities(record, l))
         .ifPresent(entity::setForms);

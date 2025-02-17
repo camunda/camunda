@@ -48,7 +48,7 @@ public abstract class ApiServices<T extends ApiServices<T>> {
 
   protected <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
       final BrokerRequest<R> brokerRequest) {
-    brokerRequest.setAuthorization(authentication.token());
+    brokerRequest.setAuthorization(authentication.claims());
     return brokerClient
         .sendRequest(brokerRequest)
         .handleAsync(

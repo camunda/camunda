@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.clock;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
-
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
@@ -60,12 +58,11 @@ public final class ClockProcessor implements DistributedTypedRecordProcessor<Clo
   public void processNewCommand(final TypedRecord<ClockRecord> command) {
     final var authRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.SYSTEM, PermissionType.UPDATE);
-    if (authCheckBehavior.isAuthorized(authRequest).isLeft()) {
-      final var reason =
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authRequest.getPermissionType(), authRequest.getResourceType());
-      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, reason);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, reason);
+    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 

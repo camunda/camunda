@@ -362,7 +362,7 @@ public class TaskSearchView {
   public static TaskSearchView createFrom(TaskEntity taskEntity, Object[] sortValues) {
     final TaskSearchView taskSearchView =
         new TaskSearchView()
-            .setId(taskEntity.getId())
+            .setId(String.valueOf(taskEntity.getKey()))
             .setCreationTime(taskEntity.getCreationTime())
             .setCompletionTime(taskEntity.getCompletionTime())
             .setProcessInstanceId(taskEntity.getProcessInstanceId())

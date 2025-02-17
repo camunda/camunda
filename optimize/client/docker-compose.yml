@@ -50,7 +50,7 @@ services:
         soft: 65536 # maximum number of open files for the OpenSearch user, set to at least 65536 on modern systems
         hard: 65536
     ports:
-      - 9205:9200
+      - 9200:9200
       - 9305:9300
     restart: always
     cpu_count: 4
@@ -68,7 +68,6 @@ services:
       - 'JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m'
     ports:
       - '26500:26500'
-      - '9600:9600'
     healthcheck:
       test: ['CMD-SHELL', "timeout 10s bash -c ':> /dev/tcp/127.0.0.1/9600' || exit 1"]
       interval: 30s
@@ -91,7 +90,6 @@ services:
       - DATABASE_PORT=9200
     ports:
       - 26500:26500
-      - 9600:9600
     healthcheck:
       test: ['CMD-SHELL', "timeout 10s bash -c ':> /dev/tcp/127.0.0.1/9600' || exit 1"]
       interval: 30s
@@ -105,7 +103,7 @@ services:
       - opensearch
   keycloak:
     container_name: keycloak
-    image: bitnami/keycloak:26.0.7@sha256:586f85341c86a793b29ab5e1be134c20193d91c152d64441940943efe6882e12
+    image: bitnami/keycloak:26.1.0@sha256:e18757062605529d3869a2f765660110cce6061d92259c83bb48fddff9b44d2f
     profiles: ['self-managed', 'self-managed:opensearch', 'self-managed:elasticsearch']
     ports:
       - '18080:8080'
@@ -191,9 +189,9 @@ services:
       - SERVER_SERVLET_CONTEXT_PATH=/
       - CAMUNDA_OPERATE_CLUSTERNODE_PARTITIONIDS=1,2
     ports:
-      - '8080:8080'
+      - '28080:8080'
     healthcheck:
-      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:8080/actuator/health/readiness'"]
+      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:28080/actuator/health/readiness'"]
       interval: 30s
       timeout: 1s
       retries: 5
@@ -223,9 +221,9 @@ services:
       - SERVER_SERVLET_CONTEXT_PATH=/
       - CAMUNDA_OPERATE_CLUSTERNODE_PARTITIONIDS=1,2
     ports:
-      - '8080:8080'
+      - '28080:8080'
     healthcheck:
-      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:8080/actuator/health/readiness'"]
+      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:28080/actuator/health/readiness'"]
       interval: 30s
       timeout: 1s
       retries: 5

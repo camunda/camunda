@@ -36,7 +36,7 @@ public final class JobUpdateRetriesTest {
   private static final int NEW_RETRIES = 20;
   private static final String PROCESS_ID = "process";
   private static String jobType;
-  private static long userKey;
+  private static String username;
   private static String tenantId;
 
   @Rule
@@ -46,25 +46,27 @@ public final class JobUpdateRetriesTest {
   @BeforeClass
   public static void setUp() {
     tenantId = UUID.randomUUID().toString();
-    final var username = UUID.randomUUID().toString();
-    userKey = ENGINE.user().newUser(username).create().getValue().getUserKey();
-    final var tenantKey =
-        ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
+    username = UUID.randomUUID().toString();
+    final var user = ENGINE.user().newUser(username).create().getValue();
+    final var userKey = user.getUserKey();
+    final var username = user.getUsername();
+    ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     ENGINE
         .tenant()
-        .addEntity(tenantKey)
+        .addEntity(tenantId)
         .withEntityType(EntityType.USER)
-        .withEntityKey(userKey)
+        .withEntityId(username)
         .add();
 
     ENGINE
         .authorization()
-        .permission()
-        .withPermission(PermissionType.UPDATE_PROCESS_INSTANCE, PROCESS_ID)
+        .newAuthorization()
+        .withPermissions(PermissionType.UPDATE_PROCESS_INSTANCE)
+        .withResourceId(PROCESS_ID)
         .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-        .withOwnerKey(userKey)
+        .withOwnerId(username)
         .withOwnerType(AuthorizationOwnerType.USER)
-        .add();
+        .create();
   }
 
   @Before
@@ -197,7 +199,7 @@ public final class JobUpdateRetriesTest {
     // given
     ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
     final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(userKey);
+        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(username);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
     // when
@@ -219,7 +221,7 @@ public final class JobUpdateRetriesTest {
     final String falseTenantId = "foo";
     ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
     final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(userKey);
+        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(username);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
     // when

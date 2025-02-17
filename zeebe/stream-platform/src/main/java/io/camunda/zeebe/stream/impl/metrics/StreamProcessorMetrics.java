@@ -7,78 +7,28 @@
  */
 package io.camunda.zeebe.stream.impl.metrics;
 
-import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
-import io.prometheus.client.Counter;
-import io.prometheus.client.Gauge;
-import io.prometheus.client.Histogram;
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.TimeGauge;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class StreamProcessorMetrics {
 
-  private static final String LABEL_NAME_PARTITION = "partition";
-  private static final String LABEL_NAME_ACTION = "action";
+  private final AtomicLong startupRecoveryTime = new AtomicLong();
+  private final AtomicInteger processorState = new AtomicInteger();
 
-  private static final String LABEL_WRITTEN = "written";
-  private static final String LABEL_SKIPPED = "skipped";
-  private static final String LABEL_PROCESSED = "processed";
-  private static final String NAMESPACE = "zeebe";
+  private final MeterRegistry registry;
 
-  private static final Counter STREAM_PROCESSOR_EVENTS =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("stream_processor_records_total")
-          .help("Number of records processed by stream processor")
-          .labelNames(LABEL_NAME_ACTION, LABEL_NAME_PARTITION)
-          .register();
+  public StreamProcessorMetrics(final MeterRegistry registry) {
+    this.registry = registry;
 
-  private static final Gauge LAST_PROCESSED_POSITION =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .name("stream_processor_last_processed_position")
-          .help("The last position the stream processor has processed.")
-          .labelNames(LABEL_NAME_PARTITION)
-          .register();
-
-  private static final Histogram PROCESSING_LATENCY =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("stream_processor_latency")
-          .help(
-              "Time between a command is written until it is picked up for processing (in seconds)")
-          .labelNames(LABEL_NAME_PARTITION)
-          .register();
-  private static final String LABEL_NAME_VALUE_TYPE = "valueType";
-  private static final String LABEL_NAME_INTENT = "intent";
-  private static final Histogram PROCESSING_DURATION =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("stream_processor_processing_duration")
-          .help("Time for processing a record (in seconds)")
-          .labelNames(LABEL_NAME_PARTITION, LABEL_NAME_VALUE_TYPE, LABEL_NAME_INTENT)
-          .register();
-
-  private static final Gauge STARTUP_RECOVERY_TIME =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .name("stream_processor_startup_recovery_time")
-          .help("Time taken for startup and recovery of stream processor (in ms)")
-          .labelNames(LABEL_NAME_PARTITION)
-          .register();
-
-  private static final Gauge PROCESSOR_STATE =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .name("stream_processor_state")
-          .help("Describes the state of the stream processor, namely if it is active or paused.")
-          .labelNames(LABEL_NAME_PARTITION)
-          .register();
-  private final String partitionIdLabel;
-  private final Gauge.Child processorState;
-
-  public StreamProcessorMetrics(final int partitionId) {
-    partitionIdLabel = String.valueOf(partitionId);
-    processorState = PROCESSOR_STATE.labels(partitionIdLabel);
+    registerStartupRecoveryTime();
+    registerProcessorState();
   }
 
   public void setStreamProcessorInitial() {
@@ -101,49 +51,9 @@ public final class StreamProcessorMetrics {
     processorState.set(4);
   }
 
-  private void event(final String action) {
-    STREAM_PROCESSOR_EVENTS.labels(action, partitionIdLabel).inc();
-  }
-
-  public void processingLatency(final long written, final long processed) {
-    PROCESSING_LATENCY.labels(partitionIdLabel).observe((processed - written) / 1000f);
-  }
-
-  public Histogram.Timer startProcessingDurationTimer(
-      final ValueType valueType, final Intent intent) {
-    return PROCESSING_DURATION
-        .labels(partitionIdLabel, valueType.name(), intent.name())
-        .startTimer();
-  }
-
-  /** We only process commands. */
-  public void commandsProcessed() {
-    event(LABEL_PROCESSED);
-  }
-
-  /**
-   * We write various type of records. The positions are always increasing and incremented by 1 for
-   * one record.
-   */
-  public void recordsWritten(final long amount) {
-    if (amount < 1) {
-      return;
-    }
-
-    STREAM_PROCESSOR_EVENTS.labels(LABEL_WRITTEN, partitionIdLabel).inc(amount);
-  }
-
-  /** We skip events on processing. */
-  public void eventSkipped() {
-    event(LABEL_SKIPPED);
-  }
-
-  public Gauge.Timer startRecoveryTimer() {
-    return STARTUP_RECOVERY_TIME.labels(partitionIdLabel).startTimer();
-  }
-
-  public void setLastProcessedPosition(final long position) {
-    LAST_PROCESSED_POSITION.labels(partitionIdLabel).set(position);
+  public CloseableSilently startRecoveryTimer() {
+    return MicrometerUtil.timer(
+        startupRecoveryTime::set, TimeUnit.MILLISECONDS, registry.config().clock());
   }
 
   public void initializeProcessorPhase(final Phase phase) {
@@ -163,5 +73,20 @@ public final class StreamProcessorMetrics {
       default:
         setStreamProcessorFailed();
     }
+  }
+
+  private void registerStartupRecoveryTime() {
+    final var meterDoc = StreamMetricsDoc.STARTUP_RECOVERY_TIME;
+    TimeGauge.builder(
+            meterDoc.getName(), startupRecoveryTime, TimeUnit.MILLISECONDS, AtomicLong::longValue)
+        .description(meterDoc.getDescription())
+        .register(registry);
+  }
+
+  private void registerProcessorState() {
+    final var meterDoc = StreamMetricsDoc.PROCESSOR_STATE;
+    Gauge.builder(meterDoc.getName(), processorState, AtomicInteger::intValue)
+        .description(meterDoc.getDescription())
+        .register(registry);
   }
 }

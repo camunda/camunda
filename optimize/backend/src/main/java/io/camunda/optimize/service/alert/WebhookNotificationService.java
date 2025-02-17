@@ -15,14 +15,11 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ProxyConfiguration;
 import io.camunda.optimize.service.util.configuration.WebhookConfiguration;
 import jakarta.annotation.PreDestroy;
-import jakarta.ws.rs.HttpMethod;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hc.core5.http.Method;
 import org.apache.http.HttpHost;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
@@ -36,6 +33,9 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
 import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -121,7 +121,7 @@ public class WebhookNotificationService
             composePayload(notification, webhook), resolveContentTypeFromHeaders(webhook)));
 
     if (webhook.getHeaders() != null) {
-      request.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
+      request.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
       for (final Map.Entry<String, String> headerEntry : webhook.getHeaders().entrySet()) {
         request.setHeader(headerEntry.getKey(), headerEntry.getValue());
       }
@@ -129,11 +129,9 @@ public class WebhookNotificationService
 
     try (final CloseableHttpResponse response =
         webhookClientsByWebhookName.get(webhookName).execute(request)) {
-      final Response.Status statusCode =
-          Response.Status.fromStatusCode(response.getStatusLine().getStatusCode());
-      if (!Response.Status.Family.familyOf(statusCode.getStatusCode())
-          .equals(Response.Status.Family.SUCCESSFUL)) {
-        LOG.error("Unexpected response when sending webhook notification: " + statusCode);
+      final HttpStatus status = HttpStatus.resolve(response.getStatusLine().getStatusCode());
+      if (!status.is2xxSuccessful()) {
+        LOG.error("Unexpected response when sending webhook notification: " + status);
       }
     } catch (final IOException e) {
       throw new OptimizeRuntimeException(
@@ -145,14 +143,14 @@ public class WebhookNotificationService
       final WebhookConfiguration webhook) {
     final String httpMethod = webhook.getHttpMethod();
     final HttpEntityEnclosingRequestBase request;
-    switch (httpMethod) {
-      case HttpMethod.POST:
+    switch (Method.normalizedValueOf(httpMethod)) {
+      case Method.POST:
         request = new HttpPost(webhook.getUrl());
         break;
-      case HttpMethod.PATCH:
+      case Method.PATCH:
         request = new HttpPatch(webhook.getUrl());
         break;
-      case HttpMethod.PUT:
+      case Method.PUT:
         request = new HttpPut(webhook.getUrl());
         break;
       default:

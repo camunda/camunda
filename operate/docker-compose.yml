@@ -1,6 +1,6 @@
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.16.1
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.1
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -22,7 +22,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.16.1
+    image: docker.elastic.co/kibana/kibana:8.17.0
     ports:
       - 5601:5601
     links:
@@ -40,23 +40,6 @@ services:
       - 26500:26500
       - 8000:8000
       - 8085:8080
-    restart: always
-    volumes:
-      - ./config/zeebe.cfg.yaml:/usr/local/zeebe/config/application.yaml
-
-  zeebe-e2e:
-    container_name: zeebe-e2e
-    image: camunda/zeebe:SNAPSHOT
-    environment:
-      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
-      - ZEEBE_HOST=${ZEEBE_HOST:-}
-      - ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX=e2e
-      - ZEEBE_BROKER_BACKPRESSURE_ENABLED=false
-      #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
-    ports:
-      - 26503:26500
-      - 8001:8000
-      - 8086:8080
     restart: always
     volumes:
       - ./config/zeebe.cfg.yaml:/usr/local/zeebe/config/application.yaml
@@ -118,7 +101,7 @@ services:
       - 8000:8000
     restart: always
   operate-opensearch:
-    image: camunda/operate:8.6.6
+    image: camunda/operate:8.6.7
     container_name: operate-opensearch
     environment:
       - SERVER_PORT=8080

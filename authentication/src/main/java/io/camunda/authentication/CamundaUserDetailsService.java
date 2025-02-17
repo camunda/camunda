@@ -9,17 +9,15 @@ package io.camunda.authentication;
 
 import static io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder.aCamundaUser;
 
-import io.camunda.search.entities.AuthorizationEntity;
+import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
-import io.camunda.security.entity.Permission;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.RoleServices;
+import io.camunda.service.TenantServices;
+import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -28,11 +26,18 @@ public class CamundaUserDetailsService implements UserDetailsService {
 
   private final UserServices userServices;
   private final AuthorizationServices authorizationServices;
+  private final RoleServices roleServices;
+  private final TenantServices tenantServices;
 
   public CamundaUserDetailsService(
-      final UserServices userServices, final AuthorizationServices authorizationServices) {
+      final UserServices userServices,
+      final AuthorizationServices authorizationServices,
+      final RoleServices roleServices,
+      final TenantServices tenantServices) {
     this.userServices = userServices;
     this.authorizationServices = authorizationServices;
+    this.roleServices = roleServices;
+    this.tenantServices = tenantServices;
   }
 
   @Override
@@ -46,30 +51,31 @@ public class CamundaUserDetailsService implements UserDetailsService {
             .findFirst()
             .orElseThrow(() -> new UsernameNotFoundException(username));
 
-    final var authorizationQuery =
-        SearchQueryBuilders.authorizationSearchQuery(
-            fn ->
-                fn.filter(
-                    f ->
-                        f.ownerKeys(storedUser.userKey())
-                            .permissionType(PermissionType.ACCESS)
-                            .resourceType(AuthorizationResourceType.APPLICATION.name())));
+    final Long userKey = storedUser.userKey();
 
     final var authorizedApplications =
-        authorizationServices.search(authorizationQuery).items().stream()
-            .map(AuthorizationEntity::permissions)
-            .flatMap(List::stream)
-            .map(Permission::resourceIds)
-            .flatMap(Set::stream)
-            .collect(Collectors.toList());
+        authorizationServices.getAuthorizedApplications(Set.of(storedUser.username()));
+
+    final var roles = roleServices.findAll(RoleQuery.of(q -> q.filter(f -> f.memberKey(userKey))));
+
+    final var tenants =
+        tenantServices.getTenantsByMemberKey(userKey).stream()
+            .map(
+                entity ->
+                    new TenantDTO(
+                        entity.key(), entity.tenantId(), entity.name(), entity.description()))
+            .toList();
 
     return aCamundaUser()
-        .withUserKey(storedUser.userKey())
+        .withUserKey(userKey)
         .withName(storedUser.name())
         .withUsername(storedUser.username())
         .withPassword(storedUser.password())
         .withEmail(storedUser.email())
         .withAuthorizedApplications(authorizedApplications)
+        .withRoles(roles)
+        .withTenants(tenants)
+        .withCanLogout(true)
         .build();
   }
 }

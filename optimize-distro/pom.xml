@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda.optimize</groupId>
     <artifactId>optimize-parent</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
     <relativePath>../optimize/pom.xml</relativePath>
   </parent>
 
@@ -15,8 +15,7 @@
 
   <properties>
     <exclude.from.config>OptimizeLicense.txt</exclude.from.config>
-    <elasticsearch.demo.version>8.13.0</elasticsearch.demo.version>
-    <assembly.skipAssembly>true</assembly.skipAssembly>
+    <assembly.skipAssembly>false</assembly.skipAssembly>
   </properties>
 
   <dependencies>
@@ -30,22 +29,17 @@
       <artifactId>upgrade-optimize</artifactId>
       <version>${project.version}</version>
     </dependency>
-  </dependencies>
 
-  <profiles>
-    <profile>
-      <id>add-license-key</id>
-      <properties>
-        <exclude.from.config />
-      </properties>
-    </profile>
-    <profile>
-      <id>runAssembly</id>
-      <properties>
-        <assembly.skipAssembly>false</assembly.skipAssembly>
-      </properties>
-    </profile>
-  </profiles>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j2-impl</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+    </dependency>
+  </dependencies>
 
   <build>
     <finalName>camunda-optimize-${project.version}</finalName>
@@ -56,13 +50,12 @@
         <executions>
           <execution>
             <id>assemble</id>
-            <phase>package</phase>
             <goals>
               <goal>single</goal>
             </goals>
+            <phase>package</phase>
             <configuration>
               <descriptors>
-                <descriptor>assembly-distro-demo.xml</descriptor>
                 <descriptor>assembly-distro-production.xml</descriptor>
               </descriptors>
               <attach>true</attach>
@@ -137,26 +130,21 @@
           </execution>
         </executions>
       </plugin>
-
-      <plugin>
-        <groupId>com.googlecode.maven-download-plugin</groupId>
-        <artifactId>download-maven-plugin</artifactId>
-        <version>1.13.0</version>
-        <executions>
-          <execution>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>wget</goal>
-            </goals>
-            <configuration>
-              <url>https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${elasticsearch.demo.version}-windows-x86_64.zip</url>
-              <unpack>true</unpack>
-              <outputDirectory>${project.build.directory}</outputDirectory>
-              <skip>true</skip>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>add-license-key</id>
+      <properties>
+        <exclude.from.config></exclude.from.config>
+      </properties>
+    </profile>
+    <profile>
+      <id>runAssembly</id>
+      <properties>
+        <assembly.skipAssembly>false</assembly.skipAssembly>
+      </properties>
+    </profile>
+  </profiles>
 </project>

@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.backup;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
-import io.camunda.zeebe.qa.util.testcontainers.AzuriteContainer;
+import io.camunda.zeebe.test.testcontainers.AzuriteContainer;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;

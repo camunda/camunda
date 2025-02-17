@@ -74,6 +74,11 @@ public class RoleClient {
       return expectation.apply(position);
     }
 
+    public Record<RoleRecordValue> create(final String username) {
+      final long position = writer.writeCommand(RoleIntent.CREATE, username, roleRecord);
+      return expectation.apply(position);
+    }
+
     public RoleCreateClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;

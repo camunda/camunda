@@ -8,6 +8,10 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
+import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
+import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex.KEY;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex.NAME;
@@ -15,24 +19,36 @@ import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantI
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.TenantFilter;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
-import java.util.List;
 
-public class TenantFilterTransformer implements FilterTransformer<TenantFilter> {
+public class TenantFilterTransformer extends IndexFilterTransformer<TenantFilter> {
 
-  @Override
-  public SearchQuery toSearchQuery(final TenantFilter filter) {
-
-    return and(
-        term(TenantIndex.JOIN, IdentityJoinRelationshipType.TENANT.getType()),
-        filter.key() == null ? null : term(KEY, filter.key()),
-        filter.tenantId() == null ? null : term(TENANT_ID, filter.tenantId()),
-        filter.name() == null ? null : term(NAME, filter.name()));
+  public TenantFilterTransformer(final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
   }
 
   @Override
-  public List<String> toIndices(final TenantFilter filter) {
-    return List.of("camunda-tenant-8.7.0_alias");
+  public SearchQuery toSearchQuery(final TenantFilter filter) {
+    return and(
+        filter.key() == null ? null : term(KEY, filter.key()),
+        filter.tenantId() == null ? null : term(TENANT_ID, filter.tenantId()),
+        filter.name() == null ? null : term(NAME, filter.name()),
+        filter.memberKeys() == null || filter.memberKeys().isEmpty()
+            ? null
+            : filter.memberKeys().isEmpty()
+                ? matchNone()
+                : hasChildQuery(
+                    IdentityJoinRelationshipType.MEMBER.getType(),
+                    longTerms(TenantIndex.MEMBER_KEY, filter.memberKeys())),
+        filter.entityType() == null
+            ? null
+            : term(TenantIndex.MEMBER_TYPE, filter.entityType().name()),
+        filter.joinParentId() == null
+            ? term(TenantIndex.JOIN, IdentityJoinRelationshipType.TENANT.getType())
+            : hasParentQuery(
+                IdentityJoinRelationshipType.TENANT.getType(),
+                term(TENANT_ID, filter.joinParentId())));
   }
 }

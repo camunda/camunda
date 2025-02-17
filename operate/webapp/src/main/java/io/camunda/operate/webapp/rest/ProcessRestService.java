@@ -80,23 +80,25 @@ public class ProcessRestService extends InternalAPIErrorController {
   public BatchOperationEntity deleteProcessDefinition(
       @ValidLongId @PathVariable("id") final String processId) {
     final ProcessEntity processEntity = processReader.getProcess(Long.valueOf(processId));
-    checkIdentityDeletePermission(processEntity.getBpmnProcessId());
+    checkIdentityDeletePermission(processEntity.getKey());
     return batchOperationWriter.scheduleDeleteProcessDefinition(processEntity);
   }
 
   private void checkIdentityReadPermission(final String bpmnProcessId) {
     if (permissionsService.permissionsEnabled()
-        && !permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)) {
+        && !permissionsService.hasPermissionForProcess(
+            bpmnProcessId, IdentityPermission.READ_PROCESS_DEFINITION)) {
       throw new NotAuthorizedException(
           String.format("No read permission for process %s", bpmnProcessId));
     }
   }
 
-  private void checkIdentityDeletePermission(final String bpmnProcessId) {
+  private void checkIdentityDeletePermission(final Long processDefinitionKey) {
     if (permissionsService.permissionsEnabled()
-        && !permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.DELETE)) {
+        && !permissionsService.hasPermissionForResource(
+            processDefinitionKey, IdentityPermission.DELETE_PROCESS)) {
       throw new NotAuthorizedException(
-          String.format("No delete permission for process %s", bpmnProcessId));
+          String.format("No delete permission for process definition %s", processDefinitionKey));
     }
   }
 }

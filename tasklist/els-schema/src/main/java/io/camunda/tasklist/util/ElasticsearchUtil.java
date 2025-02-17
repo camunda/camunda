@@ -26,6 +26,7 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -92,7 +93,6 @@ public abstract class ElasticsearchUtil {
           EnumSet.of(ALLOW_NO_INDICES, IGNORE_UNAVAILABLE, IGNORE_THROTTLED), EnumSet.of(OPEN));
   public static final IndicesOptions STRICT_EXPAND_OPEN_CLOSED_IGNORE_THROTTLED =
       new IndicesOptions(EnumSet.of(ALLOW_NO_INDICES, IGNORE_THROTTLED), EnumSet.of(OPEN, CLOSED));
-
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchUtil.class);
 
   public static SearchRequest createSearchRequest(final IndexTemplateDescriptor template) {
@@ -486,6 +486,23 @@ public abstract class ElasticsearchUtil {
         (hits) -> result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_STRING));
 
     scrollWith(request, esClient, collectIds, null, null);
+    return result;
+  }
+
+  public static List<String> scrollUserTaskKeysToList(
+      final SearchRequest request, final RestHighLevelClient esClient) throws IOException {
+    final List<String> result = new ArrayList<>();
+
+    final Consumer<SearchHits> collectKeys =
+        (hits) ->
+            result.addAll(
+                map(
+                    hits.getHits(),
+                    hit ->
+                        String.valueOf(
+                            (long) hit.getDocumentFields().get(TaskTemplate.KEY).getValue())));
+
+    scrollWith(request, esClient, collectKeys, null, null);
     return result;
   }
 

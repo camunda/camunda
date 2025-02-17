@@ -9,16 +9,14 @@ package io.camunda.zeebe.gateway.rest.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import io.camunda.zeebe.gateway.protocol.rest.BasicLongFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.BasicStringFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.DateTimeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.IntegerFilterProperty;
-import io.camunda.zeebe.gateway.protocol.rest.LongFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.StringFilterProperty;
-import io.camunda.zeebe.gateway.rest.deserializer.BasicLongFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.BasicStringFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.DateTimeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.IntegerFilterPropertyDeserializer;
-import io.camunda.zeebe.gateway.rest.deserializer.LongFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.StringFilterPropertyDeserializer;
 import java.util.function.Consumer;
@@ -32,9 +30,8 @@ public class JacksonConfig {
   @Bean("gatewayRestObjectMapperCustomizer")
   public Consumer<Jackson2ObjectMapperBuilder> gatewayRestObjectMapperCustomizer() {
     final var module = new SimpleModule("gateway-rest-module");
-    module.addDeserializer(LongFilterProperty.class, new LongFilterPropertyDeserializer());
     module.addDeserializer(
-        BasicLongFilterProperty.class, new BasicLongFilterPropertyDeserializer());
+        BasicStringFilterProperty.class, new BasicStringFilterPropertyDeserializer());
     module.addDeserializer(IntegerFilterProperty.class, new IntegerFilterPropertyDeserializer());
     module.addDeserializer(StringFilterProperty.class, new StringFilterPropertyDeserializer());
     module.addDeserializer(DateTimeFilterProperty.class, new DateTimeFilterPropertyDeserializer());

@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -15,18 +17,23 @@ import io.camunda.db.rdbms.write.queue.QueueItem;
 public class VariableWriter {
 
   private final ExecutionQueue executionQueue;
+  private final VendorDatabaseProperties vendorDatabaseProperties;
 
-  public VariableWriter(final ExecutionQueue executionQueue) {
+  public VariableWriter(
+      final ExecutionQueue executionQueue,
+      final VendorDatabaseProperties vendorDatabaseProperties) {
     this.executionQueue = executionQueue;
+    this.vendorDatabaseProperties = vendorDatabaseProperties;
   }
 
   public void create(final VariableDbModel variable) {
+
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.VARIABLE,
             variable.variableKey(),
             "io.camunda.db.rdbms.sql.VariableMapper.insert",
-            variable));
+            variable.truncateValue(vendorDatabaseProperties.variableValuePreviewSize())));
   }
 
   public void update(final VariableDbModel variable) {
@@ -35,6 +42,17 @@ public class VariableWriter {
             ContextType.VARIABLE,
             variable.variableKey(),
             "io.camunda.db.rdbms.sql.VariableMapper.update",
-            variable));
+            variable.truncateValue(vendorDatabaseProperties.variableValuePreviewSize())));
+  }
+
+  public void migrateToProcess(final long variableKey, final String processDefinitionId) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.VARIABLE,
+            variableKey,
+            "io.camunda.db.rdbms.sql.VariableMapper.migrateToProcess",
+            new VariableMapper.MigrateToProcessDto.Builder()
+                .variableKey(variableKey)
+                .processDefinitionId(processDefinitionId)));
   }
 }

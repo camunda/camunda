@@ -17,25 +17,30 @@ package io.camunda.zeebe.client.api.search.filter;
 
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.search.DecisionDefinitionFilter}
+ */
+@Deprecated
 public interface DecisionDefinitionFilter extends SearchRequestFilter {
 
   /** Filter by decision key. */
-  DecisionDefinitionFilter decisionDefinitionKey(final long value);
+  DecisionDefinitionFilter decisionKey(final Long value);
 
   /** Filter by dmn decision id. */
-  DecisionDefinitionFilter decisionDefinitionId(final String value);
+  DecisionDefinitionFilter dmnDecisionId(final String value);
 
   /** Filter by dmn decision name. */
-  DecisionDefinitionFilter name(final String value);
+  DecisionDefinitionFilter dmnDecisionName(final String value);
 
   /** Filter by version. */
-  DecisionDefinitionFilter version(final int value);
+  DecisionDefinitionFilter version(final Integer value);
 
   /** Filter by dmn decision requirements id. */
-  DecisionDefinitionFilter decisionRequirementsId(final String value);
+  DecisionDefinitionFilter dmnDecisionRequirementsId(final String value);
 
   /** Filter by decision requirements key. */
-  DecisionDefinitionFilter decisionRequirementsKey(final long value);
+  DecisionDefinitionFilter decisionRequirementsKey(final Long value);
 
   /** Filter by tenant id. */
   DecisionDefinitionFilter tenantId(final String value);

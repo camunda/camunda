@@ -384,7 +384,7 @@ public class MigrationRunnerIT extends AdapterTest {
     properties.setMaxRetries(2);
     properties.setMinRetryDelay(Duration.ofSeconds(1));
 
-    final var ex = assertThrows(MigrationException.class, migrator::run);
+    final var ex = assertThrows(MigrationException.class, migrator::call);
     assertThat(ex.getMessage()).isEqualTo("Failed to fetch last migrated process");
   }
 }

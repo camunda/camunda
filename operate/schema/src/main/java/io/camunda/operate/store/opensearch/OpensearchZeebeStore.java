@@ -8,6 +8,7 @@
 package io.camunda.operate.store.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ZeebeStore;
 import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -28,20 +29,22 @@ public class OpensearchZeebeStore implements ZeebeStore {
   @Qualifier("zeebeOpensearchClient")
   private OpenSearchClient openSearchClient;
 
+  @Autowired private OperateProperties operateProperties;
+
   @Override
-  public void refreshIndex(String indexPattern) {
+  public void refreshIndex(final String indexPattern) {
     try {
       final var response = openSearchClient.indices().refresh(r -> r.index(indexPattern));
       if (!response.shards().failures().isEmpty()) {
         LOGGER.warn("Unable to refresh indices: {}", indexPattern);
       }
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       LOGGER.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
     }
   }
 
   @Override
-  public boolean zeebeIndicesExists(String indexPattern) {
+  public boolean zeebeIndicesExists(final String indexPattern) {
     try {
       final var exists =
           openSearchClient
@@ -52,11 +55,16 @@ public class OpensearchZeebeStore implements ZeebeStore {
         LOGGER.debug("Data already exists in Zeebe.");
       }
       return exists;
-    } catch (IOException io) {
+    } catch (final IOException io) {
       LOGGER.debug(
           "Error occurred while checking existence of data in Zeebe: {}. Demo data won't be created.",
           io.getMessage());
       return false;
     }
+  }
+
+  @Override
+  public String getZeebeIndexPrefix() {
+    return operateProperties.getZeebeOpensearch().getPrefix();
   }
 }

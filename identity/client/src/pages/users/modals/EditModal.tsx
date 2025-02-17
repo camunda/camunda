@@ -48,18 +48,18 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
         autoFocus
       />
       <TextField
-        label={t("Email")}
-        value={user.email}
-        placeholder={t("Email")}
-        onChange={(email) => setUser({ ...user, email })}
-        errors={namedErrors?.email}
-      />
-      <TextField
         label={t("Username")}
         value={user.username}
         placeholder={t("Username")}
         errors={namedErrors?.username}
         disabled
+      />
+      <TextField
+        label={t("Email")}
+        value={user.email}
+        placeholder={t("Email")}
+        onChange={(email) => setUser({ ...user, email })}
+        errors={namedErrors?.email}
       />
       <TextField
         label={t("Password")}

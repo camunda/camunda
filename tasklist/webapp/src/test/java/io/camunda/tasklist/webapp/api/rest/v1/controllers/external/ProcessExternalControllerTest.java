@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers.external;
 
-import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
+import static io.camunda.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -22,8 +22,8 @@ import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.webapp.CommonUtils;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
-import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
-import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
+import io.camunda.tasklist.webapp.dto.ProcessInstanceDTO;
+import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
@@ -320,7 +320,7 @@ public class ProcessExternalControllerTest {
     }
 
     if (providedProcessInstanceDTO != null) {
-      when(processService.startProcessInstance(bpmnProcessId, variables, null))
+      when(processService.startProcessInstance(bpmnProcessId, variables, null, false))
           .thenReturn(providedProcessInstanceDTO);
     }
 
@@ -383,7 +383,7 @@ public class ProcessExternalControllerTest {
     }
 
     if (providedProcessInstanceDTO != null) {
-      when(processService.startProcessInstance(bpmnProcessId, variables, null))
+      when(processService.startProcessInstance(bpmnProcessId, variables, null, false))
           .thenReturn(providedProcessInstanceDTO);
     }
 

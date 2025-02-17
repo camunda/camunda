@@ -7,32 +7,31 @@
  */
 package io.camunda.zeebe.broker.system.monitoring;
 
-import io.prometheus.client.Gauge;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class HealthMetrics {
+public final class HealthMetrics {
+  private final AtomicInteger health = new AtomicInteger();
 
-  private static final Gauge HEALTH =
-      Gauge.build()
-          .namespace("zeebe")
-          .name("health")
-          .help("Shows current health of the partition (1 = healthy, 0 = unhealthy, -1 = dead)")
-          .labelNames("partition")
-          .register();
-  private final String partitionIdLabel;
-
-  public HealthMetrics(final int partitionId) {
-    partitionIdLabel = String.valueOf(partitionId);
+  public HealthMetrics(final MeterRegistry registry, final int partitionId) {
+    final var meterDoc = HealthMetricsDoc.HEALTH;
+    Gauge.builder(meterDoc.getName(), health, AtomicInteger::intValue)
+        .description(meterDoc.getDescription())
+        .tag(PartitionKeyNames.PARTITION.asString(), String.valueOf(partitionId))
+        .register(registry);
   }
 
   public void setHealthy() {
-    HEALTH.labels(partitionIdLabel).set(1);
+    health.set(1);
   }
 
   public void setUnhealthy() {
-    HEALTH.labels(partitionIdLabel).set(0);
+    health.set(0);
   }
 
   public void setDead() {
-    HEALTH.labels(partitionIdLabel).set(-1);
+    health.set(-1);
   }
 }

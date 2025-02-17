@@ -24,4 +24,8 @@ public enum ConnectionTypes {
   public static ConnectionTypes from(final String type) {
     return valueOf(type.toUpperCase());
   }
+
+  public static boolean isElasticSearch(final String type) {
+    return from(type) == ELASTICSEARCH;
+  }
 }

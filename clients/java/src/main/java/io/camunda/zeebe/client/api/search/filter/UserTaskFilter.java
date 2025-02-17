@@ -15,14 +15,15 @@
  */
 package io.camunda.zeebe.client.api.search.filter;
 
-import io.camunda.zeebe.client.api.search.filter.builder.IntegerProperty;
-import io.camunda.zeebe.client.api.search.filter.builder.StringProperty;
+import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
-import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
 import java.util.List;
-import java.util.function.Consumer;
 
-/** Interface for defining user task filters in search queries. */
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.search.filter.UserTaskFilter}
+ */
+@Deprecated
 public interface UserTaskFilter extends SearchRequestFilter {
 
   /**
@@ -31,7 +32,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param value the key of the user task
    * @return the updated filter
    */
-  UserTaskFilter userTaskKey(final Long value);
+  UserTaskFilter key(final Long value);
 
   /**
    * Filters user tasks by the specified state.
@@ -50,30 +51,6 @@ public interface UserTaskFilter extends SearchRequestFilter {
   UserTaskFilter assignee(final String assignee);
 
   /**
-   * Filters user tasks by the specified assignee using {@link StringProperty} consumer.
-   *
-   * @param fn the assignee {@link StringProperty} consumer of the user task
-   * @return the updated filter
-   */
-  UserTaskFilter assignee(final Consumer<StringProperty> fn);
-
-  /**
-   * Filters user tasks by the specified priority.
-   *
-   * @param priority the priority of the user task
-   * @return the updated filter
-   */
-  UserTaskFilter priority(final Integer priority);
-
-  /**
-   * Filters user tasks by the specified priority using {@link IntegerProperty} consumer.
-   *
-   * @param fn the priority {@link IntegerProperty} consumer of the user task
-   * @return the updated filter
-   */
-  UserTaskFilter priority(final Consumer<IntegerProperty> fn);
-
-  /**
    * Filters user tasks by the specified task definition ID.
    *
    * @param taskDefinitionId the task definition ID of the user task
@@ -90,28 +67,12 @@ public interface UserTaskFilter extends SearchRequestFilter {
   UserTaskFilter candidateGroup(final String candidateGroup);
 
   /**
-   * Filters user tasks by the specified candidate group using {@link StringProperty} consumer.
-   *
-   * @param fn the candidate group {@link StringProperty} consumer of the user task
-   * @return the updated filter
-   */
-  UserTaskFilter candidateGroup(final Consumer<StringProperty> fn);
-
-  /**
    * Filters user tasks by the specified candidate user.
    *
    * @param candidateUser the candidate user of the user task
    * @return the updated filter
    */
   UserTaskFilter candidateUser(final String candidateUser);
-
-  /**
-   * Filters user tasks by the specified candidate user using {@link StringProperty} consumer.
-   *
-   * @param fn the candidate user {@link StringProperty} consumer of the user task
-   * @return the updated filter
-   */
-  UserTaskFilter candidateUser(final Consumer<StringProperty> fn);
 
   /**
    * Filters user tasks by the specified process definition key.
@@ -135,7 +96,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param tenantId the tenant ID of the user task
    * @return the updated filter
    */
-  UserTaskFilter tenantId(final String tenantId);
+  UserTaskFilter tentantId(final String tenantId);
 
   /**
    * Filters user tasks by the specified Process Definition Id.
@@ -146,27 +107,10 @@ public interface UserTaskFilter extends SearchRequestFilter {
   UserTaskFilter bpmnProcessId(final String bpmnProcessId);
 
   /**
-   * Filters user tasks by specified Process Instance Variables.
+   * Filters user tasks by the specified Process Definition Id.
    *
    * @param variableValueFilters from the task
    * @return the updated filter
    */
-  UserTaskFilter processInstanceVariables(
-      final List<UserTaskVariableFilterRequest> variableValueFilters);
-
-  /**
-   * Filters user tasks by specified Local Variables.
-   *
-   * @param variableValueFilters from the task
-   * @return the updated filter
-   */
-  UserTaskFilter localVariables(final List<UserTaskVariableFilterRequest> variableValueFilters);
-
-  /**
-   * Filters user tasks by the specified element instance key.
-   *
-   * @param elementInstanceKey the element instance key of the user task
-   * @return the updated filter
-   */
-  UserTaskFilter elementInstanceKey(final Long elementInstanceKey);
+  UserTaskFilter variables(final List<UserTaskVariableFilterRequest> variableValueFilters);
 }

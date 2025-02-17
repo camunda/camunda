@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.clustering.dynamic;
 import static io.camunda.zeebe.test.util.asserts.TopologyAssert.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -44,7 +44,7 @@ final class DynamicClusterConfigurationServiceTest {
           .withBrokerConfig(this::configureDynamicClusterTopology)
           .build();
 
-  private ZeebeClient client;
+  private CamundaClient client;
 
   @BeforeEach
   void setup() {
@@ -75,6 +75,7 @@ final class DynamicClusterConfigurationServiceTest {
     // when
     cluster.brokers().get(MemberId.from("1")).stop();
     Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
               final var topology = client.newTopologyRequest().send().join();

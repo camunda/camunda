@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-qa</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
   </parent>
   <artifactId>operate-qa-util</artifactId>
 
@@ -39,7 +39,7 @@
     <!-- ZEEBE -->
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-client-java</artifactId>
+      <artifactId>camunda-client-java</artifactId>
     </dependency>
 
     <dependency>
@@ -145,7 +145,6 @@
         <configuration>
           <ignoredUsedUndeclaredDependencies>
             <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
-            <dependency>io.camunda:zeebe-client-java</dependency>
           </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>

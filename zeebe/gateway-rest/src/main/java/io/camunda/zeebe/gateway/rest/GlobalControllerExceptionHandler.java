@@ -9,8 +9,10 @@ package io.camunda.zeebe.gateway.rest;
 
 import com.fasterxml.jackson.databind.JsonMappingException.Reference;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpHeaders;
@@ -33,7 +35,8 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
       "Required request body is missing";
   private static final String REQUEST_BODY_PARSE_EXCEPTION_MESSAGE =
       "Request property [%s] cannot be parsed";
-  private static final String INVALID_ENUM_VALUE_EXCEPTION_MESSAGE = "Invalid Enum value";
+  private static final String INVALID_ENUM_ERROR_MESSAGE =
+      "%s for enum field '%s'. Use any of the following values: %s";
 
   @Override
   protected ProblemDetail createProblemDetail(
@@ -59,8 +62,15 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
               .collect(Collectors.joining("."));
       detail = REQUEST_BODY_PARSE_EXCEPTION_MESSAGE.formatted(path);
     } else if (isUnknownEnumError(ex)) {
-      final var httpMessageNotReadableException = (HttpMessageNotReadableException) ex;
-      detail = Objects.requireNonNull(httpMessageNotReadableException.getRootCause()).getMessage();
+      final var instantiationException = (ValueInstantiationException) ex.getCause();
+      final var options =
+          Arrays.stream(instantiationException.getType().getRawClass().getEnumConstants())
+              .map(Objects::toString)
+              .toList();
+      final var field = instantiationException.getPath().getLast().getFieldName();
+      detail =
+          INVALID_ENUM_ERROR_MESSAGE.formatted(
+              ((HttpMessageNotReadableException) ex).getRootCause().getMessage(), field, options);
     } else {
       detail = defaultDetail;
     }
@@ -98,14 +108,9 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
   }
 
   private boolean isUnknownEnumError(final Exception ex) {
-    if (ex instanceof final HttpMessageNotReadableException exception) {
-      final var exceptionMessage = exception.getMessage();
-
-      return exceptionMessage != null
-          && exceptionMessage.contains(INVALID_ENUM_VALUE_EXCEPTION_MESSAGE);
-    }
-
-    return false;
+    return ex instanceof HttpMessageNotReadableException
+        && ex.getCause() instanceof final ValueInstantiationException instantiationException
+        && instantiationException.getType().isEnumType();
   }
 
   @ExceptionHandler(Exception.class)

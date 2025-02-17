@@ -7,3 +7,5 @@
 #
 io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider
 io.camunda.document.store.gcp.GcpDocumentStoreProvider
+io.camunda.document.store.aws.AwsDocumentStoreProvider
+io.camunda.document.store.localstorage.LocalStorageDocumentStoreProvider

@@ -146,7 +146,9 @@ public class CamundaDockerIT {
         .withEnv("CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS", httpUrl())
         .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", elasticsearchUrl())
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", elasticsearchUrl())
-        .withEnv("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", gatewayAddress());
+        .withEnv("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", gatewayAddress())
+        .withEnv("CAMUNDA_DATABASE_URL", elasticsearchUrl())
+        .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
   }
 
   private static String httpUrl() {

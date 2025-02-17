@@ -22,7 +22,10 @@ import java.util.function.UnaryOperator;
  * is allowed only when the member is already replicating the partition.
  */
 record PartitionLeaveApplier(
-    int partitionId, MemberId localMemberId, PartitionChangeExecutor partitionChangeExecutor)
+    int partitionId,
+    MemberId localMemberId,
+    int minimumAllowedReplicas,
+    PartitionChangeExecutor partitionChangeExecutor)
     implements MemberOperationApplier {
 
   @Override
@@ -54,6 +57,7 @@ record PartitionLeaveApplier(
     final boolean partitionIsLeaving =
         currentClusterConfiguration.getMember(localMemberId).getPartition(partitionId).state()
             == PartitionState.State.LEAVING;
+
     if (partitionIsLeaving) {
       // If partition state is already set to leaving, then we don't need to set it again. This can
       // happen if the node was restarted while applying the leave operation. To ensure that the
@@ -64,12 +68,13 @@ record PartitionLeaveApplier(
           currentClusterConfiguration.members().values().stream()
               .filter(m -> m.hasPartition(partitionId))
               .count();
-      if (partitionReplicaCount <= 1) {
+      if (partitionReplicaCount <= minimumAllowedReplicas) {
         return Either.left(
             new IllegalStateException(
                 String.format(
-                    "Expected to leave partition, but the partition %s has only one replica",
-                    partitionId)));
+                    "Expected to leave partition, but the partition %s has %d replicas "
+                        + "but minimum allowed replicas is %d",
+                    partitionId, partitionReplicaCount, minimumAllowedReplicas)));
       }
       return Either.right(
           memberState -> memberState.updatePartition(partitionId, PartitionState::toLeaving));

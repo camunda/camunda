@@ -13,21 +13,24 @@ import org.slf4j.LoggerFactory;
 public enum ListenerEventType {
   START,
   END,
+  COMPLETING,
+  ASSIGNING,
+  UNKNOWN,
   UNSPECIFIED;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ListenerEventType.class);
 
   public static ListenerEventType fromZeebeListenerEventType(final String listenerEventType) {
     if (listenerEventType == null) {
-      LOGGER.warn("Listener event type is null. Setting it as {}.", UNSPECIFIED);
+      LOGGER.debug("Listener event type is null. Setting it as {}.", UNSPECIFIED);
       return UNSPECIFIED;
     }
     try {
       return ListenerEventType.valueOf(listenerEventType);
     } catch (final IllegalArgumentException e) {
-      LOGGER.warn(
-          "Unknown listener event type [{}]. Setting it as {}.", listenerEventType, UNSPECIFIED);
+      LOGGER.debug(
+          "Unknown listener event type [{}]. Setting it as {}.", listenerEventType, UNKNOWN);
     }
-    return UNSPECIFIED;
+    return UNKNOWN;
   }
 }

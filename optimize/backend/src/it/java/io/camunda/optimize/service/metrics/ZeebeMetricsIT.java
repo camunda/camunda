@@ -17,12 +17,12 @@ import io.camunda.optimize.OptimizeRequestExecutor;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.micrometer.core.instrument.Statistic;
-import jakarta.ws.rs.core.Response;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.http.HttpStatus;
 
 @Disabled("Disabled due to issues with actuator config, to be fixed with OPT-7141")
 public class ZeebeMetricsIT extends AbstractCCSMIT {
@@ -37,7 +37,7 @@ public class ZeebeMetricsIT extends AbstractCCSMIT {
 
     // when
     final MetricResponseDto response =
-        requester.get().execute(MetricResponseDto.class, Response.Status.OK.getStatusCode());
+        requester.get().execute(MetricResponseDto.class, HttpStatus.OK.value());
 
     // then
     final Stream<String> actualTags =
@@ -60,7 +60,7 @@ public class ZeebeMetricsIT extends AbstractCCSMIT {
         requester
             .get()
             .addSingleQueryParam("tag", RECORD_TYPE_TAG + ":" + ValueType.PROCESS_INSTANCE)
-            .execute(MetricResponseDto.class, Response.Status.OK.getStatusCode());
+            .execute(MetricResponseDto.class, HttpStatus.OK.value());
 
     // then
     final Stream<String> actualTags =

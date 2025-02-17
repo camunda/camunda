@@ -194,6 +194,26 @@ const elements = {
     name: 'Compensation boundary event',
     type: 'CompensationBoundaryEvent',
   },
+  ParallelGateway_1: {
+    id: 'ParallelGateway_1',
+    name: 'ParallelGateway_1',
+    type: 'ParallelGateway',
+  },
+  ParallelGateway_2: {
+    id: 'ParallelGateway_1',
+    name: 'ParallelGateway_1',
+    type: 'ParallelGateway',
+  },
+  ParallelGateway_3: {
+    id: 'ParallelGateway_1',
+    name: 'ParallelGateway_1',
+    type: 'ParallelGateway',
+  },
+  ParallelGateway_4: {
+    id: 'ParallelGateway_1',
+    name: 'ParallelGateway_1',
+    type: 'ParallelGateway',
+  },
 };
 
 type Props = {

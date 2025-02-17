@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.usertask;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -91,21 +92,37 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   private void processCompleteTaskListener(final TypedRecord<UserTaskRecord> command) {
     final var lifecycleState = userTaskState.getLifecycleState(command.getKey());
     final var listenerEventType = mapLifecycleStateToEventType(lifecycleState);
-    final var persistedRecord = userTaskState.getUserTask(command.getKey());
-    final var userTaskElement = getUserTaskElement(persistedRecord);
-    final var userTaskElementInstance = getUserTaskElementInstance(persistedRecord);
+    // we need to copy the intermediate user task record as we have read it from the state, and we
+    // will read from the state again later, which in turn would modify this record
+    final var intermediateUserTaskRecord =
+        userTaskState.getIntermediateState(command.getKey()).getRecord().copy();
+    final var userTaskElement = getUserTaskElement(intermediateUserTaskRecord);
+    final var userTaskElementInstance = getUserTaskElementInstance(intermediateUserTaskRecord);
     final var context = buildContext(userTaskElementInstance);
+
+    if (command.getValue().hasChangedAttributes()) {
+      intermediateUserTaskRecord.wrapChangedAttributesIfValueChanged(command.getValue());
+
+      if (intermediateUserTaskRecord.hasChangedAttributes()) {
+        stateWriter.appendFollowUpEvent(
+            command.getKey(), UserTaskIntent.CORRECTED, intermediateUserTaskRecord);
+      }
+    }
 
     findNextTaskListener(listenerEventType, userTaskElement, userTaskElementInstance)
         .ifPresentOrElse(
-            listener -> jobBehavior.createNewTaskListenerJob(context, persistedRecord, listener),
-            () -> finalizeCommand(command, lifecycleState, persistedRecord));
+            listener ->
+                jobBehavior.createNewTaskListenerJob(context, intermediateUserTaskRecord, listener),
+            () -> finalizeCommand(command, lifecycleState, intermediateUserTaskRecord));
   }
 
   private void finalizeCommand(
       final TypedRecord<UserTaskRecord> command,
       final LifecycleState lifecycleState,
       final UserTaskRecord userTaskRecord) {
+    final var currentUserTask = userTaskState.getUserTask(command.getKey());
+    userTaskRecord.setDiffAsChangedAttributes(currentUserTask);
+
     final var commandProcessor = determineProcessorFromUserTaskLifecycleState(lifecycleState);
     commandProcessor.onFinalizeCommand(command, userTaskRecord);
   }
@@ -117,7 +134,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     switch (lifecycleState) {
       case COMPLETING ->
           writeRejectionForCommand(command, persistedRecord, UserTaskIntent.COMPLETION_DENIED);
-      case ASSIGNING ->
+      case ASSIGNING, CLAIMING ->
           writeRejectionForCommand(command, persistedRecord, UserTaskIntent.ASSIGNMENT_DENIED);
       default ->
           throw new IllegalArgumentException(
@@ -133,9 +150,8 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
         .validateCommand(command)
         .ifRightOrLeft(
             persistedRecord ->
-                handleCommandProcessing(commandProcessor, command, persistedRecord, intent),
-            violation ->
-                handleCommandRejection(command, violation.getLeft(), violation.getRight()));
+                handleCommandProcessing(commandProcessor, command, persistedRecord.copy(), intent),
+            rejection -> handleCommandRejection(command, rejection));
   }
 
   private void handleCommandProcessing(
@@ -144,7 +160,13 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       final UserTaskRecord persistedRecord,
       final UserTaskIntent intent) {
 
-    processor.onCommand(command, persistedRecord);
+    // If a user-triggered command (ASSIGN, CLAIM, UPDATE, COMPLETE) lacks request metadata,
+    // it indicates the command was retried by the engine after resolving an incident caused
+    // by a task listener property expression evaluation failure. In this case, the `onCommand`
+    // method was already processed during the initial execution, so we can safely skip it now.
+    if (command.hasRequestMetadata()) {
+      processor.onCommand(command, persistedRecord);
+    }
 
     final var userTaskElement = getUserTaskElement(persistedRecord);
     final var eventType = mapIntentToEventType(intent);
@@ -174,6 +196,10 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   }
 
   void storeUserTaskRecordRequestMetadata(final TypedRecord<UserTaskRecord> command) {
+    if (!command.hasRequestMetadata()) {
+      return;
+    }
+
     final var metadata =
         new UserTaskRecordRequestMetadata()
             .setIntent((UserTaskIntent) command.getIntent())
@@ -183,11 +209,9 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   }
 
   private void handleCommandRejection(
-      final TypedRecord<UserTaskRecord> command,
-      final RejectionType rejectionType,
-      final String rejectionReason) {
-    rejectionWriter.appendRejection(command, rejectionType, rejectionReason);
-    responseWriter.writeRejectionOnCommand(command, rejectionType, rejectionReason);
+      final TypedRecord<UserTaskRecord> command, final Rejection rejection) {
+    rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+    responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
   }
 
   private Optional<TaskListener> findNextTaskListener(
@@ -233,9 +257,9 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
   private ZeebeTaskListenerEventType mapIntentToEventType(final UserTaskIntent intent) {
     return switch (intent) {
-      case ASSIGN, CLAIM -> ZeebeTaskListenerEventType.assignment;
-      case UPDATE -> ZeebeTaskListenerEventType.update;
-      case COMPLETE -> ZeebeTaskListenerEventType.complete;
+      case ASSIGN, CLAIM -> ZeebeTaskListenerEventType.assigning;
+      case UPDATE -> ZeebeTaskListenerEventType.updating;
+      case COMPLETE -> ZeebeTaskListenerEventType.completing;
       default ->
           throw new IllegalArgumentException("Unexpected user task intent: '%s'".formatted(intent));
     };
@@ -244,11 +268,11 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   private ZeebeTaskListenerEventType mapLifecycleStateToEventType(
       final LifecycleState lifecycleState) {
     return switch (lifecycleState) {
-      case CREATING -> ZeebeTaskListenerEventType.create;
-      case ASSIGNING, CLAIMING -> ZeebeTaskListenerEventType.assignment;
-      case UPDATING -> ZeebeTaskListenerEventType.update;
-      case COMPLETING -> ZeebeTaskListenerEventType.complete;
-      case CANCELING -> ZeebeTaskListenerEventType.cancel;
+      case CREATING -> ZeebeTaskListenerEventType.creating;
+      case ASSIGNING, CLAIMING -> ZeebeTaskListenerEventType.assigning;
+      case UPDATING -> ZeebeTaskListenerEventType.updating;
+      case COMPLETING -> ZeebeTaskListenerEventType.completing;
+      case CANCELING -> ZeebeTaskListenerEventType.canceling;
       default ->
           throw new IllegalArgumentException(
               "Unexpected user task lifecycle state: '%s'".formatted(lifecycleState));

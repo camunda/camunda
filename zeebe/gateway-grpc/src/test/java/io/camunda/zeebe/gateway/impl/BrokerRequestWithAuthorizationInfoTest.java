@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.auth.impl.Authorization;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.gateway.api.deployment.DeployResourceStub;
 import io.camunda.zeebe.gateway.api.job.ActivateJobsStub;
@@ -124,7 +124,7 @@ public class BrokerRequestWithAuthorizationInfoTest extends GatewayTest {
                         Authorization.USER_TOKEN_CLAIM_PREFIX + entry.getKey(), entry.getValue()))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     final BrokerExecuteCommand<?> brokerRequest = brokerClient.getSingleBrokerRequest();
-    final Map<String, Object> decodedMap = brokerRequest.getAuthorization().toDecodedMap();
+    final Map<String, Object> decodedMap = brokerRequest.getAuthorization().getClaims();
 
     assertThat(decodedMap).containsAllEntriesOf(mapToCheck);
   }

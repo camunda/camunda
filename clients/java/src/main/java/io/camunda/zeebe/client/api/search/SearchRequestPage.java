@@ -17,6 +17,11 @@ package io.camunda.zeebe.client.api.search;
 
 import java.util.List;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.search.SearchRequestPage}
+ */
+@Deprecated
 public interface SearchRequestPage {
 
   /** Start the page from. */

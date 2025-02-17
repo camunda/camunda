@@ -15,6 +15,11 @@
  */
 package io.camunda.zeebe.client.api.response;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.response.CorrelateMessageResponse}
+ */
+@Deprecated
 public interface CorrelateMessageResponse {
   /**
    * Returns the record key of the message that was correlated.

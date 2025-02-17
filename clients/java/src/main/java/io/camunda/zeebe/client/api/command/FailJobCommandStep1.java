@@ -20,6 +20,10 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.Map;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.FailJobCommandStep1}
+ */
 public interface FailJobCommandStep1 extends CommandWithCommunicationApiStep<FailJobCommandStep1> {
 
   /**
@@ -34,6 +38,10 @@ public interface FailJobCommandStep1 extends CommandWithCommunicationApiStep<Fai
    */
   FailJobCommandStep2 retries(int remainingRetries);
 
+  /**
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+   *     io.camunda.client.api.command.FailJobCommandStep1.FailJobCommandStep2}
+   */
   interface FailJobCommandStep2 extends FinalCommandStep<FailJobResponse> {
     // the place for new optional parameters
 

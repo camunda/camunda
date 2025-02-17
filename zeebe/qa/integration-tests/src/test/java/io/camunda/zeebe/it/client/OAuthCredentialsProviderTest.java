@@ -9,11 +9,11 @@ package io.camunda.zeebe.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.CredentialsProvider;
+import io.camunda.client.CredentialsProvider.CredentialsApplier;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.identity.sdk.IdentityConfiguration.Type;
-import io.camunda.zeebe.client.CredentialsProvider;
-import io.camunda.zeebe.client.CredentialsProvider.CredentialsApplier;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;

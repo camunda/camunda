@@ -108,6 +108,10 @@ public final class ExporterTestController implements Controller {
     return Instant.ofEpochMilli(lastRanAtMs);
   }
 
+  public void resetLastRanAt() {
+    lastRanAtMs = 0;
+  }
+
   /**
    * Will run all tasks scheduled since the last time this was executed + the given duration.
    *

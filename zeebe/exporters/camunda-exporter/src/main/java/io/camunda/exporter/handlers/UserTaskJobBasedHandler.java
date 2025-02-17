@@ -13,6 +13,8 @@ import static io.camunda.zeebe.protocol.Protocol.USER_TASK_CANDIDATE_USERS_HEADE
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
@@ -40,7 +42,6 @@ import org.slf4j.LoggerFactory;
 
 public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRecordValue> {
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final Logger LOGGER = LoggerFactory.getLogger(UserTaskJobBasedHandler.class);
   private static final Pattern EMBEDDED_FORMS_PATTERN = Pattern.compile("^camunda-forms:bpmn:.*");
   private static final Set<JobIntent> SUPPORTED_INTENTS =
@@ -51,14 +52,20 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
           JobIntent.MIGRATED,
           JobIntent.RECURRED_AFTER_BACKOFF,
           JobIntent.FAILED);
-
+  private final ObjectReader objectReader;
   private final String indexName;
   private final ExporterEntityCache<String, CachedFormEntity> formCache;
+  private final ExporterMetadata exporterMetadata;
 
   public UserTaskJobBasedHandler(
-      final String indexName, final ExporterEntityCache<String, CachedFormEntity> formCache) {
+      final String indexName,
+      final ExporterEntityCache<String, CachedFormEntity> formCache,
+      final ExporterMetadata exporterMetadata,
+      final ObjectMapper objectMapper) {
     this.indexName = indexName;
     this.formCache = formCache;
+    this.exporterMetadata = exporterMetadata;
+    objectReader = objectMapper.readerFor(String[].class);
   }
 
   @Override
@@ -79,7 +86,13 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
 
   @Override
   public List<String> generateIds(final Record<JobRecordValue> record) {
-    return List.of(String.valueOf(record.getKey()));
+    if (record.getIntent().equals(JobIntent.CREATED)) {
+      exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, record.getKey());
+    }
+    if (refersToPreviousVersionRecord(record.getKey())) {
+      return List.of(String.valueOf(record.getKey()));
+    }
+    return List.of(String.valueOf(record.getValue().getElementInstanceKey()));
   }
 
   @Override
@@ -90,6 +103,7 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
   @Override
   public void updateEntity(final Record<JobRecordValue> record, final TaskEntity entity) {
     entity.setProcessInstanceId(String.valueOf(record.getValue().getProcessInstanceKey()));
+    entity.setKey(record.getKey());
     switch (record.getIntent()) {
       case JobIntent.CREATED -> createTaskEntity(entity, record);
       case JobIntent.COMPLETED, JobIntent.CANCELED ->
@@ -129,8 +143,15 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
     final var updateFields = getUpdatedFields(entity);
     final var taskEntityId = entity.getId();
     final var processInstanceKey = entity.getProcessInstanceId();
+
+    final boolean previousVersionRecord = refersToPreviousVersionRecord(entity.getKey());
+
     batchRequest.upsertWithRouting(
-        indexName, taskEntityId, entity, updateFields, processInstanceKey);
+        indexName,
+        previousVersionRecord ? String.valueOf(entity.getKey()) : taskEntityId,
+        entity,
+        updateFields,
+        previousVersionRecord ? String.valueOf(entity.getKey()) : processInstanceKey);
   }
 
   @Override
@@ -216,11 +237,16 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
   private String[] toStringArray(final String value) {
     if (!ExporterUtil.isEmpty(value)) {
       try {
-        return MAPPER.readValue(value, String[].class);
+        return objectReader.readValue(value);
       } catch (final JsonProcessingException e) {
         LOGGER.warn(String.format("Failed to parse value %s: %s", value, e.getMessage()), e);
       }
     }
     return null;
+  }
+
+  private boolean refersToPreviousVersionRecord(final long key) {
+    return exporterMetadata.getFirstUserTaskKey(TaskImplementation.JOB_WORKER) == -1
+        || key < exporterMetadata.getFirstUserTaskKey(TaskImplementation.JOB_WORKER);
   }
 }

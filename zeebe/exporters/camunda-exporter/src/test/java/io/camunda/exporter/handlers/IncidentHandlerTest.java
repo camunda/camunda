@@ -18,6 +18,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
+import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
@@ -40,7 +41,9 @@ public class IncidentHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-incident";
   private final TestProcessCache processCache = new TestProcessCache();
-  private final IncidentHandler underTest = new IncidentHandler(indexName, false, processCache);
+  private final IncidentNotifier incidentNotifier = mock(IncidentNotifier.class);
+  private final IncidentHandler underTest =
+      new IncidentHandler(indexName, processCache, incidentNotifier);
 
   @Test
   void testGetHandledValueType() {
@@ -109,32 +112,47 @@ public class IncidentHandlerTest {
   @Test
   void shouldAddEntityOnFlush() {
     // given
-    final IncidentEntity inputEntity = new IncidentEntity();
-    inputEntity.setPosition(1L);
+    final long recordKey = 123L;
+    final IncidentRecordValue incidentRecordValue =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class))
+            .build();
+
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT,
+            r ->
+                r.withIntent(IncidentIntent.CREATED)
+                    .withValue(incidentRecordValue)
+                    .withKey(recordKey)
+                    .withPartitionId(2)
+                    .withPosition(1L)
+                    .withTimestamp(System.currentTimeMillis()));
+
+    final IncidentEntity incidentEntity = new IncidentEntity();
+    underTest.updateEntity(incidentRecord, incidentEntity);
+
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
-
-    // then
-    verify(mockRequest, times(1)).upsert(indexName, "0", inputEntity, Map.of("position", 1L));
-  }
-
-  @Test
-  void shouldAddEntityOnFlushWithScript() {
-    // given
-    final IncidentEntity inputEntity = new IncidentEntity();
-    final var underTest = new IncidentHandler(indexName, true, null);
-    inputEntity.setPosition(1L);
-    final BatchRequest mockRequest = mock(BatchRequest.class);
-
-    // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(incidentEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))
-        .upsertWithScript(
-            indexName, "0", inputEntity, concurrencyScriptMock(), Map.of("position", 1L));
+        .upsert(
+            indexName,
+            String.valueOf(recordKey),
+            incidentEntity,
+            Map.of(
+                "position",
+                1L,
+                "flowNodeId",
+                incidentRecordValue.getElementId(),
+                "bpmnProcessId",
+                incidentRecordValue.getBpmnProcessId(),
+                "processDefinitionKey",
+                incidentRecordValue.getProcessDefinitionKey()));
+    verify(incidentNotifier).notifyAsync(List.of(incidentEntity));
   }
 
   @Test
@@ -150,7 +168,7 @@ public class IncidentHandlerTest {
         factory.generateRecord(
             ValueType.INCIDENT,
             r ->
-                r.withIntent(ProcessIntent.CREATED)
+                r.withIntent(IncidentIntent.CREATED)
                     .withValue(incidentRecordValue)
                     .withKey(recordKey)
                     .withPartitionId(2)
@@ -391,6 +409,34 @@ public class IncidentHandlerTest {
     assertThat(incidentEntity.getErrorType())
         .isEqualTo(
             io.camunda.webapps.schema.entities.operate.ErrorType.EXECUTION_LISTENER_NO_RETRIES);
+  }
+
+  @Test
+  void shouldHandleTaskListenerNoRetriesErrorType() {
+    // given
+    final long expectedId = 123;
+    final IncidentRecordValue incidentRecordValue =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class))
+            .withErrorType(ErrorType.TASK_LISTENER_NO_RETRIES)
+            .build();
+
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT,
+            r ->
+                r.withIntent(ProcessIntent.CREATED)
+                    .withValue(incidentRecordValue)
+                    .withKey(expectedId));
+
+    final IncidentEntity incidentEntity = new IncidentEntity();
+
+    // when
+    underTest.updateEntity(incidentRecord, incidentEntity);
+
+    // then
+    assertThat(incidentEntity.getErrorType())
+        .isEqualTo(io.camunda.webapps.schema.entities.operate.ErrorType.TASK_LISTENER_NO_RETRIES);
   }
 
   private String concurrencyScriptMock() {

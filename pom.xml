@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
     <relativePath>parent/pom.xml</relativePath>
   </parent>
 
@@ -32,6 +32,7 @@
     <module>search</module>
     <module>service</module>
     <module>clients/java</module>
+    <module>clients/java-deprecated</module>
     <module>clients/spring-boot-starter-camunda-sdk</module>
     <module>testing/camunda-process-test-java</module>
     <module>testing/camunda-process-test-spring</module>

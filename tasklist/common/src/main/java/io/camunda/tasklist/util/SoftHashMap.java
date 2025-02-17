@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReentrantLock;
@@ -87,7 +88,7 @@ public class SoftHashMap<K, V> implements Map<K, V> {
    *     referenced (retained), preventing them from being eagerly garbage collected by the JVM.
    */
   @SuppressWarnings({"unchecked"})
-  public SoftHashMap(int retentionSize) {
+  public SoftHashMap(final int retentionSize) {
     super();
     this.retentionSize = Math.max(0, retentionSize);
     queue = new ReferenceQueue<>();
@@ -103,7 +104,7 @@ public class SoftHashMap<K, V> implements Map<K, V> {
    * @param source the backing map to populate this {@code SoftHashMap}
    * @see #SoftHashMap(Map,int)
    */
-  public SoftHashMap(Map<K, V> source) {
+  public SoftHashMap(final Map<K, V> source) {
     this(DEFAULT_RETENTION_SIZE);
     putAll(source);
   }
@@ -126,12 +127,69 @@ public class SoftHashMap<K, V> implements Map<K, V> {
    * @param retentionSize the total number of most recent entries in the map that will be strongly
    *     referenced (retained), preventing them from being eagerly garbage collected by the JVM.
    */
-  public SoftHashMap(Map<K, V> source, int retentionSize) {
+  public SoftHashMap(final Map<K, V> source, final int retentionSize) {
     this(retentionSize);
     putAll(source);
   }
 
-  public V get(Object key) {
+  private void addToStrongReferences(final V result) {
+    strongReferencesLock.lock();
+    try {
+      strongReferences.add(result);
+      trimStrongReferencesIfNecessary();
+    } finally {
+      strongReferencesLock.unlock();
+    }
+  }
+
+  private void trimStrongReferencesIfNecessary() {
+    // trim the strong ref queue if necessary:
+    while (strongReferences.size() > retentionSize) {
+      strongReferences.poll();
+    }
+  }
+
+  // Guarded by the strongReferencesLock in the addToStrongReferences method
+
+  /**
+   * Traverses the ReferenceQueue and removes garbage-collected SoftValue objects from the backing
+   * map by looking them up using the SoftValue.key data member.
+   */
+  private void processQueue() {
+    SoftValue sv;
+    while ((sv = (SoftValue) queue.poll()) != null) {
+      //noinspection SuspiciousMethodCalls
+      map.remove(sv.key); // we can access private data!
+    }
+  }
+
+  @Override
+  public int size() {
+    processQueue(); // throw out garbage collected values first
+    return map.size();
+  }
+
+  @Override
+  public boolean isEmpty() {
+    processQueue();
+    return map.isEmpty();
+  }
+
+  @Override
+  public boolean containsKey(final Object key) {
+    processQueue();
+    return map.containsKey(key);
+  }
+
+  @Override
+  public boolean containsValue(final Object value) {
+    processQueue();
+    final Collection values = values();
+    return values != null && values.contains(value);
+  }
+
+  @Override
+  public V get(final Object key) {
     processQueue();
 
     V result = null;
@@ -152,90 +210,12 @@ public class SoftHashMap<K, V> implements Map<K, V> {
     return result;
   }
 
-  private void addToStrongReferences(V result) {
-    strongReferencesLock.lock();
-    try {
-      strongReferences.add(result);
-      trimStrongReferencesIfNecessary();
-    } finally {
-      strongReferencesLock.unlock();
-    }
-  }
-
-  // Guarded by the strongReferencesLock in the addToStrongReferences method
-
-  private void trimStrongReferencesIfNecessary() {
-    // trim the strong ref queue if necessary:
-    while (strongReferences.size() > retentionSize) {
-      strongReferences.poll();
-    }
-  }
-
-  /**
-   * Traverses the ReferenceQueue and removes garbage-collected SoftValue objects from the backing
-   * map by looking them up using the SoftValue.key data member.
-   */
-  private void processQueue() {
-    SoftValue sv;
-    while ((sv = (SoftValue) queue.poll()) != null) {
-      //noinspection SuspiciousMethodCalls
-      map.remove(sv.key); // we can access private data!
-    }
-  }
-
-  public boolean isEmpty() {
-    processQueue();
-    return map.isEmpty();
-  }
-
-  public boolean containsKey(Object key) {
-    processQueue();
-    return map.containsKey(key);
-  }
-
-  public boolean containsValue(Object value) {
-    processQueue();
-    final Collection values = values();
-    return values != null && values.contains(value);
-  }
-
-  public void putAll(Map<? extends K, ? extends V> m) {
-    if (m == null || m.isEmpty()) {
-      processQueue();
-      return;
-    }
-    for (Entry<? extends K, ? extends V> entry : m.entrySet()) {
-      put(entry.getKey(), entry.getValue());
-    }
-  }
-
-  public Set<K> keySet() {
-    processQueue();
-    return map.keySet();
-  }
-
-  public Collection<V> values() {
-    processQueue();
-    final Collection<K> keys = map.keySet();
-    if (keys.isEmpty()) {
-      //noinspection unchecked
-      return Collections.EMPTY_SET;
-    }
-    final Collection<V> values = new ArrayList<V>(keys.size());
-    for (K key : keys) {
-      final V v = get(key);
-      if (v != null) {
-        values.add(v);
-      }
-    }
-    return values;
-  }
-
   /**
    * Creates a new entry, but wraps the value in a SoftValue instance to enable auto garbage
    * collection.
    */
-  public V put(K key, V value) {
+  @Override
+  public V put(final K key, final V value) {
     processQueue(); // throw out garbage collected values first
     final SoftValue<V, K> sv = new SoftValue<V, K>(value, key, queue);
     final SoftValue<V, K> previous = map.put(key, sv);
@@ -243,12 +223,25 @@ public class SoftHashMap<K, V> implements Map<K, V> {
     return previous != null ? previous.get() : null;
   }
 
-  public V remove(Object key) {
+  @Override
+  public V remove(final Object key) {
     processQueue(); // throw out garbage collected values first
     final SoftValue<V, K> raw = map.remove(key);
     return raw != null ? raw.get() : null;
   }
 
+  @Override
+  public void putAll(final Map<? extends K, ? extends V> m) {
+    if (m == null || m.isEmpty()) {
+      processQueue();
+      return;
+    }
+    for (final Entry<? extends K, ? extends V> entry : m.entrySet()) {
+      put(entry.getKey(), entry.getValue());
+    }
+  }
+
+  @Override
   public void clear() {
     strongReferencesLock.lock();
     try {
@@ -260,11 +253,31 @@ public class SoftHashMap<K, V> implements Map<K, V> {
     map.clear();
   }
 
-  public int size() {
-    processQueue(); // throw out garbage collected values first
-    return map.size();
+  @Override
+  public Set<K> keySet() {
+    processQueue();
+    return map.keySet();
   }
 
+  @Override
+  public Collection<V> values() {
+    processQueue();
+    final Collection<K> keys = map.keySet();
+    if (keys.isEmpty()) {
+      //noinspection unchecked
+      return Collections.EMPTY_SET;
+    }
+    final Collection<V> values = new ArrayList<V>(keys.size());
+    for (final K key : keys) {
+      final V v = get(key);
+      if (v != null) {
+        values.add(v);
+      }
+    }
+    return values;
+  }
+
+  @Override
   public Set<Entry<K, V>> entrySet() {
     processQueue(); // throw out garbage collected values first
     final Collection<K> keys = map.keySet();
@@ -274,7 +287,7 @@ public class SoftHashMap<K, V> implements Map<K, V> {
     }
 
     final Map<K, V> kvPairs = new HashMap<K, V>(keys.size());
-    for (K key : keys) {
+    for (final K key : keys) {
       final V v = get(key);
       if (v != null) {
         kvPairs.put(key, v);
@@ -299,7 +312,7 @@ public class SoftHashMap<K, V> implements Map<K, V> {
      * @param queue the soft reference queue to poll to determine if the entry had been reaped by
      *     the GC.
      */
-    private SoftValue(V value, K key, ReferenceQueue<? super V> queue) {
+    private SoftValue(final V value, final K key, final ReferenceQueue<? super V> queue) {
       super(value, queue);
       this.key = key;
     }

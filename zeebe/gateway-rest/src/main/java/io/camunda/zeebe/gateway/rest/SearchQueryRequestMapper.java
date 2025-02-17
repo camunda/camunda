@@ -7,11 +7,14 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import static io.camunda.search.filter.Operation.eq;
+import static io.camunda.zeebe.gateway.rest.RequestMapper.getResult;
 import static io.camunda.zeebe.gateway.rest.util.AdvancedSearchFilterUtil.mapToOperations;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_SEARCH_BEFORE_AND_AFTER;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_SORT_FIELD_MUST_NOT_BE_NULL;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_BY;
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_ORDER;
+import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
+import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateDate;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
@@ -34,6 +37,8 @@ import io.camunda.search.filter.MappingFilter;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.TenantFilter;
+import io.camunda.search.filter.UntypedOperation;
+import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
@@ -53,6 +58,7 @@ import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.TypedSearchQueryBuilder;
+import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
@@ -75,6 +81,7 @@ import io.camunda.search.sort.UserTaskSort;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.protocol.rest.*;
+import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
 import io.camunda.zeebe.util.Either;
 import jakarta.validation.constraints.NotNull;
@@ -91,15 +98,37 @@ public final class SearchQueryRequestMapper {
 
   private SearchQueryRequestMapper() {}
 
+  public static Either<ProblemDetail, UsageMetricsQuery> toUsageMetricsQuery(
+      final String startTime, final String endTime) {
+    return getResult(
+        validate(
+            violations -> {
+              if (startTime == null || endTime == null) {
+                violations.add("The startTime and endTime must both be specified");
+              }
+              validateDate(startTime, "startTime", violations);
+              validateDate(endTime, "endTime", violations);
+            }),
+        () ->
+            new UsageMetricsQuery.Builder()
+                .filter(
+                    new UsageMetricsFilter.Builder()
+                        .startTime(toOffsetDateTime(startTime))
+                        .endTime(toOffsetDateTime(endTime))
+                        .build())
+                .build());
+  }
+
   public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQuery(
-      final ProcessDefinitionSearchQueryRequest request) {
+      final ProcessDefinitionSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.processDefinitionSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromProcessDefinitionSearchQuerySortRequest(
+                request.getSort()),
             SortOptionBuilders::processDefinition,
             SearchQueryRequestMapper::applyProcessDefinitionSortField);
     final var filter = toProcessDefinitionFilter(request.getFilter());
@@ -107,14 +136,15 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, ProcessInstanceQuery> toProcessInstanceQuery(
-      final ProcessInstanceSearchQueryRequest request) {
+      final ProcessInstanceSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.processInstanceSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromProcessInstanceSearchQuerySortRequest(
+                request.getSort()),
             SortOptionBuilders::processInstance,
             SearchQueryRequestMapper::applyProcessInstanceSortField);
     final var filter = toProcessInstanceFilter(request.getFilter());
@@ -128,7 +158,7 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromRoleSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::role,
             SearchQueryRequestMapper::applyRoleSortField);
     return buildSearchQuery(null, sort, page, SearchQueryBuilders::roleSearchQuery);
@@ -142,7 +172,7 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromGroupSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::group,
             SearchQueryRequestMapper::applyGroupSortField);
     return buildSearchQuery(null, sort, page, SearchQueryBuilders::groupSearchQuery);
@@ -156,7 +186,7 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromTenantSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::tenant,
             SearchQueryRequestMapper::applyTenantSortField);
     final var filter = toTenantFilter(request.getFilter());
@@ -171,7 +201,7 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromMappingSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::mapping,
             SearchQueryRequestMapper::applyMappingSortField);
     final var filter = toMappingFilter(request.getFilter());
@@ -179,14 +209,15 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, DecisionDefinitionQuery> toDecisionDefinitionQuery(
-      final DecisionDefinitionSearchQueryRequest request) {
+      final DecisionDefinitionSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.decisionDefinitionSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromDecisionDefinitionSearchQuerySortRequest(
+                request.getSort()),
             SortOptionBuilders::decisionDefinition,
             SearchQueryRequestMapper::applyDecisionDefinitionSortField);
     final var filter = toDecisionDefinitionFilter(request.getFilter());
@@ -194,14 +225,15 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, DecisionRequirementsQuery> toDecisionRequirementsQuery(
-      final DecisionRequirementsSearchQueryRequest request) {
+      final DecisionRequirementsSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.decisionRequirementsSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromDecisionRequirementsSearchQuerySortRequest(
+                request.getSort()),
             SortOptionBuilders::decisionRequirements,
             SearchQueryRequestMapper::applyDecisionRequirementsSortField);
     final var filter = toDecisionRequirementsFilter(request.getFilter());
@@ -210,14 +242,15 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, FlowNodeInstanceQuery> toFlownodeInstanceQuery(
-      final FlowNodeInstanceSearchQueryRequest request) {
+      final FlowNodeInstanceSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.flownodeInstanceSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromFlowNodeInstanceSearchQuerySortRequest(
+                request.getSort()),
             SortOptionBuilders::flowNodeInstance,
             SearchQueryRequestMapper::applyFlownodeInstanceSortField);
     final var filter = toFlownodeInstanceFilter(request.getFilter());
@@ -225,14 +258,15 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, DecisionInstanceQuery> toDecisionInstanceQuery(
-      final DecisionInstanceSearchQueryRequest request) {
+      final DecisionInstanceSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.decisionInstanceSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromDecisionInstanceSearchQuerySortRequest(
+                request.getSort()),
             SortOptionBuilders::decisionInstance,
             SearchQueryRequestMapper::applyDecisionInstanceSortField);
     final var filter = toDecisionInstanceFilter(request.getFilter());
@@ -240,11 +274,13 @@ public final class SearchQueryRequestMapper {
   }
 
   private static DecisionInstanceFilter toDecisionInstanceFilter(
-      final DecisionInstanceFilterRequest filter) {
+      final io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceFilter filter) {
     final var builder = FilterBuilders.decisionInstance();
 
     if (filter != null) {
-      ofNullable(filter.getDecisionInstanceKey()).ifPresent(builder::decisionInstanceKeys);
+      ofNullable(filter.getDecisionInstanceKey())
+          .map(KeyUtil::keyToLong)
+          .ifPresent(builder::decisionInstanceKeys);
       ofNullable(filter.getDecisionInstanceId()).ifPresent(builder::decisionInstanceIds);
       ofNullable(filter.getState())
           .map(s -> convertEnum(s, DecisionInstanceState.class))
@@ -253,7 +289,9 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getEvaluationDate())
           .map(mapToOperations(OffsetDateTime.class))
           .ifPresent(builder::evaluationDateOperations);
-      ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(KeyUtil::keyToLong)
+          .ifPresent(builder::processDefinitionKeys);
       ofNullable(filter.getDecisionDefinitionKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::decisionDefinitionKeyOperations);
@@ -270,25 +308,26 @@ public final class SearchQueryRequestMapper {
   }
 
   private static List<String> applyDecisionInstanceSortField(
-      final String field, final DecisionInstanceSort.Builder builder) {
+      final DecisionInstanceSearchQuerySortRequest.FieldEnum field,
+      final DecisionInstanceSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "decisionInstanceKey" -> builder.decisionInstanceKey();
-        case "decisionInstanceId" -> builder.decisionInstanceId();
-        case "state" -> builder.state();
-        case "evaluationDate" -> builder.evaluationDate();
-        case "evaluationFailure" -> builder.evaluationFailure();
-        case "processDefinitionKey" -> builder.processDefinitionKey();
-        case "processInstanceKey" -> builder.processInstanceKey();
-        case "decisionDefinitionKey" -> builder.decisionDefinitionKey();
-        case "decisionDefinitionId" -> builder.decisionDefinitionId();
-        case "decisionDefinitionName" -> builder.decisionDefinitionName();
-        case "decisionDefinitionVersion" -> builder.decisionDefinitionVersion();
-        case "decisionDefinitionType" -> builder.decisionDefinitionType();
-        case "tenantId" -> builder.tenantId();
+        case DECISION_INSTANCE_KEY -> builder.decisionInstanceKey();
+        case DECISION_INSTANCE_ID -> builder.decisionInstanceId();
+        case STATE -> builder.state();
+        case EVALUATION_DATE -> builder.evaluationDate();
+        case EVALUATION_FAILURE -> builder.evaluationFailure();
+        case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
+        case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
+        case DECISION_DEFINITION_KEY -> builder.decisionDefinitionKey();
+        case DECISION_DEFINITION_ID -> builder.decisionDefinitionId();
+        case DECISION_DEFINITION_NAME -> builder.decisionDefinitionName();
+        case DECISION_DEFINITION_VERSION -> builder.decisionDefinitionVersion();
+        case DECISION_DEFINITION_TYPE -> builder.decisionDefinitionType();
+        case TENANT_ID -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -301,7 +340,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
-      final UserTaskSearchQueryRequest request) {
+      final UserTaskSearchQuery request) {
 
     if (request == null) {
       return Either.right(SearchQueryBuilders.userTaskSearchQuery().build());
@@ -309,7 +348,7 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromUserTaskSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::userTask,
             SearchQueryRequestMapper::applyUserTaskSortField);
     final var filter = toUserTaskFilter(request.getFilter());
@@ -321,19 +360,35 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.variableSearchQuery().build());
     }
+
+    final var filter = toUserTaskVariableFilter(request.getFilter());
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromUserTaskVariableSearchQuerySortRequest(
+                request.getSort()),
             SortOptionBuilders::variable,
-            SearchQueryRequestMapper::applyVariableSortField);
+            SearchQueryRequestMapper::applyUserTaskVariableSortField);
 
-    return buildSearchQuery(
-        FilterBuilders.variable().build(), sort, page, SearchQueryBuilders::variableSearchQuery);
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
+  }
+
+  private static VariableFilter toUserTaskVariableFilter(
+      final VariableUserTaskFilterRequest filter) {
+    if (filter == null) {
+      return FilterBuilders.variable().build();
+    }
+
+    final var builder = FilterBuilders.variable();
+    ofNullable(filter.getName())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::nameOperations);
+
+    return builder.build();
   }
 
   public static Either<ProblemDetail, VariableQuery> toVariableQuery(
-      final VariableSearchQueryRequest request) {
+      final VariableSearchQuery request) {
 
     if (request == null) {
       return Either.right(SearchQueryBuilders.variableSearchQuery().build());
@@ -341,14 +396,15 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromVariableSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::variable,
             SearchQueryRequestMapper::applyVariableSortField);
     final VariableFilter filter = toVariableFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
   }
 
-  private static VariableFilter toVariableFilter(final VariableFilterRequest filter) {
+  private static VariableFilter toVariableFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.VariableFilter filter) {
     if (filter == null) {
       return FilterBuilders.variable().build();
     }
@@ -384,7 +440,7 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromUserSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::user,
             SearchQueryRequestMapper::applyUserSortField);
     final var filter = toUserFilter(request.getFilter());
@@ -392,14 +448,14 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, IncidentQuery> toIncidentQuery(
-      final IncidentSearchQueryRequest request) {
+      final IncidentSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.incidentSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromIncidentSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::incident,
             SearchQueryRequestMapper::applyIncidentSortField);
     final var filter = toIncidentFilter(request.getFilter());
@@ -407,12 +463,13 @@ public final class SearchQueryRequestMapper {
   }
 
   private static ProcessDefinitionFilter toProcessDefinitionFilter(
-      final ProcessDefinitionFilterRequest filter) {
+      final io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionFilter filter) {
     final var builder = FilterBuilders.processDefinition();
     Optional.ofNullable(filter)
         .ifPresent(
             f -> {
               Optional.ofNullable(f.getProcessDefinitionKey())
+                  .map(KeyUtil::keyToLong)
                   .ifPresent(builder::processDefinitionKeys);
               Optional.ofNullable(f.getName()).ifPresent(builder::names);
               Optional.ofNullable(f.getResourceName()).ifPresent(builder::resourceNames);
@@ -430,7 +487,7 @@ public final class SearchQueryRequestMapper {
   }
 
   private static ProcessInstanceFilter toProcessInstanceFilter(
-      final ProcessInstanceFilterRequest filter) {
+      final io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter filter) {
     final var builder = FilterBuilders.processInstance();
 
     if (filter != null) {
@@ -458,9 +515,6 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getParentFlowNodeInstanceKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::parentFlowNodeInstanceKeyOperations);
-      ofNullable(filter.getTreePath())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::treePathOperations);
       ofNullable(filter.getStartDate())
           .map(mapToOperations(OffsetDateTime.class))
           .ifPresent(builder::startDateOperations);
@@ -501,16 +555,20 @@ public final class SearchQueryRequestMapper {
   }
 
   private static DecisionDefinitionFilter toDecisionDefinitionFilter(
-      final DecisionDefinitionFilterRequest filter) {
+      final io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionFilter filter) {
     final var builder = FilterBuilders.decisionDefinition();
 
     if (filter != null) {
-      ofNullable(filter.getDecisionDefinitionKey()).ifPresent(builder::decisionDefinitionKeys);
+      ofNullable(filter.getDecisionDefinitionKey())
+          .map(KeyUtil::keyToLong)
+          .ifPresent(builder::decisionDefinitionKeys);
       ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
       ofNullable(filter.getName()).ifPresent(builder::names);
       ofNullable(filter.getVersion()).ifPresent(builder::versions);
       ofNullable(filter.getDecisionRequirementsId()).ifPresent(builder::decisionRequirementsIds);
-      ofNullable(filter.getDecisionRequirementsKey()).ifPresent(builder::decisionRequirementsKeys);
+      ofNullable(filter.getDecisionRequirementsKey())
+          .map(KeyUtil::keyToLong)
+          .ifPresent(builder::decisionRequirementsKeys);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
 
@@ -518,15 +576,16 @@ public final class SearchQueryRequestMapper {
   }
 
   private static DecisionRequirementsFilter toDecisionRequirementsFilter(
-      final DecisionRequirementsFilterRequest filter) {
+      final io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsFilter filter) {
     final var builder = FilterBuilders.decisionRequirements();
 
     Optional.ofNullable(filter)
         .ifPresent(
             f -> {
               Optional.ofNullable(f.getDecisionRequirementsKey())
+                  .map(KeyUtil::keyToLong)
                   .ifPresent(builder::decisionRequirementsKeys);
-              Optional.ofNullable(f.getName()).ifPresent(builder::names);
+              Optional.ofNullable(f.getDecisionRequirementsName()).ifPresent(builder::names);
               Optional.ofNullable(f.getVersion()).ifPresent(builder::versions);
               Optional.ofNullable(f.getDecisionRequirementsId())
                   .ifPresent(builder::decisionRequirementsIds);
@@ -537,16 +596,19 @@ public final class SearchQueryRequestMapper {
   }
 
   private static FlowNodeInstanceFilter toFlownodeInstanceFilter(
-      final FlowNodeInstanceFilterRequest filter) {
+      final io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceFilter filter) {
     final var builder = FilterBuilders.flowNodeInstance();
     Optional.ofNullable(filter)
         .ifPresent(
             f -> {
               Optional.ofNullable(f.getFlowNodeInstanceKey())
+                  .map(KeyUtil::keyToLong)
                   .ifPresent(builder::flowNodeInstanceKeys);
               Optional.ofNullable(f.getProcessInstanceKey())
+                  .map(KeyUtil::keyToLong)
                   .ifPresent(builder::processInstanceKeys);
               Optional.ofNullable(f.getProcessDefinitionKey())
+                  .map(KeyUtil::keyToLong)
                   .ifPresent(builder::processDefinitionKeys);
               Optional.ofNullable(f.getProcessDefinitionId())
                   .ifPresent(builder::processDefinitionIds);
@@ -556,21 +618,25 @@ public final class SearchQueryRequestMapper {
                   .ifPresent(
                       t -> builder.types(FlowNodeType.fromZeebeBpmnElementType(t.getValue())));
               Optional.ofNullable(f.getFlowNodeId()).ifPresent(builder::flowNodeIds);
-              Optional.ofNullable(f.getTreePath()).ifPresent(builder::treePaths);
               Optional.ofNullable(f.getHasIncident()).ifPresent(builder::hasIncident);
-              Optional.ofNullable(f.getIncidentKey()).ifPresent(builder::incidentKeys);
+              Optional.ofNullable(f.getIncidentKey())
+                  .map(KeyUtil::keyToLong)
+                  .ifPresent(builder::incidentKeys);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
             });
     return builder.build();
   }
 
-  private static UserTaskFilter toUserTaskFilter(final UserTaskFilterRequest filter) {
+  private static UserTaskFilter toUserTaskFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.UserTaskFilter filter) {
     final var builder = FilterBuilders.userTask();
 
     Optional.ofNullable(filter)
         .ifPresent(
             f -> {
-              Optional.ofNullable(f.getUserTaskKey()).ifPresent(builder::userTaskKeys);
+              Optional.ofNullable(f.getUserTaskKey())
+                  .map(KeyUtil::keyToLong)
+                  .ifPresent(builder::userTaskKeys);
               Optional.ofNullable(f.getState())
                   .map(s -> String.valueOf(UserTaskState.valueOf(s.getValue())))
                   .ifPresent(builder::states);
@@ -589,11 +655,14 @@ public final class SearchQueryRequestMapper {
                   .map(mapToOperations(String.class))
                   .ifPresent(builder::candidateUserOperations);
               Optional.ofNullable(f.getProcessDefinitionKey())
+                  .map(KeyUtil::keyToLong)
                   .ifPresent(builder::processDefinitionKeys);
               Optional.ofNullable(f.getProcessInstanceKey())
+                  .map(KeyUtil::keyToLong)
                   .ifPresent(builder::processInstanceKeys);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
               Optional.ofNullable(f.getElementInstanceKey())
+                  .map(KeyUtil::keyToLong)
                   .ifPresent(builder::elementInstanceKeys);
               Optional.ofNullable(f.getProcessInstanceVariables())
                   .filter(variables -> !variables.isEmpty())
@@ -602,6 +671,18 @@ public final class SearchQueryRequestMapper {
               Optional.ofNullable(f.getLocalVariables())
                   .filter(variables -> !variables.isEmpty())
                   .ifPresent(vars -> builder.localVariables(toVariableValueFilters(vars)));
+              Optional.ofNullable(f.getCreationDate())
+                  .map(mapToOperations(OffsetDateTime.class))
+                  .ifPresent(builder::creationDateOperations);
+              Optional.ofNullable(f.getCompletionDate())
+                  .map(mapToOperations(OffsetDateTime.class))
+                  .ifPresent(builder::completionDateOperations);
+              Optional.ofNullable(f.getDueDate())
+                  .map(mapToOperations(OffsetDateTime.class))
+                  .ifPresent(builder::dueDateOperations);
+              Optional.ofNullable(f.getFollowUpDate())
+                  .map(mapToOperations(OffsetDateTime.class))
+                  .ifPresent(builder::followUpDateOperations);
             });
 
     return builder.build();
@@ -619,51 +700,57 @@ public final class SearchQueryRequestMapper {
         .orElse(null);
   }
 
-  private static IncidentFilter toIncidentFilter(final IncidentFilterRequest filter) {
+  private static IncidentFilter toIncidentFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.IncidentFilter filter) {
     final var builder = FilterBuilders.incident();
 
     if (filter != null) {
-      ofNullable(filter.getIncidentKey()).ifPresent(builder::incidentKeys);
-      ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
+      ofNullable(filter.getIncidentKey()).map(KeyUtil::keyToLong).ifPresent(builder::incidentKeys);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(KeyUtil::keyToLong)
+          .ifPresent(builder::processDefinitionKeys);
       ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::processDefinitionIds);
-      ofNullable(filter.getProcessInstanceKey()).ifPresent(builder::processInstanceKeys);
+      ofNullable(filter.getProcessInstanceKey())
+          .map(KeyUtil::keyToLong)
+          .ifPresent(builder::processInstanceKeys);
       ofNullable(filter.getErrorType())
           .ifPresent(t -> builder.errorTypes(IncidentEntity.ErrorType.valueOf(t.getValue())));
       ofNullable(filter.getErrorMessage()).ifPresent(builder::errorMessages);
       ofNullable(filter.getFlowNodeId()).ifPresent(builder::flowNodeIds);
-      ofNullable(filter.getFlowNodeInstanceKey()).ifPresent(builder::flowNodeInstanceKeys);
+      ofNullable(filter.getFlowNodeInstanceKey())
+          .map(KeyUtil::keyToLong)
+          .ifPresent(builder::flowNodeInstanceKeys);
       ofNullable(filter.getCreationTime())
           .ifPresent(t -> builder.creationTime(toDateValueFilter(t)));
       ofNullable(filter.getState())
           .ifPresent(s -> builder.states(IncidentState.valueOf(s.getValue())));
-      ofNullable(filter.getJobKey()).ifPresent(builder::jobKeys);
-      ofNullable(filter.getTreePath()).ifPresent(builder::treePaths);
+      ofNullable(filter.getJobKey()).map(KeyUtil::keyToLong).ifPresent(builder::jobKeys);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
     return builder.build();
   }
 
   private static List<String> applyProcessInstanceSortField(
-      final String field, final ProcessInstanceSort.Builder builder) {
+      final ProcessInstanceSearchQuerySortRequest.FieldEnum field,
+      final ProcessInstanceSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "key" -> builder.processInstanceKey();
-        case "bpmnProcessId" -> builder.processDefinitionId();
-        case "processName" -> builder.processDefinitionName();
-        case "processVersion" -> builder.processDefinitionVersion();
-        case "processVersionTag" -> builder.processDefinitionVersionTag();
-        case "processDefinitionKey" -> builder.processDefinitionKey();
-        case "parentProcessInstanceKey" -> builder.parentProcessInstanceKey();
-        case "parentFlowNodeInstanceKey" -> builder.parentFlowNodeInstanceKey();
-        case "treePath" -> builder.treePath();
-        case "startDate" -> builder.startDate();
-        case "endDate" -> builder.endDate();
-        case "state" -> builder.state();
-        case "incident" -> builder.hasIncident();
-        case "tenantId" -> builder.tenantId();
+        case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
+        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
+        case PROCESS_DEFINITION_NAME -> builder.processDefinitionName();
+        case PROCESS_DEFINITION_VERSION -> builder.processDefinitionVersion();
+        case PROCESS_DEFINITION_VERSION_TAG -> builder.processDefinitionVersionTag();
+        case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
+        case PARENT_PROCESS_INSTANCE_KEY -> builder.parentProcessInstanceKey();
+        case PARENT_FLOW_NODE_INSTANCE_KEY -> builder.parentFlowNodeInstanceKey();
+        case START_DATE -> builder.startDate();
+        case END_DATE -> builder.endDate();
+        case STATE -> builder.state();
+        case HAS_INCIDENT -> builder.hasIncident();
+        case TENANT_ID -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -671,19 +758,20 @@ public final class SearchQueryRequestMapper {
   }
 
   private static List<String> applyProcessDefinitionSortField(
-      final String field, final ProcessDefinitionSort.Builder builder) {
+      final ProcessDefinitionSearchQuerySortRequest.FieldEnum field,
+      final ProcessDefinitionSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "processDefinitionKey" -> builder.processDefinitionKey();
-        case "name" -> builder.name();
-        case "resourceName" -> builder.resourceName();
-        case "version" -> builder.version();
-        case "versionTag" -> builder.versionTag();
-        case "processDefinitionId" -> builder.processDefinitionId();
-        case "tenantId" -> builder.tenantId();
+        case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
+        case NAME -> builder.name();
+        case RESOURCE_NAME -> builder.resourceName();
+        case VERSION -> builder.version();
+        case VERSION_TAG -> builder.versionTag();
+        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
+        case TENANT_ID -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -691,14 +779,14 @@ public final class SearchQueryRequestMapper {
   }
 
   private static List<String> applyRoleSortField(
-      final String field, final RoleSort.Builder builder) {
+      final RoleSearchQuerySortRequest.FieldEnum field, final RoleSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "roleKey" -> builder.roleKey();
-        case "name" -> builder.name();
+        case ROLE_KEY -> builder.roleKey();
+        case NAME -> builder.name();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -706,14 +794,14 @@ public final class SearchQueryRequestMapper {
   }
 
   private static List<String> applyGroupSortField(
-      final String field, final GroupSort.Builder builder) {
+      final GroupSearchQuerySortRequest.FieldEnum field, final GroupSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "groupKey" -> builder.groupKey();
-        case "name" -> builder.name();
+        case GROUP_KEY -> builder.groupKey();
+        case NAME -> builder.name();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -721,15 +809,15 @@ public final class SearchQueryRequestMapper {
   }
 
   private static List<String> applyTenantSortField(
-      final String field, final TenantSort.Builder builder) {
+      final TenantSearchQuerySortRequest.FieldEnum field, final TenantSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "key" -> builder.tenantKey();
-        case "name" -> builder.name();
-        case "tenantId" -> builder.tenantId();
+        case KEY -> builder.tenantKey();
+        case NAME -> builder.name();
+        case TENANT_ID -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -737,15 +825,16 @@ public final class SearchQueryRequestMapper {
   }
 
   private static List<String> applyMappingSortField(
-      final String field, final MappingSort.Builder builder) {
+      final MappingSearchQuerySortRequest.FieldEnum field, final MappingSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "mappingKey" -> builder.mappingKey();
-        case "claimName" -> builder.claimName();
-        case "claimValue" -> builder.claimValue();
+        case MAPPING_KEY -> builder.mappingKey();
+        case CLAIM_NAME -> builder.claimName();
+        case CLAIM_VALUE -> builder.claimValue();
+        case NAME -> builder.name();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -753,19 +842,20 @@ public final class SearchQueryRequestMapper {
   }
 
   private static List<String> applyDecisionDefinitionSortField(
-      final String field, final DecisionDefinitionSort.Builder builder) {
+      final DecisionDefinitionSearchQuerySortRequest.FieldEnum field,
+      final DecisionDefinitionSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "decisionDefinitionKey" -> builder.decisionDefinitionKey();
-        case "decisionDefinitionId" -> builder.decisionDefinitionId();
-        case "name" -> builder.name();
-        case "version" -> builder.version();
-        case "decisionRequirementsId" -> builder.decisionRequirementsId();
-        case "decisionRequirementsKey" -> builder.decisionRequirementsKey();
-        case "tenantId" -> builder.tenantId();
+        case DECISION_DEFINITION_KEY -> builder.decisionDefinitionKey();
+        case DECISION_DEFINITION_ID -> builder.decisionDefinitionId();
+        case NAME -> builder.name();
+        case VERSION -> builder.version();
+        case DECISION_REQUIREMENTS_ID -> builder.decisionRequirementsId();
+        case DECISION_REQUIREMENTS_KEY -> builder.decisionRequirementsKey();
+        case TENANT_ID -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -773,17 +863,18 @@ public final class SearchQueryRequestMapper {
   }
 
   private static List<String> applyDecisionRequirementsSortField(
-      final String field, final DecisionRequirementsSort.Builder builder) {
+      final DecisionRequirementsSearchQuerySortRequest.FieldEnum field,
+      final DecisionRequirementsSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "decisionRequirementsKey" -> builder.decisionRequirementsKey();
-        case "name" -> builder.name();
-        case "version" -> builder.version();
-        case "decisionRequirementsId" -> builder.decisionRequirementsId();
-        case "tenantId" -> builder.tenantId();
+        case DECISION_REQUIREMENTS_KEY -> builder.decisionRequirementsKey();
+        case DECISION_REQUIREMENTS_NAME -> builder.name();
+        case VERSION -> builder.version();
+        case DECISION_REQUIREMENTS_ID -> builder.decisionRequirementsId();
+        case TENANT_ID -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -791,23 +882,24 @@ public final class SearchQueryRequestMapper {
   }
 
   private static List<String> applyFlownodeInstanceSortField(
-      final String field, final FlowNodeInstanceSort.Builder builder) {
+      final FlowNodeInstanceSearchQuerySortRequest.FieldEnum field,
+      final FlowNodeInstanceSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "flowNodeInstanceKey" -> builder.flowNodeInstanceKey();
-        case "processInstanceKey" -> builder.processInstanceKey();
-        case "processDefinitionKey" -> builder.processDefinitionKey();
-        case "processDefinitionId" -> builder.processDefinitionId();
-        case "startDate" -> builder.startDate();
-        case "endDate" -> builder.endDate();
-        case "flowNodeId" -> builder.flowNodeId();
-        case "type" -> builder.type();
-        case "state" -> builder.state();
-        case "incidentKey" -> builder.incidentKey();
-        case "tenantId" -> builder.tenantId();
+        case FLOW_NODE_INSTANCE_KEY -> builder.flowNodeInstanceKey();
+        case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
+        case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
+        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
+        case START_DATE -> builder.startDate();
+        case END_DATE -> builder.endDate();
+        case FLOW_NODE_ID -> builder.flowNodeId();
+        case TYPE -> builder.type();
+        case STATE -> builder.state();
+        case INCIDENT_KEY -> builder.incidentKey();
+        case TENANT_ID -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -815,25 +907,24 @@ public final class SearchQueryRequestMapper {
   }
 
   private static List<String> applyIncidentSortField(
-      final String field, final IncidentSort.Builder builder) {
+      final IncidentSearchQuerySortRequest.FieldEnum field, final IncidentSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "incidentKey" -> builder.incidentKey();
-        case "processDefinitionKey" -> builder.processDefinitionKey();
-        case "processDefinitionId" -> builder.processDefinitionId();
-        case "processInstanceKey" -> builder.processInstanceKey();
-        case "errorType" -> builder.errorType();
-        case "errorMessage" -> builder.errorMessage();
-        case "flowNodeId" -> builder.flowNodeId();
-        case "flowNodeInstanceKey" -> builder.flowNodeInstanceKey();
-        case "creationTime" -> builder.creationTime();
-        case "state" -> builder.state();
-        case "jobKey" -> builder.jobKey();
-        case "treePath" -> builder.treePath();
-        case "tenantId" -> builder.tenantId();
+        case INCIDENT_KEY -> builder.incidentKey();
+        case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
+        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
+        case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
+        case ERROR_TYPE -> builder.errorType();
+        case ERROR_MESSAGE -> builder.errorMessage();
+        case FLOW_NODE_ID -> builder.flowNodeId();
+        case FLOW_NODE_INSTANCE_KEY -> builder.flowNodeInstanceKey();
+        case CREATION_TIME -> builder.creationTime();
+        case STATE -> builder.state();
+        case JOB_KEY -> builder.jobKey();
+        case TENANT_ID -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -841,17 +932,17 @@ public final class SearchQueryRequestMapper {
   }
 
   private static List<String> applyUserTaskSortField(
-      final String field, final UserTaskSort.Builder builder) {
+      final UserTaskSearchQuerySortRequest.FieldEnum field, final UserTaskSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "creationDate" -> builder.creationDate();
-        case "completionDate" -> builder.completionDate();
-        case "followUpDate" -> builder.followUpDate();
-        case "dueDate" -> builder.dueDate();
-        case "priority" -> builder.priority();
+        case CREATION_DATE -> builder.creationDate();
+        case COMPLETION_DATE -> builder.completionDate();
+        case FOLLOW_UP_DATE -> builder.followUpDate();
+        case DUE_DATE -> builder.dueDate();
+        case PRIORITY -> builder.priority();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -859,18 +950,38 @@ public final class SearchQueryRequestMapper {
   }
 
   private static List<String> applyVariableSortField(
-      final String field, final VariableSort.Builder builder) {
+      final VariableSearchQuerySortRequest.FieldEnum field, final VariableSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "value" -> builder.value();
-        case "name" -> builder.name();
-        case "tenantId" -> builder.tenantId();
-        case "variableKey" -> builder.variableKey();
-        case "scopeKey" -> builder.scopeKey();
-        case "processInstanceKey" -> builder.processInstanceKey();
+        case VALUE -> builder.value();
+        case NAME -> builder.name();
+        case TENANT_ID -> builder.tenantId();
+        case VARIABLE_KEY -> builder.variableKey();
+        case SCOPE_KEY -> builder.scopeKey();
+        case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  private static List<String> applyUserTaskVariableSortField(
+      final UserTaskVariableSearchQuerySortRequest.FieldEnum field,
+      final VariableSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case VALUE -> builder.value();
+        case NAME -> builder.name();
+        case TENANT_ID -> builder.tenantId();
+        case VARIABLE_KEY -> builder.variableKey();
+        case SCOPE_KEY -> builder.scopeKey();
+        case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -878,15 +989,15 @@ public final class SearchQueryRequestMapper {
   }
 
   private static List<String> applyUserSortField(
-      final String field, final UserSort.Builder builder) {
+      final UserSearchQuerySortRequest.FieldEnum field, final UserSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "username" -> builder.username();
-        case "name" -> builder.name();
-        case "email" -> builder.email();
+        case USERNAME -> builder.username();
+        case NAME -> builder.name();
+        case EMAIL -> builder.email();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -899,11 +1010,13 @@ public final class SearchQueryRequestMapper {
     if (filters != null && !filters.isEmpty()) {
       return filters.stream()
           .map(
-              filter ->
-                  new VariableValueFilter.Builder()
-                      .name(filter.getName())
-                      .eq(filter.getValue())
-                      .build())
+              filter -> {
+                final var builder = new VariableValueFilter.Builder().name(filter.getName());
+                if (filter.getValue() != null) {
+                  builder.valueOperation(UntypedOperation.of(eq(filter.getValue())));
+                }
+                return builder.build();
+              })
           .toList();
     }
 
@@ -919,7 +1032,7 @@ public final class SearchQueryRequestMapper {
               filter ->
                   new VariableValueFilter.Builder()
                       .name(filter.getName())
-                      .eq(filter.getValue())
+                      .valueOperation(UntypedOperation.of(eq(filter.getValue())))
                       .build())
           .toList();
     }
@@ -949,17 +1062,17 @@ public final class SearchQueryRequestMapper {
                     .searchBefore(searchBefore)));
   }
 
-  private static <T, B extends SortOption.AbstractBuilder<B> & ObjectBuilder<T>>
+  private static <T, B extends SortOption.AbstractBuilder<B> & ObjectBuilder<T>, F>
       Either<List<String>, T> toSearchQuerySort(
-          final List<SearchQuerySortRequest> sorting,
+          final List<SearchQuerySortRequest<F>> sorting,
           final Supplier<B> builderSupplier,
-          final BiFunction<String, B, List<String>> sortFieldMapper) {
+          final BiFunction<F, B, List<String>> sortFieldMapper) {
     if (sorting != null && !sorting.isEmpty()) {
       final List<String> validationErrors = new ArrayList<>();
       final var builder = builderSupplier.get();
-      for (final SearchQuerySortRequest sort : sorting) {
-        validationErrors.addAll(sortFieldMapper.apply(sort.getField(), builder));
-        validationErrors.addAll(applySortOrder(sort.getOrder(), builder));
+      for (final SearchQuerySortRequest<F> sort : sorting) {
+        validationErrors.addAll(sortFieldMapper.apply(sort.field(), builder));
+        applySortOrder(sort.order(), builder);
       }
 
       return validationErrors.isEmpty()
@@ -988,21 +1101,19 @@ public final class SearchQueryRequestMapper {
       validationErrors.addAll(page.getLeft());
     }
 
-    return RequestMapper.getResult(
+    return getResult(
         RequestValidator.createProblemDetail(validationErrors),
         () ->
             queryBuilderSupplier.get().page(page.get()).filter(filter).sort(sorting.get()).build());
   }
 
-  private static List<String> applySortOrder(
-      final String order, final SortOption.AbstractBuilder<?> builder) {
-    final List<String> validationErrors = new ArrayList<>();
-    switch (order.toLowerCase()) {
-      case "asc" -> builder.asc();
-      case "desc" -> builder.desc();
-      default -> validationErrors.add(ERROR_UNKNOWN_SORT_ORDER.formatted(order));
+  private static void applySortOrder(
+      final SortOrderEnum order, final SortOption.AbstractBuilder<?> builder) {
+    if (order == SortOrderEnum.DESC) {
+      builder.desc();
+    } else {
+      builder.asc();
     }
-    return validationErrors;
   }
 
   private static Object[] toArrayOrNull(final List<Object> values) {
@@ -1035,7 +1146,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, AuthorizationQuery> toAuthorizationQuery(
-      final AuthorizationSearchQueryRequest request) {
+      final AuthorizationSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.authorizationSearchQuery().build());
     }
@@ -1043,7 +1154,7 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromAuthorizationSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::authorization,
             SearchQueryRequestMapper::applyAuthorizationSortField);
     final var filter = toAuthorizationFilter(request.getFilter());
@@ -1051,15 +1162,17 @@ public final class SearchQueryRequestMapper {
   }
 
   private static List<String> applyAuthorizationSortField(
-      final String field, final AuthorizationSort.Builder builder) {
+      final AuthorizationSearchQuerySortRequest.FieldEnum field,
+      final AuthorizationSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "ownerType" -> builder.ownerType();
-        case "ownerKey" -> builder.ownerKey();
-        case "resourceType" -> builder.resourceType();
+        case OWNER_ID -> builder.ownerId();
+        case OWNER_TYPE -> builder.ownerType();
+        case RESOURCE_ID -> builder.resourceId();
+        case RESOURCE_TYPE -> builder.resourceType();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -1067,13 +1180,16 @@ public final class SearchQueryRequestMapper {
   }
 
   private static AuthorizationFilter toAuthorizationFilter(
-      final AuthorizationFilterRequest filter) {
+      final io.camunda.zeebe.gateway.protocol.rest.AuthorizationFilter filter) {
     return Optional.ofNullable(filter)
         .map(
             f ->
                 FilterBuilders.authorization()
+                    .ownerIds(f.getOwnerId())
                     .ownerType(f.getOwnerType() == null ? null : f.getOwnerType().getValue())
-                    .ownerKeys(f.getOwnerKey())
+                    .resourceIds(f.getResourceIds())
+                    .resourceType(
+                        f.getResourceType() == null ? null : f.getResourceType().getValue())
                     .build())
         .orElse(null);
   }

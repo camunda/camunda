@@ -18,6 +18,11 @@ package io.camunda.zeebe.client.api.command;
 import io.camunda.zeebe.client.api.response.PinClockResponse;
 import java.time.Instant;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.ClockPinCommandStep1}
+ */
+@Deprecated
 public interface ClockPinCommandStep1 extends FinalCommandStep<PinClockResponse> {
 
   /**

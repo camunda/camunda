@@ -5,25 +5,7 @@ on:
     branches:
       - "main"
       - "stable/**"
-    paths:
-      - ".github/actions/**"
-      - ".github/workflows/tasklist-*"
-      - "bom/*"
-      - "parent/*"
-      - "pom.xml"
-      - "tasklist/**"
-      - "tasklist.Dockerfile"
-      - "webapps-common/**"
   pull_request:
-    paths:
-      - ".github/actions/**"
-      - ".github/workflows/tasklist-*"
-      - "bom/*"
-      - "parent/*"
-      - "pom.xml"
-      - "tasklist/**"
-      - "tasklist.Dockerfile"
-      - "webapps-common/**"
 
 # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
 # Exception for main branch: complete builds for every commit needed for confidenence
@@ -32,11 +14,27 @@ concurrency:
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
 jobs:
+  detect-changes:
+    outputs:
+      tasklist-backend-changes: ${{ steps.filter.outputs.tasklist-backend-changes }}
+      tasklist-frontend-changes: ${{ steps.filter.outputs.tasklist-frontend-changes }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+      # Detect changes against the base branch
+      - name: Detect changes
+        uses: ./.github/actions/paths-filter
+        id: filter
   test:
     runs-on: ubuntu-latest
+    needs: [detect-changes]
+    if: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.tasklist-frontend-changes == 'true' }}
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.16.1
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.17.1
         env:
           discovery.type: single-node
           cluster.name: docker-cluster
@@ -51,9 +49,9 @@ jobs:
         image: camunda/zeebe:SNAPSHOT
         env:
           JAVA_TOOL_OPTIONS: "-Xms512m -Xmx512m"
-          ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME: io.camunda.zeebe.exporter.ElasticsearchExporter
-          ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL: http://elasticsearch:9200
-          ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE: 1
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME: io.camunda.exporter.CamundaExporter
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL: http://elasticsearch:9200
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE: 100
           ZEEBE_BROKER_BACKPRESSURE_ENABLED: false
         ports:
           - 26500:26500
@@ -63,7 +61,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@c46b8b88227585d3999accc9441c5810fe186a84
+        uses: hashicorp/vault-action@a1b77a09293a4366e48a5067a86692ac6e94fdc0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -119,7 +117,7 @@ jobs:
         # we're excluding optimize from the build, not to impact this tasklist's workflow.
         run: ./mvnw clean install -T1C -DskipChecks -PskipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Start Tasklist
-        run: ./mvnw -q -B spring-boot:start -pl dist -Dspring-boot.run.main-class=io.camunda.application.StandaloneTasklist -Dspring-boot.run.fork=true -Dspring-boot.run.profiles=e2e-test -Dspring-boot.run.arguments="--camunda.tasklist.cloud.clusterId=449ac2ad-d3c6-4c73-9c68-7752e39ae616 --camunda.tasklist.csrfPreventionEnabled=false"
+        run: ./mvnw -q -B spring-boot:start -pl dist -Dspring-boot.run.main-class=io.camunda.application.StandaloneTasklist -Dspring-boot.run.fork=true -Dspring-boot.run.profiles=e2e-test -Dspring-boot.run.arguments="--camunda.tasklist.cloud.clusterId=449ac2ad-d3c6-4c73-9c68-7752e39ae616 --camunda.tasklist.csrfPreventionEnabled=false --camunda.tasklist.zeebe.compatibility.enabled=true --camunda.security.authentication.basic.allowUnauthenticatedApiAccess=true"
       - name: Python setup
         if: always()
         uses: actions/setup-python@v5

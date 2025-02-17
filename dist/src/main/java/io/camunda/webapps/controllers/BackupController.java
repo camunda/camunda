@@ -7,6 +7,7 @@
  */
 package io.camunda.webapps.controllers;
 
+import io.camunda.application.commons.conditions.WebappEnabledCondition;
 import io.camunda.management.backups.Error;
 import io.camunda.management.backups.HistoryBackupDetail;
 import io.camunda.management.backups.HistoryBackupInfo;
@@ -20,11 +21,13 @@ import io.camunda.webapps.backup.GetBackupStateResponseDetailDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import io.camunda.webapps.backup.TakeBackupRequestDto;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
-import io.camunda.webapps.profiles.ProfileOperateTasklist;
+import io.camunda.webapps.profiles.ProfileWebApp;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.common.lang.NonNull;
 import java.math.BigDecimal;
 import java.util.Arrays;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
@@ -32,12 +35,15 @@ import org.springframework.boot.actuate.endpoint.annotation.Selector;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@WebEndpoint(id = "backup-history")
-@ProfileOperateTasklist
+@WebEndpoint(id = "backupHistory")
+@Conditional(WebappEnabledCondition.class)
+@ProfileWebApp
 public class BackupController {
+  private static final Logger LOG = LoggerFactory.getLogger(BackupController.class);
 
   private final BackupService backupService;
   private final BackupRepositoryProps backupRepositoryProps;
@@ -56,9 +62,11 @@ public class BackupController {
       validateRepositoryNameIsConfigured();
       final var respDTO =
           backupService.takeBackup(new TakeBackupRequestDto().setBackupId(backupId));
-      return new WebEndpointResponse<>(
-          new TakeBackupHistoryResponse().scheduledSnapshots(respDTO.getScheduledSnapshots()));
+      final var response =
+          new TakeBackupHistoryResponse().scheduledSnapshots(respDTO.getScheduledSnapshots());
+      return new WebEndpointResponse<>(response);
     } catch (final Exception e) {
+      LOG.warn("Error when taking backup", e);
       return mapErrorResponse(e);
     }
   }
@@ -69,8 +77,10 @@ public class BackupController {
       validateBackupId(backupId);
       validateRepositoryNameIsConfigured();
       final var respDTO = backupService.getBackupState(backupId);
-      return new WebEndpointResponse<>(mapTo(respDTO));
+      final var resp = mapTo(respDTO);
+      return new WebEndpointResponse<>(resp);
     } catch (final Exception e) {
+      LOG.warn("Error when trying to get a backup", e);
       return mapErrorResponse(e);
     }
   }
@@ -80,8 +90,10 @@ public class BackupController {
     try {
       validateRepositoryNameIsConfigured();
       final var respDTO = backupService.getBackups();
-      return new WebEndpointResponse<>(respDTO.stream().map(this::mapTo).toList());
+      final var resp = respDTO.stream().map(this::mapTo).toList();
+      return new WebEndpointResponse<>(resp);
     } catch (final Exception e) {
+      LOG.warn("Error when trying to get all backup", e);
       return mapErrorResponse(e);
     }
   }
@@ -94,6 +106,7 @@ public class BackupController {
       backupService.deleteBackup(backupId);
       return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
     } catch (final Exception e) {
+      LOG.warn("Error when trying to delete a backup", e);
       return mapErrorResponse(e);
     }
   }

@@ -15,11 +15,13 @@
  */
 package io.camunda.zeebe.client.impl.http;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.json.async.NonBlockingByteBufferJsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
-import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
+import io.camunda.client.protocol.rest.ProblemDetail;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -91,13 +93,17 @@ public interface TypedApiEntityConsumer<T> {
 
     @Override
     public ApiEntity<T> generateContent() throws IOException {
-      buffer.asParserOnFirstToken();
-
-      if (isResponse) {
-        return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), type));
+      try {
+        if (isResponse) {
+          return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), type));
+        }
+        return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), ProblemDetail.class));
+      } catch (final IOException ioe) {
+        // write the original JSON response into an error response
+        final String jsonString = getJsonString();
+        return ApiEntity.of(
+            new ProblemDetail().title("Unexpected server response").status(500).detail(jsonString));
       }
-
-      return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), ProblemDetail.class));
     }
 
     @Override
@@ -135,6 +141,18 @@ public interface TypedApiEntityConsumer<T> {
     @Override
     public int getBufferedBytes() {
       return bufferedBytes;
+    }
+
+    private String getJsonString() {
+      try (final ByteArrayOutputStream output = new ByteArrayOutputStream();
+          final JsonGenerator generator = json.createGenerator(output)) {
+        buffer.serialize(generator);
+        generator.flush();
+        return output.toString(StandardCharsets.UTF_8.name());
+      } catch (final Exception ex) {
+        LOGGER.warn("Failed to serialize JSON string", ex);
+        return "Original response cannot be constructed";
+      }
     }
   }
 

@@ -5,17 +5,16 @@
   <parent>
     <groupId>io.camunda.optimize</groupId>
     <artifactId>optimize-parent</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>optimize-backend</artifactId>
   <name>Optimize Backend</name>
 
   <properties>
-    <spring.security.version>6.4.1</spring.security.version>
-    <it.test.excludedGroups />
-    <it.test.includedGroups />
-    <test.forkCount />
+    <it.test.excludedGroups></it.test.excludedGroups>
+    <it.test.includedGroups></it.test.includedGroups>
+    <test.forkCount></test.forkCount>
     <version.tomcat>10.1.34</version.tomcat>
   </properties>
 
@@ -24,9 +23,16 @@
 
     <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
-      <groupId>net.logstash.logback</groupId>
-      <artifactId>logstash-logback-encoder</artifactId>
-      <version>8.0</version>
+      <groupId>io.github.netmikey.logunit</groupId>
+      <artifactId>logunit-log4j2</artifactId>
+      <version>2.0.0</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- this is necessary. Dependency:analyze error suppressed -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
     </dependency>
 
     <!-- this is necessary. Dependency:analyze error suppressed -->
@@ -47,17 +53,17 @@
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-bpmn-model</artifactId>
-      <version>${camunda.maven.artifacts.version}</version>
+      <version>${version.camunda}</version>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-dmn-model</artifactId>
-      <version>${camunda.maven.artifacts.version}</version>
+      <version>${version.camunda}</version>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine</artifactId>
-      <version>${camunda.maven.artifacts.version}</version>
+      <version>${version.camunda}</version>
       <exclusions>
         <exclusion>
           <groupId>org.camunda.feel</groupId>
@@ -72,25 +78,24 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
-      <version>8.6.6</version>
     </dependency>
 
     <!-- Zeebe dependencies -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
-      <version>${zeebe.version}</version>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-client-java</artifactId>
-      <version>${zeebe.version}</version>
+      <artifactId>camunda-client-java</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>jakarta.ws.rs</groupId>
       <artifactId>jakarta.ws.rs-api</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <!-- IDENTITY-->
@@ -98,13 +103,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-spring-boot-starter</artifactId>
-      <version>${identity.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.logging.log4j</groupId>
-          <artifactId>log4j-slf4j2-impl</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <!-- Spring -->
@@ -123,77 +121,71 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
-      <version>${spring.boot.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-tomcat</artifactId>
-      <version>${spring.boot.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.tomcat.embed</groupId>
       <artifactId>tomcat-embed-core</artifactId>
-      <version>${version.tomcat}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.tomcat</groupId>
       <artifactId>tomcat-annotations-api</artifactId>
-      <version>${version.tomcat}</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot</artifactId>
-      <version>${spring.boot.version}</version>
+      <version>${version.spring-boot}</version>
     </dependency>
 
-    <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-jersey</artifactId>
-      <version>${spring.boot.version}</version>
+      <groupId>org.javassist</groupId>
+      <artifactId>javassist</artifactId>
     </dependency>
 
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-web</artifactId>
-      <version>${spring.security.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-config</artifactId>
-      <version>${spring.security.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-oauth2-client</artifactId>
-      <version>${spring.security.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-oauth2-jose</artifactId>
-      <version>${spring.security.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-oauth2-resource-server</artifactId>
-      <version>${spring.security.version}</version>
     </dependency>
 
     <!-- Authentication -->
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
-      <version>4.4.0</version>
+      <version>${version.java-jwt}</version>
       <exclusions>
         <exclusion>
-          <artifactId>jackson-databind</artifactId>
           <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-databind</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -205,8 +197,8 @@
       <version>${quartz.version}</version>
       <exclusions>
         <exclusion>
-          <artifactId>slf4j-api</artifactId>
           <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -214,7 +206,7 @@
     <dependency>
       <groupId>org.freemarker</groupId>
       <artifactId>freemarker</artifactId>
-      <version>2.3.33</version>
+      <version>2.3.34</version>
     </dependency>
 
     <!-- CSV -->
@@ -234,12 +226,12 @@
     <dependency>
       <groupId>com.github.ben-manes.caffeine</groupId>
       <artifactId>caffeine</artifactId>
-      <version>3.1.8</version>
+      <version>${version.caffeine}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-math3</artifactId>
-      <version>3.6.1</version>
+      <version>${version.commons-math}</version>
     </dependency>
     <dependency>
       <groupId>com.github.sisyphsu</groupId>
@@ -249,7 +241,7 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>${commons.io.version}</version>
+      <version>${version.commons-io}</version>
       <scope>test</scope>
     </dependency>
 
@@ -257,19 +249,18 @@
     <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-registry-prometheus</artifactId>
-      <version>1.14.2</version>
+      <artifactId>micrometer-registry-prometheus-simpleclient</artifactId>
     </dependency>
 
     <!--Lucene dependencies-->
     <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-core</artifactId>
-      <version>${lucene.version}</version>
+      <version>${version.lucene}</version>
       <exclusions>
         <exclusion>
-          <artifactId>*</artifactId>
           <groupId>*</groupId>
+          <artifactId>*</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -284,7 +275,12 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-test-container</artifactId>
-      <version>3.6.5</version>
+      <version>${version.zeebe-test-container}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol-jackson</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -299,12 +295,12 @@
       <scope>test</scope>
       <exclusions>
         <exclusion>
-          <artifactId>slf4j-api</artifactId>
           <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
         </exclusion>
         <exclusion>
-          <artifactId>junit</artifactId>
           <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -316,12 +312,16 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
-      <version>${spring.boot.version}</version>
+      <version>${version.spring-boot}</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
           <groupId>junit</groupId>
           <artifactId>junit</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -330,13 +330,11 @@
     <dependency>
       <groupId>org.apache.httpcomponents.core5</groupId>
       <artifactId>httpcore5</artifactId>
-      <version>${apache.http5-core.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-java</artifactId>
-      <version>${opensearch.client.version}</version>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -348,14 +346,14 @@
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-license-check</artifactId>
-      <version>2.10.0</version>
+      <version>${version.camunda-license-check}</version>
     </dependency>
 
     <!-- ClassGraph  -->
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
-      <version>4.8.179</version>
+      <version>${version.classgraph}</version>
     </dependency>
 
     <!-- used/undeclared block -->
@@ -377,8 +375,7 @@
     <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
-      <version>1.23.1</version>
-      <scope>compile</scope>
+      <version>${version.agrona}</version>
     </dependency>
 
     <dependency>
@@ -391,13 +388,12 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>
-      <version>1.20.4</version>
+      <version>${version.testcontainers}</version>
       <scope>test</scope>
     </dependency>
 
@@ -410,29 +406,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-sdk</artifactId>
-      <version>8.5.10</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-oauth2-core</artifactId>
-      <version>6.4.1</version>
-      <scope>compile</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-actuator</artifactId>
-      <version>${spring.boot.version}</version>
-      <scope>compile</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.glassfish.jersey.media</groupId>
-      <artifactId>jersey-media-json-jackson</artifactId>
-      <version>3.1.8</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -443,7 +421,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
-      <version>8.6.6</version>
+      <version>8.6.7</version>
       <scope>test</scope>
     </dependency>
 
@@ -451,49 +429,35 @@
       <groupId>jakarta.json</groupId>
       <artifactId>jakarta.json-api</artifactId>
       <version>2.1.3</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
-      <version>${spring.boot.version}</version>
-      <scope>compile</scope>
+      <version>${version.spring-boot}</version>
     </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-test</artifactId>
-      <version>${spring.boot.version}</version>
+      <version>${version.spring-boot}</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-core</artifactId>
-      <version>6.4.1</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>com.nimbusds</groupId>
       <artifactId>oauth2-oidc-sdk</artifactId>
-      <version>11.20.1</version>
-      <scope>compile</scope>
+      <version>${version.nimbus-sdk}</version>
     </dependency>
 
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
-      <version>${spring.version}</version>
-      <scope>compile</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>net.minidev</groupId>
-      <artifactId>json-smart</artifactId>
-      <version>2.5.1</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -504,8 +468,7 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpcore</artifactId>
-      <version>4.4.16</version>
-      <scope>compile</scope>
+      <version>${version.httpcomponents}</version>
     </dependency>
 
     <dependency>
@@ -518,86 +481,59 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
-      <version>1.14.2</version>
-      <scope>compile</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>com.vdurmont</groupId>
-      <artifactId>semver4j</artifactId>
-      <version>3.1.0</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>jakarta.validation</groupId>
       <artifactId>jakarta.validation-api</artifactId>
-      <version>3.1.0</version>
-      <scope>compile</scope>
     </dependency>
 
     <!-- scope here is wider than test. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-rest-client</artifactId>
-      <version>2.12.0</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>co.elastic.clients</groupId>
       <artifactId>elasticsearch-java</artifactId>
-      <version>8.13.4</version>
-      <scope>compile</scope>
+      <version>${version.elasticsearch}</version>
     </dependency>
 
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-common</artifactId>
-      <version>4.1.115.Final</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-client</artifactId>
-      <version>8.13.4</version>
-      <scope>compile</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>jakarta.xml.bind</groupId>
-      <artifactId>jakarta.xml.bind-api</artifactId>
-      <version>4.0.2</version>
-      <scope>compile</scope>
+      <version>${version.elasticsearch}</version>
     </dependency>
 
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>5.14.2</version>
+      <version>${version.mockito}</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.jetbrains</groupId>
       <artifactId>annotations</artifactId>
-      <version>17.0.0</version>
       <scope>runtime</scope>
     </dependency>
 
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
-      <scope>compile</scope>
+      <version>${version.slf4j}</version>
     </dependency>
 
     <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>jakarta.annotation</groupId>
       <artifactId>jakarta.annotation-api</artifactId>
-      <version>2.1.1</version>
     </dependency>
 
     <!-- scope here is wider than test. Dependency:analyze error suppressed -->
@@ -609,37 +545,28 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.17.0</version>
-      <scope>compile</scope>
     </dependency>
 
     <!-- scope here is wider than test. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpcore-nio</artifactId>
-      <version>4.4.16</version>
-      <scope>compile</scope>
+      <version>${version.httpcomponents}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.httpcomponents.client5</groupId>
       <artifactId>httpclient5</artifactId>
-      <version>5.4.1</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
-      <version>1.17.1</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-text</artifactId>
-      <version>1.12.0</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -653,36 +580,37 @@
       <groupId>com.github.wnameless.json</groupId>
       <artifactId>json-base</artifactId>
       <version>2.5.0</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>${guava.version}</version>
-      <scope>compile</scope>
+      <version>${version.guava}</version>
     </dependency>
 
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-xml-model</artifactId>
       <version>${camunda.maven.artifacts.version}</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
-      <version>${spring.version}</version>
-      <scope>compile</scope>
     </dependency>
 
     <!-- scope here is wider than test. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>org.glassfish.jersey.core</groupId>
       <artifactId>jersey-client</artifactId>
-      <version>3.1.8</version>
-      <scope>compile</scope>
+      <version>3.1.9</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.glassfish.jersey.media</groupId>
+      <artifactId>jersey-media-json-jackson</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <!-- this is necessary. Dependency:analyze error suppressed -->
@@ -690,58 +618,34 @@
       <groupId>org.eclipse.angus</groupId>
       <artifactId>jakarta.mail</artifactId>
       <version>2.0.3</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-collections4</artifactId>
-      <version>4.4</version>
-      <scope>compile</scope>
+      <version>${version.commons-collections4}</version>
     </dependency>
 
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-webmvc</artifactId>
-      <version>${spring.version}</version>
-      <scope>compile</scope>
-    </dependency>
-
-    <!-- scope here is wider than test. Dependency:analyze error suppressed -->
-    <dependency>
-      <groupId>commons-collections</groupId>
-      <artifactId>commons-collections</artifactId>
-      <version>20040616</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
-      <version>${httpclient.version}</version>
-      <scope>compile</scope>
     </dependency>
 
     <!-- scope here is wider than test. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>org.apache.tika</groupId>
       <artifactId>tika-core</artifactId>
-      <version>2.9.2</version>
-      <scope>compile</scope>
+      <version>3.0.0</version>
     </dependency>
 
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
-      <version>${spring.version}</version>
-      <scope>compile</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.glassfish.jersey.core</groupId>
-      <artifactId>jersey-server</artifactId>
-      <version>3.1.8</version>
-      <scope>compile</scope>
     </dependency>
 
     <!-- this is necessary. Dependency:analyze error suppressed -->
@@ -749,25 +653,71 @@
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
       <version>6.1.0</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-beans</artifactId>
-      <version>${spring.version}</version>
-      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.github.spotbugs</groupId>
+      <artifactId>spotbugs-annotations</artifactId>
+      <version>${version.spotbugs}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j2-impl</artifactId>
     </dependency>
   </dependencies>
 
   <build>
     <finalName>optimize-backend-${project.version}</finalName>
+    <resources>
+      <!-- TODO: Remove this resource block once legacy Optimize Main class is no longer -->
+      <resource>
+        <targetPath>META-INF/resources/optimize</targetPath>
+        <directory>../client/dist</directory>
+      </resource>
+
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+      <resource>
+        <directory>src/main/ssl</directory>
+      </resource>
+    </resources>
+    <testResources>
+      <testResource>
+        <targetPath>webapp</targetPath>
+        <directory>src/it/webapp</directory>
+      </testResource>
+      <testResource>
+        <filtering>true</filtering>
+        <directory>src/it/resources</directory>
+        <includes>
+          <include>**/*.properties</include>
+        </includes>
+      </testResource>
+      <testResource>
+        <filtering>false</filtering>
+        <directory>src/it/resources</directory>
+        <includes>
+          <include>**/*</include>
+        </includes>
+      </testResource>
+      <testResource>
+        <directory>src/test/resources</directory>
+      </testResource>
+    </testResources>
 
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.13.0</version>
+        <version>${plugin.version.compiler}</version>
         <configuration>
           <fork>false</fork>
           <meminitial>128m</meminitial>
@@ -781,10 +731,10 @@
         <executions>
           <execution>
             <id>add-it-source</id>
-            <phase>generate-test-sources</phase>
             <goals>
               <goal>add-test-source</goal>
             </goals>
+            <phase>generate-test-sources</phase>
             <configuration>
               <sources>
                 <source>src/it/java</source>
@@ -797,7 +747,7 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
-        <version>${spring.boot.version}</version>
+        <version>${version.spring-boot}</version>
       </plugin>
 
       <plugin>
@@ -824,85 +774,26 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <ignoredUnusedDeclaredDependencies>
+            <ignoredUnusedDeclaredDependency>io.camunda:zeebe-protocol-jackson:jar</ignoredUnusedDeclaredDependency>
+          </ignoredUnusedDeclaredDependencies>
+        </configuration>
         <executions>
           <execution>
             <id>copy-dependencies-to-lib-folder</id>
-            <phase>package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
+            <phase>package</phase>
             <configuration>
               <outputDirectory>${project.build.directory}/lib</outputDirectory>
               <includeScope>runtime</includeScope>
             </configuration>
           </execution>
         </executions>
-        <configuration>
-          <ignoredUnusedDeclaredDependencies>
-            <dep>net.logstash.logback:logstash-logback-encoder</dep>
-            <dep>org.codehaus.janino:janino</dep>
-            <dep>io.camunda:identity-spring-boot-starter</dep>
-            <dep>org.springframework:spring-tx</dep>
-            <dep>org.springframework.boot:spring-boot-starter-web</dep>
-            <dep>org.springframework.boot:spring-boot-starter-jersey</dep>
-            <dep>io.micrometer:micrometer-registry-prometheus</dep>
-            <dep>org.apache.httpcomponents.core5:httpcore5</dep>
-            <dep>org.eclipse.angus:jakarta.mail</dep>
-            <dep>org.springframework.boot:spring-boot-starter-tomcat</dep>
-            <dep>jakarta.servlet:jakarta.servlet-api</dep>
-            <dep>jakarta.annotation:jakarta.annotation-api</dep>
-
-            <!-- test dependencies -->
-            <dep>org.springframework.boot:spring-boot-starter-test</dep>
-            <dep>com.sun.mail:jakarta.mail</dep>
-          </ignoredUnusedDeclaredDependencies>
-          <ignoredNonTestScopedDependencies>
-            <dep>com.fasterxml.jackson.datatype:jackson-datatype-jdk8</dep>
-            <dep>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</dep>
-            <dep>org.apache.httpcomponents:httpcore-nio</dep>
-            <dep>org.glassfish.jersey.core:jersey-client</dep>
-            <dep>org.apache.tika:tika-core</dep>
-            <dep>commons-collections:commons-collections</dep>
-            <dep>org.opensearch.client:opensearch-rest-client</dep>
-          </ignoredNonTestScopedDependencies>
-        </configuration>
       </plugin>
     </plugins>
-    <resources>
-      <resource>
-        <directory>../client/dist</directory>
-        <targetPath>webapp</targetPath>
-      </resource>
-      <resource>
-        <directory>src/main/resources</directory>
-      </resource>
-      <resource>
-        <directory>src/main/ssl</directory>
-      </resource>
-    </resources>
-    <testResources>
-      <testResource>
-        <directory>src/it/webapp</directory>
-        <targetPath>webapp</targetPath>
-      </testResource>
-      <testResource>
-        <directory>src/it/resources</directory>
-        <filtering>true</filtering>
-        <includes>
-          <include>**/*.properties</include>
-        </includes>
-      </testResource>
-      <testResource>
-        <directory>src/it/resources</directory>
-        <filtering>false</filtering>
-        <includes>
-          <include>**/*</include>
-        </includes>
-      </testResource>
-      <testResource>
-        <directory>src/test/resources</directory>
-      </testResource>
-    </testResources>
   </build>
 
   <profiles>
@@ -946,13 +837,16 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>exec-maven-plugin</artifactId>
+            <configuration>
+              <skip>${skipTests}</skip>
+            </configuration>
             <executions>
               <execution>
                 <id>docker-start</id>
-                <phase>pre-integration-test</phase>
                 <goals>
                   <goal>exec</goal>
                 </goals>
+                <phase>pre-integration-test</phase>
                 <configuration>
                   <environmentVariables>
                     <ES_VERSION>${elasticsearch.test.version}</ES_VERSION>
@@ -976,10 +870,10 @@
               </execution>
               <execution>
                 <id>docker-remove</id>
-                <phase>post-integration-test</phase>
                 <goals>
                   <goal>exec</goal>
                 </goals>
+                <phase>post-integration-test</phase>
                 <configuration>
                   <skip>${skip.docker}</skip>
                   <executable>docker</executable>
@@ -994,9 +888,6 @@
                 </configuration>
               </execution>
             </executions>
-            <configuration>
-              <skip>${skipTests}</skip>
-            </configuration>
           </plugin>
         </plugins>
       </build>

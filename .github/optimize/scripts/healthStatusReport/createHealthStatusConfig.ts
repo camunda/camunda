@@ -38,7 +38,6 @@ async function createHealthStatusConfig() {
         },
         'optimize-zeebe-compatibility',
         'optimize-e2e-tests-sm',
-        'optimize-release-optimize-c8-only',
       ],
     },
   };

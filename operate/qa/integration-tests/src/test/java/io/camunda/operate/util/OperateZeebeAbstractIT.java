@@ -17,6 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.CamundaClient;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
@@ -33,7 +34,6 @@ import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.webapps.zeebe.StandalonePartitionSupplier;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -71,10 +71,10 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   @Autowired public BeanFactory beanFactory;
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
 
-  // we don't want to create ZeebeClient, we will rather use the one from
-  @MockBean protected ZeebeClient mockedZeebeClient;
+  // we don't want to create CamundaClient, we will rather use the one from
+  @MockBean protected CamundaClient mockedCamundaClient;
 
-  protected ZeebeClient zeebeClient;
+  protected CamundaClient camundaClient;
   @Autowired protected PartitionHolder partitionHolder;
   @Autowired protected ImportPositionHolder importPositionHolder;
   @Autowired protected ProcessCache processCache;
@@ -182,6 +182,10 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   protected Predicate<Object[]> processInstancesAreStartedByProcessId;
 
   @Autowired
+  @Qualifier("listenerJobIsCreated")
+  protected Predicate<Object[]> listenerJobIsCreated;
+
+  @Autowired
   @Qualifier("userTasksAreCreated")
   protected Predicate<Object[]> userTasksAreCreated;
 
@@ -206,10 +210,11 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     zeebeContainer = zeebeRule.getZeebeContainer();
     assertThat(zeebeContainer).as("zeebeContainer is not null").isNotNull();
 
-    zeebeClient = getClient();
+    camundaClient = getClient();
     workerName = TestUtil.createRandomString(10);
 
-    tester = beanFactory.getBean(OperateTester.class, zeebeClient, mockMvcTestRule, searchTestRule);
+    tester =
+        beanFactory.getBean(OperateTester.class, camundaClient, mockMvcTestRule, searchTestRule);
 
     processCache.clearCache();
     importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
@@ -226,7 +231,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     importPositionHolder.clearCache();
   }
 
-  public ZeebeClient getClient() {
+  public CamundaClient getClient() {
     return zeebeRule.getClient();
   }
 

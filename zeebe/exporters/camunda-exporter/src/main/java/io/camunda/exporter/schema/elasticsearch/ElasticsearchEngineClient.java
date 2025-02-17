@@ -7,10 +7,6 @@
  */
 package io.camunda.exporter.schema.elasticsearch;
 
-import static io.camunda.exporter.utils.SearchEngineClientUtils.appendToFileSchemaSettings;
-import static io.camunda.exporter.utils.SearchEngineClientUtils.listIndices;
-import static io.camunda.exporter.utils.SearchEngineClientUtils.mapToSettings;
-
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.mapping.Property;
@@ -27,7 +23,6 @@ import co.elastic.clients.elasticsearch.indices.put_index_template.IndexTemplate
 import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.JsonpDeserializer;
 import co.elastic.clients.json.jackson.JacksonJsonpGenerator;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.SchemaResourceSerializer;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
@@ -37,6 +32,7 @@ import io.camunda.exporter.schema.IndexMapping;
 import io.camunda.exporter.schema.IndexMappingProperty;
 import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SearchEngineClient;
+import io.camunda.exporter.utils.SearchEngineClientUtils;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
@@ -54,11 +50,17 @@ import org.slf4j.LoggerFactory;
 
 public class ElasticsearchEngineClient implements SearchEngineClient {
   private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchEngineClient.class);
-  private static final ObjectMapper MAPPER = new ObjectMapper();
   private final ElasticsearchClient client;
+  private final SearchEngineClientUtils utils;
+  private final ObjectMapper mapper;
+  private final SchemaResourceSerializer schemaSerializer;
 
-  public ElasticsearchEngineClient(final ElasticsearchClient client) {
+  public ElasticsearchEngineClient(
+      final ElasticsearchClient client, final ObjectMapper objectMapper) {
     this.client = client;
+    utils = new SearchEngineClientUtils(objectMapper);
+    mapper = objectMapper;
+    schemaSerializer = new SchemaResourceSerializer(mapper);
   }
 
   @Override
@@ -67,11 +69,27 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     try {
       client.indices().create(request);
       LOG.debug("Index [{}] was successfully created", indexDescriptor.getFullQualifiedName());
-    } catch (final IOException | ElasticsearchException e) {
+    } catch (final IOException ioe) {
       final var errMsg =
           String.format("Index [%s] was not created", indexDescriptor.getFullQualifiedName());
-      LOG.error(errMsg, e);
-      throw new ElasticsearchExporterException(errMsg, e);
+      LOG.error(errMsg, ioe);
+      throw new ElasticsearchExporterException(errMsg, ioe);
+    } catch (final ElasticsearchException elsEx) {
+      if ("resource_already_exists_exception".equals(elsEx.error().type())) {
+        // we can ignore already exists exceptions
+        // as this means the index was created by another exporter on a different partition
+        final var warnMsg =
+            String.format(
+                "Expected to create index [%s], but already exist. Will continue, likely was created by different partition (exporter).",
+                indexDescriptor.getFullQualifiedName());
+        LOG.debug(warnMsg, elsEx);
+        return;
+      }
+
+      final var errMsg =
+          String.format("Index [%s] was not created", indexDescriptor.getFullQualifiedName());
+      LOG.error(errMsg, elsEx);
+      throw new ElasticsearchExporterException(errMsg, elsEx);
     }
   }
 
@@ -162,7 +180,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     } catch (final IOException | ElasticsearchException e) {
       final var errMsg =
           String.format(
-              "settings PUT failed for the following indices [%s]", listIndices(indexDescriptors));
+              "settings PUT failed for the following indices [%s]",
+              utils.listIndices(indexDescriptors));
       LOG.error(errMsg, e);
       throw new ElasticsearchExporterException(errMsg, e);
     }
@@ -222,13 +241,13 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   private PutIndicesSettingsRequest putIndexSettingsRequest(
       final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
     final co.elastic.clients.elasticsearch.indices.IndexSettings settings =
-        mapToSettings(
+        utils.mapToSettings(
             toAppendSettings,
             (inp) ->
                 deserializeJson(
                     co.elastic.clients.elasticsearch.indices.IndexSettings._DESERIALIZER, inp));
     return new PutIndicesSettingsRequest.Builder()
-        .index(listIndices(indexDescriptors))
+        .index(utils.listIndices(indexDescriptors))
         .settings(settings)
         .build();
   }
@@ -290,10 +309,10 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   private Map<String, Object> propertyToMap(final Property property) {
     try {
-      return SchemaResourceSerializer.serialize(
+      return schemaSerializer.serialize(
           (JacksonJsonpGenerator::new),
           (jacksonJsonpGenerator) ->
-              property.serialize(jacksonJsonpGenerator, new JacksonJsonpMapper(MAPPER)));
+              property.serialize(jacksonJsonpGenerator, client._transport().jsonpMapper()));
     } catch (final IOException e) {
       throw new ElasticsearchExporterException(
           String.format("Failed to serialize property [%s]", property.toString()), e);
@@ -315,7 +334,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
     final var elsProperties =
         newProperties.stream()
-            .map(IndexMappingProperty::toElasticsearchProperty)
+            .map(p -> p.toElasticsearchProperty(client._jsonpMapper(), mapper))
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
     return new PutMappingRequest.Builder()
@@ -345,7 +364,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final var templateFields =
           deserializeJson(
               IndexTemplateMapping._DESERIALIZER,
-              appendToFileSchemaSettings(templateFile, settings));
+              utils.appendToFileSchemaSettings(templateFile, settings));
 
       return new PutIndexTemplateRequest.Builder()
           .name(indexTemplateDescriptor.getTemplateName())
@@ -375,7 +394,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final var templateFields =
           deserializeJson(
               IndexTemplateMapping._DESERIALIZER,
-              appendToFileSchemaSettings(templateFile, settings));
+              utils.appendToFileSchemaSettings(templateFile, settings));
 
       return new CreateIndexRequest.Builder()
           .index(indexDescriptor.getFullQualifiedName())

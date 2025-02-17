@@ -11,7 +11,9 @@ import java.util.List;
 import java.util.Map;
 
 public record DocumentStoreConfiguration(
-    String defaultDocumentStoreId, List<DocumentStoreConfigurationRecord> documentStores) {
+    String defaultDocumentStoreId,
+    Integer threadPoolSize,
+    List<DocumentStoreConfigurationRecord> documentStores) {
 
   public record DocumentStoreConfigurationRecord(
       String id,

@@ -11,9 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
-import io.camunda.zeebe.client.api.response.BrokerInfo;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.time.Duration;
@@ -68,7 +68,7 @@ import org.slf4j.LoggerFactory;
  *
  *     // when
  *     final Topology topology;
- *     try (final ZeebeClient client = cluster.newClientBuilder().build()) {
+ *     try (final CamundaClient client = cluster.newClientBuilder().build()) {
  *       topology = c.newTopologyRequest().send().join();
  *     }
  *
@@ -264,8 +264,8 @@ public final class TestCluster implements CloseableSilently {
    * @throws NoSuchElementException if there are no started gateways
    */
   @SuppressWarnings("resource")
-  public ZeebeClientBuilder newClientBuilder() {
-    return ZeebeClient.newClientBuilder()
+  public CamundaClientBuilder newClientBuilder() {
+    return CamundaClient.newClientBuilder()
         .usePlaintext()
         .restAddress(availableGateway().restAddress())
         .grpcAddress(availableGateway().grpcAddress());

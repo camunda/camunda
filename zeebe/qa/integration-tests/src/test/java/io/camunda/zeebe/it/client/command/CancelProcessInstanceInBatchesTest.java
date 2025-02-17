@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.it.client.command;
 
-import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_KB;
+import static io.camunda.client.impl.util.DataSizeUtil.ONE_KB;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -40,8 +40,7 @@ public final class CancelProcessInstanceInBatchesTest {
           });
   private static final GrpcClientRule CLIENT_RULE =
       new GrpcClientRule(
-          BROKER_RULE,
-          zeebeClientBuilder -> zeebeClientBuilder.maxMessageSize(MAX_MESSAGE_SIZE_KB * ONE_KB));
+          BROKER_RULE, clientBuilder -> clientBuilder.maxMessageSize(MAX_MESSAGE_SIZE_KB * ONE_KB));
 
   @ClassRule
   public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);

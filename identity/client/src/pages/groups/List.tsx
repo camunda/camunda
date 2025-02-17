@@ -6,6 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 import { FC, useState } from "react";
+import { C3EmptyState } from "@camunda/camunda-composite-components";
+import { Edit, TrashCan } from "@carbon/react/icons";
+import { Stack } from "@carbon/react";
+import { spacing06 } from "@carbon/elements";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
 import Page, { PageTitle } from "src/components/layout/Page";
@@ -16,48 +20,52 @@ import {
   documentationHref,
   DocumentationLink,
 } from "src/components/documentation";
-import { getGroups, Group } from "src/utility/api/groups";
+import { Group, searchGroups } from "src/utility/api/groups";
 import { useNavigate } from "react-router";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import EditModal from "src/pages/groups/modals/EditModal";
 import DeleteModal from "src/pages/groups/modals/DeleteModal";
 import AddModal from "src/pages/groups/modals/AddModal";
-import { C3EmptyState } from "@camunda/camunda-composite-components";
-import { Edit, TrashCan } from "@carbon/react/icons";
 
 const List: FC = () => {
   const { t, Translate } = useTranslate();
   const navigate = useNavigate();
   const [, setSearch] = useState("");
 
-  const { data: groups, loading, reload, success } = useApi(getGroups);
+  const {
+    data: groupSearchResults,
+    loading,
+    reload,
+    success,
+  } = useApi(searchGroups);
   const [addGroup, addModal] = useModal(AddModal, reload);
   const [updateGroup, editModal] = useEntityModal(EditModal, reload);
   const [deleteGroup, deleteModal] = useEntityModal(DeleteModal, reload);
-  const areGroupsEmpty = !groups || groups.length === 0;
-  const showDetails = ({ id }: Group) => navigate(`${id}`);
+  const showDetails = ({ groupKey }: Group) => navigate(`${groupKey}`);
 
-  if (success && areGroupsEmpty) {
+  if (success && !groupSearchResults?.items.length) {
     return (
       <Page>
-        <PageTitle>
-          <Translate>Groups</Translate>
-        </PageTitle>
-        <C3EmptyState
-          heading={t("You don’t have any groups yet")}
-          description={t(
-            "Roles, permissions, and authorizations can be applied to a group, and any users added to the group will inherit them. Utilizing groups can enhance the efficiency of managing users over time.",
-          )}
-          button={{
-            label: t("Create a group"),
-            onClick: addGroup,
-          }}
-          link={{
-            href: documentationHref("/concepts/access-control/groups", ""),
-            label: t("Learn more about groups"),
-          }}
-        />
+        <Stack gap={spacing06}>
+          <PageTitle>
+            <Translate>Groups</Translate>
+          </PageTitle>
+          <C3EmptyState
+            heading={t("You don’t have any groups yet")}
+            description={t(
+              "Roles, permissions, and authorizations can be applied to a group, and any users added to the group will inherit them. Utilizing groups can enhance the efficiency of managing users over time.",
+            )}
+            button={{
+              label: t("Create a group"),
+              onClick: addGroup,
+            }}
+            link={{
+              href: documentationHref("/concepts/access-control/groups", ""),
+              label: t("Learn more about groups"),
+            }}
+          />
+        </Stack>
         {addModal}
       </Page>
     );
@@ -66,7 +74,7 @@ const List: FC = () => {
     <Page>
       <EntityList
         title={t("Groups")}
-        data={groups}
+        data={groupSearchResults == null ? [] : groupSearchResults.items}
         headers={[{ header: t("name"), key: "name" }]}
         sortProperty="name"
         addEntityLabel={t("Create group")}

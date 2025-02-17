@@ -21,18 +21,20 @@ import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.views.TaskSearchView;
+import io.camunda.tasklist.webapp.dto.TaskDTO;
+import io.camunda.tasklist.webapp.dto.TaskQueryDTO;
+import io.camunda.tasklist.webapp.dto.UserDTO;
+import io.camunda.tasklist.webapp.dto.VariableDTO;
+import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.es.TaskValidator;
-import io.camunda.tasklist.webapp.graphql.entity.*;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
+import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.security.UserReader;
+import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
-import io.camunda.zeebe.client.api.response.AssignUserTaskResponse;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -52,10 +54,6 @@ public class TaskService {
 
   @Autowired private UserReader userReader;
 
-  @Autowired
-  @Qualifier("tasklistZeebeClient")
-  private ZeebeClient zeebeClient;
-
   @Autowired private TaskStore taskStore;
   @Autowired private VariableService variableService;
   @Autowired private FormStore formStore;
@@ -68,6 +66,7 @@ public class TaskService {
   @Autowired private TaskMetricsStore taskMetricsStore;
   @Autowired private AssigneeMigrator assigneeMigrator;
   @Autowired private TaskValidator taskValidator;
+  @Autowired private TasklistServicesAdapter tasklistServicesAdapter;
 
   public List<TaskDTO> getTasks(final TaskQueryDTO query) {
     return getTasks(query, emptySet(), false);
@@ -155,14 +154,14 @@ public class TaskService {
       allowOverrideAssignment = true;
     }
 
-    final UserDTO currentUser = getCurrentUser();
-    if (StringUtils.isEmpty(assignee) && currentUser.isApiUser()) {
+    final var isApiUser = TasklistAuthenticationUtil.isApiUser();
+    if (StringUtils.isEmpty(assignee) && isApiUser) {
       throw new InvalidRequestException("Assignee must be specified");
     }
 
     if (StringUtils.isNotEmpty(assignee)
-        && !currentUser.isApiUser()
-        && !assignee.equals(currentUser.getUserId())) {
+        && !isApiUser
+        && !assignee.equals(getCurrentUser().getUserId())) {
       throw new ForbiddenActionException(
           "User doesn't have the permission to assign another user to this task");
     }
@@ -171,19 +170,7 @@ public class TaskService {
     taskValidator.validateCanAssign(taskBefore, allowOverrideAssignment);
 
     final String taskAssignee = determineTaskAssignee(assignee);
-
-    if (taskBefore.getImplementation().equals(TaskImplementation.ZEEBE_USER_TASK)) {
-      try {
-        final AssignUserTaskResponse assigneeResponse =
-            zeebeClient
-                .newUserTaskAssignCommand(Long.parseLong(taskId))
-                .assignee(taskAssignee)
-                .send()
-                .join();
-      } catch (final ClientException exception) {
-        throw new TasklistRuntimeException(exception.getMessage());
-      }
-    }
+    tasklistServicesAdapter.assignUserTask(taskBefore, taskAssignee);
 
     final TaskEntity claimedTask = taskStore.persistTaskClaim(taskBefore, taskAssignee);
     updateClaimedMetric(claimedTask);
@@ -191,9 +178,8 @@ public class TaskService {
   }
 
   private String determineTaskAssignee(final String assignee) {
-    final UserDTO currentUser = getCurrentUser();
-    return StringUtils.isEmpty(assignee) && !currentUser.isApiUser()
-        ? currentUser.getUserId()
+    return StringUtils.isEmpty(assignee) && !TasklistAuthenticationUtil.isApiUser()
+        ? getCurrentUser().getUserId()
         : assignee;
   }
 
@@ -210,24 +196,7 @@ public class TaskService {
 
       final TaskEntity task = taskStore.getTask(taskId);
       taskValidator.validateCanComplete(task);
-
-      try {
-        if (task.getImplementation().equals(TaskImplementation.JOB_WORKER)) {
-          // complete
-          CompleteJobCommandStep1 completeJobCommand =
-              zeebeClient.newCompleteCommand(Long.parseLong(taskId));
-          completeJobCommand = completeJobCommand.variables(variablesMap);
-          completeJobCommand.send().join();
-        } else {
-          zeebeClient
-              .newUserTaskCompleteCommand(Long.parseLong(taskId))
-              .variables(variablesMap)
-              .send()
-              .join();
-        }
-      } catch (final ClientException exception) {
-        throw new TasklistRuntimeException(exception.getMessage());
-      }
+      tasklistServicesAdapter.completeUserTask(task, variablesMap);
 
       // persist completion and variables
       final TaskEntity completedTaskEntity = taskStore.persistTaskCompletion(task);
@@ -283,13 +252,11 @@ public class TaskService {
     final TaskEntity taskBefore = taskStore.getTask(taskId);
     taskValidator.validateCanUnassign(taskBefore);
     final TaskEntity taskEntity = taskStore.persistTaskUnclaim(taskBefore);
-    if (taskBefore.getImplementation().equals(TaskImplementation.ZEEBE_USER_TASK)) {
-      try {
-        zeebeClient.newUserTaskUnassignCommand(taskBefore.getKey()).send().join();
-      } catch (final ClientException exception) {
-        taskStore.persistTaskClaim(taskBefore, taskBefore.getAssignee());
-        throw new TasklistRuntimeException(exception.getMessage());
-      }
+    try {
+      tasklistServicesAdapter.unassignUserTask(taskEntity);
+    } catch (final Exception e) {
+      taskStore.persistTaskClaim(taskBefore, taskBefore.getAssignee());
+      throw e;
     }
     return TaskDTO.createFrom(taskEntity, objectMapper);
   }
@@ -311,7 +278,7 @@ public class TaskService {
           taskStore.updateTaskLinkedForm(task, form.bpmnId(), form.version());
           LOGGER.debug(
               "Updated Task with id {} form link of key {} to formId {} and version {}",
-              task.getId(),
+              task.getKey(),
               task.getFormKey(),
               form.bpmnId(),
               form.version());
@@ -323,7 +290,7 @@ public class TaskService {
   }
 
   private void updateCompletedMetric(final TaskEntity task) {
-    LOGGER.info("Updating completed task metric for task with ID: {}", task.getId());
+    LOGGER.info("Updating completed task metric for task with ID: {}", task.getKey());
     try {
       metrics.recordCounts(COUNTER_NAME_COMPLETED_TASKS, 1, getTaskMetricLabels(task));
       assigneeMigrator.migrateUsageMetrics(getCurrentUser().getUserId());
@@ -334,16 +301,16 @@ public class TaskService {
         taskMetricsStore.registerTaskCompleteEvent(task);
       }
     } catch (final Exception e) {
-      LOGGER.error("Error updating completed task metric for task with ID: {}", task.getId(), e);
+      LOGGER.error("Error updating completed task metric for task with ID: {}", task.getKey(), e);
       throw new TasklistRuntimeException(
-          "Error updating completed task metric for task with ID: " + task.getId(), e);
+          "Error updating completed task metric for task with ID: " + task.getKey(), e);
     }
   }
 
   private String[] getTaskMetricLabels(final TaskEntity task) {
     final String keyUserId;
 
-    if (getCurrentUser().isApiUser()) {
+    if (TasklistAuthenticationUtil.isApiUser()) {
       if (task.getAssignee() != null) {
         keyUserId = task.getAssignee();
       } else {

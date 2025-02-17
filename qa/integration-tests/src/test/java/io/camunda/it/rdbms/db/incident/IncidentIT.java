@@ -116,9 +116,15 @@ public class IncidentIT {
     assertThat(searchResult.total()).isEqualTo(20);
     assertThat(searchResult.items()).hasSize(5);
 
+    final var firstInstance = searchResult.items().getFirst();
+    assertThat(searchResult.firstSortValues()).hasSize(3);
+    assertThat(searchResult.firstSortValues())
+        .containsExactly(
+            firstInstance.creationTime(), firstInstance.flowNodeId(), firstInstance.incidentKey());
+
     final var lastInstance = searchResult.items().getLast();
-    assertThat(searchResult.sortValues()).hasSize(3);
-    assertThat(searchResult.sortValues())
+    assertThat(searchResult.lastSortValues()).hasSize(3);
+    assertThat(searchResult.lastSortValues())
         .containsExactly(
             lastInstance.creationTime(), lastInstance.flowNodeId(), lastInstance.incidentKey());
   }

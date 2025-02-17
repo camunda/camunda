@@ -1,7 +1,16 @@
-name: AWS OpenSearch Manual Run Integration Tests
+name: AWS OpenSearch Manual/Scheduled Run Integration Tests
 
 on:
-  workflow_dispatch: { }
+  workflow_dispatch:
+    inputs:
+      os_version:
+        description: Version of AWS OS
+        type: choice
+        options:
+          - "2.9"
+          - "2.11"
+  schedule:
+    - cron: "0 23 * * Sat"
 
 defaults:
   run:
@@ -10,18 +19,34 @@ defaults:
     shell: bash
 
 jobs:
- integration-tests:
-    name: "[IT] ${{ matrix.name }}"
+  integration-tests:
+    name: "[IT] ${{ matrix.name }}. OS ver.${{ matrix.os_version }}"
     timeout-minutes: 15
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
       matrix:
-        group: [ os-exporter ]
+        os_version: ${{ fromJSON(format('[{0}]', inputs.os_version || '"2.9", "2.11"')) }}
+        group:
+        - os-exporter
+        - search-client-os
+        - camunda-exporter
         include:
           - group: os-exporter
             name: "Zeebe OS Exporter Integration Tests"
             maven-modules: "'io.camunda:zeebe-opensearch-exporter'"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            runs-on: aws-core-8-default
+          - group: search-client-os
+            name: "Search Client AWS OS Integration Tests"
+            maven-modules: "'io.camunda:camunda-search-client-connect'"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            runs-on: aws-core-8-default
+          - group: camunda-exporter
+            name: "Camunda Exporter AWS OS Integration Tests"
+            maven-modules: "'io.camunda:camunda-exporter'"
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: aws-core-8-default
@@ -37,6 +62,35 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
             secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_2_9_URL;
+            secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_2_11_URL;
+      - name: Set temp GH envs
+        id: temp-vars
+        run: |
+          echo "AWS_REGION=$(echo $AWS_REGION)" >> "$GITHUB_ENV"
+          echo "AWS_DEFAULT_REGION=$(echo $AWS_DEFAULT_REGION)" >> "$GITHUB_ENV"
+          echo "AWS_ROLE_ARN=$(echo $AWS_ROLE_ARN)" >> "$GITHUB_ENV"
+          echo "AWS_WEB_IDENTITY_TOKEN_FILE=$(echo $AWS_WEB_IDENTITY_TOKEN_FILE)" >> "$GITHUB_ENV"
+          echo "AWS_STS_REGIONAL_ENDPOINTS=$(echo $AWS_STS_REGIONAL_ENDPOINTS)" >> "$GITHUB_ENV"
+          
+          if [[ "${{ matrix.os_version }}" = "2.9" ]]
+          then
+            echo "Using OS 2.9"
+            OS_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_2_9_URL }};
+          elif [[ "${{ matrix.os_version }}" = "2.11" ]]
+          then
+            echo "Using OS 2.11"
+            OS_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_2_11_URL }};
+          else
+            echo "Incorrect on usupported version of OpenSearch"
+            exit 1
+          fi
+          echo "OS_URL=$OS_URL" >> "$GITHUB_ENV"
+      - uses: aws-actions/configure-aws-credentials@v4
+        name: Pre-login to AWS
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          web-identity-token-file: ${{ env.AWS_WEB_IDENTITY_TOKEN_FILE }}
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: it-${{ matrix.group }}
@@ -46,17 +100,16 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -T1C -D skipOptimize
+          maven-extra-args: -T1C -D skipOptimize -D skip.fe.build -D skip.yarn -D skip.docker
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
-          url="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_2_9_URL }};
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
           -D forkCount=${{ matrix.maven-test-fork-count }}
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks -D skipOptimize
-          -D camunda.it.opensearch.aws.url="$url"
+          -D camunda.it.opensearch.aws.url="${{ env.OS_URL }}"
           -P parallel-tests,extract-flaky-tests
           -pl ${{ matrix.maven-modules }}
           verify
@@ -84,3 +137,36 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  send-slack-notificaion:
+    name: "Send slack notification on fail"
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    if: failure()
+    permissions:
+      contents: read
+      actions: write
+    steps:
+    - name: Import secrets from Vault
+      id: secrets
+      uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
+    - name: Send notification
+      uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
+      with:
+        webhook: ${{ steps.secrets.outputs.DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
+        webhook-type: webhook-trigger
+        # For posting a rich message using Block Kit
+        payload: |
+          text: "AWS OpenSearch Manual/Scheduled Run Integration Tests failed"
+          blocks:
+            - type: "section"
+              text:
+                type: "mrkdwn"
+                text: "AWS OpenSearch Manual/Scheduled Run Integration Tests FAILED\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

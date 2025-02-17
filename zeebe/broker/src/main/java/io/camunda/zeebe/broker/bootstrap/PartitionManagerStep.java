@@ -65,7 +65,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
             brokerStartupContext.setPartitionManager(partitionManager);
             brokerStartupContext
                 .getClusterConfigurationService()
-                .registerChangeExecutors(partitionManager, partitionManager);
+                .registerPartitionChangeExecutors(partitionManager, partitionManager);
             startupFuture.complete(brokerStartupContext);
           } catch (final Exception e) {
             startupFuture.completeExceptionally(e);

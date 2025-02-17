@@ -38,9 +38,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(
-    value = DecisionRequirementsQueryController.class,
-    properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = DecisionRequirementsController.class)
 public class DecisionRequirementsQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -49,8 +47,8 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
               "items": [
                   {
                       "tenantId": "t",
-                      "decisionRequirementsKey": 0,
-                      "name": "name",
+                      "decisionRequirementsKey": "0",
+                      "decisionRequirementsName": "name",
                       "version": 1,
                       "decisionRequirementsId": "id",
                       "resourceName": "rN"
@@ -58,7 +56,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": ["v"],
+                  "firstSortValues": ["f"],
                   "lastSortValues": [
                       "v"
                   ]
@@ -68,7 +66,8 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
       new Builder<DecisionRequirementsEntity>()
           .total(1L)
           .items(List.of(new DecisionRequirementsEntity(0L, "id", "name", 1, "rN", null, "t")))
-          .sortValues(new Object[] {"v"})
+          .firstSortValues(new Object[] {"f"})
+          .lastSortValues(new Object[] {"v"})
           .build();
 
   static final String DECISION_REQUIREMENTS_SEARCH_URL = "/v2/decision-requirements/search";
@@ -82,8 +81,8 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
       """
           {
             "tenantId": "t",
-            "decisionRequirementsKey": 1,
-            "name": "name",
+            "decisionRequirementsKey": "1",
+            "decisionRequirementsName": "name",
             "version": 1,
             "decisionRequirementsId": "id",
             "resourceName": "rN"
@@ -162,7 +161,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
               "filter":{
                 "tenantId": "t",
                 "decisionRequirementsKey": 0,
-                "name": "name",
+                "decisionRequirementsName": "name",
                 "version": 1,
                 "decisionRequirementsId": "drId"
               }
@@ -208,23 +207,23 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                 "sort": [
                     {
                         "field": "version",
-                        "order": "asc"
+                        "order": "ASC"
                     },
                     {
-                        "field": "name",
-                        "order": "asc"
+                        "field": "decisionRequirementsName",
+                        "order": "ASC"
                     },
                     {
                         "field": "tenantId",
-                        "order": "desc"
+                        "order": "DESC"
                     },
                     {
                         "field": "decisionRequirementsKey",
-                        "order": "asc"
+                        "order": "ASC"
                     },
                     {
                         "field": "decisionRequirementsId",
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";
@@ -271,7 +270,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                 "sort": [
                     {
                         "field": "unknownField",
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";
@@ -280,9 +279,9 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unknown sortBy: unknownField.",
+                  "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [decisionRequirementsKey, decisionRequirementsName, version, decisionRequirementsId, tenantId]",
                   "instance": "%s"
                 }""",
             DECISION_REQUIREMENTS_SEARCH_URL);

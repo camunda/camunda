@@ -85,6 +85,13 @@ public class DecisionEvaluationClient {
     return expectation.apply(position);
   }
 
+  public Record<DecisionEvaluationRecordValue> evaluate(final String username) {
+    final long position =
+        writer.writeCommand(DecisionEvaluationIntent.EVALUATE, username, decisionEvaluationRecord);
+
+    return expectation.apply(position);
+  }
+
   public DecisionEvaluationClient expectFailure() {
     expectation = FAILURE_EXPECTATION;
     return this;

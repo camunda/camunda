@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.qa.backup;
 
-import com.graphql.spring.boot.test.GraphQLTestTemplate;
 import io.camunda.tasklist.qa.util.TestContext;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -16,13 +15,12 @@ public class BackupRestoreTestContext extends TestContext<BackupRestoreTestConte
 
   private RestHighLevelClient esClient;
   private OpenSearchClient osClient;
-  private GraphQLTestTemplate tasklistRestClient;
 
   public RestHighLevelClient getEsClient() {
     return esClient;
   }
 
-  public BackupRestoreTestContext setEsClient(RestHighLevelClient esClient) {
+  public BackupRestoreTestContext setEsClient(final RestHighLevelClient esClient) {
     this.esClient = esClient;
     return this;
   }
@@ -31,17 +29,8 @@ public class BackupRestoreTestContext extends TestContext<BackupRestoreTestConte
     return osClient;
   }
 
-  public BackupRestoreTestContext setOsClient(OpenSearchClient osClient) {
+  public BackupRestoreTestContext setOsClient(final OpenSearchClient osClient) {
     this.osClient = osClient;
-    return this;
-  }
-
-  public GraphQLTestTemplate getTasklistRestClient() {
-    return tasklistRestClient;
-  }
-
-  public BackupRestoreTestContext setTasklistRestClient(GraphQLTestTemplate operateRestClient) {
-    this.tasklistRestClient = operateRestClient;
     return this;
   }
 }

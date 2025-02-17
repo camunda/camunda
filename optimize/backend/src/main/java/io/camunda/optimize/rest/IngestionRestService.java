@@ -9,28 +9,27 @@ package io.camunda.optimize.rest;
 
 import static io.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto.toExternalProcessVariableDtos;
 import static io.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import io.camunda.optimize.dto.optimize.ReportConstants;
 import io.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
+import io.camunda.optimize.rest.exceptions.BadRequestException;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.VariableHelper;
 import io.camunda.optimize.service.variable.ExternalVariableService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import org.slf4j.Logger;
-import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-@Path(INGESTION_PATH)
-@Component
+@Validated
+@RestController
+@RequestMapping(REST_API_PATH + INGESTION_PATH)
 public class IngestionRestService {
 
   public static final String INGESTION_PATH = "/ingestion";
@@ -43,11 +42,8 @@ public class IngestionRestService {
     this.externalVariableService = externalVariableService;
   }
 
-  @POST
-  @Path(VARIABLE_SUB_PATH)
-  @Consumes(MediaType.APPLICATION_JSON)
+  @PostMapping(VARIABLE_SUB_PATH)
   public void ingestVariables(
-      final @Context ContainerRequestContext requestContext,
       final @NotNull @Valid @RequestBody List<ExternalProcessVariableRequestDto> variableDtos) {
     validateVariableType(variableDtos);
     externalVariableService.storeExternalProcessVariables(

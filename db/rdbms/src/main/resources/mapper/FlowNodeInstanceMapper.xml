@@ -12,7 +12,7 @@
 
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)
-    FROM FLOW_NODE_INSTANCE pi
+    FROM ${prefix}FLOW_NODE_INSTANCE pi
     <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.searchFilter"/>
   </select>
 
@@ -37,7 +37,7 @@
     WHEN NUM_SUBPROCESS_INCIDENTS > 0 OR INCIDENT_KEY IS NOT NULL THEN TRUE
     ELSE FALSE
     END AS HAS_INCIDENT
-    FROM FLOW_NODE_INSTANCE
+    FROM ${prefix}FLOW_NODE_INSTANCE
     <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -118,21 +118,39 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel"
     flushCache="true">
-    INSERT INTO FLOW_NODE_INSTANCE (FLOW_NODE_INSTANCE_KEY, FLOW_NODE_ID, PROCESS_INSTANCE_KEY,
+    INSERT INTO ${prefix}FLOW_NODE_INSTANCE (FLOW_NODE_INSTANCE_KEY, FLOW_NODE_ID, PROCESS_INSTANCE_KEY,
                                     PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY, TYPE, STATE,
-                                    START_DATE, END_DATE, TENANT_ID, TREE_PATH, INCIDENT_KEY, NUM_SUBPROCESS_INCIDENTS)
+                                             START_DATE, END_DATE, TENANT_ID, TREE_PATH,
+                                             INCIDENT_KEY, NUM_SUBPROCESS_INCIDENTS, PARTITION_ID)
     VALUES (#{flowNodeInstanceKey}, #{flowNodeId}, #{processInstanceKey}, #{processDefinitionId},
             #{processDefinitionKey}, #{type}, #{state},
             #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId},
-            #{treePath}, #{incidentKey}, #{numSubprocessIncidents})
+            #{treePath}, #{incidentKey}, #{numSubprocessIncidents}, #{partitionId})
   </insert>
+
+  <update
+    id="update"
+    parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel"
+    flushCache="true">
+    UPDATE FLOW_NODE_INSTANCE
+    SET FLOW_NODE_ID             = #{flowNodeId},
+        PROCESS_INSTANCE_KEY     = #{processInstanceKey},
+        PROCESS_DEFINITION_ID    = #{processDefinitionId},
+        PROCESS_DEFINITION_KEY   = #{processDefinitionKey},
+        TYPE                     = #{type},
+        STATE                    = #{state},
+        START_DATE               = #{startDate, jdbcType=TIMESTAMP},
+        END_DATE                 = #{endDate, jdbcType=TIMESTAMP},
+        TENANT_ID                = #{tenantId}
+    WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
+  </update>
 
   <update
     id="updateStateAndEndDate"
     statementType="PREPARED"
     parameterType="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper$EndFlowNodeDto"
     flushCache="true">
-    UPDATE FLOW_NODE_INSTANCE
+    UPDATE ${prefix}FLOW_NODE_INSTANCE
     SET STATE = #{state},
         END_DATE = #{endDate}
     WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
@@ -143,7 +161,7 @@
     statementType="PREPARED"
     parameterType="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper$UpdateIncidentDto"
     flushCache="true">
-    UPDATE FLOW_NODE_INSTANCE
+    UPDATE ${prefix}FLOW_NODE_INSTANCE
     SET INCIDENT_KEY = #{incidentKey}
     WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
   </update>
@@ -153,7 +171,7 @@
     statementType="PREPARED"
     parameterType="java.lang.Long"
     flushCache="true">
-    UPDATE FLOW_NODE_INSTANCE
+    UPDATE ${prefix}FLOW_NODE_INSTANCE
     SET NUM_SUBPROCESS_INCIDENTS = NUM_SUBPROCESS_INCIDENTS + 1
     WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
   </update>
@@ -163,7 +181,7 @@
     statementType="PREPARED"
     parameterType="java.lang.Long"
     flushCache="true">
-    UPDATE FLOW_NODE_INSTANCE
+    UPDATE ${prefix}FLOW_NODE_INSTANCE
     SET NUM_SUBPROCESS_INCIDENTS = NUM_SUBPROCESS_INCIDENTS - 1
     WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
   </update>

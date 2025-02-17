@@ -168,7 +168,7 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
     final var membersToLeave =
         oldMetadata.members().stream()
             .filter(member -> !newMetadata.members().contains(member))
-            .map(oldMember -> new PartitionLeaveOperation(oldMember, partitionId))
+            .map(oldMember -> new PartitionLeaveOperation(oldMember, partitionId, 1))
             .toList();
     final var membersToChangePriority =
         oldMetadata.members().stream()

@@ -42,10 +42,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   static final String EXPECTED_START_RESPONSE =
       """
           {
-             "processDefinitionKey":123,
+             "processDefinitionKey":"123",
              "processDefinitionId":"bpmnProcessId",
              "processDefinitionVersion":-1,
-             "processInstanceKey":123,
+             "processInstanceKey":"123",
              "tenantId":"tenantId"
           }""";
   static final String PROCESS_INSTANCES_START_URL = "/v2/process-instances";
@@ -83,7 +83,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
         {
-            "processDefinitionKey": 123,
+            "processDefinitionKey": "123",
             "tenantId": "tenantId"
         }""";
 
@@ -130,7 +130,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
             {
-                "processDefinitionKey": 123
+                "processDefinitionKey": "123"
             }""";
 
     // when / then
@@ -149,10 +149,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .json(
             """
 {
-   "processDefinitionKey":123,
+   "processDefinitionKey":"123",
    "processDefinitionId":"bpmnProcessId",
    "processDefinitionVersion":-1,
-   "processInstanceKey":123,
+   "processInstanceKey":"123",
    "tenantId":"<default>"
 }""");
 

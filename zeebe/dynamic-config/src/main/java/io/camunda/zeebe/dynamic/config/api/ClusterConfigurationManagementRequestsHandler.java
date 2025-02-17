@@ -18,6 +18,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
@@ -95,7 +96,9 @@ public final class ClusterConfigurationManagementRequestsHandler
             Either.right(
                 List.of(
                     new PartitionLeaveOperation(
-                        leavePartitionRequest.memberId(), leavePartitionRequest.partitionId()))));
+                        leavePartitionRequest.memberId(),
+                        leavePartitionRequest.partitionId(),
+                        1))));
   }
 
   @Override
@@ -171,6 +174,12 @@ public final class ClusterConfigurationManagementRequestsHandler
             clusterPatchRequest.membersToRemove(),
             clusterPatchRequest.newPartitionCount(),
             clusterPatchRequest.newReplicationFactor()));
+  }
+
+  @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> purge(final PurgeRequest purgeRequest) {
+
+    return handleRequest(purgeRequest.dryRun(), new PurgeRequestTransformer());
   }
 
   @Override

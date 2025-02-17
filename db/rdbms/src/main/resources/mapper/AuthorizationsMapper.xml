@@ -12,8 +12,8 @@
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.AuthorizationDbQuery">
     SELECT COUNT(*) FROM (
-    SELECT DISTINCT OWNER_KEY, OWNER_TYPE, RESOURCE_TYPE
-    FROM AUTHORIZATIONS a
+    SELECT DISTINCT AUTHORIZATION_KEY, OWNER_ID, OWNER_TYPE, RESOURCE_TYPE, RESOURCE_ID
+    FROM ${prefix}AUTHORIZATIONS a
     <include refid="io.camunda.db.rdbms.sql.AuthorizationMapper.searchFilter"/>
     ) t
   </select>
@@ -21,7 +21,8 @@
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.AuthorizationDbQuery"
     resultMap="io.camunda.db.rdbms.sql.AuthorizationMapper.authorizationResultMap">
     SELECT
-    t.OWNER_KEY,
+    t.AUTHORIZATION_KEY,
+    t.OWNER_ID,
     t.OWNER_TYPE,
     t.RESOURCE_TYPE,
     a.PERMISSION_TYPE,
@@ -29,10 +30,12 @@
     FROM (
     SELECT * FROM (
     SELECT DISTINCT
-    OWNER_KEY,
+    AUTHORIZATION_KEY,
+    OWNER_ID,
     OWNER_TYPE,
-    RESOURCE_TYPE
-    FROM AUTHORIZATIONS
+    RESOURCE_TYPE,
+    RESOURCE_ID
+    FROM ${prefix}AUTHORIZATIONS
     <include refid="io.camunda.db.rdbms.sql.AuthorizationMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -40,8 +43,8 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
     ) t
-    JOIN AUTHORIZATIONS a ON t.OWNER_KEY = a.OWNER_KEY AND t.OWNER_TYPE = a.OWNER_TYPE AND
-    t.RESOURCE_TYPE = a.RESOURCE_TYPE
+    JOIN ${prefix}AUTHORIZATIONS a ON t.AUTHORIZATION_KEY = a.AUTHORIZATION_KEY AND t.OWNER_ID = a.OWNER_ID AND t.OWNER_TYPE = a.OWNER_TYPE AND
+    t.RESOURCE_TYPE = a.RESOURCE_TYPE AND t.RESOURCE_ID = a.RESOURCE_ID
     <!-- outer orderBy for actual sorting -->
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
   </select>
@@ -50,10 +53,15 @@
     WHERE 1 = 1
     <if test="filter.ownerType != null">AND OWNER_TYPE = #{filter.ownerType}</if>
     <if test="filter.resourceType != null">AND RESOURCE_TYPE = #{filter.resourceType}</if>
-    <if test="filter.permissionType != null">AND PERMISSION_TYPE = #{filter.permissionType}</if>
-    <if test="filter.ownerKeys != null and !filter.ownerKeys.isEmpty()">
-      AND OWNER_KEY IN
-      <foreach collection="filter.ownerKeys" item="value" open="(" separator=", "
+    <if test="filter.permissionTypes != null and !filter.permissionTypes.isEmpty()">
+        AND PERMISSION_TYPE IN
+      <foreach collection="filter.permissionTypes" item="value" open="(" separator=", "
+        close=")">#{value}
+      </foreach>
+    </if>
+    <if test="filter.ownerIds != null and !filter.ownerIds.isEmpty()">
+      AND OWNER_ID IN
+      <foreach collection="filter.ownerIds" item="value" open="(" separator=", "
         close=")">#{value}
       </foreach>
     </if>
@@ -67,47 +75,31 @@
 
   <resultMap id="authorizationResultMap"
     type="io.camunda.db.rdbms.write.domain.AuthorizationDbModel">
-    <id column="OWNER_KEY" property="ownerKey"/>
+    <id column="AUTHORIZATION_KEY" property="authorizationKey"/>
+    <id column="OWNER_ID" property="ownerId"/>
     <id column="OWNER_TYPE" property="ownerType"/>
     <id column="RESOURCE_TYPE" property="resourceType"/>
-    <collection property="permissions"
-      ofType="io.camunda.db.rdbms.write.domain.AuthorizationPermissionDbModel"
-      javaType="java.util.List">
-      <id column="PERMISSION_TYPE" property="type"/>
-      <collection property="resourceIds" ofType="java.lang.String" javaType="java.util.Set">
-        <id column="RESOURCE_ID"/>
-      </collection>
+    <id column="RESOURCE_ID" property="resourceId" />
+    <collection property="permissionTypes"
+      ofType="io.camunda.zeebe.protocol.record.value.PermissionType"
+      javaType="java.util.Set">
+      <id column="PERMISSION_TYPE"/>
     </collection>
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.AuthorizationDbModel"
     flushCache="true">
-    INSERT INTO AUTHORIZATIONS (OWNER_KEY, OWNER_TYPE, RESOURCE_TYPE, PERMISSION_TYPE, RESOURCE_ID)
+    INSERT INTO ${prefix}AUTHORIZATIONS (AUTHORIZATION_KEY, OWNER_ID, OWNER_TYPE, RESOURCE_TYPE, RESOURCE_ID, PERMISSION_TYPE)
     VALUES
-    <foreach collection="permissions" item="permission" separator=",">
-      <foreach collection="permission.resourceIds" item="resourceId" separator=",">
-        (#{ownerKey}, #{ownerType}, #{resourceType}, #{permission.type}, #{resourceId})
-      </foreach>
+    <foreach collection="permissionTypes" item="permissionType" separator=",">
+      (#{authorizationKey}, #{ownerId}, #{ownerType}, #{resourceType}, #{resourceId}, #{permissionType})
     </foreach>
   </insert>
 
   <delete id="delete" parameterType="io.camunda.db.rdbms.write.domain.AuthorizationDbModel"
     flushCache="true">
     DELETE
-    FROM AUTHORIZATIONS
-    WHERE OWNER_KEY = #{ownerKey}
-    AND OWNER_TYPE = #{ownerType}
-    AND RESOURCE_TYPE = #{resourceType}
-    <if test="permissions != null and !permissions.isEmpty()">
-      <foreach collection="permissions" item="permission" open=" AND (" separator=" OR " close=" ) ">
-        ( PERMISSION_TYPE = #{permission.type}
-        <if test="permission.resourceIds != null and !permission.resourceIds.isEmpty()">
-          <foreach collection="permission.resourceIds" item="resourceId" open=" AND RESOURCE_ID IN (" separator=", " close=" ) ">
-            #{resourceId}
-          </foreach>
-        </if>
-        )
-      </foreach>
-    </if>
+    FROM ${prefix}AUTHORIZATIONS
+    WHERE AUTHORIZATION_KEY = #{authorizationKey}
   </delete>
 </mapper>

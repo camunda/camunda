@@ -11,8 +11,14 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
+import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,10 +42,68 @@ public class DeleteUserTest {
             .withPassword("password")
             .create();
 
-    final var deletedUser =
-        ENGINE.user().deleteUser(userRecord.getKey()).withUsername("").delete().getValue();
+    final var deletedUser = ENGINE.user().deleteUser(username).delete().getValue();
 
     assertThat(deletedUser).isNotNull().hasFieldOrPropertyWithValue("userKey", userRecord.getKey());
+  }
+
+  @Test
+  public void shouldCleanupMembership() {
+    final var username = UUID.randomUUID().toString();
+    final var tenantId = "tenant";
+    final var userRecord =
+        ENGINE
+            .user()
+            .newUser(username)
+            .withName("Foo Bar")
+            .withEmail("foo@bar.com")
+            .withPassword("password")
+            .create();
+    final var group = ENGINE.group().newGroup("group").create();
+    final var role = ENGINE.role().newRole("role").create();
+    final var tenant = ENGINE.tenant().newTenant().withTenantId(tenantId).create();
+
+    ENGINE
+        .group()
+        .addEntity(group.getKey())
+        .withEntityKey(userRecord.getKey())
+        .withEntityType(EntityType.USER)
+        .add();
+    ENGINE
+        .role()
+        .addEntity(role.getKey())
+        .withEntityKey(userRecord.getKey())
+        .withEntityType(EntityType.USER)
+        .add();
+    ENGINE
+        .tenant()
+        .addEntity(tenantId)
+        .withEntityId(username)
+        .withEntityType(EntityType.USER)
+        .add();
+
+    // when
+    ENGINE.user().deleteUser(username).delete();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.groupRecords(GroupIntent.ENTITY_REMOVED)
+                .withGroupKey(group.getKey())
+                .withEntityKey(userRecord.getKey())
+                .exists())
+        .isTrue();
+    Assertions.assertThat(
+            RecordingExporter.roleRecords(RoleIntent.ENTITY_REMOVED)
+                .withRoleKey(role.getKey())
+                .withEntityKey(userRecord.getKey())
+                .exists())
+        .isTrue();
+    Assertions.assertThat(
+            RecordingExporter.tenantRecords(TenantIntent.ENTITY_REMOVED)
+                .withTenantId(tenantId)
+                .withEntityId(username)
+                .exists())
+        .isTrue();
   }
 
   @Test
@@ -47,8 +111,7 @@ public class DeleteUserTest {
     final var userNotFoundRejection =
         ENGINE
             .user()
-            .deleteUser(1234L)
-            .withUsername("foobar")
+            .deleteUser("1234")
             .withName("Bar Foo")
             .withEmail("foo@bar.blah")
             .withPassword("Foo Bar")
@@ -58,6 +121,6 @@ public class DeleteUserTest {
     assertThat(userNotFoundRejection)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to delete user with key 1234, but a user with this key does not exist");
+            "Expected to delete user with username 1234, but a user with this username does not exist");
   }
 }

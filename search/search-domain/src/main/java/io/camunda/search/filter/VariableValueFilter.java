@@ -7,43 +7,13 @@
  */
 package io.camunda.search.filter;
 
+import io.camunda.util.ObjectBuilder;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
-public final class VariableValueFilter extends ComparableValues implements FilterBase {
-  private final String name;
-
-  public VariableValueFilter(
-      final String name,
-      final Object eq,
-      final Object neq,
-      final Object gt,
-      final Object gte,
-      final Object lt,
-      final Object lte) {
-    super(eq, neq, gt, gte, lt, lte);
-    this.name = name;
-  }
-
-  public String name() {
-    return name;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(name) + super.hashCode();
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (obj == this) {
-      return true;
-    }
-    if (obj == null || obj.getClass() != getClass()) {
-      return false;
-    }
-    final var that = (VariableValueFilter) obj;
-    return Objects.equals(name, that.name) && super.equals(that);
-  }
+public record VariableValueFilter(String name, List<UntypedOperation> valueOperations)
+    implements FilterBase {
 
   @Override
   public String toString() {
@@ -51,38 +21,34 @@ public final class VariableValueFilter extends ComparableValues implements Filte
         + "name="
         + name
         + ", "
-        + "eq="
-        + eq
-        + ", "
-        + "neq="
-        + neq
-        + ", "
-        + "gt="
-        + gt
-        + ", "
-        + "gte="
-        + gte
-        + ", "
-        + "lt="
-        + lt
-        + ", "
-        + "lte="
-        + lte
+        + "valueOperation="
+        + valueOperations
         + ']';
   }
 
-  public static final class Builder extends ComparableValueBuilder<VariableValueFilter> {
+  public static final class Builder implements ObjectBuilder<VariableValueFilter> {
 
     private String name;
+    private final List<UntypedOperation> valueOperations = new ArrayList<>();
 
     public Builder name(final String value) {
       name = value;
       return this;
     }
 
+    public Builder valueOperation(final UntypedOperation operation) {
+      valueOperations.add(operation);
+      return this;
+    }
+
+    public Builder valueOperations(final List<UntypedOperation> operations) {
+      valueOperations.addAll(operations);
+      return this;
+    }
+
     @Override
     public VariableValueFilter build() {
-      return new VariableValueFilter(Objects.requireNonNull(name), eq, neq, gt, gte, lt, lte);
+      return new VariableValueFilter(Objects.requireNonNull(name), valueOperations);
     }
   }
 }

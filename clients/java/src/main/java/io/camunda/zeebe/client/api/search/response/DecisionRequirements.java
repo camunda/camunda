@@ -15,5 +15,10 @@
  */
 package io.camunda.zeebe.client.api.search.response;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.search.response.DecisionRequirements}
+ */
+@Deprecated
 public interface DecisionRequirements
     extends io.camunda.zeebe.client.api.response.DecisionRequirements {}

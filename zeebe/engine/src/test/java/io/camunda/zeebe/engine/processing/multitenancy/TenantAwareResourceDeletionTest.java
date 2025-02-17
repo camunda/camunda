@@ -10,6 +10,8 @@ package io.camunda.zeebe.engine.processing.multitenancy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -18,6 +20,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordAssert;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import org.junit.ClassRule;
@@ -132,6 +135,51 @@ public class TenantAwareResourceDeletionTest {
                 .withIntent(ResourceDeletionIntent.DELETED)
                 .exists())
         .isFalse();
+  }
+
+  @Test
+  public void shouldDeleteResourceAssignedToDefaultTenantWithAnonymousUser() {
+    // given
+    ENGINE.tenant().newTenant().withTenantId(tenantIdA).create();
+    ENGINE.tenant().newTenant().withTenantId(tenantIdB).create();
+
+    final var deployment =
+        ENGINE.deployment().withXmlResource(PROCESS).withTenantId(tenantIdA).deploy();
+    final var resourceKey =
+        deployment.getValue().getProcessesMetadata().getFirst().getProcessDefinitionKey();
+
+    final var anonymous =
+        AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true);
+
+    // when
+    final var deleted = ENGINE.resourceDeletion().withResourceKey(resourceKey).delete(anonymous);
+
+    // then
+    Assertions.assertThat(deleted.getValue()).hasTenantId(tenantIdA);
+    verifyResourceIsDeleted(resourceKey);
+  }
+
+  @Test
+  public void shouldDeleteResourceWithAnonymousUser() {
+    // given
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(PROCESS)
+            .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .deploy();
+    final var resourceKey =
+        deployment.getValue().getProcessesMetadata().getFirst().getProcessDefinitionKey();
+
+    final var anonymous =
+        AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true);
+
+    // when
+    final var deleted = ENGINE.resourceDeletion().withResourceKey(resourceKey).delete(anonymous);
+
+    // then
+    Assertions.assertThat(deleted.getValue()).hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    verifyResourceIsDeleted(resourceKey);
   }
 
   private void verifyResourceIsDeleted(final long key) {

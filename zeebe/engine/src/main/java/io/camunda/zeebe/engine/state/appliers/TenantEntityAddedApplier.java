@@ -8,31 +8,51 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 
 public class TenantEntityAddedApplier implements TypedEventApplier<TenantIntent, TenantRecord> {
 
   private final MutableTenantState tenantState;
   private final MutableUserState userState;
   private final MutableMappingState mappingState;
+  private final MutableGroupState groupState;
 
   public TenantEntityAddedApplier(final MutableProcessingState state) {
     tenantState = state.getTenantState();
     userState = state.getUserState();
     mappingState = state.getMappingState();
+    groupState = state.getGroupState();
   }
 
   @Override
   public void applyState(final long key, final TenantRecord tenant) {
-    tenantState.addEntity(tenant);
     switch (tenant.getEntityType()) {
-      case USER -> userState.addTenantId(tenant.getEntityKey(), tenant.getTenantId());
-      case MAPPING -> mappingState.addTenant(tenant.getEntityKey(), tenant.getTenantKey());
+      case USER -> {
+        final var username = tenant.getEntityId();
+        final var userKey = userState.getUser(username).orElseThrow().getUserKey();
+        final var tenantKey = tenantState.getTenantKeyById(tenant.getTenantId()).orElseThrow();
+        tenantState.addEntity(
+            new TenantRecord()
+                .setTenantKey(tenantKey)
+                .setEntityType(EntityType.USER)
+                .setEntityKey(userKey));
+        userState.addTenantId(username, tenant.getTenantId());
+      }
+      case MAPPING -> {
+        tenantState.addEntity(tenant);
+        mappingState.addTenant(tenant.getEntityKey(), tenant.getTenantId());
+      }
+      case GROUP -> {
+        tenantState.addEntity(tenant);
+        groupState.addTenant(tenant.getEntityKey(), tenant.getTenantId());
+      }
       default ->
           throw new IllegalStateException(
               String.format(

@@ -15,6 +15,11 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.client.impl.util.ParseUtil;
+import io.camunda.client.protocol.rest.ModifyProcessInstanceVariableInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceModificationActivateInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceModificationInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
@@ -27,9 +32,6 @@ import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.ModifyProcessInstanceResponseImpl;
-import io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceActivateInstruction;
-import io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceTerminateInstruction;
-import io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceVariableInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest;
@@ -56,12 +58,11 @@ public final class ModifyProcessInstanceCommandImpl
   private final GatewayStub asyncStub;
   private final Predicate<StatusCode> retryPredicate;
   private ActivateInstruction latestActivateInstruction;
-  private ModifyProcessInstanceActivateInstruction latestActivateInstructionRest;
+  private ProcessInstanceModificationActivateInstruction latestActivateInstructionRest;
   private Duration requestTimeout;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private final io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceRequest
-      httpRequestObject;
+  private final ProcessInstanceModificationInstruction httpRequestObject;
   private boolean useRest;
   private final long processInstanceKey;
 
@@ -79,7 +80,7 @@ public final class ModifyProcessInstanceCommandImpl
     this.retryPredicate = retryPredicate;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
-    httpRequestObject = new io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceRequest();
+    httpRequestObject = new ProcessInstanceModificationInstruction();
     useRest = config.preferRestOverGrpc();
     this.processInstanceKey = processInstanceKey;
     requestTimeout(requestTimeout);
@@ -101,7 +102,8 @@ public final class ModifyProcessInstanceCommandImpl
     requestBuilder.addTerminateInstructions(
         TerminateInstruction.newBuilder().setElementInstanceKey(elementInstanceKey).build());
     httpRequestObject.addTerminateInstructionsItem(
-        new ModifyProcessInstanceTerminateInstruction().elementInstanceKey(elementInstanceKey));
+        new ProcessInstanceModificationTerminateInstruction()
+            .elementInstanceKey(ParseUtil.keyToString(elementInstanceKey)));
     return this;
   }
 
@@ -114,10 +116,10 @@ public final class ModifyProcessInstanceCommandImpl
             .build();
     latestActivateInstruction = activateInstruction;
     requestBuilder.addActivateInstructions(activateInstruction);
-    final ModifyProcessInstanceActivateInstruction activateInstructionsItem =
-        new ModifyProcessInstanceActivateInstruction()
+    final ProcessInstanceModificationActivateInstruction activateInstructionsItem =
+        new ProcessInstanceModificationActivateInstruction()
             .elementId(elementId)
-            .ancestorElementInstanceKey(ancestorElementInstanceKey);
+            .ancestorElementInstanceKey(ParseUtil.keyToString(ancestorElementInstanceKey));
     latestActivateInstructionRest = activateInstructionsItem;
     httpRequestObject.addActivateInstructionsItem(activateInstructionsItem);
     return this;

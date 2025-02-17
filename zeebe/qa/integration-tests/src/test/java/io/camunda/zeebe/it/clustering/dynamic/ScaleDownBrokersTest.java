@@ -12,28 +12,26 @@ import static io.camunda.zeebe.it.clustering.dynamic.Utils.createInstanceWithAJo
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.scaleAndWait;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 @ZeebeIntegration
-@AutoCloseResources
 @Timeout(2 * 60)
 final class ScaleDownBrokersTest {
   private static final int PARTITIONS_COUNT = 3;
   private static final String JOB_TYPE = "job";
   private static final int CLUSTER_SIZE = 3;
-  @AutoCloseResource ZeebeClient zeebeClient;
+  @AutoClose CamundaClient camundaClient;
 
   @TestZeebe
   private final TestCluster cluster =
@@ -67,7 +65,7 @@ final class ScaleDownBrokersTest {
 
   @BeforeEach
   void createClient() {
-    zeebeClient = cluster.availableGateway().newClientBuilder().build();
+    camundaClient = cluster.availableGateway().newClientBuilder().build();
   }
 
   @Test
@@ -77,7 +75,7 @@ final class ScaleDownBrokersTest {
     final var brokerToShutdown =
         cluster.brokers().get(MemberId.from(String.valueOf(brokerToShutdownId)));
     final var createdInstances =
-        createInstanceWithAJobOnAllPartitions(zeebeClient, JOB_TYPE, PARTITIONS_COUNT);
+        createInstanceWithAJobOnAllPartitions(camundaClient, JOB_TYPE, PARTITIONS_COUNT);
 
     // when
     final int newClusterSize = CLUSTER_SIZE - 1;
@@ -96,18 +94,18 @@ final class ScaleDownBrokersTest {
     Awaitility.await()
         .untilAsserted(
             () ->
-                TopologyAssert.assertThat(zeebeClient.newTopologyRequest().send().join())
+                TopologyAssert.assertThat(camundaClient.newTopologyRequest().send().join())
                     .hasLeaderForPartition(3, 0));
     cluster.awaitCompleteTopology(newClusterSize, PARTITIONS_COUNT, 1, Duration.ofSeconds(20));
 
-    assertThatAllJobsCanBeCompleted(createdInstances, zeebeClient, JOB_TYPE);
+    assertThatAllJobsCanBeCompleted(createdInstances, camundaClient, JOB_TYPE);
   }
 
   @Test
   void shouldScaleDownClusterAgain() {
     // given
     final var createdInstances =
-        createInstanceWithAJobOnAllPartitions(zeebeClient, JOB_TYPE, PARTITIONS_COUNT);
+        createInstanceWithAJobOnAllPartitions(camundaClient, JOB_TYPE, PARTITIONS_COUNT);
 
     scaleAndWait(cluster, CLUSTER_SIZE - 1);
     cluster.brokers().get(MemberId.from(String.valueOf(CLUSTER_SIZE - 1))).close();
@@ -132,11 +130,11 @@ final class ScaleDownBrokersTest {
     Awaitility.await()
         .untilAsserted(
             () ->
-                TopologyAssert.assertThat(zeebeClient.newTopologyRequest().send().join())
+                TopologyAssert.assertThat(camundaClient.newTopologyRequest().send().join())
                     .hasLeaderForPartition(3, 0)
                     .hasLeaderForPartition(2, 0));
     cluster.awaitCompleteTopology(newClusterSize, PARTITIONS_COUNT, 1, Duration.ofSeconds(20));
 
-    assertThatAllJobsCanBeCompleted(createdInstances, zeebeClient, JOB_TYPE);
+    assertThatAllJobsCanBeCompleted(createdInstances, camundaClient, JOB_TYPE);
   }
 }

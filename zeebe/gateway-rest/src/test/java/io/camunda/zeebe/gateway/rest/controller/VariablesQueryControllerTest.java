@@ -23,7 +23,6 @@ import io.camunda.search.sort.VariableSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.VariableServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,11 +34,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(value = VariableQueryController.class, properties = "camunda.rest.query.enabled=true")
-@Import(JacksonConfig.class)
+@WebMvcTest(value = VariableController.class)
 public class VariablesQueryControllerTest extends RestControllerTest {
 
   private static final Long VALID_VARIABLE_KEY = 0L;
@@ -48,12 +45,12 @@ public class VariablesQueryControllerTest extends RestControllerTest {
   private static final String EXPECT_SINGLE_VARIABLE_RESPONSE =
       """
           {
-              "variableKey": 0,
+              "variableKey": "0",
               "name": "n",
               "value": "v",
               "fullValue": "v",
-              "scopeKey": 2,
-              "processInstanceKey": 3,
+              "scopeKey": "2",
+              "processInstanceKey": "3",
               "tenantId": "<default>",
               "isTruncated": false
           }""";
@@ -62,19 +59,19 @@ public class VariablesQueryControllerTest extends RestControllerTest {
           {
               "items": [
                   {
-                        "variableKey": 0,
+                        "variableKey": "0",
                         "name": "n",
                         "value": "v",
                         "fullValue": "v",
-                        "scopeKey": 2,
-                        "processInstanceKey": 3,
+                        "scopeKey": "2",
+                        "processInstanceKey": "3",
                         "tenantId": "<default>",
                         "isTruncated": false
                   }
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": ["v"],
+                  "firstSortValues": ["f"],
                   "lastSortValues": [
                       "v"
                   ]
@@ -86,7 +83,8 @@ public class VariablesQueryControllerTest extends RestControllerTest {
       new Builder<VariableEntity>()
           .total(1L)
           .items(List.of(new VariableEntity(0L, "n", "v", "v", false, 2L, 3L, "bpid", "<default>")))
-          .sortValues(new Object[] {"v"})
+          .firstSortValues(new Object[] {"f"})
+          .lastSortValues(new Object[] {"v"})
           .build();
   @MockBean VariableServices variableServices;
   @Captor ArgumentCaptor<VariableQuery> variableQueryCaptor;
@@ -157,7 +155,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "name",
-                        "order": "desc"
+                        "order": "DESC"
                     },
                     {
                         "field": "value",
@@ -205,9 +203,9 @@ public class VariablesQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unknown sortOrder: dsc.",
+                  "detail": "Unexpected value 'dsc' for enum field 'order'. Use any of the following values: [ASC, DESC]",
                   "instance": "%s"
                 }""",
             VARIABLE_TASKS_SEARCH_URL);
@@ -237,7 +235,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
             {
                 "sort": [
                     {
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";
@@ -355,11 +353,11 @@ public class VariablesQueryControllerTest extends RestControllerTest {
   private static Stream<Arguments> provideAdvancedSearchParameters() {
     final var streamBuilder = Stream.<Arguments>builder();
 
-    longOperationTestCases(
+    keyOperationTestCases(
         streamBuilder,
         "scopeKey",
         ops -> new VariableFilter.Builder().scopeKeyOperations(ops).build());
-    longOperationTestCases(
+    keyOperationTestCases(
         streamBuilder,
         "processInstanceKey",
         ops -> new VariableFilter.Builder().processInstanceKeyOperations(ops).build());

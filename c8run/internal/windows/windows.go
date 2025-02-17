@@ -13,7 +13,7 @@ import (
 )
 
 func (w *WindowsC8Run) OpenBrowser(protocol string, port int) error {
-	operateUrl := protocol + "://localhost:" + strconv.Itoa(port) + "/operate/login"
+	operateUrl := protocol + "://localhost:" + strconv.Itoa(port) + "/operate"
 	openBrowserCmdString := "start " + operateUrl
 	openBrowserCmd := exec.Command("cmd", "/C", openBrowserCmdString)
 	openBrowserCmd.SysProcAttr = &syscall.SysProcAttr{
@@ -46,7 +46,7 @@ func (w *WindowsC8Run) ElasticsearchCmd(elasticsearchVersion string, parentDir s
 }
 
 func (w *WindowsC8Run) ConnectorsCmd(javaBinary string, parentDir string, camundaVersion string) *exec.Cmd {
-	connectorsCmd := exec.Command(javaBinary, "-classpath", parentDir+"\\*;"+parentDir+"\\custom_connectors\\*;"+parentDir+"\\camunda-zeebe-"+camundaVersion+"\\lib\\*", "io.camunda.connector.runtime.app.ConnectorRuntimeApplication", "--spring.config.location="+parentDir+"\\connectors-application.properties")
+	connectorsCmd := exec.Command(javaBinary, "-classpath", parentDir+"\\*;"+parentDir+"\\custom_connectors\\*", "io.camunda.connector.runtime.app.ConnectorRuntimeApplication", "--spring.config.location="+parentDir+"\\connectors-application.properties")
 	connectorsCmd.SysProcAttr = &syscall.SysProcAttr{
 		CreationFlags: 0x08000000 | 0x00000200, // CREATE_NO_WINDOW, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
 		// CreationFlags: 0x00000008 | 0x00000200, // DETACHED_PROCESS, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags

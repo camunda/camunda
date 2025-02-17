@@ -18,8 +18,8 @@ package io.camunda.zeebe.client.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.client.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.client.api.command.InternalClientException;
-import io.camunda.zeebe.client.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import java.util.Collections;
 import java.util.Map;

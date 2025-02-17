@@ -22,11 +22,14 @@ import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
@@ -36,6 +39,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
+  public static final String ASSIGNEE = "assignee";
   public static final String CANDIDATE_GROUPS = "candidateGroupsList";
   public static final String CANDIDATE_USERS = "candidateUsersList";
   public static final String DUE_DATE = "dueDate";
@@ -43,14 +47,37 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   public static final String PRIORITY = "priority";
 
   private static final String EMPTY_STRING = "";
+  private static final StringValue ASSIGNEE_VALUE = new StringValue(ASSIGNEE);
   private static final StringValue CANDIDATE_GROUPS_VALUE = new StringValue(CANDIDATE_GROUPS);
   private static final StringValue CANDIDATE_USERS_VALUE = new StringValue(CANDIDATE_USERS);
   private static final StringValue DUE_DATE_VALUE = new StringValue(DUE_DATE);
   private static final StringValue FOLLOW_UP_DATE_VALUE = new StringValue(FOLLOW_UP_DATE);
   private static final StringValue PRIORITY_VALUE = new StringValue(PRIORITY);
 
+  /**
+   * Defines the mapping between names of attributes that may be modified (updated or corrected) and
+   * their corresponding getter methods. This map enables efficient comparison and updates of
+   * attribute values dynamically based on their names.
+   *
+   * @implNote If a new updatable attribute is introduced in the {@link UserTaskRecord} class:
+   *     <ul>
+   *       <li>The corresponding getter method must also be added to this map.
+   *       <li>To ensure efficiency, prefer getters that return a {@code DirectBuffer}
+   *           representation of the attribute (where applicable) to avoid unnecessary conversions
+   *           during comparisons.
+   *     </ul>
+   */
+  private static final Map<String, Function<UserTaskRecord, ?>> ATTRIBUTE_GETTER_MAP =
+      Map.of(
+          ASSIGNEE, UserTaskRecord::getAssigneeBuffer,
+          CANDIDATE_GROUPS, UserTaskRecord::getCandidateGroupsList,
+          CANDIDATE_USERS, UserTaskRecord::getCandidateUsersList,
+          DUE_DATE, UserTaskRecord::getDueDateBuffer,
+          FOLLOW_UP_DATE, UserTaskRecord::getFollowUpDateBuffer,
+          PRIORITY, UserTaskRecord::getPriority);
+
   private final LongProperty userTaskKeyProp = new LongProperty("userTaskKey", -1);
-  private final StringProperty assigneeProp = new StringProperty("assignee", EMPTY_STRING);
+  private final StringProperty assigneeProp = new StringProperty(ASSIGNEE, EMPTY_STRING);
   private final ArrayProperty<StringValue> candidateGroupsListProp =
       new ArrayProperty<>(CANDIDATE_GROUPS, StringValue::new);
   private final ArrayProperty<StringValue> candidateUsersListProp =
@@ -76,8 +103,42 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+  /**
+   * Tracks the names of user task attributes that are intended to be modified (e.g. on `UPDATE`),
+   * or have been modified (e.g. on `UPDATED` or `CORRECTED`).
+   *
+   * <p>Since our `msgpack` implementation doesn't support `null` values, all record attributes have
+   * default non-null values. As a result, without `changedAttributes`, it would be impossible to
+   * determine whether an attribute was explicitly modified or simply retained its default value.
+   * This property solves that issue by explicitly listing attributes that were changed.
+   *
+   * <p>The content of `changedAttributes` field depend on the type of record:
+   *
+   * <ul>
+   *   <li><b>UPDATE command:</b> Specifies which attributes are intended to be updated, allowing
+   *       explicit changes (including clearing values to default). The presence of an attribute in
+   *       this list indicates that it was explicitly modified by the update request.
+   *   <li><b>UPDATING and UPDATED events:</b> Contains only attributes whose values differ from the
+   *       persisted state. In the case of `UPDATED` this can include any corrections made by
+   *       listeners, unless they corrected them back to the prior state.
+   *   <li><b>CORRECTED event:</b> Contains only attributes that were modified by a listener,
+   *       comparing them to the previous event that triggered the listener or a prior listener
+   *       correction. It doesn't include the original attributes that caused the listener to
+   *       trigger.
+   * </ul>
+   *
+   * <p>For `CORRECTED` events, this list reflects only attributes that were actually changed by the
+   * correction. If a listener applies the same correction multiple times, subsequent `CORRECTED`
+   * events will not contain duplicate changes.
+   *
+   * @see #wrapChangedAttributes(UserTaskRecord, boolean)
+   * @see #wrapChangedAttributesIfValueChanged(UserTaskRecord)
+   * @see #correctAttributes(List, JobResultCorrections)
+   */
   private final ArrayProperty<StringValue> changedAttributesProp =
       new ArrayProperty<>("changedAttributes", StringValue::new);
+
   private final StringProperty actionProp = new StringProperty("action", EMPTY_STRING);
   private final LongProperty creationTimestampProp = new LongProperty("creationTimestamp", -1L);
   private final IntegerProperty priorityProp = new IntegerProperty(PRIORITY, 50);
@@ -107,6 +168,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .declareProperty(priorityProp);
   }
 
+  /** Like {@link #wrap(UserTaskRecord)} but does not set the variables. */
   public void wrapWithoutVariables(final UserTaskRecord record) {
     userTaskKeyProp.setValue(record.getUserTaskKey());
     assigneeProp.setValue(record.getAssigneeBuffer());
@@ -131,22 +193,74 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     priorityProp.setValue(record.getPriority());
   }
 
+  /**
+   * Wraps the given record's properties, typically used to quickly set the same properties.
+   *
+   * @implNote This method uses variable assignment. So changing a non-primitive in one record also
+   *     affects the other. If you need to separate the records, use {@link #copy()} instead.
+   */
   public void wrap(final UserTaskRecord record) {
     wrapWithoutVariables(record);
     variableProp.setValue(record.getVariablesBuffer());
   }
 
-  public void wrapChangedAttributes(
-      final UserTaskRecord record, final boolean includeTrackingProperties) {
-    record.getChangedAttributesProp().stream()
-        .forEach(attribute -> updateAttribute(attribute, record));
-    if (includeTrackingProperties) {
-      setChangedAttributesProp(record.getChangedAttributesProp());
-    }
+  /** Returns a full copy of the record. */
+  public UserTaskRecord copy() {
+    final UserTaskRecord copy = new UserTaskRecord();
+    copy.copyFrom(this);
+    return copy;
   }
 
-  private void updateAttribute(final StringValue attribute, final UserTaskRecord record) {
-    switch (bufferAsString(attribute.getValue())) {
+  /**
+   * Updates the attributes of this {@link UserTaskRecord} based on the given record.
+   *
+   * @apiNote If {@code includeTrackingProperties} is {@code true}, all attributes in the given
+   *     record's `changedAttributes` list will be added to this record's `changedAttributesProp`,
+   *     even if their values match the existing values. To update attributes and track only truly
+   *     changed attributes, use the {@link #wrapChangedAttributesIfValueChanged} method instead.
+   * @param record the record containing the changed attributes list and new attribute values
+   * @param includeTrackingProperties whether to include all changed attributes in the tracking list
+   */
+  public void wrapChangedAttributes(
+      final UserTaskRecord record, final boolean includeTrackingProperties) {
+    if (includeTrackingProperties) {
+      changedAttributesProp.reset();
+    }
+
+    record
+        .getChangedAttributes()
+        .forEach(
+            attribute -> {
+              updateAttribute(attribute, record);
+              if (includeTrackingProperties) {
+                addChangedAttribute(attribute);
+              }
+            });
+  }
+
+  /**
+   * Updates the attributes of this {@link UserTaskRecord} based on the given record and adds the
+   * attribute to `changedAttributesProp` only if its value was actually changed.
+   *
+   * @param record the record containing the changed attributes list and new attribute values
+   */
+  public void wrapChangedAttributesIfValueChanged(final UserTaskRecord record) {
+    changedAttributesProp.reset();
+
+    record.getChangedAttributes().stream()
+        .filter(attribute -> isAttributeValueChanged(attribute, record))
+        .forEach(
+            attribute -> {
+              updateAttribute(attribute, record);
+              addChangedAttribute(attribute);
+            });
+  }
+
+  private void updateAttribute(final String attributeName, final UserTaskRecord record) {
+    switch (attributeName) {
+      case ASSIGNEE:
+        setAssignee(record.getAssigneeBuffer());
+        break;
       case CANDIDATE_GROUPS:
         setCandidateGroupsList(record.getCandidateGroupsList());
         break;
@@ -165,6 +279,34 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
       default:
         break;
     }
+  }
+
+  /**
+   * Corrects those attributes of the user task record provided in the list of corrected attributes
+   * with the values from the given corrections. Corrected attributes are tracked as changed
+   * attributes.
+   *
+   * @param correctedAttributes the attributes to correct
+   * @param corrections the corrections to apply
+   */
+  public void correctAttributes(
+      final List<String> correctedAttributes, final JobResultCorrections corrections) {
+    changedAttributesProp.reset();
+
+    correctedAttributes.forEach(
+        attribute -> {
+          switch (attribute) {
+            case ASSIGNEE -> setAssignee(corrections.getAssignee());
+            case CANDIDATE_GROUPS -> setCandidateGroupsList(corrections.getCandidateGroupsList());
+            case CANDIDATE_USERS -> setCandidateUsersList(corrections.getCandidateUsersList());
+            case DUE_DATE -> setDueDate(corrections.getDueDate());
+            case FOLLOW_UP_DATE -> setFollowUpDate(corrections.getFollowUpDate());
+            case PRIORITY -> setPriority(corrections.getPriority());
+            default ->
+                throw new IllegalArgumentException("Unknown corrected attribute: " + attribute);
+          }
+          addChangedAttribute(attribute);
+        });
   }
 
   @Override
@@ -338,8 +480,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord setChangedAttributes(final List<String> changedAttributes) {
     changedAttributesProp.reset();
-    changedAttributes.forEach(
-        attribute -> changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute)));
+    changedAttributes.forEach(this::addChangedAttribute);
     return this;
   }
 
@@ -394,6 +535,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord setUserTaskKey(final long userTaskKey) {
     userTaskKeyProp.setValue(userTaskKey);
+    return this;
+  }
+
+  public UserTaskRecord setAssigneeChanged() {
+    changedAttributesProp.add().wrap(ASSIGNEE_VALUE);
     return this;
   }
 
@@ -457,6 +603,34 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     changedAttributesProp.reset();
     changedAttributes.forEach(attribute -> changedAttributesProp.add().wrap(attribute));
     return this;
+  }
+
+  public UserTaskRecord addChangedAttribute(final String attribute) {
+    changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute));
+    return this;
+  }
+
+  public void setDiffAsChangedAttributes(final UserTaskRecord other) {
+    changedAttributesProp.reset();
+    ATTRIBUTE_GETTER_MAP.keySet().stream()
+        .sorted()
+        .filter(attribute -> isAttributeValueChanged(attribute, other))
+        .forEach(this::addChangedAttribute);
+  }
+
+  public boolean hasChangedAttributes() {
+    return !changedAttributesProp.isEmpty();
+  }
+
+  private boolean isAttributeValueChanged(final String attribute, final UserTaskRecord other) {
+    final var attributeGetter = ATTRIBUTE_GETTER_MAP.get(attribute);
+    if (attributeGetter == null) {
+      return false;
+    }
+
+    final var thisAttributeValue = attributeGetter.apply(this);
+    final var otherAttributeValue = attributeGetter.apply(other);
+    return !Objects.equals(thisAttributeValue, otherAttributeValue);
   }
 
   @JsonIgnore

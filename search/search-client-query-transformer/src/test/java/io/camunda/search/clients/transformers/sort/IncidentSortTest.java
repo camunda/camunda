@@ -36,7 +36,6 @@ public class IncidentSortTest extends AbstractSortTransformerTest {
         new TestArguments("creationTime", SortOrder.ASC, s -> s.creationTime().asc()),
         new TestArguments("state", SortOrder.ASC, s -> s.state().asc()),
         new TestArguments("jobKey", SortOrder.ASC, s -> s.jobKey().asc()),
-        new TestArguments("treePath", SortOrder.ASC, s -> s.treePath().asc()),
         new TestArguments("tenantId", SortOrder.ASC, s -> s.tenantId().asc()));
   }
 

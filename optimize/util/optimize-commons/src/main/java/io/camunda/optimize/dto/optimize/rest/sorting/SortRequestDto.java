@@ -8,7 +8,6 @@
 package io.camunda.optimize.dto.optimize.rest.sorting;
 
 import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import jakarta.ws.rs.QueryParam;
 import java.util.Optional;
 
 public class SortRequestDto {
@@ -16,10 +15,8 @@ public class SortRequestDto {
   public static final String SORT_BY = "sortBy";
   public static final String SORT_ORDER = "sortOrder";
 
-  @QueryParam(SORT_BY)
   private String sortBy;
 
-  @QueryParam(SORT_ORDER)
   private SortOrder sortOrder;
 
   public SortRequestDto(final String sortBy, final SortOrder sortOrder) {

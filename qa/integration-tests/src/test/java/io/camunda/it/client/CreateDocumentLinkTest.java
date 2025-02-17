@@ -10,51 +10,39 @@ package io.camunda.it.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.client.api.response.DocumentReferenceResponse;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.it.utils.MultiDbTest;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-@ZeebeIntegration
+@MultiDbTest
 public class CreateDocumentLinkTest {
 
   private static final String DOCUMENT_CONTENT = "test";
 
-  private static ZeebeClient zeebeClient;
+  private static CamundaClient camundaClient;
   private static DocumentReferenceResponse documentReference;
-
-  @TestZeebe(initMethod = "initTestStandaloneCamunda")
-  private static TestStandaloneCamunda testStandaloneCamunda;
-
-  @SuppressWarnings("unused")
-  static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda();
-  }
 
   @BeforeAll
   public static void beforeAll() {
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
     documentReference =
-        zeebeClient.newCreateDocumentCommand().content(DOCUMENT_CONTENT).send().join();
+        camundaClient.newCreateDocumentCommand().content(DOCUMENT_CONTENT).send().join();
   }
 
   @Test
   public void shouldReturnBadRequestWhenDocumentStoreDoesNotExist() {
     // given
     final var storeId = "invalid-document-store-id";
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
     final var exception =
         assertThrowsExactly(
             ProblemException.class,
             () ->
-                zeebeClient
-                    .newCreateDocumentLinkCommand(documentReference.getDocumentId())
+                camundaClient
+                    .newCreateDocumentLinkCommand(documentReference)
                     .storeId(storeId)
                     .send()
                     .join());
@@ -70,16 +58,17 @@ public class CreateDocumentLinkTest {
   public void shouldReturnMethodNotAllowedWhenStoreIsInMemory() {
     // given
     final var storeId = "in-memory";
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    final var documentId = documentReference.getDocumentId();
 
     // when
     final var exception =
         assertThrowsExactly(
             ProblemException.class,
             () ->
-                zeebeClient
-                    .newCreateDocumentLinkCommand(documentReference.getDocumentId())
+                camundaClient
+                    .newCreateDocumentLinkCommand(documentId)
                     .storeId(storeId)
+                    .contentHash(documentReference.getContentHash())
                     .send()
                     .join());
 

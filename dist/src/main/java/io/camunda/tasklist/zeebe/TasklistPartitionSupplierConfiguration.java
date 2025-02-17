@@ -7,10 +7,12 @@
  */
 package io.camunda.tasklist.zeebe;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.tasklist.util.ConditionalOnTasklistCompatibility;
 import io.camunda.webapps.zeebe.PartitionSupplier;
 import io.camunda.webapps.zeebe.PartitionSupplierConfigurer;
 import io.camunda.zeebe.broker.Broker;
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.Gateway;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -19,11 +21,20 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
 public class TasklistPartitionSupplierConfiguration {
-  @Bean
-  public PartitionSupplier tasklistPartitionSupplier(
+
+  @Bean("tasklistPartitionSupplier")
+  @ConditionalOnTasklistCompatibility(enabled = "true")
+  public PartitionSupplier tasklistPartitionSupplierCompatibility(
       @Autowired(required = false) final Broker broker,
       @Autowired(required = false) final Gateway gateway,
-      @Autowired @Qualifier("tasklistZeebeClient") final ZeebeClient zeebeClient) {
-    return new PartitionSupplierConfigurer(broker, gateway, zeebeClient).createPartitionSupplier();
+      @Autowired @Qualifier("tasklistCamundaClient") final CamundaClient camundaClient) {
+    return new PartitionSupplierConfigurer(broker, gateway, camundaClient)
+        .createPartitionSupplier();
+  }
+
+  @Bean("tasklistPartitionSupplier")
+  @ConditionalOnTasklistCompatibility(enabled = "false", matchIfMissing = true)
+  public PartitionSupplier tasklistPartitionSupplier(final BrokerClient brokerClient) {
+    return new PartitionSupplierConfigurer(brokerClient).createPartitionSupplier();
   }
 }

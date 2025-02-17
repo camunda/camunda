@@ -67,7 +67,7 @@ public final class IncidentServiceTest {
     final var processId = "processId";
     when(entity.processDefinitionId()).thenReturn(processId);
     when(client.searchIncidents(any()))
-        .thenReturn(new SearchQueryResult<>(1, List.of(entity), null));
+        .thenReturn(new SearchQueryResult<>(1, List.of(entity), null, null));
     when(securityContextProvider.isAuthorized(
             processId,
             authentication,
@@ -87,7 +87,7 @@ public final class IncidentServiceTest {
     final var processId = "processId";
     when(entity.processDefinitionId()).thenReturn(processId);
     when(client.searchIncidents(any()))
-        .thenReturn(new SearchQueryResult<>(1, List.of(entity), null));
+        .thenReturn(new SearchQueryResult<>(1, List.of(entity), null, null));
     when(securityContextProvider.isAuthorized(
             processId,
             authentication,

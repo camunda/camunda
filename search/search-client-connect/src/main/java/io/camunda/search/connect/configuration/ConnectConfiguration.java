@@ -13,37 +13,36 @@ import java.util.List;
 
 public class ConnectConfiguration {
 
-  private static final String DATABASE_TYPE_DEFAULT = "elasticsearch";
+  private static final DatabaseType DATABASE_TYPE_DEFAULT = DatabaseType.ELASTICSEARCH;
   private static final String CLUSTER_NAME_DEFAULT = "elasticsearch";
   private static final String DATE_FORMAT_FIELD = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
   private static final String FIELD_DATE_FORMAT_DEFAULT = "date_time";
   private static final String URL_DEFAULT = "http://localhost:9200";
-
-  private String type = DATABASE_TYPE_DEFAULT;
+  private String type = DATABASE_TYPE_DEFAULT.toString();
   private String clusterName = CLUSTER_NAME_DEFAULT;
-
   private String dateFormat = DATE_FORMAT_FIELD;
   private String fieldDateFormat = FIELD_DATE_FORMAT_DEFAULT;
-
   private Integer socketTimeout;
   private Integer connectTimeout;
-
   private String url = URL_DEFAULT;
   private String username;
   private String password;
-
   private SecurityConfiguration security = new SecurityConfiguration();
-
   private String indexPrefix;
-
   private List<PluginConfiguration> interceptorPlugins = new ArrayList<>();
 
+  /** Use {@link ConnectConfiguration#getTypeEnum()} */
+  @Deprecated
   public String getType() {
     return type;
   }
 
   public void setType(final String type) {
     this.type = type;
+  }
+
+  public DatabaseType getTypeEnum() {
+    return DatabaseType.from(type);
   }
 
   public String getClusterName() {

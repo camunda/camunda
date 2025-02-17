@@ -7,54 +7,48 @@
  */
 package io.camunda.zeebe.broker.system.monitoring;
 
-import io.prometheus.client.Gauge;
-import io.prometheus.client.Gauge.Timer;
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.TimeGauge;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class BrokerStepMetrics {
+  private final Map<String, AtomicLong> startup = new HashMap<>();
+  private final Map<String, AtomicLong> close = new HashMap<>();
 
-  public static final String ZEEBE_NAMESPACE = "zeebe";
-  public static final String STEP_NAME_LABEL = "stepName";
-  private static final Gauge STARTUP_METRIC =
-      Gauge.build()
-          .namespace(ZEEBE_NAMESPACE)
-          .name("broker_start_step_latency")
-          .help("Time for each broker start step to complete.")
-          .labelNames(STEP_NAME_LABEL)
-          .register();
+  private final MeterRegistry registry;
 
-  private static final Gauge CLOSE_METRICS =
-      Gauge.build()
-          .namespace(ZEEBE_NAMESPACE)
-          .name("broker_close_step_latency")
-          .help("Time for each broker close step to complete.")
-          .labelNames(STEP_NAME_LABEL)
-          .register();
-
-  /**
-   * Meter the time to start for a single step.
-   *
-   * @param stepName the name of the step
-   * @param startupDuration the step start duration in ms
-   */
-  public void observeDurationForStarStep(final String stepName, final long startupDuration) {
-    STARTUP_METRIC.labels(stepName).set(startupDuration);
+  public BrokerStepMetrics(final MeterRegistry registry) {
+    this.registry = Objects.requireNonNull(registry, "must specify a meter registry");
   }
 
-  public Timer createStartupTimer(final String stepName) {
-    return STARTUP_METRIC.labels(stepName).startTimer();
+  public CloseableSilently createStartupTimer(final String stepName) {
+    final var timerTracker =
+        startup.computeIfAbsent(
+            stepName, name -> registerMetric(BrokerStepMetricsDoc.STARTUP, name));
+    return MicrometerUtil.timer(
+        timerTracker::set, TimeUnit.MILLISECONDS, registry.config().clock());
   }
 
-  public Timer createCloseTimer(final String stepName) {
-    return CLOSE_METRICS.labels(stepName).startTimer();
+  public CloseableSilently createCloseTimer(final String stepName) {
+    final var timerTracker =
+        close.computeIfAbsent(stepName, name -> registerMetric(BrokerStepMetricsDoc.CLOSE, name));
+    return MicrometerUtil.timer(
+        timerTracker::set, TimeUnit.MILLISECONDS, registry.config().clock());
   }
 
-  /**
-   * Meter the the time to close for a single step.
-   *
-   * @param stepName the name of the step
-   * @param closeDuration the step close duration in ms
-   */
-  public void observeDurationForCloseStep(final String stepName, final long closeDuration) {
-    CLOSE_METRICS.labels(stepName).set(closeDuration);
+  private AtomicLong registerMetric(final BrokerStepMetricsDoc meterDoc, final String stepName) {
+    final var timeTracker = new AtomicLong();
+    TimeGauge.builder(meterDoc.getName(), timeTracker, TimeUnit.MILLISECONDS, AtomicLong::longValue)
+        .description(meterDoc.getDescription())
+        .tag("stepName", stepName)
+        .register(registry);
+
+    return timeTracker;
   }
 }

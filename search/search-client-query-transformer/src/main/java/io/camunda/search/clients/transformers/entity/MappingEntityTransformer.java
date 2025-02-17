@@ -17,6 +17,7 @@ public class MappingEntityTransformer
   @Override
   public MappingEntity apply(
       final io.camunda.webapps.schema.entities.usermanagement.MappingEntity value) {
-    return new MappingEntity(value.getKey(), value.getClaimName(), value.getClaimValue());
+    return new MappingEntity(
+        value.getKey(), value.getClaimName(), value.getClaimValue(), value.getName());
   }
 }

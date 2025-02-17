@@ -22,7 +22,7 @@ import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.util.ResettableJobActivationRequestResponseObserver;
@@ -51,7 +51,7 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
 
   static final String JOBS_BASE_URL = "/v2/jobs";
 
-  @Autowired ActivateJobsHandler<JobActivationResponse> activateJobsHandler;
+  @Autowired ActivateJobsHandler<JobActivationResult> activateJobsHandler;
   @Autowired StubbedBrokerClient stubbedBrokerClient;
   @SpyBean ResettableJobActivationRequestResponseObserver responseObserver;
 
@@ -92,12 +92,12 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
         {
           "jobs": [
             {
-              "jobKey": %d,
+              "jobKey": "%d",
               "type": "TEST",
-              "processInstanceKey": 123,
-              "processDefinitionKey": 4532,
+              "processInstanceKey": "123",
+              "processDefinitionKey": "4532",
               "processDefinitionVersion": 23,
-              "elementInstanceKey": 459,
+              "elementInstanceKey": "459",
               "retries": 12,
               "deadline": 123123123,
               "tenantId": "default",
@@ -108,12 +108,12 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
               "worker": "bar"
             },
             {
-              "jobKey": %d,
+              "jobKey": "%d",
               "type": "TEST",
-              "processInstanceKey": 123,
-              "processDefinitionKey": 4532,
+              "processInstanceKey": "123",
+              "processDefinitionKey": "4532",
               "processDefinitionVersion": 23,
-              "elementInstanceKey": 459,
+              "elementInstanceKey": "459",
               "retries": 12,
               "deadline": 123123123,
               "tenantId": "default",
@@ -322,7 +322,7 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
     // reset the results in the test class' observer (created anew per request in production setup)
     responseObserver.reset();
     // return the current partition
-    return Protocol.decodePartitionId(JsonPath.read(result, "$.jobs[0].jobKey"));
+    return Protocol.decodePartitionId(Long.parseLong(JsonPath.read(result, "$.jobs[0].jobKey")));
   }
 
   private static int getExpectedPartitionId(
@@ -368,7 +368,7 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
     }
 
     @Bean
-    public ActivateJobsHandler<JobActivationResponse> activateJobsHandler(
+    public ActivateJobsHandler<JobActivationResult> activateJobsHandler(
         final BrokerClient brokerClient, final ActorScheduler actorScheduler) {
       final var handler =
           new RoundRobinActivateJobsHandler<>(
@@ -387,9 +387,9 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
     }
 
     @Bean
-    public JobServices<JobActivationResponse> jobServices(
+    public JobServices<JobActivationResult> jobServices(
         final BrokerClient brokerClient,
-        final ActivateJobsHandler<JobActivationResponse> activateJobsHandler) {
+        final ActivateJobsHandler<JobActivationResult> activateJobsHandler) {
       return new JobServices<>(
           brokerClient,
           new SecurityContextProvider(new SecurityConfiguration(), null),

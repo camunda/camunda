@@ -8,8 +8,10 @@
 package io.camunda.document.api;
 
 import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
+import java.util.concurrent.ExecutorService;
 
 public interface DocumentStoreProvider {
 
-  DocumentStore createDocumentStore(DocumentStoreConfigurationRecord configuration);
+  DocumentStore createDocumentStore(
+      DocumentStoreConfigurationRecord configuration, ExecutorService executor);
 }

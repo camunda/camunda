@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="http://www.omg.org/spec/DMN/20151101/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20151101/DC/" xmlns:di="http://www.omg.org/spec/DMN/20151101/DI/" id="definitions_1" name="definitions" namespace="http://camunda.org/schema/1.0/dmn">
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" id="definitions_1"
+  name="definitions" namespace="http://camunda.org/schema/1.0/dmn">
   <decision id="decision_1" name="Loan Eligibility">
     <decisionTable id="decisionTable_1" hitPolicy="FIRST">
       <input id="input_1" label="Age">

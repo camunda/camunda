@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.test.util;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.worker.JobWorker;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.worker.JobWorker;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
@@ -25,7 +25,7 @@ import org.awaitility.Awaitility;
 
 /**
  * Utility to produce some work for a Zeebe cluster. The intention is to use {@link
- * #performSampleWorkload(ZeebeClient client)} for blackbox testing.
+ * #performSampleWorkload(CamundaClient client)} for blackbox testing.
  *
  * <p>It's not the intention to add more methods that produce a specific workload to test individual
  * features. Prefer to define these methods next to those tests instead of making {@link
@@ -48,7 +48,7 @@ public final class WorkloadGenerator {
    * Given a client, deploy a process, start instances, work on service tasks, create and resolve
    * incidents and finish the instance.
    */
-  public static void performSampleWorkload(final ZeebeClient client) {
+  public static void performSampleWorkload(final CamundaClient client) {
     client
         .newDeployResourceCommand()
         .addProcessModel(SAMPLE_PROCESS, "sample_process.bpmn")

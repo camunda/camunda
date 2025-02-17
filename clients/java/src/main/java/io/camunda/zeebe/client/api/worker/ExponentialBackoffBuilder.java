@@ -17,6 +17,11 @@ package io.camunda.zeebe.client.api.worker;
 
 import java.util.Random;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.worker.ExponentialBackoffBuilder}
+ */
+@Deprecated
 public interface ExponentialBackoffBuilder {
 
   /**

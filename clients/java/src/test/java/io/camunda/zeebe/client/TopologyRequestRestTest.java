@@ -15,25 +15,25 @@
  */
 package io.camunda.zeebe.client;
 
-import static io.camunda.zeebe.client.protocol.rest.Partition.HealthEnum.DEAD;
-import static io.camunda.zeebe.client.protocol.rest.Partition.HealthEnum.HEALTHY;
-import static io.camunda.zeebe.client.protocol.rest.Partition.HealthEnum.UNHEALTHY;
-import static io.camunda.zeebe.client.protocol.rest.Partition.RoleEnum.FOLLOWER;
-import static io.camunda.zeebe.client.protocol.rest.Partition.RoleEnum.INACTIVE;
-import static io.camunda.zeebe.client.protocol.rest.Partition.RoleEnum.LEADER;
+import static io.camunda.client.protocol.rest.Partition.HealthEnum.DEAD;
+import static io.camunda.client.protocol.rest.Partition.HealthEnum.HEALTHY;
+import static io.camunda.client.protocol.rest.Partition.HealthEnum.UNHEALTHY;
+import static io.camunda.client.protocol.rest.Partition.RoleEnum.FOLLOWER;
+import static io.camunda.client.protocol.rest.Partition.RoleEnum.INACTIVE;
+import static io.camunda.client.protocol.rest.Partition.RoleEnum.LEADER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.client.protocol.rest.BrokerInfo;
+import io.camunda.client.protocol.rest.Partition;
+import io.camunda.client.protocol.rest.ProblemDetail;
+import io.camunda.client.protocol.rest.TopologyResponse;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.response.PartitionBrokerHealth;
 import io.camunda.zeebe.client.api.response.PartitionBrokerRole;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.api.response.Topology;
-import io.camunda.zeebe.client.protocol.rest.BrokerInfo;
-import io.camunda.zeebe.client.protocol.rest.Partition;
-import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
-import io.camunda.zeebe.client.protocol.rest.TopologyResponse;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.RestGatewayPaths;
 import java.time.Duration;

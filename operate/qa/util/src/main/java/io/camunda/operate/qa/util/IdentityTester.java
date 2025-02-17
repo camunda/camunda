@@ -10,8 +10,8 @@ package io.camunda.operate.qa.util;
 import static io.camunda.operate.qa.util.TestContainerUtil.*;
 import static io.camunda.operate.webapp.security.OperateURIs.COOKIE_JSESSIONID;
 
+import io.camunda.client.impl.util.Environment;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.zeebe.client.impl.util.Environment;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -71,6 +71,7 @@ public class IdentityTester {
     registry.add(
         "management.endpoints.web.exposure.include", () -> "info,prometheus,loggers,usage-metrics");
     registry.add("server.servlet.session.cookie.name", () -> COOKIE_JSESSIONID);
-    registry.add("camunda.operate.multiTenancy.enabled", () -> String.valueOf(multiTenancyEnabled));
+    registry.add(
+        "camunda.security.multiTenancy.enabled", () -> String.valueOf(multiTenancyEnabled));
   }
 }

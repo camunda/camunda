@@ -17,7 +17,7 @@ package io.camunda.zeebe.client.resource.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.protocol.rest.DeleteResourceRequest;
+import io.camunda.client.protocol.rest.DeleteResourceRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
 

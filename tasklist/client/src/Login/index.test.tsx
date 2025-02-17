@@ -77,7 +77,9 @@ describe('<Login />', () => {
     expect(
       await screen.findByRole('button', {name: 'Login'}),
     ).toBeInTheDocument();
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/i);
+    await waitFor(() =>
+      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/i),
+    );
   });
 
   it('should redirect to the referrer page', async () => {

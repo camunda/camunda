@@ -38,17 +38,17 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
   private static final String EXPECTED_EVALUATION_RESPONSE =
       """
           {
-             "decisionDefinitionKey":123456,
+             "decisionDefinitionKey":"123456",
              "decisionDefinitionId":"decisionId",
              "decisionDefinitionName":"decisionName",
              "decisionDefinitionVersion":1,
              "decisionRequirementsId":"decisionRequirementsId",
-             "decisionRequirementsKey":123456,
+             "decisionRequirementsKey":"123456",
              "output":"null",
              "failedDecisionDefinitionId":"",
              "failureMessage":"",
              "tenantId":"tenantId",
-             "decisionInstanceKey":123,
+             "decisionInstanceKey":"123",
              "evaluatedDecisions":[]
           }""";
 

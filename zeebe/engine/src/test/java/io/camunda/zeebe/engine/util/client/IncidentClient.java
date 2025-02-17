@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.util.client;
 
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -91,6 +92,47 @@ public final class IncidentClient {
               IncidentIntent.RESOLVE,
               incidentRecord,
               authorizedTenantIds.toArray(new String[0]));
+
+      return expectation.apply(position);
+    }
+
+    public Record<IncidentRecordValue> resolve(final AuthInfo authorizations) {
+      if (incidentKey == DEFAULT_KEY) {
+        incidentKey =
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getKey();
+      }
+
+      final long position =
+          writer.writeCommandOnPartition(
+              Protocol.decodePartitionId(incidentKey),
+              incidentKey,
+              IncidentIntent.RESOLVE,
+              incidentRecord,
+              authorizations);
+
+      return expectation.apply(position);
+    }
+
+    public Record<IncidentRecordValue> resolve(final String username) {
+      if (incidentKey == DEFAULT_KEY) {
+        incidentKey =
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getKey();
+      }
+
+      final long position =
+          writer.writeCommandOnPartition(
+              Protocol.decodePartitionId(incidentKey),
+              incidentKey,
+              IncidentIntent.RESOLVE,
+              username,
+              incidentRecord,
+              TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
       return expectation.apply(position);
     }

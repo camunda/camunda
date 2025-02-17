@@ -27,6 +27,7 @@ import io.camunda.zeebe.stream.api.EventFilter;
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
@@ -128,6 +129,7 @@ public final class ExporterRule implements TestRule {
             .distributionInterval(distributionInterval)
             .partitionMessagingService(partitionMessagingService)
             .descriptors(descriptorsWithInitializationInfo)
+            .meterRegistry(new SimpleMeterRegistry())
             .positionsToSkipFilter(positionsToSkipFilter);
 
     director = new ExporterDirector(context, phase);

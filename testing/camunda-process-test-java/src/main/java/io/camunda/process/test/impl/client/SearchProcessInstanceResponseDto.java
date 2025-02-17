@@ -15,15 +15,17 @@
  */
 package io.camunda.process.test.impl.client;
 
+import io.camunda.client.api.search.response.ProcessInstance;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class SearchProcessInstanceResponseDto {
 
   private List<ProcessInstanceDto> items;
   private long total;
 
-  public List<ProcessInstanceDto> getItems() {
-    return items;
+  public List<ProcessInstance> getItems() {
+    return items.stream().map(ProcessInstance.class::cast).collect(Collectors.toList());
   }
 
   public void setItems(final List<ProcessInstanceDto> items) {

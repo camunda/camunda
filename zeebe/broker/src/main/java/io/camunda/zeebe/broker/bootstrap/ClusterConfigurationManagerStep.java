@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import io.camunda.zeebe.broker.partitioning.topology.ClusterChangeExecutorImpl;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.DynamicClusterConfigurationService;
+import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 public class ClusterConfigurationManagerStep
@@ -25,8 +27,13 @@ public class ClusterConfigurationManagerStep
     final ActorFuture<BrokerStartupContext> started =
         brokerStartupContext.getConcurrencyControl().createFuture();
 
+    final ClusterChangeExecutor clusterChangeExecutor =
+        new ClusterChangeExecutorImpl(
+            brokerStartupContext.getConcurrencyControl(),
+            brokerStartupContext.getExporterRepository(),
+            brokerStartupContext.getMeterRegistry());
     final ClusterConfigurationService clusterConfigurationService =
-        new DynamicClusterConfigurationService();
+        new DynamicClusterConfigurationService(clusterChangeExecutor);
     clusterConfigurationService
         .start(brokerStartupContext)
         .onComplete(

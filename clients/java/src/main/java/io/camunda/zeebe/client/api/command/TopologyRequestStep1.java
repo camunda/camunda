@@ -17,6 +17,11 @@ package io.camunda.zeebe.client.api.command;
 
 import io.camunda.zeebe.client.api.response.Topology;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.TopologyRequestStep1}
+ */
+@Deprecated
 public interface TopologyRequestStep1
     extends CommandWithCommunicationApiStep<TopologyRequestStep1>, FinalCommandStep<Topology> {
   // the place for new optional parameters

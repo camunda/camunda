@@ -19,6 +19,10 @@ import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import java.time.Duration;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.FinalCommandStep}
+ */
 public interface FinalCommandStep<T> {
 
   /**

@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
@@ -51,8 +52,7 @@ public class DeleteUserMultiPartitionTest {
 
     engine
         .user()
-        .deleteUser(userRecord.getKey())
-        .withUsername(username)
+        .deleteUser(username)
         .withName("Bar Foo")
         .withEmail("bar@foo.com")
         .withPassword("password")
@@ -66,7 +66,7 @@ public class DeleteUserMultiPartitionTest {
             RecordingExporter.records()
                 .withPartitionId(1)
                 .limitByCount(
-                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
+                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 3)
                 .filter(
                     record ->
                         record.getValueType() == ValueType.USER
@@ -123,8 +123,7 @@ public class DeleteUserMultiPartitionTest {
 
     engine
         .user()
-        .deleteUser(userRecord.getKey())
-        .withUsername(username)
+        .deleteUser(username)
         .withName("Bar Foo")
         .withEmail("bar@foo.com")
         .withPassword("password")
@@ -133,7 +132,7 @@ public class DeleteUserMultiPartitionTest {
     // then
     assertThat(
             RecordingExporter.commandDistributionRecords()
-                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
+                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 3)
                 .withIntent(CommandDistributionIntent.ENQUEUED))
         .extracting(r -> r.getValue().getQueueId())
         .containsOnly(DistributionQueue.IDENTITY.getQueueId());
@@ -157,8 +156,7 @@ public class DeleteUserMultiPartitionTest {
     // when
     engine
         .user()
-        .deleteUser(userRecord.getKey())
-        .withUsername("foobar")
+        .deleteUser("foobar")
         .withName("Bar Foo")
         .withEmail("bar@foo.com")
         .withPassword("password")
@@ -170,10 +168,11 @@ public class DeleteUserMultiPartitionTest {
     // then
     assertThat(
             RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
-                .limit(2))
+                .limit(3))
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
         .containsExactly(
             Assertions.tuple(ValueType.USER, UserIntent.CREATE),
+            tuple(ValueType.AUTHORIZATION, AuthorizationIntent.CREATE),
             Assertions.tuple(ValueType.USER, UserIntent.DELETE));
   }
 

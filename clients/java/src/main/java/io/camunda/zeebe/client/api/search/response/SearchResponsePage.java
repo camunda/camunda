@@ -17,6 +17,11 @@ package io.camunda.zeebe.client.api.search.response;
 
 import java.util.List;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.search.response.SearchResponsePage}
+ */
+@Deprecated
 public interface SearchResponsePage {
 
   /** Total number of items that matches the query */

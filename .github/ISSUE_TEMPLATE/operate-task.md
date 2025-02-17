@@ -8,7 +8,7 @@ assignees: ''
 
 ---
 
-<!-- For anything that is not a feature request or a bug reeport.-->
+<!-- For anything that is not a feature request or a bug report.-->
 
 ### Description (required on creation)
 
@@ -21,7 +21,7 @@ assignees: ''
 ### Links
 
 <!--
-- https://jira.camunda.com/browse/SUPPORT-12398
+- Link to JIRA support case
 -->
 
 ```[tasklist]

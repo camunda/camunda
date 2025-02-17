@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-bom</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
     <relativePath>../bom/pom.xml</relativePath>
   </parent>
 
@@ -36,60 +36,60 @@
 
     <!-- EXTERNAL LIBS -->
     <version.agrona>1.23.1</version.agrona>
-    <version.assertj>3.26.3</version.assertj>
+    <version.assertj>3.27.3</version.assertj>
     <version.awaitility>4.2.2</version.awaitility>
     <version.bouncycastle>1.79</version.bouncycastle>
     <version.camunda>7.22.0</version.camunda>
     <version.camunda-license-check>2.10.0</version.camunda-license-check>
-    <version.checkstyle>10.20.2</version.checkstyle>
+    <version.checkstyle>10.21.1</version.checkstyle>
     <version.commons-beanutils>1.9.4</version.commons-beanutils>
     <version.commons-lang>3.17.0</version.commons-lang>
     <version.commons-logging>1.3.4</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
-    <version.commons-codec>1.17.1</version.commons-codec>
+    <version.commons-codec>1.17.2</version.commons-codec>
     <version.commons-compress>1.27.1</version.commons-compress>
     <version.commons-validator>1.9.0</version.commons-validator>
-    <version.zstd-jni>1.5.6-8</version.zstd-jni>
-    <version.commons-text>1.12.0</version.commons-text>
+    <version.zstd-jni>1.5.6-9</version.zstd-jni>
+    <version.commons-text>1.13.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
-    <version.docker-java-api>3.4.0</version.docker-java-api>
+    <version.docker-java-api>3.4.1</version.docker-java-api>
     <version.elasticsearch>8.13.4</version.elasticsearch>
     <version.error-prone>2.36.0</version.error-prone>
-    <version.grpc>1.68.2</version.grpc>
+    <version.grpc>1.69.1</version.grpc>
     <version.gson>2.11.0</version.gson>
-    <version.guava>33.3.1-jre</version.guava>
+    <version.guava>33.4.0-jre</version.guava>
     <version.hamcrest>3.0</version.hamcrest>
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.14</version.httpclient>
-    <version.httpclient5>5.3.1</version.httpclient5>
-    <version.httpcore5>5.2.5</version.httpcore5>
+    <version.httpclient5>5.4.1</version.httpclient5>
+    <version.httpcore5>5.3</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.6.6</version.identity>
+    <version.identity>8.6.7</version.identity>
     <version.surefire>3.5.2</version.surefire>
     <version.jackson>2.18.2</version.jackson>
-    <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
-    <version.junit>5.11.3</version.junit>
+    <version.junit>5.11.4</version.junit>
     <version.junit4>4.13.2</version.junit4>
-    <version.log4j>2.24.2</version.log4j>
+    <version.log4j>2.24.3</version.log4j>
     <version.minlog>1.3.1</version.minlog>
-    <version.mockito>5.14.2</version.mockito>
+    <version.mockito>5.15.2</version.mockito>
     <version.model>7.7.0</version.model>
-    <version.msgpack>0.9.8</version.msgpack>
-    <version.netty>4.1.115.Final</version.netty>
+    <version.msgpack>0.9.9</version.msgpack>
+    <version.netty>4.1.117.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.14.0</version.opensearch>
+    <version.opensearch-java>2.19.0</version.opensearch-java>
     <version.opensearch.testcontainers>2.1.2</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
-    <version.protobuf>3.25.5</version.protobuf>
-    <version.protobuf-common>2.49.0</version.protobuf-common>
-    <version.micrometer>1.14.2</version.micrometer>
+    <version.protobuf>4.29.3</version.protobuf>
+    <version.protobuf-common>2.50.1</version.protobuf-common>
+    <version.micrometer>1.14.3</version.micrometer>
     <version.rocksdbjni>9.4.0</version.rocksdbjni>
-    <version.sbe>1.33.2</version.sbe>
-    <version.scala>2.13.15</version.scala>
+    <version.sbe>1.34.1</version.sbe>
+    <version.scala>2.13.16</version.scala>
     <version.slf4j>2.0.16</version.slf4j>
     <version.snakeyaml>2.3</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
-    <version.wiremock>3.9.2</version.wiremock>
+    <version.wiremock>3.10.0</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
     <version.testcontainers>1.20.4</version.testcontainers>
@@ -98,58 +98,59 @@
     <version.postgressql-testcontainer>1.20.1</version.postgressql-testcontainer>
     <version.netflix.concurrency>0.5.3</version.netflix.concurrency>
     <version.zeebe-test-container>3.6.5</version.zeebe-test-container>
-    <version.feel-scala>1.18.1</version.feel-scala>
-    <version.dmn-scala>1.10.0</version.dmn-scala>
+    <version.feel-scala>1.19.1</version.feel-scala>
+    <version.dmn-scala>1.10.1</version.dmn-scala>
     <version.rest-assured>5.5.0</version.rest-assured>
-    <version.spring>6.1.14</version.spring>
-    <version.spring-security>6.4.1</version.spring-security>
-    <version.spring-boot>3.3.4</version.spring-boot>
+    <version.spring>6.2.1</version.spring>
+    <version.spring-security>6.4.2</version.spring-security>
+    <version.spring-boot>3.4.1</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
-    <version.jetbrains-annotations>25.0.0</version.jetbrains-annotations>
+    <version.jetbrains-annotations>26.0.1</version.jetbrains-annotations>
     <version.jqwik>1.9.2</version.jqwik>
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
-    <version.byte-buddy>1.15.10</version.byte-buddy>
+    <version.byte-buddy>1.15.11</version.byte-buddy>
     <version.revapi>0.28.1</version.revapi>
-    <version.resilience4j>2.2.0</version.resilience4j>
+    <version.resilience4j>2.3.0</version.resilience4j>
     <version.immutables>2.10.1</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
     <version.classgraph>4.8.179</version.classgraph>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
-    <version.spotbugs>4.8.6</version.spotbugs>
+    <version.spotbugs>4.9.0</version.spotbugs>
     <version.archunit>1.3.0</version.archunit>
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.20</version.jnr-posix>
-    <version.zpt>8.6.6</version.zpt>
+    <version.zpt>8.6.7</version.zpt>
     <version.feign>13.5</version.feign>
-    <version.google-sdk>26.51.0</version.google-sdk>
+    <version.google-sdk>26.53.0</version.google-sdk>
     <version.azure-sdk>1.2.30</version.azure-sdk>
-    <version.awssdk>2.29.31</version.awssdk>
+    <version.awssdk>2.29.50</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <version.jackson-annotations>2.18.2</version.jackson-annotations>
-    <version.swagger-annotations>2.2.26</version.swagger-annotations>
-    <version.checker-qual>3.48.3</version.checker-qual>
+    <version.swagger-annotations>2.2.28</version.swagger-annotations>
+    <version.checker-qual>3.48.4</version.checker-qual>
     <version.java-jwt>4.4.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
-    <version.postgresql>42.7.4</version.postgresql>
+    <version.postgresql>42.7.5</version.postgresql>
     <version.h2>2.3.232</version.h2>
     <version.aws-signing>2.3.1</version.aws-signing>
-    <version.reactor-netty>1.1.23</version.reactor-netty>
-    <version.tc-keycloak>3.3.1</version.tc-keycloak>
+    <version.tc-keycloak>3.6.0</version.tc-keycloak>
     <version.jakarta-activation>2.1.3</version.jakarta-activation>
     <version.jakarta.json-api>2.1.3</version.jakarta.json-api>
     <version.jakarta-annotation>3.0.0</version.jakarta-annotation>
-    <version.jna-platform>5.15.0</version.jna-platform>
+    <version.jna-platform>5.16.0</version.jna-platform>
     <version.liquibase>4.30.0</version.liquibase>
-    <version.caffeine>3.1.8</version.caffeine>
+    <version.sqlformatter>2.0.5</version.sqlformatter>
+    <version.caffeine>3.2.0</version.caffeine>
+    <version.commons-collections>3.2.2</version.commons-collections>
 
     <version.commons-io>2.18.0</version.commons-io>
     <version.thymeleaf>3.1.3.RELEASE</version.thymeleaf>
@@ -161,16 +162,15 @@
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.aws-java-sdk>1.12.779</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.780</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.20.4</version.elasticsearch-test-container>
     <version.postgres-test-container>1.20.4</version.postgres-test-container>
-    <version.elasticsearch7>7.17.26</version.elasticsearch7>
+    <version.elasticsearch7>7.17.27</version.elasticsearch7>
     <!-- the lucene version must be coupled with version.elasticsearch7 -->
     <version.lucene>8.11.3</version.lucene>
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
     <version.joda-time>2.13.0</version.joda-time>
     <version.commons-collections4>4.4</version.commons-collections4>
-    <version.jetty>11.0.24</version.jetty>
     <version.xmlunit-core>2.10.0</version.xmlunit-core>
 
     <!-- Auth0 Dependencies -->
@@ -182,25 +182,15 @@
     <version.okio-jvm>3.9.1</version.okio-jvm>
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
-    <version.nimbus-jose-jwt>9.47</version.nimbus-jose-jwt>
-    <version.nimbus-sdk>11.20.1</version.nimbus-sdk>
+    <version.nimbus-jose-jwt>10.0.1</version.nimbus-jose-jwt>
+    <version.nimbus-sdk>11.21.2</version.nimbus-sdk>
     <version.keycloak>25.0.6</version.keycloak>
-    <version.jna>5.15.0</version.jna>
+    <version.jna>5.16.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
-
-    <!-- GraphQL dependencies -->
-    <version.graphql-kickstart>15.2.0</version.graphql-kickstart>
-    <version.graphql-kickstart-spring-boot>15.1.0</version.graphql-kickstart-spring-boot>
-    <version.graphql-java>21.5</version.graphql-java>
-    <version.graphql-java.scalars>21.0</version.graphql-java.scalars>
-    <version.graphql-java.dataloader>3.3.0</version.graphql-java.dataloader>
-    <version.graphql-java-annotations>21.5</version.graphql-java-annotations>
-
-    <version.javassist>3.30.2-GA</version.javassist>
-
     <version.mybatis-spring>3.0.4</version.mybatis-spring>
-    <version.mybatis>3.5.17</version.mybatis>
+    <version.mybatis>3.5.19</version.mybatis>
     <version.mybatis-spring-boot-starter>3.0.4</version.mybatis-spring-boot-starter>
+    <version.javassist>3.30.2-GA</version.javassist>
 
     <!--    VERIFY WHETHER OPERATE WORKS WITH MOCKITO 5.11 -->
     <!--    <mockito.version>5.5.0</mockito.version>-->
@@ -233,13 +223,13 @@
     <plugin.version.maven-source>3.3.1</plugin.version.maven-source>
 
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
-    <plugin.version.google-java-format>1.25.1</plugin.version.google-java-format>
+    <plugin.version.google-java-format>1.25.2</plugin.version.google-java-format>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.7.1</extension.version.os-maven-plugin>
 
     <!-- version against which backwards compatibility is checked -->
-    <backwards.compat.version>8.6.0</backwards.compat.version>
+    <backwards.compat.version>8.7.0-SNAPSHOT</backwards.compat.version>
     <ignored.changes.file>ignored-changes.json</ignored.changes.file>
 
     <!--
@@ -597,12 +587,6 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>operate-archiver</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
         <artifactId>operate-importer</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -610,12 +594,6 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>operate-importer-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>operate-importer-8_6</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -745,12 +723,6 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>tasklist-importer-860</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
         <artifactId>tasklist-importer-870</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -852,6 +824,12 @@
         <version>${project.version}</version>
       </dependency>
 
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-db-rdbms-schema</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- camunda search client -->
 
       <dependency>
@@ -906,7 +884,7 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>zeebe-client-java</artifactId>
+        <artifactId>camunda-client-java</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -957,6 +935,14 @@
       </dependency>
 
       <!-- Third party dependencies -->
+      <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>${version.junit}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
       <dependency>
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
@@ -1044,14 +1030,6 @@
            In order resolve dependency issues with wiremock and spring-boot-dependencies
            make sure this is declared before spring boot dependencies.
       -->
-
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-bom</artifactId>
-        <version>${version.jetty}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
 
       <dependency>
         <!-- Import dependency management from Spring Boot -->
@@ -1165,6 +1143,12 @@
       </dependency>
 
       <dependency>
+        <groupId>com.github.vertical-blank</groupId>
+        <artifactId>sql-formatter</artifactId>
+        <version>${version.sqlformatter}</version>
+      </dependency>
+
+      <dependency>
         <groupId>org.mybatis.spring.boot</groupId>
         <artifactId>mybatis-spring-boot-starter</artifactId>
         <version>${version.mybatis-spring-boot-starter}</version>
@@ -1198,14 +1182,6 @@
         <groupId>org.msgpack</groupId>
         <artifactId>jackson-dataformat-msgpack</artifactId>
         <version>${version.msgpack}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.junit</groupId>
-        <artifactId>junit-bom</artifactId>
-        <version>${version.junit}</version>
-        <type>pom</type>
-        <scope>import</scope>
       </dependency>
 
       <dependency>
@@ -1348,12 +1324,6 @@
       </dependency>
 
       <dependency>
-        <groupId>io.projectreactor.netty</groupId>
-        <artifactId>reactor-netty-http</artifactId>
-        <version>${version.reactor-netty}</version>
-      </dependency>
-
-      <dependency>
         <groupId>io.micrometer</groupId>
         <artifactId>micrometer-bom</artifactId>
         <version>${version.micrometer}</version>
@@ -1382,7 +1352,7 @@
       <dependency>
         <groupId>org.opensearch.client</groupId>
         <artifactId>opensearch-java</artifactId>
-        <version>${version.opensearch}</version>
+        <version>${version.opensearch-java}</version>
       </dependency>
 
       <dependency>
@@ -1395,12 +1365,6 @@
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-test-container</artifactId>
         <version>${version.zeebe-test-container}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>io.camunda</groupId>
-            <artifactId>zeebe-client-java</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
 
       <dependency>
@@ -1444,6 +1408,12 @@
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-text</artifactId>
         <version>${version.commons-text}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-collections</groupId>
+        <artifactId>commons-collections</artifactId>
+        <version>${version.commons-collections}</version>
       </dependency>
 
       <dependency>
@@ -1509,18 +1479,6 @@
       </dependency>
 
       <dependency>
-        <groupId>io.prometheus</groupId>
-        <artifactId>simpleclient_httpserver</artifactId>
-        <version>${version.prometheus}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.prometheus</groupId>
-        <artifactId>simpleclient_hotspot</artifactId>
-        <version>${version.prometheus}</version>
-      </dependency>
-
-      <dependency>
         <groupId>org.apache.httpcomponents.client5</groupId>
         <artifactId>httpclient5</artifactId>
         <version>${version.httpclient5}</version>
@@ -1530,18 +1488,6 @@
         <groupId>org.apache.httpcomponents.core5</groupId>
         <artifactId>httpcore5</artifactId>
         <version>${version.httpcore5}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>me.dinowernli</groupId>
-        <artifactId>java-grpc-prometheus</artifactId>
-        <version>${version.java-grpc-prometheus}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-all</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
 
       <!-- Interface based code generation -->
@@ -1555,12 +1501,6 @@
         <groupId>javax.annotation</groupId>
         <artifactId>javax.annotation-api</artifactId>
         <version>${version.javax}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.wiremock</groupId>
-        <artifactId>wiremock</artifactId>
-        <version>${version.wiremock}</version>
       </dependency>
 
       <dependency>
@@ -1928,13 +1868,6 @@
         <version>3.0.0</version>
       </dependency>
 
-      <!-- between io.projectreactor.netty:reactor-netty-http:1.1.8 and org.springframework:spring-webflux:6.0.11 -->
-      <dependency>
-        <groupId>io.projectreactor</groupId>
-        <artifactId>reactor-core</artifactId>
-        <version>3.7.1</version>
-      </dependency>
-
       <!-- between com.github.dasniko:testcontainers-keycloak and its own dependencies -->
       <dependency>
         <groupId>jakarta.activation</groupId>
@@ -1953,7 +1886,7 @@
       <dependency>
         <groupId>net.minidev</groupId>
         <artifactId>json-smart</artifactId>
-        <version>2.5.1</version>
+        <version>2.4.11</version>
       </dependency>
 
       <!-- needed for tests in elasticsearch-exporter -->
@@ -2039,6 +1972,12 @@
         <groupId>io.swagger.core.v3</groupId>
         <artifactId>swagger-annotations-jakarta</artifactId>
         <version>${version.swagger-annotations}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.javassist</groupId>
+        <artifactId>javassist</artifactId>
+        <version>${version.javassist}</version>
       </dependency>
 
       <dependency>
@@ -2157,89 +2096,6 @@
         <groupId>net.sf.jopt-simple</groupId>
         <artifactId>jopt-simple</artifactId>
         <version>${version.jopt-simple}</version>
-      </dependency>
-
-      <!-- between graphql-spring-boot and thymeleaf -->
-      <dependency>
-        <groupId>org.javassist</groupId>
-        <artifactId>javassist</artifactId>
-        <version>${version.javassist}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-spring-boot-starter</artifactId>
-        <version>${version.graphql-kickstart-spring-boot}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-spring-boot-autoconfigure</artifactId>
-        <version>${version.graphql-kickstart-spring-boot}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>com.graphql-java-kickstart</groupId>
-            <artifactId>graphql-java-tools</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-webflux</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-java-kickstart</artifactId>
-        <version>${version.graphql-kickstart}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-java-servlet</artifactId>
-        <version>${version.graphql-kickstart}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-spring-boot-starter-test</artifactId>
-        <version>${version.graphql-kickstart-spring-boot}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-spring-boot-test</artifactId>
-        <version>${version.graphql-kickstart-spring-boot}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-spring-boot-test-autoconfigure</artifactId>
-        <version>${version.graphql-kickstart-spring-boot}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java</groupId>
-        <artifactId>graphql-java</artifactId>
-        <version>${version.graphql-java}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.github.graphql-java</groupId>
-        <artifactId>graphql-java-annotations</artifactId>
-        <version>${version.graphql-java-annotations}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java</groupId>
-        <artifactId>graphql-java-extended-scalars</artifactId>
-        <version>${version.graphql-java.scalars}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java</groupId>
-        <artifactId>java-dataloader</artifactId>
-        <version>${version.graphql-java.dataloader}</version>
       </dependency>
 
       <dependency>
@@ -2728,6 +2584,23 @@
                 </rules>
               </configuration>
             </execution>
+            <execution>
+              <id>forbid-banned-dependencies</id>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+              <configuration>
+                <rules>
+                  <!-- ban the direct usage of the zeebe-client-java dependency -->
+                  <bannedDependencies>
+                    <excludes>
+                      <exclude>io.camunda:zeebe-client-java</exclude>
+                    </excludes>
+                    <searchTransitive>false</searchTransitive>
+                  </bannedDependencies>
+                </rules>
+              </configuration>
+            </execution>
           </executions>
         </plugin>
 
@@ -2835,7 +2708,7 @@
         <plugin>
           <groupId>org.openapitools</groupId>
           <artifactId>openapi-generator-maven-plugin</artifactId>
-          <version>7.8.0</version>
+          <version>7.10.0</version>
           <configuration>
             <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
             <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/spring.md -->
@@ -3027,6 +2900,9 @@
               <groups>performance</groups>
               <!-- Reset <excludedGroups> as it take precedence over <groups> -->
               <excludedGroups combine.self="override"></excludedGroups>
+              <excludes>
+                <exclude>**/LargeStateControllerPerformanceTest.java</exclude>
+              </excludes>
             </configuration>
           </plugin>
         </plugins>
@@ -3169,7 +3045,7 @@
                 <dep>org.apache.maven.surefire:surefire-junit47</dep>
                 <dep>org.apache.maven.surefire:surefire-junit-platform</dep>
                 <dep>org.codehaus.plexus:plexus-utils</dep>
-                <dep>io.camunda:zeebe-client-java</dep>
+                <dep>io.camunda:camunda-client-java</dep>
               </ignoredUnusedDeclaredDependencies>
             </configuration>
             <executions>

@@ -18,9 +18,15 @@ public class ListenerEventTypeTest {
   public void convertStatesFromZeebeJobs() {
     final ListenerEventType actual1 = ListenerEventType.fromZeebeListenerEventType("START");
     assertEquals(actual1, ListenerEventType.START);
-    final ListenerEventType actual2 = ListenerEventType.fromZeebeListenerEventType("TEST");
-    assertEquals(actual2, ListenerEventType.UNSPECIFIED);
-    final ListenerEventType actual3 = ListenerEventType.fromZeebeListenerEventType(null);
-    assertEquals(actual3, ListenerEventType.UNSPECIFIED);
+    final ListenerEventType actual2 = ListenerEventType.fromZeebeListenerEventType("END");
+    assertEquals(actual2, ListenerEventType.END);
+    final ListenerEventType actual3 = ListenerEventType.fromZeebeListenerEventType("COMPLETING");
+    assertEquals(actual3, ListenerEventType.COMPLETING);
+    final ListenerEventType actual4 = ListenerEventType.fromZeebeListenerEventType("ASSIGNING");
+    assertEquals(actual4, ListenerEventType.ASSIGNING);
+    final ListenerEventType actual5 = ListenerEventType.fromZeebeListenerEventType("TEST");
+    assertEquals(actual5, ListenerEventType.UNKNOWN);
+    final ListenerEventType actual6 = ListenerEventType.fromZeebeListenerEventType(null);
+    assertEquals(actual6, ListenerEventType.UNSPECIFIED);
   }
 }

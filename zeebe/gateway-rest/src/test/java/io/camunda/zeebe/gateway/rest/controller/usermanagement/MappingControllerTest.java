@@ -46,7 +46,9 @@ public class MappingControllerTest extends RestControllerTest {
         new MappingRecord()
             .setMappingKey(1L)
             .setClaimName(dto.claimName())
-            .setClaimValue(dto.claimValue());
+            .setClaimValue(dto.claimValue())
+            .setId(dto.id())
+            .setName(dto.name());
 
     when(mappingServices.createMapping(dto))
         .thenReturn(CompletableFuture.completedFuture(mappingRecord));
@@ -67,9 +69,56 @@ public class MappingControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldRejectMappingCreationWithMissingId() {
+    // given
+    final var request =
+        new MappingRuleCreateRequest().claimValue("claimValue").claimName("claim").name("name");
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No id provided.",
+              "instance": "%s"
+            }"""
+            .formatted(MAPPING_RULES_PATH));
+    verifyNoInteractions(mappingServices);
+  }
+
+  @Test
+  void shouldRejectMappingCreationWitBlankId() {
+    // given
+    final var request =
+        new MappingRuleCreateRequest()
+            .claimName("claim")
+            .claimValue("claimValue")
+            .name("name")
+            .id("");
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No id provided.",
+              "instance": "%s"
+            }"""
+            .formatted(MAPPING_RULES_PATH));
+    verifyNoInteractions(mappingServices);
+  }
+
+  @Test
   void shouldRejectMappingCreationWithMissingClaimName() {
     // given
-    final var request = new MappingRuleCreateRequest().claimValue("claimValue");
+    final var request =
+        new MappingRuleCreateRequest().claimValue("claimValue").name("name").id("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -89,7 +138,8 @@ public class MappingControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingCreationWitBlankClaimName() {
     // given
-    final var request = new MappingRuleCreateRequest().claimName("").claimValue("claimValue");
+    final var request =
+        new MappingRuleCreateRequest().claimName("").claimValue("claimValue").name("name").id("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -109,7 +159,7 @@ public class MappingControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingCreationWithMissingClaimValue() {
     // given
-    final var request = new MappingRuleCreateRequest().claimName("claimName");
+    final var request = new MappingRuleCreateRequest().claimName("claimName").name("name").id("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -129,7 +179,8 @@ public class MappingControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingCreationWitBlankClaimValue() {
     // given
-    final var request = new MappingRuleCreateRequest().claimName("claimName").claimValue("");
+    final var request =
+        new MappingRuleCreateRequest().claimName("claimName").claimValue("").name("name").id("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -140,6 +191,27 @@ public class MappingControllerTest extends RestControllerTest {
               "status": 400,
               "title": "INVALID_ARGUMENT",
               "detail": "No claimValue provided.",
+              "instance": "%s"
+            }"""
+            .formatted(MAPPING_RULES_PATH));
+    verifyNoInteractions(mappingServices);
+  }
+
+  @Test
+  void shouldRejectMappingCreationWithMissingName() {
+    // given
+    final var request =
+        new MappingRuleCreateRequest().claimName("claimName").claimValue("claimValue").id("id");
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No name provided.",
               "instance": "%s"
             }"""
             .formatted(MAPPING_RULES_PATH));
@@ -170,7 +242,7 @@ public class MappingControllerTest extends RestControllerTest {
   }
 
   private MappingDTO validCreateMappingRequest() {
-    return new MappingDTO("newClaimName", "newClaimValue");
+    return new MappingDTO("newClaimName", "newClaimValue", "mapName", "mapId");
   }
 
   private void assertRequestRejectedExceptionally(

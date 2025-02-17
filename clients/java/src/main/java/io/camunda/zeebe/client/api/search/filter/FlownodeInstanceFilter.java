@@ -17,6 +17,11 @@ package io.camunda.zeebe.client.api.search.filter;
 
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.search.filter.FlownodeInstanceFilter}
+ */
+@Deprecated
 public interface FlownodeInstanceFilter extends SearchRequestFilter {
 
   /**
@@ -36,14 +41,6 @@ public interface FlownodeInstanceFilter extends SearchRequestFilter {
   FlownodeInstanceFilter processDefinitionKey(final long value);
 
   /**
-   * Filters flow node instances by bpmn process id.
-   *
-   * @param value the bpmn process id of flow node instance
-   * @return the updated filter
-   */
-  FlownodeInstanceFilter processDefinitionId(final String value);
-
-  /**
    * Filters flow node instances by process instance key.
    *
    * @param value the process instance key of flow node instance
@@ -58,6 +55,14 @@ public interface FlownodeInstanceFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   FlownodeInstanceFilter flowNodeId(final String value);
+
+  /**
+   * Filters flow node instances by flow node name.
+   *
+   * @param value the flow node name of flow node instance
+   * @return the updated filter
+   */
+  FlownodeInstanceFilter flowNodeName(final String value);
 
   /**
    * Filters flow node instances by state.
@@ -81,7 +86,7 @@ public interface FlownodeInstanceFilter extends SearchRequestFilter {
    * @param value has the flow node instance an incident
    * @return the updated filter
    */
-  FlownodeInstanceFilter hasIncident(final boolean value);
+  FlownodeInstanceFilter incident(final boolean value);
 
   /**
    * Filters flow node instances by incident key.

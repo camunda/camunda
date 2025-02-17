@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.util;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.zeebe.containers.ZeebeContainer;
 import java.time.Instant;
 import org.junit.rules.TestWatcher;
@@ -75,7 +75,7 @@ public class OperateZeebeRule extends TestWatcher {
   //    this.zeebeEsClient = zeebeEsClient;
   //  }
   //
-  public ZeebeClient getClient() {
+  public CamundaClient getClient() {
     return operateZeebeRuleProvider.getClient();
   }
 }

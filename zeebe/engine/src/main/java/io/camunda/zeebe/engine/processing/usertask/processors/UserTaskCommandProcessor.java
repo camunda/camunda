@@ -7,11 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.collection.Tuple;
 
 /**
  * Interface for processing user task commands.
@@ -33,10 +32,9 @@ public interface UserTaskCommandProcessor {
    * proceeds with the command processing.
    *
    * @param command the user task command to be validated
-   * @return Either a tuple of rejection type and error message if validation fails, or the user
-   *     task record if validation succeeds
+   * @return Either a rejection if validation fails, or the user task record if validation succeeds
    */
-  default Either<Tuple<RejectionType, String>, UserTaskRecord> validateCommand(
+  default Either<Rejection, UserTaskRecord> validateCommand(
       final TypedRecord<UserTaskRecord> command) {
     return Either.right(command.getValue());
   }

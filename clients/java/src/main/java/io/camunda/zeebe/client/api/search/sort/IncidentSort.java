@@ -17,19 +17,24 @@ package io.camunda.zeebe.client.api.search.sort;
 
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestSort;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.search.sort.IncidentSort}
+ */
+@Deprecated
 public interface IncidentSort extends SearchRequestSort<IncidentSort> {
 
-  IncidentSort incidentKey();
+  IncidentSort key();
 
   IncidentSort processDefinitionKey();
 
   IncidentSort processInstanceKey();
 
-  IncidentSort errorType();
+  IncidentSort type();
 
   IncidentSort flowNodeId();
 
-  IncidentSort flowNodeInstanceKey();
+  IncidentSort flowNodeInstanceId();
 
   IncidentSort creationTime();
 

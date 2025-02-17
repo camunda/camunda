@@ -8,26 +8,37 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex.CLAIM_NAME;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex.CLAIM_VALUE;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex.NAME;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.MappingFilter;
-import java.util.List;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
-public class MappingFilterTransformer implements FilterTransformer<MappingFilter> {
+public class MappingFilterTransformer extends IndexFilterTransformer<MappingFilter> {
+
+  public MappingFilterTransformer(final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
+  }
+
   @Override
   public SearchQuery toSearchQuery(final MappingFilter filter) {
     return and(
         stringTerms(CLAIM_NAME, filter.claimNames()),
         filter.claimName() == null ? null : term(CLAIM_NAME, filter.claimName()),
-        filter.claimValue() == null ? null : term(CLAIM_VALUE, filter.claimValue()));
-  }
-
-  @Override
-  public List<String> toIndices(final MappingFilter filter) {
-    return List.of("camunda-mapping-8.7.0_alias");
+        filter.claimValue() == null ? null : term(CLAIM_VALUE, filter.claimValue()),
+        filter.name() == null ? null : term(NAME, filter.name()),
+        filter.claims() == null
+            ? null
+            : or(
+                filter.claims().stream()
+                    .map(
+                        claim ->
+                            and(term(CLAIM_NAME, claim.name()), term(CLAIM_VALUE, claim.value())))
+                    .toList()));
   }
 }

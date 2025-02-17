@@ -7,7 +7,8 @@
  */
 package io.camunda.zeebe.it.network;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.authentication.config.AuthenticationProperties;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.zeebe.containers.cluster.ZeebeCluster;
@@ -42,6 +43,8 @@ final class DefaultAdvertisedAddressIT {
               node -> {
                 node.getEnvMap().remove("ZEEBE_GATEWAY_CLUSTER_ADVERTISEDHOST");
                 node.getEnvMap().remove("ZEEBE_GATEWAY_CLUSTER_HOST");
+                node.withEnv(
+                    AuthenticationProperties.getAllowUnauthenticatedApiAccessEnvVar(), "true");
               })
           .build();
 
@@ -49,7 +52,7 @@ final class DefaultAdvertisedAddressIT {
   void shouldFormClusterWithDefaultAdvertisedHost() {
     // given
     final var clientBuilder =
-        ZeebeClient.newClientBuilder()
+        CamundaClient.newClientBuilder()
             .usePlaintext()
             .restAddress(
                 URI.create("http://localhost:" + cluster.getAvailableGateway().getMappedPort(8080)))

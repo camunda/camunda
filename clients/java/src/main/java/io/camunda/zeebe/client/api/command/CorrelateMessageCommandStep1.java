@@ -19,6 +19,11 @@ import io.camunda.zeebe.client.api.response.CorrelateMessageResponse;
 import java.io.InputStream;
 import java.util.Map;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.CorrelateMessageCommandStep1}
+ */
+@Deprecated
 public interface CorrelateMessageCommandStep1 {
   /**
    * Set the name of the message.

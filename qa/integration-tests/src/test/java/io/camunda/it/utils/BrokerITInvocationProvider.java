@@ -12,9 +12,13 @@ import static java.util.Arrays.asList;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
-import io.camunda.it.utils.ZeebeClientTestFactory.Authenticated;
-import io.camunda.it.utils.ZeebeClientTestFactory.User;
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.authentication.config.AuthenticationProperties;
+import io.camunda.client.CamundaClient;
+import io.camunda.it.utils.CamundaClientTestFactory.Authenticated;
+import io.camunda.it.utils.CamundaClientTestFactory.User;
+import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
@@ -47,7 +51,6 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
  */
 public class BrokerITInvocationProvider
     implements TestTemplateInvocationContextProvider, AfterAllCallback, BeforeAllCallback {
-
   private static final Logger LOGGER = LoggerFactory.getLogger(BrokerITInvocationProvider.class);
 
   private final Set<ExporterType> supportedExporterTypes = new HashSet<>();
@@ -55,10 +58,20 @@ public class BrokerITInvocationProvider
   private final Map<ExporterType, TestStandaloneBroker> testBrokers = new HashMap<>();
   private final Set<Profile> additionalProfiles = new HashSet<>();
   private Consumer<BrokerBasedProperties> additionalBrokerConfig = cfg -> {};
-  private Consumer<CamundaSecurityProperties> additionalSecurityConfig = cfg -> {};
+  private Consumer<CamundaSecurityProperties> additionalSecurityConfig =
+      cfg -> {
+        cfg.getInitialization()
+            .getUsers()
+            .add(
+                new ConfiguredUser(
+                    InitializationConfiguration.DEFAULT_USER_USERNAME,
+                    InitializationConfiguration.DEFAULT_USER_PASSWORD,
+                    InitializationConfiguration.DEFAULT_USER_NAME,
+                    InitializationConfiguration.DEFAULT_USER_EMAIL));
+      };
   private final Map<String, Object> additionalProperties = new HashMap<>();
   private final List<AutoCloseable> closeables = new ArrayList<>();
-  private final Map<ExporterType, ZeebeClientTestFactory> zeebeClientTestFactories =
+  private final Map<ExporterType, CamundaClientTestFactory> camundaClientTestFactories =
       new HashMap<>();
   private final List<User> registeredUsers = new ArrayList<>();
 
@@ -104,6 +117,12 @@ public class BrokerITInvocationProvider
     return this;
   }
 
+  public BrokerITInvocationProvider withBasicAuth() {
+    withAdditionalProperty(AuthenticationProperties.METHOD, AuthenticationMethod.BASIC.name());
+    withAdditionalProfiles(Profile.CONSOLIDATED_AUTH);
+    return this;
+  }
+
   public BrokerITInvocationProvider withAuthorizationsEnabled() {
     return withAdditionalSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
   }
@@ -115,8 +134,8 @@ public class BrokerITInvocationProvider
 
   @Override
   public void beforeAll(final ExtensionContext context) {
-    LOGGER.info("Starting up '{}' camunda instances", supportedExporterTypes.size());
-    supportedExporterTypes.parallelStream()
+    LOGGER.info("Starting up '{}' camunda instances", activeExporterTypes.size());
+    activeExporterTypes.parallelStream()
         .forEach(
             exporterType -> {
               LOGGER.info("Start up '{}'", exporterType);
@@ -136,7 +155,6 @@ public class BrokerITInvocationProvider
                           .withBrokerConfig(additionalBrokerConfig)
                           .withSecurityConfig(additionalSecurityConfig)
                           .withRecordingExporter(true)
-                          .withProperty("camunda.rest.query.enabled", true)
                           .withProperty(
                               "camunda.database.url",
                               "http://" + elasticsearchContainer.getHttpHostAddress())
@@ -146,10 +164,10 @@ public class BrokerITInvocationProvider
                   closeables.add(testBroker);
                   testBrokers.put(exporterType, testBroker);
                   testBroker.awaitCompleteTopology();
-                  final var zeebeClientTestFactory =
-                      new ZeebeClientTestFactory().withUsers(registeredUsers);
-                  zeebeClientTestFactories.put(exporterType, zeebeClientTestFactory);
-                  closeables.add(zeebeClientTestFactory);
+                  final var camundaClientTestFactory =
+                      new CamundaClientTestFactory().withUsers(registeredUsers);
+                  camundaClientTestFactories.put(exporterType, camundaClientTestFactory);
+                  closeables.add(camundaClientTestFactory);
                   addClientFactory(exporterType);
                 }
                 case RDBMS_EXPORTER_H2 -> {
@@ -158,7 +176,6 @@ public class BrokerITInvocationProvider
                           .withBrokerConfig(cfg -> cfg.getGateway().setEnable(true))
                           .withBrokerConfig(additionalBrokerConfig)
                           .withRecordingExporter(true)
-                          .withProperty("camunda.rest.query.enabled", true)
                           .withRdbmsExporter()
                           .withAdditionalProperties(additionalProperties)
                           .withAdditionalProfiles(additionalProfiles)
@@ -201,7 +218,7 @@ public class BrokerITInvocationProvider
               @Override
               public boolean supportsParameter(
                   final ParameterContext parameterCtx, final ExtensionContext extensionCtx) {
-                return Set.of(TestStandaloneBroker.class, ZeebeClient.class)
+                return Set.of(TestStandaloneBroker.class, CamundaClient.class)
                     .contains(parameterCtx.getParameter().getType());
               }
 
@@ -212,9 +229,9 @@ public class BrokerITInvocationProvider
                 final TestGateway<?> testGateway = testBrokers.get(exporterType);
                 if (TestStandaloneBroker.class.equals(parameter.getType())) {
                   return testGateway;
-                } else if (ZeebeClient.class.equals(parameter.getType())) {
-                  final var zeebeClientTestFactory = zeebeClientTestFactories.get(exporterType);
-                  return zeebeClientTestFactory.createZeebeClient(
+                } else if (CamundaClient.class.equals(parameter.getType())) {
+                  final var camundaClientTestFactory = camundaClientTestFactories.get(exporterType);
+                  return camundaClientTestFactory.createCamundaClient(
                       testGateway, parameter.getAnnotation(Authenticated.class));
                 }
                 throw new IllegalArgumentException(
@@ -239,9 +256,9 @@ public class BrokerITInvocationProvider
   }
 
   private void addClientFactory(final ExporterType exporterType) {
-    final var zeebeClientTestFactory = new ZeebeClientTestFactory().withUsers(registeredUsers);
-    zeebeClientTestFactories.put(exporterType, zeebeClientTestFactory);
-    closeables.add(zeebeClientTestFactory);
+    final var camundaClientTestFactory = new CamundaClientTestFactory().withUsers(registeredUsers);
+    camundaClientTestFactories.put(exporterType, camundaClientTestFactory);
+    closeables.add(camundaClientTestFactory);
   }
 
   public enum ExporterType {

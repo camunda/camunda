@@ -25,7 +25,7 @@ public record GroupSort(List<FieldSorting> orderings) implements SortOption {
       implements ObjectBuilder<GroupSort> {
 
     public Builder groupKey() {
-      currentOrdering = new FieldSorting("key", null);
+      currentOrdering = new FieldSorting("groupKey", null);
       return this;
     }
 

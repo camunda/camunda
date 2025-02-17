@@ -42,7 +42,11 @@ import java.lang.annotation.Target;
  *
  * <p>This annotation was originally copied from io.grpc.ExperimentalApi, licensed under the Apache
  * License, Version 2.0. Copyright 2015 The gRPC Authors. Changes have been made since.
+ *
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.ExperimentalApi}
  */
+@Deprecated
 @Retention(RetentionPolicy.CLASS)
 @Target({
   ElementType.ANNOTATION_TYPE,

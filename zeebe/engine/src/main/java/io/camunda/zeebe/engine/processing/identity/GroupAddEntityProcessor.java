@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
-
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
@@ -79,14 +77,11 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.UPDATE)
             .addResourceId(record.getName());
-    if (authCheckBehavior.isAuthorized(authorizationRequest).isLeft()) {
-      final var errorMessage =
-          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-              authorizationRequest.getPermissionType(),
-              authorizationRequest.getResourceType(),
-              "group name '%s'".formatted(record.getName()));
-      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
+    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -98,6 +93,15 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
               .formatted(entityKey, entityType, groupKey);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      return;
+    }
+
+    if (isEntityAssigned(record)) {
+      final var errorMessage =
+          ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(
+              record.getEntityKey(), record.getGroupKey());
+      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
     }
 
@@ -114,18 +118,14 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
   @Override
   public void processDistributedCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
-    groupState
-        .getEntityType(record.getGroupKey(), record.getEntityKey())
-        .ifPresentOrElse(
-            entityType -> {
-              final var errorMessage =
-                  ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(
-                      record.getEntityKey(), record.getGroupKey());
-              rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
-            },
-            () ->
-                stateWriter.appendFollowUpEvent(
-                    command.getKey(), GroupIntent.ENTITY_ADDED, record));
+    if (isEntityAssigned(record)) {
+      final var errorMessage =
+          ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(
+              record.getEntityKey(), record.getGroupKey());
+      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
+    } else {
+      stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.ENTITY_ADDED, record);
+    }
 
     commandDistributionBehavior.acknowledgeCommand(command);
   }
@@ -136,5 +136,9 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
       case EntityType.MAPPING -> mappingState.get(entityKey).isPresent();
       default -> false;
     };
+  }
+
+  private boolean isEntityAssigned(final GroupRecord record) {
+    return groupState.getEntityType(record.getGroupKey(), record.getEntityKey()).isPresent();
   }
 }

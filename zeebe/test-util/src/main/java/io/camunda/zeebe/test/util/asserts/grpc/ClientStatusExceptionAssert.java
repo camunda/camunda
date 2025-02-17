@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.test.util.asserts.grpc;
 
-import io.camunda.zeebe.client.api.command.ClientStatusException;
+import io.camunda.client.api.command.ClientStatusException;
 import io.grpc.Status;
 import java.util.function.Consumer;
 import org.assertj.core.api.AbstractThrowableAssert;

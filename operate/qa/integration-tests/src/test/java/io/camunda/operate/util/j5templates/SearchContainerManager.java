@@ -8,11 +8,9 @@
 package io.camunda.operate.util.j5templates;
 
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
-import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
-import io.camunda.operate.util.IndexPrefixHolder;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,33 +21,18 @@ public abstract class SearchContainerManager {
   protected final OperateProperties operateProperties;
   protected final SchemaManager schemaManager;
   protected String indexPrefix;
-  private final IndexPrefixHolder indexPrefixHolder;
 
   public SearchContainerManager(
-      final OperateProperties operateProperties,
-      final SchemaManager schemaManager,
-      final IndexPrefixHolder indexPrefixHolder) {
+      final OperateProperties operateProperties, final SchemaManager schemaManager) {
     this.operateProperties = operateProperties;
     this.schemaManager = schemaManager;
-    this.indexPrefixHolder = indexPrefixHolder;
   }
 
   public void refreshIndices(final String indexPattern) {
     schemaManager.refresh(indexPattern);
   }
 
-  public void startContainer() {
-    if (indexPrefix == null) {
-      indexPrefix = indexPrefixHolder.createNewIndexPrefix();
-    }
-    updatePropertiesIndexPrefix();
-    if (shouldCreateSchema()) {
-      schemaManager.createSchema();
-      assertThat(areIndicesCreatedAfterChecks(indexPrefix, 5, 5 * 60 /*sec*/))
-          .describedAs("Search %s (min %d) indices are created", indexPrefix, 5)
-          .isTrue();
-    }
-  }
+  public abstract void startContainer();
 
   protected abstract void updatePropertiesIndexPrefix();
 

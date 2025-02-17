@@ -7,15 +7,17 @@
  */
 package io.camunda.zeebe.it.clustering.network;
 
+import static io.camunda.zeebe.it.util.ZeebeContainerUtil.newClientBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.Capability;
 import com.github.dockerjava.api.model.HostConfig;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.BrokerInfo;
-import io.camunda.zeebe.client.api.response.PartitionInfo;
-import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.authentication.config.AuthenticationProperties;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.BrokerInfo;
+import io.camunda.client.api.response.PartitionInfo;
+import io.camunda.client.api.response.Topology;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import io.zeebe.containers.ZeebeBrokerNode;
@@ -76,7 +78,7 @@ final class AsymmetricNetworkPartitionIT {
   @RegisterExtension
   final ContainerLogsDumper logsWatcher = new ContainerLogsDumper(CLUSTER::getBrokers, LOGGER);
 
-  private ZeebeClient client;
+  private CamundaClient client;
 
   static Stream<Arguments> provideTestCases() {
     return Stream.of(
@@ -97,7 +99,7 @@ final class AsymmetricNetworkPartitionIT {
 
   @BeforeEach
   void beforeEach() {
-    client = CLUSTER.newClientBuilder().build();
+    client = newClientBuilder(CLUSTER).build();
     CLUSTER.getBrokers().forEach((id, broker) -> clearUnreachableRoutes(broker));
   }
 
@@ -262,7 +264,8 @@ final class AsymmetricNetworkPartitionIT {
         .self()
         .withCreateContainerCmdModifier(AsymmetricNetworkPartitionIT::configureNetAdmin)
         .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "1MB")
-        .withEnv("ZEEBE_BROKER_DATA_LOGSEGMENTSIZE", "16MB");
+        .withEnv("ZEEBE_BROKER_DATA_LOGSEGMENTSIZE", "16MB")
+        .withEnv(AuthenticationProperties.getAllowUnauthenticatedApiAccessEnvVar(), "true");
   }
 
   private static void configureNetAdmin(final CreateContainerCmd command) {

@@ -79,7 +79,12 @@ const isMigratableFlowNode = (businessObject: BusinessObject) => {
   if (
     hasType({
       businessObject,
-      types: ['bpmn:ExclusiveGateway', 'bpmn:EventBasedGateway'],
+      types: [
+        'bpmn:ExclusiveGateway',
+        'bpmn:EventBasedGateway',
+        'bpmn:InclusiveGateway',
+        'bpmn:ParallelGateway',
+      ],
     })
   ) {
     return true;

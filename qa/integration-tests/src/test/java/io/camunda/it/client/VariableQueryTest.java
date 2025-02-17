@@ -10,13 +10,11 @@ package io.camunda.it.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.client.api.search.response.Variable;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.response.Variable;
+import io.camunda.it.utils.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.Comparator;
@@ -27,23 +25,15 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-@ZeebeIntegration
+@MultiDbTest
 class VariableQueryTest {
-  @TestZeebe(initMethod = "initTestStandaloneCamunda")
-  private static TestStandaloneCamunda testStandaloneCamunda;
 
-  private static ZeebeClient camundaClient;
+  private static CamundaClient camundaClient;
 
   private static Variable variable;
 
-  @SuppressWarnings("unused")
-  static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda();
-  }
-
   @BeforeAll
   static void beforeAll() {
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     delpoyProcessFromResourcePath("/process/bpm_variable_test.bpmn", "bpm_variable_test.bpmn");
 
     startProcessInstance("bpmProcessVariable");
@@ -192,52 +182,6 @@ class VariableQueryTest {
         camundaClient
             .newVariableQuery()
             .filter(f -> f.processInstanceKey(variable.getProcessInstanceKey()))
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(5);
-    assertThat(
-            result.items().stream()
-                .allMatch(v -> v.getProcessInstanceKey().equals(variable.getProcessInstanceKey())))
-        .isTrue();
-  }
-
-  @Test
-  void shouldQueryByProcessInstanceKeyFilterGtLt() {
-    // when
-    final var result =
-        camundaClient
-            .newVariableQuery()
-            .filter(
-                f ->
-                    f.processInstanceKey(
-                        b ->
-                            b.gt(variable.getProcessInstanceKey() - 1)
-                                .lt(variable.getProcessInstanceKey() + 1)))
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(5);
-    assertThat(
-            result.items().stream()
-                .allMatch(v -> v.getProcessInstanceKey().equals(variable.getProcessInstanceKey())))
-        .isTrue();
-  }
-
-  @Test
-  void shouldQueryByProcessInstanceKeyFilterGteLte() {
-    // when
-    final var result =
-        camundaClient
-            .newVariableQuery()
-            .filter(
-                f ->
-                    f.processInstanceKey(
-                        b ->
-                            b.gte(variable.getProcessInstanceKey())
-                                .lte(variable.getProcessInstanceKey())))
             .send()
             .join();
 

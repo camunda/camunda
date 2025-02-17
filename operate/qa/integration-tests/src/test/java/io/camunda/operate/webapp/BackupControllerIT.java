@@ -79,7 +79,7 @@ anymore, it will be done in a follow-up PR
     properties = {
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      "management.endpoints.web.exposure.include = backup-history",
+      "management.endpoints.web.exposure.include = backupHistory",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
     })
 @ActiveProfiles({"test", "operate", "standalone"})
@@ -155,7 +155,7 @@ public class BackupControllerIT {
 
     final ResponseEntity<Map> result =
         testRestTemplate.getForEntity(
-            "http://localhost:" + managementPort + "/actuator/backup-history/2", Map.class);
+            "http://localhost:" + managementPort + "/actuator/backupHistory/2", Map.class);
 
     assertThat(result.getStatusCode().value()).isEqualTo(404);
 

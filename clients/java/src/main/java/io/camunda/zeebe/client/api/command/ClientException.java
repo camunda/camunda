@@ -15,6 +15,11 @@
  */
 package io.camunda.zeebe.client.api.command;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.ClientException}
+ */
+@Deprecated
 public class ClientException extends RuntimeException {
   private static final long serialVersionUID = 1L;
 

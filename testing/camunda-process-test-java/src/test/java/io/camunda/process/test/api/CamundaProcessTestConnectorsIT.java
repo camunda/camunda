@@ -15,10 +15,11 @@
  */
 package io.camunda.process.test.api;
 
+import static io.camunda.process.test.api.assertions.ElementSelectors.byName;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.ProcessInstanceEvent;
 import java.io.IOException;
 import java.time.Duration;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
@@ -44,7 +45,7 @@ public class CamundaProcessTestConnectorsIT {
               "CONNECTORS_URL", "http://connectors:8080/actuator/health/readiness");
 
   // to be injected
-  private ZeebeClient client;
+  private CamundaClient client;
   private CamundaProcessTestContext processTestContext;
 
   @Test
@@ -69,7 +70,7 @@ public class CamundaProcessTestConnectorsIT {
     // then: outbound connector is invoked
     CamundaAssert.assertThat(processInstance)
         .isActive()
-        .hasCompletedElements("Get connectors readiness status")
+        .hasCompletedElements(byName("Get connectors readiness status"))
         .hasVariable("health", "UP");
 
     // when: invoke the inbound connector
@@ -95,6 +96,6 @@ public class CamundaProcessTestConnectorsIT {
     // then
     CamundaAssert.assertThat(processInstance)
         .isCompleted()
-        .hasCompletedElements("Wait for HTTP POST request");
+        .hasCompletedElements(byName("Wait for HTTP POST request"));
   }
 }

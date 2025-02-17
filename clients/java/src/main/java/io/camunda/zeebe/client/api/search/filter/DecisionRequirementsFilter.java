@@ -17,7 +17,13 @@ package io.camunda.zeebe.client.api.search.filter;
 
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 
-/** Interface for defining Decision Requirements in search queries. */
+/**
+ * Interface for defining Decision Requirmeent in search queries.
+ *
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.search.filter.DecisionRequirementsFilter}
+ */
+@Deprecated
 public interface DecisionRequirementsFilter extends SearchRequestFilter {
 
   /**
@@ -29,15 +35,15 @@ public interface DecisionRequirementsFilter extends SearchRequestFilter {
   DecisionRequirementsFilter decisionRequirementsKey(final Long value);
 
   /**
-   * Filters Decision Requirements by the specified name.
+   * Filters Decision Requirement by the specified name.
    *
    * @param name the name of the decision requirement
    * @return the updated filter
    */
-  DecisionRequirementsFilter name(final String name);
+  DecisionRequirementsFilter dmnDecisionRequirementsName(final String name);
 
   /**
-   * Filters Decision Requirements by the specified version.
+   * Filters Decision Requirement by the specified version.
    *
    * @param version the version of the decision requirement
    * @return the updated filter
@@ -45,15 +51,15 @@ public interface DecisionRequirementsFilter extends SearchRequestFilter {
   DecisionRequirementsFilter version(final Integer version);
 
   /**
-   * Filters Decision Requirements by the specified decision requirements ID.
+   * Filters Decision Requirement by the specified decision requirements ID.
    *
    * @param decisionRequirementsId the decision requirements ID of the decision requirement
    * @return the updated filter
    */
-  DecisionRequirementsFilter decisionRequirementsId(final String decisionRequirementsId);
+  DecisionRequirementsFilter dmnDecisionRequirementsId(final String decisionRequirementsId);
 
   /**
-   * Filters Decision Requirements by the specified tenant ID.
+   * Filters Decision Requirement by the specified tenant ID.
    *
    * @param tenantId the tenant ID of the decision requirement
    * @return the updated filter

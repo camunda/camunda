@@ -7,18 +7,20 @@
  */
 package io.camunda.operate.util;
 
-import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
+import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.componentTemplateRequestBuilder;
 import static org.junit.Assert.assertTrue;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.response.Topology;
+import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.zeebe.containers.ZeebeContainer;
 import java.time.Duration;
 import java.time.Instant;
@@ -43,20 +45,22 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   private static final Logger LOGGER =
       LoggerFactory.getLogger(OpensearchOperateZeebeRuleProvider.class);
   @Autowired public OperateProperties operateProperties;
-
   @Autowired protected ZeebeRichOpenSearchClient zeebeRichOpenSearchClient;
   protected ZeebeContainer zeebeContainer;
+  @Autowired private SecurityConfiguration securityConfiguration;
   @Autowired private TestContainerUtil testContainerUtil;
-  private ZeebeClient client;
+  @Autowired private IndexPrefixHolder indexPrefixHolder;
+  private CamundaClient client;
 
   private String prefix;
   private boolean failed = false;
 
   @Override
   public void starting(final Description description) {
-    prefix = TestUtil.createRandomString(10);
-    LOGGER.info("Starting Zeebe with OS prefix: " + prefix);
+    prefix = indexPrefixHolder.createNewIndexPrefix();
+    LOGGER.info("Starting Camunda Exporter with prefix: {}", prefix);
     operateProperties.getZeebeOpensearch().setPrefix(prefix);
+    operateProperties.getOpensearch().setIndexPrefix(prefix);
 
     startZeebe();
   }
@@ -112,12 +116,17 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   public void startZeebe() {
 
     final String zeebeVersion =
-        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_PROPERTY_NAME);
+        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME);
     zeebeContainer =
-        testContainerUtil.startZeebe(zeebeVersion, prefix, 2, isMultitTenancyEnabled());
+        testContainerUtil.startZeebe(
+            zeebeVersion,
+            prefix,
+            2,
+            isMultitTenancyEnabled(),
+            ConnectionTypes.OPENSEARCH.getType());
 
     client =
-        ZeebeClient.newClientBuilder()
+        CamundaClient.newClientBuilder()
             .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
             .usePlaintext()
             .defaultRequestTimeout(REQUEST_TIMEOUT)
@@ -147,13 +156,13 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   }
 
   @Override
-  public ZeebeClient getClient() {
+  public CamundaClient getClient() {
     return client;
   }
 
   @Override
   public boolean isMultitTenancyEnabled() {
-    return operateProperties.getMultiTenancy().isEnabled();
+    return securityConfiguration.getMultiTenancy().isEnabled();
   }
 
   private void testZeebeIsReady() {

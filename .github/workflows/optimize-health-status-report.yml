@@ -45,10 +45,18 @@ jobs:
           config_file_path: ${{ github.workspace }}/.github/optimize/scripts/healthStatusReport/config.json
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Format infra report for Slack
+        id: format-report
+        run: echo "formatted_report=${{ steps.get-report.outputs.infra_report }}" | sed ':a;N;$!ba;s/\n/\\n/g' >> $GITHUB_ENV
+
       - name: Send report to slack channel
-        uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
         with:
-          channel-id: "#optimize-status"
-          slack-message: ${{ steps.get-report.outputs.infra_report }}
-        env:
-          SLACK_BOT_TOKEN: ${{ steps.secrets.outputs.SLACK_API_KEY }}
+          method: chat.postMessage
+          token: ${{ steps.secrets.outputs.SLACK_API_KEY }}
+          # "C04FM0DRJT0" is the ID of the #optimize-status channel
+          payload: |
+            {
+              "channel": "C04FM0DRJT0",
+              "text": "${{ env.formatted_report }}"
+            }

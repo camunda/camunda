@@ -9,14 +9,13 @@ package io.camunda.zeebe.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
-import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.api.response.Topology;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import java.io.File;
 import java.net.URL;
 import java.security.cert.CertificateException;
@@ -30,7 +29,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Timeout(time = 120)
 @Testcontainers
 @ZeebeIntegration
-@AutoCloseResources
 public final class SecurityTest {
 
   @TestZeebe(autoStart = false)
@@ -100,14 +98,14 @@ public final class SecurityTest {
     }
   }
 
-  private ZeebeClientBuilder newSecureClient(final boolean useRest) {
-    return configureClientForTls(ZeebeClient.newClientBuilder())
+  private CamundaClientBuilder newSecureClient(final boolean useRest) {
+    return configureClientForTls(CamundaClient.newClientBuilder())
         .preferRestOverGrpc(useRest)
         .grpcAddress(testCluster.anyGateway().grpcAddress())
         .restAddress(testCluster.anyGateway().restAddress());
   }
 
-  private ZeebeClientBuilder configureClientForTls(final ZeebeClientBuilder clientBuilder) {
+  private CamundaClientBuilder configureClientForTls(final CamundaClientBuilder clientBuilder) {
     return clientBuilder.caCertificatePath(getResource("security/test-chain.cert.pem").getPath());
   }
 

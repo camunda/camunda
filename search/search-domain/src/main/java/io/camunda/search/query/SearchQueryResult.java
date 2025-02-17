@@ -12,13 +12,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public final record SearchQueryResult<T>(long total, List<T> items, Object[] sortValues) {
+public record SearchQueryResult<T>(
+    long total, List<T> items, Object[] firstSortValues, Object[] lastSortValues) {
 
   public static final class Builder<T> implements ObjectBuilder<SearchQueryResult<T>> {
 
     private long total;
     private List<T> items;
-    private Object[] sortValues;
+    private Object[] firstSortValues;
+    private Object[] lastSortValues;
 
     public Builder<T> total(final long value) {
       total = value;
@@ -30,15 +32,23 @@ public final record SearchQueryResult<T>(long total, List<T> items, Object[] sor
       return this;
     }
 
-    public Builder<T> sortValues(final Object[] values) {
-      sortValues = values;
+    public Builder<T> firstSortValues(final Object[] values) {
+      firstSortValues = values;
+      return this;
+    }
+
+    public Builder<T> lastSortValues(final Object[] values) {
+      lastSortValues = values;
       return this;
     }
 
     @Override
     public SearchQueryResult<T> build() {
       return new SearchQueryResult<T>(
-          total, Objects.requireNonNullElse(items, Collections.emptyList()), sortValues);
+          total,
+          Objects.requireNonNullElse(items, Collections.emptyList()),
+          firstSortValues,
+          lastSortValues);
     }
   }
 }

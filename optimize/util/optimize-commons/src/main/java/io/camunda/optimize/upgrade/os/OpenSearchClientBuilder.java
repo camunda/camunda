@@ -26,6 +26,7 @@ import io.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import io.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
+import io.camunda.optimize.rest.exceptions.NotSupportedException;
 import io.camunda.optimize.service.db.os.ExtendedOpenSearchClient;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -41,7 +42,6 @@ import io.camunda.optimize.service.util.mapper.CustomReportDefinitionDeserialize
 import io.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
-import jakarta.ws.rs.NotSupportedException;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;

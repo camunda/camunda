@@ -16,4 +16,4 @@ logging:
     # Hide default logging from Testcontainers
     org:
       testcontainers: warn
-    tc: warn
+    tc: error

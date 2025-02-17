@@ -18,11 +18,13 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -45,11 +47,7 @@ public class TenantAppliersTest {
     tenantState = processingState.getTenantState();
     userState = processingState.getUserState();
     authorizationState = processingState.getAuthorizationState();
-    tenantDeletedApplier =
-        new TenantDeletedApplier(
-            processingState.getTenantState(),
-            processingState.getUserState(),
-            processingState.getAuthorizationState());
+    tenantDeletedApplier = new TenantDeletedApplier(processingState.getTenantState());
     tenantEntityAddedApplier = new TenantEntityAddedApplier(processingState);
     tenantEntityRemovedApplier = new TenantEntityRemovedApplier(processingState);
   }
@@ -60,11 +58,12 @@ public class TenantAppliersTest {
     final long entityKey = UUID.randomUUID().hashCode();
     final long tenantKey = UUID.randomUUID().hashCode();
     final var tenantId = UUID.randomUUID().toString();
+    final var username = "username";
     createTenant(tenantKey, tenantId);
-    createUser(entityKey, "username");
+    createUser(entityKey, username);
 
     // when
-    associateUserWithTenant(tenantKey, tenantId, entityKey);
+    associateUserWithTenant(tenantKey, tenantId, username);
 
     // then
     assertThat(tenantState.getEntitiesByType(tenantKey).get(EntityType.USER))
@@ -94,41 +93,7 @@ public class TenantAppliersTest {
     // then
     assertThat(tenantState.getEntityType(tenantKey, entityKey).get().equals(EntityType.MAPPING));
     final var persistedMapping = mappingState.get(entityKey).get();
-    assertThat(persistedMapping.getTenantKeysList()).containsExactly(tenantKey);
-  }
-
-  @Test
-  void shouldDeleteTenantWithMultipleUsers() {
-    // given
-    final long tenantKey = UUID.randomUUID().hashCode();
-    final var tenantId = UUID.randomUUID().toString();
-
-    final var tenantRecord = createTenant(tenantKey, tenantId);
-    final long[] userKeys = {1L, 2L, 3L};
-    for (final long userKey : userKeys) {
-      createUser(userKey, "user" + userKey);
-      associateUserWithTenant(tenantKey, tenantId, userKey);
-    }
-
-    // Ensure the tenant and associated users exist before deletion
-    assertThat(tenantState.getTenantByKey(tenantKey)).isPresent();
-    assertUsersAreAssociatedWithTenant(userKeys, tenantId);
-
-    // when
-    tenantDeletedApplier.applyState(tenantKey, tenantRecord);
-
-    // then verify tenant is deleted
-    assertThat(tenantState.getTenantByKey(tenantKey)).isEmpty();
-
-    // Verify all associated users are no longer linked to the tenant
-    assertUsersAreNotAssociatedWithAnyTenant(userKeys);
-
-    // Verify owner type and permissions are removed
-    assertThat(authorizationState.getOwnerType(tenantKey)).isEmpty();
-    final var resourceIdentifiers =
-        authorizationState.getResourceIdentifiers(
-            tenantKey, AuthorizationResourceType.TENANT, PermissionType.DELETE);
-    assertThat(resourceIdentifiers).isEmpty();
+    assertThat(persistedMapping.getTenantIdsList()).containsExactly(tenantId);
   }
 
   @Test
@@ -148,11 +113,12 @@ public class TenantAppliersTest {
 
     // then
     assertThat(tenantState.getTenantByKey(tenantKey)).isEmpty();
-    final var ownerType = authorizationState.getOwnerType(tenantKey);
-    assertThat(ownerType).isEmpty();
     final var resourceIdentifiers =
         authorizationState.getResourceIdentifiers(
-            tenantKey, AuthorizationResourceType.TENANT, PermissionType.DELETE);
+            AuthorizationOwnerType.TENANT,
+            tenantId,
+            AuthorizationResourceType.TENANT,
+            PermissionType.DELETE);
     assertThat(resourceIdentifiers).isEmpty();
   }
 
@@ -162,9 +128,10 @@ public class TenantAppliersTest {
     final long entityKey = UUID.randomUUID().hashCode();
     final long tenantKey = UUID.randomUUID().hashCode();
     final var tenantId = UUID.randomUUID().toString();
+    final var username = "username";
     createTenant(tenantKey, tenantId);
-    createUser(entityKey, "username");
-    associateUserWithTenant(tenantKey, tenantId, entityKey);
+    createUser(entityKey, username);
+    associateUserWithTenant(tenantKey, tenantId, username);
 
     // Ensure the user is associated with the tenant before removal
     assertThat(tenantState.getEntitiesByType(tenantKey).get(EntityType.USER))
@@ -175,9 +142,8 @@ public class TenantAppliersTest {
     // when
     final var tenantRecord =
         new TenantRecord()
-            .setTenantKey(tenantKey)
             .setTenantId(tenantId)
-            .setEntityKey(entityKey)
+            .setEntityId(username)
             .setEntityType(EntityType.USER);
     tenantEntityRemovedApplier.applyState(tenantKey, tenantRecord);
 
@@ -188,6 +154,8 @@ public class TenantAppliersTest {
   }
 
   @Test
+  @Disabled(
+      "Disabled while mappings are not supported: https://github.com/camunda/camunda/issues/26981")
   void shouldRemoveEntityFromTenantWithTypeMapping() {
     // given
     final long entityKey = 1L;
@@ -206,7 +174,7 @@ public class TenantAppliersTest {
     // Ensure the mapping is associated with the tenant before removal
     assertThat(tenantState.getEntityType(tenantKey, entityKey).get().equals(EntityType.MAPPING));
     final var persistedMapping = mappingState.get(entityKey).get();
-    assertThat(persistedMapping.getTenantKeysList()).containsExactly(tenantKey);
+    assertThat(persistedMapping.getTenantIdsList()).containsExactly(tenantId);
 
     // when
     tenantEntityRemovedApplier.applyState(tenantKey, tenantRecord);
@@ -214,7 +182,7 @@ public class TenantAppliersTest {
     // then
     assertThat(tenantState.getEntityType(tenantKey, entityKey)).isEmpty();
     final var updatedMapping = mappingState.get(entityKey).get();
-    assertThat(updatedMapping.getTenantKeysList()).isEmpty();
+    assertThat(updatedMapping.getTenantIdsList()).isEmpty();
   }
 
   private TenantRecord createTenant(final long tenantKey, final String tenantId) {
@@ -223,7 +191,7 @@ public class TenantAppliersTest {
             .setTenantKey(tenantKey)
             .setTenantId(tenantId)
             .setName("Tenant-" + tenantId);
-    new TenantCreatedApplier(tenantState, authorizationState).applyState(tenantKey, tenantRecord);
+    new TenantCreatedApplier(tenantState).applyState(tenantKey, tenantRecord);
     return tenantRecord;
   }
 
@@ -235,31 +203,16 @@ public class TenantAppliersTest {
             .setName("User-" + username)
             .setEmail(username + "@test.com")
             .setPassword("password");
-    new UserCreatedApplier(processingState).applyState(userKey, userRecord);
+    new UserCreatedApplier(userState).applyState(userKey, userRecord);
   }
 
   private void associateUserWithTenant(
-      final long tenantKey, final String tenantId, final long userKey) {
+      final long tenantKey, final String tenantId, final String username) {
     final var tenantRecord =
         new TenantRecord()
-            .setTenantKey(tenantKey)
             .setTenantId(tenantId)
-            .setEntityKey(userKey)
+            .setEntityId(username)
             .setEntityType(EntityType.USER);
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
-  }
-
-  private void assertUsersAreAssociatedWithTenant(final long[] userKeys, final String tenantId) {
-    for (final long userKey : userKeys) {
-      final var persistedUser = userState.getUser(userKey).get();
-      assertThat(persistedUser.getTenantIdsList()).contains(tenantId);
-    }
-  }
-
-  private void assertUsersAreNotAssociatedWithAnyTenant(final long[] userKeys) {
-    for (final long userKey : userKeys) {
-      final var persistedUser = userState.getUser(userKey).get();
-      assertThat(persistedUser.getTenantIdsList()).isEmpty();
-    }
   }
 }

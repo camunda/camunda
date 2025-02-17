@@ -15,7 +15,8 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setGateway
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setInternalApiPort;
 
 import io.atomix.cluster.AtomixCluster;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.client.CamundaClient;
+import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -23,7 +24,6 @@ import io.camunda.zeebe.broker.TestLoggers;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
@@ -35,6 +35,9 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.util.NetUtil;
 import java.io.File;
 import java.io.IOException;
@@ -80,6 +83,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
   private File brokerBase;
   private String dataDirectory;
   private SystemContext systemContext;
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @SafeVarargs
   public EmbeddedBrokerRule(final Consumer<BrokerCfg>... configurators) {
@@ -159,6 +163,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
       } catch (final IOException e) {
         LOG.error("Unexpected error on deleting data.", e);
       }
+      MicrometerUtil.closeRegistry(meterRegistry);
 
       controlledActorClock.reset();
     }
@@ -232,14 +237,16 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     }
 
     final var scheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg, controlledActorClock);
-    atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg);
+    atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg, meterRegistry);
     systemContext =
         new SystemContext(
             brokerCfg,
             scheduler,
             atomixCluster,
             TestBrokerClientFactory.createBrokerClient(atomixCluster, scheduler),
-            new SecurityConfiguration());
+            SecurityConfigurations.unauthenticated(),
+            null,
+            null);
 
     final var additionalListeners = new ArrayList<>(Arrays.asList(listeners));
     final CountDownLatch latch = new CountDownLatch(brokerCfg.getCluster().getPartitionsCount());
@@ -258,7 +265,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
 
     if (brokerCfg.getGateway().isEnable()) {
       try (final var client =
-          ZeebeClient.newClientBuilder()
+          CamundaClient.newClientBuilder()
               .gatewayAddress(NetUtil.toSocketAddressString(getGatewayAddress()))
               .usePlaintext()
               .build()) {
@@ -313,6 +320,10 @@ public final class EmbeddedBrokerRule extends ExternalResource {
         deleteSnapshots(stateDirectory);
       }
     }
+  }
+
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
   }
 
   private static class LeaderPartitionListener implements PartitionListener {

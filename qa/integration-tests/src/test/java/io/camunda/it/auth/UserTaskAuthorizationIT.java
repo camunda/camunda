@@ -7,21 +7,20 @@
  */
 package io.camunda.it.auth;
 
-import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.CREATE;
-import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.CREATE_PROCESS_INSTANCE;
-import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.READ_USER_TASK;
-import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.DEPLOYMENT;
-import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.PROCESS_DEFINITION;
+import static io.camunda.client.protocol.rest.PermissionTypeEnum.CREATE;
+import static io.camunda.client.protocol.rest.PermissionTypeEnum.CREATE_PROCESS_INSTANCE;
+import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ_USER_TASK;
+import static io.camunda.client.protocol.rest.ResourceTypeEnum.PROCESS_DEFINITION;
+import static io.camunda.client.protocol.rest.ResourceTypeEnum.RESOURCE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.camunda.application.Profile;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.it.utils.BrokerITInvocationProvider;
-import io.camunda.it.utils.ZeebeClientTestFactory.Authenticated;
-import io.camunda.it.utils.ZeebeClientTestFactory.Permissions;
-import io.camunda.it.utils.ZeebeClientTestFactory.User;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ProblemException;
+import io.camunda.it.utils.CamundaClientTestFactory.Authenticated;
+import io.camunda.it.utils.CamundaClientTestFactory.Permissions;
+import io.camunda.it.utils.CamundaClientTestFactory.User;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
@@ -44,7 +43,7 @@ class UserTaskAuthorizationIT {
           ADMIN,
           "password",
           List.of(
-              new Permissions(DEPLOYMENT, CREATE, List.of("*")),
+              new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))));
   private static final User USER1_USER =
@@ -62,14 +61,14 @@ class UserTaskAuthorizationIT {
   static final BrokerITInvocationProvider PROVIDER =
       new BrokerITInvocationProvider()
           .withoutRdbmsExporter()
-          .withAdditionalProfiles(Profile.AUTH_BASIC)
+          .withBasicAuth()
           .withAuthorizationsEnabled()
           .withUsers(ADMIN_USER, USER1_USER, USER2_USER);
 
   private boolean initialized;
 
   @BeforeEach
-  void setUp(@Authenticated(ADMIN) final ZeebeClient adminClient) {
+  void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
     if (!initialized) {
       deployResource(adminClient, "process/bpm_variable_test.bpmn");
       deployResource(adminClient, "form/form.form");
@@ -85,9 +84,9 @@ class UserTaskAuthorizationIT {
 
   @TestTemplate
   public void searchShouldReturnAuthorizedUserTasks(
-      @Authenticated(USER1) final ZeebeClient zeebeClient) {
+      @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
-    final var result = zeebeClient.newUserTaskQuery().send().join();
+    final var result = camundaClient.newUserTaskQuery().send().join();
 
     // then return only user tasks from process with id PROCESS_ID_1
     assertThat(result.items()).hasSize(2);
@@ -97,12 +96,12 @@ class UserTaskAuthorizationIT {
 
   @TestTemplate
   void getByKeyShouldReturnAuthorizedUserTask(
-      @Authenticated(ADMIN) final ZeebeClient adminClient,
-      @Authenticated(USER1) final ZeebeClient zeebeClient) {
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER1) final CamundaClient camundaClient) {
     // given
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = zeebeClient.newUserTaskGetRequest(userTaskKey).send().join();
+    final var result = camundaClient.newUserTaskGetRequest(userTaskKey).send().join();
     // then
     assertThat(result).isNotNull();
     assertThat(result.getBpmnProcessId()).isEqualTo(PROCESS_ID_1);
@@ -110,13 +109,13 @@ class UserTaskAuthorizationIT {
 
   @TestTemplate
   void getByKeyShouldReturnForbiddenForUnauthorizedUserTask(
-      @Authenticated(ADMIN) final ZeebeClient adminClient,
-      @Authenticated(USER1) final ZeebeClient zeebeClient) {
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER1) final CamundaClient camundaClient) {
     // given
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_2);
     // when
     final Executable executeGet =
-        () -> zeebeClient.newUserTaskGetRequest(userTaskKey).send().join();
+        () -> camundaClient.newUserTaskGetRequest(userTaskKey).send().join();
     // then
     final var problemException = assertThrows(ProblemException.class, executeGet);
     assertThat(problemException.code()).isEqualTo(403);
@@ -127,12 +126,12 @@ class UserTaskAuthorizationIT {
 
   @TestTemplate
   void getUserTaskFormShouldReturnFormForAuthorizedUserTask(
-      @Authenticated(ADMIN) final ZeebeClient adminClient,
-      @Authenticated(USER2) final ZeebeClient zeebeClient) {
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER2) final CamundaClient camundaClient) {
     // given
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_2);
     // when
-    final var result = zeebeClient.newUserTaskGetFormRequest(userTaskKey).send().join();
+    final var result = camundaClient.newUserTaskGetFormRequest(userTaskKey).send().join();
     // then
     assertThat(result).isNotNull();
     assertThat(result.getFormId()).isEqualTo("test");
@@ -140,13 +139,13 @@ class UserTaskAuthorizationIT {
 
   @TestTemplate
   void getUserTaskFormShouldReturnForbiddenForUnauthorizedUserTask(
-      @Authenticated(ADMIN) final ZeebeClient adminClient,
-      @Authenticated(USER1) final ZeebeClient zeebeClient) {
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER1) final CamundaClient camundaClient) {
     // given
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_2);
     // when
     final Executable executeGetForm =
-        () -> zeebeClient.newUserTaskGetFormRequest(userTaskKey).send().join();
+        () -> camundaClient.newUserTaskGetFormRequest(userTaskKey).send().join();
     // then
     final var problemException = assertThrows(ProblemException.class, executeGetForm);
     assertThat(problemException.code()).isEqualTo(403);
@@ -157,25 +156,25 @@ class UserTaskAuthorizationIT {
 
   @TestTemplate
   void searchUserTaskVariablesShouldReturnVariablesForAuthorizedUserTask(
-      @Authenticated(ADMIN) final ZeebeClient adminClient,
-      @Authenticated(USER1) final ZeebeClient zeebeClient) {
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER1) final CamundaClient camundaClient) {
     // given
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = zeebeClient.newUserTaskVariableQuery(userTaskKey).send().join();
+    final var result = camundaClient.newUserTaskVariableQuery(userTaskKey).send().join();
     // then
     assertThat(result.items()).isNotEmpty();
   }
 
   @TestTemplate
   void searchUserTaskVariablesShouldReturnForbiddenForUnauthorizedUserTask(
-      @Authenticated(ADMIN) final ZeebeClient adminClient,
-      @Authenticated(USER2) final ZeebeClient zeebeClient) {
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER2) final CamundaClient camundaClient) {
     // given
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_1);
     // when
     final Executable executeSearchVariables =
-        () -> zeebeClient.newUserTaskVariableQuery(userTaskKey).send().join();
+        () -> camundaClient.newUserTaskVariableQuery(userTaskKey).send().join();
     // then
     final var problemException = assertThrows(ProblemException.class, executeSearchVariables);
     assertThat(problemException.code()).isEqualTo(403);
@@ -184,8 +183,8 @@ class UserTaskAuthorizationIT {
             "Unauthorized to perform operation 'READ_USER_TASK' on resource 'PROCESS_DEFINITION'");
   }
 
-  private long getUserTaskKey(final ZeebeClient zeebeClient, final String processId) {
-    return zeebeClient
+  private long getUserTaskKey(final CamundaClient camundaClient, final String processId) {
+    return camundaClient
         .newUserTaskQuery()
         .filter(f -> f.bpmnProcessId(processId))
         .send()
@@ -195,21 +194,22 @@ class UserTaskAuthorizationIT {
         .getUserTaskKey();
   }
 
-  private void deployResource(final ZeebeClient zeebeClient, final String resourceName) {
-    zeebeClient.newDeployResourceCommand().addResourceFromClasspath(resourceName).send().join();
+  private void deployResource(final CamundaClient camundaClient, final String resourceName) {
+    camundaClient.newDeployResourceCommand().addResourceFromClasspath(resourceName).send().join();
   }
 
-  private void startProcessInstance(final ZeebeClient zeebeClient, final String processId) {
-    zeebeClient.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().send().join();
+  private void startProcessInstance(final CamundaClient camundaClient, final String processId) {
+    camundaClient.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().send().join();
   }
 
-  private void waitForTasksBeingExported(final ZeebeClient zeebeClient, final int expectedCount) {
+  private void waitForTasksBeingExported(
+      final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should receive data from ES")
         .atMost(Duration.ofMinutes(1))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
-                assertThat(zeebeClient.newUserTaskQuery().send().join().items())
+                assertThat(camundaClient.newUserTaskQuery().send().join().items())
                     .hasSize(expectedCount));
   }
 }

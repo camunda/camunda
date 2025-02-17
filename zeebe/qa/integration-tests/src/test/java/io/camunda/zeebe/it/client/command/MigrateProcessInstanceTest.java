@@ -10,8 +10,8 @@ package io.camunda.zeebe.it.client.command;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -20,24 +20,23 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @ZeebeIntegration
-@AutoCloseResources
 public class MigrateProcessInstanceTest {
 
-  @AutoCloseResource ZeebeClient client;
+  @AutoClose CamundaClient client;
 
   @TestZeebe
-  final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+  final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   ZeebeResourcesHelper resourcesHelper;
 
@@ -381,7 +380,7 @@ public class MigrateProcessInstanceTest {
   }
 
   private MigrateProcessInstanceCommandStep1 getCommand(
-      final ZeebeClient client, final boolean useRest, final long processInstanceKey) {
+      final CamundaClient client, final boolean useRest, final long processInstanceKey) {
     final MigrateProcessInstanceCommandStep1 migrateCommand =
         client.newMigrateProcessInstanceCommand(processInstanceKey);
     return useRest ? migrateCommand.useRest() : migrateCommand.useGrpc();

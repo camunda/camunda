@@ -29,6 +29,7 @@ public final class ExporterTestContext implements Context {
   private Configuration configuration;
   private RecordFilter recordFilter;
   private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private int partitionId;
 
   @Override
   public MeterRegistry getMeterRegistry() {
@@ -52,12 +53,17 @@ public final class ExporterTestContext implements Context {
 
   @Override
   public int getPartitionId() {
-    return 0;
+    return partitionId;
   }
 
   @Override
   public void setFilter(final RecordFilter filter) {
     recordFilter = filter;
+  }
+
+  public ExporterTestContext setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
   }
 
   public ExporterTestContext setConfiguration(final Configuration configuration) {

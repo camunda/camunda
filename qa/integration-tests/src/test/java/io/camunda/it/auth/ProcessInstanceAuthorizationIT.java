@@ -7,22 +7,21 @@
  */
 package io.camunda.it.auth;
 
-import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.CREATE;
-import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.CREATE_PROCESS_INSTANCE;
-import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.READ;
-import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.READ_PROCESS_INSTANCE;
-import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.DEPLOYMENT;
-import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.PROCESS_DEFINITION;
+import static io.camunda.client.protocol.rest.PermissionTypeEnum.CREATE;
+import static io.camunda.client.protocol.rest.PermissionTypeEnum.CREATE_PROCESS_INSTANCE;
+import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ_PROCESS_DEFINITION;
+import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ_PROCESS_INSTANCE;
+import static io.camunda.client.protocol.rest.ResourceTypeEnum.PROCESS_DEFINITION;
+import static io.camunda.client.protocol.rest.ResourceTypeEnum.RESOURCE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.camunda.application.Profile;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.it.utils.BrokerITInvocationProvider;
-import io.camunda.it.utils.ZeebeClientTestFactory.Authenticated;
-import io.camunda.it.utils.ZeebeClientTestFactory.Permissions;
-import io.camunda.it.utils.ZeebeClientTestFactory.User;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ProblemException;
+import io.camunda.it.utils.CamundaClientTestFactory.Authenticated;
+import io.camunda.it.utils.CamundaClientTestFactory.Permissions;
+import io.camunda.it.utils.CamundaClientTestFactory.User;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
@@ -45,9 +44,9 @@ class ProcessInstanceAuthorizationIT {
           ADMIN,
           "password",
           List.of(
-              new Permissions(DEPLOYMENT, CREATE, List.of("*")),
+              new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, READ, List.of("*")),
+              new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*"))));
   private static final User USER1_USER =
       new User(
@@ -66,14 +65,14 @@ class ProcessInstanceAuthorizationIT {
   static final BrokerITInvocationProvider PROVIDER =
       new BrokerITInvocationProvider()
           .withoutRdbmsExporter()
-          .withAdditionalProfiles(Profile.AUTH_BASIC)
+          .withBasicAuth()
           .withAuthorizationsEnabled()
           .withUsers(ADMIN_USER, USER1_USER, USER2_USER);
 
   private boolean initialized;
 
   @BeforeEach
-  void setUp(@Authenticated(ADMIN) final ZeebeClient adminClient) {
+  void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
     if (!initialized) {
       deployResource(adminClient, "process/incident_process_v1.bpmn");
       deployResource(adminClient, "process/service_tasks_v1.bpmn");
@@ -88,9 +87,9 @@ class ProcessInstanceAuthorizationIT {
 
   @TestTemplate
   public void searchShouldReturnAuthorizedProcessInstances(
-      @Authenticated(USER1) final ZeebeClient zeebeClient) {
+      @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
-    final var result = zeebeClient.newProcessInstanceQuery().send().join();
+    final var result = camundaClient.newProcessInstanceQuery().send().join();
     // then
     assertThat(result.items()).hasSize(1);
     assertThat(result.items().getFirst().getProcessDefinitionId()).isEqualTo(PROCESS_ID_1);
@@ -98,12 +97,12 @@ class ProcessInstanceAuthorizationIT {
 
   @TestTemplate
   void getByKeyShouldReturnAuthorizedProcessInstance(
-      @Authenticated(ADMIN) final ZeebeClient adminClient,
-      @Authenticated(USER1) final ZeebeClient zeebeClient) {
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER1) final CamundaClient camundaClient) {
     // given
     final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = zeebeClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
+    final var result = camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
     // then
     assertThat(result).isNotNull();
     assertThat(result.getProcessDefinitionId()).isEqualTo(PROCESS_ID_1);
@@ -111,13 +110,13 @@ class ProcessInstanceAuthorizationIT {
 
   @TestTemplate
   void getByKeyShouldReturnForbiddenForUnauthorizedProcessInstance(
-      @Authenticated(ADMIN) final ZeebeClient adminClient,
-      @Authenticated(USER1) final ZeebeClient zeebeClient) {
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER1) final CamundaClient camundaClient) {
     // given
     final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID_2);
     // when
     final Executable executeGet =
-        () -> zeebeClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
+        () -> camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
     // then
     final var problemException = assertThrows(ProblemException.class, executeGet);
     assertThat(problemException.code()).isEqualTo(403);
@@ -128,12 +127,12 @@ class ProcessInstanceAuthorizationIT {
 
   @TestTemplate
   public void searchShouldReturnAuthorizedFlowNodeInstances(
-      @Authenticated(ADMIN) final ZeebeClient adminClient,
-      @Authenticated(USER1) final ZeebeClient zeebeClient) {
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER1) final CamundaClient camundaClient) {
     // given
     final long processDefinitionKey = getProcessDefinitionKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = zeebeClient.newFlownodeInstanceQuery().send().join();
+    final var result = camundaClient.newFlownodeInstanceQuery().send().join();
     // then
     assertThat(result.items()).hasSize(2);
     assertThat(result.items().getFirst().getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
@@ -142,12 +141,13 @@ class ProcessInstanceAuthorizationIT {
 
   @TestTemplate
   void getByKeyShouldReturnAuthorizedFlowNodeInstance(
-      @Authenticated(ADMIN) final ZeebeClient adminClient,
-      @Authenticated(USER1) final ZeebeClient zeebeClient) {
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER1) final CamundaClient camundaClient) {
     // given
     final var flowNodeInstanceKey = getAnyFlowNodeInstanceKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = zeebeClient.newFlowNodeInstanceGetRequest(flowNodeInstanceKey).send().join();
+    final var result =
+        camundaClient.newFlowNodeInstanceGetRequest(flowNodeInstanceKey).send().join();
     // then
     assertThat(result).isNotNull();
     assertThat(result.getProcessDefinitionKey())
@@ -156,13 +156,13 @@ class ProcessInstanceAuthorizationIT {
 
   @TestTemplate
   void getByKeyShouldReturnForbiddenForUnauthorizedFlowNodeInstance(
-      @Authenticated(ADMIN) final ZeebeClient adminClient,
-      @Authenticated(USER1) final ZeebeClient zeebeClient) {
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER1) final CamundaClient camundaClient) {
     // given
     final var flowNodeInstanceKey = getAnyFlowNodeInstanceKey(adminClient, PROCESS_ID_2);
     // when
     final Executable executeGet =
-        () -> zeebeClient.newFlowNodeInstanceGetRequest(flowNodeInstanceKey).send().join();
+        () -> camundaClient.newFlowNodeInstanceGetRequest(flowNodeInstanceKey).send().join();
     // then
     final var problemException = assertThrows(ProblemException.class, executeGet);
     assertThat(problemException.code()).isEqualTo(403);
@@ -173,9 +173,9 @@ class ProcessInstanceAuthorizationIT {
 
   @TestTemplate
   public void searchShouldReturnAuthorizedIncidents(
-      @Authenticated(USER1) final ZeebeClient zeebeClient) {
+      @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
-    final var result = zeebeClient.newIncidentQuery().send().join();
+    final var result = camundaClient.newIncidentQuery().send().join();
     // then
     assertThat(result.items()).hasSize(1);
     assertThat(result.items().getFirst().getProcessDefinitionId()).isEqualTo(PROCESS_ID_1);
@@ -183,12 +183,12 @@ class ProcessInstanceAuthorizationIT {
 
   @TestTemplate
   void getByKeyShouldReturnAuthorizedIncident(
-      @Authenticated(ADMIN) final ZeebeClient adminClient,
-      @Authenticated(USER1) final ZeebeClient zeebeClient) {
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER1) final CamundaClient camundaClient) {
     // given
     final var incidentKey = getAnyIncidentKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = zeebeClient.newIncidentGetRequest(incidentKey).send().join();
+    final var result = camundaClient.newIncidentGetRequest(incidentKey).send().join();
     // then
     assertThat(result).isNotNull();
     assertThat(result.getProcessDefinitionKey())
@@ -197,13 +197,13 @@ class ProcessInstanceAuthorizationIT {
 
   @TestTemplate
   void getByKeyShouldReturnForbiddenForUnauthorizedIncident(
-      @Authenticated(ADMIN) final ZeebeClient adminClient,
-      @Authenticated(USER2) final ZeebeClient zeebeClient) {
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER2) final CamundaClient camundaClient) {
     // given
     final var incidentKey = getAnyIncidentKey(adminClient, PROCESS_ID_1);
     // when
     final Executable executeGet =
-        () -> zeebeClient.newIncidentGetRequest(incidentKey).send().join();
+        () -> camundaClient.newIncidentGetRequest(incidentKey).send().join();
     // then
     final var problemException = assertThrows(ProblemException.class, executeGet);
     assertThat(problemException.code()).isEqualTo(403);
@@ -214,12 +214,12 @@ class ProcessInstanceAuthorizationIT {
 
   @TestTemplate
   public void searchShouldReturnAuthorizedVariables(
-      @Authenticated(ADMIN) final ZeebeClient adminClient,
-      @Authenticated(USER1) final ZeebeClient zeebeClient) {
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER1) final CamundaClient camundaClient) {
     // given
     final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = zeebeClient.newVariableQuery().send().join();
+    final var result = camundaClient.newVariableQuery().send().join();
     // then
     assertThat(result.items()).hasSize(1);
     assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
@@ -227,13 +227,13 @@ class ProcessInstanceAuthorizationIT {
 
   @TestTemplate
   void getByKeyShouldReturnAuthorizedVariable(
-      @Authenticated(ADMIN) final ZeebeClient adminClient,
-      @Authenticated(USER1) final ZeebeClient zeebeClient) {
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER1) final CamundaClient camundaClient) {
     // given
     final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID_1);
     final var variableKey = getAnyVariableKey(adminClient, processInstanceKey);
     // when
-    final var result = zeebeClient.newVariableGetRequest(variableKey).send().join();
+    final var result = camundaClient.newVariableGetRequest(variableKey).send().join();
     // then
     assertThat(result).isNotNull();
     assertThat(result.getProcessInstanceKey()).isEqualTo(processInstanceKey);
@@ -241,14 +241,14 @@ class ProcessInstanceAuthorizationIT {
 
   @TestTemplate
   void getByKeyShouldReturnForbiddenForUnauthorizedVariable(
-      @Authenticated(ADMIN) final ZeebeClient adminClient,
-      @Authenticated(USER1) final ZeebeClient zeebeClient) {
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER1) final CamundaClient camundaClient) {
     // given
     final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID_2);
     final var variableKey = getAnyVariableKey(adminClient, processInstanceKey);
     // when
     final Executable executeGet =
-        () -> zeebeClient.newVariableGetRequest(variableKey).send().join();
+        () -> camundaClient.newVariableGetRequest(variableKey).send().join();
     // then
     final var problemException = assertThrows(ProblemException.class, executeGet);
     assertThat(problemException.code()).isEqualTo(403);
@@ -257,8 +257,8 @@ class ProcessInstanceAuthorizationIT {
             "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
   }
 
-  private long getProcessInstanceKey(final ZeebeClient zeebeClient, final String processId) {
-    return zeebeClient
+  private long getProcessInstanceKey(final CamundaClient camundaClient, final String processId) {
+    return camundaClient
         .newProcessInstanceQuery()
         .filter(f -> f.processDefinitionId(processId))
         .send()
@@ -268,8 +268,9 @@ class ProcessInstanceAuthorizationIT {
         .getProcessInstanceKey();
   }
 
-  private long getAnyFlowNodeInstanceKey(final ZeebeClient zeebeClient, final String processId) {
-    return zeebeClient
+  private long getAnyFlowNodeInstanceKey(
+      final CamundaClient camundaClient, final String processId) {
+    return camundaClient
         .newFlownodeInstanceQuery()
         .filter(f -> f.processDefinitionId(processId))
         .send()
@@ -279,8 +280,8 @@ class ProcessInstanceAuthorizationIT {
         .getFlowNodeInstanceKey();
   }
 
-  private long getAnyIncidentKey(final ZeebeClient zeebeClient, final String processId) {
-    return zeebeClient
+  private long getAnyIncidentKey(final CamundaClient camundaClient, final String processId) {
+    return camundaClient
         .newIncidentQuery()
         .filter(f -> f.processDefinitionId(processId))
         .send()
@@ -290,8 +291,8 @@ class ProcessInstanceAuthorizationIT {
         .getIncidentKey();
   }
 
-  private long getAnyVariableKey(final ZeebeClient zeebeClient, final long processInstanceKey) {
-    return zeebeClient
+  private long getAnyVariableKey(final CamundaClient camundaClient, final long processInstanceKey) {
+    return camundaClient
         .newVariableQuery()
         .filter(f -> f.processInstanceKey(processInstanceKey))
         .send()
@@ -301,7 +302,7 @@ class ProcessInstanceAuthorizationIT {
         .getVariableKey();
   }
 
-  private long getProcessDefinitionKey(final ZeebeClient adminClient, final String processId) {
+  private long getProcessDefinitionKey(final CamundaClient adminClient, final String processId) {
     return adminClient
         .newProcessDefinitionQuery()
         .filter(f -> f.processDefinitionId(processId))
@@ -312,22 +313,22 @@ class ProcessInstanceAuthorizationIT {
         .getProcessDefinitionKey();
   }
 
-  private void deployResource(final ZeebeClient zeebeClient, final String resourceName) {
-    zeebeClient.newDeployResourceCommand().addResourceFromClasspath(resourceName).send().join();
+  private void deployResource(final CamundaClient camundaClient, final String resourceName) {
+    camundaClient.newDeployResourceCommand().addResourceFromClasspath(resourceName).send().join();
   }
 
-  private void startProcessInstance(final ZeebeClient zeebeClient, final String processId) {
-    zeebeClient.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().send().join();
+  private void startProcessInstance(final CamundaClient camundaClient, final String processId) {
+    camundaClient.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().send().join();
   }
 
   private void waitForFlowNodeInstancesBeingExported(
-      final ZeebeClient zeebeClient, final int expectedCount) {
+      final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should receive data from ES")
         .atMost(Duration.ofMinutes(1))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
-                assertThat(zeebeClient.newFlownodeInstanceQuery().send().join().items())
+                assertThat(camundaClient.newFlownodeInstanceQuery().send().join().items())
                     .hasSize(expectedCount));
   }
 }

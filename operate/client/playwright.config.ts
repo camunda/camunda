@@ -26,7 +26,12 @@ const getPort = () => {
 };
 
 const getBasePath = () => {
-  return IS_CI && !IS_E2E ? '' : '/operate/';
+  const isLocalVisualRegression =
+    !IS_CI && !IS_E2E && !IS_A11Y && !IS_SCREENSHOT_GENERATOR;
+
+  const path = (IS_CI && !IS_E2E) || isLocalVisualRegression ? '' : '/operate/';
+
+  return path;
 };
 
 /**
@@ -63,7 +68,7 @@ const config: PlaywrightTestConfig = {
   use: {
     actionTimeout: 0,
     baseURL: `http://localhost:${getPort()}${getBasePath()}`,
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },

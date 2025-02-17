@@ -12,6 +12,7 @@ import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirect
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
@@ -44,6 +45,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import org.slf4j.Logger;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 public final class SystemContext {
 
@@ -64,6 +66,8 @@ public final class SystemContext {
   private final BrokerClient brokerClient;
   private final MeterRegistry meterRegistry;
   private final SecurityConfiguration securityConfiguration;
+  private final UserServices userServices;
+  private final PasswordEncoder passwordEncoder;
 
   public SystemContext(
       final Duration shutdownTimeout,
@@ -73,7 +77,9 @@ public final class SystemContext {
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
       final MeterRegistry meterRegistry,
-      final SecurityConfiguration securityConfiguration) {
+      final SecurityConfiguration securityConfiguration,
+      final UserServices userServices,
+      final PasswordEncoder passwordEncoder) {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
     this.identityConfiguration = identityConfiguration;
@@ -82,6 +88,8 @@ public final class SystemContext {
     this.brokerClient = brokerClient;
     this.meterRegistry = meterRegistry;
     this.securityConfiguration = securityConfiguration;
+    this.userServices = userServices;
+    this.passwordEncoder = passwordEncoder;
     initSystemContext();
   }
 
@@ -91,7 +99,9 @@ public final class SystemContext {
       final ActorScheduler scheduler,
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration) {
+      final SecurityConfiguration securityConfiguration,
+      final UserServices userServices,
+      final PasswordEncoder passwordEncoder) {
     this(
         DEFAULT_SHUTDOWN_TIMEOUT,
         brokerCfg,
@@ -100,7 +110,9 @@ public final class SystemContext {
         cluster,
         brokerClient,
         new SimpleMeterRegistry(),
-        securityConfiguration);
+        securityConfiguration,
+        userServices,
+        passwordEncoder);
   }
 
   private void initSystemContext() {
@@ -342,5 +354,13 @@ public final class SystemContext {
 
   public SecurityConfiguration getSecurityConfiguration() {
     return securityConfiguration;
+  }
+
+  public UserServices getUserServices() {
+    return userServices;
+  }
+
+  public PasswordEncoder getPasswordEncoder() {
+    return passwordEncoder;
   }
 }

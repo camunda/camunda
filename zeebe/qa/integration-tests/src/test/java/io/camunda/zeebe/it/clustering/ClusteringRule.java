@@ -32,7 +32,12 @@ import io.camunda.application.commons.configuration.BrokerBasedConfiguration.Bro
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration.GatewayBasedProperties;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.api.response.BrokerInfo;
+import io.camunda.client.api.response.Topology;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -47,10 +52,6 @@ import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.management.PartitionStatus;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
-import io.camunda.zeebe.client.api.response.BrokerInfo;
-import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.JobStreamComponent;
@@ -71,6 +72,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.util.NetUtil;
 import java.io.File;
@@ -104,6 +106,7 @@ import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
 import org.junit.Assert;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.Description;
@@ -130,7 +133,7 @@ public class ClusteringRule extends ExternalResource {
   private final int clusterSize;
   private final Consumer<BrokerCfg> brokerConfigurator;
   private final Consumer<GatewayCfg> gatewayConfigurator;
-  private final Consumer<ZeebeClientBuilder> clientConfigurator;
+  private final Consumer<CamundaClientBuilder> clientConfigurator;
   private final Map<Integer, Broker> brokers;
   private final Map<Integer, BrokerBasedProperties> brokerCfgs;
   private final List<Integer> partitionIds;
@@ -138,13 +141,14 @@ public class ClusteringRule extends ExternalResource {
   private final Map<Integer, LogStream> logstreams;
 
   // cluster
-  private ZeebeClient client;
+  private CamundaClient client;
   private GatewayResource gatewayResource;
   private CountDownLatch partitionLatch;
   private final Map<Integer, Leader> partitionLeader;
   private final Map<Integer, SpringBrokerBridge> springBrokerBridge;
   private final Map<Integer, SystemContext> systemContexts;
   private final ActorClockConfiguration actorClockConfiguration;
+  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   public ClusteringRule() {
     this(3);
@@ -170,7 +174,7 @@ public class ClusteringRule extends ExternalResource {
         clusterSize,
         configurator,
         gatewayCfg -> {},
-        ZeebeClientBuilder::usePlaintext);
+        CamundaClientBuilder::usePlaintext);
   }
 
   public ClusteringRule(
@@ -185,7 +189,7 @@ public class ClusteringRule extends ExternalResource {
         clusterSize,
         brokerConfigurator,
         gatewayConfigurator,
-        ZeebeClientBuilder::usePlaintext);
+        CamundaClientBuilder::usePlaintext);
   }
 
   public ClusteringRule(
@@ -194,7 +198,7 @@ public class ClusteringRule extends ExternalResource {
       final int clusterSize,
       final Consumer<BrokerCfg> brokerConfigurator,
       final Consumer<GatewayCfg> gatewayConfigurator,
-      final Consumer<ZeebeClientBuilder> clientConfigurator) {
+      final Consumer<CamundaClientBuilder> clientConfigurator) {
     this.partitionCount = partitionCount;
     this.replicationFactor = replicationFactor;
     this.clusterSize = clusterSize;
@@ -343,16 +347,21 @@ public class ClusteringRule extends ExternalResource {
 
     final var atomixCluster =
         new AtomixCluster(
-            brokerSpringConfig.clusterConfig(), Version.from(VersionUtil.getVersion()), "Broker");
+            brokerSpringConfig.clusterConfig(),
+            Version.from(VersionUtil.getVersion()),
+            "Broker",
+            meterRegistry);
 
     final var scheduler =
         new ActorSchedulerConfiguration(
                 brokerSpringConfig.schedulerConfiguration(),
                 IdleStrategySupplier.ofDefault(),
-                actorClockConfiguration)
+                actorClockConfiguration,
+                meterRegistry)
             .scheduler();
 
-    final var dynamicClusterServices = new DynamicClusterServices(scheduler, atomixCluster);
+    final var dynamicClusterServices =
+        new DynamicClusterServices(scheduler, atomixCluster, meterRegistry);
     final var topologyManager = dynamicClusterServices.brokerTopologyManager();
 
     final var brokerClientConfig = brokerSpringConfig.brokerClientConfig();
@@ -370,7 +379,9 @@ public class ClusteringRule extends ExternalResource {
             atomixCluster,
             brokerClient,
             new SimpleMeterRegistry(),
-            new SecurityConfiguration());
+            new SecurityConfiguration(),
+            null,
+            null);
     systemContexts.put(nodeId, systemContext);
 
     final Broker broker =
@@ -473,14 +484,19 @@ public class ClusteringRule extends ExternalResource {
 
     final ActorScheduler actorScheduler =
         new ActorSchedulerConfiguration(
-                actorConfig, IdleStrategySupplier.ofDefault(), actorClockConfiguration)
+                actorConfig,
+                IdleStrategySupplier.ofDefault(),
+                actorClockConfiguration,
+                meterRegistry)
             .scheduler();
 
-    final var clusterConfiguration = new AtomixClusterConfiguration(clusterConfig, actorConfig);
+    final var clusterConfiguration =
+        new AtomixClusterConfiguration(clusterConfig, actorConfig, meterRegistry);
     final var atomixCluster = clusterConfiguration.atomixCluster();
     atomixCluster.start().join();
 
-    final var dynamicClusterServices = new DynamicClusterServices(actorScheduler, atomixCluster);
+    final var dynamicClusterServices =
+        new DynamicClusterServices(actorScheduler, atomixCluster, meterRegistry);
     final var topologyManager = dynamicClusterServices.brokerTopologyManager();
 
     final var brokerClientConfig = config.brokerClientConfig();
@@ -500,26 +516,29 @@ public class ClusteringRule extends ExternalResource {
     final var gateway =
         new Gateway(
             gatewayCfg,
-            new SecurityConfiguration(),
+            SecurityConfigurations.unauthenticated(),
             brokerClient,
             actorScheduler,
-            jobStreamClient.streamer());
+            jobStreamClient.streamer(),
+            null,
+            null,
+            new SimpleMeterRegistry());
     gateway.start().join();
 
     return new GatewayResource(
         gatewayCfg, actorScheduler, atomixCluster, brokerClient, jobStreamClient, gateway);
   }
 
-  private ZeebeClient createClient() {
+  private CamundaClient createClient() {
     final String contactPoint =
         NetUtil.toSocketAddressString(
             gatewayResource.gateway.getGatewayCfg().getNetwork().toSocketAddress());
-    final ZeebeClientBuilder zeebeClientBuilder =
-        ZeebeClient.newClientBuilder().gatewayAddress(contactPoint);
+    final CamundaClientBuilder camundaClientBuilder =
+        CamundaClient.newClientBuilder().gatewayAddress(contactPoint);
 
-    clientConfigurator.accept(zeebeClientBuilder);
+    clientConfigurator.accept(camundaClientBuilder);
 
-    final ZeebeClient client = zeebeClientBuilder.build();
+    final CamundaClient client = camundaClientBuilder.build();
     closeables.add(client);
     return client;
   }
@@ -752,7 +771,7 @@ public class ClusteringRule extends ExternalResource {
     return gatewayResource.gateway;
   }
 
-  public ZeebeClient getClient() {
+  public CamundaClient getClient() {
     return client;
   }
 

@@ -59,7 +59,7 @@ final class ConfigurationChangeCoordinatorImplTest {
     // when
     final var applyFuture =
         coordinator.applyOperations(
-            getTransformer(List.of(new PartitionLeaveOperation(MemberId.from("1"), 1))));
+            getTransformer(List.of(new PartitionLeaveOperation(MemberId.from("1"), 1, 1))));
 
     // then
     assertThat(applyFuture)
@@ -96,8 +96,9 @@ final class ConfigurationChangeCoordinatorImplTest {
         coordinator.applyOperations(
             getTransformer(
                 List.of(
-                    new PartitionLeaveOperation(MemberId.from("1"), 1), // Valid operation
-                    new PartitionLeaveOperation(MemberId.from("1"), 1) // Duplicate leave not valid
+                    new PartitionLeaveOperation(MemberId.from("1"), 1, 1), // Valid operation
+                    new PartitionLeaveOperation(
+                        MemberId.from("1"), 1, 1) // Duplicate leave not valid
                     )));
 
     // then
@@ -114,12 +115,12 @@ final class ConfigurationChangeCoordinatorImplTest {
     // given
     clusterTopologyManager.setClusterTopology(
         initialTopology.startConfigurationChange(
-            List.of(new PartitionLeaveOperation(MemberId.from("1"), 1))));
+            List.of(new PartitionLeaveOperation(MemberId.from("1"), 1, 1))));
 
     // when
     final var applyFuture =
         coordinator.applyOperations(
-            getTransformer(List.of(new PartitionLeaveOperation(MemberId.from("1"), 1))));
+            getTransformer(List.of(new PartitionLeaveOperation(MemberId.from("1"), 1, 1))));
 
     // then
     assertThat(applyFuture)
@@ -187,7 +188,7 @@ final class ConfigurationChangeCoordinatorImplTest {
 
     final var simulationResult =
         coordinator.simulateOperations(
-            getTransformer(List.of(new PartitionLeaveOperation(MemberId.from("1"), 1))));
+            getTransformer(List.of(new PartitionLeaveOperation(MemberId.from("1"), 1, 1))));
 
     // then
     assertThat(simulationResult)

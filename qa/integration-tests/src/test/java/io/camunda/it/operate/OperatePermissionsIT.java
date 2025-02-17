@@ -7,31 +7,32 @@
  */
 package io.camunda.it.operate;
 
+import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ_PROCESS_DEFINITION;
+import static io.camunda.client.protocol.rest.ResourceTypeEnum.PROCESS_DEFINITION;
 import static io.camunda.it.client.QueryTest.deployResource;
-import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.READ;
-import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.PROCESS_DEFINITION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.OK;
 
-import io.camunda.application.Profile;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.Process;
 import io.camunda.qa.util.cluster.TestRestOperateClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
+@Disabled("Enable again with https://github.com/camunda/camunda/pull/27928")
 public class OperatePermissionsIT {
 
   private static final String SUPER_USER = "super";
@@ -44,34 +45,32 @@ public class OperatePermissionsIT {
   @ZeebeIntegration.TestZeebe(initMethod = "initTestStandaloneCamunda")
   private static TestStandaloneCamunda testInstance;
 
-  @AutoCloseResource private static TestRestOperateClient superOperateClient;
-  @AutoCloseResource private static TestRestOperateClient restrictedOperateClient;
+  @AutoClose private static TestRestOperateClient superOperateClient;
+  @AutoClose private static TestRestOperateClient restrictedOperateClient;
 
   @SuppressWarnings("unused")
   static void initTestStandaloneCamunda() {
-    testInstance =
-        new TestStandaloneCamunda()
-            .withElasticsearchExporter(false)
-            .withCamundaExporter()
-            .withAdditionalProfile(Profile.AUTH_BASIC)
-            .withAuthorizationsEnabled();
+    testInstance = new TestStandaloneCamunda().withCamundaExporter().withAuthorizationsEnabled();
   }
 
   @BeforeAll
   public static void beforeAll() throws Exception {
     final var authorizationsUtil =
-        new AuthorizationsUtil(testInstance, testInstance.getElasticSearchHostAddress());
+        AuthorizationsUtil.create(testInstance, testInstance.getElasticSearchHostAddress());
     final var defaultClient = authorizationsUtil.getDefaultClient();
     // create super user that can read all process definitions
-    final var superZeebeClient =
+    final var superCamundaClient =
         authorizationsUtil.createUserAndClient(
-            SUPER_USER, "password", new Permissions(PROCESS_DEFINITION, READ, List.of("*")));
+            SUPER_USER,
+            "password",
+            new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*")));
     superOperateClient = testInstance.newOperateClient(SUPER_USER, "password");
     // create restricted user that can only read process definition 1
     authorizationsUtil.createUserWithPermissions(
         RESTRICTED_USER,
         "password",
-        new Permissions(PROCESS_DEFINITION, READ, List.of(PROCESS_DEFINITION_ID_1)));
+        new Permissions(
+            PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of(PROCESS_DEFINITION_ID_1)));
     restrictedOperateClient = testInstance.newOperateClient(RESTRICTED_USER, "password");
 
     final List<String> processes = List.of(PROCESS_DEFINITION_ID_1, PROCESS_DEFINITION_ID_2);
@@ -82,7 +81,7 @@ public class OperatePermissionsIT {
                     .getProcesses()));
     assertThat(DEPLOYED_PROCESSES).hasSize(processes.size());
 
-    waitForProcessesToBeDeployed(superZeebeClient, DEPLOYED_PROCESSES.size());
+    waitForProcessesToBeDeployed(superCamundaClient, DEPLOYED_PROCESSES.size());
   }
 
   @AfterAll
@@ -124,13 +123,13 @@ public class OperatePermissionsIT {
   }
 
   private static void waitForProcessesToBeDeployed(
-      final ZeebeClient zeebeClient, final int expectedProcessDefinitions) {
+      final CamundaClient camundaClient, final int expectedProcessDefinitions) {
     Awaitility.await("Should processes be exported to Elasticsearch")
         .atMost(Duration.ofSeconds(15))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
-                assertThat(zeebeClient.newProcessDefinitionQuery().send().join().items())
+                assertThat(camundaClient.newProcessDefinitionQuery().send().join().items())
                     .hasSize(expectedProcessDefinitions));
   }
 }

@@ -6,7 +6,7 @@
       "archives": {
         "justification": "Ignore everything not included in the module itself",
         "include": [
-          "io\\.camunda:zeebe-client-java:.*"
+          "io\\.camunda:camunda-client-java:.*"
         ]
       },
       "elements": {
@@ -14,32 +14,12 @@
           {
             "justification": "The implementation package is not meant to be used directly, and as such does not need to maintain any backwards compatibility guarantees.",
             "matcher": "java-package",
+            "match": "/io\\.camunda\\.client\\.impl(\\..*)?/"
+          },
+          {
+            "justification": "The implementation package is not meant to be used directly, and as such does not need to maintain any backwards compatibility guarantees.",
+            "matcher": "java-package",
             "match": "/io\\.camunda\\.zeebe\\.client\\.impl(\\..*)?/"
-          },
-          {
-            "justification": "The search endpoints are in ALPHA version for this release, and as such does not need to maintain any backwards compatibility guarantees.",
-            "matcher": "java-package",
-            "match": "/io\\.camunda\\.zeebe\\.client\\.protocol\\.rest(\\..*)?/"
-          },
-          {
-            "justification": "The search endpoints are in ALPHA version for this release, and as such does not need to maintain any backwards compatibility guarantees.",
-            "matcher": "java-package",
-            "match": "/io\\.camunda\\.zeebe\\.client\\.api\\.search\\.filter(\\..*)?/"
-          },
-          {
-            "justification": "The search endpoints are in ALPHA version for this release, and as such does not need to maintain any backwards compatibility guarantees.",
-            "matcher": "java-package",
-            "match": "/io\\.camunda\\.zeebe\\.client\\.api\\.search\\.query(\\..*)?/"
-          },
-          {
-            "justification": "The search endpoints are in ALPHA version for this release, and as such does not need to maintain any backwards compatibility guarantees.",
-            "matcher": "java-package",
-            "match": "/io\\.camunda\\.zeebe\\.client\\.api\\.search\\.sort(\\..*)?/"
-          },
-          {
-            "justification": "The search endpoints are in ALPHA version for this release, and as such does not need to maintain any backwards compatibility guarantees.",
-            "matcher": "java-package",
-            "match": "/io\\.camunda\\.zeebe\\.client\\.api\\.search\\.response(\\..*)?/"
           }
         ]
       }
@@ -57,40 +37,14 @@
         {
           "ignore": true,
           "code": "java.annotation.removed",
-          "annotationType": "io.camunda.zeebe.client.api.ExperimentalApi",
+          "annotationType": "io.camunda.client.api.ExperimentalApi",
           "justification": "The ExperimentalApi annotation is used to mark methods as 'in-development'. It is okay to remove it after a feature is implemented"
         },
         {
           "ignore": true,
           "code": "java.annotation.attributeValueChanged",
-          "annotationType": "io.camunda.zeebe.client.api.ExperimentalApi",
+          "annotationType": "io.camunda.client.api.ExperimentalApi",
           "justification": "The ExperimentalApi annotation is used to mark methods as 'in-development'. It is okay to change value field"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequest io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequest::changeset(io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequestChangeset)",
-          "justification": "The classes/methods are only internal and are not user-facing, and as such does not need to maintain any backwards compatibility guarantees."
-
-        },
-        {
-          "ignore": true,
-          "code": "java.method.returnTypeChanged",
-          "old": "method io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequestChangeset io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequest::getChangeset()",
-          "new": "method io.camunda.zeebe.client.protocol.rest.Changeset io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequest::getChangeset()",
-          "justification": "The classes/methods are only internal and are not user-facing, and as such does not need to maintain any backwards compatibility guarantees."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method void io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequest::setChangeset(io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequestChangeset)",
-          "justification": "The classes/methods are only internal and are not user-facing, and as such does not need to maintain any backwards compatibility guarantees."
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequestChangeset",
-          "justification": "The classes/methods are only internal and are not user-facing, and as such does not need to maintain any backwards compatibility guarantees."
         }
       ]
     }

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
@@ -97,15 +96,9 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
             command.getValue().getTenantId());
     final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
     if (isAuthorized.isLeft()) {
-      final var rejectionType = isAuthorized.getLeft();
-      final String errorMessage =
-          RejectionType.UNAUTHORIZED.equals(rejectionType)
-              ? UNAUTHORIZED_ERROR_MESSAGE.formatted(
-                  authRequest.getPermissionType(), authRequest.getResourceType())
-              : "Expected to publish a new message for tenant '%s', but no such tenant was found"
-                  .formatted(command.getValue().getTenantId());
-      rejectionWriter.appendRejection(command, rejectionType, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
+      final var rejection = isAuthorized.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 

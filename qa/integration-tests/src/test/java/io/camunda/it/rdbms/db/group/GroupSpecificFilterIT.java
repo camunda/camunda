@@ -64,7 +64,7 @@ public class GroupSpecificFilterIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
-    assertThat(searchResult.items().getFirst().key()).isEqualTo(1337L);
+    assertThat(searchResult.items().getFirst().groupKey()).isEqualTo(1337L);
   }
 
   static List<GroupFilter> shouldFindWithSpecificFilterParameters() {

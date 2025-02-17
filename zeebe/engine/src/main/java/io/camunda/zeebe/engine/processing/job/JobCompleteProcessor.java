@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -29,12 +30,23 @@ import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
   public static final String TL_JOB_COMPLETION_WITH_VARS_NOT_SUPPORTED_MESSAGE =
       "Task Listener job completion with variables payload provided is not yet supported (job key '%d', type '%s', processInstanceKey '%d'). "
           + "Support will be enabled with the resolution of issue #23702";
+  private static final Set<String> CORRECTABLE_PROPERTIES =
+      Set.of(
+          UserTaskRecord.ASSIGNEE,
+          UserTaskRecord.CANDIDATE_GROUPS,
+          UserTaskRecord.CANDIDATE_USERS,
+          UserTaskRecord.DUE_DATE,
+          UserTaskRecord.FOLLOW_UP_DATE,
+          UserTaskRecord.PRIORITY);
 
   private final UserTaskState userTaskState;
   private final ElementInstanceState elementInstanceState;
@@ -55,7 +67,10 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
             state.getJobState(),
             this::acceptCommand,
             authCheckBehavior,
-            List.of(this::checkVariablesNotProvidedForTaskListenerJob));
+            List.of(
+                this::checkTaskListenerJobForProvidingVariables,
+                this::checkTaskListenerJobForDenyingWithCorrections,
+                this::checkTaskListenerJobForUnknownPropertyCorrections));
     this.jobMetrics = jobMetrics;
     this.eventHandle = eventHandle;
   }
@@ -83,62 +98,59 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
     }
 
     switch (value.getJobKind()) {
-      case EXECUTION_LISTENER:
-        {
-          // to store the variable for merge, to handle concurrent commands
-          eventHandle.triggeringProcessEvent(value);
+      case EXECUTION_LISTENER -> {
+        // to store the variable for merge, to handle concurrent commands
+        eventHandle.triggeringProcessEvent(value);
 
+        commandWriter.appendFollowUpCommand(
+            elementInstanceKey,
+            ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER,
+            elementInstance.getValue());
+      }
+      case TASK_LISTENER -> {
+        /*
+         We retrieve the intermediate user task state rather than the regular user task record
+         because the intermediate state captures the exact data provided during the original
+         user task command (e.g., COMPLETE, ASSIGN). This data includes variables, actions,
+         and other command-related details that may not yet be reflected in the persisted user
+         task record, that can be accessed via `userTaskState.getUserTask`.
+
+         When task listeners are involved, it's essential to preserve this original state
+         until all task listeners have been executed. Retrieving the intermediate state here
+         ensures that the finalization of the user task command uses the correct, unmodified
+         data as originally intended by the user. Once all task listeners have been processed
+         and the original user task command is finalized, the intermediate state is cleared.
+        */
+        final var userTask =
+            userTaskState.getIntermediateState(elementInstance.getUserTaskKey()).getRecord();
+
+        if (value.getResult().isDenied()) {
           commandWriter.appendFollowUpCommand(
-              elementInstanceKey,
-              ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER,
-              elementInstance.getValue());
-          return;
-        }
-      case TASK_LISTENER:
-        {
-          /*
-           We retrieve the intermediate user task state rather than the regular user task record
-           because the intermediate state captures the exact data provided during the original
-           user task command (e.g., COMPLETE, ASSIGN). This data includes variables, actions,
-           and other command-related details that may not yet be reflected in the persisted user
-           task record, that can be accessed via `userTaskState.getUserTask`.
-
-           When task listeners are involved, it's essential to preserve this original state
-           until all task listeners have been executed. Retrieving the intermediate state here
-           ensures that the finalization of the user task command uses the correct, unmodified
-           data as originally intended by the user. Once all task listeners have been processed
-           and the original user task command is finalized, the intermediate state is cleared.
-          */
-          final var userTask =
-              userTaskState.getIntermediateState(elementInstance.getUserTaskKey()).getRecord();
-
-          if (value.getResult().isDenied()) {
-            commandWriter.appendFollowUpCommand(
-                userTask.getUserTaskKey(), UserTaskIntent.DENY_TASK_LISTENER, userTask);
-            return;
-          }
-
+              userTask.getUserTaskKey(), UserTaskIntent.DENY_TASK_LISTENER, userTask);
+        } else {
+          userTask.correctAttributes(
+              value.getResult().getCorrectedAttributes(), value.getResult().getCorrections());
           commandWriter.appendFollowUpCommand(
               userTask.getUserTaskKey(), UserTaskIntent.COMPLETE_TASK_LISTENER, userTask);
-          return;
         }
-      default:
-        {
-          final long scopeKey = elementInstance.getValue().getFlowScopeKey();
-          final ElementInstance scopeInstance = elementInstanceState.getInstance(scopeKey);
+      }
+      default -> {
+        final long scopeKey = elementInstance.getValue().getFlowScopeKey();
+        final ElementInstance scopeInstance = elementInstanceState.getInstance(scopeKey);
 
-          if (scopeInstance != null && scopeInstance.isActive()) {
-            eventHandle.triggeringProcessEvent(value);
-            commandWriter.appendFollowUpCommand(
-                elementInstanceKey,
-                ProcessInstanceIntent.COMPLETE_ELEMENT,
-                elementInstance.getValue());
-          }
+        if (scopeInstance != null && scopeInstance.isActive()) {
+          eventHandle.triggeringProcessEvent(value);
+          commandWriter.appendFollowUpCommand(
+              elementInstanceKey,
+              ProcessInstanceIntent.COMPLETE_ELEMENT,
+              elementInstance.getValue());
         }
+      }
     }
   }
 
-  private Either<Rejection, JobRecord> checkVariablesNotProvidedForTaskListenerJob(
+  /** We currently don't support completing task listener jobs with variables. */
+  private Either<Rejection, JobRecord> checkTaskListenerJobForProvidingVariables(
       final TypedRecord<JobRecord> command, final JobRecord job) {
 
     if (job.getJobKind() == JobKind.TASK_LISTENER && hasVariables(command)) {
@@ -154,6 +166,54 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
   private boolean hasVariables(final TypedRecord<JobRecord> command) {
     return !DocumentValue.EMPTY_DOCUMENT.equals(command.getValue().getVariablesBuffer());
+  }
+
+  private Either<Rejection, JobRecord> checkTaskListenerJobForDenyingWithCorrections(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    if (job.getJobKind() != JobKind.TASK_LISTENER) {
+      return Either.right(job);
+    }
+
+    final var jobResult = command.getValue().getResult();
+    if (jobResult.isDenied() && !jobResult.getCorrectedAttributes().isEmpty()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              """
+              Expected to complete task listener job with corrections, but the job result is \
+              denied. The corrections would be reverted by the denial. Either complete the job with \
+              corrections without setting denied, or complete the job with a denied result but no \
+              corrections."""));
+    } else {
+      return Either.right(job);
+    }
+  }
+
+  private Either<Rejection, JobRecord> checkTaskListenerJobForUnknownPropertyCorrections(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    if (job.getJobKind() != JobKind.TASK_LISTENER) {
+      return Either.right(job);
+    }
+
+    final var optionalUnknownProperty =
+        command.getValue().getResult().getCorrectedAttributes().stream()
+            .filter(Predicate.not(CORRECTABLE_PROPERTIES::contains))
+            .findAny();
+
+    if (optionalUnknownProperty.isEmpty()) {
+      return Either.right(job);
+    }
+
+    final var correctableProperties =
+        CORRECTABLE_PROPERTIES.stream().sorted().collect(Collectors.joining(", ", "[", "]"));
+    return Either.left(
+        new Rejection(
+            RejectionType.INVALID_ARGUMENT,
+            """
+            Expected to complete task listener job with a corrections result, \
+            but property '%s' cannot be corrected. \
+            Only the following properties can be corrected: %s."""
+                .formatted(optionalUnknownProperty.get(), correctableProperties)));
   }
 
   private void acceptCommand(

@@ -15,6 +15,10 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import static java.util.Optional.ofNullable;
+
+import io.camunda.client.protocol.rest.JobChangeset;
+import io.camunda.client.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
@@ -23,8 +27,6 @@ import io.camunda.zeebe.client.api.command.UpdateJobCommandStep1.UpdateJobComman
 import io.camunda.zeebe.client.api.response.UpdateJobResponse;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
-import io.camunda.zeebe.client.protocol.rest.JobChangeset;
-import io.camunda.zeebe.client.protocol.rest.JobUpdateRequest;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -61,8 +63,12 @@ public class JobUpdateCommandImpl implements UpdateJobCommandStep1, UpdateJobCom
   }
 
   @Override
-  public UpdateJobCommandStep2 update(final JobChangeset jobChangeset) {
-    httpRequestObject.setChangeset(jobChangeset);
+  public UpdateJobCommandStep2 update(
+      final io.camunda.zeebe.client.protocol.rest.JobChangeset jobChangeset) {
+    httpRequestObject.setChangeset(
+        ofNullable(jobChangeset)
+            .map(io.camunda.zeebe.client.protocol.rest.JobChangeset::getDelegate)
+            .orElse(null));
     return this;
   }
 

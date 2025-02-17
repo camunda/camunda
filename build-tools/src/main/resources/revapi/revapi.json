@@ -39,6 +39,15 @@
             "OTHER": "BREAKING"
           }
         }
+      },
+      "onAllowed": {
+        "classification": {
+          "BINARY": "EQUIVALENT",
+          "SOURCE": "EQUIVALENT",
+          "SEMANTIC": "EQUIVALENT",
+          "OTHER": "EQUIVALENT"
+        },
+        "justification": "Allowed due to semantic versioning rules"
       }
     }
   },

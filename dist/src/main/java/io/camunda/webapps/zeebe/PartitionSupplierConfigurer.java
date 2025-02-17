@@ -7,25 +7,38 @@
  */
 package io.camunda.webapps.zeebe;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.util.Either;
 
 public class PartitionSupplierConfigurer {
 
   private final Broker broker;
-
   private final Gateway gateway;
-  private final ZeebeClient zeebeClient;
+  private final CamundaClient camundaClient;
+  private final BrokerClient brokerClient;
 
   public PartitionSupplierConfigurer(
-      final Broker broker, final Gateway gateway, final ZeebeClient zeebeClient) {
+      final Broker broker, final Gateway gateway, final CamundaClient camundaClient) {
+    this(broker, gateway, camundaClient, null);
+  }
+
+  public PartitionSupplierConfigurer(final BrokerClient brokerClient) {
+    this(null, null, null, brokerClient);
+  }
+
+  PartitionSupplierConfigurer(
+      final Broker broker,
+      final Gateway gateway,
+      final CamundaClient camundaClient,
+      final BrokerClient brokerClient) {
     this.broker = broker;
     this.gateway = gateway;
-    this.zeebeClient = zeebeClient;
+    this.camundaClient = camundaClient;
+    this.brokerClient = brokerClient;
   }
 
   public PartitionSupplier createPartitionSupplier() {
@@ -35,9 +48,11 @@ public class PartitionSupplierConfigurer {
     } else if (gateway != null) {
       final var brokerClient = gateway.getBrokerClient();
       return new BrokerClientPartitionSupplier(brokerClient);
+    } else if (brokerClient != null) {
+      return new BrokerClientPartitionSupplier(brokerClient);
     } else {
       // default use Standalone Partition Holder by using the Zeebe Client
-      return new StandalonePartitionSupplier(zeebeClient);
+      return new StandalonePartitionSupplier(camundaClient);
     }
   }
 

@@ -7,49 +7,67 @@
  */
 package io.camunda.migration.identity;
 
-import static java.util.Arrays.asList;
-
+import com.google.common.util.concurrent.Uninterruptibles;
 import io.camunda.migration.api.Migrator;
-import io.camunda.service.AuthorizationServices;
-import io.camunda.service.UserServices;
-import org.springframework.boot.ApplicationArguments;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
+import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.NotImplementedException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+@EnableConfigurationProperties(IdentityMigrationProperties.class)
 @Component("identity-migrator")
 public class MigrationRunner implements Migrator {
 
-  private ApplicationArguments args;
-  private final UserServices userService;
-  private final AuthorizationServices authorizationServices;
+  private static final Logger LOGGER = LoggerFactory.getLogger(MigrationRunner.class);
+
   private final AuthorizationMigrationHandler authorizationMigrationHandler;
+  private final TenantMigrationHandler tenantMigrationHandler;
+  private final TenantMappingRuleMigrationHandler tenantMappingRuleMigrationHandler;
+  private final UserTenantsMigrationHandler userTenantsMigrationHandler;
+  private final RoleMigrationHandler roleMigrationHandler;
+  private final GroupMigrationHandler groupMigrationHandler;
 
   public MigrationRunner(
-      final UserServices userService,
-      final AuthorizationServices authorizationServices,
-      final AuthorizationMigrationHandler authorizationMigrationHandler) {
-    this.userService = userService;
-    this.authorizationServices = authorizationServices;
+      final AuthorizationMigrationHandler authorizationMigrationHandler,
+      final TenantMigrationHandler tenantMigrationHandler,
+      final TenantMappingRuleMigrationHandler tenantMappingRuleMigrationHandler,
+      final UserTenantsMigrationHandler userTenantsMigrationHandler,
+      final RoleMigrationHandler roleMigrationHandler,
+      final GroupMigrationHandler groupMigrationHandler) {
     this.authorizationMigrationHandler = authorizationMigrationHandler;
+    this.tenantMigrationHandler = tenantMigrationHandler;
+    this.tenantMappingRuleMigrationHandler = tenantMappingRuleMigrationHandler;
+    this.userTenantsMigrationHandler = userTenantsMigrationHandler;
+    this.roleMigrationHandler = roleMigrationHandler;
+    this.groupMigrationHandler = groupMigrationHandler;
   }
 
   @Override
-  public void run() {
+  public Void call() {
+    migrate();
+    return null;
+  }
 
-    final String command =
-        args.containsOption("command") ? args.getOptionValues("command").getFirst() : "migrate";
-    if (!asList("migrate", "status").contains(command)) {
-      if ("migrate".equals(command)) {
+  private void migrate() {
+    while (true) {
+      try {
+        tenantMigrationHandler.migrate();
+        tenantMappingRuleMigrationHandler.migrate();
+        userTenantsMigrationHandler.migrate();
+        groupMigrationHandler.migrate();
+        roleMigrationHandler.migrate();
         authorizationMigrationHandler.migrate();
+        break;
+      } catch (final NotImplementedException e) {
+        LOGGER.error("Identity endpoint is not implemented {}", e.getCode());
+        throw e;
+      } catch (final Exception e) {
+        LOGGER.warn("Migration failed, let's retry!", e);
+        Uninterruptibles.sleepUninterruptibly(1000, TimeUnit.MILLISECONDS);
       }
-      throw new IllegalArgumentException("Unknown command: " + command);
     }
-
-    // TODO: place holder to logic
-    System.out.println("Migration Logic");
-  }
-
-  @Override
-  public void acceptArguments(final ApplicationArguments args) {
-    this.args = args;
   }
 }

@@ -19,6 +19,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.SmartLifecycle;
 
+@Deprecated(forRemoval = true, since = "8.6")
 public class ZeebeLifecycleEventProducer implements SmartLifecycle {
 
   protected boolean running = false;

@@ -163,4 +163,33 @@ const noInputForm: Form = {
   isDeleted: false,
 };
 
-export {form, invalidForm, dynamicForm, nestedForm, noInputForm};
+const formWithDocumentPreview: Form = {
+  id: 'camunda-forms:bpmn:form-0',
+  processDefinitionKey: 'process',
+  title: 'A form',
+  version: null,
+  schema: JSON.stringify({
+    components: [
+      {
+        label: 'My documents',
+        endpointKey: '=defaultDocumentsEndpointKey',
+        type: 'documentPreview',
+        id: 'myDocuments',
+        dataSource: '=myDocuments',
+      },
+    ],
+    type: 'default',
+    id: 'integration_form',
+  }),
+  tenantId: '<default>',
+  isDeleted: false,
+};
+
+export {
+  form,
+  invalidForm,
+  dynamicForm,
+  nestedForm,
+  noInputForm,
+  formWithDocumentPreview,
+};

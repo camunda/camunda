@@ -30,6 +30,7 @@ public class EnvironmentConfigurationLoader implements DocumentStoreConfiguratio
   private static final String CONFIGURATION_PREFIX = "DOCUMENT_";
   private static final String STORE_PREFIX = "DOCUMENT_STORE_";
   private static final String DEFAULT_DOCUMENT_STORE_ID = "DEFAULT_STORE_ID";
+  private static final String THREAD_POOL_SIZE = "THREAD_POOL_SIZE";
 
   private static final Pattern DOCUMENT_STORE_PROPERTY_PATTERN =
       Pattern.compile("^" + STORE_PREFIX + "(?<id>[^_]+)_(?<property>.+)$");
@@ -39,6 +40,7 @@ public class EnvironmentConfigurationLoader implements DocumentStoreConfiguratio
   public DocumentStoreConfiguration loadConfiguration() {
     return new DocumentStoreConfiguration(
         getRootLevelProperty(DEFAULT_DOCUMENT_STORE_ID).map(String::toLowerCase).orElse(null),
+        getRootLevelProperty(THREAD_POOL_SIZE).map(Integer::parseInt).orElse(null),
         loadDocumentStoreProperties());
   }
 

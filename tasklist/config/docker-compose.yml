@@ -5,7 +5,7 @@ services:
 
   postgres:
     container_name: postgres
-    image: postgres:17.0-alpine
+    image: postgres:17.2-alpine
     ports:
       - "5432:5432"
     environment:
@@ -16,7 +16,7 @@ services:
       - zeebe_network
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.16.1
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.1
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -56,13 +56,13 @@ services:
         soft: 65536 # maximum number of open files for the OpenSearch user, set to at least 65536 on modern systems
         hard: 65536
     ports:
-      - 9205:9200
+      - 9200:9200
       - 9605:9605 # required for Performance Analyzer
     networks:
       - zeebe_network
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.16.1
+    image: docker.elastic.co/kibana/kibana:8.17.0
     ports:
       - 5601:5601
     environment:
@@ -76,7 +76,7 @@ services:
     depends_on:
       - postgres
     container_name: keycloak
-    image: bitnami/keycloak:26.0.7
+    image: bitnami/keycloak:26.1.0
     ports:
       - "18080:8080"
     environment:
@@ -211,6 +211,7 @@ services:
       - 8080:8080
     environment:
       - SPRING_PROFILES_ACTIVE=dev,dev-data,auth
+      - CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED=true
     depends_on:
       - ${DATABASE}
       - zeebe
@@ -352,7 +353,7 @@ services:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_BROKER_NETWORK_HOST=zeebe-e2e
       - ZEEBE_BROKER_GATEWAY_NETWORK_PORT=26503
-      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX=e2e
+      - ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX=e2e
       - ZEEBE_BROKER_GATEWAY_ENABLE=true
       #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
     env_file:
@@ -375,6 +376,7 @@ services:
     environment:
       - CAMUNDA_TASKLIST_ELASTICSEARCH_INDEXPREFIX=e2etasklist
       - CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX=e2e
+      - CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED=true
       - CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=zeebe-e2e:26503
       - CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=http://zeebe-e2e:8088
       - CAMUNDA_TASKLIST_IMPORTER.READERBACKOFF=0
@@ -396,6 +398,7 @@ services:
       - 8080:8080
     environment:
       - spring.profiles.active=dev,dev-data,sso-auth
+      - CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED=true
       - camunda.tasklist.auth0.backendDomain=camunda-dev.eu.auth0.com
       - camunda.tasklist.auth0.claimName=https://camunda.com/orgs
       - camunda.tasklist.auth0.clientId=CLGSo9RQ1K290Fvy2ohDomndvLR3Qgl3

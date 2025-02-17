@@ -14,8 +14,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.ForbiddenException;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.NotFoundException;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UnauthorizedException;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -139,14 +139,13 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
 
     final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
     if (isAuthorized.isLeft()) {
-      final var rejectionType = isAuthorized.getLeft();
-      if (RejectionType.UNAUTHORIZED.equals(rejectionType)) {
-        throw new UnauthorizedException(
-            authRequest, "BPMN process id '%s'".formatted(subscriptionRecord.getBpmnProcessId()));
+      final var rejection = isAuthorized.getLeft();
+      if (RejectionType.NOT_FOUND.equals(rejection.type())) {
+        throw new NotFoundException(
+            "Expected to broadcast signal with name '%s', but no such signal was found"
+                .formatted(command.getValue().getSignalName()));
       }
-      throw new NotFoundException(
-          authRequest,
-          "broadcast signal with name '%s'".formatted(command.getValue().getSignalName()));
+      throw new ForbiddenException(authRequest);
     }
   }
 
@@ -174,10 +173,11 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<SignalRecord> command, final Throwable error) {
-    if (error instanceof final UnauthorizedException exception) {
-      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, exception.getMessage());
+    if (error instanceof final ForbiddenException exception) {
+      rejectionWriter.appendRejection(
+          command, exception.getRejectionType(), exception.getMessage());
       responseWriter.writeRejectionOnCommand(
-          command, RejectionType.UNAUTHORIZED, exception.getMessage());
+          command, exception.getRejectionType(), exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
 

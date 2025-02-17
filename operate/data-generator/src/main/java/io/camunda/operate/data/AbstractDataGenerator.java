@@ -10,11 +10,12 @@ package io.camunda.operate.data;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.worker.JobWorker;
 import io.camunda.operate.data.usertest.UserTestDataGenerator;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ZeebeStore;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.worker.JobWorker;
+import io.camunda.operate.zeebe.ZeebeESConstants;
+import io.camunda.security.configuration.SecurityConfiguration;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
@@ -34,12 +35,12 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractDataGenerator.class);
 
   @Autowired
-  @Qualifier("zeebeClient")
-  protected ZeebeClient client;
+  @Qualifier("camundaClient")
+  protected CamundaClient client;
 
-  @Autowired protected OperateProperties operateProperties;
   protected boolean manuallyCalled = false;
   protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
+  @Autowired private SecurityConfiguration securityConfiguration;
   private boolean shutdown = false;
   @Autowired private ZeebeStore zeebeStore;
 
@@ -105,9 +106,9 @@ public abstract class AbstractDataGenerator implements DataGenerator {
 
   public boolean shouldCreateData(final boolean manuallyCalled) {
     if (!manuallyCalled) { // when called manually, always create the data
+      final String zeebeIndexPrefix = zeebeStore.getZeebeIndexPrefix();
       final boolean exists =
-          zeebeStore.zeebeIndicesExists(
-              operateProperties.getZeebeElasticsearch().getPrefix() + "*");
+          zeebeStore.zeebeIndicesExists(zeebeIndexPrefix + "*" + ZeebeESConstants.DEPLOYMENT + "*");
       if (exists) {
         // data already exists
         LOGGER.debug("Data already exists in Zeebe.");
@@ -157,7 +158,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   }
 
   protected String getTenant(final String tenantId) {
-    if (operateProperties.getMultiTenancy().isEnabled()) {
+    if (securityConfiguration.getMultiTenancy().isEnabled()) {
       return tenantId;
     }
     return DEFAULT_TENANT_ID;

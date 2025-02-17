@@ -15,12 +15,16 @@
  */
 package io.camunda.zeebe.spring.client.annotation;
 
-import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import io.camunda.client.CamundaClientConfiguration;
 import java.lang.annotation.*;
 
+/**
+ * @deprecated please use {@link io.camunda.spring.client.annotation.JobWorker}
+ */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
+@Deprecated(forRemoval = true, since = "8.8")
 public @interface JobWorker {
 
   /**
@@ -31,7 +35,7 @@ public @interface JobWorker {
   String type() default "";
 
   /**
-   * set to empty string which leads to default from ZeebeClientBuilderImpl being used in
+   * set to empty string which leads to default from CamundaClientBuilderImpl being used in
    * ZeebeWorkerAnnotationProcessor
    */
   String name() default "";
@@ -50,7 +54,7 @@ public @interface JobWorker {
    * the worker will stop activating new jobs in order to not overwhelm the client and give other
    * workers the chance to work on the jobs. The worker will try to activate new jobs again when
    * jobs are completed (or marked as failed). If no maximum is set then the default, from the
-   * ZeebeClientConfigurationImpl, is used. <br>
+   * CamundaClientConfigurationImpl, is used. <br>
    * <br>
    * Considerations: A greater value can avoid situations in which the client waits idle for the
    * broker to provide more jobs. This can improve the worker's throughput. The memory used by the
@@ -64,8 +68,8 @@ public @interface JobWorker {
 
   /**
    * Set the request timeout (in seconds) for activate job request used to poll for new job. If no
-   * request timeout is set then the default is used from the {@link ZeebeClientConfiguration
-   * ZeebeClientConfigurationImpl}
+   * request timeout is set then the default is used from the {@link CamundaClientConfiguration
+   * CamundaClientConfigurationImpl}
    */
   long requestTimeout() default -1L;
 
@@ -73,7 +77,7 @@ public @interface JobWorker {
    * Set the maximal interval (in milliseconds) between polling for new jobs. A job worker will
    * automatically try to always activate new jobs after completing jobs. If no jobs can be
    * activated after completing the worker will periodically poll for new jobs. If no poll interval
-   * is set then the default is used from the {@link ZeebeClientConfiguration}
+   * is set then the default is used from the {@link CamundaClientConfiguration}
    */
   long pollInterval() default -1L;
 
@@ -93,7 +97,7 @@ public @interface JobWorker {
    *
    * <p>You can still throw exceptions if you want to raise a problem instead of job completion. You
    * could also raise a BPMN problem throwing a {@link
-   * io.camunda.zeebe.spring.common.exception.ZeebeBpmnError}
+   * io.camunda.spring.client.exception.CamundaBpmnError}
    */
   boolean autoComplete() default true;
 

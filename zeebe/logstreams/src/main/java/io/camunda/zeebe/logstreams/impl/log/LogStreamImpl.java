@@ -65,7 +65,7 @@ public final class LogStreamImpl implements LogStream, CommitListener {
   @Override
   public void close() {
     closed = true;
-    LOG.info("Closing {} with {} readers", logName, readers.size());
+    LOG.debug("Closing {} with {} readers", logName, readers.size());
     readers.forEach(LogStreamReader::close);
     logStorage.removeCommitListener(this);
     logStreamMetrics.remove();

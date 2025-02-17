@@ -9,6 +9,7 @@ package io.camunda.webapps.schema.descriptors.usermanagement;
 
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
+import java.util.Optional;
 
 public abstract class UserManagementIndexDescriptor extends AbstractIndexDescriptor {
 
@@ -19,5 +20,10 @@ public abstract class UserManagementIndexDescriptor extends AbstractIndexDescrip
   @Override
   public String getComponentName() {
     return ComponentNames.CAMUNDA.toString();
+  }
+
+  @Override
+  public Optional<String> getTenantIdField() {
+    return Optional.empty();
   }
 }

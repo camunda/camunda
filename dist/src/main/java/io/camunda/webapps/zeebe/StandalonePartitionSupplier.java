@@ -7,20 +7,20 @@
  */
 package io.camunda.webapps.zeebe;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.util.Either;
 
 public class StandalonePartitionSupplier implements PartitionSupplier {
-  private final ZeebeClient zeebeClient;
+  private final CamundaClient camundaClient;
 
-  public StandalonePartitionSupplier(final ZeebeClient zeebeClient) {
-    this.zeebeClient = zeebeClient;
+  public StandalonePartitionSupplier(final CamundaClient camundaClient) {
+    this.camundaClient = camundaClient;
   }
 
   @Override
   public Either<Exception, Integer> getPartitionsCount() {
     try {
-      final var topology = zeebeClient.newTopologyRequest().send().join();
+      final var topology = camundaClient.newTopologyRequest().send().join();
       final var partitionCount = topology.getPartitionsCount();
       return Either.right(partitionCount);
     } catch (final Exception t) {

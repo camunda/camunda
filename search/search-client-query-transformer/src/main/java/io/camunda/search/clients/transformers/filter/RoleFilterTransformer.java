@@ -9,15 +9,20 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
+import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.RoleFilter;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
-import java.util.List;
 
-public class RoleFilterTransformer implements FilterTransformer<RoleFilter> {
+public class RoleFilterTransformer extends IndexFilterTransformer<RoleFilter> {
+  public RoleFilterTransformer(final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
+  }
 
   @Override
   public SearchQuery toSearchQuery(final RoleFilter filter) {
@@ -25,15 +30,12 @@ public class RoleFilterTransformer implements FilterTransformer<RoleFilter> {
         term(RoleIndex.JOIN, IdentityJoinRelationshipType.ROLE.getType()),
         filter.roleKey() == null ? null : term(RoleIndex.KEY, filter.roleKey()),
         filter.name() == null ? null : term(RoleIndex.NAME, filter.name()),
-        filter.memberKey() == null
+        filter.memberKeys() == null
             ? null
-            : hasChildQuery(
-                IdentityJoinRelationshipType.MEMBER.getType(),
-                term(RoleIndex.MEMBER_KEY, filter.memberKey())));
-  }
-
-  @Override
-  public List<String> toIndices(final RoleFilter filter) {
-    return List.of("camunda-role-8.7.0_alias");
+            : filter.memberKeys().isEmpty()
+                ? matchNone()
+                : hasChildQuery(
+                    IdentityJoinRelationshipType.MEMBER.getType(),
+                    longTerms(RoleIndex.MEMBER_KEY, filter.memberKeys())));
   }
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.schema;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
@@ -24,16 +25,19 @@ public class SchemaManager {
   private final Collection<IndexDescriptor> indexDescriptors;
   private final Collection<IndexTemplateDescriptor> indexTemplateDescriptors;
   private final ExporterConfiguration config;
+  private final ObjectMapper objectMapper;
 
   public SchemaManager(
       final SearchEngineClient searchEngineClient,
       final Collection<IndexDescriptor> indexDescriptors,
       final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
-      final ExporterConfiguration config) {
+      final ExporterConfiguration config,
+      final ObjectMapper objectMapper) {
     this.searchEngineClient = searchEngineClient;
     this.indexDescriptors = indexDescriptors;
     this.indexTemplateDescriptors = indexTemplateDescriptors;
     this.config = config;
+    this.objectMapper = objectMapper;
   }
 
   public void startup() {
@@ -43,10 +47,9 @@ public class SchemaManager {
       return;
     }
     LOG.info("Schema creation is enabled. Start Schema management.");
-    final var schemaValidator = new IndexSchemaValidator();
-    final var newIndexProperties = validateIndices(schemaValidator, searchEngineClient);
-    final var newIndexTemplateProperties =
-        validateIndexTemplates(schemaValidator, searchEngineClient);
+    final var schemaValidator = new IndexSchemaValidator(objectMapper);
+    final var newIndexProperties = validateIndices(schemaValidator);
+    final var newIndexTemplateProperties = validateIndexTemplates(schemaValidator);
     //  used to create any indices/templates which don't exist
     initialiseResources();
 
@@ -146,9 +149,8 @@ public class SchemaManager {
             "Index alias: '{}'. New fields will be added '{}'",
             descriptor.getFullQualifiedName(),
             newProperties);
-
-        searchEngineClient.putMapping(descriptor, newProperties);
       }
+      searchEngineClient.putMapping(descriptor, newProperties);
     }
   }
 
@@ -172,7 +174,7 @@ public class SchemaManager {
   }
 
   private Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndices(
-      final IndexSchemaValidator schemaValidator, final SearchEngineClient searchEngineClient) {
+      final IndexSchemaValidator schemaValidator) {
     if (indexDescriptors.isEmpty()) {
       LOG.info("No validation of indices, as there are no descriptors");
       return Map.of();
@@ -187,7 +189,7 @@ public class SchemaManager {
   }
 
   private Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndexTemplates(
-      final IndexSchemaValidator schemaValidator, final SearchEngineClient searchEngineClient) {
+      final IndexSchemaValidator schemaValidator) {
     if (indexTemplateDescriptors.isEmpty()) {
       LOG.info("No validation of index templates, as there are no descriptors");
       return Map.of();

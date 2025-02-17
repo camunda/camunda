@@ -18,15 +18,14 @@ package io.camunda.zeebe.client.api.search.sort;
 
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestSort;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.search.sort.UserTaskSort}
+ */
+@Deprecated
 public interface UserTaskSort extends SearchRequestSort<UserTaskSort> {
 
   UserTaskSort creationDate();
 
   UserTaskSort completionDate();
-
-  UserTaskSort dueDate();
-
-  UserTaskSort followUpDate();
-
-  UserTaskSort priority();
 }

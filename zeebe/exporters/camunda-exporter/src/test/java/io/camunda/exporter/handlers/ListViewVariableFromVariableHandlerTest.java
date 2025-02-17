@@ -25,13 +25,16 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
 
 public class ListViewVariableFromVariableHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-list-view";
   private final ListViewVariableFromVariableHandler underTest =
-      new ListViewVariableFromVariableHandler(indexName, false);
+      new ListViewVariableFromVariableHandler(indexName);
 
   @Test
   public void testGetHandledValueType() {
@@ -41,6 +44,34 @@ public class ListViewVariableFromVariableHandlerTest {
   @Test
   public void testGetEntityType() {
     assertThat(underTest.getEntityType()).isEqualTo(VariableForListViewEntity.class);
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = VariableIntent.class,
+      names = {"CREATED", "UPDATED"},
+      mode = Mode.INCLUDE)
+  void shouldHandleRecord(final VariableIntent intent) {
+    // given
+    final Record<VariableRecordValue> variableRecord =
+        factory.generateRecord(ValueType.VARIABLE, r -> r.withIntent(intent));
+
+    // when - then
+    assertThat(underTest.handlesRecord(variableRecord)).isTrue();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = VariableIntent.class,
+      names = {"MIGRATED"},
+      mode = Mode.INCLUDE)
+  void shouldNotHandleRecord(final VariableIntent intent) {
+    // given
+    final Record<VariableRecordValue> variableRecord =
+        factory.generateRecord(ValueType.VARIABLE, r -> r.withIntent(intent));
+
+    // when - then
+    assertThat(underTest.handlesRecord(variableRecord)).isFalse();
   }
 
   @Test
@@ -93,40 +124,6 @@ public class ListViewVariableFromVariableHandlerTest {
             indexName,
             inputEntity.getId(),
             inputEntity,
-            expectedUpdateFields,
-            String.valueOf(inputEntity.getProcessInstanceKey()));
-  }
-
-  @Test
-  public void shouldUpsertEntityWithConcurrencyModeOnFlush() {
-    // given
-    final ListViewVariableFromVariableHandler underTest =
-        new ListViewVariableFromVariableHandler(indexName, true);
-    final VariableForListViewEntity inputEntity =
-        new VariableForListViewEntity()
-            .setId("66-A")
-            .setProcessInstanceKey(66L)
-            .setPosition(123L)
-            .setVarName("A")
-            .setVarValue("B");
-
-    final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
-    expectedUpdateFields.put(POSITION, inputEntity.getPosition());
-    expectedUpdateFields.put(VAR_NAME, inputEntity.getVarName());
-    expectedUpdateFields.put(VAR_VALUE, inputEntity.getVarValue());
-
-    final BatchRequest mockRequest = mock(BatchRequest.class);
-
-    // when
-    underTest.flush(inputEntity, mockRequest);
-
-    // then
-    verify(mockRequest, times(1))
-        .upsertWithScriptAndRouting(
-            indexName,
-            inputEntity.getId(),
-            inputEntity,
-            underTest.getVariableScript(),
             expectedUpdateFields,
             String.valueOf(inputEntity.getProcessInstanceKey()));
   }

@@ -19,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
@@ -179,6 +180,19 @@ final class ProtoBufSerializerTest {
     // then
     final var decodedRequest = protoBufSerializer.decodeForceRemoveBrokersRequest(encodedRequest);
     assertThat(decodedRequest).isEqualTo(forceRemoveBrokersRequest);
+  }
+
+  @Test
+  void shouldEncodeAndDecodePurgeRequest() {
+    // given
+    final var purgeRequest = new PurgeRequest(true);
+
+    // when
+    final var encodedRequest = protoBufSerializer.encodePurgeRequest(purgeRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodePurgeRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(purgeRequest);
   }
 
   @Test

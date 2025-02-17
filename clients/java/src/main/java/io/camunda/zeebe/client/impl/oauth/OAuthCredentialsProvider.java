@@ -33,21 +33,11 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLSocketFactory;
 import net.jcip.annotations.ThreadSafe;
-import org.apache.hc.core5.ssl.SSLContextBuilder;
-import org.apache.hc.core5.ssl.SSLContexts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,22 +59,12 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private final URL authorizationServerUrl;
   private final String payload;
   private final String clientId;
-  private final Path keystorePath;
-  private final String keystorePassword;
-  private final String keystoreKeyPassword;
-  private final Path truststorePath;
-  private final String truststorePassword;
   private final OAuthCredentialsCache credentialsCache;
   private final Duration connectionTimeout;
   private final Duration readTimeout;
 
   OAuthCredentialsProvider(final OAuthCredentialsProviderBuilder builder) {
     authorizationServerUrl = builder.getAuthorizationServer();
-    keystorePath = builder.getKeystorePath();
-    keystorePassword = builder.getKeystorePassword();
-    keystoreKeyPassword = builder.getKeystoreKeyPassword();
-    truststorePath = builder.getTruststorePath();
-    truststorePassword = builder.getTruststorePassword();
     clientId = builder.getClientId();
     payload = createParams(builder);
     credentialsCache = new OAuthCredentialsCache(builder.getCredentialsCache());
@@ -159,7 +139,6 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private ZeebeClientCredentials fetchCredentials() throws IOException {
     final HttpURLConnection connection =
         (HttpURLConnection) authorizationServerUrl.openConnection();
-    maybeConfigureCustomSSLContext(connection);
     connection.setRequestMethod("POST");
     connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
     connection.setRequestProperty("Accept", "application/json");
@@ -189,40 +168,6 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
       }
 
       return fetchedCredentials;
-    }
-  }
-
-  private void maybeConfigureCustomSSLContext(final HttpURLConnection connection) {
-    if (connection instanceof HttpsURLConnection) {
-      final HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
-      httpsConnection.setSSLSocketFactory(createSSLContext());
-    }
-  }
-
-  private SSLSocketFactory createSSLContext() {
-    if (keystorePath == null && truststorePath == null) {
-      return SSLContexts.createSystemDefault().getSocketFactory();
-    }
-    final SSLContextBuilder builder = SSLContexts.custom();
-    try {
-      if (keystorePath != null) {
-        builder.loadKeyMaterial(
-            keystorePath,
-            keystorePassword == null ? null : keystorePassword.toCharArray(),
-            keystoreKeyPassword == null ? new char[0] : keystoreKeyPassword.toCharArray());
-      }
-      if (truststorePath != null) {
-        builder.loadTrustMaterial(
-            truststorePath, truststorePassword == null ? null : truststorePassword.toCharArray());
-      }
-      return builder.build().getSocketFactory();
-    } catch (final NoSuchAlgorithmException
-        | KeyManagementException
-        | KeyStoreException
-        | UnrecoverableKeyException
-        | CertificateException
-        | IOException e) {
-      throw new RuntimeException("Failed to create SSL context", e);
     }
   }
 }

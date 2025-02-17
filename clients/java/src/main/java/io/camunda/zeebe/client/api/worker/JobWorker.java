@@ -19,7 +19,11 @@ package io.camunda.zeebe.client.api.worker;
  * Represents an active job worker that performs jobs of a certain type. While a registration is
  * open, the client continuously receives jobs from the broker and hands them to a registered {@link
  * JobHandler}.
+ *
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.worker.JobWorker}
  */
+@Deprecated
 public interface JobWorker extends AutoCloseable {
   /**
    * @return true if this registration is currently active and work items are being received for it

@@ -11,7 +11,7 @@ import io.camunda.search.entities.GroupEntity;
 import java.util.function.Function;
 
 public enum GroupSearchColumn implements SearchColumn<GroupEntity> {
-  GROUP_KEY("key", GroupEntity::key),
+  GROUP_KEY("groupKey", GroupEntity::groupKey),
   NAME("name", GroupEntity::name);
 
   private final String property;

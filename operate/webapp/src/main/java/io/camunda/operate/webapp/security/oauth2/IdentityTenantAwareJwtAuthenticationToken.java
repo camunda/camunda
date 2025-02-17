@@ -8,10 +8,10 @@
 package io.camunda.operate.webapp.security.oauth2;
 
 import io.camunda.identity.sdk.Identity;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.webapp.security.tenant.OperateTenant;
 import io.camunda.operate.webapp.security.tenant.TenantAwareAuthentication;
+import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -52,7 +52,7 @@ public class IdentityTenantAwareJwtAuthenticationToken extends JwtAuthentication
       } else {
         return new ArrayList<>();
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       // need to trigger HTTP error code 40x. Encapsulate the causing exception
       throw new InsufficientAuthenticationException(e.getMessage(), e);
     }
@@ -62,11 +62,11 @@ public class IdentityTenantAwareJwtAuthenticationToken extends JwtAuthentication
     return SpringContextHolder.getBean(Identity.class);
   }
 
-  private OperateProperties getOperateProperties() {
-    return SpringContextHolder.getBean(OperateProperties.class);
+  private SecurityConfiguration getSecurityConfiguration() {
+    return SpringContextHolder.getBean(SecurityConfiguration.class);
   }
 
   private boolean isMultiTenancyEnabled() {
-    return getOperateProperties().getMultiTenancy().isEnabled();
+    return getSecurityConfiguration().getMultiTenancy().isEnabled();
   }
 }

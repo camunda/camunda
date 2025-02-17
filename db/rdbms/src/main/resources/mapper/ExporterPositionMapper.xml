@@ -11,7 +11,7 @@
 
   <select id="findOne"
     statementType="PREPARED"
-    parameterType="java.lang.Long"
+    parameterType="java.lang.Integer"
     resultType="io.camunda.db.rdbms.write.domain.ExporterPositionModel">
       SELECT
         PARTITION_ID,
@@ -20,7 +20,7 @@
         CREATED,
         LAST_UPDATED
       FROM
-        EXPORTER_POSITION
+        ${prefix}EXPORTER_POSITION
       WHERE PARTITION_ID = #{partitionId}
   </select>
 
@@ -28,7 +28,7 @@
     id="insert"
     statementType="PREPARED"
     parameterType="io.camunda.db.rdbms.write.domain.ExporterPositionModel">
-      INSERT INTO EXPORTER_POSITION (PARTITION_ID, EXPORTER, LAST_EXPORTED_POSITION, CREATED, LAST_UPDATED)
+      INSERT INTO ${prefix}EXPORTER_POSITION (PARTITION_ID, EXPORTER, LAST_EXPORTED_POSITION, CREATED, LAST_UPDATED)
       VALUES (#{partitionId}, #{exporter}, #{lastExportedPosition}, #{created}, #{lastUpdated})
   </insert>
 
@@ -36,7 +36,7 @@
     id="update"
     statementType="PREPARED"
     parameterType="io.camunda.db.rdbms.write.domain.ExporterPositionModel">
-      UPDATE EXPORTER_POSITION
+      UPDATE ${prefix}EXPORTER_POSITION
       SET LAST_EXPORTED_POSITION = #{lastExportedPosition}, LAST_UPDATED = #{lastUpdated}
       WHERE PARTITION_ID = #{partitionId}
   </update>

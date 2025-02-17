@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -24,10 +25,16 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class UserTaskClient {
   private static final long DEFAULT_KEY = -1L;
+  private static final int DEFAULT_REQUEST_STREAM_ID = 1;
+  private static final long DEFAULT_REQUEST_ID = 1L;
+  private static final int DEFAULT_PARTITION_ID = 1;
 
   private static final Function<Long, Record<UserTaskRecordValue>> SUCCESS_SUPPLIER =
       (position) ->
-          RecordingExporter.userTaskRecords().withSourceRecordPosition(position).getFirst();
+          RecordingExporter.userTaskRecords()
+              .onlyEvents()
+              .withSourceRecordPosition(position)
+              .getFirst();
 
   private static final Function<Long, Record<UserTaskRecordValue>> REJECTION_SUPPLIER =
       (position) ->
@@ -117,14 +124,34 @@ public final class UserTaskClient {
     return userTaskKey;
   }
 
+  public Record<UserTaskRecordValue> unassign() {
+    return withoutAssignee().withAction(userTaskRecord.getActionOrDefault("unassign")).assign();
+  }
+
   public Record<UserTaskRecordValue> assign() {
     final long userTaskKey = findUserTaskKey();
     final long position =
         writer.writeCommand(
             userTaskKey,
+            DEFAULT_REQUEST_STREAM_ID,
+            DEFAULT_REQUEST_ID,
             UserTaskIntent.ASSIGN,
             userTaskRecord.setUserTaskKey(userTaskKey),
             authorizedTenantIds.toArray(new String[0]));
+    return expectation.apply(position);
+  }
+
+  public Record<UserTaskRecordValue> assign(final String username) {
+    final long userTaskKey = findUserTaskKey();
+    final long position =
+        writer.writeCommand(
+            userTaskKey,
+            DEFAULT_REQUEST_STREAM_ID,
+            DEFAULT_REQUEST_ID,
+            UserTaskIntent.ASSIGN,
+            username,
+            userTaskRecord.setUserTaskKey(userTaskKey),
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     return expectation.apply(position);
   }
 
@@ -136,6 +163,8 @@ public final class UserTaskClient {
     final long position =
         writer.writeCommand(
             userTaskKey,
+            DEFAULT_REQUEST_STREAM_ID,
+            DEFAULT_REQUEST_ID,
             UserTaskIntent.ASSIGN,
             taskRecord,
             authorizedTenantIds.toArray(new String[0]));
@@ -147,66 +176,113 @@ public final class UserTaskClient {
     final long position =
         writer.writeCommand(
             userTaskKey,
+            DEFAULT_REQUEST_STREAM_ID,
+            DEFAULT_REQUEST_ID,
             UserTaskIntent.CLAIM,
             userTaskRecord.setUserTaskKey(userTaskKey),
             authorizedTenantIds.toArray(new String[0]));
     return expectation.apply(position);
   }
 
-  public Record<UserTaskRecordValue> complete() {
+  public Record<UserTaskRecordValue> claim(final String username) {
     final long userTaskKey = findUserTaskKey();
     final long position =
         writer.writeCommand(
             userTaskKey,
-            UserTaskIntent.COMPLETE,
+            DEFAULT_REQUEST_STREAM_ID,
+            DEFAULT_REQUEST_ID,
+            UserTaskIntent.CLAIM,
+            username,
             userTaskRecord.setUserTaskKey(userTaskKey),
-            authorizedTenantIds.toArray(new String[0]));
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     return expectation.apply(position);
   }
 
-  public Record<UserTaskRecordValue> update(
-      final List<String> candidateGroups,
-      final List<String> candidateUsers,
-      final String dueDate,
-      final String followUpDate) {
-    if (candidateGroups != null) {
-      userTaskRecord.setCandidateGroupsList(candidateGroups).setCandidateGroupsChanged();
-    }
-    if (candidateUsers != null) {
-      userTaskRecord.setCandidateUsersList(candidateUsers).setCandidateUsersChanged();
-    }
-    if (dueDate != null) {
-      userTaskRecord.setDueDate(dueDate).setDueDateChanged();
-    }
-    if (followUpDate != null) {
-      userTaskRecord.setFollowUpDate(followUpDate).setFollowUpDateChanged();
-    }
+  public Record<UserTaskRecordValue> complete() {
+    final long userTaskKey = findUserTaskKey();
+    final int partitionId = decodePartitionId(userTaskKey);
+    final long position =
+        writer.writeCommandOnPartition(
+            partitionId,
+            r ->
+                r.key(userTaskKey)
+                    .requestStreamId(DEFAULT_REQUEST_STREAM_ID)
+                    .requestId(DEFAULT_REQUEST_ID)
+                    .intent(UserTaskIntent.COMPLETE)
+                    .event(userTaskRecord.setUserTaskKey(userTaskKey))
+                    .authorizations(authorizedTenantIds.toArray(new String[0])));
+    return expectation.apply(position);
+  }
 
+  private static int decodePartitionId(final long userTaskKey) {
+    final var partitionId = Protocol.decodePartitionId(userTaskKey);
+    if (partitionId <= 0) {
+      // the userTaskKey does not encode a partition id
+      return DEFAULT_PARTITION_ID;
+    }
+    return partitionId;
+  }
+
+  public Record<UserTaskRecordValue> complete(final String username) {
     final long userTaskKey = findUserTaskKey();
     final long position =
         writer.writeCommand(
             userTaskKey,
-            UserTaskIntent.UPDATE,
+            DEFAULT_REQUEST_STREAM_ID,
+            DEFAULT_REQUEST_ID,
+            UserTaskIntent.COMPLETE,
+            username,
             userTaskRecord.setUserTaskKey(userTaskKey),
-            authorizedTenantIds.toArray(new String[0]));
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     return expectation.apply(position);
   }
 
   public Record<UserTaskRecordValue> update(final UserTaskRecord changes) {
-    changes
-        .setCandidateGroupsChanged()
-        .setCandidateUsersChanged()
-        .setDueDateChanged()
-        .setFollowUpDateChanged();
+    if (changes.getChangedAttributesProp().isEmpty()) {
+      // assume all attributes have been changed
+      changes
+          .setCandidateGroupsChanged()
+          .setCandidateUsersChanged()
+          .setDueDateChanged()
+          .setFollowUpDateChanged()
+          .setPriorityChanged();
+    }
     userTaskRecord.wrapChangedAttributes(changes, true);
 
     final long userTaskKey = findUserTaskKey();
     final long position =
         writer.writeCommand(
             userTaskKey,
+            DEFAULT_REQUEST_STREAM_ID,
+            DEFAULT_REQUEST_ID,
             UserTaskIntent.UPDATE,
             userTaskRecord.setUserTaskKey(userTaskKey),
             authorizedTenantIds.toArray(new String[0]));
+    return expectation.apply(position);
+  }
+
+  public Record<UserTaskRecordValue> update(final UserTaskRecord changes, final String username) {
+    if (changes.getChangedAttributesProp().isEmpty()) {
+      // assume all attributes have been changed
+      changes
+          .setCandidateGroupsChanged()
+          .setCandidateUsersChanged()
+          .setDueDateChanged()
+          .setFollowUpDateChanged()
+          .setPriorityChanged();
+    }
+    userTaskRecord.wrapChangedAttributes(changes, true);
+
+    final long userTaskKey = findUserTaskKey();
+    final long position =
+        writer.writeCommand(
+            userTaskKey,
+            DEFAULT_REQUEST_STREAM_ID,
+            DEFAULT_REQUEST_ID,
+            UserTaskIntent.UPDATE,
+            username,
+            userTaskRecord.setUserTaskKey(userTaskKey),
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     return expectation.apply(position);
   }
 }

@@ -160,6 +160,7 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
         "pendingUpdateAlias",
         "incidentAlias",
         "listViewAlias",
+        "listViewFullQualifiedName",
         "flowNodeAlias",
         "operationAlias",
         client,

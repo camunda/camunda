@@ -17,6 +17,11 @@ package io.camunda.zeebe.client.api.command;
 
 import io.camunda.zeebe.client.api.response.UnassignUserTaskResponse;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.UnassignUserTaskCommandStep1}
+ */
+@Deprecated
 public interface UnassignUserTaskCommandStep1 extends FinalCommandStep<UnassignUserTaskResponse> {
   // the place for new optional parameters
 }

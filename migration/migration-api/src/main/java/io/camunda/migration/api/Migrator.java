@@ -7,17 +7,7 @@
  */
 package io.camunda.migration.api;
 
-import org.springframework.boot.ApplicationArguments;
+import java.util.concurrent.Callable;
 
 /** Scanned interface for migration tasks. */
-public interface Migrator extends Runnable {
-
-  default void run(final ApplicationArguments args) {
-    acceptArguments(args);
-    run();
-  }
-
-  default void acceptArguments(final ApplicationArguments args) {
-    // no-op
-  }
-}
+public interface Migrator extends Callable<Void> {}

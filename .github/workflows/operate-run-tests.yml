@@ -57,10 +57,10 @@ jobs:
         run: ${{ inputs.command }}
       - name: Send Slack notification on failure
         if: failure()
-        uses: slackapi/slack-github-action@v1.27.1
-        env:
-          SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.OPERATE_CI_ALERT_WEBHOOK_URL }}
+        uses: slackapi/slack-github-action@v2.0.0
         with:
+          webhook: ${{ steps.secrets.outputs.OPERATE_CI_ALERT_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
           payload: |
             {
               "workflow_name": "${{ github.workflow }}",

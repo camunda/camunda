@@ -42,7 +42,7 @@ public final class TopologyImpl implements Topology {
     gatewayVersion = grpcResponse.getGatewayVersion();
   }
 
-  public TopologyImpl(final io.camunda.zeebe.client.protocol.rest.TopologyResponse httpResponse) {
+  public TopologyImpl(final io.camunda.client.protocol.rest.TopologyResponse httpResponse) {
     brokers =
         Optional.ofNullable(httpResponse.getBrokers()).orElse(Collections.emptyList()).stream()
             .map(BrokerInfoImpl::new)

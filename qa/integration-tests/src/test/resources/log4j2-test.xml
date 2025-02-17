@@ -17,6 +17,7 @@
 
   <Loggers>
     <Logger name="io.camunda.zeebe" level="debug"/>
+    <Logger name="io.camunda.it" level="debug"/>
     <Logger name="io.atomix" level="debug"/>
     <Logger name="io.zeebe.containers.ZeebeTopologyWaitStrategy" level="trace"/>
 
@@ -26,6 +27,7 @@
 
     <Logger name="org.apache.ibatis" level="debug"/>
     <Logger name="io.camunda.db.rdbms" level="debug"/>
+    <Logger name="io.camunda.exporter.rdbms" level="debug"/>
     <Logger name="io.camunda.zeebe.gateway.rest" level="debug"/>
 
     <Root level="info">

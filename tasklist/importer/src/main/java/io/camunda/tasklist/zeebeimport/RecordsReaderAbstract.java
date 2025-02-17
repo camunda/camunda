@@ -122,14 +122,7 @@ public abstract class RecordsReaderAbstract implements RecordsReader, Runnable {
       }
       Long nextRunDelay = null;
       if (importBatch.getHits().size() == 0) {
-        if (recordsReaderHolder.hasPartitionCompletedImporting(partitionId)) {
-          recordsReaderHolder.incrementEmptyBatches(partitionId, importValueType);
-        }
-
-        if (recordsReaderHolder.isRecordReaderCompletedImporting(partitionId, importValueType)) {
-          recordsReaderHolder.recordLatestLoadedPositionAsCompleted(
-              importPositionHolder, importValueType.getAliasTemplate(), partitionId);
-        }
+        markRecordReaderCompletedIfMinimumEmptyBatchesReceived();
         nextRunDelay = readerBackoff;
       } else {
         final var importJob = createImportJob(latestPosition, importBatch);
@@ -149,6 +142,7 @@ public abstract class RecordsReaderAbstract implements RecordsReader, Runnable {
       }
       return importBatch.getHits().size();
     } catch (final NoSuchIndexException ex) {
+      markRecordReaderCompletedIfMinimumEmptyBatchesReceived();
       // if no index found, we back off current reader
       if (autoContinue) {
         rescheduleReader(readerBackoff);
@@ -306,6 +300,25 @@ public abstract class RecordsReaderAbstract implements RecordsReader, Runnable {
             completeRescheduling();
             rescheduleReader(null);
           });
+    }
+  }
+
+  private void markRecordReaderCompletedIfMinimumEmptyBatchesReceived() {
+    if (recordsReaderHolder.hasPartitionCompletedImporting(partitionId)) {
+      recordsReaderHolder.incrementEmptyBatches(partitionId, importValueType);
+    }
+
+    if (recordsReaderHolder.isRecordReaderCompletedImporting(partitionId, importValueType)) {
+      try {
+        recordsReaderHolder.recordLatestLoadedPositionAsCompleted(
+            importPositionHolder, importValueType.getAliasTemplate(), partitionId);
+      } catch (final IOException e) {
+        LOGGER.error(
+            "Failed when trying to mark record reader [{}-{}] as completed",
+            importValueType.getAliasTemplate(),
+            partitionId,
+            e);
+      }
     }
   }
 

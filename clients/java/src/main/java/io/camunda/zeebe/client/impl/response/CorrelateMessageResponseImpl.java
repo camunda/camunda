@@ -15,9 +15,10 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.client.impl.util.ParseUtil;
+import io.camunda.client.protocol.rest.MessageCorrelationResult;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.CorrelateMessageResponse;
-import io.camunda.zeebe.client.protocol.rest.MessageCorrelationResponse;
 
 public final class CorrelateMessageResponseImpl implements CorrelateMessageResponse {
 
@@ -45,10 +46,10 @@ public final class CorrelateMessageResponseImpl implements CorrelateMessageRespo
     return processInstanceKey;
   }
 
-  public CorrelateMessageResponseImpl setResponse(final MessageCorrelationResponse response) {
-    key = response.getMessageKey();
+  public CorrelateMessageResponseImpl setResponse(final MessageCorrelationResult response) {
+    key = ParseUtil.parseLongOrEmpty(response.getMessageKey());
     tenantId = response.getTenantId();
-    processInstanceKey = response.getProcessInstanceKey();
+    processInstanceKey = ParseUtil.parseLongOrEmpty(response.getProcessInstanceKey());
     return this;
   }
 }

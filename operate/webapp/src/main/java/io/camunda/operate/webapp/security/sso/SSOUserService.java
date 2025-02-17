@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Profile(SSO_AUTH_PROFILE)
+// TODO replace with OIDC implementation
 public class SSOUserService extends AbstractUserService<AbstractAuthenticationToken> {
 
   @Autowired private OperateProperties operateProperties;

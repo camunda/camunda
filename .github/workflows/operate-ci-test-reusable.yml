@@ -56,7 +56,15 @@ jobs:
     timeout-minutes: 40
     runs-on: ${{ inputs.runner-type }}
     if: ${{ !startsWith(inputs.branch, 'fe-') && !(startsWith(inputs.branch, 'renovate/') && contains(inputs.branch, '-fe-')) }}
-
+    env:
+      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe
+      ZEEBE_TEST_DOCKER_IMAGE_TAG: current-test
+    services:
+      # local registry is used as this job needs to push its docker image to be used by IT
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
@@ -88,16 +96,26 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-
-      # Build: all Maven artifacts
-      - name: Build Maven
-        run: |
-          ./mvnw clean install -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild
+      - uses: ./.github/actions/build-platform-docker
+        id: build-camunda-docker
+        with:
+          # we use a local registry for pushing
+          repository: ${{ env.ZEEBE_TEST_DOCKER_IMAGE }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          version: ${{ env.ZEEBE_TEST_DOCKER_IMAGE_TAG }}
+          # push is needed to make accessible for integration tests
+          push: true
 
       # Run integration tests in parallel
       - name: Backend - ${{ inputs.test-type }}
         run: |
-          ${{ inputs.command }}
+          ${{ inputs.command }} \
+          -Dzeebe.currentVersion.docker.tag=${{ env.ZEEBE_TEST_DOCKER_IMAGE_TAG }} \
+          -Dzeebe.currentVersion.docker.repo=${{ env.ZEEBE_TEST_DOCKER_IMAGE }}
 
       # Reports: publish test metrics results
       - name: Upload Test Report
@@ -107,10 +125,10 @@ jobs:
           name: "Operate ${{ inputs.test-type }}"
       - name: Send Slack notification on failure
         if: failure()
-        uses: slackapi/slack-github-action@v1.27.1
-        env:
-          SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.OPERATE_CI_ALERT_WEBHOOK_URL }}
+        uses: slackapi/slack-github-action@v2.0.0
         with:
+          webhook: ${{ steps.secrets.outputs.OPERATE_CI_ALERT_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
           payload: |
             {
               "workflow_name": "${{ github.workflow }}",

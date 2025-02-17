@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
-import io.camunda.tasklist.webapp.graphql.entity.ProcessDTO;
+import io.camunda.tasklist.webapp.dto.ProcessDTO;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -31,7 +31,7 @@ public class ProcessPublicEndpointsResponse {
     return bpmnProcessId;
   }
 
-  public ProcessPublicEndpointsResponse setBpmnProcessId(String bpmnProcessId) {
+  public ProcessPublicEndpointsResponse setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
   }
@@ -40,7 +40,7 @@ public class ProcessPublicEndpointsResponse {
     return processDefinitionKey;
   }
 
-  public ProcessPublicEndpointsResponse setProcessDefinitionKey(String processDefinitionKey) {
+  public ProcessPublicEndpointsResponse setProcessDefinitionKey(final String processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
     return this;
   }
@@ -49,12 +49,12 @@ public class ProcessPublicEndpointsResponse {
     return endpoint;
   }
 
-  public ProcessPublicEndpointsResponse setEndpoint(String endpoint) {
+  public ProcessPublicEndpointsResponse setEndpoint(final String endpoint) {
     this.endpoint = endpoint;
     return this;
   }
 
-  public static ProcessPublicEndpointsResponse fromProcessDTO(ProcessDTO process) {
+  public static ProcessPublicEndpointsResponse fromProcessDTO(final ProcessDTO process) {
     return new ProcessPublicEndpointsResponse()
         .setBpmnProcessId(process.getProcessDefinitionId())
         .setProcessDefinitionKey(process.getId())
@@ -63,7 +63,7 @@ public class ProcessPublicEndpointsResponse {
                 TasklistURIs.START_PUBLIC_PROCESS.concat("%s"), process.getProcessDefinitionId()));
   }
 
-  public static ProcessPublicEndpointsResponse fromProcessEntity(ProcessEntity process) {
+  public static ProcessPublicEndpointsResponse fromProcessEntity(final ProcessEntity process) {
     return new ProcessPublicEndpointsResponse()
         .setBpmnProcessId(process.getBpmnProcessId())
         .setProcessDefinitionKey(process.getId())
@@ -77,13 +77,18 @@ public class ProcessPublicEndpointsResponse {
     return tenantId;
   }
 
-  public ProcessPublicEndpointsResponse setTenantId(String tenantId) {
+  public ProcessPublicEndpointsResponse setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
 
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    return Objects.hash(bpmnProcessId, processDefinitionKey, endpoint, tenantId);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -95,11 +100,6 @@ public class ProcessPublicEndpointsResponse {
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(endpoint, that.endpoint)
         && Objects.equals(tenantId, that.tenantId);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(bpmnProcessId, processDefinitionKey, endpoint, tenantId);
   }
 
   @Override

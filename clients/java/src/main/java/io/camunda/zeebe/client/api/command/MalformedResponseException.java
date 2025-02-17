@@ -15,6 +15,11 @@
  */
 package io.camunda.zeebe.client.api.command;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.MalformedResponseException}
+ */
+@Deprecated
 public class MalformedResponseException extends ClientHttpException {
 
   public MalformedResponseException(final int code, final String reason, final Throwable cause) {

@@ -15,12 +15,12 @@ import static io.camunda.tasklist.webapp.security.TasklistProfileService.IDENTIT
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.impl.util.Environment;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TestContainerUtil;
 import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.webapp.security.oauth.IdentityJwt2AuthenticationTokenConverter;
-import io.camunda.zeebe.client.impl.util.Environment;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import java.util.Collections;
@@ -41,7 +41,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-@ActiveProfiles({IDENTITY_AUTH_PROFILE, "tasklist", "test"})
+@ActiveProfiles({IDENTITY_AUTH_PROFILE, "tasklist", "test", "standalone"})
 public abstract class IdentityTester extends SessionlessTasklistZeebeIntegrationTest {
   public static TestContext testContext;
   protected static final String USER = KEYCLOAK_USERNAME;
@@ -80,7 +80,7 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
             testContext.getExternalKeycloakBaseUrl()
                 + "/auth/realms/camunda-platform/protocol/openid-connect/token");
 
-    /* Workaround: Zeebe Test Container is not yet compatible with ZeebeClient. The deprecated ZeebeClient
+    /* Workaround: Zeebe Test Container is not yet compatible with CamundaClient. The deprecated ZeebeClient
     Environment properties must be set for the TestContainer poller.
     ref: https://camunda.slack.com/archives/CSQ2E3BT4/p1721717060291479?thread_ts=1721648856.848609&cid=CSQ2E3BT4 */
     io.camunda.zeebe.client.impl.util.Environment.system().put("ZEEBE_CLIENT_ID", "zeebe");
@@ -99,7 +99,7 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
     super.before();
     tester =
         beanFactory
-            .getBean(TasklistTester.class, zeebeClient, databaseTestExtension, jwtDecoder)
+            .getBean(TasklistTester.class, camundaClient, databaseTestExtension, jwtDecoder)
             .withAuthenticationToken(generateCamundaIdentityToken());
   }
 
@@ -285,10 +285,10 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
     Environment.system().remove("ZEEBE_CLIENT_SECRET");
     Environment.system().remove("ZEEBE_TOKEN_AUDIENCE");
     Environment.system().remove("ZEEBE_AUTHORIZATION_SERVER_URL");
-    io.camunda.zeebe.client.impl.util.Environment.system().remove("ZEEBE_CLIENT_ID");
-    io.camunda.zeebe.client.impl.util.Environment.system().remove("ZEEBE_CLIENT_SECRET");
-    io.camunda.zeebe.client.impl.util.Environment.system().remove("ZEEBE_TOKEN_AUDIENCE");
-    io.camunda.zeebe.client.impl.util.Environment.system().remove("ZEEBE_AUTHORIZATION_SERVER_URL");
+    Environment.system().remove("ZEEBE_CLIENT_ID");
+    Environment.system().remove("ZEEBE_CLIENT_SECRET");
+    Environment.system().remove("ZEEBE_TOKEN_AUDIENCE");
+    Environment.system().remove("ZEEBE_AUTHORIZATION_SERVER_URL");
     testContainerUtil.stopIdentity(testContext);
   }
 }

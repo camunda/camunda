@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.test.util.asserts;
 
-import io.camunda.zeebe.client.api.response.BrokerInfo;
-import io.camunda.zeebe.client.api.response.PartitionBrokerHealth;
-import io.camunda.zeebe.client.api.response.PartitionBrokerRole;
-import io.camunda.zeebe.client.api.response.PartitionInfo;
-import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.client.api.response.BrokerInfo;
+import io.camunda.client.api.response.PartitionBrokerHealth;
+import io.camunda.client.api.response.PartitionBrokerRole;
+import io.camunda.client.api.response.PartitionInfo;
+import io.camunda.client.api.response.Topology;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.List;
 

@@ -33,6 +33,16 @@ public class BrokerMappingCreateRequest extends BrokerExecuteCommand<MappingReco
     return this;
   }
 
+  public BrokerMappingCreateRequest setName(final String name) {
+    requestDto.setName(name);
+    return this;
+  }
+
+  public BrokerMappingCreateRequest setId(final String id) {
+    requestDto.setId(id);
+    return this;
+  }
+
   @Override
   public MappingRecord getRequestWriter() {
     return requestDto;

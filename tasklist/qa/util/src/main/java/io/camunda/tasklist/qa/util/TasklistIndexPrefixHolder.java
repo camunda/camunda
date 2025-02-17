@@ -15,7 +15,7 @@ public class TasklistIndexPrefixHolder {
   private String indexPrefix;
 
   public String createNewIndexPrefix() {
-    indexPrefix = TestUtil.createRandomString(10) + "-tasklist";
+    indexPrefix = TestUtil.createRandomString(10);
     return indexPrefix;
   }
 

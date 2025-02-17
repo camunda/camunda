@@ -47,7 +47,7 @@ public class OperationFailureZeebeIT extends OperateZeebeAbstractIT {
   @Before
   public void before() {
     super.before();
-    cancelProcessInstanceHandler.setZeebeClient(super.getClient());
+    cancelProcessInstanceHandler.setCamundaClient(super.getClient());
     mockMvc = mockMvcTestRule.getMockMvc();
     tester.deployProcess("demoProcess_v_2.bpmn");
   }

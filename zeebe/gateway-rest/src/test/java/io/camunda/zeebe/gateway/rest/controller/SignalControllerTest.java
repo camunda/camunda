@@ -37,7 +37,7 @@ public class SignalControllerTest extends RestControllerTest {
   private static final String EXPECTED_PUBLICATION_RESPONSE =
       """
           {
-            "signalKey": 123,
+            "signalKey": "123",
             "tenantId": "tenantId"
           }""";
 

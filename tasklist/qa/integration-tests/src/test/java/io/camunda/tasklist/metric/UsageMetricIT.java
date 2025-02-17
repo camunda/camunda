@@ -7,13 +7,14 @@
  */
 package io.camunda.tasklist.metric;
 
+import static io.camunda.tasklist.metric.MetricIT.BPMN_PROCESS_ID;
+import static io.camunda.tasklist.metric.MetricIT.ELEMENT_ID;
 import static io.camunda.tasklist.property.ElasticsearchProperties.DATE_FORMAT_DEFAULT;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.tasklist.graphql.TaskIT;
 import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
-import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.management.dto.UsageMetricDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
@@ -23,6 +24,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -90,17 +92,21 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
     final Map<String, String> parameters = new HashMap<>();
     parameters.put("startTime", now.minusSeconds(1L).format(FORMATTER));
     parameters.put("endTime", now.plusSeconds(1L).format(FORMATTER));
-    final ResponseEntity<UsageMetricDTO> response =
-        testRestTemplate.getForEntity(
-            "http://localhost:" + managementPort + ASSIGNEE_ENDPOINT,
-            UsageMetricDTO.class,
-            parameters);
 
     final UsageMetricDTO expectedDto =
         new UsageMetricDTO(List.of("Angela Merkel", "John Lennon")); // just repeat once
 
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(response.getBody()).isEqualTo(expectedDto);
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              final ResponseEntity<UsageMetricDTO> response =
+                  testRestTemplate.getForEntity(
+                      "http://localhost:" + managementPort + ASSIGNEE_ENDPOINT,
+                      UsageMetricDTO.class,
+                      parameters);
+              assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+              assertThat(response.getBody()).isEqualTo(expectedDto);
+            });
   }
 
   @Test
@@ -159,36 +165,24 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
     // given users: joe, jane and demo
     // and
     tester
-        .createAndDeploySimpleProcess(TaskIT.BPMN_PROCESS_ID, TaskIT.ELEMENT_ID)
+        .createAndDeploySimpleProcess(BPMN_PROCESS_ID, ELEMENT_ID)
         .waitUntil()
         .processIsDeployed();
 
-    tester
-        .startProcessInstance(TaskIT.BPMN_PROCESS_ID)
-        .waitUntil()
-        .taskIsCreated(TaskIT.ELEMENT_ID);
+    tester.startProcessInstance(BPMN_PROCESS_ID).waitUntil().taskIsCreated(ELEMENT_ID);
     setCurrentUser(joe);
-    tester.claimAndCompleteHumanTask(TaskIT.ELEMENT_ID);
+    tester.claimAndCompleteHumanTask(ELEMENT_ID);
 
-    tester
-        .startProcessInstance(TaskIT.BPMN_PROCESS_ID)
-        .waitUntil()
-        .taskIsCreated(TaskIT.ELEMENT_ID);
+    tester.startProcessInstance(BPMN_PROCESS_ID).waitUntil().taskIsCreated(ELEMENT_ID);
     setCurrentUser(jane);
-    tester.claimAndCompleteHumanTask(TaskIT.ELEMENT_ID);
+    tester.claimAndCompleteHumanTask(ELEMENT_ID);
 
-    tester
-        .startProcessInstance(TaskIT.BPMN_PROCESS_ID)
-        .waitUntil()
-        .taskIsCreated(TaskIT.ELEMENT_ID);
-    tester.claimAndCompleteHumanTask(TaskIT.ELEMENT_ID);
+    tester.startProcessInstance(BPMN_PROCESS_ID).waitUntil().taskIsCreated(ELEMENT_ID);
+    tester.claimAndCompleteHumanTask(ELEMENT_ID);
 
-    tester
-        .startProcessInstance(TaskIT.BPMN_PROCESS_ID)
-        .waitUntil()
-        .taskIsCreated(TaskIT.ELEMENT_ID);
+    tester.startProcessInstance(BPMN_PROCESS_ID).waitUntil().taskIsCreated(ELEMENT_ID);
     setCurrentUser(demo);
-    tester.claimAndCompleteHumanTask(TaskIT.ELEMENT_ID);
+    tester.claimAndCompleteHumanTask(ELEMENT_ID);
 
     tester.waitFor(2000);
     databaseTestExtension.refreshTasklistIndices();

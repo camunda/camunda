@@ -1,0 +1,34 @@
+description: Recommended ruleset with additional customizations.
+extends: [[spectral:oas, recommended]]
+rules:
+  operation-tag-defined: error
+  no-period-in-summary:
+    category:
+      description: Operations are the core of the contract, they define paths and HTTP methods. These rules check operations have been well constructed, looks for operationId, parameter, schema and return types in depth.
+      id: operations
+      name: Operations
+    description: Path summary must not include period
+    formats:
+      - oas3
+      - oas3_1
+      - oas2
+    severity: error
+    given: $.paths[*][*].summary
+    howToFix: Summaries are short descriptions often used in navigation bars, they must not contain periods at the end. Please remove the period at the end of the summary text.
+    id: no-period-in-summary
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: ^.*\.$
+    type: validation
+  require-property-descriptions:
+    category:
+      description: Documentation is really important, in OpenAPI, just about everything can and should have a description. This set of rules checks for absent descriptions, poor quality descriptions (copy/paste), or short descriptions.
+      id: descriptions
+      name: Descriptions
+    description: Schema properties must have a description.
+    given: $.components.schemas[*].properties[*]
+    then:
+      field: description
+      function: truthy
+    severity: error

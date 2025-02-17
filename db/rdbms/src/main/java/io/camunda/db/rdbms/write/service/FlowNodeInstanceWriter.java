@@ -36,6 +36,15 @@ public class FlowNodeInstanceWriter {
             flowNode));
   }
 
+  public void update(final FlowNodeInstanceDbModel flowNode) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.FLOW_NODE,
+            flowNode.flowNodeInstanceKey(),
+            "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.update",
+            flowNode));
+  }
+
   public void finish(final long key, final FlowNodeState state, final OffsetDateTime endDate) {
     final boolean wasMerged = mergeToQueue(key, b -> b.state(state).endDate(endDate));
 
@@ -68,7 +77,7 @@ public class FlowNodeInstanceWriter {
           new QueueItem(
               ContextType.FLOW_NODE,
               flowNodeInstanceKey,
-              "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.incrementIncidentCount",
+              "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.incrementSubprocessIncidentCount",
               flowNodeInstanceKey));
     }
   }
@@ -83,7 +92,7 @@ public class FlowNodeInstanceWriter {
           new QueueItem(
               ContextType.FLOW_NODE,
               flowNodeInstanceKey,
-              "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.decrementIncidentCount",
+              "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.decrementSubprocessIncidentCount",
               flowNodeInstanceKey));
     }
   }

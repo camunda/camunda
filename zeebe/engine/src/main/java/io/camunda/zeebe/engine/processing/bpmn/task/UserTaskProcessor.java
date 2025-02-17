@@ -118,7 +118,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
       final ExecutableUserTask element, final BpmnElementContext context) {
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
-    if (element.hasExecutionListeners()) {
+    if (element.hasExecutionListeners() || element.hasTaskListeners()) {
       jobBehavior.cancelJob(context);
     }
 
@@ -163,7 +163,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
       final UserTaskRecord userTaskRecord,
       final String assignee) {
     userTaskBehavior.userTaskAssigning(userTaskRecord, assignee);
-    element.getTaskListeners(ZeebeTaskListenerEventType.assignment).stream()
+    element.getTaskListeners(ZeebeTaskListenerEventType.assigning).stream()
         .findFirst()
         .ifPresentOrElse(
             listener -> jobBehavior.createNewTaskListenerJob(context, userTaskRecord, listener),

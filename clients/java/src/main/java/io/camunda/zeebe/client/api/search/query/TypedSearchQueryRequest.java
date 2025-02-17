@@ -20,6 +20,11 @@ import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRe
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestSort;
 import java.util.function.Consumer;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.search.query.TypedSearchQueryRequest}
+ */
+@Deprecated
 public interface TypedSearchQueryRequest<
     F extends SearchRequestFilter,
     S extends SearchRequestSort<S>,

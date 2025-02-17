@@ -89,7 +89,6 @@ public class FormZeebeRecordProcessorElasticSearch {
             .setTenantId(tenantId)
             .setEmbedded(false)
             .setIsDeleted(isDelete);
-
     try {
       if (isDelete) {
         // Delete operation

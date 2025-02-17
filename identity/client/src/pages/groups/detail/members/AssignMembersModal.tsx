@@ -16,7 +16,10 @@ const SelectedUsers = styled.div`
 `;
 
 const AssignMembersModal: FC<
-  UseEntityModalCustomProps<{ id: Group["id"] }, { assignedUsers: User[] }>
+  UseEntityModalCustomProps<
+    { id: Group["groupKey"] },
+    { assignedUsers: User[] }
+  >
 > = ({ entity: group, assignedUsers, onSuccess, open, onClose }) => {
   const { t, Translate } = useTranslate();
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);

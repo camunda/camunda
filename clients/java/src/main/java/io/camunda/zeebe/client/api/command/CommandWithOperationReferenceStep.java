@@ -15,6 +15,11 @@
  */
 package io.camunda.zeebe.client.api.command;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.CommandWithOperationReferenceStep}
+ */
+@Deprecated
 public interface CommandWithOperationReferenceStep<T> {
 
   /**

@@ -18,6 +18,11 @@ package io.camunda.zeebe.client.api.command;
 import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl.MappingInstruction;
 import java.util.List;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.MigrationPlan}
+ */
+@Deprecated
 public interface MigrationPlan {
 
   /** Create a new migration plan builder to build {@link MigrationPlan} object */
@@ -41,6 +46,11 @@ public interface MigrationPlan {
    */
   public List<MappingInstruction> getMappingInstructions();
 
+  /**
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+   *     io.camunda.client.api.command.MigrationPlan.MigrationPlanBuilderStep1}
+   */
+  @Deprecated
   interface MigrationPlanBuilderStep1 {
 
     /**
@@ -52,6 +62,11 @@ public interface MigrationPlan {
     MigrationPlanBuilderStep2 withTargetProcessDefinitionKey(final long targetProcessDefinitionKey);
   }
 
+  /**
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+   *     io.camunda.client.api.command.MigrationPlan.MigrationPlanBuilderStep2}
+   */
+  @Deprecated
   interface MigrationPlanBuilderStep2 {
 
     /**
@@ -80,6 +95,11 @@ public interface MigrationPlan {
         final String sourceElementId, final String targetElementId);
   }
 
+  /**
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+   *     io.camunda.client.api.command.MigrationPlan.MigrationPlanBuilderFinalStep}
+   */
+  @Deprecated
   interface MigrationPlanBuilderFinalStep extends MigrationPlanBuilderStep2 {
 
     /**

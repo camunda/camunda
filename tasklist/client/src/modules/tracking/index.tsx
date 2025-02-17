@@ -17,6 +17,12 @@ type Events =
       eventName:
         | 'task-unassigned'
         | 'task-assigned'
+        | 'task-assignment-delayed-notification'
+        | 'task-unassignment-delayed-notification'
+        | 'task-completion-delayed-notification'
+        | 'task-assignment-rejected-notification'
+        | 'task-unassignment-rejected-notification'
+        | 'task-completion-rejected-notification'
         | 'processes-consent-refused'
         | 'processes-consent-accepted'
         | 'processes-fetch-failed'
@@ -35,7 +41,8 @@ type Events =
         | 'custom-filter-saved'
         | 'custom-filter-applied'
         | 'custom-filter-updated'
-        | 'custom-filter-deleted';
+        | 'custom-filter-deleted'
+        | 'public-start-form-schema-with-file-components';
     }
   | {
       eventName: 'task-opened';

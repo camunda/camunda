@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.store.FormStore.FormIdView;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
@@ -30,6 +31,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.ErrorResponse;
+import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -46,6 +51,8 @@ class FormStoreOpenSearchTest {
   @Mock private ProcessIndex processIndex = new ProcessIndex("test", false);
 
   @Mock private TenantAwareOpenSearchClient tenantAwareClient;
+
+  @Mock private OpenSearchClient osClient;
 
   @InjectMocks private FormStoreOpenSearch instance;
 
@@ -81,6 +88,21 @@ class FormStoreOpenSearchTest {
         .isInstanceOf(TasklistRuntimeException.class)
         .hasMessage("some IO exception")
         .hasCauseInstanceOf(IOException.class);
+  }
+
+  @Test
+  void getFormByKeyNotExistShouldReturnEmpty() throws IOException {
+    when(formIndex.getFullQualifiedName()).thenReturn(FormIndex.INDEX_NAME);
+
+    when(osClient.get(any(GetRequest.class), eq(FormIdView.class)))
+        .thenThrow(
+            new OpenSearchException(
+                new ErrorResponse.Builder()
+                    .status(404)
+                    .error(e -> e.reason("not found").type("not found"))
+                    .build()));
+
+    assertThat(instance.getFormByKey("id1")).isEmpty();
   }
 
   @Test

@@ -45,7 +45,7 @@ public class VariableZeebeImportIT extends OperateZeebeAbstractIT {
   @Before
   public void before() {
     super.before();
-    updateVariableHandler.setZeebeClient(super.getClient());
+    updateVariableHandler.setCamundaClient(super.getClient());
   }
 
   protected String getVariablesURL(final Long processInstanceKey) {
@@ -84,7 +84,7 @@ public class VariableZeebeImportIT extends OperateZeebeAbstractIT {
     // TC 1 - when process instance is started
     final Long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(
-            zeebeClient, processId, "{\"var1\": \"initialValue\", \"otherVar\": 123}");
+            camundaClient, processId, "{\"var1\": \"initialValue\", \"otherVar\": 123}");
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task1");
     searchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, "otherVar");
 
@@ -133,7 +133,7 @@ public class VariableZeebeImportIT extends OperateZeebeAbstractIT {
 
     // TC4 - when variables are updated
     ZeebeTestUtil.updateVariables(
-        zeebeClient, processInstanceKey, "{\"var1\": \"updatedValue\" , \"newVar\": 555 }");
+        camundaClient, processInstanceKey, "{\"var1\": \"updatedValue\" , \"newVar\": 555 }");
     // elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
     searchTestRule.processAllRecordsAndWait(
         variableEqualsCheck, processInstanceKey, processInstanceKey, "var1", "\"updatedValue\"");

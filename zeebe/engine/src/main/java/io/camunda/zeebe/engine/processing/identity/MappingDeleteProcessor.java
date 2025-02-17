@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
-
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
@@ -16,12 +14,26 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.TenantState;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -31,6 +43,8 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
   private static final String MAPPING_NOT_FOUND_ERROR_MESSAGE =
       "Expected to delete mapping with key '%s', but a mapping with this key does not exist.";
   private final MappingState mappingState;
+  private final TenantState tenantState;
+  private final AuthorizationState authorizationState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -39,12 +53,14 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
   private final CommandDistributionBehavior commandDistributionBehavior;
 
   public MappingDeleteProcessor(
-      final MappingState mappingState,
+      final ProcessingState processingState,
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
-    this.mappingState = mappingState;
+    mappingState = processingState.getMappingState();
+    tenantState = processingState.getTenantState();
+    authorizationState = processingState.getAuthorizationState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -68,16 +84,15 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
     final var authorizationRequest =
         new AuthorizationRequest(
             command, AuthorizationResourceType.MAPPING_RULE, PermissionType.DELETE);
-    if (authCheckBehavior.isAuthorized(authorizationRequest).isLeft()) {
-      final var errorMessage =
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
-      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
+    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
-    stateWriter.appendFollowUpEvent(mappingKey, MappingIntent.DELETED, record);
+    deleteMapping(persistedMapping.get());
     responseWriter.writeEventOnCommand(mappingKey, MappingIntent.DELETED, record, command);
 
     final long key = keyGenerator.nextKey();
@@ -93,9 +108,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
     mappingState
         .get(record.getMappingKey())
         .ifPresentOrElse(
-            persistedMapping ->
-                stateWriter.appendFollowUpEvent(
-                    command.getKey(), MappingIntent.DELETED, command.getValue()),
+            this::deleteMapping,
             () -> {
               final var errorMessage =
                   MAPPING_NOT_FOUND_ERROR_MESSAGE.formatted(record.getMappingKey());
@@ -103,5 +116,53 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
             });
 
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  private void deleteMapping(final PersistedMapping mapping) {
+    final var mappingKey = mapping.getMappingKey();
+    deleteAuthorizations(mappingKey);
+    for (final var tenantId : mapping.getTenantIdsList()) {
+      final long tenantKey = tenantState.getTenantKeyById(tenantId).orElseThrow();
+      stateWriter.appendFollowUpEvent(
+          tenantKey,
+          TenantIntent.ENTITY_REMOVED,
+          new TenantRecord()
+              .setTenantKey(tenantKey)
+              .setEntityKey(mappingKey)
+              .setEntityType(EntityType.MAPPING));
+    }
+    for (final var roleKey : mapping.getRoleKeysList()) {
+      stateWriter.appendFollowUpEvent(
+          roleKey,
+          RoleIntent.ENTITY_REMOVED,
+          new RoleRecord()
+              .setRoleKey(roleKey)
+              .setEntityKey(mappingKey)
+              .setEntityType(EntityType.MAPPING));
+    }
+    for (final var groupKey : mapping.getGroupKeysList()) {
+      stateWriter.appendFollowUpEvent(
+          groupKey,
+          GroupIntent.ENTITY_REMOVED,
+          new GroupRecord()
+              .setGroupKey(groupKey)
+              .setEntityKey(mappingKey)
+              .setEntityType(EntityType.MAPPING));
+    }
+    stateWriter.appendFollowUpEvent(
+        mappingKey, MappingIntent.DELETED, new MappingRecord().setMappingKey(mappingKey));
+  }
+
+  private void deleteAuthorizations(final long mappingKey) {
+    final var authorizationKeysForMapping =
+        authorizationState.getAuthorizationKeysForOwner(
+            AuthorizationOwnerType.MAPPING, String.valueOf(mappingKey));
+
+    authorizationKeysForMapping.forEach(
+        authorizationKey -> {
+          final var authorization = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
+          stateWriter.appendFollowUpEvent(
+              authorizationKey, AuthorizationIntent.DELETED, authorization);
+        });
   }
 }

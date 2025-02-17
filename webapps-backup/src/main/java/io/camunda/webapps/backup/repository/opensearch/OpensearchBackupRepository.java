@@ -24,6 +24,7 @@ import io.camunda.webapps.backup.BackupException;
 import io.camunda.webapps.backup.BackupException.*;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.BackupService;
+import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDetailDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
@@ -31,6 +32,7 @@ import io.camunda.webapps.backup.Metadata;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import io.camunda.webapps.util.ExceptionSupplier;
+import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -42,12 +44,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch.indices.GetIndexRequest;
 import org.opensearch.client.opensearch.snapshot.GetSnapshotResponse;
 import org.opensearch.client.opensearch.snapshot.SnapshotInfo;
 import org.slf4j.Logger;
@@ -56,6 +61,7 @@ import org.slf4j.LoggerFactory;
 public class OpensearchBackupRepository implements BackupRepository {
   public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "snapshot_missing_exception";
   public static final String REPOSITORY_MISSING_EXCEPTION_TYPE = "repository_missing_exception";
+  private static final String INDEX_MISSING_EXCEPTION_TYPE = "index_not_found_exception";
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchBackupRepository.class);
 
   private final OpenSearchClient openSearchClient;
@@ -164,6 +170,38 @@ public class OpensearchBackupRepository implements BackupRepository {
   }
 
   @Override
+  public Optional<Metadata> getMetadata(final String repositoryName, final Long backupId) {
+    final var snapshots = findSnapshots(repositoryName, backupId);
+    if (snapshots.isEmpty()) {
+      return Optional.empty();
+    } else {
+      final var first = snapshots.getFirst();
+      return Optional.of(
+          MetadataMarshaller.fromMetadata(
+              first.getMetadata(), openSearchClient._transport().jsonpMapper()));
+    }
+  }
+
+  @Override
+  public Set<String> checkAllIndicesExist(final List<String> indices) {
+    try {
+      final var response =
+          openSearchClient
+              .indices()
+              .get(
+                  GetIndexRequest.of(
+                      b ->
+                          b.index(indices)
+                              // setting this to true to not receive an exception, but only the list
+                              // of available indices
+                              .ignoreUnavailable(true)));
+      return response.result().keySet();
+    } catch (final IOException e) {
+      throw new BackupRepositoryConnectionException("Unable to connect to Elasticsearch", e);
+    }
+  }
+
+  @Override
   public List<GetBackupStateResponseDto> getBackups(final String repositoryName) {
     final var requestBuilder =
         getSnapshotRequestBuilder(repositoryName, snapshotNameProvider.snapshotNamePrefix() + "*")
@@ -217,9 +255,7 @@ public class OpensearchBackupRepository implements BackupRepository {
 
   @Override
   public void executeSnapshotting(
-      final BackupService.SnapshotRequest snapshotRequest,
-      final Runnable onSuccess,
-      final Runnable onFailure) {
+      final SnapshotRequest snapshotRequest, final Runnable onSuccess, final Runnable onFailure) {
     final Long backupId = backupId(snapshotRequest);
     final Map<String, JsonData> metadataJson =
         MetadataMarshaller.asJson(
@@ -229,7 +265,7 @@ public class OpensearchBackupRepository implements BackupRepository {
         createSnapshotRequestBuilder(
                 snapshotRequest.repositoryName(),
                 snapshotRequest.snapshotName(),
-                snapshotRequest.indices())
+                snapshotRequest.indices().allIndices())
             .ignoreUnavailable(
                 false) // ignoreUnavailable = false - indices defined by their exact name MUST be
             // present
@@ -244,7 +280,13 @@ public class OpensearchBackupRepository implements BackupRepository {
             e -> "Failed to send snapshot create request!")
         .thenAccept(response -> handleSnapshotReceived(response.snapshot(), onSuccess, onFailure))
         .exceptionally(
-            e -> {
+            t -> {
+              final Throwable e;
+              if (t instanceof final CompletionException ce) {
+                e = ce.getCause();
+              } else {
+                e = t;
+              }
               if (e instanceof SocketTimeoutException) {
                 // This is thrown even if the backup is still running
                 LOGGER.warn(
@@ -294,14 +336,19 @@ public class OpensearchBackupRepository implements BackupRepository {
             });
   }
 
+  private boolean isErrorType(final Throwable t, final String errorType) {
+    if (t instanceof final OpenSearchException oe) {
+      return Objects.equals(oe.error().type(), errorType);
+    }
+    return false;
+  }
+
   private boolean isSnapshotMissingException(final Throwable t) {
-    return t instanceof OpenSearchException
-        && t.getMessage().contains(SNAPSHOT_MISSING_EXCEPTION_TYPE);
+    return isErrorType(t, SNAPSHOT_MISSING_EXCEPTION_TYPE);
   }
 
   private boolean isRepositoryMissingException(final Exception e) {
-    return e instanceof OpenSearchException
-        && e.getMessage().contains(REPOSITORY_MISSING_EXCEPTION_TYPE);
+    return isErrorType(e, REPOSITORY_MISSING_EXCEPTION_TYPE);
   }
 
   private static String noRepositoryErrorMessage(final String repositoryName) {

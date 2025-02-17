@@ -18,10 +18,10 @@ package io.camunda.zeebe.client.process.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceActivateInstruction;
-import io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceRequest;
-import io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceTerminateInstruction;
-import io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceVariableInstruction;
+import io.camunda.client.protocol.rest.ModifyProcessInstanceVariableInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceModificationActivateInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceModificationInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -46,10 +46,10 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
     client.newModifyProcessInstanceCommand(PI_KEY).activateElement(ELEMENT_ID_A).send().join();
 
     // then
-    final ModifyProcessInstanceRequest request =
-        gatewayService.getLastRequest(ModifyProcessInstanceRequest.class);
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
     assertRequest(request, 1, 0);
-    final ModifyProcessInstanceActivateInstruction activateInstruction =
+    final ProcessInstanceModificationActivateInstruction activateInstruction =
         request.getActivateInstructions().get(0);
     assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 0);
   }
@@ -66,13 +66,13 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ModifyProcessInstanceRequest request =
-        gatewayService.getLastRequest(ModifyProcessInstanceRequest.class);
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
     assertRequest(request, 2, 0);
-    final ModifyProcessInstanceActivateInstruction activateInstruction =
+    final ProcessInstanceModificationActivateInstruction activateInstruction =
         request.getActivateInstructions().get(0);
     assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 0);
-    final ModifyProcessInstanceActivateInstruction activateInstructionB =
+    final ProcessInstanceModificationActivateInstruction activateInstructionB =
         request.getActivateInstructions().get(1);
     assertActivateInstruction(activateInstructionB, ELEMENT_ID_B, EMPTY_KEY, 0);
   }
@@ -91,16 +91,16 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ModifyProcessInstanceRequest request =
-        gatewayService.getLastRequest(ModifyProcessInstanceRequest.class);
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
     assertRequest(request, 2, 0);
-    final ModifyProcessInstanceActivateInstruction activateInstruction =
+    final ProcessInstanceModificationActivateInstruction activateInstruction =
         request.getActivateInstructions().get(0);
     assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 1);
     final ModifyProcessInstanceVariableInstruction variableInstructionA =
         activateInstruction.getVariableInstructions().get(0);
     assertVariableInstruction(variableInstructionA, EMPTY_ELEMENT_ID);
-    final ModifyProcessInstanceActivateInstruction activateInstructionB =
+    final ProcessInstanceModificationActivateInstruction activateInstructionB =
         request.getActivateInstructions().get(1);
     assertActivateInstruction(activateInstructionB, ELEMENT_ID_B, EMPTY_KEY, 1);
     final ModifyProcessInstanceVariableInstruction variableInstructionB =
@@ -114,10 +114,10 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
     client.newModifyProcessInstanceCommand(PI_KEY).terminateElement(ELEMENT_KEY_A).send().join();
 
     // then
-    final ModifyProcessInstanceRequest request =
-        gatewayService.getLastRequest(ModifyProcessInstanceRequest.class);
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
     assertRequest(request, 0, 1);
-    final ModifyProcessInstanceTerminateInstruction terminateInstruction =
+    final ProcessInstanceModificationTerminateInstruction terminateInstruction =
         request.getTerminateInstructions().get(0);
     assertTerminateInstruction(terminateInstruction, ELEMENT_KEY_A);
   }
@@ -134,13 +134,13 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ModifyProcessInstanceRequest request =
-        gatewayService.getLastRequest(ModifyProcessInstanceRequest.class);
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
     assertRequest(request, 0, 2);
-    final ModifyProcessInstanceTerminateInstruction terminateInstructionA =
+    final ProcessInstanceModificationTerminateInstruction terminateInstructionA =
         request.getTerminateInstructions().get(0);
     assertTerminateInstruction(terminateInstructionA, ELEMENT_KEY_A);
-    final ModifyProcessInstanceTerminateInstruction terminateInstructionB =
+    final ProcessInstanceModificationTerminateInstruction terminateInstructionB =
         request.getTerminateInstructions().get(1);
     assertTerminateInstruction(terminateInstructionB, ELEMENT_KEY_B);
   }
@@ -157,13 +157,13 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ModifyProcessInstanceRequest request =
-        gatewayService.getLastRequest(ModifyProcessInstanceRequest.class);
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
     assertRequest(request, 1, 1);
-    final ModifyProcessInstanceActivateInstruction activateInstruction =
+    final ProcessInstanceModificationActivateInstruction activateInstruction =
         request.getActivateInstructions().get(0);
     assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 0);
-    final ModifyProcessInstanceTerminateInstruction terminateInstruction =
+    final ProcessInstanceModificationTerminateInstruction terminateInstruction =
         request.getTerminateInstructions().get(0);
     assertTerminateInstruction(terminateInstruction, ELEMENT_KEY_A);
   }
@@ -178,10 +178,10 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ModifyProcessInstanceRequest request =
-        gatewayService.getLastRequest(ModifyProcessInstanceRequest.class);
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
     assertRequest(request, 1, 0);
-    final ModifyProcessInstanceActivateInstruction activateInstruction =
+    final ProcessInstanceModificationActivateInstruction activateInstruction =
         request.getActivateInstructions().get(0);
     assertActivateInstruction(activateInstruction, ELEMENT_ID_A, ELEMENT_KEY_A, 0);
   }
@@ -197,10 +197,10 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ModifyProcessInstanceRequest request =
-        gatewayService.getLastRequest(ModifyProcessInstanceRequest.class);
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
     assertRequest(request, 1, 0);
-    final ModifyProcessInstanceActivateInstruction activateInstruction =
+    final ProcessInstanceModificationActivateInstruction activateInstruction =
         request.getActivateInstructions().get(0);
     assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 1);
     final ModifyProcessInstanceVariableInstruction variableInstruction =
@@ -224,10 +224,10 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ModifyProcessInstanceRequest request =
-        gatewayService.getLastRequest(ModifyProcessInstanceRequest.class);
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
     assertRequest(request, 1, 0);
-    final ModifyProcessInstanceActivateInstruction activateInstruction =
+    final ProcessInstanceModificationActivateInstruction activateInstruction =
         request.getActivateInstructions().get(0);
     assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 1);
     final ModifyProcessInstanceVariableInstruction variableInstruction =
@@ -246,10 +246,10 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ModifyProcessInstanceRequest request =
-        gatewayService.getLastRequest(ModifyProcessInstanceRequest.class);
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
     assertRequest(request, 1, 0);
-    final ModifyProcessInstanceActivateInstruction activateInstruction =
+    final ProcessInstanceModificationActivateInstruction activateInstruction =
         request.getActivateInstructions().get(0);
     assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 1);
     final ModifyProcessInstanceVariableInstruction variableInstruction =
@@ -268,10 +268,10 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ModifyProcessInstanceRequest request =
-        gatewayService.getLastRequest(ModifyProcessInstanceRequest.class);
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
     assertRequest(request, 1, 0);
-    final ModifyProcessInstanceActivateInstruction activateInstruction =
+    final ProcessInstanceModificationActivateInstruction activateInstruction =
         request.getActivateInstructions().get(0);
     assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 1);
     final ModifyProcessInstanceVariableInstruction variableInstruction =
@@ -290,10 +290,10 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ModifyProcessInstanceRequest request =
-        gatewayService.getLastRequest(ModifyProcessInstanceRequest.class);
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
     assertRequest(request, 1, 0);
-    final ModifyProcessInstanceActivateInstruction activateInstruction =
+    final ProcessInstanceModificationActivateInstruction activateInstruction =
         request.getActivateInstructions().get(0);
     assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 1);
     final ModifyProcessInstanceVariableInstruction variableInstruction =
@@ -317,10 +317,10 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ModifyProcessInstanceRequest request =
-        gatewayService.getLastRequest(ModifyProcessInstanceRequest.class);
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
     assertRequest(request, 1, 0);
-    final ModifyProcessInstanceActivateInstruction activateInstruction =
+    final ProcessInstanceModificationActivateInstruction activateInstruction =
         request.getActivateInstructions().get(0);
     assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 1);
     final ModifyProcessInstanceVariableInstruction variableInstruction =
@@ -339,10 +339,10 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ModifyProcessInstanceRequest request =
-        gatewayService.getLastRequest(ModifyProcessInstanceRequest.class);
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
     assertRequest(request, 1, 0);
-    final ModifyProcessInstanceActivateInstruction activateInstruction =
+    final ProcessInstanceModificationActivateInstruction activateInstruction =
         request.getActivateInstructions().get(0);
     assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 1);
     final ModifyProcessInstanceVariableInstruction variableInstruction =
@@ -369,10 +369,10 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ModifyProcessInstanceRequest request =
-        gatewayService.getLastRequest(ModifyProcessInstanceRequest.class);
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
     assertRequest(request, 1, 0);
-    final ModifyProcessInstanceActivateInstruction activateInstruction =
+    final ProcessInstanceModificationActivateInstruction activateInstruction =
         request.getActivateInstructions().get(0);
     assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 4);
     final ModifyProcessInstanceVariableInstruction variableInstruction1 =
@@ -400,10 +400,10 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ModifyProcessInstanceRequest request =
-        gatewayService.getLastRequest(ModifyProcessInstanceRequest.class);
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
     assertRequest(request, 1, 0);
-    final ModifyProcessInstanceActivateInstruction activateInstruction =
+    final ProcessInstanceModificationActivateInstruction activateInstruction =
         request.getActivateInstructions().get(0);
     assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 1);
     final ModifyProcessInstanceVariableInstruction variableInstruction =
@@ -422,10 +422,10 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ModifyProcessInstanceRequest request =
-        gatewayService.getLastRequest(ModifyProcessInstanceRequest.class);
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
     assertRequest(request, 1, 0);
-    final ModifyProcessInstanceActivateInstruction activateInstruction =
+    final ProcessInstanceModificationActivateInstruction activateInstruction =
         request.getActivateInstructions().get(0);
     assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 1);
     final ModifyProcessInstanceVariableInstruction variableInstruction =
@@ -444,10 +444,10 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ModifyProcessInstanceRequest request =
-        gatewayService.getLastRequest(ModifyProcessInstanceRequest.class);
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
     assertRequest(request, 1, 0);
-    final ModifyProcessInstanceActivateInstruction activateInstruction =
+    final ProcessInstanceModificationActivateInstruction activateInstruction =
         request.getActivateInstructions().get(0);
     assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 1);
     final ModifyProcessInstanceVariableInstruction variableInstruction =
@@ -470,7 +470,7 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
   }
 
   private void assertRequest(
-      final ModifyProcessInstanceRequest request,
+      final ProcessInstanceModificationInstruction request,
       final int expectedStartInstructions,
       final int expectedTerminateInstructions) {
     assertThat(request.getActivateInstructions()).hasSize(expectedStartInstructions);
@@ -478,19 +478,21 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
   }
 
   private void assertActivateInstruction(
-      final ModifyProcessInstanceActivateInstruction activateInstruction,
+      final ProcessInstanceModificationActivateInstruction activateInstruction,
       final String expectedElementId,
       final long expectedAncestorKey,
       final int expectedVariableInstructions) {
     assertThat(activateInstruction.getElementId()).isEqualTo(expectedElementId);
-    assertThat(activateInstruction.getAncestorElementInstanceKey()).isEqualTo(expectedAncestorKey);
+    assertThat(activateInstruction.getAncestorElementInstanceKey())
+        .isEqualTo(String.valueOf(expectedAncestorKey));
     assertThat(activateInstruction.getVariableInstructions()).hasSize(expectedVariableInstructions);
   }
 
   private void assertTerminateInstruction(
-      final ModifyProcessInstanceTerminateInstruction terminateInstruction,
+      final ProcessInstanceModificationTerminateInstruction terminateInstruction,
       final long expectedElementKey) {
-    assertThat(terminateInstruction.getElementInstanceKey()).isEqualTo(expectedElementKey);
+    assertThat(terminateInstruction.getElementInstanceKey())
+        .isEqualTo(String.valueOf(expectedElementKey));
   }
 
   private void assertVariableInstruction(

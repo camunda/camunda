@@ -19,6 +19,11 @@ import io.camunda.zeebe.client.api.response.ModifyProcessInstanceResponse;
 import java.io.InputStream;
 import java.util.Map;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.ModifyProcessInstanceCommandStep1}
+ */
+@Deprecated
 public interface ModifyProcessInstanceCommandStep1
     extends CommandWithCommunicationApiStep<ModifyProcessInstanceCommandStep1> {
 
@@ -57,6 +62,11 @@ public interface ModifyProcessInstanceCommandStep1
    */
   ModifyProcessInstanceCommandStep2 terminateElement(final long elementInstanceKey);
 
+  /**
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+   *     io.camunda.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2}
+   */
+  @Deprecated
   interface ModifyProcessInstanceCommandStep2
       extends CommandWithOperationReferenceStep<ModifyProcessInstanceCommandStep2>,
           FinalCommandStep<ModifyProcessInstanceResponse> {
@@ -69,6 +79,11 @@ public interface ModifyProcessInstanceCommandStep1
     ModifyProcessInstanceCommandStep1 and();
   }
 
+  /**
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+   *     io.camunda.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3}
+   */
+  @Deprecated
   interface ModifyProcessInstanceCommandStep3 extends ModifyProcessInstanceCommandStep2 {
 
     /**

@@ -14,6 +14,7 @@ import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.executi
 import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.assertExecutionListenerJobsCompletedForElement;
 import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.completeRecreatedJobWithType;
 import static io.camunda.zeebe.protocol.record.intent.JobIntent.FAILED;
+import static io.camunda.zeebe.test.util.record.RecordingExporter.incidentRecords;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.records;
 import static java.util.Map.entry;
@@ -1100,6 +1101,34 @@ public class ExecutionListenerTaskElementsTest {
                   .getFirst())
           .extracting(r -> r.getValue().getType())
           .isEqualTo(START_EL_TYPE);
+    }
+
+    @Test
+    public void shouldResolveIncidentForElJobAfterProcessInstanceCancellation() {
+      // given
+      deployProcess(
+          createProcessWithTask(
+              b -> b.zeebeExecutionListener(el -> el.start().type(START_EL_TYPE))));
+      final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+      ENGINE.job().ofInstance(processInstanceKey).withType(START_EL_TYPE).withRetries(0).fail();
+      final var incident =
+          incidentRecords(IncidentIntent.CREATED)
+              .withProcessInstanceKey(processInstanceKey)
+              .withErrorType(ErrorType.EXECUTION_LISTENER_NO_RETRIES)
+              .getFirst();
+
+      // when
+      ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+      // then: incident should be resolved
+      assertThat(
+              incidentRecords(IncidentIntent.RESOLVED)
+                  .withProcessInstanceKey(processInstanceKey)
+                  .withErrorType(ErrorType.EXECUTION_LISTENER_NO_RETRIES)
+                  .getFirst())
+          .extracting(Record::getKey)
+          .isEqualTo(incident.getKey());
     }
 
     private void assertExecutionListenerJobsCompleted(

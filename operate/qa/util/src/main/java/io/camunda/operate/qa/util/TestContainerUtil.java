@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.qa.util;
 
+import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_REPO_PROPERTY_NAME;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static org.testcontainers.images.PullPolicy.alwaysPull;
 
@@ -463,37 +464,29 @@ public class TestContainerUtil {
   }
 
   public ZeebeContainer startZeebe(
-      final String dataFolderPath,
-      final String version,
-      final String prefix,
-      final Integer partitionCount) {
-    final TestContext testContext =
-        new TestContext()
-            .setZeebeDataFolder(new File(dataFolderPath))
-            .setZeebeIndexPrefix(prefix)
-            .setPartitionCount(partitionCount);
-    return startZeebe(version, testContext);
-  }
-
-  public ZeebeContainer startZeebe(
       final String version,
       final String prefix,
       final Integer partitionCount,
-      final boolean multitenancyEnabled) {
+      final boolean multitenancyEnabled,
+      final String connectionType) {
     final TestContext testContext =
         new TestContext()
             .setZeebeIndexPrefix(prefix)
             .setPartitionCount(partitionCount)
-            .setMultitenancyEnabled(multitenancyEnabled);
+            .setMultitenancyEnabled(multitenancyEnabled)
+            .setConnectionType(connectionType);
     return startZeebe(version, testContext);
   }
 
   public ZeebeContainer startZeebe(final String version, final TestContext testContext) {
     if (broker == null) {
-      LOGGER.info("************ Starting Zeebe {} ************", version);
+      final String dockerRepo =
+          ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_REPO_PROPERTY_NAME);
+      LOGGER.info("************ Starting Zeebe {}:{} ************", dockerRepo, version);
       final long startTime = System.currentTimeMillis();
       Testcontainers.exposeHostPorts(ELS_PORT);
-      broker = new ZeebeContainer(DockerImageName.parse("camunda/zeebe:" + version));
+      broker =
+          new ZeebeContainer(DockerImageName.parse(String.format("%s:%s", dockerRepo, version)));
       broker.withLogConsumer(new Slf4jLogConsumer(LOGGER));
       if (testContext.getNetwork() != null) {
         broker.withNetwork(testContext.getNetwork());
@@ -510,7 +503,9 @@ public class TestContainerUtil {
       // this user cannot access a mounted volume that is owned by root
       broker.withCreateContainerCmdModifier(cmd -> cmd.withUser("root"));
 
-      if ("SNAPSHOT".equals(version) || SemanticVersion.fromVersion(version).isAtLeast("8.7.0")) {
+      if ("SNAPSHOT".equals(version)
+          || "current-test".equals(version)
+          || SemanticVersion.fromVersion(version).isAtLeast("8.8.0")) {
         configureCamundaExporter(testContext);
       } else {
         configureElasticsearchExporter(testContext);
@@ -568,6 +563,9 @@ public class TestContainerUtil {
         .withEnv(
             "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME",
             "io.camunda.exporter.CamundaExporter")
+        .withEnv(
+            "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE",
+            testContext.getConnectionType())
         .withEnv(
             "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL", getElasticURL(testContext))
         .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_DELAY", "1")

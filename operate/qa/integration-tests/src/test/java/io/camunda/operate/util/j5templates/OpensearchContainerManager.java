@@ -14,6 +14,7 @@ import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateOpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
+import io.camunda.operate.schema.util.camunda.exporter.SchemaWithExporter;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.IndexPrefixHolder;
 import io.camunda.operate.util.TestUtil;
@@ -32,13 +33,31 @@ public class OpensearchContainerManager extends SearchContainerManager {
 
   protected RichOpenSearchClient richOpenSearchClient;
 
+  private final IndexPrefixHolder indexPrefixHolder;
+
   public OpensearchContainerManager(
       final RichOpenSearchClient richOpenSearchClient,
       final OperateProperties operateProperties,
       final SchemaManager schemaManager,
       final IndexPrefixHolder indexPrefixHolder) {
-    super(operateProperties, schemaManager, indexPrefixHolder);
+    super(operateProperties, schemaManager);
     this.richOpenSearchClient = richOpenSearchClient;
+    this.indexPrefixHolder = indexPrefixHolder;
+  }
+
+  @Override
+  public void startContainer() {
+    if (indexPrefix == null) {
+      indexPrefix = indexPrefixHolder.createNewIndexPrefix();
+    }
+    updatePropertiesIndexPrefix();
+    if (shouldCreateSchema()) {
+      final var schemaExporterHelper = new SchemaWithExporter(indexPrefix, false);
+      schemaExporterHelper.createSchema();
+      assertThat(areIndicesCreatedAfterChecks(indexPrefix, 19, 5 * 60 /*sec*/))
+          .describedAs("Search %s (min %d) indices are created", indexPrefix, 5)
+          .isTrue();
+    }
   }
 
   @Override

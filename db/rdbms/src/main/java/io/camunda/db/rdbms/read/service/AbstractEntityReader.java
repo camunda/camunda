@@ -17,12 +17,15 @@ import io.camunda.db.rdbms.read.domain.DbQuerySorting;
 import io.camunda.db.rdbms.read.domain.DbQuerySorting.SortingEntry;
 import io.camunda.db.rdbms.sql.columns.SearchColumn;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.search.sort.SortOrder;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 
 abstract class AbstractEntityReader<T> {
 
@@ -116,14 +119,37 @@ abstract class AbstractEntityReader<T> {
     return keySetPagination;
   }
 
-  public Object[] extractSortValues(final List<T> hits, final DbQuerySorting<T> sort) {
+  protected final SearchQueryResult<T> buildSearchQueryResult(
+      final long totalHits, final List<T> hits, final DbQuerySorting<T> dbSort) {
+    return new SearchQueryResult.Builder<T>()
+        .total(totalHits)
+        .items(hits)
+        .firstSortValues(extractFirstSortValues(hits, dbSort))
+        .lastSortValues(extractLastSortValues(hits, dbSort))
+        .build();
+  }
+
+  @VisibleForTesting
+  Object[] extractFirstSortValues(final List<T> hits, final DbQuerySorting<T> sort) {
+    return extractSortValues(hits, sort, List::getFirst);
+  }
+
+  @VisibleForTesting
+  Object[] extractLastSortValues(final List<T> hits, final DbQuerySorting<T> sort) {
+    return extractSortValues(hits, sort, List::getLast);
+  }
+
+  private Object[] extractSortValues(
+      final List<T> hits,
+      final DbQuerySorting<T> sort,
+      final Function<List<T>, T> firstOrLastGetter) {
     if (hits.isEmpty() || sort.orderings().isEmpty()) {
       return new Object[0];
     }
-
+    final T firstOrLast = firstOrLastGetter.apply(hits);
     final List<Object> sortOptions = new ArrayList<>();
     for (final SortingEntry<T> fieldSorting : sort.orderings()) {
-      sortOptions.add(fieldSorting.column().getPropertyValue(hits.getLast()));
+      sortOptions.add(fieldSorting.column().getPropertyValue(firstOrLast));
     }
 
     return sortOptions.toArray();

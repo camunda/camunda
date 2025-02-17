@@ -12,6 +12,8 @@ import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
@@ -104,5 +106,18 @@ public final class ClusterTopologyDomain extends DomainContextBase {
   @Provide
   Arbitrary<MemberId> memberIds() {
     return Arbitraries.integers().greaterOrEqual(0).map(id -> MemberId.from(id.toString()));
+  }
+
+  @Provide
+  Arbitrary<ExportersConfig> exportersConfigs() {
+    return Arbitraries.forType(ExportersConfig.class).enableRecursion();
+  }
+
+  @Provide
+  Arbitrary<DynamicPartitionConfig> dynamicPartitionConfigs() {
+    return Arbitraries.forType(ExportersConfig.class)
+        .enableRecursion()
+        .map(DynamicPartitionConfig::new)
+        .filter(DynamicPartitionConfig::isInitialized);
   }
 }

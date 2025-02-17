@@ -7,9 +7,6 @@
  */
 package io.camunda.tasklist.queries;
 
-import graphql.annotations.annotationTypes.GraphQLConstructor;
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLNonNull;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Date;
 import java.util.Objects;
@@ -20,18 +17,13 @@ public class DateFilter {
   @Schema(
       description =
           "Start date range to search from in date-time format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard.")
-  @GraphQLField
-  @GraphQLNonNull
   private Date from;
 
   @Schema(
       description =
           "End date range to search to in date-time format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard.")
-  @GraphQLField
-  @GraphQLNonNull
   private Date to;
 
-  @GraphQLConstructor
   public DateFilter(final Date from, final Date to) {
     this.from = from;
     this.to = to;
@@ -43,7 +35,7 @@ public class DateFilter {
     return to;
   }
 
-  public DateFilter setTo(Date to) {
+  public DateFilter setTo(final Date to) {
     this.to = to;
     return this;
   }
@@ -52,13 +44,18 @@ public class DateFilter {
     return from;
   }
 
-  public DateFilter setFrom(Date from) {
+  public DateFilter setFrom(final Date from) {
     this.from = from;
     return this;
   }
 
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    return Objects.hash(from, to);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -67,11 +64,6 @@ public class DateFilter {
     }
     final DateFilter that = (DateFilter) o;
     return Objects.equals(from, that.from) && Objects.equals(to, that.to);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(from, to);
   }
 
   @Override

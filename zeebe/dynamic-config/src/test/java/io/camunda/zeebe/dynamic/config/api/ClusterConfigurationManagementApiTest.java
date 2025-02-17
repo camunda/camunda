@@ -19,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -42,13 +43,17 @@ import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -66,6 +71,7 @@ final class ClusterConfigurationManagementApiTest {
   private final MemberId id3 = MemberId.from("3");
   private final ClusterConfiguration initialTopology =
       ClusterConfiguration.init().addMember(id0, MemberState.initializeAsActive(Map.of()));
+  @AutoClose private final MeterRegistry registry = new SimpleMeterRegistry();
 
   private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
 
@@ -108,7 +114,7 @@ final class ClusterConfigurationManagementApiTest {
   }
 
   private AtomixCluster createClusterNode(final Node localNode, final Collection<Node> nodes) {
-    return AtomixCluster.builder()
+    return AtomixCluster.builder(registry)
         .withAddress(localNode.address())
         .withMemberId(localNode.id().id())
         .withMembershipProvider(new BootstrapDiscoveryProvider(nodes))
@@ -187,7 +193,8 @@ final class ClusterConfigurationManagementApiTest {
     final var changeStatus = clientApi.leavePartition(request).join().get();
 
     // then
-    assertThat(changeStatus.plannedChanges()).containsExactly(new PartitionLeaveOperation(id1, 1));
+    assertThat(changeStatus.plannedChanges())
+        .containsExactly(new PartitionLeaveOperation(id1, 1, 1));
   }
 
   @Test
@@ -215,7 +222,7 @@ final class ClusterConfigurationManagementApiTest {
     // then
     assertThat(changeStatus.plannedChanges())
         .containsExactly(
-            new PartitionJoinOperation(id2, 2, 1), new PartitionLeaveOperation(id1, 2));
+            new PartitionJoinOperation(id2, 2, 1), new PartitionLeaveOperation(id1, 2, 1));
   }
 
   @Test
@@ -237,7 +244,7 @@ final class ClusterConfigurationManagementApiTest {
         .containsExactly(
             new MemberJoinOperation(id1),
             new PartitionJoinOperation(id1, 2, 1),
-            new PartitionLeaveOperation(id0, 2));
+            new PartitionLeaveOperation(id0, 2, 1));
   }
 
   @Test
@@ -306,8 +313,8 @@ final class ClusterConfigurationManagementApiTest {
     // then
     assertThat(changeStatus.plannedChanges())
         .containsExactlyInAnyOrder(
-            new PartitionLeaveOperation(id0, 2),
-            new PartitionLeaveOperation(id1, 1),
+            new PartitionLeaveOperation(id0, 2, 1),
+            new PartitionLeaveOperation(id1, 1, 1),
             new PartitionReconfigurePriorityOperation(id0, 1, 1),
             new PartitionReconfigurePriorityOperation(id1, 2, 1));
   }
@@ -360,7 +367,7 @@ final class ClusterConfigurationManagementApiTest {
         .containsExactly(
             new MemberJoinOperation(id1),
             new PartitionJoinOperation(id1, 2, 1),
-            new PartitionLeaveOperation(id0, 2),
+            new PartitionLeaveOperation(id0, 2, 1),
             new PartitionBootstrapOperation(id0, 3, 1));
   }
 
@@ -384,7 +391,7 @@ final class ClusterConfigurationManagementApiTest {
         .containsExactly(
             new MemberJoinOperation(id1),
             new PartitionJoinOperation(id1, 2, 1),
-            new PartitionLeaveOperation(id0, 2),
+            new PartitionLeaveOperation(id0, 2, 1),
             new PartitionBootstrapOperation(id0, 3, 1));
   }
 
@@ -479,5 +486,36 @@ final class ClusterConfigurationManagementApiTest {
         .left()
         .extracting(ErrorResponse::code)
         .isEqualTo(ErrorCode.INVALID_REQUEST);
+  }
+
+  @Test
+  void shouldPurgeCluster() {
+    // given
+    recordingCoordinator.setCurrentTopology(
+        initialTopology
+            .addMember(id1, MemberState.initializeAsActive(Map.of()))
+            .addMember(id2, MemberState.initializeAsActive(Map.of()))
+            .updateMember(id0, m -> m.addPartition(0, PartitionState.active(2, partitionConfig)))
+            .updateMember(id1, m -> m.addPartition(0, PartitionState.active(1, partitionConfig)))
+            .updateMember(id2, m -> m.addPartition(0, PartitionState.active(1, partitionConfig)))
+            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(id1, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
+            .updateMember(id2, m -> m.addPartition(1, PartitionState.active(1, partitionConfig))));
+    final var request = new PurgeRequest(false);
+
+    // when
+    final var changeStatus = clientApi.purge(request).join().get();
+
+    // then
+    final var currentConfiguration =
+        changeStatus.currentConfiguration().values().stream()
+            .map(MemberState::partitions)
+            .collect(Collectors.toSet());
+    final var expectedConfiguration =
+        changeStatus.expectedConfiguration().values().stream()
+            .map(MemberState::partitions)
+            .collect(Collectors.toSet());
+
+    assertThat(currentConfiguration).containsExactlyElementsOf(expectedConfiguration);
   }
 }

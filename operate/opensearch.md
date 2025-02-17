@@ -22,13 +22,11 @@ The goal is to do the same in Opensearch. For that Operate needs to implement al
 
 Operate defines interfaces like
 
-* [Archiver.java](https://github.com/camunda/operate/blob/7ad44931a7d23f5e500dd708d238ce3046e3c71b/archiver/src/main/java/io/camunda/operate/archiver/Archiver.java#L14-L14)
 * [IncidentStore.java](https://github.com/camunda/operate/blob/7ad44931a7d23f5e500dd708d238ce3046e3c71b/els-schema/src/main/java/io/camunda/operate/store/IncidentStore.java#L16-L16)
 * [DecisionReader.java](https://github.com/camunda/operate/blob/7ad44931a7d23f5e500dd708d238ce3046e3c71b/webapp/src/main/java/io/camunda/operate/webapp/reader/DecisionReader.java#L14-L14)
 
 which all have already the Elasticsearch implementations:
 
-* [ElasticsearchArchiver.java](https://github.com/camunda/operate/blob/7ad44931a7d23f5e500dd708d238ce3046e3c71b/archiver/src/main/java/io/camunda/operate/archiver/elasticsearch/ElasticsearchArchiver.java#L48-L48)
 * [ElasticsearchIncidentStore.java](https://github.com/camunda/operate/blob/7ad44931a7d23f5e500dd708d238ce3046e3c71b/els-schema/src/main/java/io/camunda/operate/store/elasticsearch/ElasticsearchIncidentStore.java#L55-L55)
 * [DecisionReader.java](https://github.com/camunda/operate/blob/7ad44931a7d23f5e500dd708d238ce3046e3c71b/webapp/src/main/java/io/camunda/operate/webapp/elasticsearch/reader/DecisionReader.java#L48-L48)
 
@@ -217,7 +215,6 @@ rewrite the code in terms of [Opensearch Java Client](https://opensearch.org/doc
 Implementation of interfaces for Opensearch (packages sorted by most important first)
 1.  [io.camunda.operate.store.opensearch](https://github.com/camunda/operate/tree/7ad44931a7d23f5e500dd708d238ce3046e3c71b/els-schema/src/main/java/io/camunda/operate/store/opensearch)
 2.  [io.camunda.operate.webapp.opensearch](https://github.com/camunda/operate/tree/7ad44931a7d23f5e500dd708d238ce3046e3c71b/webapp/src/main/java/io/camunda/operate/webapp/opensearch)
-3.  [io.camunda.operate.archiver.opensearch](https://github.com/camunda/operate/tree/7ad44931a7d23f5e500dd708d238ce3046e3c71b/archiver/src/main/java/io/camunda/operate/archiver/opensearch)
 4.  [io.camunda.operate.schema.migration.opensearch](https://github.com/camunda/operate/tree/7ad44931a7d23f5e500dd708d238ce3046e3c71b/els-schema/src/main/java/io/camunda/operate/schema/opensearch)
 5.  [Public API](https://github.com/camunda/operate/tree/7ad44931a7d23f5e500dd708d238ce3046e3c71b/webapp/src/main/java/io/camunda/operate/webapp/api) even needs abstraction layer.
 

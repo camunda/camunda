@@ -9,7 +9,7 @@ package io.camunda.optimize.service.db.os;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_SHARDS_SETTING;
 
-import jakarta.ws.rs.NotSupportedException;
+import io.camunda.optimize.rest.exceptions.NotSupportedException;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 
 public final class OptimizeOpenSearchUtil {

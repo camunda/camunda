@@ -17,6 +17,11 @@ package io.camunda.zeebe.client.api.command;
 
 import io.camunda.zeebe.client.api.response.CreateUserResponse;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.CreateUserCommandStep1}
+ */
+@Deprecated
 public interface CreateUserCommandStep1 extends FinalCommandStep<CreateUserResponse> {
 
   /**

@@ -9,9 +9,9 @@ package io.camunda.zeebe.test.util.asserts;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import io.camunda.zeebe.client.api.response.PartitionBrokerHealth;
-import io.camunda.zeebe.client.api.response.PartitionBrokerRole;
-import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.client.api.response.PartitionBrokerHealth;
+import io.camunda.client.api.response.PartitionBrokerRole;
+import io.camunda.client.api.response.Topology;
 import io.camunda.zeebe.test.util.asserts.TestTopology.TestBroker;
 import io.camunda.zeebe.test.util.asserts.TestTopology.TestPartition;
 import java.util.List;

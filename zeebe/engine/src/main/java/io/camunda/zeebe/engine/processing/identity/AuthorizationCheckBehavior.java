@@ -8,8 +8,13 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.zeebe.auth.impl.Authorization;
+import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
+import io.camunda.zeebe.engine.state.immutable.GroupState;
+import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -19,7 +24,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -29,23 +34,28 @@ import java.util.stream.Stream;
 
 public final class AuthorizationCheckBehavior {
 
-  public static final String UNAUTHORIZED_ERROR_MESSAGE =
-      "Unauthorized to perform operation '%s' on resource '%s'";
-  public static final String UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE =
-      UNAUTHORIZED_ERROR_MESSAGE + " with %s";
+  public static final String FORBIDDEN_ERROR_MESSAGE =
+      "Insufficient permissions to perform operation '%s' on resource '%s'";
+  public static final String FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE =
+      FORBIDDEN_ERROR_MESSAGE + ", required resource identifiers are one of '%s'";
   public static final String NOT_FOUND_ERROR_MESSAGE =
       "Expected to %s with key '%s', but no %s was found";
   public static final String WILDCARD_PERMISSION = "*";
+  private static final String UNAUTHORIZED_ERROR_MESSAGE =
+      "Unauthorized to perform operation '%s' on resource '%s'";
   private final AuthorizationState authorizationState;
   private final UserState userState;
   private final SecurityConfiguration securityConfig;
+  private final MappingState mappingState;
+  private final GroupState groupState;
 
   public AuthorizationCheckBehavior(
-      final AuthorizationState authorizationState,
-      final UserState userState,
-      final SecurityConfiguration securityConfig) {
-    this.authorizationState = authorizationState;
-    this.userState = userState;
+      final ProcessingState processingState, final SecurityConfiguration securityConfig) {
+    authorizationState = processingState.getAuthorizationState();
+    userState = processingState.getUserState();
+    mappingState = processingState.getMappingState();
+    groupState = processingState.getGroupState();
+    processingState.getTenantState();
     this.securityConfig = securityConfig;
   }
 
@@ -61,7 +71,7 @@ public final class AuthorizationCheckBehavior {
    * @return a {@link Either} containing a {@link RejectionType} if the user is not authorized or
    *     {@link Void} if the user is authorized
    */
-  public Either<RejectionType, Void> isAuthorized(final AuthorizationRequest request) {
+  public Either<Rejection, Void> isAuthorized(final AuthorizationRequest request) {
     if (!securityConfig.getAuthorizations().isEnabled()) {
       return Either.right(null);
     }
@@ -71,23 +81,32 @@ public final class AuthorizationCheckBehavior {
       return Either.right(null);
     }
 
+    if (isAuthorizedAnonymousUser(request.getCommand())) {
+      return Either.right(null);
+    }
+
     final Stream<String> authorizedResourceIdentifiers;
     final var userKey = getUserKey(request);
     if (userKey.isPresent()) {
       final var userOptional = userState.getUser(userKey.get());
       if (userOptional.isEmpty()) {
-        return Either.left(RejectionType.UNAUTHORIZED);
+        return Either.left(
+            new Rejection(
+                RejectionType.UNAUTHORIZED,
+                UNAUTHORIZED_ERROR_MESSAGE.formatted(
+                    request.getPermissionType(), request.getResourceType())));
       }
       // verify if the user is authorized for the tenant
       if (!isUserAuthorizedForTenant(request, userOptional.get())) {
-        return Either.left(RejectionType.NOT_FOUND);
+        return Either.left(
+            new Rejection(RejectionType.NOT_FOUND, request.getForbiddenErrorMessage()));
       }
 
       authorizedResourceIdentifiers =
           getUserAuthorizedResourceIdentifiers(
               userOptional.get(), request.getResourceType(), request.getPermissionType());
     } else {
-      authorizedResourceIdentifiers = Stream.empty();
+      authorizedResourceIdentifiers = getMappingsAuthorizedResourceIdentifiers(request);
     }
 
     // Check if authorizations contain a resource identifier that matches the required resource
@@ -95,11 +114,28 @@ public final class AuthorizationCheckBehavior {
     if (hasRequiredPermission(request.getResourceIds(), authorizedResourceIdentifiers)) {
       return Either.right(null);
     } else {
-      return Either.left(RejectionType.UNAUTHORIZED);
+      return Either.left(
+          new Rejection(RejectionType.FORBIDDEN, request.getForbiddenErrorMessage()));
     }
   }
 
-  private static Optional<Long> getUserKey(final AuthorizationRequest request) {
+  /**
+   * Returns true, if a command is executed by an anonymous authentication. So that, no
+   * authorization checks and no tenants checks are performed. Basically, it allows to run commands
+   * without authentication safely.
+   *
+   * <p>This provides anyone, i.e., when doing a broker request, with the option to run broker
+   * requests and commands anonymously. This is helpful especially if the gateway, for example,
+   * already checks authorizations and tenancy.
+   */
+  private boolean isAuthorizedAnonymousUser(final TypedRecord<?> command) {
+    final var authorizationClaims = command.getAuthorizations();
+    final var authorizedAnonymousUserClaim =
+        authorizationClaims.get(Authorization.AUTHORIZED_ANONYMOUS_USER);
+    return Optional.ofNullable(authorizedAnonymousUserClaim).map(Boolean.class::cast).orElse(false);
+  }
+
+  private Optional<Long> getUserKey(final AuthorizationRequest request) {
     return getUserKey(request.getCommand());
   }
 
@@ -110,7 +146,38 @@ public final class AuthorizationCheckBehavior {
       return true;
     }
 
-    return user.getTenantIdsList().contains(tenantId);
+    if (user.getTenantIdsList().contains(tenantId)) {
+      return true;
+    }
+
+    return areGroupsAuthorizedForTenant(user.getGroupKeysList(), tenantId);
+  }
+
+  private boolean isMappingAuthorizedForTenant(
+      final AuthorizationRequest request, final PersistedMapping mapping) {
+    final var tenantId = request.tenantId;
+    if (tenantId.equals(TenantOwned.DEFAULT_TENANT_IDENTIFIER)) {
+      return true;
+    }
+
+    if (mapping.getTenantIdsList().contains(request.getTenantId())) {
+      return true;
+    }
+
+    return areGroupsAuthorizedForTenant(mapping.getGroupKeysList(), tenantId);
+  }
+
+  private boolean areGroupsAuthorizedForTenant(final List<Long> groupKeys, final String tenantId) {
+    return getTenantIdsForGroups(groupKeys).contains(tenantId);
+  }
+
+  private Set<String> getTenantIdsForGroups(final List<Long> groupKeys) {
+    return groupKeys.stream()
+        .map(groupState::get)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .flatMap(group -> group.getTenantIdsList().stream())
+        .collect(Collectors.toSet());
   }
 
   public Set<String> getAllAuthorizedResourceIdentifiers(final AuthorizationRequest request) {
@@ -118,18 +185,23 @@ public final class AuthorizationCheckBehavior {
       return Set.of(WILDCARD_PERMISSION);
     }
 
+    if (isAuthorizedAnonymousUser(request.getCommand())) {
+      return Set.of(WILDCARD_PERMISSION);
+    }
+
     return getUserKey(request)
         .map(
-            userKey -> {
-              final var userOptional = userState.getUser(userKey);
-              return userOptional
-                  .map(
-                      user ->
-                          getUserAuthorizedResourceIdentifiers(
-                              user, request.getResourceType(), request.getPermissionType()))
-                  .orElseGet(Stream::empty);
-            })
-        .orElseGet(Stream::empty)
+            userKey ->
+                userState
+                    .getUser(userKey)
+                    .map(
+                        persistedUser ->
+                            getUserAuthorizedResourceIdentifiers(
+                                persistedUser,
+                                request.getResourceType(),
+                                request.getPermissionType()))
+                    .orElseGet(Stream::empty))
+        .orElseGet(() -> getMappingsAuthorizedResourceIdentifiers(request))
         .collect(Collectors.toSet());
   }
 
@@ -139,60 +211,73 @@ public final class AuthorizationCheckBehavior {
    * assigned roles or groups.
    */
   public Set<String> getDirectAuthorizedResourceIdentifiers(
-      final long ownerKey,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType) {
-    return authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType);
-  }
-
-  /**
-   * Get all authorized resource identifiers for a given owner, resource type and permission type.
-   * This includes direct authorizations and inherited authorizations, for example authorizations
-   * for users from assigned roles or groups.
-   */
-  public Set<String> getAllAuthorizedResourceIdentifiers(
-      final long ownerKey,
       final AuthorizationOwnerType ownerType,
+      final String ownerId,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
-    return switch (ownerType) {
-      case USER -> {
-        final var userOptional = userState.getUser(ownerKey);
-        if (userOptional.isEmpty()) {
-          yield new HashSet<>();
-        }
-        yield getUserAuthorizedResourceIdentifiers(userOptional.get(), resourceType, permissionType)
-            .collect(Collectors.toSet());
-      }
-      case ROLE, GROUP ->
-          // Roles and groups can only have direct authorizations
-          getDirectAuthorizedResourceIdentifiers(ownerKey, resourceType, permissionType);
-      // TODO add MAPPING
-      default -> new HashSet<>();
-    };
+    return authorizationState.getResourceIdentifiers(
+        ownerType, ownerId, resourceType, permissionType);
   }
 
+  // TODO: refactor role and group keys to use groupNames and roleNames after
+  // https://github.com/camunda/camunda/issues/26981
   private Stream<String> getUserAuthorizedResourceIdentifiers(
       final PersistedUser user,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
     // Get resource identifiers for this user
     final var userAuthorizedResourceIdentifiers =
-        authorizationState.getResourceIdentifiers(user.getUserKey(), resourceType, permissionType);
+        authorizationState.getResourceIdentifiers(
+            AuthorizationOwnerType.USER, user.getUsername(), resourceType, permissionType);
     // Get resource identifiers for the user's roles
     final var roleAuthorizedResourceIdentifiers =
         getAuthorizedResourceIdentifiersForOwners(
-            user.getRoleKeysList(), resourceType, permissionType);
+            AuthorizationOwnerType.ROLE, user.getRoleKeysList(), resourceType, permissionType);
     // Get resource identifiers for the user's groups
     final var groupAuthorizedResourceIdentifiers =
         getAuthorizedResourceIdentifiersForOwners(
-            user.getGroupKeysList(), resourceType, permissionType);
+            AuthorizationOwnerType.GROUP, user.getGroupKeysList(), resourceType, permissionType);
     return Stream.concat(
         userAuthorizedResourceIdentifiers.stream(),
         Stream.concat(roleAuthorizedResourceIdentifiers, groupAuthorizedResourceIdentifiers));
   }
 
+  // TODO: refactor to use String-based ownerKeys when all Identity-related entities use them
+  // https://github.com/camunda/camunda/issues/26981
+  private Stream<String> getMappingsAuthorizedResourceIdentifiers(
+      final AuthorizationRequest request) {
+    return extractUserTokenClaims(request.getCommand())
+        .<PersistedMapping>mapMulti(
+            (claim, stream) ->
+                mappingState.get(claim.claimName(), claim.claimValue()).ifPresent(stream))
+        .filter(mapping -> isMappingAuthorizedForTenant(request, mapping))
+        .<String>mapMulti(
+            (mapping, stream) -> {
+              getAuthorizedResourceIdentifiersForOwners(
+                      AuthorizationOwnerType.MAPPING,
+                      List.of(mapping.getMappingKey()),
+                      request.getResourceType(),
+                      request.getPermissionType())
+                  .forEach(stream);
+              getAuthorizedResourceIdentifiersForOwners(
+                      AuthorizationOwnerType.GROUP,
+                      mapping.getGroupKeysList(),
+                      request.getResourceType(),
+                      request.getPermissionType())
+                  .forEach(stream);
+              getAuthorizedResourceIdentifiersForOwners(
+                      AuthorizationOwnerType.ROLE,
+                      mapping.getRoleKeysList(),
+                      request.getResourceType(),
+                      request.getPermissionType())
+                  .forEach(stream);
+            });
+  }
+
+  // TODO: refactor to use String-based ownerKeys when all Identity-related entities use them
+  // https://github.com/camunda/camunda/issues/26981
   private Stream<String> getAuthorizedResourceIdentifiersForOwners(
+      final AuthorizationOwnerType ownerType,
       final List<Long> ownerKeys,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
@@ -200,38 +285,83 @@ public final class AuthorizationCheckBehavior {
         .flatMap(
             ownerKey ->
                 authorizationState
-                    .getResourceIdentifiers(ownerKey, resourceType, permissionType)
+                    .getResourceIdentifiers(
+                        ownerType, String.valueOf(ownerKey), resourceType, permissionType)
                     .stream());
   }
 
-  private boolean hasRequiredPermission(
+  private static boolean hasRequiredPermission(
       final Set<String> requiredResourceIdentifiers,
       final Stream<String> authorizedResourceIdentifiers) {
     return authorizedResourceIdentifiers.anyMatch(requiredResourceIdentifiers::contains);
   }
 
-  public List<String> getAuthorizedTenantIds(final TypedRecord<?> command) {
+  public AuthorizedTenants getAuthorizedTenantIds(final TypedRecord<?> command) {
+    if (isAuthorizedAnonymousUser(command)) {
+      return AuthorizedTenants.ANONYMOUS;
+    }
+
     // todo: this is a temporary solution until we adjust all the tests to fetch the tenant from the
     // state
     if (command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS) != null) {
-      return (List<String>) command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS);
+      final var authorizedTenants =
+          (List<String>) command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS);
+      return new AuthenticatedAuthorizedTenants(authorizedTenants);
     }
+
     final var userKey = getUserKey(command);
-    final List<String> authorizedTenantIds = new ArrayList<>();
-    authorizedTenantIds.add(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    return userKey
-        .map(
-            key ->
-                userState
-                    .getUser(key)
-                    .map(PersistedUser::getTenantIdsList)
-                    .orElse(authorizedTenantIds))
-        .orElse(authorizedTenantIds);
+    if (userKey.isPresent()) {
+      return userState
+          .getUser(userKey.get())
+          .map(
+              user -> {
+                final List<String> tenantIds = user.getTenantIdsList();
+                tenantIds.addAll(getTenantIdsForGroups(user.getGroupKeysList()));
+                return tenantIds;
+              })
+          .filter(t -> !t.isEmpty())
+          .<AuthorizedTenants>map(AuthenticatedAuthorizedTenants::new)
+          .orElse(AuthorizedTenants.DEFAULT_TENANTS);
+    }
+
+    final var tenantsOfMapping =
+        extractUserTokenClaims(command)
+            .map(claim -> mappingState.get(claim.claimName(), claim.claimValue()))
+            .<PersistedMapping>mapMulti(Optional::ifPresent)
+            .flatMap(
+                mapping -> {
+                  final var tenantIdsList = mapping.getTenantIdsList();
+                  tenantIdsList.addAll(getTenantIdsForGroups(mapping.getGroupKeysList()));
+                  return tenantIdsList.stream();
+                })
+            .toList();
+    return tenantsOfMapping.isEmpty()
+        ? AuthorizedTenants.DEFAULT_TENANTS
+        : new AuthenticatedAuthorizedTenants(tenantsOfMapping);
   }
 
-  private static Optional<Long> getUserKey(final TypedRecord<?> command) {
+  private Optional<Long> getUserKey(final TypedRecord<?> command) {
     return Optional.ofNullable(
-        (Long) command.getAuthorizations().get(Authorization.AUTHORIZED_USER_KEY));
+            (String) command.getAuthorizations().get(Authorization.AUTHORIZED_USERNAME))
+        .flatMap(userState::getUser)
+        .map(PersistedUser::getUserKey);
+  }
+
+  private static Stream<UserTokenClaim> extractUserTokenClaims(final TypedRecord<?> command) {
+    return command.getAuthorizations().entrySet().stream()
+        .filter(entry -> entry.getKey().startsWith(Authorization.USER_TOKEN_CLAIM_PREFIX))
+        .flatMap(
+            claimEntry -> {
+              final var claimName =
+                  claimEntry.getKey().substring(Authorization.USER_TOKEN_CLAIM_PREFIX.length());
+              final var claimValue = claimEntry.getValue();
+              if (claimValue instanceof final Collection<?> collection) {
+                return collection.stream()
+                    .map(value -> new UserTokenClaim(claimName, value.toString()));
+              } else {
+                return Stream.of(new UserTokenClaim(claimName, claimValue.toString()));
+              }
+            });
   }
 
   public static final class AuthorizationRequest {
@@ -285,22 +415,34 @@ public final class AuthorizationCheckBehavior {
     public String getTenantId() {
       return tenantId;
     }
+
+    public String getForbiddenErrorMessage() {
+      final var resourceIdsContainsOnlyWildcard =
+          resourceIds.size() == 1 && resourceIds.contains(WILDCARD_PERMISSION);
+      return resourceIdsContainsOnlyWildcard
+          ? FORBIDDEN_ERROR_MESSAGE.formatted(permissionType, resourceType)
+          : FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+              permissionType, resourceType, resourceIds.stream().sorted().toList());
+    }
   }
 
-  public static class UnauthorizedException extends RuntimeException {
+  public static class ForbiddenException extends RuntimeException {
 
-    public UnauthorizedException(
-        final AuthorizationRequest authRequest, final String resourceMessage) {
-      super(
-          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-              authRequest.getPermissionType(), authRequest.getResourceType(), resourceMessage));
+    public ForbiddenException(final AuthorizationRequest authRequest) {
+      super(authRequest.getForbiddenErrorMessage());
+    }
+
+    public RejectionType getRejectionType() {
+      return RejectionType.FORBIDDEN;
     }
   }
 
   public static class NotFoundException extends RuntimeException {
 
-    public NotFoundException(final AuthorizationRequest authRequest, final String resourceMessage) {
-      super(NOT_FOUND_ERROR_MESSAGE.formatted(resourceMessage, authRequest.getTenantId()));
+    public NotFoundException(final String message) {
+      super(message);
     }
   }
+
+  private record UserTokenClaim(String claimName, String claimValue) {}
 }

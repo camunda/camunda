@@ -16,9 +16,9 @@
 package io.camunda.zeebe.client.impl.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.impl.http.TypedApiEntityConsumer.JsonApiEntityConsumer;
 import io.camunda.zeebe.client.impl.http.TypedApiEntityConsumer.RawApiEntityConsumer;
-import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -52,14 +52,14 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
       Arrays.asList(ContentType.TEXT_XML);
   private final ObjectMapper json;
   private final Class<T> type;
-  private final int maxCapacity;
+  private final int chunkSize;
 
   private TypedApiEntityConsumer<T> entityConsumer;
 
-  ApiEntityConsumer(final ObjectMapper json, final Class<T> type, final int maxCapacity) {
+  ApiEntityConsumer(final ObjectMapper json, final Class<T> type, final int chunkSize) {
     this.json = json;
     this.type = type;
-    this.maxCapacity = maxCapacity;
+    this.chunkSize = chunkSize;
   }
 
   @Override
@@ -72,7 +72,7 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
       final boolean isResponse =
           String.class.equals(type)
               && SUPPORTED_TEXT_CONTENT_TYPES.stream().anyMatch(t -> t.isSameMimeType(contentType));
-      entityConsumer = new RawApiEntityConsumer<>(isResponse, maxCapacity);
+      entityConsumer = new RawApiEntityConsumer<>(isResponse, chunkSize);
     }
   }
 
@@ -83,7 +83,7 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
 
   @Override
   protected int capacityIncrement() {
-    return maxCapacity - entityConsumer.getBufferedBytes();
+    return chunkSize;
   }
 
   @Override

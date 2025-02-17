@@ -1,4 +1,4 @@
-import { ApiDefinition, apiDelete, apiPatch, apiPost } from "../request";
+import { ApiDefinition, apiDelete, apiPost, apiPut } from "../request";
 import { SearchResponse } from "src/utility/api";
 import { EntityData } from "src/components/entityList/EntityList";
 
@@ -31,16 +31,18 @@ export const createUser: ApiDefinition<undefined, CreateUserParams> = (user) =>
   apiPost(USERS_ENDPOINT, { ...user, enabled: true });
 
 export const updateUser: ApiDefinition<undefined, User> = (user) => {
-  const { key, name, email, username, password } = user;
-  return apiPatch(`${USERS_ENDPOINT}/${key}`, {
-    changeset: { name, email, username, password: password ?? "" },
+  const { name, email, username, password } = user;
+  return apiPut(`${USERS_ENDPOINT}/${username}`, {
+    name,
+    email,
+    password: password ?? "",
   });
 };
 
 type DeleteUserParams = {
-  key: number;
+  username: string;
 };
 
 export const deleteUser: ApiDefinition<undefined, DeleteUserParams> = ({
-  key,
-}) => apiDelete(`${USERS_ENDPOINT}/${key}`);
+  username,
+}) => apiDelete(`${USERS_ENDPOINT}/${username}`);
