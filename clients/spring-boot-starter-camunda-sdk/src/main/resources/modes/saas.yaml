@@ -3,7 +3,6 @@ camunda:
     mode: saas
     cloud:
       base-url: zeebe.camunda.io
-      region: bru-2
       port: 443
     auth:
       token-url: https://login.cloud.camunda.io/oauth/token
