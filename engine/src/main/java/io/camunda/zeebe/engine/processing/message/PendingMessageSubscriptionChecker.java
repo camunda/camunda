@@ -16,6 +16,11 @@ public final class PendingMessageSubscriptionChecker implements Runnable {
   private final SubscriptionCommandSender commandSender;
   private final PendingMessageSubscriptionState state;
 
+  /**
+   * Specifies the time in ms that no command is sent for a subscription after sending a command for
+   * it. This ensures that we don't overload the broker with duplicate command for the same
+   * subscription.
+   */
   private final long subscriptionTimeout;
 
   public PendingMessageSubscriptionChecker(
@@ -45,7 +50,7 @@ public final class PendingMessageSubscriptionChecker implements Runnable {
         record.getCorrelationKeyBuffer(),
         record.getTenantId());
 
-    // TODO (saig0): the state change of the sent time should be reflected by a record (#6364)
+    // Update the sent time for the subscription to avoid it being considered for resending too soon
     final var sentTime = ActorClock.currentTimeMillis();
     state.onSent(record, sentTime);
 
