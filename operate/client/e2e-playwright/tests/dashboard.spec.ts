@@ -42,7 +42,7 @@ test.beforeAll(async ({request}) => {
         },
         {timeout: SETUP_WAITING_TIME},
       )
-      .toEqual(38),
+      .toEqual(40),
     expect
       .poll(
         async () => {
@@ -129,6 +129,64 @@ test.describe('Dashboard', () => {
         name: `Process Instances - ${instancesWithIncidentCount} result${
           Number(instancesWithIncidentCount) > 1 ? 's' : ''
         }`,
+      }),
+    ).toBeVisible();
+  });
+
+  test('Navigate to processes view (same truncated error message)', async ({
+    page,
+    dashboardPage,
+    processInstancePage,
+  }) => {
+    // select incident type a from the incidents list
+    await page
+      .getByRole('link', {
+        name: /type a/i,
+      })
+      .click();
+
+    await expect(
+      page.getByRole('heading', {
+        name: 'Process Instances - 1 result',
+      }),
+    ).toBeVisible();
+
+    await page
+      .getByRole('link', {
+        name: /view instance/i,
+      })
+      .click();
+
+    await expect(
+      processInstancePage.variablesList.getByRole('cell', {
+        name: /incident type a/i,
+      }),
+    ).toBeVisible();
+
+    await dashboardPage.navigateToDashboard();
+
+    // select incident type b from the incidents list
+    await page
+      .getByRole('link', {
+        name: /type b/i,
+      })
+      .click();
+
+    await expect(
+      page.getByRole('heading', {
+        name: 'Process Instances - 1 result',
+      }),
+    ).toBeVisible();
+
+    await page
+      .getByRole('link', {
+        name: /view instance/i,
+      })
+      .click();
+
+    await expect(
+      processInstancePage.variablesList.getByRole('cell', {
+        name: /incident type b/i,
       }),
     ).toBeVisible();
   });

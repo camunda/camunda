@@ -8,7 +8,8 @@
 
 import {zeebeGrpcApi} from '../api/zeebe-grpc';
 
-const {deployProcesses, createInstances, createSingleInstance} = zeebeGrpcApi;
+const {deployProcesses, createInstances, createWorker, createSingleInstance} =
+  zeebeGrpcApi;
 
 const setup = async () => {
   await deployProcesses([
@@ -17,6 +18,7 @@ const setup = async () => {
     'onlyIncidentsProcess_v_1.bpmn',
     'orderProcess_v_1.bpmn',
     'processWithAnIncident.bpmn',
+    'incidentGeneratorProcess.bpmn',
   ]);
 
   await deployProcesses([
@@ -24,6 +26,18 @@ const setup = async () => {
     'withoutIncidentsProcess_v_2.bpmn',
     'onlyIncidentsProcess_v_2.bpmn',
   ]);
+
+  createWorker('incidentGenerator', true, {}, (job) => {
+    const BASE_ERROR_MESSAGE =
+      'This is an error message for testing purposes. This error message is very long to ensure it is truncated in the UI.';
+
+    if (job.variables.incidentType === 'Incident Type A') {
+      return job.fail(`${BASE_ERROR_MESSAGE} Type A`);
+    } else {
+      return job.fail(`${BASE_ERROR_MESSAGE} Type B`);
+    }
+  });
+
   const instancesList = await Promise.all([
     createInstances('withoutIncidentsProcess', 1, 4),
     createInstances('withoutIncidentsProcess', 2, 8),
@@ -31,6 +45,12 @@ const setup = async () => {
     createInstances('onlyIncidentsProcess', 2, 5),
     createInstances('orderProcess', 1, 10),
     createSingleInstance('processWithAnIncident', 1),
+    createSingleInstance('incidentGeneratorProcess', 1, {
+      incidentType: 'Incident Type A',
+    }),
+    createSingleInstance('incidentGeneratorProcess', 1, {
+      incidentType: 'Incident Type B',
+    }),
   ]);
 
   const allInstances = instancesList.flatMap((instances) => instances);
