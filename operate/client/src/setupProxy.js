@@ -15,7 +15,7 @@ module.exports = function (app) {
     BASENAME,
     createProxyMiddleware({
       target: `http://localhost:${process.env.IS_E2E ? '8081' : '8080'}`,
-      pathFilter: ['/client-config.js', '/api', '/v2'],
+      pathFilter: ['/client-config.js', '/api', '/v2', '/login', '/logout'],
       pathRewrite: {'^/client-config.js': '/operate/client-config.js'},
     }),
   );

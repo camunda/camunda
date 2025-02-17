@@ -16,6 +16,7 @@ import {
   mockOrderProcessInstancesWithFailedOperations,
 } from '../mocks/processes.mocks';
 import {open} from 'modules/mocks/diagrams';
+import {URL_API_PATTERN} from '../constants';
 
 const baseDirectory =
   'e2e-playwright/docs-screenshots/monitor-operation-status/';
@@ -33,7 +34,7 @@ test.describe('process instance migration', () => {
     processesPage: {processInstancesTable},
   }) => {
     await page.route(
-      /^.*\/api.*$/i,
+      URL_API_PATTERN,
       mockProcessesResponses({
         groupedProcesses: mockGroupedProcesses.filter((process) => {
           return process.bpmnProcessId === 'orderProcess';

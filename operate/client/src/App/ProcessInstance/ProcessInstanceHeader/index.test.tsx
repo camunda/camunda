@@ -385,7 +385,6 @@ describe('InstanceHeader', () => {
 
     authenticationStore.setUser({
       displayName: 'demo',
-      permissions: ['read', 'write'],
       canLogout: true,
       userId: 'demo',
       roles: null,
@@ -422,7 +421,6 @@ describe('InstanceHeader', () => {
 
     authenticationStore.setUser({
       displayName: 'demo',
-      permissions: ['read', 'write'],
       canLogout: true,
       userId: 'demo',
       roles: null,
@@ -459,7 +457,6 @@ describe('InstanceHeader', () => {
 
     authenticationStore.setUser({
       displayName: 'demo',
-      permissions: ['write'],
       canLogout: true,
       userId: 'demo',
       roles: null,
@@ -496,44 +493,6 @@ describe('InstanceHeader', () => {
 
     authenticationStore.setUser({
       displayName: 'demo',
-      permissions: ['write'],
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
-    });
-
-    render(<ProcessInstanceHeader />, {wrapper: Wrapper});
-
-    expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
-
-    processInstanceDetailsDiagramStore.init();
-    processInstanceDetailsStore.init({
-      id: mockInstanceWithActiveOperation.id,
-    });
-
-    await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
-    );
-
-    expect(
-      screen.queryByRole('button', {name: /Cancel Instance/}),
-    ).not.toBeInTheDocument();
-
-    expect(
-      screen.queryByRole('button', {name: /Modify Instance/}),
-    ).not.toBeInTheDocument();
-  });
-
-  it('should hide operation buttons when user has no permission', async () => {
-    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
-
-    authenticationStore.setUser({
-      displayName: 'demo',
-      permissions: ['read'],
       canLogout: true,
       userId: 'demo',
       roles: null,
