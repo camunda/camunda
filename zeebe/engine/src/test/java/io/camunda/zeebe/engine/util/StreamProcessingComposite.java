@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorCo
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.util.TestStreams.FluentLogWriter;
 import io.camunda.zeebe.engine.util.client.CommandWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
@@ -32,6 +33,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 
 public class StreamProcessingComposite implements CommandWriter {
 
@@ -221,6 +223,14 @@ public class StreamProcessingComposite implements CommandWriter {
             .intent(intent)
             .authorizations(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .event(value);
+    return writeActor.submit(writer::write).join();
+  }
+
+  @Override
+  public long writeCommandOnPartition(
+      final int partitionId, final UnaryOperator<FluentLogWriter> builder) {
+    final var writer =
+        builder.apply(streams.newRecord(getLogName(partitionId)).recordType(RecordType.COMMAND));
     return writeActor.submit(writer::write).join();
   }
 
