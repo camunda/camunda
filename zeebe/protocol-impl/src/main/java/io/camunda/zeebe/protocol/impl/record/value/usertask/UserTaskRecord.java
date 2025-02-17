@@ -612,10 +612,26 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public void setDiffAsChangedAttributes(final UserTaskRecord other) {
     changedAttributesProp.reset();
-    ATTRIBUTE_GETTER_MAP.keySet().stream()
+    determineChangedAttributes(other).forEach(this::addChangedAttribute);
+  }
+
+  /**
+   * Determines which attributes have changed between this {@link UserTaskRecord} and another
+   * instance.
+   *
+   * <p>This method compares all trackable user task attributes and returns a list of attribute
+   * names that have different values between the two records.
+   *
+   * @param other the {@link UserTaskRecord} to compare against
+   * @return a list of attribute names that have changed
+   * @implNote Attributes are compared using {@link UserTaskRecord#ATTRIBUTE_GETTER_MAP}, ensuring
+   *     that all supported fields are checked dynamically.
+   */
+  public List<String> determineChangedAttributes(final UserTaskRecord other) {
+    return ATTRIBUTE_GETTER_MAP.keySet().stream()
         .sorted()
         .filter(attribute -> isAttributeValueChanged(attribute, other))
-        .forEach(this::addChangedAttribute);
+        .toList();
   }
 
   public boolean hasChangedAttributes() {
