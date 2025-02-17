@@ -20,9 +20,7 @@ jest.mock('react-router-dom', () => ({
 }));
 
 jest.mock('./service', () => ({
-  checkConflicts: jest.fn(),
   importEntity: jest.fn(),
-  removeEntities: jest.fn(),
 }));
 
 jest.mock('hooks', () => ({
@@ -115,7 +113,6 @@ it('should call importEntity with correct id when the import button is clicked',
   const fileReaderMock = {
     addEventListener: addEventListenerSpy,
     readAsText: readAsTextSpy,
-    result: null,
   };
 
   //  When: simulate file input change
@@ -124,7 +121,6 @@ it('should call importEntity with correct id when the import button is clicked',
   const node = shallow(<CollectionEnitiesList {...props} />);
 
   node.find('input').simulate('change');
-  fileReaderMock.result = mockFileContent;
 
   // Then
   expect(readAsTextSpy).toHaveBeenCalled();
