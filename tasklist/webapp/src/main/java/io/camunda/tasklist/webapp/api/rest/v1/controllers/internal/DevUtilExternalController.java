@@ -12,6 +12,7 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
+import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.swagger.v3.oas.annotations.Operation;
@@ -70,7 +71,11 @@ public class DevUtilExternalController {
 
     final Set<String> indices =
         retryElasticsearchClient
-            .getIndexNames(tasklistProperties.getElasticsearch().getIndexPrefix() + "*")
+            .getIndexNames(
+                tasklistProperties.getElasticsearch().getIndexPrefix()
+                    + "*"
+                    + ComponentNames.TASK_LIST
+                    + "*")
             .stream()
             .filter(
                 f ->
