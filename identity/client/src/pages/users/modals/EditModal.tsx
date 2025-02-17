@@ -44,7 +44,7 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
       <TextField
         label={t("Username")}
         value={user.username}
-        placeholder={t("Enter username or user ID")}
+        placeholder={t("Enter username")}
         readOnly
       />
       <TextField
@@ -55,9 +55,9 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
         autoFocus
       />
       <TextField
-        label={t("Email name")}
+        label={t("Email")}
         value={user.email}
-        placeholder={t("Enter email name")}
+        placeholder={t("Enter email address")}
         onChange={(email) => setUser({ ...user, email })}
         onBlur={() => setEmailValid(isValidEmail(user.email))}
         errors={!emailValid ? [t("Please enter a valid email")] : []}
@@ -65,7 +65,7 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
       <TextField
         label={t("New Password")}
         value={user.password}
-        placeholder={t("Emter new password")}
+        placeholder={t("Enter new password")}
         onChange={(password) => setUser({ ...user, password })}
         type="password"
         helperText={t("Leave empty to keep current password")}

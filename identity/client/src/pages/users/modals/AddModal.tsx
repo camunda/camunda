@@ -57,9 +57,9 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         onChange={setName}
       />
       <TextField
-        label={t("Email name")}
+        label={t("Email")}
         value={email}
-        placeholder={t("Enter email name")}
+        placeholder={t("Enter email address")}
         onChange={setEmail}
         type="email"
         onBlur={validateEmail}
