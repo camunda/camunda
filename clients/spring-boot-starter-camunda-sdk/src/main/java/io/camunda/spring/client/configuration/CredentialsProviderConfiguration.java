@@ -40,10 +40,14 @@ public class CredentialsProviderConfiguration {
   @ConditionalOnMissingBean
   public CredentialsProvider camundaClientCredentialsProvider(
       final CamundaClientProperties camundaClientProperties) {
-    return switch (camundaClientProperties.getMode()) {
-      case basic -> buildBasicAuthCredentialsProvider(camundaClientProperties);
-      case saas, selfManaged -> buildOAuthCredentialsProvider(camundaClientProperties);
-    };
+    final var clientMode = camundaClientProperties.getMode();
+
+    return clientMode == null
+        ? new NoopCredentialsProvider()
+        : switch (clientMode) {
+          case basic -> buildBasicAuthCredentialsProvider(camundaClientProperties);
+          case saas, selfManaged -> buildOAuthCredentialsProvider(camundaClientProperties);
+        };
   }
 
   private CredentialsProvider buildBasicAuthCredentialsProvider(
