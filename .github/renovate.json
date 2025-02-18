@@ -210,7 +210,7 @@
     },
     {
       "customType": "regex",
-      "fileMatch": ["optimize/docker/test/docker-labels.golden.json"],
+      "fileMatch": ["optimize\\\/docker\\\/test\\\/docker-labels\\.golden\\.json"],
       "matchStrings": [
         "(?<depName>docker\\.io\\/library\\/alpine):(?<currentValue>\\d+\\.\\d+\\.\\d+)"
       ],
