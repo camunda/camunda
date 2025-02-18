@@ -183,18 +183,6 @@ engines:
       # Enables/disables linking to other Camunda Web Applications
       enabled: true
 
-engine-commons:
-  connection:
-    #Maximum time without connection to the engine, Optimize should wait
-    #until a timeout is triggered. A value of zero means to wait an
-    # infinite amount of time.
-    timeout: 0
-  read:
-    # Maximum time a request to the engine should last,
-    # before a timeout triggers. A value of zero means to wait an
-    # infinite amount of time.
-    timeout: 0
-
 zeebe:
   # Toggles whether Optimize should attempt to import data from the connected Zeebe instance
   enabled: ${CAMUNDA_OPTIMIZE_ZEEBE_ENABLED:false}
