@@ -43,27 +43,27 @@ public class MigrationITExtension
 
   private static final String TASKLIST = "tasklist";
   private static final String OPERATE = "operate";
-  private static final Map<DatabaseType, MigrationHelper> helpers = new HashMap<>();
-  private static final List<AutoCloseable> dbClosables = new ArrayList<>();
-  private static final Map<DatabaseType, Network> networks = new HashMap<>();
-  private static final Set<DatabaseType> databaseTypes =
+  private static final Map<DatabaseType, MigrationHelper> HELPERS = new HashMap<>();
+  private static final List<AutoCloseable> DB_CLOSABLES = new ArrayList<>();
+  private static final Map<DatabaseType, Network> NETWORKS = new HashMap<>();
+  private static final Set<DatabaseType> DATABASE_TYPES =
       Set.of(/*DatabaseType.ELASTICSEARCH,*/ DatabaseType.OPENSEARCH);
-  private static final Map<DatabaseType, String> databaseExternalUrls = new HashMap<>();
-  private static final Map<DatabaseType, MigrationDatabaseChecks> databaseChecks = new HashMap<>();
-  private static final Map<DatabaseType, Boolean> has87Data =
+  private static final Map<DatabaseType, String> DATABASE_EXTERNAL_URLS = new HashMap<>();
+  private static final Map<DatabaseType, MigrationDatabaseChecks> DATABASE_CHECKS = new HashMap<>();
+  private static final Map<DatabaseType, Boolean> HAS_87_DATA =
       new HashMap<>() {
         {
           put(DatabaseType.ELASTICSEARCH, false);
           put(DatabaseType.OPENSEARCH, false);
         }
       };
-  private static final Map<DatabaseType, String> indexPrefixes = new HashMap<>();
+  private static final Map<DatabaseType, String> INDEX_PREFIXES = new HashMap<>();
 
   @Override
   public void afterAll(final ExtensionContext context) {
     final var clazz = context.getTestClass().get();
     if (!isNestedClass(clazz)) {
-      dbClosables.parallelStream()
+      DB_CLOSABLES.parallelStream()
           .forEach(
               c -> {
                 try {
@@ -81,27 +81,27 @@ public class MigrationITExtension
 
     final DatabaseType db = DatabaseType.valueOf(context.getDisplayName());
     try {
-      helpers.get(db).close();
-      helpers.get(db).cleanup();
+      HELPERS.get(db).close();
+      HELPERS.get(db).cleanup();
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }
-    databaseChecks.get(db).cleanup(indexPrefix);
-    databaseChecks.get(db).close();
-    indexPrefixes.remove(db);
-    has87Data.put(db, false);
+    DATABASE_CHECKS.get(db).cleanup(indexPrefix);
+    DATABASE_CHECKS.get(db).close();
+    INDEX_PREFIXES.remove(db);
+    HAS_87_DATA.put(db, false);
   }
 
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
     final var clazz = context.getTestClass().get();
     if (!isNestedClass(clazz)) {
-      databaseTypes.parallelStream()
+      DATABASE_TYPES.parallelStream()
           .forEach(
               db -> {
                 final Network network = Network.newNetwork();
                 startDatabaseContainer(db, network);
-                networks.put(db, network);
+                NETWORKS.put(db, network);
               });
     }
   }
@@ -114,44 +114,46 @@ public class MigrationITExtension
   @Override
   public Stream<TestTemplateInvocationContext> provideTestTemplateInvocationContexts(
       final ExtensionContext context) {
-    return databaseTypes.stream()
+    return DATABASE_TYPES.stream()
         .flatMap(
             db -> {
               final String indexPrefix = context.getTestMethod().get().getName().toLowerCase();
-              indexPrefixes.put(db, indexPrefix);
+              INDEX_PREFIXES.put(db, indexPrefix);
               context.getTags().add(db.name());
-              final MigrationHelper helper = new MigrationHelper(networks.get(db), indexPrefix);
-              helper.initialize(db, databaseExternalUrls.get(db));
+              final MigrationHelper helper = new MigrationHelper(NETWORKS.get(db), indexPrefix);
+              helper.initialize(db, DATABASE_EXTERNAL_URLS.get(db));
               final var expectedDescriptors =
                   new IndexDescriptors(indexPrefix, db.equals(DatabaseType.ELASTICSEARCH)).all();
-              databaseChecks.put(
+              DATABASE_CHECKS.put(
                   db,
-                  new MigrationDatabaseChecks(databaseExternalUrls.get(db), expectedDescriptors));
-              helpers.put(db, helper);
+                  new MigrationDatabaseChecks(DATABASE_EXTERNAL_URLS.get(db), expectedDescriptors));
+              HELPERS.put(db, helper);
               return Stream.of(invocationContext(db));
             });
   }
 
   public void upgrade(final DatabaseType databaseType) {
-    final String indexPrefix = indexPrefixes.get(databaseType);
-    if (has87Data.get(databaseType)) {
+    final String indexPrefix = INDEX_PREFIXES.get(databaseType);
+    if (HAS_87_DATA.get(databaseType)) {
       Awaitility.await("Await Import Positions have been flushed")
           .timeout(Duration.of(1, ChronoUnit.MINUTES))
           .pollInterval(Duration.of(500, ChronoUnit.MILLIS))
           .until(
               () ->
-                  databaseChecks.get(databaseType).checkImportPositionsFlushed(indexPrefix, OPERATE)
-                      && databaseChecks
+                  DATABASE_CHECKS
+                          .get(databaseType)
+                          .checkImportPositionsFlushed(indexPrefix, OPERATE)
+                      && DATABASE_CHECKS
                           .get(databaseType)
                           .checkImportPositionsFlushed(indexPrefix, TASKLIST));
     }
 
-    helpers.get(databaseType).update(databaseType);
+    HELPERS.get(databaseType).update(databaseType);
 
     Awaitility.await("Await database and exporter readiness")
         .timeout(Duration.of(60, ChronoUnit.SECONDS))
         .pollInterval(Duration.of(500, ChronoUnit.MILLIS))
-        .untilAsserted(() -> databaseChecks.get(databaseType).validateSchemaCreation(indexPrefix));
+        .untilAsserted(() -> DATABASE_CHECKS.get(databaseType).validateSchemaCreation(indexPrefix));
 
     /* Ingest an 8.8 Record in order to trigger importers empty batch counting */
     ingestRecordToTriggerImporters(databaseType);
@@ -161,8 +163,8 @@ public class MigrationITExtension
         .pollInterval(Duration.of(500, ChronoUnit.MILLIS))
         .until(
             () ->
-                databaseChecks.get(databaseType).checkImportersFinished(indexPrefix, OPERATE)
-                    && databaseChecks
+                DATABASE_CHECKS.get(databaseType).checkImportersFinished(indexPrefix, OPERATE)
+                    && DATABASE_CHECKS
                         .get(databaseType)
                         .checkImportersFinished(indexPrefix, TASKLIST));
   }
@@ -180,7 +182,7 @@ public class MigrationITExtension
   }
 
   public CamundaClient getCamundaClient(final DatabaseType databaseType) {
-    return helpers.get(databaseType).getCamundaClient();
+    return HELPERS.get(databaseType).getCamundaClient();
   }
 
   /**
@@ -188,11 +190,11 @@ public class MigrationITExtension
    * the Tasklist & Operate import-position indices to be flushed
    */
   public void has87Data(final DatabaseType databaseType) {
-    has87Data.put(databaseType, true);
+    HAS_87_DATA.put(databaseType, true);
   }
 
   public MigrationHelper helper(final DatabaseType databaseType) {
-    return helpers.get(databaseType);
+    return HELPERS.get(databaseType);
   }
 
   private TestTemplateInvocationContext invocationContext(final DatabaseType databaseType) {
@@ -220,12 +222,12 @@ public class MigrationITExtension
                   final ParameterContext parameterContext, final ExtensionContext extensionContext)
                   throws ParameterResolutionException {
                 if (parameterContext.getParameter().getType().equals(CamundaClient.class)) {
-                  return helpers.get(databaseType).getCamundaClient();
+                  return HELPERS.get(databaseType).getCamundaClient();
                 } else if (parameterContext
                     .getParameter()
                     .getType()
                     .equals(MigrationHelper.class)) {
-                  return helpers.get(databaseType);
+                  return HELPERS.get(databaseType);
                 } else if (parameterContext.getParameter().getType().equals(DatabaseType.class)) {
                   return databaseType;
                 }
@@ -245,8 +247,8 @@ public class MigrationITExtension
                 .withNetworkAliases("elasticsearch");
         elasticsearchContainer.setPortBindings(List.of("9200:9200"));
         elasticsearchContainer.start();
-        dbClosables.add(elasticsearchContainer);
-        databaseExternalUrls.put(db, "http://" + elasticsearchContainer.getHttpHostAddress());
+        DB_CLOSABLES.add(elasticsearchContainer);
+        DATABASE_EXTERNAL_URLS.put(db, "http://" + elasticsearchContainer.getHttpHostAddress());
         break;
       case OPENSEARCH:
         final OpensearchContainer opensearchContainer =
@@ -255,8 +257,8 @@ public class MigrationITExtension
                 .withNetworkAliases("opensearch");
         opensearchContainer.setPortBindings(List.of("9210:9200"));
         opensearchContainer.start();
-        databaseExternalUrls.put(db, opensearchContainer.getHttpHostAddress());
-        dbClosables.add(opensearchContainer);
+        DATABASE_EXTERNAL_URLS.put(db, opensearchContainer.getHttpHostAddress());
+        DB_CLOSABLES.add(opensearchContainer);
         break;
       default:
         throw new IllegalArgumentException("Unsupported database type: " + db);

@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 public class MigrationDatabaseChecks extends ElasticOpenSearchSetupHelper {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final Logger LOGGER = LoggerFactory.getLogger(MigrationDatabaseChecks.class);
-  private static final String importersFinishedQuery =
+  private static final String IMPORTERS_FINISHED_QUERY =
       """
             {
               "size": 0,
@@ -60,7 +60,7 @@ public class MigrationDatabaseChecks extends ElasticOpenSearchSetupHelper {
         HttpRequest.newBuilder()
             .uri(URI.create(targetUrl))
             .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(importersFinishedQuery))
+            .POST(HttpRequest.BodyPublishers.ofString(IMPORTERS_FINISHED_QUERY))
             .build();
 
     response = httpClient.send(request, BodyHandlers.ofString());
