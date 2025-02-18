@@ -1811,7 +1811,7 @@ paths:
 
 
   /element-instances/{elementInstanceKey}/variables:
-    post:
+    put:
       tags:
         - Element instance
       summary: Update element instance variables
