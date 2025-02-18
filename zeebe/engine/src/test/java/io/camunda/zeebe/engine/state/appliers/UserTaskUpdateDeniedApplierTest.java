@@ -85,6 +85,12 @@ public class UserTaskUpdateDeniedApplierTest {
         .hasNoCandidateGroupsList()
         .hasFollowUpDate("");
 
+    // Ensure that the actual user task state hasn't been updated yet
+    assertThat(userTaskState.getUserTask(userTaskKey))
+        .describedAs(
+            "Expect the actual user task state to remain unchanged while the update is in progress")
+        .isEqualTo(initialState);
+
     assertThat(userTaskState.getLifecycleState(userTaskKey))
         .describedAs("Expect lifecycle state to be 'UPDATING' before denial")
         .isEqualTo(LifecycleState.UPDATING);
@@ -97,13 +103,9 @@ public class UserTaskUpdateDeniedApplierTest {
         .describedAs("Expect that intermediate state is cleared after denial")
         .isNull();
 
-    Assertions.assertThat(userTaskState.getUserTask(userTaskKey))
-        .describedAs("Expect user task to retain original values after update was denied")
-        .hasCandidateUsersList("initial_user")
-        .hasCandidateGroupsList("initial_group")
-        .hasFollowUpDate("initial_follow_up_date")
-        .hasDueDate("initial_due_date")
-        .hasPriority(initialPriority);
+    assertThat(userTaskState.getUserTask(userTaskKey))
+        .describedAs("Expect user task to retain initial values after update was denied")
+        .isEqualTo(initialState);
 
     assertThat(userTaskState.getLifecycleState(userTaskKey))
         .describedAs("Expect lifecycle state to be reverted to 'CREATED' after denial")
