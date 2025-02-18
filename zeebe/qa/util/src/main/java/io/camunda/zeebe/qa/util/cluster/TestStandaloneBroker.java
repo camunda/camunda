@@ -166,6 +166,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   }
 
   /** Returns the broker configuration */
+  @Override
   public BrokerBasedProperties brokerConfig() {
     return config;
   }
