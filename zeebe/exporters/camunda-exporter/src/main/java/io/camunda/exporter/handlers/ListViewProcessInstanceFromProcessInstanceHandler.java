@@ -72,7 +72,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       final var intent = record.getIntent();
       return PI_AND_AI_START_STATES.contains(intent)
           || PI_AND_AI_FINISH_STATES.contains(intent)
-          || ELEMENT_MIGRATED.equals(intent);
+          || ELEMENT_MIGRATED.equals(intent)
+          || ANCESTOR_MIGRATED.equals(intent);
     }
     return false;
   }
@@ -128,7 +129,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
           .setTreePath(treePath.toString())
           .setStartDate(timestamp)
           .setState(ProcessInstanceState.ACTIVE);
-    } else if (intent.equals(ELEMENT_MIGRATED)) {
+    } else if (intent.equals(ELEMENT_MIGRATED) || intent.equals(ANCESTOR_MIGRATED)) {
       final TreePath treePath = createTreePath(record);
       piEntity.setTreePath(treePath.toString()).setState(ProcessInstanceState.ACTIVE);
     } else {

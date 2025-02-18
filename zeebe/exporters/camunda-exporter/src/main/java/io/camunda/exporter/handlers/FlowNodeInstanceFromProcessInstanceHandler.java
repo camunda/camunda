@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ANCESTOR_MIGRATED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_MIGRATED;
@@ -65,7 +66,8 @@ public class FlowNodeInstanceFromProcessInstanceHandler
     return !isOfTypes(processInstanceRecordValue, UNHANDLED_TYPES)
         && (AI_START_STATES.contains(intent)
             || AI_FINISH_STATES.contains(intent)
-            || ELEMENT_MIGRATED.equals(intent));
+            || ELEMENT_MIGRATED.equals(intent)
+            || ANCESTOR_MIGRATED.equals(intent));
   }
 
   @Override
@@ -94,7 +96,9 @@ public class FlowNodeInstanceFromProcessInstanceHandler
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
     entity.setScopeKey(recordValue.getFlowScopeKey());
 
-    if (intent.equals(ELEMENT_ACTIVATING) || intent.equals(ELEMENT_MIGRATED)) {
+    if (intent.equals(ELEMENT_ACTIVATING)
+        || intent.equals(ELEMENT_MIGRATED)
+        || intent.equals(ANCESTOR_MIGRATED)) {
       setTreePath(record, entity);
     }
 
