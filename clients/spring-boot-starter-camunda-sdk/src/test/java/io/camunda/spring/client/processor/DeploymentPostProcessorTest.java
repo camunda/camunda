@@ -175,8 +175,6 @@ public class DeploymentPostProcessorTest {
           final ClassInfo classInfo =
               ClassInfo.builder().bean(new WithNoClassPathResource()).build();
 
-          // when(client.newDeployResourceCommand()).thenReturn(deployStep1);
-
           // when
           deploymentPostProcessor.configureFor(classInfo);
           deploymentPostProcessor.start(client);
