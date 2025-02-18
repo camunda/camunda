@@ -12,9 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.it.migration.util.ExporterUpdateITProvider;
-import io.camunda.it.migration.util.ExporterUpdateITProvider.Component;
-import io.camunda.it.migration.util.TasklistComponentHelper;
+import io.camunda.it.migration.util.MigrationHelper;
+import io.camunda.it.migration.util.MigrationITExtension;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
@@ -39,52 +38,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 @TestInstance(Lifecycle.PER_CLASS)
 public class MigrationUserTaskUpdateIT {
 
-  @RegisterExtension
-  static final ExporterUpdateITProvider provider = new ExporterUpdateITProvider();
+  @RegisterExtension static final MigrationITExtension provider = new MigrationITExtension();
 
   private static final ObjectMapper objectMapper = new ObjectMapper();
 
-  private HttpResponse<Void> assignTask(
-      final TasklistComponentHelper tasklistComponentHelper,
-      final long userTaskKey,
-      final String assignee)
-      throws IOException, InterruptedException {
-    return tasklistComponentHelper.request(
-        b ->
-            b.method(
-                    "PATCH",
-                    HttpRequest.BodyPublishers.ofString("{\"assignee\":\"" + assignee + "\"}"))
-                .uri(
-                    URI.create(
-                        tasklistComponentHelper.getUrl() + "/tasks/" + userTaskKey + "/assign")),
-        HttpResponse.BodyHandlers.discarding());
-  }
-
-  private HttpResponse<Void> unassignTask(
-      final TasklistComponentHelper tasklistComponentHelper, final long userTaskKey)
-      throws IOException, InterruptedException {
-    return tasklistComponentHelper.request(
-        b ->
-            b.method("PATCH", HttpRequest.BodyPublishers.noBody())
-                .uri(
-                    URI.create(
-                        tasklistComponentHelper.getUrl() + "/tasks/" + userTaskKey + "/unassign")),
-        HttpResponse.BodyHandlers.discarding());
-  }
-
-  private HttpResponse<Void> completeTask(
-      final TasklistComponentHelper tasklistComponentHelper, final long userTaskKey)
-      throws InterruptedException, IOException {
-    return tasklistComponentHelper.request(
-        b ->
-            b.method("PATCH", HttpRequest.BodyPublishers.noBody())
-                .uri(
-                    URI.create(
-                        tasklistComponentHelper.getUrl() + "/tasks/" + userTaskKey + "/complete")),
-        HttpResponse.BodyHandlers.discarding());
-  }
-
-  private long deployAndStartUserTask(
+  private long deployAndStartUserTaskProcess(
       final DatabaseType databaseType, final UnaryOperator<UserTaskBuilder> builder) {
     final var process =
         Bpmn.createExecutableProcess("task-process")
@@ -111,8 +69,8 @@ public class MigrationUserTaskUpdateIT {
         .getProcessInstanceKey();
   }
 
-  private long waitForTaskToBeImportedReturningId(
-      final TasklistComponentHelper tasklist, final long piKey) throws JsonProcessingException {
+  private long waitForTaskToBeImportedReturningId(final MigrationHelper helper, final long piKey)
+      throws JsonProcessingException {
     final AtomicLong userTaskKey = new AtomicLong();
     final String body =
         objectMapper.writeValueAsString(
@@ -123,13 +81,13 @@ public class MigrationUserTaskUpdateIT {
         .atMost(Duration.ofSeconds(30))
         .until(
             () -> {
-              final var response =
-                  tasklist.request(
-                      b ->
-                          b.POST(HttpRequest.BodyPublishers.ofString(body))
-                              .uri(URI.create(tasklist.getUrl() + "/tasks/search")),
-                      HttpResponse.BodyHandlers.ofString());
               try {
+                final var response =
+                    helper.request(
+                        b ->
+                            b.POST(HttpRequest.BodyPublishers.ofString(body))
+                                .uri(URI.create(helper.tasklistUrl() + "/tasks/search")),
+                        HttpResponse.BodyHandlers.ofString());
                 final var tasks =
                     objectMapper.readValue(
                         response.body(), new TypeReference<List<TaskSearchResponse>>() {});
@@ -137,7 +95,7 @@ public class MigrationUserTaskUpdateIT {
                   userTaskKey.set(Long.parseLong(tasks.getFirst().getId()));
                   return true;
                 }
-              } catch (final JsonProcessingException ignore) {
+              } catch (final IOException ignore) {
                 // ignore
               }
               return false;
@@ -150,82 +108,33 @@ public class MigrationUserTaskUpdateIT {
   class AssignUserTaskTests {
 
     @TestTemplate
-    void shouldAssign87ZeebeTaskV1(
-        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
-        throws IOException, InterruptedException {
-      long startTime = System.nanoTime();
+    void shouldAssign87ZeebeTaskV1(final DatabaseType databaseType, final MigrationHelper helper)
+        throws IOException {
       final var piKey =
-          deployAndStartUserTask(databaseType, AbstractUserTaskBuilder::zeebeUserTask);
-      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
-      long elapsedTime = (System.nanoTime() - startTime) / 1_000_000;
-      System.out.println("Pre condition time: " + elapsedTime + " ms");
-
-      startTime = System.nanoTime();
-      provider.upgradeComponent(Component.ZEEBE, databaseType);
-      elapsedTime = (System.nanoTime() - startTime) / 1_000_000;
-      System.out.println("Upgrade time Zeebe: " + elapsedTime + " ms");
-      startTime = System.nanoTime();
-      provider.upgradeComponent(Component.TASKLIST, databaseType);
-      elapsedTime = (System.nanoTime() - startTime) / 1_000_000;
-      System.out.println("Upgrade time Zeebe: " + elapsedTime + " ms");
-      // Print the elapsed time
-      final var res = assignTask(tasklistComponentHelper, taskKey, "demo");
+          deployAndStartUserTaskProcess(databaseType, AbstractUserTaskBuilder::zeebeUserTask);
+      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
+      provider.has87Data(databaseType);
+      provider.upgrade(databaseType);
+      final var res =
+          helper
+              .getTasklistClient()
+              .withAuthentication("demo", "demo")
+              .assignUserTask(taskKey, "demo");
       assertThat(res.statusCode()).isEqualTo(200);
 
       shouldBeAssigned(databaseType, taskKey);
     }
 
     @TestTemplate
-    void shouldAssign87ZeebeTaskV2(
-        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+    void shouldAssign87ZeebeTaskV2(final DatabaseType databaseType, final MigrationHelper helper)
         throws IOException {
 
       final var piKey =
-          deployAndStartUserTask(databaseType, AbstractUserTaskBuilder::zeebeUserTask);
-      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+          deployAndStartUserTaskProcess(databaseType, AbstractUserTaskBuilder::zeebeUserTask);
+      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
 
-      provider.upgradeComponent(Component.ZEEBE, databaseType);
-      provider.upgradeComponent(Component.TASKLIST, databaseType);
-
-      provider
-          .getCamundaClient(databaseType)
-          .newUserTaskAssignCommand(taskKey)
-          .assignee("demo")
-          .send()
-          .join();
-
-      shouldBeAssigned(databaseType, taskKey);
-    }
-
-    @TestTemplate
-    void shouldAssign88ZeebeTaskV1(
-        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
-        throws IOException, InterruptedException {
-
-      provider.upgradeComponent(Component.ZEEBE, databaseType);
-      provider.upgradeComponent(Component.TASKLIST, databaseType);
-
-      final var piKey =
-          deployAndStartUserTask(databaseType, AbstractUserTaskBuilder::zeebeUserTask);
-      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
-
-      final var res = assignTask(tasklistComponentHelper, taskKey, "demo");
-      assertThat(res.statusCode()).isEqualTo(200);
-
-      shouldBeAssigned(databaseType, taskKey);
-    }
-
-    @TestTemplate
-    void shouldAssign88ZeebeTaskV2(
-        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
-        throws IOException, InterruptedException {
-
-      provider.upgradeComponent(Component.ZEEBE, databaseType);
-      provider.upgradeComponent(Component.TASKLIST, databaseType);
-
-      final var piKey =
-          deployAndStartUserTask(databaseType, AbstractUserTaskBuilder::zeebeUserTask);
-      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+      provider.has87Data(databaseType);
+      provider.upgrade(databaseType);
 
       provider
           .getCamundaClient(databaseType)
@@ -238,34 +147,78 @@ public class MigrationUserTaskUpdateIT {
     }
 
     @TestTemplate
-    void shouldAssign87JobWorkerV1(
-        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
-        throws IOException, InterruptedException {
+    void shouldAssign88ZeebeTaskV1(final DatabaseType databaseType, final MigrationHelper helper)
+        throws IOException {
 
-      final var piKey = deployAndStartUserTask(databaseType, t -> t);
-      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+      provider.upgrade(databaseType);
 
-      provider.upgradeComponent(Component.ZEEBE, databaseType);
-      provider.upgradeComponent(Component.TASKLIST, databaseType);
+      final var piKey =
+          deployAndStartUserTaskProcess(databaseType, AbstractUserTaskBuilder::zeebeUserTask);
+      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
 
-      final var res = assignTask(tasklistComponentHelper, taskKey, "demo");
+      final var res =
+          helper
+              .getTasklistClient()
+              .withAuthentication("demo", "demo")
+              .assignUserTask(taskKey, "demo");
       assertThat(res.statusCode()).isEqualTo(200);
 
       shouldBeAssigned(databaseType, taskKey);
     }
 
     @TestTemplate
-    void shouldAssign88JobWorkerV1(
-        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
-        throws IOException, InterruptedException {
+    void shouldAssign88ZeebeTaskV2(final DatabaseType databaseType, final MigrationHelper helper)
+        throws IOException {
 
-      provider.upgradeComponent(Component.ZEEBE, databaseType);
-      provider.upgradeComponent(Component.TASKLIST, databaseType);
+      provider.upgrade(databaseType);
 
-      final var piKey = deployAndStartUserTask(databaseType, t -> t);
-      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+      final var piKey =
+          deployAndStartUserTaskProcess(databaseType, AbstractUserTaskBuilder::zeebeUserTask);
+      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
 
-      final var res = assignTask(tasklistComponentHelper, taskKey, "demo");
+      provider
+          .getCamundaClient(databaseType)
+          .newUserTaskAssignCommand(taskKey)
+          .assignee("demo")
+          .send()
+          .join();
+
+      shouldBeAssigned(databaseType, taskKey);
+    }
+
+    @TestTemplate
+    void shouldAssign87JobWorkerV1(final DatabaseType databaseType, final MigrationHelper helper)
+        throws IOException {
+
+      final var piKey = deployAndStartUserTaskProcess(databaseType, t -> t);
+      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
+      provider.has87Data(databaseType);
+      provider.upgrade(databaseType);
+
+      final var res =
+          helper
+              .getTasklistClient()
+              .withAuthentication("demo", "demo")
+              .assignUserTask(taskKey, "demo");
+      assertThat(res.statusCode()).isEqualTo(200);
+
+      shouldBeAssigned(databaseType, taskKey);
+    }
+
+    @TestTemplate
+    void shouldAssign88JobWorkerV1(final DatabaseType databaseType, final MigrationHelper helper)
+        throws IOException {
+
+      provider.upgrade(databaseType);
+
+      final var piKey = deployAndStartUserTaskProcess(databaseType, t -> t);
+      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
+
+      final var res =
+          helper
+              .getTasklistClient()
+              .withAuthentication("demo", "demo")
+              .assignUserTask(taskKey, "demo");
       assertThat(res.statusCode()).isEqualTo(200);
 
       shouldBeAssigned(databaseType, taskKey);
@@ -295,34 +248,33 @@ public class MigrationUserTaskUpdateIT {
   @Nested
   class UnassignUserTaskTests {
     @TestTemplate
-    void shouldUnassign87ZeebeTaskV1(
-        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
-        throws IOException, InterruptedException {
+    void shouldUnassign87ZeebeTaskV1(final DatabaseType databaseType, final MigrationHelper helper)
+        throws IOException {
 
       final var piKey =
-          deployAndStartUserTask(databaseType, t -> t.zeebeUserTask().zeebeAssignee("test"));
-      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+          deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("test"));
+      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
 
-      provider.upgradeComponent(Component.ZEEBE, databaseType);
-      provider.upgradeComponent(Component.TASKLIST, databaseType);
+      provider.has87Data(databaseType);
+      provider.upgrade(databaseType);
 
-      final var res = unassignTask(tasklistComponentHelper, taskKey);
+      final var res =
+          helper.getTasklistClient().withAuthentication("demo", "demo").unassignUserTask(taskKey);
       assertThat(res.statusCode()).isEqualTo(200);
 
       shouldBeUnassigned(databaseType, taskKey);
     }
 
     @TestTemplate
-    void shouldUnassign87ZeebeTaskV2(
-        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+    void shouldUnassign87ZeebeTaskV2(final DatabaseType databaseType, final MigrationHelper helper)
         throws IOException {
 
       final var piKey =
-          deployAndStartUserTask(databaseType, t -> t.zeebeUserTask().zeebeAssignee("test"));
-      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+          deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("test"));
+      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
 
-      provider.upgradeComponent(Component.ZEEBE, databaseType);
-      provider.upgradeComponent(Component.TASKLIST, databaseType);
+      provider.has87Data(databaseType);
+      provider.upgrade(databaseType);
 
       provider.getCamundaClient(databaseType).newUserTaskUnassignCommand(taskKey).send().join();
 
@@ -330,34 +282,31 @@ public class MigrationUserTaskUpdateIT {
     }
 
     @TestTemplate
-    void shouldUnassign88ZeebeTaskV1(
-        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
-        throws IOException, InterruptedException {
+    void shouldUnassign88ZeebeTaskV1(final DatabaseType databaseType, final MigrationHelper helper)
+        throws IOException {
 
-      provider.upgradeComponent(Component.ZEEBE, databaseType);
-      provider.upgradeComponent(Component.TASKLIST, databaseType);
+      provider.upgrade(databaseType);
 
       final var piKey =
-          deployAndStartUserTask(databaseType, t -> t.zeebeUserTask().zeebeAssignee("test"));
-      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+          deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("test"));
+      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
 
-      final var res = unassignTask(tasklistComponentHelper, taskKey);
+      final var res =
+          helper.getTasklistClient().withAuthentication("demo", "demo").unassignUserTask(taskKey);
       assertThat(res.statusCode()).isEqualTo(200);
 
       shouldBeUnassigned(databaseType, taskKey);
     }
 
     @TestTemplate
-    void shouldUnassign88ZeebeTaskV2(
-        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+    void shouldUnassign88ZeebeTaskV2(final DatabaseType databaseType, final MigrationHelper helper)
         throws IOException {
 
-      provider.upgradeComponent(Component.ZEEBE, databaseType);
-      provider.upgradeComponent(Component.TASKLIST, databaseType);
+      provider.upgrade(databaseType);
 
       final var piKey =
-          deployAndStartUserTask(databaseType, t -> t.zeebeUserTask().zeebeAssignee("test"));
-      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+          deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("test"));
+      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
 
       provider.getCamundaClient(databaseType).newUserTaskUnassignCommand(taskKey).send().join();
 
@@ -365,34 +314,33 @@ public class MigrationUserTaskUpdateIT {
     }
 
     @TestTemplate
-    void shouldUnAssign87JobWorkerV1(
-        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
-        throws IOException, InterruptedException {
+    void shouldUnAssign87JobWorkerV1(final DatabaseType databaseType, final MigrationHelper helper)
+        throws IOException {
 
-      final var piKey = deployAndStartUserTask(databaseType, t -> t.zeebeAssignee("test"));
-      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+      final var piKey = deployAndStartUserTaskProcess(databaseType, t -> t.zeebeAssignee("test"));
+      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
 
-      provider.upgradeComponent(Component.ZEEBE, databaseType);
-      provider.upgradeComponent(Component.TASKLIST, databaseType);
+      provider.has87Data(databaseType);
+      provider.upgrade(databaseType);
 
-      final var res = unassignTask(tasklistComponentHelper, taskKey);
+      final var res =
+          helper.getTasklistClient().withAuthentication("demo", "demo").unassignUserTask(taskKey);
       assertThat(res.statusCode()).isEqualTo(200);
 
       shouldBeUnassigned(databaseType, taskKey);
     }
 
     @TestTemplate
-    void shouldUnAssign88JobWorkerV1(
-        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
-        throws IOException, InterruptedException {
+    void shouldUnAssign88JobWorkerV1(final DatabaseType databaseType, final MigrationHelper helper)
+        throws IOException {
 
-      provider.upgradeComponent(Component.ZEEBE, databaseType);
-      provider.upgradeComponent(Component.TASKLIST, databaseType);
+      provider.upgrade(databaseType);
 
-      final var piKey = deployAndStartUserTask(databaseType, t -> t.zeebeAssignee("test"));
-      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+      final var piKey = deployAndStartUserTaskProcess(databaseType, t -> t.zeebeAssignee("test"));
+      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
 
-      final var res = unassignTask(tasklistComponentHelper, taskKey);
+      final var res =
+          helper.getTasklistClient().withAuthentication("demo", "demo").unassignUserTask(taskKey);
       assertThat(res.statusCode()).isEqualTo(200);
 
       shouldBeUnassigned(databaseType, taskKey);
@@ -422,34 +370,33 @@ public class MigrationUserTaskUpdateIT {
   @Nested
   class CompleteUserTaskTests {
     @TestTemplate
-    void shouldComplete87ZeebeTaskV1(
-        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
-        throws IOException, InterruptedException {
+    void shouldComplete87ZeebeTaskV1(final DatabaseType databaseType, final MigrationHelper helper)
+        throws IOException {
 
       final var piKey =
-          deployAndStartUserTask(databaseType, t -> t.zeebeUserTask().zeebeAssignee("demo"));
-      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+          deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("demo"));
+      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
 
-      provider.upgradeComponent(Component.ZEEBE, databaseType);
-      provider.upgradeComponent(Component.TASKLIST, databaseType);
+      provider.has87Data(databaseType);
+      provider.upgrade(databaseType);
 
-      final var res = completeTask(tasklistComponentHelper, taskKey);
+      final var res =
+          helper.getTasklistClient().withAuthentication("demo", "demo").completeUserTask(taskKey);
       assertThat(res.statusCode()).isEqualTo(200);
 
       shouldBeCompleted(databaseType, taskKey);
     }
 
     @TestTemplate
-    void shouldComplete87ZeebeTaskV2(
-        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+    void shouldComplete87ZeebeTaskV2(final DatabaseType databaseType, final MigrationHelper helper)
         throws IOException {
 
       final var piKey =
-          deployAndStartUserTask(databaseType, t -> t.zeebeUserTask().zeebeAssignee("demo"));
-      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+          deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("demo"));
+      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
 
-      provider.upgradeComponent(Component.ZEEBE, databaseType);
-      provider.upgradeComponent(Component.TASKLIST, databaseType);
+      provider.has87Data(databaseType);
+      provider.upgrade(databaseType);
 
       final var res =
           provider.getCamundaClient(databaseType).newUserTaskCompleteCommand(taskKey).send().join();
@@ -458,34 +405,31 @@ public class MigrationUserTaskUpdateIT {
     }
 
     @TestTemplate
-    void shouldComplete88ZeebeTaskV1(
-        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
-        throws IOException, InterruptedException {
+    void shouldComplete88ZeebeTaskV1(final DatabaseType databaseType, final MigrationHelper helper)
+        throws IOException {
 
-      provider.upgradeComponent(Component.ZEEBE, databaseType);
-      provider.upgradeComponent(Component.TASKLIST, databaseType);
+      provider.upgrade(databaseType);
 
       final var piKey =
-          deployAndStartUserTask(databaseType, t -> t.zeebeUserTask().zeebeAssignee("demo"));
-      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+          deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("demo"));
+      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
 
-      final var res = completeTask(tasklistComponentHelper, taskKey);
+      final var res =
+          helper.getTasklistClient().withAuthentication("demo", "demo").completeUserTask(taskKey);
       assertThat(res.statusCode()).isEqualTo(200);
 
       shouldBeCompleted(databaseType, taskKey);
     }
 
     @TestTemplate
-    void shouldComplete88ZeebeTaskV2(
-        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
+    void shouldComplete88ZeebeTaskV2(final DatabaseType databaseType, final MigrationHelper helper)
         throws IOException {
 
-      provider.upgradeComponent(Component.ZEEBE, databaseType);
-      provider.upgradeComponent(Component.TASKLIST, databaseType);
+      provider.upgrade(databaseType);
 
       final var piKey =
-          deployAndStartUserTask(databaseType, t -> t.zeebeUserTask().zeebeAssignee("demo"));
-      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+          deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("demo"));
+      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
 
       provider.getCamundaClient(databaseType).newUserTaskCompleteCommand(taskKey).send().join();
 
@@ -493,34 +437,33 @@ public class MigrationUserTaskUpdateIT {
     }
 
     @TestTemplate
-    void shouldComplete87JobWorkerV1(
-        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
-        throws IOException, InterruptedException {
+    void shouldComplete87JobWorkerV1(final DatabaseType databaseType, final MigrationHelper helper)
+        throws IOException {
 
-      final var piKey = deployAndStartUserTask(databaseType, t -> t.zeebeAssignee("demo"));
-      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+      final var piKey = deployAndStartUserTaskProcess(databaseType, t -> t.zeebeAssignee("demo"));
+      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
 
-      provider.upgradeComponent(Component.ZEEBE, databaseType);
-      provider.upgradeComponent(Component.TASKLIST, databaseType);
+      provider.has87Data(databaseType);
+      provider.upgrade(databaseType);
 
-      final var res = completeTask(tasklistComponentHelper, taskKey);
+      final var res =
+          helper.getTasklistClient().withAuthentication("demo", "demo").completeUserTask(taskKey);
       assertThat(res.statusCode()).isEqualTo(200);
 
       shouldBeCompleted(databaseType, taskKey);
     }
 
     @TestTemplate
-    void shouldComplete88JobWorkerV1(
-        final DatabaseType databaseType, final TasklistComponentHelper tasklistComponentHelper)
-        throws IOException, InterruptedException {
+    void shouldComplete88JobWorkerV1(final DatabaseType databaseType, final MigrationHelper helper)
+        throws IOException {
 
-      provider.upgradeComponent(Component.ZEEBE, databaseType);
-      provider.upgradeComponent(Component.TASKLIST, databaseType);
+      provider.upgrade(databaseType);
 
-      final var piKey = deployAndStartUserTask(databaseType, t -> t.zeebeAssignee("demo"));
-      final var taskKey = waitForTaskToBeImportedReturningId(tasklistComponentHelper, piKey);
+      final var piKey = deployAndStartUserTaskProcess(databaseType, t -> t.zeebeAssignee("demo"));
+      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
 
-      final var res = completeTask(tasklistComponentHelper, taskKey);
+      final var res =
+          helper.getTasklistClient().withAuthentication("demo", "demo").completeUserTask(taskKey);
       assertThat(res.statusCode()).isEqualTo(200);
 
       shouldBeCompleted(databaseType, taskKey);
