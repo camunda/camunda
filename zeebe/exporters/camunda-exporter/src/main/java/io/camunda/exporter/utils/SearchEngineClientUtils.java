@@ -11,7 +11,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -65,28 +64,5 @@ public class SearchEngineClientUtils {
               "Failed to serialise settings in PutSettingsRequest [%s]", settingsMap.toString()),
           e);
     }
-  }
-
-  public boolean allImportersCompleted(
-      final List<ImportPositionEntity> recordReaderStatuses, final int totalValueTypesCount) {
-    // For a fresh install where there are no import position documents
-    if (recordReaderStatuses.isEmpty()) {
-      return true;
-    }
-
-    final var partitionCompleted =
-        recordReaderStatuses.stream().anyMatch(ImportPositionEntity::getCompleted);
-
-    // If all record readers have an import position document we can check their completed values
-
-    if (recordReaderStatuses.size() == totalValueTypesCount) {
-      return recordReaderStatuses.stream().allMatch(ImportPositionEntity::getCompleted);
-    }
-
-    // If some record readers are missing their import position document we can say their status
-    // is equal to that of the partition completion status.
-
-    return recordReaderStatuses.stream().allMatch(ImportPositionEntity::getCompleted)
-        && partitionCompleted;
   }
 }
