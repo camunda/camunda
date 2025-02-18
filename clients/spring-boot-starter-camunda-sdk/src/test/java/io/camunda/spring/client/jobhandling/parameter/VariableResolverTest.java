@@ -18,9 +18,10 @@ package io.camunda.spring.client.jobhandling.parameter;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
-import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.api.worker.JobClient;
-import io.camunda.client.impl.CamundaObjectMapper;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.worker.JobClient;
+import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
+import io.camunda.zeebe.spring.client.jobhandling.parameter.VariableResolver;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,7 +38,7 @@ class VariableResolverTest {
 
   @BeforeEach
   void setUp() {
-    resolver = new VariableResolver("testVar", String.class, new CamundaObjectMapper());
+    resolver = new VariableResolver("testVar", String.class, new ZeebeObjectMapper());
   }
 
   @Test
