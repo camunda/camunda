@@ -12,7 +12,6 @@ import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.UserDetails;
-import io.camunda.identity.sdk.authentication.exception.TokenDecodeException;
 import io.camunda.identity.sdk.impl.rest.exception.RestException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
@@ -74,18 +73,6 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     return expires == null || expires.before(new Date());
   }
 
-  private boolean hasRefreshTokenExpired() {
-    try {
-      LOGGER.info("Refresh token will expire at {}", refreshTokenExpiresAt);
-      return refreshTokenExpiresAt == null || refreshTokenExpiresAt.before(new Date());
-    } catch (final TokenDecodeException e) {
-      LOGGER.info(
-          "Refresh token is not a JWT and expire date can not be determined. Error message: {}",
-          e.getMessage());
-      return false;
-    }
-  }
-
   @Override
   public String getName() {
     return name;
@@ -95,19 +82,12 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   public boolean isAuthenticated() {
     if (hasExpired()) {
       LOGGER.info("Access token is expired");
-      if (hasRefreshTokenExpired()) {
-        LOGGER.info("No refresh token available. Authentication is invalid.");
+      LOGGER.info("Get a new access token by using refresh token");
+      try {
+        renewAccessToken();
+      } catch (final Exception e) {
+        LOGGER.error("Renewing access token failed with exception", e);
         setAuthenticated(false);
-        getIdentity().authentication().revokeToken(tokens.getRefreshToken());
-        return false;
-      } else {
-        LOGGER.info("Get a new access token by using refresh token");
-        try {
-          renewAccessToken();
-        } catch (final Exception e) {
-          LOGGER.error("Renewing access token failed with exception", e);
-          setAuthenticated(false);
-        }
       }
     }
     return super.isAuthenticated();
@@ -132,23 +112,13 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
         && Objects.equals(authorizations, that.authorizations)
         && Objects.equals(subject, that.subject)
         && Objects.equals(expires, that.expires)
-        && Objects.equals(refreshTokenExpiresAt, that.refreshTokenExpiresAt)
         && Objects.equals(tenants, that.tenants);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
-        super.hashCode(),
-        tokens,
-        id,
-        name,
-        permissions,
-        authorizations,
-        subject,
-        expires,
-        refreshTokenExpiresAt,
-        tenants);
+        super.hashCode(), tokens, id, name, permissions, authorizations, subject, expires, tenants);
   }
 
   public String getId() {
@@ -245,17 +215,6 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     subject = accessToken.getToken().getSubject();
     expires = accessToken.getToken().getExpiresAt();
     LOGGER.info("Access token will expire at {}", expires);
-    if (!isPolling()) {
-      try {
-        refreshTokenExpiresAt =
-            getIdentity().authentication().decodeJWT(this.tokens.getRefreshToken()).getExpiresAt();
-      } catch (final TokenDecodeException e) {
-        LOGGER.error(
-            "Unable to decode refresh token {} with exception: {}",
-            this.tokens.getRefreshToken(),
-            e.getMessage());
-      }
-    }
     setAuthenticated(!hasExpired());
   }
 
