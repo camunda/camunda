@@ -48,6 +48,11 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+// Suppressing resource warning because JobWorker instances are managed and closed automatically
+// by `CamundaClient#close()`, which is invoked via the JUnit 5 extension due to the `client`
+// being annotated with `@AutoClose`. This ensures proper cleanup without requiring explicit
+// try-with-resources statements in each test.
+@SuppressWarnings("resource")
 @ZeebeIntegration
 public class UserTaskListenersTest {
 
