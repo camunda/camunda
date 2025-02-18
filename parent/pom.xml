@@ -44,7 +44,7 @@
     <version.checkstyle>10.21.2</version.checkstyle>
     <version.commons-beanutils>1.9.4</version.commons-beanutils>
     <version.commons-lang>3.17.0</version.commons-lang>
-    <version.commons-logging>1.3.4</version.commons-logging>
+    <version.commons-logging>1.3.5</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.17.2</version.commons-codec>
     <version.commons-compress>1.27.1</version.commons-compress>
