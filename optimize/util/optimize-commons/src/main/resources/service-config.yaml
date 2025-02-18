@@ -136,65 +136,6 @@ users:
   cloud:
     accountsUrl: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_URL:}
 
-# Configuration for engines used to import data. Please note that you have to have at
-# least one engine configured at all times.
-engines:
-  # An alias of the engine, which will be used for internal purposes like
-  # logging and displaying which data belong to which engine.
-  'camunda-bpm':
-    # The process engines name on the platform, this is the unique engine identifier on the platforms REST API.
-    name: default
-    # List of tenant IDs to be excluded when importing data. When left empty, data from all tenants will be imported.
-    # Please note that the defaultTenant cannot be excluded (and therefore also not the entities with "null" as tenant)
-    excludedTenants: [ ]
-    # A default tenant to be injected on data from this engine where no tenant is configured in the engine itself.
-    # This property is only relevant in the context of a `One Process Engine Per Tenant`.
-    # For details consult the Multi-Tenancy documentation.
-    defaultTenant:
-      # the id used for this default tenant on persisted entities
-      id: null
-      # the name used for this tenant when displayed in the UI
-      name: null
-    # A base URL that will be used for connections to the Camunda Engine REST API.
-    rest: '${OPTIMIZE_CAMUNDABPM_REST_URL:http://localhost:8080/engine-rest}'
-    # Determines whether this instance of Optimize should import definition & historical data from this engine.
-    importEnabled: true
-    authentication:
-      # Toggles basic authentication on or off. When enabling basic
-      # authentication, please be aware that you also need to adjust the values
-      # of the user and password.
-      # Also note, when enabled, it is required that the user has
-      # * READ & READ_HISTORY permission on the Process and Decision Definition resources
-      # * READ permission on the Authorization, Group, User, Deployment & Tenant resources
-      # to enable users to log in and Optimize to import the engine data.
-      enabled: false
-      # When basic authentication is enabled, this password is used to
-      # authenticate against the engine.
-      password: ''
-      # When basic authentication is enabled, this user is used to authenticate
-      # against the engine.
-      user: ''
-    # The webapps configuration allows Optimize to directly link
-    # to the other Camunda Web Applications, e.g. to jump from
-    # Optimize directly to a dedicated process instance in Cockpit
-    webapps:
-      # Defines the endpoint where to find the camunda webapps for the given engine
-      endpoint: '${OPTIMIZE_CAMUNDABPM_WEBAPPS_URL:http://localhost:8080/camunda}'
-      # Enables/disables linking to other Camunda Web Applications
-      enabled: true
-
-engine-commons:
-  connection:
-    #Maximum time without connection to the engine, Optimize should wait
-    #until a timeout is triggered. A value of zero means to wait an
-    # infinite amount of time.
-    timeout: 0
-  read:
-    # Maximum time a request to the engine should last,
-    # before a timeout triggers. A value of zero means to wait an
-    # infinite amount of time.
-    timeout: 0
-
 zeebe:
   # Toggles whether Optimize should attempt to import data from the connected Zeebe instance
   enabled: ${CAMUNDA_OPTIMIZE_ZEEBE_ENABLED:false}
@@ -546,38 +487,6 @@ es:
       className: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_INTERCEPTORPLUGINS_4_CLASSNAME:}
       jarPath: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_INTERCEPTORPLUGINS_4_JARPATH:}
 
-plugin:
-  # Defines the directory path in the local Optimize file system which should be checked for plugins
-  directory: ${PLUGIN_DIR:./plugin}
-  variableImport:
-    # Look in the given base package list for variable import adaption plugins.
-    # If empty, the import is not influenced.
-    basePackages: [ ]
-  engineRestFilter:
-    # Look in the given base package list for engine rest filter plugins.
-    # If empty, the REST calls are not influenced.
-    basePackages: [ ]
-  authenticationExtractor:
-    # Looks in the given base package list for authentication extractor plugins.
-    # If empty, the standard Optimize authentication mechanism is used.
-    basePackages: [ ]
-  decisionInputImport:
-    # Look in the given base package list for Decision input import adaption plugins.
-    # If empty, the import is not influenced.
-    basePackages: [ ]
-  decisionOutputImport:
-    # Look in the given base package list for Decision output import adaption plugins.
-    # If empty, the import is not influenced.
-    basePackages: [ ]
-  businessKeyImport:
-    # Look in the given base package list for business key import adaption plugins.
-    # If empty, the import is not influenced.
-    basePackages: [ ]
-  elasticsearchCustomHeader:
-    # Look in the given base package list for Elasticsearch custom header fetching plugins.
-    # If empty, ES requests are not influenced.
-    basePackages: [ ]
-
 serialization:
   # Define a custom date format that should be used for
   # fetching date data from the engine(should be the same as in the engine)
@@ -701,14 +610,6 @@ historyCleanup:
     # 'myProcessDefinitionKey':
     #   ttl: 'P2M'
     #   cleanupMode: 'variables'
-  decisionDataCleanup:
-    # switch for the Camunda decision data cleanup, defaults to false
-    enabled: ${CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED:false}
-    # decision definition specific configuration parameters that will overwrite the general parameters (ttl)
-    # for the specific decisionDefinition key
-    perDecisionDefinitionConfig:
-    # 'myDecisionDefinitionKey':
-    #   ttl: 'P2M'
   externalVariableCleanup:
     # switch for the ingested variable data cleanup, defaults to false. Note that this cleans the external variable index,
     # not external variables already imported into process instances.
@@ -775,11 +676,6 @@ onboarding:
 
 # Configuration of application internal in-memory caches
 caches:
-  # This cache is used to hold the list of available tenants.
-  # It helps to optimize the performance for reads on definitions, reports and collections.
-  tenants:
-    # the time a read result will be cached
-    defaultTtlMillis: 10000
   # This cache is used to cache the list of engines a particular definition is available on by definition key.
   # It helps to optimize the performance for listings of reports, collection data sources and collection roles.
   definitionEngines:

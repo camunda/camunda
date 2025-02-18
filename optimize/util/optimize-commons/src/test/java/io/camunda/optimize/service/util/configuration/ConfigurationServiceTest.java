@@ -18,7 +18,6 @@ import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.util.CronNormalizerUtil;
 import io.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import io.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
-import io.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import io.camunda.optimize.service.util.configuration.extension.EnvironmentVariablesExtension;
 import io.camunda.optimize.service.util.configuration.extension.SystemPropertiesExtension;
 import java.lang.reflect.Method;
@@ -88,16 +87,6 @@ public class ConfigurationServiceTest {
   public void getTokenLifeTimeMinutes() {
     final ConfigurationService underTest = createDefaultConfiguration();
     assertThat(underTest.getAuthConfiguration().getTokenLifeTimeMinutes()).isEqualTo(60);
-  }
-
-  @Test
-  public void testOverrideAliasOfEngine() {
-    final String[] locations = {
-      defaultConfigFile(), "environment-config.yaml", "override-engine-config.yaml"
-    };
-    final ConfigurationService underTest = createConfiguration(locations);
-    assertThat(underTest.getConfiguredEngines()).hasSize(1);
-    assertThat(underTest.getConfiguredEngines().get("myAwesomeEngine").getName()).isNotNull();
   }
 
   @Test
@@ -601,20 +590,6 @@ public class ConfigurationServiceTest {
     }
   }
 
-  @Test
-  public void testCutTrailingSlash() {
-    // given
-    final String[] locations = {defaultConfigFile(), "override-engine-config.yaml"};
-    final ConfigurationService underTest = createConfiguration(locations);
-
-    // when
-    final String resultUrl =
-        underTest.getConfiguredEngines().get("myAwesomeEngine").getWebapps().getEndpoint();
-
-    // then
-    assertThat(resultUrl.endsWith("/")).isFalse();
-  }
-
   private ConfigurationService createConfiguration(final String... locations) {
     return ConfigurationServiceBuilder.createConfiguration()
         .loadConfigurationFrom(locations)
@@ -628,11 +603,6 @@ public class ConfigurationServiceTest {
   private void assertThatPlaceholderDefaultValuesAreResolved(final ConfigurationService underTest) {
     assertThat(underTest.getAuthConfiguration().getTokenLifeTimeMinutes())
         .isEqualTo(DEFAULT_AUTH_TOKEN_LIFE_MIN);
-    assertThat(
-            underTest.getConfiguredEngines().values().stream()
-                .map(EngineConfiguration::isImportEnabled)
-                .collect(toList()))
-        .contains(DEFAULT_FIRST_ENGINE_IMPORT_ENABLED, DEFAULT_SECOND_ENGINE_IMPORT_ENABLED);
     assertThat(
             underTest.getElasticSearchConfiguration().getConnectionNodes().stream()
                 .map(DatabaseConnectionNodeConfiguration::getHost)
@@ -713,11 +683,6 @@ public class ConfigurationServiceTest {
         .isEqualTo(CUSTOM_MAX_REPORT_DATASOURCE);
     assertThat(underTest.getAuthConfiguration().getTokenLifeTimeMinutes())
         .isEqualTo(CUSTOM_AUTH_TOKEN_LIFE_MIN);
-    assertThat(
-            underTest.getConfiguredEngines().values().stream()
-                .map(EngineConfiguration::isImportEnabled)
-                .collect(toList()))
-        .contains(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED, CUSTOM_SECOND_ENGINE_IMPORT_ENABLED);
     assertThat(
             underTest.getElasticSearchConfiguration().getConnectionNodes().stream()
                 .map(DatabaseConnectionNodeConfiguration::getHost)
