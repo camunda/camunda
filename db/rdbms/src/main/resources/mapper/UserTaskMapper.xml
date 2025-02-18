@@ -356,7 +356,7 @@
     PROCESS_DEFINITION_ID = #{processDefinitionId},
     PROCESS_DEFINITION_KEY = #{processDefinitionKey},
     PROCESS_DEFINITION_VERSION = #{processDefinitionVersion}
-    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+    WHERE USER_TASK_KEY = #{userTaskKey}
   </update>
 
   <delete

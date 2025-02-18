@@ -34,14 +34,10 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
 
-/**
- * https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/
- */
+/** https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/ */
 public class RdbmsExporterWrapper implements Exporter {
 
-  /**
-   * The partition on which all process deployments are published
-   */
+  /** The partition on which all process deployments are published */
   public static final long PROCESS_DEFINITION_PARTITION = 1L;
 
   private static final int DEFAULT_FLUSH_INTERVAL = 500;
