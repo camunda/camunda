@@ -116,6 +116,19 @@ public class OpensearchIncidentStore implements IncidentStore {
   }
 
   @Override
+  public List<IncidentEntity> getIncidentsByErrorHashCode(final Integer incidentErrorHashCode) {
+    final var searchRequestBuilder =
+        searchRequestBuilder(incidentTemplate, ONLY_RUNTIME)
+            .query(
+                withTenantCheck(
+                    activeIncidentConstantScore(
+                        term(IncidentTemplate.ERROR_MSG_HASH, incidentErrorHashCode))))
+            .sort(sortOptions(IncidentTemplate.CREATION_TIME, SortOrder.Asc));
+
+    return richOpenSearchClient.doc().scrollValues(searchRequestBuilder, IncidentEntity.class);
+  }
+
+  @Override
   public Map<Long, List<Long>> getIncidentKeysPerProcessInstance(
       final List<Long> processInstanceKeys) {
     record Result(Long processInstanceKey) {}

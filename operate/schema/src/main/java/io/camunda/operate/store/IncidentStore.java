@@ -21,6 +21,8 @@ public interface IncidentStore {
 
   List<IncidentEntity> getIncidentsByProcessInstanceKey(Long processInstanceKey);
 
+  List<IncidentEntity> getIncidentsByErrorHashCode(final Integer incidentErrorHashCode);
+
   /**
    * Returns map of incident ids per process instance id.
    *
