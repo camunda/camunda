@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist;
 
+import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.operate.webapp.security.UserService;
 import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
@@ -87,7 +88,7 @@ public class TasklistSecurityStubsConfiguration {
     return new TenantService() {
       @Override
       public List<String> tenantsIds() {
-        return List.of();
+        return TenantAttributeHolder.getTenantIds();
       }
 
       @Override

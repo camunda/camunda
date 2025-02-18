@@ -26,16 +26,9 @@ public class IdentityAuthorizationServiceImpl implements IdentityAuthorizationSe
   @Override
   public List<String> getUserGroups() {
 
-    if (securityConfiguration.getAuthentication().getMethod() == AuthenticationMethod.BASIC) {
+    if (securityConfiguration.getAuthentication().getMethod() == AuthenticationMethod.BASIC
+        || securityConfiguration.getAuthentication().getMethod() == AuthenticationMethod.OIDC) {
       return camundaUserService.getCurrentUser().groups();
-    }
-
-    // TO-DO: Implement OIDC
-    if (securityConfiguration.getAuthentication().getMethod() == AuthenticationMethod.OIDC) {
-      // OIDC is not ready to be tested
-      final List<String> defaultGroups = new ArrayList<>();
-      defaultGroups.add(FULL_GROUP_ACCESS);
-      return defaultGroups;
     }
 
     // Fallback groups if authentication type is unrecognized or access token is null
