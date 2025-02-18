@@ -17,6 +17,7 @@ package io.camunda.zeebe.spring.client.configuration;
 
 import static io.camunda.zeebe.spring.client.configuration.PropertyUtil.getOrLegacyOrDefault;
 import static io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties.DEFAULT;
+import static java.util.Optional.ofNullable;
 
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
@@ -39,16 +40,11 @@ public class ExecutorServiceConfiguration {
   @Bean
   public ZeebeClientExecutorService zeebeClientThreadPool(
       @Autowired(required = false) final MeterRegistry meterRegistry,
-      final ZeebeClientConfigurationProperties configurationProperties,
       final CamundaClientProperties camundaClientProperties) {
     final ScheduledExecutorService threadPool =
         Executors.newScheduledThreadPool(
-            getOrLegacyOrDefault(
-                "NumJobWorkerExecutionThreads",
-                () -> camundaClientProperties.getZeebe().getExecutionThreads(),
-                configurationProperties::getNumJobWorkerExecutionThreads,
-                DEFAULT.getNumJobWorkerExecutionThreads(),
-                null));
+            ofNullable(camundaClientProperties.getZeebe().getExecutionThreads())
+                .orElse(ZeebeClientConfigurationImpl.DEFAULT.getNumJobWorkerExecutionThreads()));
     if (meterRegistry != null) {
       final MeterBinder threadPoolMetrics =
           new ExecutorServiceMetrics(
