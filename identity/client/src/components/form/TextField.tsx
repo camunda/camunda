@@ -1,4 +1,4 @@
-import { ChangeEvent, FC } from "react";
+import { ChangeEvent, FC, useId, useMemo } from "react";
 import { PasswordInput, TextArea, TextInput } from "@carbon/react";
 import useTranslate from "src/utility/localization";
 
@@ -10,22 +10,16 @@ export type TextFieldProps = {
   placeholder?: string;
   cols?: number;
   autoFocus?: boolean;
-  type?: "text" | "password";
-} & (
-  | {
-      onChange: (newValue: string) => void;
-      disabled?: false;
-    }
-  | {
-      onChange?: () => void;
-      disabled: true;
-    }
-);
+  type?: "text" | "password" | "email";
+  onBlur?: () => void;
+  readOnly?: boolean;
+  onChange?: (newValue: string) => void;
+};
 
 const TextField: FC<TextFieldProps> = ({
-  onChange = () => null,
-  disabled = false,
-  errors,
+  onChange,
+  onBlur,
+  errors = [],
   value,
   helperText,
   placeholder,
@@ -33,10 +27,13 @@ const TextField: FC<TextFieldProps> = ({
   cols,
   autoFocus = false,
   type = "text",
+  readOnly,
 }) => {
   const { t } = useTranslate();
+  const fieldId = useId();
+
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    onChange(e.currentTarget.value);
+    onChange?.(e.currentTarget.value);
   };
   const InputComponent =
     type === "password"
@@ -45,24 +42,25 @@ const TextField: FC<TextFieldProps> = ({
         ? TextArea
         : TextInput;
 
-  const additionalProps = autoFocus
-    ? {
-        "data-modal-primary-focus": true,
-      }
-    : {};
+  const additionalProps = useMemo(
+    () => (autoFocus ? { "data-modal-primary-focus": true } : {}),
+    [autoFocus],
+  );
 
   return (
     <InputComponent
       labelText={label}
       title={label}
-      id={label}
+      id={fieldId}
       helperText={helperText}
       value={value}
-      disabled={disabled}
       placeholder={placeholder}
       onChange={handleChange}
-      invalid={errors && errors.length > 0}
-      invalidText={errors?.map((e) => t(e)).join(" ")}
+      invalid={errors.length > 0}
+      invalidText={errors.map((e) => t(e)).join(" ")}
+      type={type}
+      onBlur={onBlur}
+      readOnly={readOnly}
       {...additionalProps}
     />
   );
