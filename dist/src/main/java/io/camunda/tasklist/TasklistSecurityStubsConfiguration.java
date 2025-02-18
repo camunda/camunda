@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist;
 
-import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.operate.webapp.security.UserService;
 import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
