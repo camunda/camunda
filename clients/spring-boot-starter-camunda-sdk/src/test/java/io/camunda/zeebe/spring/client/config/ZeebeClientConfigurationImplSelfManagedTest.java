@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.config;
 
-import static io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties.*;
+import static io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl.DEFAULT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
