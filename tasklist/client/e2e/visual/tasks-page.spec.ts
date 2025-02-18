@@ -8,7 +8,7 @@
 
 import {expect, type Route, type Request} from '@playwright/test';
 import schema from '@/resources/bigForm.json' assert {type: 'json'};
-import {test} from '@/visual-fixtures';
+import {test, MOCK_TENANTS} from '@/visual-fixtures';
 import {URL_API_V1_PATTERN} from '@/constants';
 
 type Task = {
@@ -37,16 +37,6 @@ type Task = {
   context: string | null;
 };
 
-const MOCK_TENANTS = [
-  {
-    id: 'tenantA',
-    name: 'Tenant A',
-  },
-  {
-    id: 'tenantB',
-    name: 'Tenant B',
-  },
-];
 
 const NON_FORM_TASK: Task = {
   id: '2251799813687061',
@@ -202,24 +192,6 @@ function mockResponses(
           id: formId,
           processDefinitionKey: '2251799813685255',
           schema: JSON.stringify(schema),
-        }),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-    }
-
-    if (route.request().url().includes('/v2/authentication/me')) {
-      return route.fulfill({
-        status: 200,
-        body: JSON.stringify({
-          userId: 'demo',
-          displayName: 'demo',
-          permissions: ['READ', 'WRITE'],
-          salesPlanType: null,
-          roles: null,
-          c8Links: [],
-          tenants: MOCK_TENANTS,
         }),
         headers: {
           'content-type': 'application/json',
