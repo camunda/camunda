@@ -164,6 +164,13 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
   }
 
   public String getShortIndexPrefix() {
+    // TODO: This is a temporary hack to make the PrefixMigrationIT works while Optimize is not
+    //   yet launchable as active profile of StandaloneCamunda (single-application integration).
+    String envPrefix = System.getenv("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX");
+    if(envPrefix != null && !envPrefix.isEmpty()) {
+      return envPrefix;
+    }
+
     // TODO: Reconcile nomenclature in the callers and in this callee, by not returning
     //  completeIndexPrefix in the getIndexPrefix(), once Optimize is fully identical to other
     //  applications.

@@ -92,7 +92,8 @@ public class PrefixMigrationIT {
             .withEnv(
                 "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME",
                 "io.camunda.exporter.CamundaExporter")
-            .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX", newPrefix);
+            .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX", newPrefix)
+            .withEnv("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX", newPrefix);
 
     return container;
   }
