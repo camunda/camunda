@@ -320,23 +320,6 @@ public class ConfigurationService {
     return maximumBackoff;
   }
 
-  public int getEngineConnectTimeout() {
-    if (engineConnectTimeout == null) {
-      engineConnectTimeout =
-          configJsonContext.read(
-              ConfigurationServiceConstants.ENGINE_CONNECT_TIMEOUT, Integer.class);
-    }
-    return engineConnectTimeout;
-  }
-
-  public int getEngineReadTimeout() {
-    if (engineReadTimeout == null) {
-      engineReadTimeout =
-          configJsonContext.read(ConfigurationServiceConstants.ENGINE_READ_TIMEOUT, Integer.class);
-    }
-    return engineReadTimeout;
-  }
-
   public int getCurrentTimeBackoffMilliseconds() {
     if (currentTimeBackoffMilliseconds == null) {
       currentTimeBackoffMilliseconds =
