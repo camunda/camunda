@@ -22,9 +22,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/
- */
+/** https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/ */
 public class RdbmsExporter {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsExporter.class);
@@ -80,9 +78,10 @@ public class RdbmsExporter {
     rdbmsWriter.getExecutionQueue().registerPreFlushListener(this::updatePositionInRdbms);
     rdbmsWriter.getExecutionQueue().registerPostFlushListener(this::updatePositionInBroker);
 
-    // schedule first cleanup in 1 second. Future intervals are given by the history cleanup service itself
-    currentCleanupTask = controller.scheduleCancellableTask(Duration.ofSeconds(1),
-        this::cleanupHistory);
+    // schedule first cleanup in 1 second. Future intervals are given by the history cleanup service
+    // itself
+    currentCleanupTask =
+        controller.scheduleCancellableTask(Duration.ofSeconds(1), this::cleanupHistory);
 
     LOG.info("[RDBMS Exporter] Exporter opened with last exported position {}", lastPosition);
   }
@@ -210,10 +209,9 @@ public class RdbmsExporter {
   }
 
   private void cleanupHistory() {
-    var newDuration = rdbmsWriter.getHistoryCleanupService()
-        .cleanupHistory(partitionId, OffsetDateTime.now());
-    currentCleanupTask = controller.scheduleCancellableTask(newDuration,
-        this::cleanupHistory);
+    final var newDuration =
+        rdbmsWriter.getHistoryCleanupService().cleanupHistory(partitionId, OffsetDateTime.now());
+    currentCleanupTask = controller.scheduleCancellableTask(newDuration, this::cleanupHistory);
   }
 
   @VisibleForTesting(

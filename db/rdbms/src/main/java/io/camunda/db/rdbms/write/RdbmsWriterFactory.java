@@ -61,12 +61,13 @@ public class RdbmsWriterFactory {
 
   public RdbmsWriter createWriter(final RdbmsWriterConfig config) {
     final var executionQueue =
-        new DefaultExecutionQueue(sqlSessionFactory, config.partitionId(), config.maxQueueSize(),
-            metrics);
+        new DefaultExecutionQueue(
+            sqlSessionFactory, config.partitionId(), config.maxQueueSize(), metrics);
     return new RdbmsWriter(
         config,
         executionQueue,
         new ExporterPositionService(executionQueue, exporterPositionMapper),
+        metrics,
         decisionInstanceMapper,
         flowNodeInstanceMapper,
         incidentMapper,

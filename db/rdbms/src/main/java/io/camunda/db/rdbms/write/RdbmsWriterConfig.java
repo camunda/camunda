@@ -16,15 +16,13 @@ public record RdbmsWriterConfig(
     Duration defaultHistoryTTL,
     Duration minHistoryCleanupInterval,
     Duration maxHistoryCleanupInterval,
-    int historyCleanupBatchSize
-) {
+    int historyCleanupBatchSize) {
 
   public static final int DEFAULT_QUEUE_SIZE = -1;
   public static final Duration DEFAULT_HISTORY_TTL = Duration.ofDays(30);
   public static final Duration DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(1);
   public static final Duration DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(60);
   public static final int DEFAULT_HISTORY_CLEANUP_BATCH_SIZE = 1000;
-
 
   public static Builder builder() {
     return new Builder();
@@ -80,5 +78,4 @@ public record RdbmsWriterConfig(
           historyCleanupBatchSize);
     }
   }
-
 }

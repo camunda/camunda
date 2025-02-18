@@ -246,11 +246,11 @@ public class FlowNodeInstanceIT {
                             p ->
                                 p.size(5)
                                     .searchAfter(
-                                        new Object[]{
-                                            instanceAfter.type(),
-                                            instanceAfter.tenantId(),
-                                            instanceAfter.startDate(),
-                                            instanceAfter.flowNodeInstanceKey()
+                                        new Object[] {
+                                          instanceAfter.type(),
+                                          instanceAfter.tenantId(),
+                                          instanceAfter.startDate(),
+                                          instanceAfter.flowNodeInstanceKey()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);

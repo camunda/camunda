@@ -268,7 +268,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     withProperty("camunda.database.password", "");
     withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");
     withProperty("logging.level.org.mybatis", "DEBUG");
-    withProperty("zeebe.broker.exporters.rdbms.args.flushInterval", "0");
+    withProperty("zeebe.broker.exporters.rdbms.args.flushInterval", "PT0S");
     withProperty("zeebe.broker.exporters.rdbms.args.defaultHistoryTTL", "PT2S");
     withProperty("zeebe.broker.exporters.rdbms.args.minHistoryCleanupInterval", "PT2S");
     withProperty("zeebe.broker.exporters.rdbms.args.maxHistoryCleanupInterval", "PT5S");

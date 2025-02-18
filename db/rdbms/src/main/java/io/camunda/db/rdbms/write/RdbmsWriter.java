@@ -64,6 +64,7 @@ public class RdbmsWriter {
       final RdbmsWriterConfig config,
       final ExecutionQueue executionQueue,
       final ExporterPositionService exporterPositionService,
+      final RdbmsWriterMetrics metrics,
       final DecisionInstanceMapper decisionInstanceMapper,
       final FlowNodeInstanceMapper flowNodeInstanceMapper,
       final IncidentMapper incidentMapper,
@@ -92,14 +93,16 @@ public class RdbmsWriter {
     formWriter = new FormWriter(executionQueue);
     mappingWriter = new MappingWriter(executionQueue);
 
-    this.historyCleanupService = new HistoryCleanupService(
-        config,
-        processInstanceWriter,
-        incidentWriter,
-        flowNodeInstanceWriter,
-        userTaskWriter,
-        variableWriter,
-        decisionInstanceWriter);
+    historyCleanupService =
+        new HistoryCleanupService(
+            config,
+            processInstanceWriter,
+            incidentWriter,
+            flowNodeInstanceWriter,
+            userTaskWriter,
+            variableWriter,
+            decisionInstanceWriter,
+            metrics);
   }
 
   public AuthorizationWriter getAuthorizationWriter() {

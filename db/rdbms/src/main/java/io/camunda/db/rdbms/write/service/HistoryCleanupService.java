@@ -8,8 +8,12 @@
 package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
+import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,12 +26,16 @@ public class HistoryCleanupService {
   private final Duration maxCleanupInterval;
   private final int cleanupBatchSize;
 
+  private final RdbmsWriterMetrics metrics;
+
   private final ProcessInstanceWriter processInstanceWriter;
   private final IncidentWriter incidentWriter;
   private final FlowNodeInstanceWriter flowNodeInstanceWriter;
   private final UserTaskWriter userTaskWriter;
   private final VariableWriter variableInstanceWriter;
   private final DecisionInstanceWriter decisionInstanceWriter;
+
+  private final Map<Integer, Duration> lastCleanupInterval = new HashMap<>();
 
   public HistoryCleanupService(
       final RdbmsWriterConfig config,
@@ -36,8 +44,11 @@ public class HistoryCleanupService {
       final FlowNodeInstanceWriter flowNodeInstanceWriter,
       final UserTaskWriter userTaskWriter,
       final VariableWriter variableInstanceWriter,
-      final DecisionInstanceWriter decisionInstanceWriter) {
-    LOG.info("Creating HistoryCleanupService with default history ttl {}", config.defaultHistoryTTL());
+      final DecisionInstanceWriter decisionInstanceWriter,
+      final RdbmsWriterMetrics metrics) {
+    LOG.info(
+        "Creating HistoryCleanupService with default history ttl {}", config.defaultHistoryTTL());
+
     defaultHistoryTTL = config.defaultHistoryTTL();
     minCleanupInterval = config.minHistoryCleanupInterval();
     maxCleanupInterval = config.maxHistoryCleanupInterval();
@@ -48,6 +59,7 @@ public class HistoryCleanupService {
     this.userTaskWriter = userTaskWriter;
     this.variableInstanceWriter = variableInstanceWriter;
     this.decisionInstanceWriter = decisionInstanceWriter;
+    this.metrics = metrics;
   }
 
   public void scheduleProcessForHistoryCleanup(
@@ -69,14 +81,81 @@ public class HistoryCleanupService {
   public Duration cleanupHistory(final int partitionId, final OffsetDateTime cleanupDate) {
     LOG.debug("Cleanup history for partition {} with TTL before {}", partitionId, cleanupDate);
 
-    processInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize);
-    flowNodeInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize);
-    incidentWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize);
-    userTaskWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize);
-    variableInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize);
-    decisionInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize);
+    final var sample = metrics.measureHistoryCleanupDuration();
+    final long start = System.currentTimeMillis();
 
-    return minCleanupInterval;
+    final var numDeletedRecords = new HashMap<String, Integer>();
+    numDeletedRecords.put(
+        "processInstance",
+        processInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+    numDeletedRecords.put(
+        "flowNodeInstance",
+        flowNodeInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+    numDeletedRecords.put(
+        "incident", incidentWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+    numDeletedRecords.put(
+        "userTask", userTaskWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+    numDeletedRecords.put(
+        "variable",
+        variableInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+    numDeletedRecords.put(
+        "decisionInstance",
+        decisionInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+    final long end = System.currentTimeMillis();
+    sample.close();
+
+    final int sum = numDeletedRecords.values().stream().mapToInt(Integer::intValue).sum();
+
+    LOG.debug("Deleted history records: {}", numDeletedRecords);
+    for (final var entry : numDeletedRecords.entrySet()) {
+      LOG.debug("    Deleted {}s: {}", entry.getKey(), entry.getValue());
+    }
+
+    LOG.info(
+        "Cleanup history for partition {} with TTL before {} took {} ms. Deleted {} records",
+        partitionId,
+        cleanupDate,
+        end - start,
+        sum);
+
+    final var nextDuration =
+        calculateNewDuration(lastCleanupInterval.get(partitionId), numDeletedRecords);
+    LOG.debug("Schedule next cleanup for partition {} with TTL in {}", partitionId, nextDuration);
+
+    saveLastCleanupInterval(partitionId, nextDuration);
+    return nextDuration;
+  }
+
+  private void saveLastCleanupInterval(final int partitionId, final Duration nextDuration) {
+    if (lastCleanupInterval.put(partitionId, nextDuration) == null) {
+      metrics.registerCleanupBackoffDurationGauge(
+          partitionId, () -> lastCleanupInterval.get(partitionId).toMillis());
+    }
+  }
+
+  @VisibleForTesting
+  Duration calculateNewDuration(
+      final Duration lastDuration, final Map<String, Integer> numDeletedRecords) {
+    final var deletedNothing = numDeletedRecords.values().stream().allMatch(i -> i == 0);
+    final var exceededBatchSize =
+        numDeletedRecords.values().stream().anyMatch(i -> i >= cleanupBatchSize);
+    Duration nextDuration;
+
+    if (lastDuration == null) {
+      nextDuration = minCleanupInterval;
+    } else if (deletedNothing) {
+      nextDuration = lastDuration.multipliedBy(2);
+      nextDuration =
+          nextDuration.compareTo(maxCleanupInterval) < 0 ? nextDuration : maxCleanupInterval;
+    } else if (exceededBatchSize) {
+      nextDuration = lastDuration.dividedBy(2);
+      nextDuration =
+          nextDuration.compareTo(minCleanupInterval) > 0 ? nextDuration : minCleanupInterval;
+    } else {
+      nextDuration = lastDuration;
+    }
+
+    return nextDuration;
   }
 
   public Duration getHistoryCleanupInterval() {

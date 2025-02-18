@@ -626,10 +626,10 @@ public class UserTaskIT {
                             p ->
                                 p.size(5)
                                     .searchAfter(
-                                        new Object[]{
-                                            instanceAfter.priority(),
-                                            instanceAfter.completionDate(),
-                                            instanceAfter.userTaskKey()
+                                        new Object[] {
+                                          instanceAfter.priority(),
+                                          instanceAfter.completionDate(),
+                                          instanceAfter.userTaskKey()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);

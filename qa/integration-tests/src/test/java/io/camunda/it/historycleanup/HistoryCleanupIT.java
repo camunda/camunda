@@ -30,16 +30,15 @@ public class HistoryCleanupIT {
   // TODO use MultiDbTest when camunda exporter also supports it
   @RegisterExtension
   static final BrokerITInvocationProvider PROVIDER =
-      new BrokerITInvocationProvider()
-          .withoutCamundaExporter();
+      new BrokerITInvocationProvider().withoutCamundaExporter();
 
   @TestTemplate
   void shouldDeleteProcessesWhichAreMarkedForCleanup(final CamundaClient camundaClient) {
     // given
     deployResource(camundaClient, RESOURCE_NAME).getProcesses().getFirst();
     waitForProcessesToBeDeployed(camundaClient, 1);
-    final ProcessInstanceEvent processInstanceEvent = startProcessInstance(camundaClient,
-        "foo", "{\"variable\":\"bud\"}");
+    final ProcessInstanceEvent processInstanceEvent =
+        startProcessInstance(camundaClient, "foo", "{\"variable\":\"bud\"}");
     waitForProcessInstancesToStart(camundaClient, 1);
     waitForFlowNodeInstances(camundaClient, 2);
 
@@ -53,10 +52,14 @@ public class HistoryCleanupIT {
 
     // and soon it should be gone
     waitUntilProcessInstanceIsGone(camundaClient, processInstanceEvent.getProcessInstanceKey());
-    final var taskAmount = camundaClient.newUserTaskQuery()
-        .filter(b -> b.userTaskKey(userTask.getUserTaskKey())).send()
-        .join().page().totalItems();
+    final var taskAmount =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(b -> b.userTaskKey(userTask.getUserTaskKey()))
+            .send()
+            .join()
+            .page()
+            .totalItems();
     assertThat(taskAmount).isZero();
   }
-
 }

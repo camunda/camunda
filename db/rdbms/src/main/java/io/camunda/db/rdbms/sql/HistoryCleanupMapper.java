@@ -12,9 +12,9 @@ import java.time.OffsetDateTime;
 
 public interface HistoryCleanupMapper {
 
-  void scheduleForHistoryCleanup(UpdateHistoryCleanupDateDto dto);
+  int scheduleForHistoryCleanup(UpdateHistoryCleanupDateDto dto);
 
-  void cleanupHistory(CleanupHistoryDto dto);
+  int cleanupHistory(CleanupHistoryDto dto);
 
   record UpdateHistoryCleanupDateDto(long processInstanceKey, OffsetDateTime historyCleanupDate) {
 

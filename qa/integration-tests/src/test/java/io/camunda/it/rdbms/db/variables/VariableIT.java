@@ -218,11 +218,11 @@ public class VariableIT {
                             p ->
                                 p.size(5)
                                     .searchAfter(
-                                        new Object[]{
-                                            instanceAfter.scopeKey(),
-                                            instanceAfter.value(),
-                                            instanceAfter.processInstanceKey(),
-                                            instanceAfter.variableKey()
+                                        new Object[] {
+                                          instanceAfter.scopeKey(),
+                                          instanceAfter.value(),
+                                          instanceAfter.processInstanceKey(),
+                                          instanceAfter.variableKey()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);

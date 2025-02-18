@@ -27,9 +27,7 @@ import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 
-/**
- * A holder for all rdbms services
- */
+/** A holder for all rdbms services */
 public class RdbmsService {
 
   private final RdbmsWriterFactory rdbmsWriterFactory;
@@ -152,9 +150,7 @@ public class RdbmsService {
   }
 
   public RdbmsWriter createWriter(final long partitionId) { // todo fix in all itests afterwards?
-    return createWriter(new RdbmsWriterConfig.Builder()
-        .partitionId((int) partitionId)
-        .build());
+    return createWriter(new RdbmsWriterConfig.Builder().partitionId((int) partitionId).build());
   }
 
   public RdbmsWriter createWriter(final RdbmsWriterConfig config) {

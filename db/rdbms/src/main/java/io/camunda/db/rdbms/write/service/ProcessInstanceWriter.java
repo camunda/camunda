@@ -27,8 +27,8 @@ public class ProcessInstanceWriter {
   private final ProcessInstanceMapper mapper;
   private final ExecutionQueue executionQueue;
 
-  public ProcessInstanceWriter(final ProcessInstanceMapper mapper,
-      final ExecutionQueue executionQueue) {
+  public ProcessInstanceWriter(
+      final ProcessInstanceMapper mapper, final ExecutionQueue executionQueue) {
     this.mapper = mapper;
     this.executionQueue = executionQueue;
   }
@@ -124,12 +124,13 @@ public class ProcessInstanceWriter {
     }
   }
 
-  public void cleanupHistory(final int partitionId, final OffsetDateTime cleanupDate,
-      final int rowsToRemove) {
-    mapper.cleanupHistory(new CleanupHistoryDto.Builder()
-        .partitionId(partitionId)
-        .cleanupDate(cleanupDate)
-        .limit(rowsToRemove)
-        .build());
+  public int cleanupHistory(
+      final int partitionId, final OffsetDateTime cleanupDate, final int rowsToRemove) {
+    return mapper.cleanupHistory(
+        new CleanupHistoryDto.Builder()
+            .partitionId(partitionId)
+            .cleanupDate(cleanupDate)
+            .limit(rowsToRemove)
+            .build());
   }
 }

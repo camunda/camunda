@@ -197,11 +197,11 @@ public class IncidentIT {
                             p ->
                                 p.size(5)
                                     .searchAfter(
-                                        new Object[]{
-                                            instanceAfter.state(),
-                                            instanceAfter.creationTime(),
-                                            instanceAfter.flowNodeId(),
-                                            instanceAfter.processInstanceKey()
+                                        new Object[] {
+                                          instanceAfter.state(),
+                                          instanceAfter.creationTime(),
+                                          instanceAfter.flowNodeId(),
+                                          instanceAfter.processInstanceKey()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);

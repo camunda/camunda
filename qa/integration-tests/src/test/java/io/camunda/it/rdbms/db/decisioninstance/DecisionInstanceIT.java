@@ -196,11 +196,11 @@ public class DecisionInstanceIT {
                             p ->
                                 p.size(5)
                                     .searchAfter(
-                                        new Object[]{
-                                            instanceAfter.decisionDefinitionName(),
-                                            instanceAfter.decisionDefinitionVersion(),
-                                            instanceAfter.evaluationDate(),
-                                            instanceAfter.decisionInstanceId()
+                                        new Object[] {
+                                          instanceAfter.decisionDefinitionName(),
+                                          instanceAfter.decisionDefinitionVersion(),
+                                          instanceAfter.evaluationDate(),
+                                          instanceAfter.decisionInstanceId()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);

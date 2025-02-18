@@ -304,11 +304,11 @@ public class ProcessInstanceIT {
                             p ->
                                 p.size(5)
                                     .searchAfter(
-                                        new Object[]{
-                                            instanceAfter.processDefinitionName(),
-                                            instanceAfter.processDefinitionVersion(),
-                                            instanceAfter.startDate(),
-                                            instanceAfter.processInstanceKey()
+                                        new Object[] {
+                                          instanceAfter.processDefinitionName(),
+                                          instanceAfter.processDefinitionVersion(),
+                                          instanceAfter.startDate(),
+                                          instanceAfter.processInstanceKey()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);
