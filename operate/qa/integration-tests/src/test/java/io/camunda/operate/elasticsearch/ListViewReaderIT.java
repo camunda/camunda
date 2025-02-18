@@ -11,10 +11,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import io.camunda.operate.entities.FlowNodeState;
+import io.camunda.operate.entities.IncidentEntity;
+import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
+import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.reader.ListViewReader;
@@ -36,10 +39,13 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 public class ListViewReaderIT extends OperateSearchAbstractIT {
   @Autowired private ListViewReader listViewReader;
   @Autowired private ListViewTemplate listViewTemplate;
+  @Autowired private IncidentTemplate incidentTemplate;
   @MockBean private PermissionsService permissionsService;
 
   private ProcessInstanceForListViewEntity activeProcess;
   private ProcessInstanceForListViewEntity completedProcess;
+  private ProcessInstanceForListViewEntity incidentProcess;
+  private IncidentEntity incident;
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
@@ -113,6 +119,57 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
     testSearchRepository.createOrUpdateDocumentFromObject(
         listViewTemplate.getFullQualifiedName(), completedProcess.getId(), completedProcess);
 
+    incidentProcess =
+        new ProcessInstanceForListViewEntity()
+            .setProcessName("process3")
+            .setBpmnProcessId("p3")
+            .setState(ProcessInstanceState.ACTIVE)
+            .setProcessDefinitionKey(123L)
+            .setStartDate(
+                OffsetDateTime.of(2025, 2, 1, 12, 0, 30, 457, OffsetDateTime.now().getOffset()))
+            .setProcessInstanceKey(333L)
+            .setTenantId("tenant3")
+            .setIncident(true)
+            .setKey(333L)
+            .setId("333");
+
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        listViewTemplate.getFullQualifiedName(), incidentProcess.getId(), incidentProcess);
+
+    incident =
+        new IncidentEntity()
+            .setErrorMessage("Another error")
+            .setErrorMessageHash("Another error".hashCode())
+            .setProcessInstanceKey(incidentProcess.getProcessInstanceKey())
+            .setProcessDefinitionKey(incidentProcess.getProcessDefinitionKey())
+            .setBpmnProcessId(incidentProcess.getBpmnProcessId())
+            .setState(IncidentState.ACTIVE)
+            .setTenantId("tenant3")
+            .setId("555");
+
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        incidentTemplate.getFullQualifiedName(), incident.getId(), incident);
+
+    final FlowNodeInstanceForListViewEntity incidentFlowNodeEntity =
+        new FlowNodeInstanceForListViewEntity()
+            .setProcessInstanceKey(incidentProcess.getProcessInstanceKey())
+            .setActivityState(FlowNodeState.ACTIVE)
+            .setActivityId("serviceTask")
+            .setId("2000")
+            .setKey(2000L)
+            .setTenantId("tenant3")
+            .setErrorMessage(incident.getErrorMessage())
+            .setJobFailedWithRetriesLeft(false);
+    incidentFlowNodeEntity.getJoinRelation().setParent(incidentProcess.getProcessInstanceKey());
+
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        listViewTemplate.getFullQualifiedName(),
+        incidentFlowNodeEntity.getId(),
+        incidentFlowNodeEntity,
+        incidentProcess.getProcessInstanceKey().toString());
+
+    searchContainerManager.refreshIndices("*incident*");
+
     searchContainerManager.refreshIndices("*list-view*");
   }
 
@@ -127,8 +184,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
     requestDto.getQuery().setCanceled(false).setCompleted(false).setFinished(false);
 
     final var response = listViewReader.queryProcessInstances(requestDto);
-    assertThat(response.getTotalCount()).isEqualTo(1);
-    assertThat(response.getProcessInstances()).hasSize(1);
+    assertThat(response.getTotalCount()).isEqualTo(2);
+    assertThat(response.getProcessInstances()).hasSize(2);
     validateResultAgainstProcess(response.getProcessInstances().getFirst(), activeProcess);
   }
 
@@ -137,8 +194,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
 
     final var response = listViewReader.queryProcessInstances(requestDto);
-    assertThat(response.getTotalCount()).isEqualTo(2);
-    assertThat(response.getProcessInstances()).hasSize(2);
+    assertThat(response.getTotalCount()).isEqualTo(3);
+    assertThat(response.getProcessInstances()).hasSize(3);
   }
 
   @Test
@@ -222,6 +279,17 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
   }
 
   @Test
+  public void testQueryProcessInstancesByIncidentErrorHashCode() {
+    final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
+    requestDto.getQuery().setIncidentErrorHashCode(incident.getErrorMessageHash());
+
+    final var response = listViewReader.queryProcessInstances(requestDto);
+    assertThat(response.getTotalCount()).isEqualTo(1);
+    assertThat(response.getProcessInstances()).hasSize(1);
+    validateResultAgainstProcess(response.getProcessInstances().getFirst(), incidentProcess);
+  }
+
+  @Test
   public void testQueryProcessInstancesByBeforeStartDate() {
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
     requestDto
@@ -244,8 +312,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
             OffsetDateTime.of(2018, 2, 15, 12, 0, 30, 457, OffsetDateTime.now().getOffset()));
 
     final var response = listViewReader.queryProcessInstances(requestDto);
-    assertThat(response.getTotalCount()).isEqualTo(1);
-    assertThat(response.getProcessInstances()).hasSize(1);
+    assertThat(response.getTotalCount()).isEqualTo(2);
+    assertThat(response.getProcessInstances()).hasSize(2);
     validateResultAgainstProcess(response.getProcessInstances().getFirst(), completedProcess);
   }
 
@@ -305,8 +373,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
     requestDto.getQuery().setExcludeIds(List.of("101"));
 
     final var response = listViewReader.queryProcessInstances(requestDto);
-    assertThat(response.getTotalCount()).isEqualTo(1);
-    assertThat(response.getProcessInstances()).hasSize(1);
+    assertThat(response.getTotalCount()).isEqualTo(2);
+    assertThat(response.getProcessInstances()).hasSize(2);
     validateResultAgainstProcess(response.getProcessInstances().getFirst(), activeProcess);
   }
 
@@ -391,10 +459,11 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
             .setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE));
 
     final var response = listViewReader.queryProcessInstances(requestDto);
-    assertThat(response.getTotalCount()).isEqualTo(2);
-    assertThat(response.getProcessInstances()).hasSize(2);
-    validateResultAgainstProcess(response.getProcessInstances().get(0), completedProcess);
-    validateResultAgainstProcess(response.getProcessInstances().get(1), activeProcess);
+    assertThat(response.getTotalCount()).isEqualTo(3);
+    assertThat(response.getProcessInstances()).hasSize(3);
+    validateResultAgainstProcess(response.getProcessInstances().get(0), incidentProcess);
+    validateResultAgainstProcess(response.getProcessInstances().get(1), completedProcess);
+    validateResultAgainstProcess(response.getProcessInstances().get(2), activeProcess);
   }
 
   private ListViewRequestDto createSimpleProcessInstanceQuery() {
