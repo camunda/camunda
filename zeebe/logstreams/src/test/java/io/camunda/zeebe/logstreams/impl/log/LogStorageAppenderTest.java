@@ -61,8 +61,6 @@ final class LogStorageAppenderTest {
     final var meterRegistry = new SimpleMeterRegistry();
     final var logStreamMetrics = new LogStreamMetrics(meterRegistry);
     scheduler.start();
-
-    scheduler.start();
     sequencer =
         new Sequencer(
             logStorage,
