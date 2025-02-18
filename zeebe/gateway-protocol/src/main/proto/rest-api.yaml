@@ -1162,7 +1162,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
-
   /decision-definitions/evaluation:
     post:
       tags:
@@ -1680,7 +1679,7 @@ paths:
             schema:
               $ref: "#/components/schemas/IncidentSearchQuery"
       responses:
-        '200':
+        "200":
           description: >
             The incident search successful response.
           content:
@@ -1693,7 +1692,7 @@ paths:
             application/vnd.camunda.api.keys.string+json:
               schema:
                 $ref: "#/components/schemas/IncidentSearchQueryResult"
-        '400':
+        "400":
           description: >
             The incident search query failed.
             More details are provided in the response body.
@@ -1870,7 +1869,6 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-
 
   /element-instances/{elementInstanceKey}/variables:
     post:
@@ -3226,10 +3224,16 @@ components:
         - type
         - timeout
         - maxJobsToActivate
+    JobActivationResponseBase:
+      # This base schema exists to support the downstream API documentation.
+      description: Base properties for JobActivationResponse
+      type: object
     JobActivationResponse:
       description: The list of activated jobs
       deprecated: true
       type: object
+      allOf:
+        - $ref: "#/components/schemas/JobActivationResponseBase"
       properties:
         jobs:
           type: array
@@ -3238,6 +3242,8 @@ components:
     JobActivationResult:
       description: The list of activated jobs. Key attributes as string values.
       type: object
+      allOf:
+        - $ref: "#/components/schemas/JobActivationResponseBase"
       properties:
         jobs:
           type: array
@@ -4182,7 +4188,6 @@ components:
               description: Documents that failed creation.
               items:
                 $ref: "#/components/schemas/DocumentCreationFailureDetail"
-
 
     DocumentMetadata:
       description: Information about the document.
