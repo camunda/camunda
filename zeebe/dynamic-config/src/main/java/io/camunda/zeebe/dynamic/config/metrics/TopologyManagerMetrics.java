@@ -39,8 +39,7 @@ public class TopologyManagerMetrics {
     final var timer =
         operationDuration.computeIfAbsent(
             operation.getClass().getSimpleName(), this::registerOperation);
-    return new OperationObserver(
-        operation, MicrometerUtil.timer(timer, Timer.start(registry)));
+    return new OperationObserver(operation, MicrometerUtil.timer(timer, Timer.start(registry)));
   }
 
   private Timer registerOperation(final String operation) {
