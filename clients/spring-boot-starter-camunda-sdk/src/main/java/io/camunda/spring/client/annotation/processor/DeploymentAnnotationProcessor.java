@@ -80,20 +80,20 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
       throw new IllegalArgumentException("No resources found to deploy");
     }
 
-    final DeployResourceCommandStep1 command = client.newDeployResourceCommand();
-    final DeployResourceCommandStep2 commandStep2 =
-        resources.stream()
-            .map(
-                resource -> {
-                  try (final InputStream inputStream = resource.getInputStream()) {
-                    return command.addResourceStream(inputStream, resource.getFilename());
-                  } catch (final IOException e) {
-                    throw new RuntimeException(e.getMessage());
-                  }
-                })
-            .reduce((c1, c2) -> c2)
-            .orElseThrow(() -> new IllegalStateException("Unexpected absence of builder"));
-    final DeploymentEvent deploymentEvent = commandStep2.send().join();
+final DeployResourceCommandStep1 command = client.newDeployResourceCommand();
+DeployResourceCommandStep2 commandStep2 = null;
+for (Resource resource : resources) {
+    try (InputStream inputStream = resource.getInputStream()) {
+        if (commandStep2 == null) {
+            commandStep2 = command.addResourceStream(inputStream, resource.getFilename());
+        } else {
+            commandStep2 = commandStep2.addResourceStream(inputStream, resource.getFilename());
+        }
+    } catch (IOException e) {
+        throw new RuntimeException("Error reading resource: " + e.getMessage(), e);
+    }
+}
+final DeploymentEvent deploymentEvent = commandStep2.send().join();
     LOGGER.info(
         "Deployed: {}",
         Stream.concat(
