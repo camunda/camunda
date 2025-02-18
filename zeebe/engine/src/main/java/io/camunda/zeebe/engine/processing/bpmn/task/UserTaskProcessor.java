@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.task;
 
+import static io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior.CANCELABLE_LIFECYCLE_STATES;
+
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -21,8 +23,13 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior.Use
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.util.Either;
 import org.apache.commons.lang3.StringUtils;
 
@@ -36,10 +43,13 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   private final BpmnStateBehavior stateBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
   private final BpmnJobBehavior jobBehavior;
+  private final StateWriter stateWriter;
+  private final UserTaskState userTaskState;
 
   public UserTaskProcessor(
       final BpmnBehaviors bpmnBehaviors,
-      final BpmnStateTransitionBehavior stateTransitionBehavior) {
+      final BpmnStateTransitionBehavior stateTransitionBehavior,
+      final Writers writers, final UserTaskState userTaskState) {
     super(bpmnBehaviors, stateTransitionBehavior);
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
@@ -49,6 +59,8 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
     stateBehavior = bpmnBehaviors.stateBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
     jobBehavior = bpmnBehaviors.jobBehavior();
+    stateWriter = writers.state();
+    this.userTaskState = userTaskState;
   }
 
   @Override
@@ -116,16 +128,40 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   @Override
   protected void onTerminateInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
-    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
     if (element.hasExecutionListeners() || element.hasTaskListeners()) {
       jobBehavior.cancelJob(context);
     }
 
-    userTaskBehavior.cancelUserTask(context);
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
-    incidentBehavior.resolveIncidents(context);
+    final var elementInstance = stateBehavior.getElementInstance(context);
+    final long userTaskKey = elementInstance.getUserTaskKey();
 
+    if (userTaskKey > 0) {
+      final LifecycleState lifecycleState = userTaskState.getLifecycleState(userTaskKey);
+
+      if (CANCELABLE_LIFECYCLE_STATES.contains(lifecycleState)) {
+        final UserTaskRecord userTask = userTaskState.getUserTask(userTaskKey);
+        stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELING, userTask);
+
+        element.getTaskListeners(ZeebeTaskListenerEventType.canceling).stream()
+            .findFirst()
+            .ifPresentOrElse(
+                listener -> jobBehavior.createNewTaskListenerJob(context, userTask, listener),
+                () -> onFinalizeTerminateInternal(element, context));
+      }
+    } else {
+      onFinalizeTerminateInternal(element, context);
+    }
+  }
+
+  @Override
+  protected void onFinalizeTerminateInternal(final ExecutableUserTask element,
+      final BpmnElementContext context) {
+    userTaskBehavior.finalizeUserTaskCancellation(context);
+    incidentBehavior.resolveIncidents(context); // ? should it be before or after `canceling` UTLs
+
+    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
     eventSubscriptionBehavior
         .findEventTrigger(context)
         .filter(eventTrigger -> flowScopeInstance.isActive())

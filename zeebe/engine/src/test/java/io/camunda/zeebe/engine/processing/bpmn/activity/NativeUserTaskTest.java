@@ -874,6 +874,41 @@ public final class NativeUserTaskTest {
   }
 
   @Test
+  public void shouldCancelUserTaskWhenTerminating() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(process())
+        .deploy();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("foo", 10).create();
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey).await();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then
+    assertThat(
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .limitToProcessInstanceTerminated())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
+
+    assertThat(
+        RecordingExporter.userTaskRecords().withProcessInstanceKey(processInstanceKey).onlyEvents()
+            .limit(r -> r.getIntent() == UserTaskIntent.CANCELED))
+        .extracting(Record::getIntent)
+        .containsExactly(UserTaskIntent.CREATING, UserTaskIntent.CREATED, UserTaskIntent.CANCELING,
+            UserTaskIntent.CANCELED);
+  }
+
+  @Test
   public void shouldResolveIncidentsWhenTerminating() {
     // given
     ENGINE

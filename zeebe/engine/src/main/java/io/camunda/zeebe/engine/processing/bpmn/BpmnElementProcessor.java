@@ -142,4 +142,7 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * @param context process instance-related data of the element that is executed
    */
   default void onTerminate(final T element, final BpmnElementContext context) {}
+
+  default void onFinalizeTerminate(final T element, final BpmnElementContext context) {
+  }
 }

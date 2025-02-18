@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -44,7 +45,7 @@ public final class BpmnUserTaskBehavior {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BpmnUserTaskBehavior.class.getPackageName());
-  private static final Set<LifecycleState> CANCELABLE_LIFECYCLE_STATES =
+  public static final Set<LifecycleState> CANCELABLE_LIFECYCLE_STATES =
       EnumSet.complementOf(EnumSet.of(LifecycleState.NOT_FOUND, LifecycleState.CANCELING));
 
   private final HeaderEncoder headerEncoder = new HeaderEncoder(LOGGER);
@@ -317,6 +318,38 @@ public final class BpmnUserTaskBehavior {
       if (CANCELABLE_LIFECYCLE_STATES.contains(lifecycleState)) {
         final UserTaskRecord userTask = userTaskState.getUserTask(userTaskKey);
         stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELING, userTask);
+        stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELED, userTask);
+      }
+    }
+  }
+
+  public void startCancelingUserTask(final ExecutableUserTask element,
+      final BpmnElementContext context) {
+    final var elementInstance = stateBehavior.getElementInstance(context);
+    final long userTaskKey = elementInstance.getUserTaskKey();
+    if (userTaskKey > 0) {
+      final LifecycleState lifecycleState = userTaskState.getLifecycleState(userTaskKey);
+      if (CANCELABLE_LIFECYCLE_STATES.contains(lifecycleState)) {
+        final UserTaskRecord userTask = userTaskState.getUserTask(userTaskKey);
+        stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELING, userTask);
+
+        final BpmnJobBehavior jobBehavior = null;
+        element.getTaskListeners(ZeebeTaskListenerEventType.complete).stream()
+            .findFirst()
+            .ifPresentOrElse(
+                listener -> jobBehavior.createNewTaskListenerJob(context, userTask, listener),
+                () -> finalizeUserTaskCancellation(context));
+      }
+    }
+  }
+
+  public void finalizeUserTaskCancellation(final BpmnElementContext context) {
+    final var elementInstance = stateBehavior.getElementInstance(context);
+    final long userTaskKey = elementInstance.getUserTaskKey();
+    if (userTaskKey > 0) {
+      final LifecycleState lifecycleState = userTaskState.getLifecycleState(userTaskKey);
+      if (LifecycleState.CANCELING == lifecycleState) {
+        final UserTaskRecord userTask = userTaskState.getUserTask(userTaskKey);
         stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELED, userTask);
       }
     }
