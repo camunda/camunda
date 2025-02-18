@@ -62,7 +62,7 @@ public class AuthorizationStateTest {
             .setOwnerType(ownerType)
             .setResourceId(resourceId)
             .setResourceType(resourceType)
-            .setAuthorizationPermissions(permissions);
+            .setPermissionTypes(permissions);
 
     // when
     authorizationState.create(authorizationKey, authorizationRecord);
@@ -102,7 +102,7 @@ public class AuthorizationStateTest {
             .setOwnerType(ownerType)
             .setResourceId(resourceId)
             .setResourceType(resourceType)
-            .setAuthorizationPermissions(permissions);
+            .setPermissionTypes(permissions);
 
     authorizationState.create(authorizationKey, authorizationRecord);
 
@@ -114,7 +114,7 @@ public class AuthorizationStateTest {
             .setOwnerType(ownerType)
             .setResourceId("anotherResourceId")
             .setResourceType(resourceType)
-            .setAuthorizationPermissions(Set.of(PermissionType.READ, PermissionType.ACCESS));
+            .setPermissionTypes(Set.of(PermissionType.READ, PermissionType.ACCESS));
     authorizationState.update(authorizationKey, updatedAuthorizationRecord);
 
     // then
@@ -169,7 +169,7 @@ public class AuthorizationStateTest {
             .setOwnerType(ownerType)
             .setResourceId(resourceId)
             .setResourceType(resourceType)
-            .setAuthorizationPermissions(permissions);
+            .setPermissionTypes(permissions);
 
     authorizationState.create(authorizationKey, authorizationRecord);
 
@@ -181,7 +181,7 @@ public class AuthorizationStateTest {
             .setOwnerType(ownerType)
             .setResourceId("anotherResourceId")
             .setResourceType(resourceType)
-            .setAuthorizationPermissions(permissions);
+            .setPermissionTypes(permissions);
     authorizationState.update(authorizationKey, updatedAuthorizationRecord);
 
     // then
@@ -238,7 +238,7 @@ public class AuthorizationStateTest {
             .setOwnerType(ownerType)
             .setResourceId(resourceId)
             .setResourceType(resourceType)
-            .setAuthorizationPermissions(permissions);
+            .setPermissionTypes(permissions);
 
     authorizationState.create(authorizationKey, authorizationRecord);
 
@@ -250,7 +250,7 @@ public class AuthorizationStateTest {
             .setOwnerType(ownerType)
             .setResourceId(resourceId)
             .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .setAuthorizationPermissions(permissions);
+            .setPermissionTypes(permissions);
     authorizationState.update(authorizationKey, updatedAuthorizationRecord);
 
     // then
@@ -311,7 +311,7 @@ public class AuthorizationStateTest {
             .setOwnerType(ownerType)
             .setResourceId(resourceId)
             .setResourceType(resourceType)
-            .setAuthorizationPermissions(permissions);
+            .setPermissionTypes(permissions);
 
     authorizationState.create(authorizationKey, authorizationRecord);
 
@@ -322,7 +322,7 @@ public class AuthorizationStateTest {
             .setOwnerType(ownerType)
             .setResourceId("resourceId2")
             .setResourceType(resourceType)
-            .setAuthorizationPermissions(permissions);
+            .setPermissionTypes(permissions);
 
     authorizationState.create(2L, anotherRecord);
 
@@ -334,7 +334,7 @@ public class AuthorizationStateTest {
             .setOwnerType(ownerType)
             .setResourceId(resourceId)
             .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .setAuthorizationPermissions(Set.of(PermissionType.READ_PROCESS_DEFINITION));
+            .setPermissionTypes(Set.of(PermissionType.READ_PROCESS_DEFINITION));
     authorizationState.update(authorizationKey, updatedAuthorizationRecord);
 
     // then
@@ -388,7 +388,7 @@ public class AuthorizationStateTest {
             .setOwnerType(ownerType)
             .setResourceId(resourceId)
             .setResourceType(resourceType)
-            .setAuthorizationPermissions(permissions);
+            .setPermissionTypes(permissions);
 
     authorizationState.create(authorizationKey, authorizationRecord);
 
@@ -428,7 +428,7 @@ public class AuthorizationStateTest {
             .setOwnerType(ownerType1)
             .setResourceId(resourceId1)
             .setResourceType(resourceType1)
-            .setAuthorizationPermissions(permissions1);
+            .setPermissionTypes(permissions1);
 
     final var authorizationKey2 = 2L;
     final String ownerId2 = "ownerId2";
@@ -443,7 +443,7 @@ public class AuthorizationStateTest {
             .setOwnerType(ownerType2)
             .setResourceId(resourceId2)
             .setResourceType(resourceType2)
-            .setAuthorizationPermissions(permissions2);
+            .setPermissionTypes(permissions2);
 
     authorizationState.create(authorizationKey1, authorizationRecord1);
     authorizationState.create(authorizationKey2, authorizationRecord2);

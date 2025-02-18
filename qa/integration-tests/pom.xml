@@ -361,6 +361,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-opensearch-exporter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>co.elastic.clients</groupId>
       <artifactId>elasticsearch-java</artifactId>
       <scope>test</scope>
@@ -423,6 +428,11 @@
     <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.github.openfeign</groupId>
+      <artifactId>feign-core</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

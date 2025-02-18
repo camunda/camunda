@@ -5,10 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+import { FC } from "react";
+import Lazy from "src/components/router/Lazy";
+import PageRoutes from "src/components/router/PageRoutes";
 
-import {UserDto} from 'modules/api/getUser';
-import {mockGetRequest} from './mockRequest';
+const Authorizations: FC = () => (
+  <PageRoutes indexElement={<Lazy load={() => import("./List")} />} />
+);
 
-const mockGetUser = () => mockGetRequest<UserDto>('/api/authentications/user');
-
-export {mockGetUser};
+export default Authorizations;

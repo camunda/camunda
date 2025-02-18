@@ -10,7 +10,10 @@ env-up:
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_DELAY=1 \
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE=elasticsearch \
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:9200 \
-	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneCamunda" -Dspring.profiles.active=operate,broker,dev,dev-data,auth
+	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false \
+	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
+	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
+	  -Dspring.profiles.active=operate,broker,dev,dev-data,consolidated-auth
 
 env-os-up:
 	docker compose -f docker-compose.yml up -d opensearch zeebe-opensearch \
@@ -88,6 +91,7 @@ start-e2e:
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE=elasticsearch \
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:9200 \
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX=e2eoperate \
+	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false \
 	ZEEBE_BROKER_BACKPRESSURE_ENABLED=false \
 	ZEEBE_BROKER_GATEWAY_NETWORK_PORT=26503 \
 	CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=localhost:26503 \
@@ -96,4 +100,6 @@ start-e2e:
 	CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED=false \
 	SERVER_PORT=8081 \
 	MANAGEMENT_SERVER_PORT=9601 \
-	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneCamunda" -Dspring.profiles.active=operate,broker,auth
+	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
+	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
+	  -Dspring.profiles.active=operate,broker,consolidated-auth

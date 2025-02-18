@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.webapp.security.permission;
+package io.camunda.tasklist.webapp.permission;
 
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;

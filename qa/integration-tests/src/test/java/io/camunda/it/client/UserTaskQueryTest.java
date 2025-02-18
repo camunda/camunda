@@ -445,18 +445,27 @@ class UserTaskQueryTest {
 
     // Assert First and Last Sort Value matches the first and last item
     // We need to make use of toString, such the test work with ES/OS
-    assertThat(result.page().firstSortValues().stream().map(Object::toString).toList())
+    final List<String> firstSortValues =
+        result.page().firstSortValues().stream().map(Object::toString).toList();
+    String creationDateMillis = convertDateIfNeeded(firstSortValues.getFirst());
+    String userTaskKey = firstSortValues.getLast();
+
+    assertThat(creationDateMillis)
         .isEqualTo(
-            List.of(
-                Long.toString(
-                    OffsetDateTime.parse(firstItem.getCreationDate()).toInstant().toEpochMilli()),
-                Long.toString(firstItem.getUserTaskKey())));
-    assertThat(result.page().lastSortValues().stream().map(Object::toString).toList())
+            Long.toString(
+                OffsetDateTime.parse(firstItem.getCreationDate()).toInstant().toEpochMilli()));
+    assertThat(userTaskKey).isEqualTo(Long.toString(firstItem.getUserTaskKey()));
+
+    final List<String> lastSortValues =
+        result.page().lastSortValues().stream().map(Object::toString).toList();
+    creationDateMillis = convertDateIfNeeded(lastSortValues.getFirst());
+    userTaskKey = lastSortValues.getLast();
+
+    assertThat(creationDateMillis)
         .isEqualTo(
-            List.of(
-                Long.toString(
-                    OffsetDateTime.parse(lastItem.getCreationDate()).toInstant().toEpochMilli()),
-                Long.toString(lastItem.getUserTaskKey())));
+            Long.toString(
+                OffsetDateTime.parse(lastItem.getCreationDate()).toInstant().toEpochMilli()));
+    assertThat(userTaskKey).isEqualTo(Long.toString(lastItem.getUserTaskKey()));
   }
 
   @Test
@@ -1317,5 +1326,18 @@ class UserTaskQueryTest {
                   camundaClient.newUserTaskQuery().filter(f -> f.state(COMPLETED)).send().join();
               assertThat(resultComplete.items().size()).isEqualTo(1);
             });
+  }
+
+  /**
+   * TODO: RDBMS returns the date as ISO String, there are ongoing discussion in which format the
+   * sort value should be returned for dates.
+   * https://camunda.slack.com/archives/C06UKS51QV9/p1738838925251429
+   */
+  private static String convertDateIfNeeded(final String millisOrIsoDate) {
+    if (millisOrIsoDate.contains("T")) {
+      return Long.toString(OffsetDateTime.parse(millisOrIsoDate).toInstant().toEpochMilli());
+    } else {
+      return millisOrIsoDate;
+    }
   }
 }

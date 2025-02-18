@@ -12,6 +12,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.write.service.RdbmsPurger;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
@@ -37,12 +38,13 @@ public class PurgerCompletenessIT {
   @Autowired JdbcTemplate jdbcTemplate;
 
   @Autowired private PurgeMapper purgeMapper;
+  @Autowired private VendorDatabaseProperties vendorDatabaseProperties;
 
   @Test
   public void shouldFindWithSpecificFilter() {
     final var spy = spy(purgeMapper);
 
-    final var rdbmsPurger = new RdbmsPurger(spy);
+    final var rdbmsPurger = new RdbmsPurger(spy, vendorDatabaseProperties);
 
     rdbmsPurger.purgeRdbms();
 

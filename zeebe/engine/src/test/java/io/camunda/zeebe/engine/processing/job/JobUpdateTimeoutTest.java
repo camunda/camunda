@@ -73,7 +73,6 @@ public class JobUpdateTimeoutTest {
         .withPermissions(PermissionType.UPDATE_PROCESS_INSTANCE)
         .withResourceId(PROCESS_ID)
         .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-        .withOwnerKey(userKey)
         .withOwnerId(username)
         .withOwnerType(AuthorizationOwnerType.USER)
         .create();

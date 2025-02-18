@@ -987,16 +987,12 @@
         #
         #   index:
         #     prefix:
+        #     zeebeExporterIndexPrefix: zeebe-record
+        #     The 'zeebeIndexPrefix' must be the same value as the Elasticsearch/OpenSearch exporter 'elasticsearch.args.index.prefix'
+        #     otherwise the exporter may never start.
         #     numberOfShards: 3
         #     numberOfReplicas: 0
         #     variableSizeThreshold: 8191
-        #
-        #   retention:
-        #     enabled: false
-        #     minimumAge: 30d
-        #     policyName: camunda-retention-policy
-        #
-        #   createSchema: true
         #
         #   archiver:
         #     enabled: true
@@ -1005,6 +1001,13 @@
         #     rolloverBatchSize: 100
         #     waitPeriodBeforeArchiving: "1h"
         #     delayBetweenRuns: 2000
+        #     maxDelayBetweenRuns: 60000
+        #     retention:
+        #       enabled: false
+        #       minimumAge: 30d
+        #       policyName: camunda-retention-policy
+        #
+        #   createSchema: true
         #
         #   processCache:
         #     maxCacheSize: 10000

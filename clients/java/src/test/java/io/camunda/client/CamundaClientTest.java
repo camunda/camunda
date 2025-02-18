@@ -46,7 +46,6 @@ import static io.camunda.client.impl.util.DataSizeUtil.ONE_MB;
 import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.spy;
@@ -639,7 +638,9 @@ public final class CamundaClientTest {
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
 
     // when/then
-    assertThrows(IllegalArgumentException.class, () -> builder.restAddress(restAddress));
+    assertThatThrownBy(() -> builder.restAddress(restAddress))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("'restAddress' must be an absolute URI");
   }
 
   @ParameterizedTest
@@ -653,7 +654,45 @@ public final class CamundaClientTest {
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
 
     // when/then
-    assertThrows(IllegalArgumentException.class, () -> builder.withProperties(properties));
+    assertThatThrownBy(() -> builder.restAddress(restAddress))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("'restAddress' must be an absolute URI");
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "localhost",
+        "localhost:9090",
+        "localhost:9090/context",
+        "/some-path/some-other-path",
+      })
+  public void shouldThrowExceptionWhenGrpcAddressIsNotAbsoluteFromSetterWithClientBuilder(
+      final String uri) throws URISyntaxException {
+    // given
+    final URI grpcAddress = new URI(uri);
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when/then
+    assertThatThrownBy(() -> builder.grpcAddress(grpcAddress))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("'grpcAddress' must be an absolute URI");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {GRPC_ADDRESS, io.camunda.zeebe.client.ClientProperties.GRPC_ADDRESS})
+  public void shouldThrowExceptionWhenGrpcAddressIsNotAbsoluteFromPropertyWithClientBuilder(
+      final String propertyName) throws URISyntaxException {
+    // given
+    final URI grpcAddress = new URI("localhost:9090");
+    final Properties properties = new Properties();
+    properties.setProperty(propertyName, grpcAddress.toString());
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when/then
+    assertThatThrownBy(() -> builder.grpcAddress(grpcAddress))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("'grpcAddress' must be an absolute URI");
   }
 
   @ParameterizedTest

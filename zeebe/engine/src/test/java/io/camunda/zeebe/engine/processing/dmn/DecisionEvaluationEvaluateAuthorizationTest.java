@@ -123,7 +123,6 @@ public class DecisionEvaluationEvaluateAuthorizationTest {
     engine
         .authorization()
         .newAuthorization()
-        .withOwnerKey(user.getUserKey())
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)

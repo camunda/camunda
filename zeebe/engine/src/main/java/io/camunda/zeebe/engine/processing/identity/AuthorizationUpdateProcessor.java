@@ -58,7 +58,7 @@ public class AuthorizationUpdateProcessor
             record ->
                 permissionsBehavior.hasValidPermissionTypes(
                     command.getValue(),
-                    command.getValue().getAuthorizationPermissions(),
+                    command.getValue().getPermissionTypes(),
                     record.getResourceType(),
                     "Expected to update authorization with permission types '%s' and resource type '%s', but these permissions are not supported. Supported permission types are: '%s'"))
         .ifRightOrLeft(

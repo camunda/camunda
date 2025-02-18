@@ -103,7 +103,7 @@ public class MappingAppliersTest {
     authorizationState.create(
         5L,
         new AuthorizationRecord()
-            .setAuthorizationPermissions(Set.of(PermissionType.READ))
+            .setPermissionTypes(Set.of(PermissionType.READ))
             .setResourceId("process")
             .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
             .setOwnerType(AuthorizationOwnerType.MAPPING)

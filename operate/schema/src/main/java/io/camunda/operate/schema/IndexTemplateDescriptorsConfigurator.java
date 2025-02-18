@@ -141,8 +141,13 @@ public class IndexTemplateDescriptorsConfigurator {
   }
 
   @Bean
-  public TaskTemplate getTaskTemplate(final DatabaseInfo databaseInfo) {
-    return new TaskTemplate("", databaseInfo.isElasticsearchDb());
+  public TaskTemplate getTaskTemplate(
+      final OperateProperties operateProperties,
+      final DatabaseInfo databaseInfo,
+      final ProcessIndex operateProcessIndex) {
+    return new TaskTemplate(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
   }
 
   @Bean

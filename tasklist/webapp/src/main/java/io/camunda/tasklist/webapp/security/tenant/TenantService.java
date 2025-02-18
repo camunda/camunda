@@ -15,6 +15,8 @@ import org.springframework.stereotype.Component;
 @Component
 public interface TenantService {
 
+  List<String> tenantsIds();
+
   AuthenticatedTenants getAuthenticatedTenants();
 
   boolean isTenantValid(final String tenantId);

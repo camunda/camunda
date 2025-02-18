@@ -61,7 +61,7 @@ public class UserDeletedApplierTest {
             .setResourceType(PROCESS_DEFINITION)
             .setOwnerId(userRecord.getUsername())
             .setOwnerType(AuthorizationOwnerType.USER)
-            .setAuthorizationPermissions(Set.of(CREATE)));
+            .setPermissionTypes(Set.of(CREATE)));
     authorizationState.create(
         2L,
         new AuthorizationRecord()
@@ -70,7 +70,7 @@ public class UserDeletedApplierTest {
             .setResourceType(PROCESS_DEFINITION)
             .setOwnerId(userRecord.getUsername())
             .setOwnerType(AuthorizationOwnerType.USER)
-            .setAuthorizationPermissions(Set.of(CREATE)));
+            .setPermissionTypes(Set.of(CREATE)));
     authorizationState.create(
         3L,
         new AuthorizationRecord()
@@ -79,7 +79,7 @@ public class UserDeletedApplierTest {
             .setResourceType(DECISION_DEFINITION)
             .setOwnerId(userRecord.getUsername())
             .setOwnerType(AuthorizationOwnerType.USER)
-            .setAuthorizationPermissions(Set.of(DELETE)));
+            .setPermissionTypes(Set.of(DELETE)));
 
     assertThat(
             authorizationState.getResourceIdentifiers(

@@ -29,8 +29,6 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/ */
 public class RdbmsExporterWrapper implements Exporter {
@@ -40,11 +38,8 @@ public class RdbmsExporterWrapper implements Exporter {
 
   private static final int DEFAULT_FLUSH_INTERVAL = 500;
   private static final int DEFAULT_MAX_QUEUE_SIZE = 1000;
-  private static final Logger LOG = LoggerFactory.getLogger(RdbmsExporterWrapper.class);
 
-  private long partitionId;
   private final RdbmsService rdbmsService;
-  private RdbmsWriter rdbmsWriter;
 
   private RdbmsExporter exporter;
 
@@ -55,10 +50,8 @@ public class RdbmsExporterWrapper implements Exporter {
   @Override
   public void configure(final Context context) {
     final var maxQueueSize = readMaxQueueSize(context);
-
-    partitionId = context.getPartitionId();
-
-    rdbmsWriter = rdbmsService.createWriter(partitionId, maxQueueSize);
+    final int partitionId = context.getPartitionId();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(partitionId, maxQueueSize);
 
     final var builder =
         new RdbmsExporterConfig.Builder()

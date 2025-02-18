@@ -24,6 +24,7 @@ import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
+import io.camunda.zeebe.client.ZeebeClient;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -68,7 +69,7 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
   /** The JUnit extension store key of the context. */
   public static final String STORE_KEY_CONTEXT = "camunda-process-test-context";
 
-  private final List<CamundaClient> createdClients = new ArrayList<>();
+  private final List<AutoCloseable> createdClients = new ArrayList<>();
 
   private final CamundaContainerRuntimeBuilder containerRuntimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
@@ -117,9 +118,10 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
     // inject fields
     try {
       injectField(context, CamundaClient.class, camundaProcessTestContext::createClient);
+      injectField(context, ZeebeClient.class, camundaProcessTestContext::createZeebeClient);
       injectField(context, CamundaProcessTestContext.class, () -> camundaProcessTestContext);
     } catch (final Exception e) {
-      createdClients.forEach(CamundaClient::close);
+      closeCreatedClients();
       containerRuntime.close();
       throw e;
     }
@@ -181,7 +183,7 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
     // reset assertions
     CamundaAssert.reset();
     // close all created clients
-    createdClients.forEach(CamundaClient::close);
+    closeCreatedClients();
     // close the runtime
     containerRuntime.close();
 
@@ -322,5 +324,11 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
   public CamundaProcessTestExtension withConnectorsSecret(final String name, final String value) {
     containerRuntimeBuilder.withConnectorsSecret(name, value);
     return this;
+  }
+
+  private void closeCreatedClients() throws Exception {
+    for (final AutoCloseable client : createdClients) {
+      client.close();
+    }
   }
 }

@@ -53,7 +53,7 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
         .setOwnerType(authorizationRecord.getOwnerType())
         .setResourceId(authorizationRecord.getResourceId())
         .setResourceType(authorizationRecord.getResourceType())
-        .setPermissionTypes(authorizationRecord.getAuthorizationPermissions());
+        .setPermissionTypes(authorizationRecord.getPermissionTypes());
   }
 
   public long getAuthorizationKey() {

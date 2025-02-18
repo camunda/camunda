@@ -35,8 +35,6 @@ public class CreateAuthorizationTest {
         engine
             .authorization()
             .newAuthorization()
-            // TODO: remove with https://github.com/camunda/camunda/issues/26883
-            .withOwnerKey(1L)
             .withOwnerId("ownerId")
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceId("resourceId")
@@ -52,7 +50,7 @@ public class CreateAuthorizationTest {
             AuthorizationRecordValue::getOwnerType,
             AuthorizationRecordValue::getResourceId,
             AuthorizationRecordValue::getResourceType,
-            AuthorizationRecordValue::getAuthorizationPermissions)
+            AuthorizationRecordValue::getPermissionTypes)
         .containsExactly(
             "ownerId",
             AuthorizationOwnerType.USER,
@@ -67,8 +65,6 @@ public class CreateAuthorizationTest {
     engine
         .authorization()
         .newAuthorization()
-        // TODO: remove with https://github.com/camunda/camunda/issues/26883
-        .withOwnerKey(1L)
         .withOwnerId("ownerId")
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceId("resourceId")
@@ -79,8 +75,6 @@ public class CreateAuthorizationTest {
     engine
         .authorization()
         .newAuthorization()
-        // TODO: remove with https://github.com/camunda/camunda/issues/26883
-        .withOwnerKey(1L)
         .withOwnerId("ownerId")
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceId("anotherResourceId")
@@ -93,8 +87,6 @@ public class CreateAuthorizationTest {
         engine
             .authorization()
             .newAuthorization()
-            // TODO: remove with https://github.com/camunda/camunda/issues/26883
-            .withOwnerKey(1L)
             .withOwnerId("ownerId")
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceId("resourceId")
@@ -122,8 +114,6 @@ public class CreateAuthorizationTest {
         engine
             .authorization()
             .newAuthorization()
-            // TODO: remove with https://github.com/camunda/camunda/issues/26883
-            .withOwnerKey(1L)
             .withOwnerId("ownerId")
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceId("resourceId")

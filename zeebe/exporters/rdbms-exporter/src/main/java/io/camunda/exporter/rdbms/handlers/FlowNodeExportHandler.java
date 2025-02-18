@@ -20,9 +20,14 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.util.DateUtil;
+import java.util.List;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstanceRecordValue> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(FlowNodeExportHandler.class);
 
   private static final Set<Intent> FLOW_NODE_INTENT =
       Set.of(
@@ -79,6 +84,8 @@ public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstance
         .state(FlowNodeState.ACTIVE)
         .startDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
         .type(mapFlowNodeType(value))
+        .partitionId(record.getPartitionId())
+        .treePath(buildTreePath(record))
         .build();
   }
 
@@ -90,6 +97,31 @@ public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstance
       return FlowNodeType.valueOf(recordValue.getBpmnElementType().name());
     } catch (final IllegalArgumentException ex) {
       return FlowNodeType.UNKNOWN;
+    }
+  }
+
+  protected static String buildTreePath(final Record<ProcessInstanceRecordValue> record) {
+    final ProcessInstanceRecordValue value = record.getValue();
+    if (value.getElementInstancePath() != null && !value.getElementInstancePath().isEmpty()) {
+      // Build the intra treePath in the format:
+      // <pre>
+      //   <processInstanceKey>/<flowNodeInstanceKey>/.../<flowNodeInstanceKey>
+      // </pre>
+      //
+      // Where upper level flowNodeInstanceKeys are normally subprocess(es) or multi-instance
+      // bodies.
+      // This is an intra tree path that shows position of flow node instance inside one process
+      // instance.
+      // We take last entry, as in intra path we're not interested in upper level process instance
+      // scope hierarchies.
+      final List<String> treePathEntries =
+          value.getElementInstancePath().getLast().stream().map(String::valueOf).toList();
+      return String.join("/", treePathEntries);
+    } else {
+      LOG.warn(
+          "No elementInstancePath is provided for flow node instance id: {}. TreePath will be set to default value.",
+          record.getKey());
+      return value.getProcessInstanceKey() + "/" + record.getKey();
     }
   }
 }

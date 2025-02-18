@@ -131,10 +131,11 @@
                           STATE,
                           CREATION_DATE,
                           JOB_KEY,
-                          TENANT_ID)
+                                   TENANT_ID,
+                                   PARTITION_ID)
     VALUES (#{incidentKey}, #{flowNodeInstanceKey}, #{flowNodeId}, #{processInstanceKey},
             #{processDefinitionId}, #{processDefinitionKey}, #{errorMessage}, #{errorType},
-            #{state},             #{creationDate, jdbcType=TIMESTAMP}, #{jobKey}, #{tenantId})
+            #{state}, #{creationDate, jdbcType=TIMESTAMP}, #{jobKey}, #{tenantId}, #{partitionId})
   </insert>
 
   <update

@@ -76,7 +76,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
             .setOwnerType(AuthorizationOwnerType.USER)
             .setResourceId(resourceId)
             .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .setAuthorizationPermissions(Set.of(PermissionType.CREATE));
+            .setPermissionTypes(Set.of(PermissionType.CREATE));
 
     when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(authorizationRecord));
@@ -106,8 +106,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     assertEquals(resourceId, capturedRequest.resourceId());
     assertEquals(authorizationRecord.getResourceType(), capturedRequest.resourceType());
     assertEquals(1, capturedRequest.permissionTypes().size());
-    assertEquals(
-        authorizationRecord.getAuthorizationPermissions(), capturedRequest.permissionTypes());
+    assertEquals(authorizationRecord.getPermissionTypes(), capturedRequest.permissionTypes());
   }
 
   @ParameterizedTest
@@ -177,7 +176,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
             .setOwnerType(AuthorizationOwnerType.USER)
             .setResourceId(resourceId)
             .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .setAuthorizationPermissions(Set.of(PermissionType.CREATE));
+            .setPermissionTypes(Set.of(PermissionType.CREATE));
 
     when(authorizationServices.updateAuthorization(any()))
         .thenReturn(CompletableFuture.completedFuture(authorizationRecord));
@@ -203,8 +202,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     assertEquals(resourceId, capturedRequest.resourceId());
     assertEquals(authorizationRecord.getResourceType(), capturedRequest.resourceType());
     assertEquals(1, capturedRequest.permissionTypes().size());
-    assertEquals(
-        authorizationRecord.getAuthorizationPermissions(), capturedRequest.permissionTypes());
+    assertEquals(authorizationRecord.getPermissionTypes(), capturedRequest.permissionTypes());
   }
 
   @ParameterizedTest
