@@ -14,6 +14,7 @@ import io.camunda.tasklist.webapp.security.AssigneeMigratorNoImpl;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import io.camunda.tasklist.webapp.security.UserReader;
+import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.context.annotation.Bean;
@@ -77,6 +78,31 @@ public class TasklistSecurityStubsConfiguration {
       @Override
       public Optional<String> getUserToken(final Authentication authentication) {
         return Optional.empty();
+      }
+    };
+  }
+
+  @Bean
+  public TenantService stubTenantService() {
+    return new TenantService() {
+      @Override
+      public List<String> tenantsIds() {
+        return List.of();
+      }
+
+      @Override
+      public AuthenticatedTenants getAuthenticatedTenants() {
+        return AuthenticatedTenants.allTenants();
+      }
+
+      @Override
+      public boolean isTenantValid(final String tenantId) {
+        return true;
+      }
+
+      @Override
+      public boolean isMultiTenancyEnabled() {
+        return false;
       }
     };
   }

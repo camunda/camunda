@@ -7,8 +7,12 @@
  */
 package io.camunda.tasklist.webapp.security.identity;
 
-import io.camunda.tasklist.webapp.security.tenant.TenantService;
-import io.camunda.tasklist.webapp.security.tenant.TenantServiceImpl;
+import io.camunda.authentication.service.BasicCamundaUserService;
+import io.camunda.authentication.service.CamundaUserService;
+import io.camunda.authentication.service.OidcCamundaUserService;
+import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.entity.AuthenticationMethod;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -24,13 +28,19 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class TasklistSecurityConfig {
+  @Autowired private SecurityConfiguration securityConfiguration;
+
   @Bean
   public IdentityAuthorizationService identityAuthorizationService() {
     return new IdentityAuthorizationServiceImpl();
   }
 
   @Bean
-  public TenantService tenantServices() {
-    return new TenantServiceImpl();
+  public CamundaUserService camundaUserService() {
+    if (securityConfiguration.getAuthentication().getMethod() == AuthenticationMethod.BASIC) {
+      return new BasicCamundaUserService();
+    } else {
+      return new OidcCamundaUserService();
+    }
   }
 }

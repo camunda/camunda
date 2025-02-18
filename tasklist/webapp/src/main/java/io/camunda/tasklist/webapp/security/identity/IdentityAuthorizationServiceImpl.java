@@ -14,15 +14,11 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import java.util.ArrayList;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class IdentityAuthorizationServiceImpl implements IdentityAuthorizationService {
-
-  private final Logger logger = LoggerFactory.getLogger(IdentityAuthorizationServiceImpl.class);
 
   @Autowired private SecurityConfiguration securityConfiguration;
   @Autowired private CamundaUserService camundaUserService;
