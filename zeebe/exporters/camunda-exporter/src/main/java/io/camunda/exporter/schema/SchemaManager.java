@@ -55,11 +55,11 @@ public class SchemaManager {
 
     //  used to update existing indices/templates
     LOG.info("Update index schema. '{}' indices need to be updated", newIndexProperties.size());
-    updateSchema(newIndexProperties);
+    updateSchemaMappings(newIndexProperties);
     LOG.info(
         "Update index template schema. '{}' index templates need to be updated",
         newIndexProperties.size());
-    updateSchema(newIndexTemplateProperties);
+    updateSchemaMappings(newIndexTemplateProperties);
 
     final RetentionConfiguration retention = config.getArchiver().getRetention();
     if (retention.isEnabled()) {
@@ -132,7 +132,8 @@ public class SchemaManager {
             });
   }
 
-  public void updateSchema(final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields) {
+  public void updateSchemaMappings(
+      final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields) {
     for (final var newFieldEntry : newFields.entrySet()) {
       final var descriptor = newFieldEntry.getKey();
       final var newProperties = newFieldEntry.getValue();

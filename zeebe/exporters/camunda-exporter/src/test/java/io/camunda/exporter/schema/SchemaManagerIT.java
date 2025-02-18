@@ -115,7 +115,7 @@ public class SchemaManagerIT {
     final Map<IndexDescriptor, Collection<IndexMappingProperty>> schemasToChange =
         Map.of(index, newProperties);
 
-    schemaManager.updateSchema(schemasToChange);
+    schemaManager.updateSchemaMappings(schemasToChange);
 
     // then
     final var updatedIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
@@ -200,7 +200,7 @@ public class SchemaManagerIT {
 
     final Map<IndexDescriptor, Collection<IndexMappingProperty>> schemasToChange =
         Map.of(indexTemplate, Set.of());
-    schemaManager.updateSchema(schemasToChange);
+    schemaManager.updateSchemaMappings(schemasToChange);
 
     // then
     final var template =
@@ -241,7 +241,7 @@ public class SchemaManagerIT {
   }
 
   @TestTemplate
-  void shouldUpdateSchemasCorrectlyIfCreateEnabled(
+  void shouldUpdateSchemaMappingsCorrectlyIfCreateEnabled(
       final ExporterConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws Exception {
     // given
