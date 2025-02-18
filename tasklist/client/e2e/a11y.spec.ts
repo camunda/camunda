@@ -9,7 +9,6 @@
 import {expect} from '@playwright/test';
 import {test} from './test-fixtures';
 import schema from './resources/bigForm.json' assert {type: 'json'};
-import {URL_API_PATTERN} from '@/constants';
 
 const MOCK_TENANT = {
   id: 'tenantA',
@@ -42,7 +41,7 @@ const MOCK_TASK = {
 
 test.describe('a11y', () => {
   test('have no violations', async ({page, makeAxeBuilder}) => {
-    await page.route(URL_API_PATTERN, (route) => {
+    await page.route(/^.*\/(v1|v2).*$/i, (route) => {
       if (route.request().url().includes('v1/tasks/task123/variables/search')) {
         return route.fulfill({
           status: 200,

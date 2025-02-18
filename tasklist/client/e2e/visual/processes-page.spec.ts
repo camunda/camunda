@@ -10,17 +10,6 @@ import {expect, type Route, type Request} from '@playwright/test';
 import {test} from '@/visual-fixtures';
 import {URL_API_V1_PATTERN} from '@/constants';
 
-const MOCK_TENANTS = [
-  {
-    id: 'tenantA',
-    name: 'Tenant A',
-  },
-  {
-    id: 'tenantB',
-    name: 'Tenant B',
-  },
-];
-
 function mockResponses(
   processes: Array<unknown> = [],
 ): (router: Route, request: Request) => Promise<unknown> | unknown {
@@ -29,24 +18,6 @@ function mockResponses(
       return route.fulfill({
         status: 200,
         body: JSON.stringify(processes),
-      });
-    }
-
-    if (route.request().url().includes('/v2/authentication/me')) {
-      return route.fulfill({
-        status: 200,
-        body: JSON.stringify({
-          userId: 'demo',
-          displayName: 'demo',
-          permissions: ['READ', 'WRITE'],
-          salesPlanType: null,
-          roles: null,
-          c8Links: [],
-          tenants: MOCK_TENANTS,
-        }),
-        headers: {
-          'content-type': 'application/json',
-        },
       });
     }
 
