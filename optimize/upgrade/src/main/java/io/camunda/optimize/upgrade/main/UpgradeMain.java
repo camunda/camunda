@@ -44,11 +44,6 @@ public class UpgradeMain {
   }
 
   public static void main(final String... args) {
-    doUpgrade(args);
-  }
-
-  // TODO - do proper refactor and naming
-  public static void doUpgrade(final String[] args) {
     try {
       final DatabaseType databaseType =
           ConfigurationService.convertToDatabaseProperty(
@@ -110,8 +105,7 @@ public class UpgradeMain {
 
       LOG.info("Update finished successfully.");
 
-      // do not quit the application after upgrade
-      // System.exit(0);
+      System.exit(0);
     } catch (final Exception e) {
       LOG.error(e.getMessage(), e);
       System.exit(1);
