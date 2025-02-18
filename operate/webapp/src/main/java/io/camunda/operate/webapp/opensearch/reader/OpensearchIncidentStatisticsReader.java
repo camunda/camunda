@@ -104,7 +104,8 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
         cardinalityAggregation(IncidentTemplate.PROCESS_INSTANCE_KEY);
     final var groupByProcessKeys =
         termAggregation(IncidentTemplate.PROCESS_DEFINITION_KEY, TERMS_AGG_SIZE);
-    final var errorMessage = topHitsAggregation(List.of(IncidentTemplate.ERROR_MSG), 1);
+    final var errorMessage =
+        topHitsAggregation(List.of(IncidentTemplate.ERROR_MSG, IncidentTemplate.ERROR_MSG_HASH), 1);
     final var groupByErrorMessageHash =
         termAggregation(IncidentTemplate.ERROR_MSG_HASH, TERMS_AGG_SIZE);
 
@@ -253,7 +254,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
 
   private IncidentsByErrorMsgStatisticsDto getIncidentsByErrorMsgStatistic(
       final Map<Long, ProcessEntity> processes, final LongTermsBucket errorMessageBucket) {
-    record ErrorMessage(String errorMessage) {}
+    record ErrorMessage(String errorMessage, Integer errorMessageHash) {}
 
     final ErrorMessage errorMessage =
         errorMessageBucket
@@ -267,7 +268,8 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
             .to(ErrorMessage.class);
 
     final IncidentsByErrorMsgStatisticsDto processStatistics =
-        new IncidentsByErrorMsgStatisticsDto(errorMessage.errorMessage());
+        new IncidentsByErrorMsgStatisticsDto(
+            errorMessage.errorMessage(), errorMessage.errorMessageHash());
 
     errorMessageBucket
         .aggregations()
