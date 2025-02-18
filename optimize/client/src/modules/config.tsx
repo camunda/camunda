@@ -12,13 +12,6 @@ import {Loading} from '@carbon/react';
 import {get, ErrorResponse} from 'request';
 import {showError} from 'notifications';
 
-type WebappEndpoints = {
-  [key: string]: {
-    endpoint: string;
-    engineName: string;
-  };
-};
-
 type WebappLinks = {
   [key: string]: string;
 };
@@ -49,7 +42,6 @@ export type UiConfig = {
   optimizeDocsVersion: string;
   optimizeProfile: 'cloud' | 'ccsm';
   enterpriseMode: boolean;
-  webappsEndpoints: WebappEndpoints;
   webappsLinks: WebappLinks;
   webhooks: string[];
   mixpanel: MixpanelConfig;
@@ -119,7 +111,6 @@ export const isSharingEnabled = createAccessorFunction<boolean>('sharingEnabled'
 export const areTenantsAvailable = createAccessorFunction<boolean>('tenantsAvailable');
 export const getOptimizeVersion = createAccessorFunction<string>('optimizeVersion');
 export const getDocsVersion = createAccessorFunction<string>('optimizeDocsVersion');
-export const getWebappEndpoints = createAccessorFunction<WebappEndpoints>('webappsEndpoints');
 export const getWebappLinks = createAccessorFunction<WebappLinks>('webappsLinks');
 export const getWebhooks = createAccessorFunction<string[]>('webhooks');
 export const getMixpanelConfig = createAccessorFunction<MixpanelConfig>('mixpanel');
