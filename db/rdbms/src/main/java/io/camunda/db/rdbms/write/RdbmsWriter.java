@@ -58,7 +58,7 @@ public class RdbmsWriter {
       final VendorDatabaseProperties vendorDatabaseProperties) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
-    rdbmsPurger = new RdbmsPurger(purgeMapper);
+    rdbmsPurger = new RdbmsPurger(purgeMapper, vendorDatabaseProperties);
     authorizationWriter = new AuthorizationWriter(executionQueue);
     decisionDefinitionWriter = new DecisionDefinitionWriter(executionQueue);
     decisionInstanceWriter = new DecisionInstanceWriter(executionQueue);
