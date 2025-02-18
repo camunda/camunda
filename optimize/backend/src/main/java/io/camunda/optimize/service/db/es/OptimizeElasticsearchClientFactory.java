@@ -18,6 +18,7 @@ import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import io.camunda.optimize.upgrade.es.ElasticsearchClientBuilder;
+import io.camunda.optimize.upgrade.main.UpgradeMain;
 import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.IOException;
 import org.slf4j.Logger;
@@ -75,6 +76,9 @@ public final class OptimizeElasticsearchClientFactory {
       LOG.info("Schema initialization disabled, skipping");
     }
 
+    // for demonstrative purpose for now. would need to add something
+    // similar for OpenSearch
+    UpgradeMain.doUpgrade(new String[] {});
     return prefixedClient;
   }
 
