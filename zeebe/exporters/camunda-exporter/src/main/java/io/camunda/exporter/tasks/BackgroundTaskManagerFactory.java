@@ -38,6 +38,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -81,7 +82,7 @@ public final class BackgroundTaskManagerFactory {
     incidentRepository = buildIncidentRepository();
     batchOperationUpdateRepository = buildBatchOperationUpdateRepository();
 
-    final List<Runnable> tasks = buildTasks();
+    final List<RunnableTask> tasks = buildTasks();
 
     return new BackgroundTaskManager(
         partitionId,
@@ -90,11 +91,12 @@ public final class BackgroundTaskManagerFactory {
         batchOperationUpdateRepository,
         logger,
         executor,
-        tasks);
+        tasks,
+        Duration.ofSeconds(5));
   }
 
-  private List<Runnable> buildTasks() {
-    final List<Runnable> tasks = new ArrayList<>();
+  private List<RunnableTask> buildTasks() {
+    final List<RunnableTask> tasks = new ArrayList<>();
     int threadCount = 2;
 
     tasks.add(buildIncidentMarkerTask());
@@ -102,7 +104,7 @@ public final class BackgroundTaskManagerFactory {
     if (partitionId == START_PARTITION_ID) {
       threadCount = 3;
       tasks.add(buildBatchOperationArchiverJob());
-      tasks.add(new ApplyRolloverPeriodJob(archiverRepository, metrics, logger));
+      tasks.add(new ApplyRolloverPeriodJob(archiverRepository));
     }
     if (partitionId == START_PARTITION_ID) {
       tasks.add(buildBatchOperationUpdateTask());

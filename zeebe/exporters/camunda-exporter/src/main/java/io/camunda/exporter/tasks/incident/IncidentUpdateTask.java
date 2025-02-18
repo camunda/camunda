@@ -287,6 +287,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
     return mapActiveIncidentsToAffectedInstances(data)
         .thenComposeAsync(
             ignored ->
+                // processIncident one at a time, stopping if an error is raised
                 FuturesUtil.traverseIgnoring(
                     data.incidents().values(),
                     incident -> processIncidentInBatch(data, incident, batch, bulkUpdate),

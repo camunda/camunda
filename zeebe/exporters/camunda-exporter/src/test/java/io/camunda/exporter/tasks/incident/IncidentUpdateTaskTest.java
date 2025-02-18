@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
 
 final class IncidentUpdateTaskTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentUpdateTaskTest.class);
+  private static final Duration TIMEOUT = Duration.ofSeconds(5);
 
   @AutoClose
   private static final ScheduledThreadPoolExecutor EXECUTOR = new ScheduledThreadPoolExecutor(1);
@@ -60,7 +61,7 @@ final class IncidentUpdateTaskTest {
     final var result = task.execute();
 
     // then
-    assertThat(result).succeedsWithin(Duration.ofSeconds(5)).isEqualTo(0);
+    assertThat(result).succeedsWithin(TIMEOUT).isEqualTo(0);
   }
 
   @Test
@@ -257,7 +258,7 @@ final class IncidentUpdateTaskTest {
 
       // then
       assertThat(result)
-          .succeedsWithin(Duration.ofSeconds(5))
+          .succeedsWithin(TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.INTEGER)
           .isEqualTo(7);
     }
@@ -274,7 +275,7 @@ final class IncidentUpdateTaskTest {
 
       // then
       assertThat(result)
-          .failsWithin(Duration.ofSeconds(5))
+          .failsWithin(TIMEOUT)
           .withThrowableThat()
           .withRootCauseExactlyInstanceOf(ExporterException.class)
           .withMessageContaining("Failed to fetch incidents");
@@ -292,7 +293,7 @@ final class IncidentUpdateTaskTest {
 
       // then
       assertThat(result)
-          .failsWithin(Duration.ofSeconds(5))
+          .failsWithin(TIMEOUT)
           .withThrowableThat()
           .withRootCauseExactlyInstanceOf(ExporterException.class)
           .withMessageContaining("Process instance 3 is not yet imported for incident 5");
@@ -310,7 +311,7 @@ final class IncidentUpdateTaskTest {
 
       // then
       assertThat(result)
-          .failsWithin(Duration.ofSeconds(5))
+          .failsWithin(TIMEOUT)
           .withThrowableThat()
           .withRootCauseExactlyInstanceOf(ExporterException.class)
           .withMessageContaining("Flow node instance 2 affected by incident 5");
@@ -328,7 +329,7 @@ final class IncidentUpdateTaskTest {
 
       // then
       assertThat(result)
-          .failsWithin(Duration.ofSeconds(5))
+          .failsWithin(TIMEOUT)
           .withThrowableThat()
           .withRootCauseExactlyInstanceOf(ExporterException.class)
           .withMessageContaining("Flow node instance 2 affected by incident 5");
@@ -344,7 +345,7 @@ final class IncidentUpdateTaskTest {
       final var result = task.execute();
 
       // then
-      assertThat(result).succeedsWithin(Duration.ofSeconds(5));
+      assertThat(result).succeedsWithin(TIMEOUT);
       assertThat(repository.updated.incidentRequests())
           .hasSize(1)
           .containsEntry(
@@ -370,7 +371,7 @@ final class IncidentUpdateTaskTest {
       final var result = task.execute();
 
       // then
-      assertThat(result).succeedsWithin(Duration.ofSeconds(5));
+      assertThat(result).succeedsWithin(TIMEOUT);
       assertThat(repository.updated.listViewRequests())
           .hasSize(4)
           .containsEntry(
@@ -397,7 +398,7 @@ final class IncidentUpdateTaskTest {
       final var result = task.execute();
 
       // then
-      assertThat(result).succeedsWithin(Duration.ofSeconds(5));
+      assertThat(result).succeedsWithin(TIMEOUT);
       assertThat(repository.updated.flowNodeInstanceRequests())
           .hasSize(2)
           .containsEntry(
@@ -428,7 +429,7 @@ final class IncidentUpdateTaskTest {
       final var result = task.execute();
 
       // then
-      assertThat(result).succeedsWithin(Duration.ofSeconds(5));
+      assertThat(result).succeedsWithin(TIMEOUT);
       assertThat(repository.updated.incidentRequests())
           .hasSize(1)
           .containsEntry(
@@ -483,7 +484,7 @@ final class IncidentUpdateTaskTest {
 
       // then - we should mark the child process instance, the call activity, and the task as
       // incident free, but NOT the parent process instance as it still has an active incident
-      assertThat(result).succeedsWithin(Duration.ofSeconds(5));
+      assertThat(result).succeedsWithin(TIMEOUT);
       assertThat(repository.updated.incidentRequests())
           .hasSize(1)
           .containsEntry(
@@ -526,7 +527,7 @@ final class IncidentUpdateTaskTest {
       final var result = task.execute();
 
       // then
-      assertThat(result).succeedsWithin(Duration.ofSeconds(5));
+      assertThat(result).succeedsWithin(TIMEOUT);
       assertThat(repository.updated.listViewRequests()).isEmpty();
       assertThat(repository.updated.incidentRequests()).isEmpty();
       assertThat(repository.updated.flowNodeInstanceRequests()).isEmpty();
