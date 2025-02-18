@@ -16,6 +16,10 @@ import java.net.http.HttpResponse;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+/**
+ * Interface for making API calls to the Camunda Platform REST API. This is to be used against the
+ * 8.7 version of the Camunda Platform REST API.
+ */
 public interface ApiCallable {
   HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
