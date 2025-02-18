@@ -40,7 +40,7 @@ final class SequencerTest {
     // given
     final long initialPosition = 1L;
     final var logStorage = Mockito.mock(LogStorage.class);
-    final var logStreamMetrics = new LogStreamMetrics(1);
+    final var logStreamMetrics = new LogStreamMetrics(new SimpleMeterRegistry());
     final var sequencer =
         new Sequencer(
             logStorage,
@@ -62,7 +62,7 @@ final class SequencerTest {
     // given
     final long initialPosition = 1L;
     final var logStorage = Mockito.mock(LogStorage.class);
-    final var logStreamMetrics = new LogStreamMetrics(1);
+    final var logStreamMetrics = new LogStreamMetrics(new SimpleMeterRegistry());
     final var sequencer =
         new Sequencer(
             logStorage,
@@ -87,7 +87,7 @@ final class SequencerTest {
   void writesSingleEntryToLogStorage() {
     // given
     final var logStorage = Mockito.mock(LogStorage.class);
-    final var logStreamMetrics = new LogStreamMetrics(1);
+    final var logStreamMetrics = new LogStreamMetrics(new SimpleMeterRegistry());
     final var sequencer =
         new Sequencer(
             logStorage,
@@ -109,7 +109,7 @@ final class SequencerTest {
   void writesMultipleEntriesToLogStorage() {
     // given
     final var logStorage = Mockito.mock(LogStorage.class);
-    final var logStreamMetrics = new LogStreamMetrics(1);
+    final var logStreamMetrics = new LogStreamMetrics(new SimpleMeterRegistry());
     final var sequencer =
         new Sequencer(
             logStorage,
@@ -132,7 +132,7 @@ final class SequencerTest {
   void maintainsPositionWithSingleWriterAndSingleEntry() throws InterruptedException {
     // given
     final var logStorage = new VerifyingLogStorage();
-    final var logStreamMetrics = new LogStreamMetrics(1);
+    final var logStreamMetrics = new LogStreamMetrics(new SimpleMeterRegistry());
     final var sequencer =
         new Sequencer(
             logStorage,
@@ -159,7 +159,7 @@ final class SequencerTest {
     // given
     final var numberOfWriters = 8;
     final var logStorage = new VerifyingLogStorage();
-    final var logStreamMetrics = new LogStreamMetrics(1);
+    final var logStreamMetrics = new LogStreamMetrics(new SimpleMeterRegistry());
     final var sequencer =
         new Sequencer(
             logStorage,
@@ -191,7 +191,7 @@ final class SequencerTest {
   void maintainsPositionWithSingleWriterAndMultipleEntries() throws InterruptedException {
     // given
     final var logStorage = new VerifyingLogStorage();
-    final var logStreamMetrics = new LogStreamMetrics(1);
+    final var logStreamMetrics = new LogStreamMetrics(new SimpleMeterRegistry());
     final var sequencer =
         new Sequencer(
             logStorage,
@@ -218,7 +218,7 @@ final class SequencerTest {
     // given
     final var numberOfWriters = 8;
     final var logStorage = new VerifyingLogStorage();
-    final var logStreamMetrics = new LogStreamMetrics(1);
+    final var logStreamMetrics = new LogStreamMetrics(new SimpleMeterRegistry());
     final var sequencer =
         new Sequencer(
             logStorage,
