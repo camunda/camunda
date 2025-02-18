@@ -29,7 +29,6 @@ public class UIConfigurationResponseDto {
   private String optimizeDocsVersion;
   private boolean isEnterpriseMode;
   private OptimizeProfile optimizeProfile;
-  private Map<String, WebappsEndpointDto> webappsEndpoints;
   private Map<AppName, String> webappsLinks; // links for the app switcher
   private String notificationsUrl;
   private List<String> webhooks;

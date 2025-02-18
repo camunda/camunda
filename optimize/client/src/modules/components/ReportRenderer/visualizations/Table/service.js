@@ -208,23 +208,6 @@ export const getNoDataMessage = () => ({
   noData: <NoDataNotice type="info">{t('report.table.noData')}</NoDataNotice>,
 });
 
-export function cockpitLink(endpoints, instance) {
-  const content = instance['processInstanceId'];
-  const {endpoint, engineName} = endpoints[instance.engineName] || {};
-  if (endpoint) {
-    return (
-      <a
-        href={`${endpoint}/app/cockpit/${engineName}/#/process-instance/${content}`}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {content}
-      </a>
-    );
-  }
-  return content;
-}
-
 export function isVisibleColumn(column, {excludedColumns, includedColumns, includeNewVariables}) {
   if (includeNewVariables) {
     return !excludedColumns.includes(column);
