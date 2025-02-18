@@ -26,11 +26,11 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
+import io.camunda.zeebe.spring.client.configuration.CredentialsProviderConfiguration;
 import io.camunda.zeebe.spring.client.configuration.JsonMapperConfiguration;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
-import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -47,7 +47,11 @@ import org.springframework.test.context.DynamicPropertySource;
 import wiremock.com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 @SpringBootTest(
-    classes = {JsonMapperConfiguration.class, ZeebeClientConfigurationImpl.class},
+    classes = {
+      JsonMapperConfiguration.class,
+      ZeebeClientConfigurationImpl.class,
+      CredentialsProviderConfiguration.class
+    },
     properties = {
       "camunda.client.mode=saas",
       "camunda.client.cluster-id=12345",
@@ -55,10 +59,7 @@ import wiremock.com.fasterxml.jackson.databind.node.JsonNodeFactory;
       "camunda.client.auth.client-id=my-client-id",
       "camunda.client.auth.client-secret=my-client-secret"
     })
-@EnableConfigurationProperties({
-  ZeebeClientConfigurationProperties.class,
-  CamundaClientProperties.class
-})
+@EnableConfigurationProperties({CamundaClientProperties.class})
 public class CredentialsProviderSaasTest {
 
   @RegisterExtension
@@ -72,7 +73,7 @@ public class CredentialsProviderSaasTest {
   @DynamicPropertySource
   static void registerPgProperties(final DynamicPropertyRegistry registry) {
     final String issuer = "http://localhost:" + wm.getPort() + "/auth-server";
-    registry.add("camunda.client.auth.issuer", () -> issuer);
+    registry.add("camunda.client.auth.token-url", () -> issuer);
   }
 
   @BeforeEach

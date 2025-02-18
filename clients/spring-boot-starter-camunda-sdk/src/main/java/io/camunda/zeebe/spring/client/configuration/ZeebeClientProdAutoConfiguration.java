@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.configuration;
 
+import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.impl.ZeebeClientImpl;
@@ -22,7 +23,6 @@ import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
-import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
 import io.camunda.zeebe.spring.client.testsupport.SpringZeebeTestContext;
 import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
@@ -50,6 +50,7 @@ import org.springframework.context.annotation.Bean;
   ExecutorServiceConfiguration.class,
   ZeebeActuatorConfiguration.class,
   JsonMapperConfiguration.class,
+  CredentialsProviderConfiguration.class,
 })
 @AutoConfigureBefore(ZeebeClientAllAutoConfiguration.class)
 public class ZeebeClientProdAutoConfiguration {
@@ -58,19 +59,19 @@ public class ZeebeClientProdAutoConfiguration {
 
   @Bean
   public ZeebeClientConfigurationImpl zeebeClientConfiguration(
-      final ZeebeClientConfigurationProperties properties,
       final CamundaClientProperties camundaClientProperties,
       final JsonMapper jsonMapper,
       final List<ClientInterceptor> interceptors,
       final List<AsyncExecChainHandler> chainHandlers,
-      final ZeebeClientExecutorService zeebeClientExecutorService) {
+      final ZeebeClientExecutorService zeebeClientExecutorService,
+      final CredentialsProvider credentialsProvider) {
     return new ZeebeClientConfigurationImpl(
-        properties,
         camundaClientProperties,
         jsonMapper,
         interceptors,
         chainHandlers,
-        zeebeClientExecutorService) {};
+        zeebeClientExecutorService,
+        credentialsProvider);
   }
 
   @Bean(destroyMethod = "close")

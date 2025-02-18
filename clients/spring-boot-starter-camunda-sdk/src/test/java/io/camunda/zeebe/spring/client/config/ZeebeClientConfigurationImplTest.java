@@ -19,31 +19,26 @@ import static org.assertj.core.api.Assertions.*;
 
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
 import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
-import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
 import io.grpc.ClientInterceptor;
 import java.util.List;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.junit.jupiter.api.Test;
-import org.springframework.mock.env.MockEnvironment;
 
 public class ZeebeClientConfigurationImplTest {
   private static ZeebeClientConfigurationImpl configuration(
-      final ZeebeClientConfigurationProperties legacyProperties,
       final CamundaClientProperties properties,
       final JsonMapper jsonMapper,
       final List<ClientInterceptor> interceptors,
       final List<AsyncExecChainHandler> chainHandlers,
-      final ZeebeClientExecutorService executorService) {
+      final ZeebeClientExecutorService executorService,
+      final CredentialsProvider credentialsProvider) {
     return new ZeebeClientConfigurationImpl(
-        legacyProperties, properties, jsonMapper, interceptors, chainHandlers, executorService);
-  }
-
-  private static ZeebeClientConfigurationProperties legacyProperties() {
-    return new ZeebeClientConfigurationProperties(new MockEnvironment());
+        properties, jsonMapper, interceptors, chainHandlers, executorService, credentialsProvider);
   }
 
   private static CamundaClientProperties properties() {
@@ -58,16 +53,20 @@ public class ZeebeClientConfigurationImplTest {
     return ZeebeClientExecutorService.createDefault();
   }
 
+  private static CredentialsProvider credentialsProvider() {
+    return new NoopCredentialsProvider();
+  }
+
   @Test
   void shouldCreateSingletonCredentialProvider() {
     final ZeebeClientConfigurationImpl configuration =
         configuration(
-            legacyProperties(),
             properties(),
             jsonMapper(),
             List.of(),
             List.of(),
-            executorService());
+            executorService(),
+            credentialsProvider());
     final CredentialsProvider credentialsProvider1 = configuration.getCredentialsProvider();
     final CredentialsProvider credentialsProvider2 = configuration.getCredentialsProvider();
     assertThat(credentialsProvider1).isSameAs(credentialsProvider2);
