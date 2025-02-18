@@ -16,11 +16,13 @@
 package io.camunda.spring.client.event;
 
 import io.camunda.client.api.response.DeploymentEvent;
+import org.springframework.context.ApplicationEvent;
 
-public class CamundaPostDeploymentEvent {
+public class CamundaPostDeploymentEvent extends ApplicationEvent {
   private final DeploymentEvent deployment;
 
-  public CamundaPostDeploymentEvent(final DeploymentEvent deployment) {
+  public CamundaPostDeploymentEvent(final Object source, final DeploymentEvent deployment) {
+    super(source);
     this.deployment = deployment;
   }
 

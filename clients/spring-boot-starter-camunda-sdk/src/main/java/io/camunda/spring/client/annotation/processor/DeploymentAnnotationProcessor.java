@@ -105,7 +105,7 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
                 deploymentEvent.getProcesses().stream()
                     .map(wf -> String.format("<%s:%d>", wf.getBpmnProcessId(), wf.getVersion())))
             .collect(Collectors.joining(",")));
-    publisher.publishEvent(new CamundaPostDeploymentEvent(deploymentEvent));
+    publisher.publishEvent(new CamundaPostDeploymentEvent(this, deploymentEvent));
   }
 
   @Override
