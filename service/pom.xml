@@ -48,6 +48,10 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-bpmn-model</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>document-api</artifactId>
     </dependency>
     <dependency>
@@ -75,6 +79,10 @@
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-license-check</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.camunda.bpm.model</groupId>
+      <artifactId>camunda-xml-model</artifactId>
     </dependency>
 
     <dependency>
