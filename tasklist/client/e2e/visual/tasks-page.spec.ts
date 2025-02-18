@@ -9,6 +9,7 @@
 import {expect, type Route, type Request} from '@playwright/test';
 import schema from '@/resources/bigForm.json' assert {type: 'json'};
 import {test} from '@/visual-fixtures';
+import {URL_API_V1_PATTERN} from '@/constants';
 
 type Task = {
   id: string;
@@ -255,7 +256,7 @@ function mockResponses(
 
 test.describe('tasks page', () => {
   test('empty state', async ({page, tasksPage}) => {
-    await page.route(/^.*\/v1.*$/i, mockResponses());
+    await page.route(URL_API_V1_PATTERN, mockResponses());
 
     await tasksPage.goto();
 
@@ -266,7 +267,7 @@ test.describe('tasks page', () => {
     await page.addInitScript(`(() => {
       window.localStorage.setItem('theme', '"dark"');
     })()`);
-    await page.route(/^.*\/v1.*$/i, mockResponses());
+    await page.route(URL_API_V1_PATTERN, mockResponses());
 
     await tasksPage.goto();
 
@@ -277,7 +278,7 @@ test.describe('tasks page', () => {
     await page.addInitScript(`(() => {
       window.localStorage.setItem('hasCompletedTask', 'true');
     })()`);
-    await page.route(/^.*\/v1.*$/i, mockResponses());
+    await page.route(URL_API_V1_PATTERN, mockResponses());
 
     await tasksPage.goto();
 
@@ -287,7 +288,7 @@ test.describe('tasks page', () => {
   });
 
   test('empty list', async ({page, tasksPage}) => {
-    await page.route(/^.*\/v1.*$/i, mockResponses());
+    await page.route(URL_API_V1_PATTERN, mockResponses());
 
     await tasksPage.goto({filter: 'completed', sortBy: 'creation'});
 
@@ -296,7 +297,7 @@ test.describe('tasks page', () => {
 
   test('all open tasks', async ({page, tasksPage}) => {
     await page.route(
-      /^.*\/v1.*$/i,
+      URL_API_V1_PATTERN,
       mockResponses([
         {
           id: '2251799813686198',
@@ -360,7 +361,7 @@ test.describe('tasks page', () => {
 
   test('tasks assigned to me', async ({page, tasksPage}) => {
     await page.route(
-      /^.*\/v1.*$/i,
+      URL_API_V1_PATTERN,
       mockResponses([
         {
           id: '2251799813686198',
@@ -424,7 +425,7 @@ test.describe('tasks page', () => {
 
   test('unassigned tasks', async ({page, tasksPage}) => {
     await page.route(
-      /^.*\/v1.*$/i,
+      URL_API_V1_PATTERN,
       mockResponses([
         {
           id: '2251799813686198',
@@ -486,7 +487,7 @@ test.describe('tasks page', () => {
 
   test('completed tasks', async ({page, tasksPage}) => {
     await page.route(
-      /^.*\/v1.*$/i,
+      URL_API_V1_PATTERN,
       mockResponses([
         {
           id: '2251799813686198',
@@ -553,7 +554,7 @@ test.describe('tasks page', () => {
 
   test('tasks ordered by due date', async ({page, tasksPage}) => {
     await page.route(
-      /^.*\/v1.*$/i,
+      URL_API_V1_PATTERN,
       mockResponses([
         {
           id: '2251799813686198',
@@ -621,7 +622,7 @@ test.describe('tasks page', () => {
 
   test('tasks ordered by follow up date', async ({page, tasksPage}) => {
     await page.route(
-      /^.*\/v1.*$/i,
+      URL_API_V1_PATTERN,
       mockResponses([
         {
           id: '2251799813686198',
@@ -687,7 +688,7 @@ test.describe('tasks page', () => {
 
   test('tasks ordered by priority', async ({page, tasksPage}) => {
     await page.route(
-      /^.*\/v1.*$/i,
+      URL_API_V1_PATTERN,
       mockResponses([
         {
           id: '2251799813686198',
@@ -807,7 +808,7 @@ test.describe('tasks page', () => {
     tasksPage,
   }) => {
     await page.route(
-      /^.*\/v1.*$/i,
+      URL_API_V1_PATTERN,
       mockResponses(
         [
           {
@@ -851,7 +852,7 @@ test.describe('tasks page', () => {
     tasksPage,
   }) => {
     await page.route(
-      /^.*\/v1.*$/i,
+      URL_API_V1_PATTERN,
       mockResponses(
         [
           {
@@ -904,7 +905,7 @@ test.describe('tasks page', () => {
 
   test('selected assigned task', async ({page, tasksPage}) => {
     await page.route(
-      /^.*\/v1.*$/i,
+      URL_API_V1_PATTERN,
       mockResponses(
         [
           {
@@ -947,7 +948,7 @@ test.describe('tasks page', () => {
 
   test('selected completed task', async ({page, tasksPage}) => {
     await page.route(
-      /^.*\/v1.*$/i,
+      URL_API_V1_PATTERN,
       mockResponses(
         [
           {
@@ -992,7 +993,7 @@ test.describe('tasks page', () => {
 
   test('selected completed task with variables', async ({page, tasksPage}) => {
     await page.route(
-      /^.*\/v1.*$/i,
+      URL_API_V1_PATTERN,
       mockResponses(
         [
           {
@@ -1038,7 +1039,7 @@ test.describe('tasks page', () => {
 
   test('selected unassigned task with form', async ({page, tasksPage}) => {
     await page.route(
-      /^.*\/v1.*$/i,
+      URL_API_V1_PATTERN,
       mockResponses(
         [
           {
@@ -1083,7 +1084,7 @@ test.describe('tasks page', () => {
 
   test('selected assigned task with form', async ({page, tasksPage}) => {
     await page.route(
-      /^.*\/v1.*$/i,
+      URL_API_V1_PATTERN,
       mockResponses(
         [
           {
@@ -1155,7 +1156,7 @@ test.describe('tasks page', () => {
       }),
     );
     await page.route(
-      /^.*\/v1.*$/i,
+      URL_API_V1_PATTERN,
       mockResponses([NON_FORM_TASK_WITH_TENANT], NON_FORM_TASK_WITH_TENANT),
     );
 
@@ -1178,7 +1179,7 @@ test.describe('tasks page', () => {
       );
     })()`);
 
-    await page.route(/^.*\/v1.*$/i, mockResponses());
+    await page.route(URL_API_V1_PATTERN, mockResponses());
 
     await tasksPage.goto();
 
@@ -1201,7 +1202,7 @@ test.describe('tasks page', () => {
       );
     })()`);
 
-    await page.route(/^.*\/v1.*$/i, mockResponses());
+    await page.route(URL_API_V1_PATTERN, mockResponses());
 
     await tasksPage.goto();
 
@@ -1212,7 +1213,7 @@ test.describe('tasks page', () => {
   });
 
   test('process view', async ({page, tasksPage}) => {
-    await page.route(/^.*\/v1.*$/i, mockResponses([FORM_TASK], FORM_TASK));
+    await page.route(URL_API_V1_PATTERN, mockResponses([FORM_TASK], FORM_TASK));
 
     await tasksPage.gotoTaskDetailsProcessTab(FORM_TASK.id);
 
