@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -42,7 +42,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
   private final IncidentUpdateRepository repository;
   private final boolean ignoreMissingData;
   private final int batchSize;
-  private final Executor executor;
+  private final ScheduledExecutorService executor;
   private final Logger logger;
   private final Duration waitForRefreshInterval;
 
@@ -51,7 +51,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final IncidentUpdateRepository repository,
       final boolean ignoreMissingData,
       final int batchSize,
-      final Executor executor,
+      final ScheduledExecutorService executor,
       final Logger logger) {
     this(
         metadata,
@@ -69,7 +69,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final IncidentUpdateRepository repository,
       final boolean ignoreMissingData,
       final int batchSize,
-      final Executor executor,
+      final ScheduledExecutorService executor,
       final Logger logger,
       final Duration waitForRefreshInterval) {
     this.metadata = metadata;
@@ -143,8 +143,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       // if it failed once we want to give it a chance and to import more data
       // next failure will fail in case ignoring of missing data is not configured
       future =
-          new CompletableFuture<Void>()
-              .completeOnTimeout(null, waitForRefreshInterval.toMillis(), TimeUnit.MILLISECONDS)
+          completeAfter(waitForRefreshInterval.toMillis(), TimeUnit.MILLISECONDS)
               .thenComposeAsync(ignored -> queryData(incidents, data), executor)
               .thenComposeAsync(
                   unused -> checkDataAndCollectParentTreePaths(incidents, data, ignoreMissingData),
@@ -631,5 +630,11 @@ public final class IncidentUpdateTask implements BackgroundTask {
               return CompletableFuture.completedFuture(pendingIncidentsBatch);
             },
             executor);
+  }
+
+  private CompletableFuture<Void> completeAfter(final long delay, final TimeUnit timeUnit) {
+    final var future = new CompletableFuture<Void>();
+    executor.schedule(() -> future.complete(null), delay, timeUnit);
+    return future;
   }
 }

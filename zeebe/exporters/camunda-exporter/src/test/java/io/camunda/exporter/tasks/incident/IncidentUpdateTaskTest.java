@@ -32,7 +32,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -42,13 +44,14 @@ import org.slf4j.LoggerFactory;
 
 final class IncidentUpdateTaskTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentUpdateTaskTest.class);
+  @AutoClose  private static final ScheduledThreadPoolExecutor EXECUTOR = new ScheduledThreadPoolExecutor(1);
   private final ExporterMetadata metadata = new ExporterMetadata(TestObjectMapper.objectMapper());
   private final TestRepository repository = Mockito.spy(new TestRepository());
 
   @Test
   void shouldReturnNothingDoneOnEmptyPendingBatch() {
     // given
-    final var task = new IncidentUpdateTask(metadata, repository, false, 10, Runnable::run, LOGGER);
+    final var task = new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, LOGGER);
 
     // when
     final var result = task.execute();
@@ -60,7 +63,7 @@ final class IncidentUpdateTaskTest {
   @Test
   void shouldUseMetadataPositionToFetchPendingBatch() {
     // given
-    final var task = new IncidentUpdateTask(metadata, repository, false, 10, Runnable::run, LOGGER);
+    final var task = new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, LOGGER);
     metadata.setLastIncidentUpdatePosition(5);
 
     // when
@@ -73,7 +76,7 @@ final class IncidentUpdateTaskTest {
   @Test
   void shouldUseBatchSizeToFetchPendingBatch() {
     // given
-    final var task = new IncidentUpdateTask(metadata, repository, false, 10, Runnable::run, LOGGER);
+    final var task = new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, LOGGER);
 
     // when
     task.execute().toCompletableFuture().join();
@@ -233,7 +236,7 @@ final class IncidentUpdateTaskTest {
     void shouldUpdateMetadataOnSuccess() {
       // given
       final var task =
-          new IncidentUpdateTask(metadata, repository, false, 10, Runnable::run, LOGGER);
+          new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, LOGGER);
 
       // when
       task.execute().toCompletableFuture().join();
@@ -246,7 +249,7 @@ final class IncidentUpdateTaskTest {
     void shouldReturnNumberOfDocumentsUpdated() {
       // given
       final var task =
-          new IncidentUpdateTask(metadata, repository, false, 10, Runnable::run, LOGGER);
+          new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, LOGGER);
 
       // when
       final var result = task.execute();
@@ -263,7 +266,7 @@ final class IncidentUpdateTaskTest {
       // given
       final var task =
           new IncidentUpdateTask(
-              metadata, repository, false, 10, Runnable::run, LOGGER, Duration.ZERO);
+              metadata, repository, false, 10, EXECUTOR, LOGGER, Duration.ZERO);
       repository.incidents = CompletableFuture.completedFuture(Map.of());
 
       // when
@@ -282,7 +285,7 @@ final class IncidentUpdateTaskTest {
       // given
       final var task =
           new IncidentUpdateTask(
-              metadata, repository, false, 10, Runnable::run, LOGGER, Duration.ZERO);
+              metadata, repository, false, 10, EXECUTOR, LOGGER, Duration.ZERO);
       repository.processInstances = CompletableFuture.completedFuture(List.of());
 
       // when
@@ -301,7 +304,7 @@ final class IncidentUpdateTaskTest {
       // given
       final var task =
           new IncidentUpdateTask(
-              metadata, repository, false, 10, Runnable::run, LOGGER, Duration.ZERO);
+              metadata, repository, false, 10, EXECUTOR, LOGGER, Duration.ZERO);
       repository.flowNodesInListView = CompletableFuture.completedFuture(List.of());
 
       // when
@@ -320,7 +323,7 @@ final class IncidentUpdateTaskTest {
       // given
       final var task =
           new IncidentUpdateTask(
-              metadata, repository, false, 10, Runnable::run, LOGGER, Duration.ZERO);
+              metadata, repository, false, 10, EXECUTOR, LOGGER, Duration.ZERO);
       repository.flowNodeInstances = CompletableFuture.completedFuture(List.of());
 
       // when
@@ -339,7 +342,7 @@ final class IncidentUpdateTaskTest {
       // given
       final var task =
           new IncidentUpdateTask(
-              metadata, repository, false, 10, Runnable::run, LOGGER, Duration.ZERO);
+              metadata, repository, false, 10, EXECUTOR, LOGGER, Duration.ZERO);
 
       // when
       final var result = task.execute();
@@ -366,7 +369,7 @@ final class IncidentUpdateTaskTest {
       // given
       final var task =
           new IncidentUpdateTask(
-              metadata, repository, false, 10, Runnable::run, LOGGER, Duration.ZERO);
+              metadata, repository, false, 10, EXECUTOR, LOGGER, Duration.ZERO);
 
       // when
       final var result = task.execute();
@@ -394,7 +397,7 @@ final class IncidentUpdateTaskTest {
       // given
       final var task =
           new IncidentUpdateTask(
-              metadata, repository, false, 10, Runnable::run, LOGGER, Duration.ZERO);
+              metadata, repository, false, 10, EXECUTOR, LOGGER, Duration.ZERO);
 
       // when
       final var result = task.execute();
@@ -418,7 +421,7 @@ final class IncidentUpdateTaskTest {
       // given
       final var task =
           new IncidentUpdateTask(
-              metadata, repository, false, 10, Runnable::run, LOGGER, Duration.ZERO);
+              metadata, repository, false, 10, EXECUTOR, LOGGER, Duration.ZERO);
       incidentEntity.setState(IncidentState.ACTIVE);
       repository.activeIncidentsByTreePaths =
           CompletableFuture.completedFuture(
@@ -471,7 +474,7 @@ final class IncidentUpdateTaskTest {
       // process instance
       final var task =
           new IncidentUpdateTask(
-              metadata, repository, false, 10, Runnable::run, LOGGER, Duration.ZERO);
+              metadata, repository, false, 10, EXECUTOR, LOGGER, Duration.ZERO);
       incidentEntity.setState(IncidentState.ACTIVE);
       repository.activeIncidentsByTreePaths =
           CompletableFuture.completedFuture(
@@ -523,7 +526,7 @@ final class IncidentUpdateTaskTest {
       // given
       final var task =
           new IncidentUpdateTask(
-              metadata, repository, false, 10, Runnable::run, LOGGER, Duration.ZERO);
+              metadata, repository, false, 10, EXECUTOR, LOGGER, Duration.ZERO);
       repository.processInstances =
           CompletableFuture.completedFuture(List.of(parentProcessInstance));
       repository.wasProcessInstanceDeleted = CompletableFuture.completedFuture(true);
