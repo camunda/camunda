@@ -61,6 +61,8 @@ public final class ExporterDirectorTest {
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
 
   @Rule public final ExporterRule rule = ExporterRule.activeExporter();
+  @Rule public final ExporterRule passiveExporterRule = ExporterRule.passiveExporter();
+
   private final List<ControlledTestExporter> exporters = new ArrayList<>();
   private final List<ExporterDescriptor> exporterDescriptors = new ArrayList<>();
 
@@ -257,6 +259,19 @@ public final class ExporterDirectorTest {
 
     // when
     rule.closeExporterDirector();
+
+    // then
+    verify(exporters.get(0), TIMEOUT).close();
+    verify(exporters.get(1), TIMEOUT).close();
+  }
+
+  @Test
+  public void shouldCloseAllExportersOnCloseInPassiveMode() throws Exception {
+    // given
+    passiveExporterRule.startExporterDirector(exporterDescriptors);
+
+    // when
+    passiveExporterRule.closeExporterDirector();
 
     // then
     verify(exporters.get(0), TIMEOUT).close();
