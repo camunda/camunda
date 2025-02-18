@@ -129,8 +129,8 @@ final class BrokerRequestManager extends Actor {
       return;
     } catch (final PartitionInactiveException e) {
       returnFuture.completeExceptionally(e);
-      BrokerClientMetrics.registerFailedRequest(
-          request.getPartitionId(), request.getType(), "PARTITION_INACTIVE");
+      metrics.registerFailedRequest(
+          request.getPartitionId(), request.getType(), AdditionalErrorCodes.PARTITION_INACTIVE);
       return;
     }
 
