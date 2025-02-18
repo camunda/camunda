@@ -55,8 +55,7 @@ final class ProcessInstanceElementMigratedApplier
               .setCallingElementPath(value.getCallingElementPath());
         });
 
-    if (value.getBpmnElementType() == BpmnElementType.PROCESS
-        && previousProcessDefinitionKey.get() != value.getProcessDefinitionKey()) {
+    if (value.getBpmnElementType() == BpmnElementType.PROCESS) {
       elementInstanceState.deleteProcessInstanceKeyByDefinitionKey(
           value.getProcessInstanceKey(), previousProcessDefinitionKey.get());
       elementInstanceState.insertProcessInstanceKeyByDefinitionKey(

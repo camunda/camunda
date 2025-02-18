@@ -565,7 +565,7 @@ public class MigrateCallActivityTest {
 
     // then
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ANCESTOR_MIGRATED)
                 .withProcessInstanceKey(level2ChildProcessInstanceKey)
                 .withElementType(BpmnElementType.USER_TASK)
                 .withElementId("A")

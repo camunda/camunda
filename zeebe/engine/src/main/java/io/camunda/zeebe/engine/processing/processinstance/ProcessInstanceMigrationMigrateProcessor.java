@@ -508,7 +508,7 @@ public class ProcessInstanceMigrationMigrateProcessor
         .setCallingElementPath(elementTreePath.callingElementPath());
 
     stateWriter.appendFollowUpEvent(
-        instance.getKey(), ProcessInstanceIntent.ELEMENT_MIGRATED, elementInstanceRecord);
+        instance.getKey(), ProcessInstanceIntent.ANCESTOR_MIGRATED, elementInstanceRecord);
 
     if (elementInstanceRecord.getBpmnElementType() == BpmnElementType.CALL_ACTIVITY) {
       // found more call activities? add the called child instance to the queue to continue going
