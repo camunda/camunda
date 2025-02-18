@@ -55,7 +55,7 @@ public class ElasticsearchClient implements AutoCloseable {
    */
   private Sample flushLatencyMeasurement;
 
-  ElasticsearchClient(
+  public ElasticsearchClient(
       final ElasticsearchExporterConfiguration configuration, final MeterRegistry meterRegistry) {
     this(
         configuration,
