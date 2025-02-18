@@ -94,8 +94,7 @@ public class BackupManagerMetrics {
   private OperationMetrics start(final OperationType operation) {
     final var timer =
         backupOperationLatency.computeIfAbsent(operation, this::registerBackupLatency);
-    final var timerSample =
-        MicrometerUtil.timer(timer, Timer.start(registry.config().clock()));
+    final var timerSample = MicrometerUtil.timer(timer, Timer.start(registry.config().clock()));
     getOperationInProgress(operation).incrementAndGet();
     return new OperationMetrics(timerSample, operation);
   }

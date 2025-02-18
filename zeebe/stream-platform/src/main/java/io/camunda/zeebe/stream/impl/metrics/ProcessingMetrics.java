@@ -66,8 +66,7 @@ public class ProcessingMetrics {
   }
 
   public CloseableSilently startBatchProcessingDurationTimer() {
-    return MicrometerUtil.timer(
-        batchProcessingDuration, Timer.start(registry.config().clock()));
+    return MicrometerUtil.timer(batchProcessingDuration, Timer.start(registry.config().clock()));
   }
 
   public void observeCommandCount(final int commandCount) {
