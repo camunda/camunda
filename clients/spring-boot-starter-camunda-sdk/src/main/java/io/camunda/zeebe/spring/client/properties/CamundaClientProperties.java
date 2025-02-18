@@ -112,13 +112,19 @@ public class CamundaClientProperties {
 
   @Override
   public String toString() {
-    return "CamundaClientProperties{" +
-        "mode=" + mode +
-        ", tenantId='" + tenantId + '\'' +
-        ", auth=" + auth +
-        ", zeebe=" + zeebe +
-        ", cloud=" + cloud +
-        '}';
+    return "CamundaClientProperties{"
+        + "mode="
+        + mode
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + ", auth="
+        + auth
+        + ", zeebe="
+        + zeebe
+        + ", cloud="
+        + cloud
+        + '}';
   }
 
   public enum ClientMode {
