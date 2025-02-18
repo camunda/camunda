@@ -10,9 +10,7 @@
   </parent>
 
   <artifactId>camunda-zeebe</artifactId>
-
   <packaging>jar</packaging>
-
   <name>Zeebe Distribution</name>
 
   <dependencies>
@@ -712,6 +710,12 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda.optimize</groupId>
+      <artifactId>upgrade-optimize</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
       <scope>test</scope>
@@ -781,6 +785,10 @@
             <program>
               <id>prefix-migration</id>
               <mainClass>io.camunda.application.StandalonePrefixMigration</mainClass>
+            </program>
+            <program>
+              <id>optimize-upgrade</id>
+              <mainClass>io.camunda.optimize.upgrade.main.UpgradeMain</mainClass>
             </program>
           </programs>
           <repositoryLayout>flat</repositoryLayout>
