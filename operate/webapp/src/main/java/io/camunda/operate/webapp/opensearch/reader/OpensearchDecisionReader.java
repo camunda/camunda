@@ -18,13 +18,13 @@ import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.reader.DecisionReader;
 import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -173,7 +173,8 @@ public class OpensearchDecisionReader implements DecisionReader {
   private Query buildQuery(final String tenantId) {
     Query decisionIdQuery = null;
     if (permissionsService.permissionsEnabled()) {
-      final var allowed = permissionsService.getDecisionsWithPermission(IdentityPermission.READ);
+      final var allowed =
+          permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_DEFINITION);
       if (allowed != null && !allowed.isAll()) {
         decisionIdQuery = stringTerms(DecisionIndex.DECISION_ID, allowed.getIds());
       }

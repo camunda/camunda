@@ -27,11 +27,11 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.rest.validation.ModifyProcessInstanceRequestValidator;
 import io.camunda.operate.webapp.rest.validation.ProcessInstanceRequestValidator;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -74,7 +74,8 @@ public class ProcessInstanceRestServiceTest {
             sequenceFlowStore);
 
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.hasPermissionForProcess(any(), any())).thenReturn(true);
+    when(permissionsService.hasPermissionForProcess(any(), any(PermissionType.class)))
+        .thenReturn(true);
   }
 
   @Test
@@ -99,7 +100,7 @@ public class ProcessInstanceRestServiceTest {
     when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
         .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
     when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, IdentityPermission.READ_PROCESS_INSTANCE))
+            bpmnProcessId, PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(false);
 
     final NotAuthorizedException exception =
@@ -120,7 +121,7 @@ public class ProcessInstanceRestServiceTest {
     when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
         .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
     when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, IdentityPermission.READ_PROCESS_INSTANCE))
+            bpmnProcessId, PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(false);
 
     final NotAuthorizedException exception =
@@ -141,7 +142,7 @@ public class ProcessInstanceRestServiceTest {
     when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
         .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
     when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, IdentityPermission.READ_PROCESS_INSTANCE))
+            bpmnProcessId, PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(false);
 
     final NotAuthorizedException exception =
@@ -162,7 +163,7 @@ public class ProcessInstanceRestServiceTest {
     when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
         .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
     when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, IdentityPermission.READ_PROCESS_INSTANCE))
+            bpmnProcessId, PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(false);
 
     final NotAuthorizedException exception =
@@ -183,7 +184,7 @@ public class ProcessInstanceRestServiceTest {
     when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
         .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
     when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, IdentityPermission.READ_PROCESS_INSTANCE))
+            bpmnProcessId, PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(false);
 
     final NotAuthorizedException exception =
@@ -203,7 +204,7 @@ public class ProcessInstanceRestServiceTest {
     when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
         .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
     when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, IdentityPermission.READ_PROCESS_INSTANCE))
+            bpmnProcessId, PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(false);
 
     final NotAuthorizedException exception =
@@ -223,7 +224,7 @@ public class ProcessInstanceRestServiceTest {
     when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
         .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
     when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, IdentityPermission.READ_PROCESS_INSTANCE))
+            bpmnProcessId, PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(false);
 
     final NotAuthorizedException exception =
@@ -245,7 +246,7 @@ public class ProcessInstanceRestServiceTest {
     when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
         .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
     when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, IdentityPermission.DELETE_PROCESS_INSTANCE))
+            bpmnProcessId, PermissionType.DELETE_PROCESS_INSTANCE))
         .thenReturn(false);
 
     final NotAuthorizedException exception =
@@ -270,7 +271,7 @@ public class ProcessInstanceRestServiceTest {
     when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
         .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
     when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, IdentityPermission.UPDATE_PROCESS_INSTANCE))
+            bpmnProcessId, PermissionType.UPDATE_PROCESS_INSTANCE))
         .thenReturn(false);
 
     final NotAuthorizedException exception =
@@ -295,7 +296,7 @@ public class ProcessInstanceRestServiceTest {
     when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
         .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
     when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, IdentityPermission.UPDATE_PROCESS_INSTANCE))
+            bpmnProcessId, PermissionType.UPDATE_PROCESS_INSTANCE))
         .thenReturn(false);
 
     final NotAuthorizedException exception =
@@ -319,7 +320,7 @@ public class ProcessInstanceRestServiceTest {
     when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
         .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
     when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, IdentityPermission.READ_PROCESS_INSTANCE))
+            bpmnProcessId, PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(false);
 
     final NotAuthorizedException exception =

@@ -18,8 +18,8 @@ import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseD
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -86,7 +86,7 @@ public class DecisionInstanceRestService extends InternalAPIErrorController {
   private void checkIdentityReadPermission(final DecisionInstanceDto decisionInstance) {
     if (permissionsService.permissionsEnabled()
         && !permissionsService.hasPermissionForDecision(
-            decisionInstance.getDecisionId(), IdentityPermission.READ_DECISION_INSTANCE)) {
+            decisionInstance.getDecisionId(), PermissionType.READ_DECISION_INSTANCE)) {
       throw new NotAuthorizedException(
           String.format(
               "No read permission for decision instance %s", decisionInstance.getDecisionId()));

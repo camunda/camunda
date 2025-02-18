@@ -37,7 +37,6 @@ import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequest
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.UserService;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.PersistOperationHelper;
 import io.camunda.operate.webapp.writer.ProcessInstanceSource;
@@ -52,6 +51,7 @@ import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -433,10 +433,10 @@ public class OpensearchBatchOperationWriter
     Query query =
         openSearchQueryHelper.createProcessInstancesQuery(batchOperationRequest.getQuery());
     if (permissionsService.permissionsEnabled()) {
-      final IdentityPermission permission =
+      final PermissionType permission =
           batchOperationRequest.getOperationType() == OperationType.DELETE_PROCESS_INSTANCE
-              ? IdentityPermission.DELETE_PROCESS_INSTANCE
-              : IdentityPermission.UPDATE_PROCESS_INSTANCE;
+              ? PermissionType.DELETE_PROCESS_INSTANCE
+              : PermissionType.UPDATE_PROCESS_INSTANCE;
       final var allowed = permissionsService.getProcessesWithPermission(permission);
       final var permissionQuery =
           allowed.isAll()
