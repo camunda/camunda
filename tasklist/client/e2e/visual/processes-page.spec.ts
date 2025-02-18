@@ -8,6 +8,7 @@
 
 import {expect, type Route, type Request} from '@playwright/test';
 import {test} from '@/visual-fixtures';
+import {URL_API_V1_PATTERN} from '@/constants';
 
 const MOCK_TENANTS = [
   {
@@ -55,7 +56,7 @@ function mockResponses(
 
 test.describe('processes page', () => {
   test('consent modal', async ({page}) => {
-    await page.route(/^.*\/v1.*$/i, mockResponses());
+    await page.route(URL_API_V1_PATTERN, mockResponses());
 
     await page.goto('/processes', {
       waitUntil: 'networkidle',
@@ -68,7 +69,7 @@ test.describe('processes page', () => {
     await page.addInitScript(`(() => {
       window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     })()`);
-    await page.route(/^.*\/v1.*$/i, mockResponses());
+    await page.route(URL_API_V1_PATTERN, mockResponses());
 
     await page.goto('/processes', {
       waitUntil: 'networkidle',
@@ -82,7 +83,7 @@ test.describe('processes page', () => {
       window.localStorage.setItem('hasConsentedToStartProcess', 'true');
       window.localStorage.setItem('theme', '"dark"');
     })()`);
-    await page.route(/^.*\/v1.*$/i, mockResponses());
+    await page.route(URL_API_V1_PATTERN, mockResponses());
 
     await page.goto('/processes', {
       waitUntil: 'networkidle',
@@ -95,7 +96,7 @@ test.describe('processes page', () => {
     await page.addInitScript(`(() => {
       window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     })()`);
-    await page.route(/^.*\/v1.*$/i, mockResponses());
+    await page.route(URL_API_V1_PATTERN, mockResponses());
 
     await page.goto('/processes?search=foo', {
       waitUntil: 'networkidle',
@@ -109,7 +110,7 @@ test.describe('processes page', () => {
       window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     })()`);
     await page.route(
-      /^.*\/v1.*$/i,
+      URL_API_V1_PATTERN,
       mockResponses([
         {
           id: '2251799813685285',
@@ -161,7 +162,7 @@ test.describe('processes page', () => {
       }),
     );
     await page.route(
-      /^.*\/v1.*$/i,
+      URL_API_V1_PATTERN,
       mockResponses([
         {
           id: '2251799813685285',
@@ -192,7 +193,7 @@ test.describe('processes page', () => {
       window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     })()`);
     await page.route(
-      /^.*\/v1.*$/i,
+      URL_API_V1_PATTERN,
       mockResponses([
         {
           id: '2251799813685285',
