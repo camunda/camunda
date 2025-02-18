@@ -310,6 +310,20 @@ public final class ExporterDirectorTest {
   }
 
   @Test
+  public void shouldIgnoreErrorsOnClose() throws Exception {
+    // given
+    startExporterDirector(exporterDescriptors);
+
+    // when -- closing the first exporter will throw an exception
+    doThrow(new RuntimeException()).when(exporters.get(0)).close();
+    rule.closeExporterDirector();
+
+    // then -- we still call close for both exporters, ignoring the exception
+    verify(exporters.get(0), TIMEOUT).close();
+    verify(exporters.get(1), TIMEOUT).close();
+  }
+
+  @Test
   public void shouldCloseAllExportersOnClose() throws Exception {
     // given
     startExporterDirector(exporterDescriptors);
