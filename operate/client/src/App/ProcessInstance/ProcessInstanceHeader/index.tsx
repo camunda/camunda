@@ -256,7 +256,6 @@ const ProcessInstanceHeader: React.FC = observer(() => {
       ]}
       additionalContent={
         <Restricted
-          scopes={['write']}
           resourceBasedRestrictions={{
             scopes: ['UPDATE_PROCESS_INSTANCE', 'DELETE_PROCESS_INSTANCE'],
             permissions: processInstanceDetailsStore.getPermissions(),

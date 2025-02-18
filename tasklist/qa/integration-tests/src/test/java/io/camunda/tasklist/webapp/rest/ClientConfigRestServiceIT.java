@@ -12,12 +12,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.webapp.security.TasklistProfileServiceImpl;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -34,11 +36,11 @@ import org.springframework.web.context.WebApplicationContext;
       TasklistProfileServiceImpl.class,
       ClientConfig.class,
       ClientConfigRestService.class,
-      TasklistProperties.class
+      TasklistProperties.class,
+      SecurityConfiguration.class
     },
     properties = {
       TasklistProperties.PREFIX + ".enterprise=true",
-      TasklistProperties.PREFIX + ".multiTenancy.enabled=true",
       TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true",
       "CAMUNDA_TASKLIST_CLOUD_ORGANIZATIONID=organizationId",
       // CAMUNDA_TASKLIST_CLOUD_CLUSTERID=clusterId  -- leave out to test for null values
@@ -51,6 +53,8 @@ import org.springframework.web.context.WebApplicationContext;
 public class ClientConfigRestServiceIT {
 
   @Autowired private WebApplicationContext context;
+
+  @InjectMocks private SecurityConfiguration securityConfiguration;
 
   private MockMvc mockMvc;
 
@@ -75,7 +79,7 @@ public class ClientConfigRestServiceIT {
         .isEqualTo(
             "window.clientConfig = {"
                 + "\"isEnterprise\":true,"
-                + "\"isMultiTenancyEnabled\":true,"
+                + "\"isMultiTenancyEnabled\":false,"
                 + "\"canLogout\":true,"
                 + "\"isLoginDelegated\":false,"
                 + "\"contextPath\":\"\","

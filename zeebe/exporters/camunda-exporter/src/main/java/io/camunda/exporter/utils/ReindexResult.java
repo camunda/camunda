@@ -5,18 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.property;
+package io.camunda.exporter.utils;
 
-public class MultiTenancyProperties {
-
-  private boolean enabled = false;
-
-  public boolean isEnabled() {
-    return enabled;
-  }
-
-  public MultiTenancyProperties setEnabled(boolean enabled) {
-    this.enabled = enabled;
-    return this;
-  }
-}
+public record ReindexResult(
+    boolean successful, String source, String destination, Throwable failureReason) {}

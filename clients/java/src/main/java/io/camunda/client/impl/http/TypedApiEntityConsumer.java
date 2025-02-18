@@ -99,6 +99,7 @@ public interface TypedApiEntityConsumer<T> {
         }
         return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), ProblemDetail.class));
       } catch (final IOException ioe) {
+        LOGGER.warn("Could not read JSON content", ioe);
         // write the original JSON response into an error response
         final String jsonString = getJsonString();
         return ApiEntity.of(

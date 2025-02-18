@@ -8,6 +8,6 @@
 
 import {mockPostRequest} from './mockRequest';
 
-const mockLogout = () => mockPostRequest('/api/logout');
+const mockLogout = () => mockPostRequest('/logout');
 
 export {mockLogout};

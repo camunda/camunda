@@ -14,6 +14,7 @@ import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.property.TasklistOpenSearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
+import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import java.util.Map;
 import java.util.UUID;
@@ -140,6 +141,23 @@ public class MultiDbConfigurator {
                   "bulk",
                   Map.of("size", 1)));
         });
+
+    testApplication.withExporter(
+        "OpensearchExporter",
+        cfg -> {
+          cfg.setClassName(OpensearchExporter.class.getName());
+          cfg.setArgs(
+              Map.of(
+                  "url",
+                  opensearchUrl,
+                  "index",
+                  Map.of("prefix", indexPrefix),
+                  "bulk",
+                  Map.of("size", 1),
+                  "authentication",
+                  Map.of("username", userName, "password", userPassword)));
+        });
+
     testApplication.withProperty(
         "camunda.database.type", io.camunda.search.connect.configuration.DatabaseType.OPENSEARCH);
     testApplication.withProperty("camunda.operate.database", "opensearch");

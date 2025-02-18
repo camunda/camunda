@@ -5,10 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+package io.camunda.exporter.utils;
 
-import {UserDto} from 'modules/api/getUser';
-import {mockGetRequest} from './mockRequest';
-
-const mockGetUser = () => mockGetRequest<UserDto>('/api/authentications/user');
-
-export {mockGetUser};
+public record CloneResult(
+    boolean successful, String source, String destination, Throwable failureReason) {}

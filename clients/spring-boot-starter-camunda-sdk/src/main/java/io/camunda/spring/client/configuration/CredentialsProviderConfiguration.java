@@ -19,6 +19,7 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.NoopCredentialsProvider;
+import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.spring.client.properties.CamundaClientProperties;
 import java.net.URI;
@@ -38,6 +39,37 @@ public class CredentialsProviderConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public CredentialsProvider camundaClientCredentialsProvider(
+      final CamundaClientProperties camundaClientProperties) {
+    final var clientMode = camundaClientProperties.getMode();
+
+    return clientMode == null
+        ? new NoopCredentialsProvider()
+        : switch (clientMode) {
+          case basic -> buildBasicAuthCredentialsProvider(camundaClientProperties);
+          case saas, selfManaged -> buildOAuthCredentialsProvider(camundaClientProperties);
+        };
+  }
+
+  private CredentialsProvider buildBasicAuthCredentialsProvider(
+      final CamundaClientProperties camundaClientProperties) {
+    final var username = camundaClientProperties.getAuth().getUsername();
+    final var password = camundaClientProperties.getAuth().getPassword();
+
+    final var builder =
+        new BasicAuthCredentialsProviderBuilder()
+            .applyEnvironmentOverrides(false)
+            .username(username)
+            .password(password);
+
+    try {
+      return builder.build();
+    } catch (final Exception e) {
+      LOG.warn("Failed to configure credential provider", e);
+      return new NoopCredentialsProvider();
+    }
+  }
+
+  private CredentialsProvider buildOAuthCredentialsProvider(
       final CamundaClientProperties camundaClientProperties) {
     final OAuthCredentialsProviderBuilder credBuilder =
         CredentialsProvider.newCredentialsProviderBuilder()
