@@ -1,10 +1,19 @@
 import styled from "styled-components";
 import { TabListVertical, TabPanel } from "@carbon/react";
-import { label02, textSecondary } from "@carbon/elements";
+import {
+  label02,
+  layer01,
+  sizeSmall,
+  styles,
+  spacing06,
+  textSecondary,
+  layerSelected01,
+  spacing08,
+} from "@carbon/elements";
 
 export const TabsTitle = styled.p`
   position: relative;
-  top: 30px;
+  top: ${spacing06};
   font-size: ${label02.fontSize};
   font-weight: ${label02.fontWeight};
   letter-spacing: ${label02.letterSpacing};
@@ -23,20 +32,20 @@ export const TabsContainer = styled.div`
 export const CustomTabListVertical = styled(TabListVertical)`
   // Tab selectors container
   &.cds--tabs--vertical {
-    margin-top: 50px;
-    background: var(--cds-layer-02);
+    top: ${spacing08};
+    background: ${layer01};
     border: none;
     box-shadow: none;
-    padding-right: 24px;
+    padding-right: ${spacing06};
 
     // Tab selector
     .cds--tabs__nav-item {
-      background: var(--cds-layer-02);
+      background: ${layer01};
+      margin-right: ${spacing06};
+      height: ${sizeSmall};
       border: none;
-      margin-right: 24px;
-      height: 32px;
       box-shadow: none;
-      font-weight: 600;
+      font-weight: ${styles.headingCompact01.fontWeight};
 
       // Tab selector when not selected, disabled or hovered
       &:not(.cds--tabs__nav-item--selected):not(
@@ -48,7 +57,7 @@ export const CustomTabListVertical = styled(TabListVertical)`
 
     // Tab selector when selected
     .cds--tabs__nav-item--selected {
-      background: var(--cds-layer-selected);
+      background: ${layerSelected01};
     }
   }
 `;
