@@ -88,24 +88,6 @@ test.describe('form-js integration', () => {
         });
       }
 
-      if (route.request().url().includes('/v2/authentication/me')) {
-        return route.fulfill({
-          status: 200,
-          body: JSON.stringify({
-            userId: 'demo',
-            displayName: 'demo',
-            permissions: ['READ', 'WRITE'],
-            salesPlanType: null,
-            roles: null,
-            c8Links: [],
-            tenants: [],
-          }),
-          headers: {
-            'content-type': 'application/json',
-          },
-        });
-      }
-
       if (
         route.request().url().includes('v1/internal/processes/2251799813685255')
       ) {
