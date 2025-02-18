@@ -3,6 +3,7 @@ camunda:
     mode: saas
     cloud:
       base-url: zeebe.camunda.io
+<<<<<<< HEAD
       region: bru-2
       port: 443
     auth:
@@ -11,3 +12,16 @@ camunda:
     enabled: true
     grpc-address: https://${camunda.client.cloud.cluster-id}.${camunda.client.cloud.region}.${camunda.client.cloud.base-url}:${camunda.client.cloud.port}
     rest-address: https://${camunda.client.cloud.region}.${camunda.client.cloud.base-url}:${camunda.client.cloud.port}/${camunda.client.cloud.cluster-id}
+=======
+      port: 443
+      region: bru-2
+    tenant-id: <default>
+    auth:
+      token-url: https://login.cloud.camunda.io/oauth/token
+    zeebe:
+      enabled: true
+      audience: zeebe.camunda.io
+      rest-address: https://${camunda.client.cloud.region}.${camunda.client.cloud.base-url}:${camunda.client.cloud.port}/${camunda.client.cloud.cluster-id}
+      grpc-address: https://${camunda.client.cloud.cluster-id}.${camunda.client.cloud.region}.${camunda.client.cloud.base-url}:${camunda.client.cloud.port}
+      prefer-rest-over-grpc: false
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8)

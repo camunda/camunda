@@ -17,7 +17,11 @@ package io.camunda.spring.client.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/spring/client/properties/CamundaClientPropertiesSaasTest.java
 import io.camunda.spring.client.properties.CamundaClientProperties.ClientMode;
+=======
+import io.camunda.zeebe.spring.client.properties.CamundaClientProperties.ClientMode;
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/zeebe/spring/client/properties/ZeebeClientPropertiesSaasTest.java
 import java.net.URI;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,10 +40,18 @@ public class CamundaClientPropertiesSaasTest {
 
   @Test
   void shouldPopulateBaseUrlsForSaas() {
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/spring/client/properties/CamundaClientPropertiesSaasTest.java
     assertThat(properties.getGrpcAddress().toString())
         .isEqualTo("https://my-cluster-id.bru-2.zeebe.camunda.io:443");
     assertThat(properties.getRestAddress().toString())
         .isEqualTo("https://bru-2.zeebe.camunda.io:443/my-cluster-id");
+=======
+    assertThat(properties.getZeebe().getGrpcAddress().toString())
+        .isEqualTo("https://my-cluster-id.bru-2.zeebe.camunda.io:443");
+    assertThat(properties.getZeebe().getRestAddress().toString())
+        .isEqualTo("https://bru-2.zeebe.camunda.io:443/my-cluster-id");
+    assertThat(properties.getZeebe().getPreferRestOverGrpc()).isEqualTo(false);
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/zeebe/spring/client/properties/ZeebeClientPropertiesSaasTest.java
   }
 
   @Test
@@ -47,8 +59,14 @@ public class CamundaClientPropertiesSaasTest {
     assertThat(properties.getMode()).isEqualTo(ClientMode.saas);
     assertThat(properties.getAuth().getTokenUrl())
         .isEqualTo(URI.create("https://login.cloud.camunda.io/oauth/token"));
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/spring/client/properties/CamundaClientPropertiesSaasTest.java
     assertThat(properties.getEnabled()).isEqualTo(true);
     assertThat(properties.getAuth().getAudience()).isEqualTo("zeebe.camunda.io");
     assertThat(properties.getAuth().getScope()).isEqualTo("zeebe-scope");
+=======
+    assertThat(properties.getZeebe().getEnabled()).isEqualTo(true);
+    assertThat(properties.getZeebe().getAudience()).isEqualTo("zeebe.camunda.io");
+    assertThat(properties.getZeebe().getScope()).isEqualTo("zeebe-scope");
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/zeebe/spring/client/properties/ZeebeClientPropertiesSaasTest.java
   }
 }

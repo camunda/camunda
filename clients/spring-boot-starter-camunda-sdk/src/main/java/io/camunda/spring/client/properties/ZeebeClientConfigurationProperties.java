@@ -38,11 +38,17 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 @ConfigurationProperties(prefix = "zeebe.client")
 @Deprecated(since = "8.6", forRemoval = true)
 public class ZeebeClientConfigurationProperties {
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/spring/client/properties/ZeebeClientConfigurationProperties.java
   // Used to read default config values
   public static final CamundaClientBuilderImpl DEFAULT =
       (CamundaClientBuilderImpl) new CamundaClientBuilderImpl().withProperties(new Properties());
+=======
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/zeebe/spring/client/properties/ZeebeClientConfigurationProperties.java
   public static final String CONNECTION_MODE_CLOUD = "CLOUD";
   public static final String CONNECTION_MODE_ADDRESS = "ADDRESS";
+  // Used to read default config values
+  private static final ZeebeClientBuilderImpl DEFAULT =
+      (ZeebeClientBuilderImpl) new ZeebeClientBuilderImpl().withProperties(new Properties());
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ZeebeClientConfigurationProperties.class);
   private final org.springframework.core.env.Environment environment;
@@ -243,10 +249,18 @@ public class ZeebeClientConfigurationProperties {
 
   /**
    * @deprecated since 8.5 for removal with 8.8, replaced by {@link
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/spring/client/properties/ZeebeClientConfigurationProperties.java
    *     CamundaClientProperties#getGrpcAddress()}
    * @see CamundaClientConfiguration#getGatewayAddress()
    */
   @DeprecatedConfigurationProperty(replacement = "camunda.client.grpc-address")
+=======
+   *     io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl#getGrpcAddress()}
+   * @see ZeebeClientConfiguration#getGatewayAddress()
+   */
+  @Deprecated
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.grpc-address")
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/zeebe/spring/client/properties/ZeebeClientConfigurationProperties.java
   public String getGatewayAddress() {
     if (connectionMode != null && !connectionMode.isEmpty()) {
       LOGGER.info("Using connection mode '{}' to connect to Zeebe", connectionMode);

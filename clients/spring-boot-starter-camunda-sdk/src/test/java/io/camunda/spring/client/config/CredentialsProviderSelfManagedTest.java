@@ -23,11 +23,21 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/spring/client/config/CredentialsProviderSelfManagedTest.java
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.spring.client.configuration.CredentialsProviderConfiguration;
 import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.properties.CamundaClientProperties;
+=======
+import io.camunda.zeebe.client.CredentialsProvider;
+import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
+import io.camunda.zeebe.spring.client.configuration.CredentialsProviderConfiguration;
+import io.camunda.zeebe.spring.client.configuration.JsonMapperConfiguration;
+import io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl;
+import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
+import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/zeebe/spring/client/config/CredentialsProviderSelfManagedTest.java
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -39,13 +49,21 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import wiremock.com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 @SpringBootTest(
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/spring/client/config/CredentialsProviderSelfManagedTest.java
     classes = {CredentialsProviderConfiguration.class},
+=======
+    classes = {
+      JsonMapperConfiguration.class,
+      ZeebeClientConfigurationImpl.class,
+      CredentialsProviderConfiguration.class
+    },
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/zeebe/spring/client/config/CredentialsProviderSelfManagedTest.java
     properties = {
       "camunda.client.mode=self-managed",
       "camunda.client.auth.client-id=my-client-id",
@@ -58,8 +76,13 @@ public class CredentialsProviderSelfManagedTest {
   static WireMockExtension wm =
       WireMockExtension.newInstance().options(new WireMockConfiguration().dynamicPort()).build();
 
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/spring/client/config/CredentialsProviderSelfManagedTest.java
   @MockBean CamundaClientExecutorService zeebeClientExecutorService;
   @Autowired CredentialsProvider credentialsProvider;
+=======
+  @MockitoBean ZeebeClientExecutorService zeebeClientExecutorService;
+  @Autowired ZeebeClientConfigurationImpl configuration;
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/zeebe/spring/client/config/CredentialsProviderSelfManagedTest.java
 
   @DynamicPropertySource
   static void registerPgProperties(final DynamicPropertyRegistry registry) {

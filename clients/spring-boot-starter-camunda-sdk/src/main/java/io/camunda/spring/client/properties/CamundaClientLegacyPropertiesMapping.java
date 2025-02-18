@@ -13,7 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/spring/client/properties/CamundaClientLegacyPropertiesMapping.java
 package io.camunda.spring.client.properties;
+=======
+package io.camunda.zeebe.spring.client.properties;
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/zeebe/spring/client/properties/CamundaClientLegacyPropertiesMapping.java
 
 import java.util.List;
 

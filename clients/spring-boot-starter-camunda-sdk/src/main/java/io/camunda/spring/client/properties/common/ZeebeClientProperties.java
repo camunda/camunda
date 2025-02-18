@@ -22,20 +22,27 @@ import java.time.Duration;
 import java.util.Map;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.util.unit.DataSize;
 
 @Deprecated(forRemoval = true, since = "8.8")
 public class ZeebeClientProperties extends ApiProperties {
   private Integer executionThreads;
   private Duration messageTimeToLive;
-  private Integer maxMessageSize;
-  private Integer maxMetadataSize;
+  private DataSize maxMessageSize;
+  private DataSize maxMetadataSize;
   private Duration requestTimeout;
   private String caCertificatePath;
   private Duration keepAlive;
   private String overrideAuthority;
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/spring/client/properties/common/ZeebeClientProperties.java
   @NestedConfigurationProperty private JobWorkerValue defaults;
   @NestedConfigurationProperty private Map<String, JobWorkerValue> override;
   private boolean preferRestOverGrpc;
+=======
+  @NestedConfigurationProperty private ZeebeWorkerValue defaults = new ZeebeWorkerValue();
+  @NestedConfigurationProperty private Map<String, ZeebeWorkerValue> override = new HashMap<>();
+  private Boolean preferRestOverGrpc;
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/zeebe/spring/client/properties/common/ZeebeClientProperties.java
   private URI grpcAddress;
   private URI restAddress;
   @NestedConfigurationProperty private CamundaClientDeploymentProperties deployment;
@@ -112,30 +119,42 @@ public class ZeebeClientProperties extends ApiProperties {
     this.overrideAuthority = overrideAuthority;
   }
 
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/spring/client/properties/common/ZeebeClientProperties.java
   @DeprecatedConfigurationProperty(replacement = "camunda.client.max-message-size")
   public Integer getMaxMessageSize() {
+=======
+  public DataSize getMaxMessageSize() {
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/zeebe/spring/client/properties/common/ZeebeClientProperties.java
     return maxMessageSize;
   }
 
-  public void setMaxMessageSize(final Integer maxMessageSize) {
+  public void setMaxMessageSize(final DataSize maxMessageSize) {
     this.maxMessageSize = maxMessageSize;
   }
 
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/spring/client/properties/common/ZeebeClientProperties.java
   @DeprecatedConfigurationProperty(replacement = "camunda.client.max-metadata-size")
   public Integer getMaxMetadataSize() {
+=======
+  public DataSize getMaxMetadataSize() {
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/zeebe/spring/client/properties/common/ZeebeClientProperties.java
     return maxMetadataSize;
   }
 
-  public void setMaxMetadataSize(final Integer maxMetadataSize) {
+  public void setMaxMetadataSize(final DataSize maxMetadataSize) {
     this.maxMetadataSize = maxMetadataSize;
   }
 
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/spring/client/properties/common/ZeebeClientProperties.java
   @DeprecatedConfigurationProperty(replacement = "camunda.client.prefer-rest-over-grpc")
   public boolean isPreferRestOverGrpc() {
+=======
+  public Boolean getPreferRestOverGrpc() {
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/zeebe/spring/client/properties/common/ZeebeClientProperties.java
     return preferRestOverGrpc;
   }
 
-  public void setPreferRestOverGrpc(final boolean preferRestOverGrpc) {
+  public void setPreferRestOverGrpc(final Boolean preferRestOverGrpc) {
     this.preferRestOverGrpc = preferRestOverGrpc;
   }
 
@@ -181,6 +200,7 @@ public class ZeebeClientProperties extends ApiProperties {
     this.restAddress = restAddress;
   }
 
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/spring/client/properties/common/ZeebeClientProperties.java
   @DeprecatedConfigurationProperty(replacement = "camunda.client.deployment")
   public CamundaClientDeploymentProperties getDeployment() {
     return deployment;
@@ -188,5 +208,40 @@ public class ZeebeClientProperties extends ApiProperties {
 
   public void setDeployment(final CamundaClientDeploymentProperties deployment) {
     this.deployment = deployment;
+=======
+  @Override
+  public String toString() {
+    return "ZeebeClientProperties{"
+        + "executionThreads="
+        + executionThreads
+        + ", messageTimeToLive="
+        + messageTimeToLive
+        + ", maxMessageSize="
+        + maxMessageSize
+        + ", maxMetadataSize="
+        + maxMetadataSize
+        + ", requestTimeout="
+        + requestTimeout
+        + ", caCertificatePath='"
+        + caCertificatePath
+        + '\''
+        + ", keepAlive="
+        + keepAlive
+        + ", overrideAuthority='"
+        + overrideAuthority
+        + '\''
+        + ", defaults="
+        + defaults
+        + ", override="
+        + override
+        + ", preferRestOverGrpc="
+        + preferRestOverGrpc
+        + ", grpcAddress="
+        + grpcAddress
+        + ", restAddress="
+        + restAddress
+        + "} "
+        + super.toString();
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/zeebe/spring/client/properties/common/ZeebeClientProperties.java
   }
 }

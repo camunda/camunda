@@ -15,7 +15,13 @@
  */
 package io.camunda.spring.client.configuration;
 
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/spring/client/configuration/ExecutorServiceConfiguration.java
 import static io.camunda.spring.client.configuration.CamundaClientConfigurationImpl.DEFAULT;
+=======
+import static io.camunda.zeebe.spring.client.configuration.PropertyUtil.getOrLegacyOrDefault;
+import static io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties.DEFAULT;
+import static java.util.Optional.ofNullable;
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/zeebe/spring/client/configuration/ExecutorServiceConfiguration.java
 
 import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.properties.CamundaClientProperties;
@@ -41,6 +47,7 @@ public class ExecutorServiceConfiguration {
   }
 
   @Bean
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/spring/client/configuration/ExecutorServiceConfiguration.java
   public CamundaClientExecutorService camundaClientThreadPool(
       @Autowired(required = false) final MeterRegistry meterRegistry) {
     final int executionThreads =
@@ -48,6 +55,15 @@ public class ExecutorServiceConfiguration {
             ? DEFAULT.getNumJobWorkerExecutionThreads()
             : camundaClientProperties.getExecutionThreads();
     final ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(executionThreads);
+=======
+  public ZeebeClientExecutorService zeebeClientThreadPool(
+      @Autowired(required = false) final MeterRegistry meterRegistry,
+      final CamundaClientProperties camundaClientProperties) {
+    final ScheduledExecutorService threadPool =
+        Executors.newScheduledThreadPool(
+            ofNullable(camundaClientProperties.getZeebe().getExecutionThreads())
+                .orElse(ZeebeClientConfigurationImpl.DEFAULT.getNumJobWorkerExecutionThreads()));
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/zeebe/spring/client/configuration/ExecutorServiceConfiguration.java
     if (meterRegistry != null) {
       final MeterBinder threadPoolMetrics =
           new ExecutorServiceMetrics(

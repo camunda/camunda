@@ -15,14 +15,25 @@
  */
 package io.camunda.zeebe.spring.client.configuration;
 
+<<<<<<< HEAD
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.spring.client.testsupport.CamundaSpringProcessTestContext;
+=======
+import io.camunda.zeebe.client.CredentialsProvider;
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8)
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.impl.ZeebeClientImpl;
 import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
+<<<<<<< HEAD
 import io.camunda.zeebe.spring.client.event.ZeebeLifecycleEventProducer;
+=======
+import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
+import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
+import io.camunda.zeebe.spring.client.testsupport.SpringZeebeTestContext;
+import io.grpc.ClientInterceptor;
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8)
 import io.grpc.ManagedChannel;
 import java.util.concurrent.ScheduledExecutorService;
 import org.slf4j.Logger;
@@ -41,15 +52,43 @@ import org.springframework.context.annotation.Configuration;
     name = "enabled",
     havingValue = "true",
     matchIfMissing = true)
+<<<<<<< HEAD
 @ConditionalOnMissingBean(CamundaSpringProcessTestContext.class)
 @ConditionalOnBean(CamundaClientConfiguration.class)
+=======
+@ConditionalOnMissingBean(SpringZeebeTestContext.class)
+@ImportAutoConfiguration({
+  ExecutorServiceConfiguration.class,
+  ZeebeActuatorConfiguration.class,
+  JsonMapperConfiguration.class,
+  CredentialsProviderConfiguration.class,
+})
+@AutoConfigureBefore(ZeebeClientAllAutoConfiguration.class)
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8)
 public class ZeebeClientProdAutoConfiguration {
   private static final Logger LOG = LoggerFactory.getLogger(ZeebeClientProdAutoConfiguration.class);
 
   @Bean
+<<<<<<< HEAD
   public ZeebeClientConfiguration zeebeClientConfiguration(
       final CamundaClientConfiguration camundaClientConfiguration) {
     return new ZeebeClientConfigurationImpl(camundaClientConfiguration);
+=======
+  public ZeebeClientConfigurationImpl zeebeClientConfiguration(
+      final CamundaClientProperties camundaClientProperties,
+      final JsonMapper jsonMapper,
+      final List<ClientInterceptor> interceptors,
+      final List<AsyncExecChainHandler> chainHandlers,
+      final ZeebeClientExecutorService zeebeClientExecutorService,
+      final CredentialsProvider credentialsProvider) {
+    return new ZeebeClientConfigurationImpl(
+        camundaClientProperties,
+        jsonMapper,
+        interceptors,
+        chainHandlers,
+        zeebeClientExecutorService,
+        credentialsProvider);
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8)
   }
 
   @Bean(destroyMethod = "close")

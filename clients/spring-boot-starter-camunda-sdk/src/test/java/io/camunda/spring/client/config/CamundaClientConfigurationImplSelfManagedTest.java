@@ -15,7 +15,11 @@
  */
 package io.camunda.spring.client.config;
 
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/spring/client/config/CamundaClientConfigurationImplSelfManagedTest.java
 import static io.camunda.spring.client.configuration.CamundaClientConfigurationImpl.*;
+=======
+import static io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl.DEFAULT;
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/zeebe/spring/client/config/ZeebeClientConfigurationImplSelfManagedTest.java
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClientConfiguration;

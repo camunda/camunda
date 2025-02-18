@@ -15,6 +15,8 @@
  */
 package io.camunda.spring.client.jobhandling;
 
+import static io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl.DEFAULT;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -44,8 +46,13 @@ public class CamundaClientExecutorService {
     return scheduledExecutorService;
   }
 
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/spring/client/jobhandling/CamundaClientExecutorService.java
   public static CamundaClientExecutorService createDefault() {
     return createDefault(1);
+=======
+  public static ZeebeClientExecutorService createDefault() {
+    return createDefault(DEFAULT.getNumJobWorkerExecutionThreads());
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/zeebe/spring/client/jobhandling/ZeebeClientExecutorService.java
   }
 
   public static CamundaClientExecutorService createDefault(final int threads) {

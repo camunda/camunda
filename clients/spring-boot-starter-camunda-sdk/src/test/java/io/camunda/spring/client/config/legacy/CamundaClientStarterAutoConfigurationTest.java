@@ -27,17 +27,33 @@ import io.camunda.spring.client.configuration.CamundaClientProdAutoConfiguration
 import io.camunda.spring.client.configuration.JsonMapperConfiguration;
 import io.camunda.spring.client.properties.CamundaClientProperties;
 import io.camunda.zeebe.client.ZeebeClient;
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/spring/client/config/legacy/CamundaClientStarterAutoConfigurationTest.java
+=======
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.spring.client.configuration.CamundaAutoConfiguration;
+import io.camunda.zeebe.spring.client.configuration.JsonMapperConfiguration;
+import io.camunda.zeebe.spring.client.configuration.ZeebeClientProdAutoConfiguration;
+import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/zeebe/spring/client/config/legacy/ZeebeClientStarterAutoConfigurationTest.java
 import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/spring/client/config/legacy/CamundaClientStarterAutoConfigurationTest.java
 import org.springframework.boot.test.mock.mockito.MockBean;
+=======
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/zeebe/spring/client/config/legacy/ZeebeClientStarterAutoConfigurationTest.java
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/spring/client/config/legacy/CamundaClientStarterAutoConfigurationTest.java
+=======
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/zeebe/spring/client/config/legacy/ZeebeClientStarterAutoConfigurationTest.java
 import org.springframework.test.util.ReflectionTestUtils;
 
 @SpringBootTest
@@ -66,9 +82,17 @@ import org.springframework.test.util.ReflectionTestUtils;
     })
 public class CamundaClientStarterAutoConfigurationTest {
 
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/spring/client/config/legacy/CamundaClientStarterAutoConfigurationTest.java
   @Autowired private JsonMapper jsonMapper;
   @Autowired private CamundaClientProdAutoConfiguration autoConfiguration;
   @Autowired private ApplicationContext applicationContext;
+=======
+  @Autowired JsonMapper jsonMapper;
+  @Autowired ZeebeClientProdAutoConfiguration autoConfiguration;
+  @Autowired ApplicationContext applicationContext;
+  @Autowired ZeebeClientConfiguration zeebeClientConfiguration;
+  @MockitoBean ZeebeClient zeebeClient;
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/zeebe/spring/client/config/legacy/ZeebeClientStarterAutoConfigurationTest.java
 
   @Test
   void getJsonMapper() {
@@ -99,6 +123,7 @@ public class CamundaClientStarterAutoConfigurationTest {
 
   @Test
   void testClientConfiguration() {
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/spring/client/config/legacy/CamundaClientStarterAutoConfigurationTest.java
     final CamundaClientConfiguration configuration =
         applicationContext.getBean(CamundaClientConfiguration.class);
     assertThat(configuration.getGatewayAddress()).isEqualTo("localhost:1234");
@@ -110,6 +135,22 @@ public class CamundaClientStarterAutoConfigurationTest {
     assertThat(configuration.getDefaultJobWorkerMaxJobsActive()).isEqualTo(99);
     assertThat(configuration.getDefaultJobPollInterval()).isEqualTo(Duration.ofSeconds(99));
     assertThat(configuration.preferRestOverGrpc()).isFalse();
+=======
+    final ZeebeClient client = applicationContext.getBean(ZeebeClient.class);
+    assertThat(zeebeClientConfiguration.getGatewayAddress()).isEqualTo("localhost:1234");
+    assertThat(zeebeClientConfiguration.getGrpcAddress().toString())
+        .isEqualTo("https://localhost:1234");
+    assertThat(zeebeClientConfiguration.getRestAddress().toString())
+        .isEqualTo("https://localhost:8080");
+    assertThat(zeebeClientConfiguration.getDefaultRequestTimeout())
+        .isEqualTo(Duration.ofSeconds(99));
+    assertThat(zeebeClientConfiguration.getCaCertificatePath()).isEqualTo("aPath");
+    assertThat(zeebeClientConfiguration.isPlaintextConnectionEnabled()).isFalse();
+    assertThat(zeebeClientConfiguration.getDefaultJobWorkerMaxJobsActive()).isEqualTo(99);
+    assertThat(zeebeClientConfiguration.getDefaultJobPollInterval())
+        .isEqualTo(Duration.ofSeconds(99));
+    assertThat(zeebeClientConfiguration.preferRestOverGrpc()).isFalse();
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/zeebe/spring/client/config/legacy/ZeebeClientStarterAutoConfigurationTest.java
   }
 
   @EnableConfigurationProperties(CamundaClientProperties.class)

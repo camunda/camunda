@@ -13,7 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/spring/client/properties/CamundaClientLegacyPropertiesMappingsLoader.java
 package io.camunda.spring.client.properties;
+=======
+package io.camunda.zeebe.spring.client.properties;
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/zeebe/spring/client/properties/CamundaClientLegacyPropertiesMappingsLoader.java
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,7 +32,11 @@ public class CamundaClientLegacyPropertiesMappingsLoader {
     try (final InputStream inputStream =
         CamundaClientLegacyPropertiesMappingsLoader.class
             .getClassLoader()
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/spring/client/properties/CamundaClientLegacyPropertiesMappingsLoader.java
             .getResourceAsStream("camunda-client-legacy-property-mappings.properties")) {
+=======
+            .getResourceAsStream("zeebe-client-legacy-property-mappings.properties")) {
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/zeebe/spring/client/properties/CamundaClientLegacyPropertiesMappingsLoader.java
       properties.load(inputStream);
     } catch (final IOException e) {
       throw new RuntimeException("Error while loading legacy property mappings", e);

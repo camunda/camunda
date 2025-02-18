@@ -15,7 +15,11 @@
  */
 package io.camunda.spring.client.config;
 
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/spring/client/config/CamundaClientConfigurationImplSaasTest.java
 import static io.camunda.spring.client.configuration.CamundaClientConfigurationImpl.*;
+=======
+import static io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl.DEFAULT;
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/zeebe/spring/client/config/ZeebeClientConfigurationImplSaasTest.java
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClientConfiguration;
@@ -37,8 +41,8 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
     classes = {CamundaClientAllAutoConfiguration.class, CamundaClientProdAutoConfiguration.class},
     properties = {
       "camunda.client.mode=saas",
-      "camunda.client.cluster-id=12345",
-      "camunda.client.region=bru-2",
+      "camunda.client.cloud.cluster-id=12345",
+      "camunda.client.cloud.region=bru-2",
       "camunda.client.auth.client-id=my-client-id",
       "camunda.client.auth.client-secret=my-client-secret"
     })
@@ -60,9 +64,21 @@ public class CamundaClientConfigurationImplSaasTest {
   }
 
   @Test
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/spring/client/config/CamundaClientConfigurationImplSaasTest.java
   void shouldHaveGatewayAddress() throws URISyntaxException {
     assertThat(camundaClientConfiguration.getGrpcAddress())
         .isEqualTo(new URI("https://12345.bru-2.zeebe.camunda.io:443"));
+=======
+  void shouldHaveGrpcAddress() throws URISyntaxException {
+    assertThat(zeebeClientConfiguration.getGrpcAddress())
+        .isEqualTo(new URI("https://12345.bru-2.zeebe.camunda.io:443"));
+  }
+
+  @Test
+  void shouldHaveRestAddress() throws URISyntaxException {
+    assertThat(zeebeClientConfiguration.getRestAddress())
+        .isEqualTo(new URI("https://bru-2.zeebe.camunda.io:443/12345"));
+>>>>>>> 94c106bd (feat: new property mapping mechanism, just like in 8.8):clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/zeebe/spring/client/config/ZeebeClientConfigurationImplSaasTest.java
   }
 
   @Test
