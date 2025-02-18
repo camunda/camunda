@@ -9,6 +9,7 @@
 import {expect} from '@playwright/test';
 import {test} from './visual-fixtures';
 import schema from './resources/bigForm.json' assert {type: 'json'};
+import {URL_API_V1_PATTERN} from '@/constants';
 
 const MOCK_TASK = {
   id: 'task123',
@@ -42,7 +43,7 @@ test.describe('form-js integration', () => {
       width: 1920,
       height: 10000,
     });
-    await page.route(/^.*\/v1.*$/i, (route) => {
+    await page.route(URL_API_V1_PATTERN, (route) => {
       if (route.request().url().includes('v1/tasks/task123/variables/search')) {
         return route.fulfill({
           status: 200,
