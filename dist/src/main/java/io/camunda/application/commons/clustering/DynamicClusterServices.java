@@ -32,6 +32,7 @@ public class DynamicClusterServices {
   private final ClusterMembershipService clusterMembershipService;
   private final ClusterCommunicationService clusterCommunicationService;
   private final MeterRegistry meterRegistry;
+  private final BrokerClientTopologyMetrics brokerTopologyMetrics;
 
   @Autowired
   public DynamicClusterServices(
@@ -42,6 +43,7 @@ public class DynamicClusterServices {
     clusterMembershipService = atomixCluster.getMembershipService();
     clusterCommunicationService = atomixCluster.getCommunicationService();
     this.meterRegistry = meterRegistry;
+    brokerTopologyMetrics = BrokerClientTopologyMetrics.of(meterRegistry);
   }
 
   @Bean
@@ -62,8 +64,7 @@ public class DynamicClusterServices {
   @Bean
   public BrokerTopologyManager brokerTopologyManager() {
     final var brokerTopologyManager =
-        new BrokerTopologyManagerImpl(
-            clusterMembershipService::getMembers, BrokerClientTopologyMetrics.of(meterRegistry));
+        new BrokerTopologyManagerImpl(clusterMembershipService::getMembers, brokerTopologyMetrics);
     scheduler.submitActor(brokerTopologyManager).join();
     clusterMembershipService.addListener(brokerTopologyManager);
     return brokerTopologyManager;
