@@ -151,7 +151,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
       {
         "formKey": "0",
         "tenantId": "tenant-1",
-        "bpmnId": "bpmn-1",
+        "formId": "bpmn-1",
         "schema": "schema",
         "version": 1
       }
