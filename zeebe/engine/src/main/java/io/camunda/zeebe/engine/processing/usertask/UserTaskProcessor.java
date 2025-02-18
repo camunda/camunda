@@ -46,6 +46,9 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   private static final String USER_TASK_ASSIGNMENT_REJECTION =
       "Assignment of the User Task with key '%d' was denied by Task Listener";
 
+  private static final String USER_TASK_UPDATE_REJECTION =
+      "Update of the User Task with key '%d' was denied by Task Listener";
+
   private final UserTaskCommandProcessors commandProcessors;
   private final ProcessState processState;
   private final MutableUserTaskState userTaskState;
@@ -136,6 +139,8 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
           writeRejectionForCommand(command, persistedRecord, UserTaskIntent.COMPLETION_DENIED);
       case ASSIGNING, CLAIMING ->
           writeRejectionForCommand(command, persistedRecord, UserTaskIntent.ASSIGNMENT_DENIED);
+      case UPDATING ->
+          writeRejectionForCommand(command, persistedRecord, UserTaskIntent.UPDATE_DENIED);
       default ->
           throw new IllegalArgumentException(
               "Expected to reject operation for user task: '%d', but operation could not be determined from the task's current lifecycle state: '%s'"
@@ -283,6 +288,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     return switch (intent) {
       case COMPLETION_DENIED -> UserTaskIntent.COMPLETE;
       case ASSIGNMENT_DENIED -> UserTaskIntent.ASSIGN;
+      case UPDATE_DENIED -> UserTaskIntent.UPDATE;
       default ->
           throw new IllegalArgumentException("Unexpected user task intent: '%s'".formatted(intent));
     };
@@ -293,6 +299,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     return switch (intent) {
       case COMPLETION_DENIED -> USER_TASK_COMPLETION_REJECTION.formatted(userTaskKey);
       case ASSIGNMENT_DENIED -> USER_TASK_ASSIGNMENT_REJECTION.formatted(userTaskKey);
+      case UPDATE_DENIED -> USER_TASK_UPDATE_REJECTION.formatted(userTaskKey);
       default ->
           throw new IllegalArgumentException("Unexpected user task intent: '%s'".formatted(intent));
     };
