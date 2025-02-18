@@ -11,16 +11,26 @@ import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.PartitionRoleVa
 import io.camunda.zeebe.broker.client.impl.BrokerClientTopologyMetricsImpl;
 import io.micrometer.core.instrument.MeterRegistry;
 
+/**
+ * Metrics related to the cluster topology as seen by the current gateway. See {@link
+ * BrokerClientMetricsDoc} for documentation on the specific metrics.
+ */
 public interface BrokerClientTopologyMetrics {
   Noop NOOP = new Noop();
 
+  /** Returns an implementation which will register and updates metrics on the given registry */
   static BrokerClientTopologyMetrics of(final MeterRegistry meterRegistry) {
     return new BrokerClientTopologyMetricsImpl(meterRegistry);
   }
 
+  /**
+   * Sets the role of the broker with the given {@code brokerId} for the partition with the given
+   * {@code partitionId}
+   */
   void setRoleForPartition(
       final int partitionId, final int brokerId, final PartitionRoleValues roleValue);
 
+  /** An implementation which simply does nothing, mostly useful for testing. */
   final class Noop implements BrokerClientTopologyMetrics {
 
     @Override
