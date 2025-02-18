@@ -34,11 +34,9 @@ public final class LogStreamImpl implements LogStream, CommitListener {
   private final String logName;
   private final int partitionId;
   private final LogStorage logStorage;
-  private final LogStreamMetrics logStreamMetrics;
   private final FlowControl flowControl;
   private final Sequencer sequencer;
   private volatile boolean closed;
-  private final MeterRegistry meterRegistry;
 
   LogStreamImpl(
       final String logName,
@@ -50,12 +48,11 @@ public final class LogStreamImpl implements LogStream, CommitListener {
       final RateLimit writeRateLimit,
       final MeterRegistry meterRegistry) {
     this.logName = logName;
-    this.meterRegistry = meterRegistry;
 
     this.partitionId = partitionId;
     this.logStorage = logStorage;
-    logStreamMetrics = new LogStreamMetrics(partitionId);
-    flowControl = new FlowControl(logStreamMetrics, requestLimit, writeRateLimit);
+    flowControl =
+        new FlowControl(new LogStreamMetrics(meterRegistry), requestLimit, writeRateLimit);
     sequencer =
         new Sequencer(
             logStorage,
@@ -73,7 +70,6 @@ public final class LogStreamImpl implements LogStream, CommitListener {
     LOG.debug("Closing {} with {} readers", logName, readers.size());
     readers.forEach(LogStreamReader::close);
     logStorage.removeCommitListener(this);
-    logStreamMetrics.remove();
   }
 
   @Override

@@ -58,8 +58,8 @@ final class LogStorageAppenderTest {
 
   @BeforeEach
   void beforeEach() {
-    final var logStreamMetrics = new LogStreamMetrics(PARTITION_ID);
     final var meterRegistry = new SimpleMeterRegistry();
+    final var logStreamMetrics = new LogStreamMetrics(meterRegistry);
     scheduler.start();
 
     scheduler.start();
