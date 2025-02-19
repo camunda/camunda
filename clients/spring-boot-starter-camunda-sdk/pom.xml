@@ -222,6 +222,11 @@
       <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -241,6 +246,7 @@
             <dependency>io.camunda:zeebe-protocol-impl</dependency>
             <dependency>io.camunda:zeebe-protocol-jackson</dependency>
             <dependency>org.springframework.boot:spring-boot-configuration-processor</dependency>
+            <dependency>ch.qos.logback:logback-classic</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
