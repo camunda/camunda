@@ -2841,6 +2841,7 @@ public class TaskListenerTest {
       case ZeebeTaskListenerEventType.assigning -> JobListenerEventType.ASSIGNING;
       case ZeebeTaskListenerEventType.updating -> JobListenerEventType.UPDATING;
       case ZeebeTaskListenerEventType.completing -> JobListenerEventType.COMPLETING;
+      case ZeebeTaskListenerEventType.canceling -> JobListenerEventType.CANCELING;
       default ->
           throw new IllegalArgumentException(
               "Unsupported zeebe task listener event type: '%s'".formatted(eventType));

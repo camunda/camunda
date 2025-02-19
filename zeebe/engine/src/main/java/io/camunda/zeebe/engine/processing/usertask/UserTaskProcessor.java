@@ -85,7 +85,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   public void processRecord(final TypedRecord<UserTaskRecord> command) {
     final UserTaskIntent intent = (UserTaskIntent) command.getIntent();
     switch (intent) {
-      case ASSIGN, CLAIM, COMPLETE, UPDATE -> processOperationCommand(command, intent);
+      case ASSIGN, CLAIM, COMPLETE, UPDATE, CANCEL -> processOperationCommand(command, intent);
       case COMPLETE_TASK_LISTENER -> processCompleteTaskListener(command);
       case DENY_TASK_LISTENER -> processDenyTaskListener(command);
       default -> throw new UnsupportedOperationException("Unexpected user task intent: " + intent);
@@ -265,6 +265,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       case ASSIGN, CLAIM -> ZeebeTaskListenerEventType.assigning;
       case UPDATE -> ZeebeTaskListenerEventType.updating;
       case COMPLETE -> ZeebeTaskListenerEventType.completing;
+      case CANCEL -> ZeebeTaskListenerEventType.canceling;
       default ->
           throw new IllegalArgumentException("Unexpected user task intent: '%s'".formatted(intent));
     };
@@ -314,7 +315,8 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
           case CLAIMING -> UserTaskIntent.CLAIM;
           case UPDATING -> UserTaskIntent.UPDATE;
           case COMPLETING -> UserTaskIntent.COMPLETE;
-          case CREATING, CANCELING ->
+          case CANCELING -> UserTaskIntent.CANCEL;
+          case CREATING ->
               throw new UnsupportedOperationException(
                   "Conversion from '%s' user task lifecycle state to a user task command is not yet supported"
                       .formatted(lifecycleState));

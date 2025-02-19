@@ -227,7 +227,8 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
       case CLAIMING -> Either.right(UserTaskIntent.CLAIM);
       case UPDATING -> Either.right(UserTaskIntent.UPDATE);
       case COMPLETING -> Either.right(UserTaskIntent.COMPLETE);
-      case CREATING, CANCELING ->
+      case CANCELING -> Either.right(UserTaskIntent.CANCEL);
+      case CREATING ->
           Either.left(String.format(LIFECYCLE_STATE_CONVERSION_NOT_SUPPORTED_MSG, lifecycleState));
       default ->
           Either.left(String.format(UNEXPECTED_LIFECYCLE_STATE_CONVERSION_MSG, lifecycleState));
