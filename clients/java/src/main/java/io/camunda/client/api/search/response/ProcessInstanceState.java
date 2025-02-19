@@ -21,7 +21,7 @@ import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
 public enum ProcessInstanceState {
   ACTIVE,
   COMPLETED,
-  CANCELED,
+  TERMINATED,
   UNKNOWN_ENUM_VALUE;
 
   public static ProcessInstanceStateEnum toProtocolState(final ProcessInstanceState value) {

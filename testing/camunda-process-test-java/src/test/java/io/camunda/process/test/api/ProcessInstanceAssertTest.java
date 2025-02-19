@@ -85,7 +85,7 @@ public class ProcessInstanceAssertTest {
 
   private static ProcessInstanceDto newTerminatedProcessInstance(final long processInstanceKey) {
     final ProcessInstanceDto processInstance = newActiveProcessInstance(processInstanceKey);
-    processInstance.setState(ProcessInstanceState.CANCELED);
+    processInstance.setState(ProcessInstanceState.TERMINATED);
     processInstance.setEndDate(END_DATE);
     return processInstance;
   }
