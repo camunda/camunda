@@ -19,7 +19,7 @@ function useCurrentUser() {
 
       if (response !== null) {
         const currentUser = await response.json();
-        const permissions: unknown[] | undefined = currentUser?.permissions;
+        const permissions: unknown[] | undefined = currentUser?.permissions ?? [];
         return {
           ...currentUser,
           permissions:
