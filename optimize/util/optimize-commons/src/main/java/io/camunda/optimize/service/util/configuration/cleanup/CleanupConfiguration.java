@@ -29,25 +29,20 @@ public class CleanupConfiguration {
   @JsonProperty("processDataCleanup")
   private ProcessCleanupConfiguration processDataCleanupConfiguration;
 
-  @JsonProperty("decisionDataCleanup")
-  private DecisionCleanupConfiguration decisionCleanupConfiguration;
-
   @JsonProperty("externalVariableCleanup")
   private ExternalVariableCleanupConfiguration externalVariableCleanupConfiguration;
 
   public CleanupConfiguration(final String cronTrigger, final Period ttl) {
-    this(cronTrigger, ttl, new ProcessCleanupConfiguration(), new DecisionCleanupConfiguration());
+    this(cronTrigger, ttl, new ProcessCleanupConfiguration());
   }
 
   public CleanupConfiguration(
       final String cronTrigger,
       final Period ttl,
-      final ProcessCleanupConfiguration processDataCleanupConfiguration,
-      final DecisionCleanupConfiguration decisionCleanupConfiguration) {
+      final ProcessCleanupConfiguration processDataCleanupConfiguration) {
     setCronTrigger(cronTrigger);
     this.ttl = ttl;
     this.processDataCleanupConfiguration = processDataCleanupConfiguration;
-    this.decisionCleanupConfiguration = decisionCleanupConfiguration;
   }
 
   protected CleanupConfiguration() {}
@@ -66,7 +61,7 @@ public class CleanupConfiguration {
   // not relevant for serialization but only for application logic
   @JsonIgnore
   public boolean isEnabled() {
-    return processDataCleanupConfiguration.isEnabled() || decisionCleanupConfiguration.isEnabled();
+    return processDataCleanupConfiguration.isEnabled();
   }
 
   public ProcessDefinitionCleanupConfiguration getProcessDefinitionCleanupConfigurationForKey(
@@ -81,17 +76,6 @@ public class CleanupConfiguration {
         keySpecificConfig
             .flatMap(config -> Optional.ofNullable(config.getCleanupMode()))
             .orElse(processDataCleanupConfiguration.getCleanupMode()));
-  }
-
-  public DecisionDefinitionCleanupConfiguration getDecisionDefinitionCleanupConfigurationForKey(
-      final String decisionDefinitionKey) {
-    final Optional<DecisionDefinitionCleanupConfiguration> keySpecificConfig =
-        Optional.ofNullable(decisionCleanupConfiguration)
-            .map(DecisionCleanupConfiguration::getDecisionDefinitionSpecificConfiguration)
-            .flatMap(map -> Optional.ofNullable(map.get(decisionDefinitionKey)));
-
-    return new DecisionDefinitionCleanupConfiguration(
-        keySpecificConfig.flatMap(config -> Optional.ofNullable(config.getTtl())).orElse(getTtl()));
   }
 
   public String getCronTrigger() {
@@ -120,16 +104,6 @@ public class CleanupConfiguration {
   public void setProcessDataCleanupConfiguration(
       final ProcessCleanupConfiguration processDataCleanupConfiguration) {
     this.processDataCleanupConfiguration = processDataCleanupConfiguration;
-  }
-
-  public DecisionCleanupConfiguration getDecisionCleanupConfiguration() {
-    return decisionCleanupConfiguration;
-  }
-
-  @JsonProperty("decisionDataCleanup")
-  public void setDecisionCleanupConfiguration(
-      final DecisionCleanupConfiguration decisionCleanupConfiguration) {
-    this.decisionCleanupConfiguration = decisionCleanupConfiguration;
   }
 
   public ExternalVariableCleanupConfiguration getExternalVariableCleanupConfiguration() {
@@ -164,8 +138,6 @@ public class CleanupConfiguration {
         + getTtl()
         + ", processDataCleanupConfiguration="
         + getProcessDataCleanupConfiguration()
-        + ", decisionCleanupConfiguration="
-        + getDecisionCleanupConfiguration()
         + ", externalVariableCleanupConfiguration="
         + getExternalVariableCleanupConfiguration()
         + ")";

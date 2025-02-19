@@ -701,14 +701,6 @@ historyCleanup:
     # 'myProcessDefinitionKey':
     #   ttl: 'P2M'
     #   cleanupMode: 'variables'
-  decisionDataCleanup:
-    # switch for the Camunda decision data cleanup, defaults to false
-    enabled: ${CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED:false}
-    # decision definition specific configuration parameters that will overwrite the general parameters (ttl)
-    # for the specific decisionDefinition key
-    perDecisionDefinitionConfig:
-    # 'myDecisionDefinitionKey':
-    #   ttl: 'P2M'
   externalVariableCleanup:
     # switch for the ingested variable data cleanup, defaults to false. Note that this cleans the external variable index,
     # not external variables already imported into process instances.
