@@ -241,14 +241,6 @@ historyCleanup:
     # 'myProcessDefinitionKey':
     #   ttl: 'P2M'
     #   cleanupMode: 'variables'
-  decisionDataCleanup:
-    # switch for the Camunda decision data cleanup, defaults to false
-    enabled: false
-    # decision definition specific configuration parameters that will overwrite the general parameters (ttl)
-    # for the specific decisionDefinition key
-    perDecisionDefinitionConfig:
-    # 'myDecisionDefinitionKey':
-    #   ttl: 'P2M'
 
 locales:
   # all locales available
