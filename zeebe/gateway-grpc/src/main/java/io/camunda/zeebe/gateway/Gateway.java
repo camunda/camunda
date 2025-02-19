@@ -29,6 +29,8 @@ import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.IdentityInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetrics.GatewayProtocol;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetricsImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.query.impl.QueryApiImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
@@ -53,7 +55,6 @@ import io.grpc.netty.NettyServerBuilder;
 import io.grpc.protobuf.StatusProto;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.grpc.MetricCollectingServerInterceptor;
-import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.netty.handler.ssl.SslContextBuilder;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -368,10 +369,6 @@ public final class Gateway implements CloseableSilently {
 
   private LongPollingActivateJobsHandler<ActivateJobsResponse> buildLongPollingHandler(
       final BrokerClient brokerClient) {
-    final var grpcRegistry = new CompositeMeterRegistry();
-    grpcRegistry.add(meterRegistry);
-    grpcRegistry.config().commonTags("gateway", "grpc");
-
     return LongPollingActivateJobsHandler.<ActivateJobsResponse>newBuilder()
         .setBrokerClient(brokerClient)
         .setMaxMessageSize(gatewayCfg.getNetwork().getMaxMessageSize().toBytes())
@@ -381,7 +378,7 @@ public final class Gateway implements CloseableSilently {
         .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
         .setNoJobsReceivedExceptionProvider(NO_JOBS_RECEIVED_EXCEPTION_PROVIDER)
         .setRequestCanceledExceptionProvider(REQUEST_CANCELED_EXCEPTION_PROVIDER)
-        .setMeterRegistry(grpcRegistry)
+        .setMetrics(new LongPollingMetricsImpl(meterRegistry, GatewayProtocol.GRPC))
         .build();
   }
 

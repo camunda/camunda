@@ -11,6 +11,8 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 
 public final class MetricsStep implements PartitionTransitionStep {
@@ -20,19 +22,9 @@ public final class MetricsStep implements PartitionTransitionStep {
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     final var transitionMeterRegistry =
         (CompositeMeterRegistry) context.getPartitionTransitionMeterRegistry();
-    final var startupMeterRegistry = context.getPartitionStartupMeterRegistry();
-    if (transitionMeterRegistry != null) {
-      // Clear all meters from the partition registry. Their values are invalid after the
-      // transition.
-      transitionMeterRegistry.clear();
-      // Remove the backing broker registry from the partition registry so that we can close the
-      // partition registry without closing the broker registry.
-      // This also increases reliability in case something holds on to the partition registry
-      // because any new meters will no longer be forwarded to the broker registry.
-      transitionMeterRegistry.remove(startupMeterRegistry);
-      transitionMeterRegistry.close();
-      context.setPartitionTransitionMeterRegistry(null);
-    }
+    MicrometerUtil.close(transitionMeterRegistry);
+    context.setPartitionTransitionMeterRegistry(null);
+
     return context.getConcurrencyControl().createCompletedFuture();
   }
 
@@ -40,12 +32,10 @@ public final class MetricsStep implements PartitionTransitionStep {
   public ActorFuture<Void> transitionTo(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     final var startupMeterRegistry = context.getPartitionStartupMeterRegistry();
-    final var transitionRegistry = new CompositeMeterRegistry();
-
-    // Wrap over the broker registry so that all meters are forwarded to the broker registry.
-    transitionRegistry.add(startupMeterRegistry);
-
+    final var transitionRegistry =
+        MicrometerUtil.wrap(startupMeterRegistry, PartitionKeyNames.tags(context.getPartitionId()));
     context.setPartitionTransitionMeterRegistry(transitionRegistry);
+
     return context.getConcurrencyControl().createCompletedFuture();
   }
 

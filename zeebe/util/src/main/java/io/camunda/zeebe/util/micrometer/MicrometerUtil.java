@@ -11,6 +11,7 @@ import io.camunda.zeebe.util.CloseableSilently;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.Builder;
 import io.micrometer.core.instrument.Timer.Sample;
@@ -117,6 +118,46 @@ public final class MicrometerUtil {
   }
 
   /**
+   * Returns a {@link CompositeMeterRegistry} using the same config as the given registry, which
+   * will forward all metrics to that registry.
+   *
+   * <p>NOTE: Micrometer does not support forwarding tags more than two levels down, so you always
+   * have to specify the tags again on every wrapped registry!
+   */
+  public static CompositeMeterRegistry wrap(final MeterRegistry wrapped, final Tags tags) {
+    final var registry =
+        wrapped != null
+            ? new CompositeMeterRegistry(wrapped.config().clock(), Collections.singleton(wrapped))
+            : new CompositeMeterRegistry();
+    registry.config().commonTags(tags);
+    return registry;
+  }
+
+  /**
+   * Marks this registry as discarded, clearing any metrics, closing it, and removing it from any of
+   * the wrapped registries.
+   *
+   * <p>Only use if you're sure you won't use this registry again.
+   */
+  public static void close(final MeterRegistry registry) {
+    if (registry == null) {
+      return;
+    }
+
+    // clearing must be done before closing, and before removing it from the parent registry,
+    // otherwise the metrics are not removed
+    registry.clear();
+
+    // we have to remove all wrapped registries before closing, otherwise closing the composite
+    // registry will also close the wrapped registries
+    if (registry instanceof final CompositeMeterRegistry c) {
+      c.getRegistries().forEach(c::remove);
+    }
+
+    registry.close();
+  }
+
+  /**
    * Produce an array with exponentially spaced values by a factor. Used to create similar buckets
    * to the prometheus function on Histograms "exponentialBuckets"
    *
@@ -170,6 +211,10 @@ public final class MicrometerUtil {
       public String asString() {
         return "partition";
       }
+    };
+
+    public static Tags tags(final int partitionId) {
+      return Tags.of(PARTITION.name(), String.valueOf(partitionId));
     }
   }
 }
