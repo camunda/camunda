@@ -546,38 +546,6 @@ es:
       className: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_INTERCEPTORPLUGINS_4_CLASSNAME:}
       jarPath: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_INTERCEPTORPLUGINS_4_JARPATH:}
 
-plugin:
-  # Defines the directory path in the local Optimize file system which should be checked for plugins
-  directory: ${PLUGIN_DIR:./plugin}
-  variableImport:
-    # Look in the given base package list for variable import adaption plugins.
-    # If empty, the import is not influenced.
-    basePackages: [ ]
-  engineRestFilter:
-    # Look in the given base package list for engine rest filter plugins.
-    # If empty, the REST calls are not influenced.
-    basePackages: [ ]
-  authenticationExtractor:
-    # Looks in the given base package list for authentication extractor plugins.
-    # If empty, the standard Optimize authentication mechanism is used.
-    basePackages: [ ]
-  decisionInputImport:
-    # Look in the given base package list for Decision input import adaption plugins.
-    # If empty, the import is not influenced.
-    basePackages: [ ]
-  decisionOutputImport:
-    # Look in the given base package list for Decision output import adaption plugins.
-    # If empty, the import is not influenced.
-    basePackages: [ ]
-  businessKeyImport:
-    # Look in the given base package list for business key import adaption plugins.
-    # If empty, the import is not influenced.
-    basePackages: [ ]
-  elasticsearchCustomHeader:
-    # Look in the given base package list for Elasticsearch custom header fetching plugins.
-    # If empty, ES requests are not influenced.
-    basePackages: [ ]
-
 serialization:
   # Define a custom date format that should be used for
   # fetching date data from the engine(should be the same as in the engine)
