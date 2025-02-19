@@ -14,7 +14,6 @@ import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.InstantSource;
 import java.util.Objects;
 
@@ -28,7 +27,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   private InstantSource clock;
   private Limit requestLimit;
   private RateLimit writeRateLimit;
-  private MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private MeterRegistry meterRegistry;
 
   @Override
   public LogStreamBuilder withActorSchedulingService(
@@ -103,6 +102,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
     Objects.requireNonNull(actorSchedulingService, "Must specify a actor scheduler");
     Objects.requireNonNull(logStorage, "Must specify a log storage");
     Objects.requireNonNull(clock, "Must specify a clock source");
+    Objects.requireNonNull(meterRegistry, "Must specify a meter registry");
 
     if (maxFragmentSize < MINIMUM_FRAGMENT_SIZE) {
       throw new IllegalArgumentException(

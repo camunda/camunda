@@ -65,19 +65,19 @@ public final class SyncLogStreamBuilder implements LogStreamBuilder {
   }
 
   @Override
-  public LogStreamBuilder withRequestLimit(final Limit requestLimit) {
+  public SyncLogStreamBuilder withRequestLimit(final Limit requestLimit) {
     delegate.withRequestLimit(requestLimit);
     return this;
   }
 
   @Override
-  public LogStreamBuilder withWriteRateLimit(final RateLimit writeRateLimiter) {
+  public SyncLogStreamBuilder withWriteRateLimit(final RateLimit writeRateLimiter) {
     delegate.withWriteRateLimit(writeRateLimiter);
     return this;
   }
 
   @Override
-  public LogStreamBuilder withMeterRegistry(final MeterRegistry meterRegistry) {
+  public SyncLogStreamBuilder withMeterRegistry(final MeterRegistry meterRegistry) {
     delegate.withMeterRegistry(meterRegistry);
     return this;
   }
