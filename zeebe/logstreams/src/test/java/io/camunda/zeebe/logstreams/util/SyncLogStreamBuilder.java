@@ -13,6 +13,7 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 
 public final class SyncLogStreamBuilder implements LogStreamBuilder {
@@ -64,14 +65,20 @@ public final class SyncLogStreamBuilder implements LogStreamBuilder {
   }
 
   @Override
-  public LogStreamBuilder withRequestLimit(final Limit requestLimit) {
+  public SyncLogStreamBuilder withRequestLimit(final Limit requestLimit) {
     delegate.withRequestLimit(requestLimit);
     return this;
   }
 
   @Override
-  public LogStreamBuilder withWriteRateLimit(final RateLimit writeRateLimiter) {
+  public SyncLogStreamBuilder withWriteRateLimit(final RateLimit writeRateLimiter) {
     delegate.withWriteRateLimit(writeRateLimiter);
+    return this;
+  }
+
+  @Override
+  public SyncLogStreamBuilder withMeterRegistry(final MeterRegistry meterRegistry) {
+    delegate.withMeterRegistry(meterRegistry);
     return this;
   }
 
