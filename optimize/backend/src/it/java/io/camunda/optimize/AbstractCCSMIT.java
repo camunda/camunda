@@ -106,6 +106,10 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     return !isZeebeVersionPre83();
   }
 
+  protected static boolean isZeebeVersionPre87() {
+    return !isZeebeVersion87OrLater();
+  }
+
   @BeforeEach
   public void setupZeebeImportAndReloadConfiguration() {
     final String embeddedZeebePrefix = zeebeExtension.getZeebeRecordPrefix();
