@@ -362,7 +362,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/stable/8.7'
     concurrency:
-      group: deploy-docker-snapshot
+      group: deploy-docker-snapshot8.7
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
