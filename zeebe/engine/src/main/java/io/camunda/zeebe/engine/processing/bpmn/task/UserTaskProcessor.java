@@ -49,7 +49,8 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   public UserTaskProcessor(
       final BpmnBehaviors bpmnBehaviors,
       final BpmnStateTransitionBehavior stateTransitionBehavior,
-      final Writers writers, final UserTaskState userTaskState) {
+      final Writers writers,
+      final UserTaskState userTaskState) {
     super(bpmnBehaviors, stateTransitionBehavior);
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
@@ -156,10 +157,10 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   }
 
   @Override
-  protected void onFinalizeTerminateInternal(final ExecutableUserTask element,
-      final BpmnElementContext context) {
+  protected void onFinalizeTerminateInternal(
+      final ExecutableUserTask element, final BpmnElementContext context) {
     userTaskBehavior.finalizeUserTaskCancellation(context);
-    incidentBehavior.resolveIncidents(context); // ? should it be before or after `canceling` UTLs
+    incidentBehavior.resolveIncidents(context); // ? should it be before or after `canceling` UTLs ?
 
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
     eventSubscriptionBehavior

@@ -876,23 +876,21 @@ public final class NativeUserTaskTest {
   @Test
   public void shouldCancelUserTaskWhenTerminating() {
     // given
-    ENGINE
-        .deployment()
-        .withXmlResource(process())
-        .deploy();
+    ENGINE.deployment().withXmlResource(process()).deploy();
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("foo", 10).create();
     RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey).await();
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
 
     // when
     ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
     assertThat(
-        RecordingExporter.processInstanceRecords()
-            .withProcessInstanceKey(processInstanceKey)
-            .limitToProcessInstanceTerminated())
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
@@ -901,10 +899,15 @@ public final class NativeUserTaskTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
 
     assertThat(
-        RecordingExporter.userTaskRecords().withProcessInstanceKey(processInstanceKey).onlyEvents()
-            .limit(r -> r.getIntent() == UserTaskIntent.CANCELED))
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .onlyEvents()
+                .limit(r -> r.getIntent() == UserTaskIntent.CANCELED))
         .extracting(Record::getIntent)
-        .containsExactly(UserTaskIntent.CREATING, UserTaskIntent.CREATED, UserTaskIntent.CANCELING,
+        .containsExactly(
+            UserTaskIntent.CREATING,
+            UserTaskIntent.CREATED,
+            UserTaskIntent.CANCELING,
             UserTaskIntent.CANCELED);
   }
 

@@ -45,7 +45,8 @@ public final class BpmnElementProcessors {
 
   public BpmnElementProcessors(
       final BpmnBehaviors bpmnBehaviors,
-      final BpmnStateTransitionBehavior stateTransitionBehavior, final Writers writers,
+      final BpmnStateTransitionBehavior stateTransitionBehavior,
+      final Writers writers,
       final MutableUserTaskState userTaskState) {
     // tasks
     processors.put(

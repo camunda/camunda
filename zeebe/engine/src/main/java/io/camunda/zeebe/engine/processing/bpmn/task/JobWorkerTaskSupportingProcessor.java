@@ -92,6 +92,5 @@ public abstract class JobWorkerTaskSupportingProcessor<T extends ExecutableJobWo
 
   protected abstract void onTerminateInternal(final T element, final BpmnElementContext context);
 
-  protected void onFinalizeTerminateInternal(final T element, final BpmnElementContext context) {
-  }
+  protected void onFinalizeTerminateInternal(final T element, final BpmnElementContext context) {}
 }
