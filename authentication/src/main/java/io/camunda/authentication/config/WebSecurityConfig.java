@@ -13,6 +13,7 @@ import com.google.common.collect.Sets;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.filters.TenantRequestAttributeFilter;
+import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
@@ -228,6 +229,12 @@ public class WebSecurityConfig {
   public FilterRegistrationBean<TenantRequestAttributeFilter>
       tenantRequestAttributeFilterRegistration(final MultiTenancyConfiguration configuration) {
     return new FilterRegistrationBean<>(new TenantRequestAttributeFilter(configuration));
+  }
+
+  @Bean
+  public FilterRegistrationBean<WebApplicationAuthorizationCheckFilter>
+      applicationAuthorizationFilterFilterRegistrationBean() {
+    return new FilterRegistrationBean<>(new WebApplicationAuthorizationCheckFilter());
   }
 
   private static boolean isBasicAuthRequest(final HttpServletRequest request) {
