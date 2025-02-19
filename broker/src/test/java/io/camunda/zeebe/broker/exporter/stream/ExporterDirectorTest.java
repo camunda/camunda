@@ -12,6 +12,7 @@ import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -61,6 +62,8 @@ public final class ExporterDirectorTest {
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
 
   @Rule public final ExporterRule rule = ExporterRule.activeExporter();
+  @Rule public final ExporterRule passiveExporterRule = ExporterRule.passiveExporter();
+
   private final List<ControlledTestExporter> exporters = new ArrayList<>();
   private final List<ExporterDescriptor> exporterDescriptors = new ArrayList<>();
 
@@ -251,12 +254,39 @@ public final class ExporterDirectorTest {
   }
 
   @Test
+  public void shouldIgnoreErrorsOnClose() throws Exception {
+    // given
+    startExporterDirector(exporterDescriptors);
+
+    // when -- closing the first exporter will throw an exception
+    doThrow(new RuntimeException()).when(exporters.get(0)).close();
+    rule.closeExporterDirector();
+
+    // then -- we still call close for both exporters, ignoring the exception
+    verify(exporters.get(0), TIMEOUT).close();
+    verify(exporters.get(1), TIMEOUT).close();
+  }
+
+  @Test
   public void shouldCloseAllExportersOnClose() throws Exception {
     // given
     startExporterDirector(exporterDescriptors);
 
     // when
     rule.closeExporterDirector();
+
+    // then
+    verify(exporters.get(0), TIMEOUT).close();
+    verify(exporters.get(1), TIMEOUT).close();
+  }
+
+  @Test
+  public void shouldCloseAllExportersOnCloseInPassiveMode() throws Exception {
+    // given
+    passiveExporterRule.startExporterDirector(exporterDescriptors);
+
+    // when
+    passiveExporterRule.closeExporterDirector();
 
     // then
     verify(exporters.get(0), TIMEOUT).close();
