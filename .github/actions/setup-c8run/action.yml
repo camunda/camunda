@@ -1,0 +1,224 @@
+---
+name: Setup c8run build
+description: Sets up the required stack to build, install, and run c8run
+
+inputs:
+  checkout:
+    description: Whether to check out source
+    required: false
+    default: true
+  os:
+    description: The OS to run the action on
+    required: false
+    default: ubuntu-latest
+  vault-address:
+    description: Vault URL to retrieve secrets from
+    required: false
+  vault-role-id:
+    description: Vault Role ID to use
+    required: false
+  vault-secret-id:
+    description: Vault Secret ID to use
+    required: false
+  source-build:
+    description: true if the camunda build should be built from source, false will build from latest camunda release
+    required: false
+    default: false
+  local-archive-build:
+    description: true if camunda platform should be taken from a local archive
+    required: false
+    default: false
+  repository:
+    description: The repository to build from
+    required: false
+    default: camunda/camunda
+  github-token:
+    description: The GitHub token to use to clone camunda
+    required: true
+
+outputs:
+  path-to-c8run-build:
+    description: The path to the c8run build
+
+env:
+  NODE_OPTIONS: "--max_old_space_size=4096"
+
+permissions:
+  actions: write
+  attestations: none
+  checks: write
+  contents: read
+  deployments: none
+  id-token: none
+  issues: none
+  discussions: none
+  packages: none
+  pages: none
+  pull-requests: none
+  repository-projects: none
+  security-events: none
+  statuses: write
+
+runs:
+  using: composite
+  steps:
+    - if: ${{ inputs.os == 'ubuntu-latest' }}
+      name: disable and stop mono-xsp4.service
+      shell: bash
+      run: |
+           sudo systemctl stop mono-xsp4.service || true
+           sudo systemctl disable mono-xsp4.service || true
+           sudo killall mono || true
+           sudo killall xsp4 || true
+
+    - if: ${{ inputs.checkout == 'true' }}
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        repository: ${{ inputs.repository }}
+        token: ${{ inputs.github-token }}
+
+    - name: Import Secrets
+      id: secrets
+      uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+      with:
+        url: ${{ inputs.vault-address }}
+        method: approle
+        roleId: ${{ inputs.vault-role-id }}
+        secretId: ${{ inputs.vault-secret-id }}
+        secrets: |
+          secret/data/products/distribution/ci NEXUS_USERNAME;
+          secret/data/products/distribution/ci NEXUS_PASSWORD;
+
+    - name: print architecture
+      run: arch
+      shell: bash
+
+    - uses: actions/setup-go@v5
+      with:
+        go-version: '>=1.23.1'
+        cache: false  # disabling since not working anyways without a cache-dependency-path specified
+
+    - uses: ./.github/actions/setup-build
+      if: ${{ inputs.source-build == 'true' }}
+      with:
+        vault-secret-id: ${{ inputs.vault-secret-id }}
+        vault-address: ${{ inputs.vault-address }}
+        vault-role-id: ${{ inputs.vault-role-id }}
+
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+
+    - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+      if: ${{ inputs.source-build == 'true' }}
+      with:
+        directory: ./tasklist/client
+
+    - name: Install node dependencies
+      if: ${{ inputs.source-build == 'true' }}
+      working-directory: ./tasklist/client
+      shell: bash
+      run: yarn
+
+    - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+      if: ${{ inputs.source-build == 'true' }}
+      with:
+        directory: ./operate/client
+
+    - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+      if: ${{ inputs.source-build == 'true' }}
+      with:
+        directory: identity/client
+
+    - name: Install node dependencies
+      if: ${{ inputs.source-build == 'true' }}
+      working-directory: ./operate/client
+      shell: bash
+      run: yarn
+
+    - name: Install node dependencies
+      if: ${{ inputs.source-build == 'true' }}
+      working-directory: ./identity/client
+      shell: bash
+      run: yarn
+
+    - uses: ./.github/actions/build-zeebe
+      if: ${{ inputs.source-build == 'true' }}
+      id: build-zeebe
+      with:
+        maven-extra-args: "-Dskip.fe.build=false"
+
+    - name: Copy zeebe build
+      if: ${{ inputs.source-build == 'true' }}
+      run: cp $distball ./c8run/
+      shell: bash
+      env:
+        distball: ${{ steps.build-zeebe.outputs.distball }}
+
+    - name: Get version number from zeebe archive
+      if: ${{ inputs.source-build == 'true' }}
+      run: echo CAMUNDA_VERSION=$( echo $distball | grep -o 'camunda-zeebe-.*' | sed 's/camunda-zeebe-//' | sed 's/\.tar\.gz//') >> $GITHUB_ENV
+      shell: bash
+      env:
+        distball: ${{ steps.build-zeebe.outputs.distball }}
+
+    - name: Get version of camunda-dist
+      if: ${{ inputs.local-archive-build == 'true' }}
+      run: echo CAMUNDA_VERSION=$(ls camunda-zeebe*.tar.gz | grep -o 'camunda-zeebe-.*' | sed 's/camunda-zeebe-//' | sed 's/\.tar\.gz//') >> $GITHUB_ENV
+      shell: bash
+      working-directory: ./c8run
+
+    - name: Build c8run
+      run: go build
+      shell: bash
+      working-directory: ./c8run
+
+    - name: make a package
+      run: ./c8run package
+      shell: bash
+      working-directory: ./c8run
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+        JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
+
+    - name: ls
+      run: ls
+      shell: bash
+      working-directory: ./c8run
+
+    - if: ${{ inputs.os == 'macos-13' }}
+      name: Set env
+      shell: bash
+      run: echo "JAVA_HOME=$(echo $JAVA_HOME_21_X64)" >> $GITHUB_ENV
+
+    - if: ${{ inputs.os == 'ubuntu-latest' }}
+      name: Linux - Run c8run
+      run: ./c8run start
+      shell: bash
+      working-directory: ./c8run
+      env:
+        JAVA_HOME: /usr/lib/jvm/temurin-21-jdk-amd64
+        JAVA_VERSION: 21.0.3
+
+    - if: ${{ startsWith(inputs.os, 'macos') }}
+      name: Mac - Run c8run
+      shell: bash
+      run: ./c8run start
+      working-directory: ./c8run
+      env:
+        JAVA_VERSION: 21.0.3
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: camunda8-run-build-${{ inputs.os }}
+        path: ./c8run/camunda8-run*
+        retention-days: 1
+
+    - name: define c8run filepath
+      id: path-to-build
+      run: echo "path-to-c8run-build=$( ls ./c8run/camunda8-run* )" >> $GITHUB_OUTPUT
+      shell: bash
+
