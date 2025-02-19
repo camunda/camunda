@@ -32,6 +32,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.asserts.grpc.ClientStatusExceptionAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.Status.Code;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -43,7 +44,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -53,14 +53,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Execution(ExecutionMode.CONCURRENT)
 class UnavailableBrokersTest {
-  static Gateway gateway;
-  static AtomixCluster cluster;
-  static ActorScheduler actorScheduler;
-  static CamundaClient client;
-  static BrokerClient brokerClient;
-  static JobStreamClient jobStreamClient;
-  static BrokerTopologyManagerImpl topologyManager;
-  @AutoClose private static final MeterRegistry registry = new SimpleMeterRegistry();
+  private static final MeterRegistry registry = new SimpleMeterRegistry();
+
+  private static Gateway gateway;
+  private static AtomixCluster cluster;
+  private static ActorScheduler actorScheduler;
+  private static CamundaClient client;
+  private static BrokerClient brokerClient;
+  private static JobStreamClient jobStreamClient;
+  private static BrokerTopologyManagerImpl topologyManager;
 
   @BeforeAll
   static void setUp() throws IOException {
@@ -77,7 +78,7 @@ class UnavailableBrokersTest {
     topologyManager =
         new BrokerTopologyManagerImpl(
             () -> cluster.getMembershipService().getMembers(),
-            new BrokerClientTopologyMetrics(new SimpleMeterRegistry()));
+            new BrokerClientTopologyMetrics(registry));
     actorScheduler.submitActor(topologyManager).join();
     cluster.getMembershipService().addListener(topologyManager);
 
@@ -88,7 +89,7 @@ class UnavailableBrokersTest {
             cluster.getEventService(),
             actorScheduler,
             topologyManager,
-            new BrokerClientRequestMetrics(new SimpleMeterRegistry()));
+            new BrokerClientRequestMetrics(registry));
     jobStreamClient = new JobStreamClientImpl(actorScheduler, cluster.getCommunicationService());
     jobStreamClient.start().join();
 
@@ -106,7 +107,7 @@ class UnavailableBrokersTest {
             jobStreamClient.streamer(),
             mock(UserServices.class),
             mock(PasswordEncoder.class),
-            new SimpleMeterRegistry());
+            registry);
     gateway.start().join();
 
     final String gatewayAddress = NetUtil.toSocketAddressString(networkCfg.toSocketAddress());
@@ -122,7 +123,8 @@ class UnavailableBrokersTest {
         jobStreamClient,
         topologyManager,
         actorScheduler,
-        () -> cluster.stop().join());
+        () -> cluster.stop().join(),
+        () -> MicrometerUtil.closeRegistry(registry));
   }
 
   @ParameterizedTest(name = "{0}")
