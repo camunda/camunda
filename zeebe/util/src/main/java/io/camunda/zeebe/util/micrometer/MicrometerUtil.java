@@ -10,16 +10,13 @@ package io.camunda.zeebe.util.micrometer;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Clock;
-import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.Builder;
 import io.micrometer.core.instrument.Timer.Sample;
-import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.time.Duration;
 import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
 
@@ -101,23 +98,11 @@ public final class MicrometerUtil {
     registry.close();
   }
 
-  public static CompositeMeterRegistry wrap(final MeterRegistry registry) {
-    return new CompositeMeterRegistry(registry.config().clock(), Collections.singleton(registry));
-  }
-
   /** Returns a timer builder pre-configured based on the given documentation. */
   public static Timer.Builder buildTimer(final ExtendedMeterDocumentation documentation) {
     return Timer.builder(documentation.getName())
         .description(documentation.getDescription())
         .serviceLevelObjectives(documentation.getTimerSLOs());
-  }
-
-  /** Returns a timer builder pre-configured based on the given documentation. */
-  public static DistributionSummary.Builder summary(
-      final ExtendedMeterDocumentation documentation) {
-    return DistributionSummary.builder(documentation.getName())
-        .description(documentation.getDescription())
-        .serviceLevelObjectives(documentation.getDistributionSLOs());
   }
 
   /**
