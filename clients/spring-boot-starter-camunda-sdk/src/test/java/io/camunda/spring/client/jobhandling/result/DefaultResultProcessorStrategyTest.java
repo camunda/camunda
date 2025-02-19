@@ -15,6 +15,9 @@
  */
 package io.camunda.spring.client.jobhandling.result;
 
+import static org.mockito.Mockito.mock;
+
+import io.camunda.zeebe.spring.client.bean.MethodInfo;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -24,12 +27,11 @@ class DefaultResultProcessorStrategyTest {
       new DefaultResultProcessorStrategy();
 
   @Test
-  void createProcessorShouldReturnDefaultProcessor() {
+  void createProcessorShouldReturnDefaultProcessor() throws NoSuchMethodException {
     // Given
-    final String inputValue = "input";
+    final MethodInfo methodInfo = mock(MethodInfo.class);
     // When
-    final ResultProcessor resultProcessor =
-        resultProcessorStrategy.createProcessor(inputValue.getClass());
+    final ResultProcessor resultProcessor = resultProcessorStrategy.createProcessor(methodInfo);
     // Then
     Assertions.assertTrue(resultProcessor instanceof DefaultResultProcessor);
   }

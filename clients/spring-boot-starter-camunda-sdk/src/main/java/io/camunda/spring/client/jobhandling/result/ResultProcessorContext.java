@@ -15,14 +15,22 @@
  */
 package io.camunda.spring.client.jobhandling.result;
 
-public interface ResultProcessor {
+import io.camunda.client.api.response.ActivatedJob;
 
-  @Deprecated
-  default Object process(final Object result) {
+public class ResultProcessorContext {
+  private final Object result;
+  private final ActivatedJob job;
+
+  public ResultProcessorContext(final Object result, final ActivatedJob job) {
+    this.result = result;
+    this.job = job;
+  }
+
+  public Object getResult() {
     return result;
   }
 
-  default Object process(final ResultProcessorContext context) {
-    return process(context.getResult());
+  public ActivatedJob getJob() {
+    return job;
   }
 }

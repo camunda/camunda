@@ -15,7 +15,16 @@
  */
 package io.camunda.spring.client.jobhandling.result;
 
+import io.camunda.zeebe.spring.client.bean.MethodInfo;
+
 public interface ResultProcessorStrategy {
 
-  ResultProcessor createProcessor(Class<?> resultType);
+  @Deprecated
+  default ResultProcessor createProcessor(final Class<?> resultType) {
+    return new DefaultResultProcessor();
+  }
+
+  default ResultProcessor createProcessor(final MethodInfo methodInfo) {
+    return createProcessor(methodInfo.getReturnType());
+  }
 }
