@@ -10,6 +10,7 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 import static io.camunda.tasklist.webapp.mapper.TaskMapper.TASK_DESCRIPTION;
 import static java.util.Objects.requireNonNullElse;
 
+import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.queries.TaskByCandidateUserOrGroup;
@@ -31,7 +32,6 @@ import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
-import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.tasklist.webapp.service.VariableService;
@@ -80,10 +80,10 @@ public class TaskController extends ApiErrorController {
   @Autowired private TaskService taskService;
   @Autowired private VariableService variableService;
   @Autowired private TaskMapper taskMapper;
-  @Autowired private UserReader userReader;
   @Autowired private IdentityAuthorizationService identityAuthorizationService;
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private TasklistPermissionServices permissionServices;
+  @Autowired private CamundaUserService camundaUserService;
 
   @Operation(
       summary = "Search tasks",
@@ -117,7 +117,7 @@ public class TaskController extends ApiErrorController {
         && tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()) {
       final List<String> listOfUserGroups = identityAuthorizationService.getUserGroups();
       if (!listOfUserGroups.contains(IdentityProperties.FULL_GROUP_ACCESS)) {
-        final String userName = userReader.getCurrentUser().getUserId();
+        final String userName = camundaUserService.getCurrentUser().userId();
         final TaskByCandidateUserOrGroup taskByCandidateUserOrGroup =
             new TaskByCandidateUserOrGroup();
         taskByCandidateUserOrGroup.setUserGroups(listOfUserGroups.toArray(String[]::new));
@@ -230,7 +230,25 @@ public class TaskController extends ApiErrorController {
   }
 
   private boolean hasAccessToTask(final LazySupplier<TaskDTO> taskSupplier) {
-    return true;
+    final String userName = camundaUserService.getCurrentUser().userId();
+    final List<String> listOfUserGroups = identityAuthorizationService.getUserGroups();
+    final var task = taskSupplier.get();
+    final boolean allUsersTask =
+        task.getCandidateUsers() == null && task.getCandidateGroups() == null;
+    final boolean candidateGroupTasks =
+        task.getCandidateGroups() != null
+            && !Collections.disjoint(Arrays.asList(task.getCandidateGroups()), listOfUserGroups);
+    final boolean candidateUserTasks =
+        task.getCandidateUsers() != null
+            && Arrays.asList(task.getCandidateUsers()).contains(userName);
+    final boolean assigneeTasks = task.getAssignee() != null && task.getAssignee().equals(userName);
+    final boolean noRestrictions = listOfUserGroups.contains(IdentityProperties.FULL_GROUP_ACCESS);
+
+    return candidateUserTasks
+        || assigneeTasks
+        || candidateGroupTasks
+        || allUsersTask
+        || noRestrictions;
   }
 
   @Operation(
