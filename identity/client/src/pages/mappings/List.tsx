@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-import { FC, useState } from "react";
+import { FC } from "react";
 import { Stack } from "@carbon/react";
 import { spacing06 } from "@carbon/elements";
 import { Edit, TrashCan } from "@carbon/react/icons";
@@ -27,7 +27,6 @@ import { searchMapping } from "src/utility/api/mappings";
 
 const List: FC = () => {
   const { t, Translate } = useTranslate();
-  const [, setSearch] = useState("");
   const {
     data: mappingSearchResults,
     loading,
@@ -75,7 +74,6 @@ const List: FC = () => {
         sortProperty="claimName"
         addEntityLabel={t("Create mapping")}
         onAddEntity={addMapping}
-        onSearch={setSearch}
         loading={loading}
         menuItems={[
           {

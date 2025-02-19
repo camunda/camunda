@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-import { FC, useState } from "react";
+import { FC } from "react";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
 import Page from "src/components/layout/Page";
@@ -25,7 +25,6 @@ import DeleteModal from "src/pages/roles/modals/DeleteModal";
 const List: FC = () => {
   const { t, Translate } = useTranslate();
   const navigate = useNavigate();
-  const [, setSearch] = useState("");
   const { data: roles, loading, reload, success } = useApi(searchRoles);
   const [addRole, addRoleModal] = useModal(AddModal, reload);
   const [editRole, editRoleModal] = useEntityModal(EditModal, reload);
@@ -58,7 +57,6 @@ const List: FC = () => {
         onEntityClick={showDetails}
         addEntityLabel={t("Create role")}
         onAddEntity={addRole}
-        onSearch={setSearch}
         loading={loading}
       />
       {success && (
