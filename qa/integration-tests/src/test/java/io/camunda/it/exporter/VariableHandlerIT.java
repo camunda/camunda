@@ -11,24 +11,22 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.filter.VariableFilter;
-import io.camunda.it.utils.BrokerITInvocationProvider;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.it.utils.MultiDbTest;
 import java.time.Duration;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.TestTemplate;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
 
-@ExtendWith(BrokerITInvocationProvider.class)
+@MultiDbTest
 public class VariableHandlerIT {
 
+  private static CamundaClient client;
   private static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
 
-  @TestTemplate
-  void shouldExportVariable(final TestStandaloneBroker testBroker) {
-    final var client = testBroker.newClientBuilder().build();
-
+  @Test
+  void shouldExportVariable() {
+    // given
     final var deployment =
         client
             .newDeployResourceCommand()
@@ -46,6 +44,7 @@ public class VariableHandlerIT {
             .join()
             .getProcessInstanceKey();
 
+    // when
     waitForVariables(client, f -> f.processInstanceKey(processInstanceKey));
 
     final var variables =
@@ -55,6 +54,7 @@ public class VariableHandlerIT {
             .send()
             .join();
 
+    // then
     assertThat(variables.items()).isNotEmpty();
     assertThat(variables.items().stream().filter(v -> v.getName().equals("smallVariable")).count())
         .isEqualTo(1);
@@ -66,10 +66,9 @@ public class VariableHandlerIT {
     assertThat(smallVariable.get().isTruncated()).isFalse();
   }
 
-  @TestTemplate
-  void shouldTruncateVariable(final TestStandaloneBroker testBroker) {
-    final var client = testBroker.newClientBuilder().build();
-
+  @Test
+  void shouldTruncateVariable() {
+    // given
     final var deployment =
         client
             .newDeployResourceCommand()
@@ -89,6 +88,7 @@ public class VariableHandlerIT {
             .join()
             .getProcessInstanceKey();
 
+    // when
     waitForVariables(client, f -> f.processInstanceKey(processInstanceKey));
 
     final var variables =
@@ -102,6 +102,7 @@ public class VariableHandlerIT {
             .send()
             .join();
 
+    // then
     assertThat(variables.items()).isNotEmpty();
     assertThat(variables.items().stream().filter(v -> v.getName().equals("largeVariable")).count())
         .isEqualTo(1);
@@ -114,10 +115,9 @@ public class VariableHandlerIT {
         .isEqualTo("\"" + largeValue.substring(0, DEFAULT_VARIABLE_SIZE_THRESHOLD - 1));
   }
 
-  @TestTemplate
-  void replaceTruncatedVariableWithSmallValue(final TestStandaloneBroker testBroker) {
-    final var client = testBroker.newClientBuilder().build();
-
+  @Test
+  void replaceTruncatedVariableWithSmallValue() {
+    // given
     final var deployment =
         client
             .newDeployResourceCommand()
@@ -160,12 +160,14 @@ public class VariableHandlerIT {
     assertThat(largeVariable.get().getFullValue()).isEqualTo("\"" + largeValue + "\"");
     assertThat(largeVariable.get().isTruncated()).isTrue();
 
+    // when
     client
         .newSetVariablesCommand(processInstanceKey)
         .variables(Map.of("largeVariable", "smallValue"))
         .send()
         .join();
 
+    // then
     waitForVariables(
         client,
         f -> f.processInstanceKey(processInstanceKey).name("largeVariable").isTruncated(false));
