@@ -96,6 +96,7 @@ operate-identity-mt-up:
 env-down:
 	@DATABASE=opensearch docker compose -f $(COMPOSE_FILE) down -v
 	@DATABASE=elasticsearch docker compose -f $(COMPOSE_FILE) down -v
+	@rm -rf ./data
 	@mvn clean
 
 .PHONY: env-status
