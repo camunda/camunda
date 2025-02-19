@@ -60,7 +60,7 @@ class UnavailableBrokersTest {
   static BrokerClient brokerClient;
   static JobStreamClient jobStreamClient;
   static BrokerTopologyManagerImpl topologyManager;
-  @AutoClose private static MeterRegistry registry = new SimpleMeterRegistry();
+  @AutoClose private static final MeterRegistry registry = new SimpleMeterRegistry();
 
   @BeforeAll
   static void setUp() throws IOException {
@@ -76,7 +76,8 @@ class UnavailableBrokersTest {
 
     topologyManager =
         new BrokerTopologyManagerImpl(
-            () -> cluster.getMembershipService().getMembers(), BrokerClientTopologyMetrics.NOOP);
+            () -> cluster.getMembershipService().getMembers(),
+            new BrokerClientTopologyMetrics(new SimpleMeterRegistry()));
     actorScheduler.submitActor(topologyManager).join();
     cluster.getMembershipService().addListener(topologyManager);
 
@@ -87,7 +88,7 @@ class UnavailableBrokersTest {
             cluster.getEventService(),
             actorScheduler,
             topologyManager,
-            BrokerClientRequestMetrics.NOOP);
+            new BrokerClientRequestMetrics(new SimpleMeterRegistry()));
     jobStreamClient = new JobStreamClientImpl(actorScheduler, cluster.getCommunicationService());
     jobStreamClient.start().join();
 

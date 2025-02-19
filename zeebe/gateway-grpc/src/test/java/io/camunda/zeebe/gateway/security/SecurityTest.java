@@ -172,7 +172,8 @@ final class SecurityTest {
     actorScheduler.start();
     topologyManager =
         new BrokerTopologyManagerImpl(
-            () -> atomix.getMembershipService().getMembers(), BrokerClientTopologyMetrics.NOOP);
+            () -> atomix.getMembershipService().getMembers(),
+            new BrokerClientTopologyMetrics(new SimpleMeterRegistry()));
     actorScheduler.submitActor(topologyManager).join();
 
     brokerClient =
@@ -182,7 +183,7 @@ final class SecurityTest {
             atomix.getEventService(),
             actorScheduler,
             topologyManager,
-            BrokerClientRequestMetrics.NOOP);
+            new BrokerClientRequestMetrics(new SimpleMeterRegistry()));
     jobStreamClient = new JobStreamClientImpl(actorScheduler, atomix.getCommunicationService());
     jobStreamClient.start().join();
 

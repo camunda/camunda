@@ -40,7 +40,7 @@ public final class BrokerClientConfiguration {
     this.cluster = cluster;
     this.scheduler = scheduler;
     this.topologyManager = topologyManager;
-    metrics = BrokerClientRequestMetrics.of(meterRegistry);
+    metrics = new BrokerClientRequestMetrics(meterRegistry);
   }
 
   @Bean(destroyMethod = "close")

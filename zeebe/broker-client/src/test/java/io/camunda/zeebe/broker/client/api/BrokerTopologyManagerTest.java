@@ -48,7 +48,7 @@ final class BrokerTopologyManagerTest {
     members = new HashSet<>();
     topologyManager =
         new BrokerTopologyManagerImpl(
-            () -> members, BrokerClientTopologyMetrics.of(new SimpleMeterRegistry()));
+            () -> members, new BrokerClientTopologyMetrics(new SimpleMeterRegistry()));
     actorSchedulerRule.submitActor(topologyManager);
     actorSchedulerRule.workUntilDone();
   }
