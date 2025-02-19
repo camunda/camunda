@@ -11,16 +11,20 @@ import static io.camunda.client.api.search.response.UserTaskState.COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.DeployResourceCommandStep1;
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
-import io.camunda.it.exporter.ExporterTestUtil;
 import io.camunda.it.utils.MultiDbTest;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -39,7 +43,7 @@ public class UserTaskIT {
 
     // when
     final var processDefinitionId =
-        ExporterTestUtil.createAndDeployUserTaskProcess(
+        createAndDeployUserTaskProcess(
             client,
             "test-process-id",
             "zeebe-task",
@@ -51,9 +55,9 @@ public class UserTaskIT {
                     .zeebeCandidateUsers("demoUsers")
                     .zeebeCandidateGroups("demoGroup"));
 
-    final var processInstanceId = ExporterTestUtil.startProcessInstance(client, "test-process-id");
+    final var processInstanceId = startProcessInstance(client, "test-process-id");
 
-    ExporterTestUtil.waitForProcessTasks(client, processInstanceId);
+    waitForProcessTasks(client, processInstanceId);
 
     final var userTasks = fetchUserTasks(client, processInstanceId);
     // then
@@ -201,11 +205,11 @@ public class UserTaskIT {
   @Test
   void shouldExportUserTaskVariable() {
     // when
-    ExporterTestUtil.createAndDeployUserTaskProcess(
+    createAndDeployUserTaskProcess(
         client, "test-process-id", "zeebe-task", AbstractUserTaskBuilder::zeebeUserTask);
 
     final var processInstanceId =
-        ExporterTestUtil.startProcessInstance(
+        startProcessInstance(
             client,
             "test-process-id",
             Map.of(
@@ -218,7 +222,7 @@ public class UserTaskIT {
                 "bigVariable",
                 "a".repeat(8192)));
 
-    ExporterTestUtil.waitForProcessTasks(client, processInstanceId);
+    waitForProcessTasks(client, processInstanceId);
 
     // then
     var tasks =
@@ -295,15 +299,15 @@ public class UserTaskIT {
     // given
 
     // when
-    ExporterTestUtil.createAndDeployUserTaskProcess(
+    createAndDeployUserTaskProcess(
         client,
         "test-process-id",
         "zeebe-task",
         t -> t.zeebeUserTask().zeebeExternalFormReference("test-form-reference"));
 
-    final var processInstanceId = ExporterTestUtil.startProcessInstance(client, "test-process-id");
+    final var processInstanceId = startProcessInstance(client, "test-process-id");
 
-    ExporterTestUtil.waitForProcessTasks(client, processInstanceId);
+    waitForProcessTasks(client, processInstanceId);
 
     final var userTasks = fetchUserTasks(client, processInstanceId);
 
@@ -325,15 +329,15 @@ public class UserTaskIT {
             .getFirst();
 
     // when
-    ExporterTestUtil.createAndDeployUserTaskProcess(
+    createAndDeployUserTaskProcess(
         client,
         "test-process-id",
         "zeebe-task",
         t -> t.zeebeUserTask().zeebeFormId(form.getFormId()));
 
-    final var processInstanceId = ExporterTestUtil.startProcessInstance(client, "test-process-id");
+    final var processInstanceId = startProcessInstance(client, "test-process-id");
 
-    ExporterTestUtil.waitForProcessTasks(client, processInstanceId);
+    waitForProcessTasks(client, processInstanceId);
 
     final var userTasks = fetchUserTasks(client, processInstanceId);
 
@@ -356,21 +360,74 @@ public class UserTaskIT {
   public static Long startZeebeUserTaskProcess(
       final CamundaClient client, final Consumer<UserTaskBuilder> taskParams) {
     if (taskParams != null) {
-      ExporterTestUtil.createAndDeployUserTaskProcess(
+      createAndDeployUserTaskProcess(
           client,
           "test-process-id",
           "zeebe-task",
           AbstractUserTaskBuilder::zeebeUserTask,
           taskParams);
     } else {
-      ExporterTestUtil.createAndDeployUserTaskProcess(
+      createAndDeployUserTaskProcess(
           client, "test-process-id", "zeebe-task", AbstractUserTaskBuilder::zeebeUserTask);
     }
-    final var processInstanceKey = ExporterTestUtil.startProcessInstance(client, "test-process-id");
+    final var processInstanceKey = startProcessInstance(client, "test-process-id");
 
-    ExporterTestUtil.waitForProcessTasks(client, processInstanceKey);
+    waitForProcessTasks(client, processInstanceKey);
 
     return processInstanceKey;
+  }
+
+  @SafeVarargs
+  public static String createAndDeployUserTaskProcess(
+      final CamundaClient camundaClient,
+      final String processId,
+      final String flowNodeBpmnId,
+      final Consumer<UserTaskBuilder>... taskModifiers) {
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent("start")
+            .userTask(
+                flowNodeBpmnId,
+                task -> Arrays.stream(taskModifiers).forEach(modifier -> modifier.accept(task)))
+            .endEvent()
+            .done();
+    final DeployResourceCommandStep1.DeployResourceCommandStep2 deployProcessCommandStep1 =
+        camundaClient.newDeployResourceCommand().addProcessModel(process, processId + ".bpmn");
+    final DeploymentEvent deploymentEvent = deployProcessCommandStep1.send().join();
+    return String.valueOf(deploymentEvent.getProcesses().getFirst().getProcessDefinitionKey());
+  }
+
+  public static void waitForProcessTasks(
+      final CamundaClient client, final Long processInstanceKey) {
+
+    Awaitility.await()
+        .ignoreExceptions()
+        .timeout(Duration.ofSeconds(30))
+        .until(
+            () ->
+                !client
+                    .newUserTaskQuery()
+                    .filter(f -> f.processInstanceKey(processInstanceKey))
+                    .send()
+                    .join()
+                    .items()
+                    .isEmpty());
+  }
+
+  public static Long startProcessInstance(final CamundaClient client, final String processId) {
+    return startProcessInstance(client, processId, Map.of());
+  }
+
+  public static Long startProcessInstance(
+      final CamundaClient client, final String processId, final Map<String, Object> variables) {
+    return client
+        .newCreateInstanceCommand()
+        .bpmnProcessId(processId)
+        .latestVersion()
+        .variables(variables)
+        .send()
+        .join()
+        .getProcessInstanceKey();
   }
 
   public static void waitForTask(

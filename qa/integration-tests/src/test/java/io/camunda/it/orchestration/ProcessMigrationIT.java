@@ -5,9 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.exporter;
+package io.camunda.it.orchestration;
 
-import static io.camunda.it.exporter.ExporterTestUtil.startProcessInstance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -102,7 +101,7 @@ public class ProcessMigrationIT {
         deployProcessFromClasspath(client, "process/migration-process_v1.bpmn");
     final var definitionKey2 =
         deployProcessFromClasspath(client, "process/migration-process_v2.bpmn");
-    final var processInstanceKey = startProcessInstance(client, "migration-process_v1");
+    final var processInstanceKey = startProcessInstance(client, "migration-process_v1", Map.of());
     throwIncident(client, processInstanceKey, "taskB", "error", "error message");
 
     // when
@@ -135,7 +134,7 @@ public class ProcessMigrationIT {
         deployProcessFromClasspath(client, "process/migration-process_v1.bpmn");
     final var definitionKey2 =
         deployProcessFromClasspath(client, "process/migration-process_v2.bpmn");
-    final var processInstanceKey = startProcessInstance(client, "migration-process_v1");
+    final var processInstanceKey = startProcessInstance(client, "migration-process_v1", Map.of());
     throwIncident(client, processInstanceKey, "taskB", "error", "error message");
     resolveIncidents(client, processInstanceKey);
 
@@ -372,5 +371,17 @@ public class ProcessMigrationIT {
               final var result = client.newUserTaskQuery().filter(filter).send().join().items();
               asserter.accept(result);
             });
+  }
+
+  public static Long startProcessInstance(
+      final CamundaClient client, final String processId, final Map<String, Object> variables) {
+    return client
+        .newCreateInstanceCommand()
+        .bpmnProcessId(processId)
+        .latestVersion()
+        .variables(variables)
+        .send()
+        .join()
+        .getProcessInstanceKey();
   }
 }
