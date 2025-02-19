@@ -26,6 +26,9 @@ public final class UserTaskCancelingApplier
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
     userTaskState.updateUserTaskLifecycleState(key, LifecycleState.CANCELING);
+    // cleanup intermediate state created by the pending transition
+    // that was triggered before user task cancellation
+    userTaskState.deleteIntermediateState(key);
     userTaskState.storeIntermediateState(value, LifecycleState.CANCELING);
   }
 }
