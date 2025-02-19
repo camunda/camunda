@@ -62,7 +62,7 @@ describe('<Tasks />', () => {
   it('should load more tasks', async () => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -106,7 +106,7 @@ describe('<Tasks />', () => {
 
   it('should use tasklist api raw filters', async () => {
     nodeMockServer.use(
-      http.get('/v1/internal/users/current', () => {
+      http.get('/v2/authentication/me', () => {
         return HttpResponse.json(userMocks.currentUser);
       }),
       http.post<never, {candidateUser: string; foo: unknown}>(
@@ -133,7 +133,7 @@ describe('<Tasks />', () => {
 
   it('should select the first open task when auto-select is enabled and tasks are in the list', async () => {
     nodeMockServer.use(
-      http.get('/v1/internal/users/current', () => {
+      http.get('/v2/authentication/me', () => {
         return HttpResponse.json(userMocks.currentUser);
       }),
       http.post<never, never>('/v1/tasks/search', async () => {
@@ -162,7 +162,7 @@ describe('<Tasks />', () => {
 
   it('should go to the inital page when auto-select is enabled and no tasks are available', async () => {
     nodeMockServer.use(
-      http.get('/v1/internal/users/current', () => {
+      http.get('/v2/authentication/me', () => {
         return HttpResponse.json(userMocks.currentUser);
       }),
       http.post<never, {candidateUser: string; foo: unknown}>(

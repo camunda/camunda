@@ -6,14 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-type NonEmptyArray<T> = [T, ...T[]];
-
-type Permissions = NonEmptyArray<'read' | 'write'>;
-
 type CurrentUser = {
   userId: string;
   displayName: string | null;
-  permissions: Permissions;
+
   roles: string[] | null;
   salesPlanType: string | null;
   c8Links: {
@@ -155,7 +151,6 @@ export type {
   Task,
   TaskState,
   Form,
-  Permissions,
   Process,
   ProcessInstance,
   TasksSearchBody,

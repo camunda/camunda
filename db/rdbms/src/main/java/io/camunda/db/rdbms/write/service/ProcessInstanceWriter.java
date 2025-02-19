@@ -14,6 +14,7 @@ import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import java.time.OffsetDateTime;
 import java.util.function.Function;
@@ -30,6 +31,7 @@ public class ProcessInstanceWriter {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
             processInstance.processInstanceKey(),
             "io.camunda.db.rdbms.sql.ProcessInstanceMapper.insert",
             processInstance));
@@ -39,6 +41,7 @@ public class ProcessInstanceWriter {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.PROCESS_INSTANCE,
+            WriteStatementType.UPDATE,
             processInstance.processInstanceKey(),
             "io.camunda.db.rdbms.sql.ProcessInstanceMapper.update",
             processInstance));
@@ -53,6 +56,7 @@ public class ProcessInstanceWriter {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.PROCESS_INSTANCE,
+              WriteStatementType.UPDATE,
               key,
               "io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateStateAndEndDate",
               dto));
@@ -66,6 +70,7 @@ public class ProcessInstanceWriter {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.PROCESS_INSTANCE,
+              WriteStatementType.UPDATE,
               key,
               "io.camunda.db.rdbms.sql.ProcessInstanceMapper.incrementIncidentCount",
               key));
@@ -79,6 +84,7 @@ public class ProcessInstanceWriter {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.PROCESS_INSTANCE,
+              WriteStatementType.UPDATE,
               key,
               "io.camunda.db.rdbms.sql.ProcessInstanceMapper.decrementIncidentCount",
               key));

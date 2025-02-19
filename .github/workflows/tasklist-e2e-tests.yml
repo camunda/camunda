@@ -45,17 +45,6 @@ jobs:
         ports:
           - 9200:9200
           - 9300:9300
-      zeebe:
-        image: camunda/zeebe:SNAPSHOT
-        env:
-          JAVA_TOOL_OPTIONS: "-Xms512m -Xmx512m"
-          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME: io.camunda.exporter.CamundaExporter
-          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL: http://elasticsearch:9200
-          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE: 100
-          ZEEBE_BROKER_BACKPRESSURE_ENABLED: false
-        ports:
-          - 26500:26500
-          - 8089:8080
     steps:
       - name: Check out repository code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -117,7 +106,12 @@ jobs:
         # we're excluding optimize from the build, not to impact this tasklist's workflow.
         run: ./mvnw clean install -T1C -DskipChecks -PskipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Start Tasklist
-        run: ./mvnw -q -B spring-boot:start -pl dist -Dspring-boot.run.main-class=io.camunda.application.StandaloneTasklist -Dspring-boot.run.fork=true -Dspring-boot.run.profiles=e2e-test -Dspring-boot.run.arguments="--camunda.tasklist.cloud.clusterId=449ac2ad-d3c6-4c73-9c68-7752e39ae616 --camunda.tasklist.csrfPreventionEnabled=false --camunda.tasklist.zeebe.compatibility.enabled=true --camunda.security.authentication.basic.allowUnauthenticatedApiAccess=true"
+        run: >
+          ./mvnw -q -B spring-boot:start -pl dist
+          -Dspring-boot.run.main-class=io.camunda.application.StandaloneCamunda
+          -Dspring-boot.run.fork=true
+          -Dspring-boot.run.jvmArguments="-Dspring.profiles.active=e2e-test,tasklist,consolidated-auth,broker -Dzeebe.broker.exporters.camundaexporter.classname=io.camunda.exporter.CamundaExporter -Dzeebe.broker.exporters.camundaexporter.args.connect.url=http://localhost:9200 -Dzeebe.broker.exporters.camundaexporter.args.bulk.size=100 -Dzeebe.broker.exporters.camundaexporter.args.index.shouldWaitForImporters=false -Dzeebe.broker.backpressure.enabled=false"
+          -Dspring-boot.run.arguments="--camunda.tasklist.cloud.clusterId=449ac2ad-d3c6-4c73-9c68-7752e39ae616 --camunda.tasklist.csrfPreventionEnabled=false"
       - name: Python setup
         if: always()
         uses: actions/setup-python@v5
@@ -126,8 +120,6 @@ jobs:
       - name: Run tests
         working-directory: ./tasklist/client
         run: yarn run test:e2e:ci
-        env:
-          ZEEBE_GATEWAY_ADDRESS: localhost:26500
       - uses: actions/upload-artifact@v4
         if: always()
         with:
