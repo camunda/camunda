@@ -775,11 +775,6 @@ onboarding:
 
 # Configuration of application internal in-memory caches
 caches:
-  # This cache is used to hold the list of available tenants.
-  # It helps to optimize the performance for reads on definitions, reports and collections.
-  tenants:
-    # the time a read result will be cached
-    defaultTtlMillis: 10000
   # This cache is used to cache the list of engines a particular definition is available on by definition key.
   # It helps to optimize the performance for listings of reports, collection data sources and collection roles.
   definitionEngines:
