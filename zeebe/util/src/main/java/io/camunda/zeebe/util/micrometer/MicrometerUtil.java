@@ -106,30 +106,6 @@ public final class MicrometerUtil {
   }
 
   /**
-   * Returns a {@link CompositeMeterRegistry} using the same config as the given registry, which
-   * will forward all metrics to that registry. This means if the forwardee has some common tags,
-   * they will be applied to the metrics you create on the returned registry.
-   */
-  public static CompositeMeterRegistry wrap(final MeterRegistry registry) {
-    return new CompositeMeterRegistry(registry.config().clock(), Collections.singleton(registry));
-  }
-
-  /** Returns a timer builder pre-configured based on the given documentation. */
-  public static Timer.Builder timer(final ExtendedMeterDocumentation documentation) {
-    return Timer.builder(documentation.getName())
-        .description(documentation.getDescription())
-        .serviceLevelObjectives(documentation.getTimerSLOs());
-  }
-
-  /** Returns a timer builder pre-configured based on the given documentation. */
-  public static DistributionSummary.Builder summary(
-      final ExtendedMeterDocumentation documentation) {
-    return DistributionSummary.builder(documentation.getName())
-        .description(documentation.getDescription())
-        .serviceLevelObjectives(documentation.getDistributionSLOs());
-  }
-
-  /**
    * Produce an array with exponentially spaced values by a factor. Used to create similar buckets
    * to the prometheus function on Histograms "exponentialBuckets"
    *
