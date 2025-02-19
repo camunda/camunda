@@ -49,7 +49,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 @Execution(ExecutionMode.CONCURRENT)
 class UnavailableBrokersTest {
-  private static final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private static final MeterRegistry REGISTRY = new SimpleMeterRegistry();
   private static Gateway gateway;
   private static AtomixCluster cluster;
   private static ActorScheduler actorScheduler;
@@ -73,7 +73,7 @@ class UnavailableBrokersTest {
     topologyManager =
         new BrokerTopologyManagerImpl(
             () -> cluster.getMembershipService().getMembers(),
-            new BrokerClientTopologyMetrics(meterRegistry));
+            new BrokerClientTopologyMetrics(REGISTRY));
     actorScheduler.submitActor(topologyManager).join();
     cluster.getMembershipService().addListener(topologyManager);
 
@@ -84,7 +84,7 @@ class UnavailableBrokersTest {
             cluster.getEventService(),
             actorScheduler,
             topologyManager,
-            new BrokerClientRequestMetrics(meterRegistry));
+            new BrokerClientRequestMetrics(REGISTRY));
     jobStreamClient = new JobStreamClientImpl(actorScheduler, cluster.getCommunicationService());
     jobStreamClient.start().join();
 
@@ -110,7 +110,7 @@ class UnavailableBrokersTest {
         topologyManager,
         actorScheduler,
         () -> cluster.stop().join(),
-        () -> MicrometerUtil.closeRegistry(meterRegistry));
+        () -> MicrometerUtil.closeRegistry(REGISTRY));
   }
 
   @ParameterizedTest(name = "{0}")
