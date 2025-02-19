@@ -1,0 +1,201 @@
+name: "C8Run: source build/test"
+
+on:
+  schedule:
+    - cron: "0 23 * * *"
+
+permissions:
+  actions: write
+  attestations: none
+  checks: write
+  contents: read
+  deployments: none
+  id-token: none
+  issues: none
+  discussions: none
+  packages: none
+  pages: none
+  pull-requests: none
+  repository-projects: none
+  security-events: none
+  statuses: write
+
+jobs:
+  linting:
+    name: C8Run linting
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+        go-version: '>=1.23.1'
+        cache: false  # disabling since not working anyways without a cache-dependency-path specified
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@ec5d18412c0aeab7936cb16880d708ba2a64e1ae # v6.2.0
+        with:
+          working-directory: ./c8run
+  test_c8run:
+    strategy:
+      matrix:
+        # macos-latest is ARM, mac os 13 will execute on x86 runner.
+        os: [ubuntu-latest, macos-latest, macos-13]
+    name: C8Run Test ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Setup C8Run
+        uses: ./.github/actions/setup-c8run
+        with:
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          os: ${{ matrix.os }}
+					github-token: ${{ github.token }}
+          source-build: true
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./c8run/e2e_tests
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+        working-directory: ./c8run/e2e_tests
+
+      - name: Unit tests
+        run: go test
+        working-directory: ./c8run
+
+      - name: Run Playwright tests
+        run: npx playwright test
+        working-directory: ./c8run/e2e_tests
+
+      - name: Run v2 API endpoint test
+        run: ./api_tests.sh
+        working-directory: ./c8run/e2e_tests
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.os }}
+          path: ./c8run/e2e_tests/playwright-report
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: c8run-logs-${{ matrix.os }}
+          path: ./c8run/log/*.log
+          retention-days: 10
+
+
+					test_c8run_windows:
+						name: C8Run Test Windows
+						runs-on: windows-latest
+						timeout-minutes: 15
+						steps:
+							- uses: actions/checkout@v4
+				
+							- name: Import Secrets
+								id: secrets
+								uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+								with:
+									url: ${{ secrets.VAULT_ADDR }}
+									method: approle
+									roleId: ${{ secrets.VAULT_ROLE_ID }}
+									secretId: ${{ secrets.VAULT_SECRET_ID }}
+									secrets: |
+										secret/data/products/distribution/ci NEXUS_USERNAME;
+										secret/data/products/distribution/ci NEXUS_PASSWORD;
+				
+							- uses: actions/setup-go@v5
+								with:
+									go-version: '>=1.23.1'
+									cache: false  # disabling since not working anyways without a cache-dependency-path specified
+				
+							- name: Build c8run
+								run: go build
+								working-directory: .\c8run
+				
+							- name: make a package
+								run: .\c8run.exe package
+								working-directory: .\c8run
+								env:
+									GH_TOKEN: ${{ github.token }}
+									JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+									JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
+				
+							- name: ls
+								run: ls
+								working-directory: .\c8run
+				
+							- name: ls
+								run: ls
+								working-directory: .\c8run\elasticsearch-8.13.4
+				
+							- uses: actions/setup-java@v4
+								with:
+									distribution: 'temurin'
+									java-version: '22'
+				
+							- name: Set env
+								run: echo "JAVA_HOME=$env:JAVA_HOME_22_x64" >> $env:GITHUB_ENV
+				
+							- name: Unit tests
+								run: go test
+								working-directory: .\c8run
+								shell: cmd
+								env:
+									JAVA_VERSION: "22.0.2"
+				
+							- name: Run c8run
+								run: .\c8run.exe start
+								working-directory: .\c8run
+								shell: cmd
+								env:
+									JAVA_VERSION: "22.0.2"
+				
+							- uses: actions/setup-node@v4
+								with:
+									node-version: 18
+				
+							- name: Install dependencies
+								run: npm ci
+								working-directory: .\c8run\e2e_tests
+				
+							- name: Install Playwright Browsers
+								run: npx playwright install --with-deps
+								working-directory: .\c8run\e2e_tests
+				
+							- name: Wait for camunda process to start
+								run: bash -c 'while ! curl -s -f "http://localhost:9600/actuator/health"; do sleep 5; done'
+								shell: bash
+								timeout-minutes: 5
+				
+							- name: Run Playwright tests
+								run: npx playwright test
+								working-directory: .\c8run\e2e_tests
+				
+							- uses: actions/upload-artifact@v4
+								with:
+									name: playwright-report
+									path: .\c8run\e2e_tests\playwright-report
+									retention-days: 30
+				
+							- uses: actions/upload-artifact@v4
+								with:
+									name: camunda8-run-build-windows
+									path: .\c8run\camunda8-run*
+									retention-days: 1
+				
+							- uses: actions/upload-artifact@v4
+								if: failure()
+								with:
+									name: c8run-logs
+									path: .\c8run\log\*.log
+									retention-days: 10
