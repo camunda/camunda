@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -2859,5 +2860,99 @@ public class TaskListenerTest {
                 .map(Record::getValue))
         .describedAs("Expected to have User Task record with '%s' intent", intent)
         .hasValueSatisfying(consumer);
+  }
+
+  @Test
+  public void
+      shouldCancelUserTaskAfterProcessWasCancelledAndAllCancelingTaskListenersAreExecuted() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.canceling,
+                listenerType,
+                listenerType + "_2",
+                listenerType + "_3"));
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectPartialSuccess().cancel();
+    completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // then
+    assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.CANCELING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
+    // `CANCELING` and `CANCELED` events
+    // TODO fix, not yet fully implemented
+    /*assertUserTaskIntentsSequence(
+    UserTaskIntent.CREATING,
+    UserTaskIntent.CREATED,
+    UserTaskIntent.CANCELING,
+    UserTaskIntent.COMPLETE_TASK_LISTENER,
+    UserTaskIntent.COMPLETE_TASK_LISTENER,
+    UserTaskIntent.COMPLETE_TASK_LISTENER,
+    UserTaskIntent.CANCELED);*/
+  }
+
+  @Test
+  public void
+      shouldCancelUserTaskAfterTimerBoundaryEventTriggersCancellationAndAllCancelingTaskListenersAreExecuted() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask(
+                    USER_TASK_ELEMENT_ID,
+                    t ->
+                        t.zeebeUserTask()
+                            .zeebeTaskListener(l -> l.canceling().type(listenerType))
+                            .zeebeTaskListener(l -> l.canceling().type(listenerType + "_2"))
+                            .zeebeTaskListener(l -> l.canceling().type(listenerType + "_3")))
+                .boundaryEvent("timer_boundary_event")
+                .timerWithDate("=now()")
+                .endEvent("boundary_end")
+                .moveToActivity(USER_TASK_ELEMENT_ID)
+                .endEvent("user_task_end")
+                .done());
+
+    // when
+    completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // then
+    assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.CANCELING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    // ensure TIMER was triggered
+    assertThat(
+            RecordingExporter.timerRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == TimerIntent.TRIGGERED))
+        .extracting(Record::getIntent)
+        .containsExactly(TimerIntent.CREATED, TimerIntent.TRIGGER, TimerIntent.TRIGGERED);
+
+    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
+    // `CANCELING` and `CANCELED` events
+    // TODO fix, not yet fully implemented
+    /*assertUserTaskIntentsSequence(
+    UserTaskIntent.CREATING,
+    UserTaskIntent.CREATED,
+    UserTaskIntent.CANCELING,
+    UserTaskIntent.COMPLETE_TASK_LISTENER,
+    UserTaskIntent.COMPLETE_TASK_LISTENER,
+    UserTaskIntent.COMPLETE_TASK_LISTENER,
+    UserTaskIntent.CANCELED);*/
   }
 }
