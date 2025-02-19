@@ -814,12 +814,6 @@ externalVariable:
     enabled: false
     # Determines the page size for the external variable import, that got ingested via the external variable API
     maxPageSize: 10000
-  variableIngestion:
-    # Content length limit for the external variable ingestion request in bytes.
-    # Requests will be rejected when exceeding that limit. Defaults to 10MB.
-    maxBatchRequestBytes: 10485760
-    # The maximum number of requests to the external variable ingestion endpoint that can be served at a time.
-    maxRequests: 5
   variableIndexRollover:
     # scheduleIntervalInMinutes specifies how frequently the rollover API should be called to see if a rollover of the
     # external variable index is required (whether the rollover is triggered depends on the conditions specified by maxIndexSizeGB).

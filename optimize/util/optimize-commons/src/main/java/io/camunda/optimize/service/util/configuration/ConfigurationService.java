@@ -1273,11 +1273,6 @@ public class ConfigurationService {
   }
 
   @JsonIgnore
-  public VariableIngestionConfiguration getVariableIngestionConfiguration() {
-    return getExternalVariableConfiguration().getVariableIngestion();
-  }
-
-  @JsonIgnore
   public IndexRolloverConfiguration getVariableIndexRolloverConfiguration() {
     return getExternalVariableConfiguration().getVariableIndexRollover();
   }
