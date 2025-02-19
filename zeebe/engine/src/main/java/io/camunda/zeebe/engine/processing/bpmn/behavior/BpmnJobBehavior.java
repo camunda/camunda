@@ -57,12 +57,29 @@ import org.slf4j.LoggerFactory;
 
 public final class BpmnJobBehavior {
 
+  public static final String FIND_LATEST_RESOURCE_BY_ID_FAILED_MESSAGE =
+      """
+      Expected to link a resource with id '%s', but no resource with this id is found, \
+      at least a resource with this id should be available. \
+      To resolve the Incident please deploy a resource with the same id.
+      """;
+  public static final String FIND_RESOURCE_BY_ID_AND_VERSION_TAG_FAILED_MESSAGE =
+      """
+      Expected to link a resource with id '%s' and version tag '%s', but no such resource found. \
+      To resolve the incident, deploy a resource with the given id and version tag.
+      """;
+  public static final String FIND_RESOURCE_BY_ID_IN_SAME_DEPLOYMENT_FAILED_MESSAGE =
+      """
+      Expected to link a resource with id '%s' and binding type 'deployment', \
+      but no such resource found in the deployment with key %s which contained the current process. \
+      To resolve this incident, migrate the process instance to a process definition \
+      that is deployed together with the intended resource to use.\
+      """;
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BpmnJobBehavior.class.getPackageName());
   private static final Set<State> CANCELABLE_STATES =
       EnumSet.of(State.ACTIVATABLE, State.ACTIVATED, State.FAILED, State.ERROR_THROWN);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
   private final JobRecord jobRecord = new JobRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);
   private final HeaderEncoder headerEncoder = new HeaderEncoder(LOGGER);
   private final KeyGenerator keyGenerator;
@@ -157,7 +174,13 @@ public final class BpmnJobBehavior {
     final List<LinkedResourceProps> linkedResourceProps = new ArrayList<>();
     for (final LinkedResource linkedResource : linkedResources) {
       final LinkedResourceProps resourceProps = new LinkedResourceProps();
-      resourceProps.setResourceKey(resolveLinkedResourceKey(linkedResource, context, scopeKey));
+      final Either<Failure, String> keyEitherFailure =
+          resolveLinkedResourceKey(linkedResource, context, scopeKey);
+      if (keyEitherFailure.isRight()) {
+        resourceProps.setResourceKey(keyEitherFailure.get());
+      } else {
+        return Either.left(keyEitherFailure.getLeft());
+      }
       resourceProps.setResourceType(linkedResource.getResourceType());
       resourceProps.setLinkName(linkedResource.getLinkName());
       linkedResourceProps.add(resourceProps);
@@ -165,17 +188,20 @@ public final class BpmnJobBehavior {
     return Either.right(linkedResourceProps);
   }
 
-  private String resolveLinkedResourceKey(
+  private Either<Failure, String> resolveLinkedResourceKey(
       final LinkedResource linkedResource, final BpmnElementContext context, final long scopeKey) {
-    return findLinkedResource(
+    final Either<Failure, PersistedResource> resource =
+        findLinkedResource(
             linkedResource.getResourceId(),
             linkedResource.getBindingType(),
             linkedResource.getVersionTag(),
             context,
-            scopeKey)
-        .map(PersistedResource::getResourceKey)
-        .get()
-        .toString();
+            scopeKey);
+    if (resource.isRight()) {
+      return Either.right(resource.map(PersistedResource::getResourceKey).get().toString());
+    } else {
+      return Either.left(resource.getLeft());
+    }
   }
 
   private Either<Failure, PersistedResource> findLinkedResource(
@@ -198,44 +224,27 @@ public final class BpmnJobBehavior {
         .getDeploymentKey(context.getProcessDefinitionKey(), context.getTenantId())
         .flatMap(
             deploymentKey ->
-                resourceState
-                    .findResourceByIdAndDeploymentKey(
-                        resourceId, deploymentKey, context.getTenantId())
-                    .<Either<Failure, PersistedResource>>map(Either::right)
-                    .orElseGet(
-                        () ->
-                            Either.left(
-                                new Failure(
-                                    String.format(
-                                        """
-                                        Expected to use a resource with id '%s' with binding type 'deployment', \
-                                        but no such resource found in the deployment with key %s which contained the current process. \
-                                        To resolve this incident, migrate the process instance to a process definition \
-                                        that is deployed together with the intended resource to use.\
-                                        """,
-                                        resourceId, deploymentKey),
-                                    ErrorType.RESOURCE_NOT_FOUND,
-                                    scopeKey))));
+                Either.ofOptional(
+                        resourceState.findResourceByIdAndDeploymentKey(
+                            resourceId, deploymentKey, context.getTenantId()))
+                    .orElse(
+                        new Failure(
+                            String.format(
+                                FIND_RESOURCE_BY_ID_IN_SAME_DEPLOYMENT_FAILED_MESSAGE,
+                                resourceId,
+                                deploymentKey),
+                            ErrorType.RESOURCE_NOT_FOUND,
+                            scopeKey)));
   }
 
   private Either<Failure, PersistedResource> findLatestResourceById(
       final String resourceId, final String tenantId, final long scopeKey) {
-    return resourceState
-        .findLatestResourceById(resourceId, tenantId)
-        .<Either<Failure, PersistedResource>>map(Either::right)
-        .orElseGet(
-            () ->
-                Either.left(
-                    new Failure(
-                        String.format(
-                            """
-                            Expected to find a resource with id '%s', but no resource with this id is found, \
-                            at least a resource with this id should be available. \
-                            To resolve the Incident please deploy a resource with the same id.
-                            """,
-                            resourceId),
-                        ErrorType.RESOURCE_NOT_FOUND,
-                        scopeKey)));
+    return Either.ofOptional(resourceState.findLatestResourceById(resourceId, tenantId))
+        .orElse(
+            new Failure(
+                String.format(FIND_LATEST_RESOURCE_BY_ID_FAILED_MESSAGE, resourceId),
+                ErrorType.RESOURCE_NOT_FOUND,
+                scopeKey));
   }
 
   private Either<Failure, PersistedResource> findResourceByIdAndVersionTag(
@@ -243,21 +252,14 @@ public final class BpmnJobBehavior {
       final String versionTag,
       final String tenantId,
       final long scopeKey) {
-    return resourceState
-        .findResourceByIdAndVersionTag(resourceId, versionTag, tenantId)
-        .<Either<Failure, PersistedResource>>map(Either::right)
-        .orElseGet(
-            () ->
-                Either.left(
-                    new Failure(
-                        String.format(
-                            """
-                            Expected to use a resource with id '%s' and version tag '%s', but no such resource found. \
-                            To resolve the incident, deploy a resource with the given id and version tag.
-                            """,
-                            resourceId, versionTag),
-                        ErrorType.RESOURCE_NOT_FOUND,
-                        scopeKey)));
+    return Either.ofOptional(
+            resourceState.findResourceByIdAndVersionTag(resourceId, versionTag, tenantId))
+        .orElse(
+            new Failure(
+                String.format(
+                    FIND_RESOURCE_BY_ID_AND_VERSION_TAG_FAILED_MESSAGE, resourceId, versionTag),
+                ErrorType.RESOURCE_NOT_FOUND,
+                scopeKey));
   }
 
   private static String asListLiteralOrNull(final List<String> list) {

@@ -12,10 +12,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior.LinkedResourceProps;
+import io.camunda.zeebe.engine.state.ProcessingDbState;
+import io.camunda.zeebe.engine.state.mutable.MutableResourceState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -33,6 +36,8 @@ public class ServiceTaskTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
   private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final String RESOURCE_ID = "id";
+  private static final String VERSION_TAG = "1v";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -40,6 +45,12 @@ public class ServiceTaskTest {
 
   @Test
   public void shouldCreateJobWithLinkedResources() throws JsonProcessingException {
+    final var record = createResourceRecord();
+    final MutableResourceState resourceState =
+        ((ProcessingDbState) ENGINE.getProcessingState()).getResourceState();
+    resourceState.storeResourceInResourceColumnFamily(record);
+    resourceState.storeResourceInResourceKeyByResourceIdAndVersionTagColumnFamily(record);
+
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("process")
             .startEvent()
@@ -48,10 +59,10 @@ public class ServiceTaskTest {
                 t ->
                     t.zeebeLinkedResources(
                             l ->
-                                l.resourceId("id")
+                                l.resourceId(RESOURCE_ID)
                                     .resourceType("RPA")
-                                    .bindingType(ZeebeBindingType.deployment)
-                                    .versionTag("1v")
+                                    .bindingType(ZeebeBindingType.versionTag)
+                                    .versionTag(VERSION_TAG)
                                     .linkName("my_link"))
                         .zeebeJobType("type"))
             .endEvent()
@@ -70,12 +81,54 @@ public class ServiceTaskTest {
     final LinkedResourceProps resourceProps = new LinkedResourceProps();
     resourceProps.setResourceType("RPA");
     resourceProps.setLinkName("my_link");
-    // TODO: key lookup will be implemented in the next PR
-    resourceProps.setResourceKey("");
+    resourceProps.setResourceKey("1");
 
     Assertions.assertThat(jobCreated.getValue())
         .hasCustomHeaders(
             Map.of("linkedResources", MAPPER.writeValueAsString(List.of(resourceProps))));
+  }
+
+  @Test
+  public void shouldHandleNotFound() {
+
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "my_linked_resource",
+                t ->
+                    t.zeebeLinkedResources(
+                            l ->
+                                l.resourceId("2")
+                                    .resourceType("RPA")
+                                    .bindingType(ZeebeBindingType.versionTag)
+                                    .versionTag(VERSION_TAG)
+                                    .linkName("my_link"))
+                        .zeebeJobType("type"))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isFalse();
+  }
+
+  private static ResourceRecord createResourceRecord() {
+    final var record = new ResourceRecord();
+    record.setResourceId(RESOURCE_ID);
+    record.setVersionTag(VERSION_TAG);
+    record.setResourceName("name");
+    record.setVersion(1);
+    record.setResourceKey(1L);
+    return record;
   }
 
   @Test
