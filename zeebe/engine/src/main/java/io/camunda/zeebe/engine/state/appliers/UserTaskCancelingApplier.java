@@ -26,5 +26,6 @@ public final class UserTaskCancelingApplier
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
     userTaskState.updateUserTaskLifecycleState(key, LifecycleState.CANCELING);
+    userTaskState.storeIntermediateState(value, LifecycleState.CANCELING);
   }
 }
