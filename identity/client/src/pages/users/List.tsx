@@ -7,13 +7,11 @@
  */
 import { FC } from "react";
 import { useNavigate } from "react-router";
-import { Stack } from "@carbon/react";
 import { Add, Edit, TrashCan } from "@carbon/react/icons";
-import { spacing04, spacing06 } from "@carbon/elements";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
-import Page, { PageTitle, PageSubTitle } from "src/components/layout/Page";
+import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
 import {
   documentationHref,
@@ -41,49 +39,35 @@ const List: FC = () => {
 
   const showDetails = ({ username }: User) => navigate(`${username}`);
 
-  const header = (
-    <Stack gap={spacing04}>
-      <PageTitle>
-        <Translate>Users</Translate>
-      </PageTitle>
-      {success && (
-        <PageSubTitle>
-          <Translate>For more information, see documentation on</Translate>{" "}
-          <DocumentationLink path="/concepts/access-control/users">
-            users
-          </DocumentationLink>
-        </PageSubTitle>
-      )}
-    </Stack>
+  const pageHeader = (
+    <PageHeader title="Users" linkText="users" linkUrl="/concepts/users/" />
   );
 
   if (success && !userSearchResults?.items.length) {
     return (
       <Page>
-        <Stack gap={spacing06}>
-          {header}
-          <C3EmptyState
-            heading={t("No users created yet")}
-            description={
-              <>
-                <Translate>Start by</Translate>{" "}
-                <DocumentationLink path="/concepts/access-control/users">
-                  creating a new user
-                </DocumentationLink>{" "}
-                <Translate>to get started</Translate>
-              </>
-            }
-            button={{
-              label: t("Create a user"),
-              onClick: addUser,
-              icon: Add,
-            }}
-            link={{
-              href: documentationHref("/concepts/access-control/users", ""),
-              label: t("Learn more about users"),
-            }}
-          />
-        </Stack>
+        {pageHeader}
+        <C3EmptyState
+          heading={t("No users created yet")}
+          description={
+            <>
+              <Translate>Start by</Translate>{" "}
+              <DocumentationLink path="/concepts/access-control/users">
+                creating a new user
+              </DocumentationLink>{" "}
+              <Translate>to get started</Translate>
+            </>
+          }
+          button={{
+            label: t("Create a user"),
+            onClick: addUser,
+            icon: Add,
+          }}
+          link={{
+            href: documentationHref("/concepts/access-control/users", ""),
+            label: t("Learn more about users"),
+          }}
+        />
         {addUserModal}
       </Page>
     );
@@ -91,36 +75,34 @@ const List: FC = () => {
 
   return (
     <Page>
-      <Stack gap={spacing06}>
-        {header}
-        <EntityList
-          data={userSearchResults == null ? [] : userSearchResults.items}
-          headers={[
-            { header: t("Username"), key: "username" },
-            { header: t("Name"), key: "name" },
-            { header: t("Email"), key: "email" },
-          ]}
-          menuItems={[
-            {
-              label: t("Edit user"),
-              onClick: editUser,
-              icon: Edit,
-            },
-            {
-              label: t("Delete"),
-              icon: TrashCan,
-              onClick: deleteUser,
-              isDangerous: true,
-            },
-          ]}
-          sortProperty="username"
-          onEntityClick={showDetails}
-          addEntityLabel={t("Create user")}
-          onAddEntity={addUser}
-          loading={loading}
-          searchPlaceholder={t("Search by username")}
-        />
-      </Stack>
+      {pageHeader}
+      <EntityList
+        data={userSearchResults == null ? [] : userSearchResults.items}
+        headers={[
+          { header: t("Username"), key: "username" },
+          { header: t("Name"), key: "name" },
+          { header: t("Email"), key: "email" },
+        ]}
+        menuItems={[
+          {
+            label: t("Edit user"),
+            onClick: editUser,
+            icon: Edit,
+          },
+          {
+            label: t("Delete"),
+            icon: TrashCan,
+            onClick: deleteUser,
+            isDangerous: true,
+          },
+        ]}
+        sortProperty="username"
+        onEntityClick={showDetails}
+        addEntityLabel={t("Create user")}
+        onAddEntity={addUser}
+        loading={loading}
+        searchPlaceholder={t("Search by username")}
+      />
       {!loading && !success && (
         <TranslatedErrorInlineNotification
           title="The list of users could not be loaded."
