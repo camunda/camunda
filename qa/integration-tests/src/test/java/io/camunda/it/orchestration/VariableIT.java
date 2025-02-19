@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.exporter;
+package io.camunda.it.orchestration;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
@@ -19,7 +19,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
-public class VariableHandlerIT {
+public class VariableIT {
 
   private static CamundaClient client;
   private static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
