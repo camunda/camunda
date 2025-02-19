@@ -53,6 +53,7 @@ import io.camunda.zeebe.stream.impl.TypedEventRegistry;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
@@ -159,6 +160,7 @@ public final class TestStreams {
       final int partitionId,
       final LogStorage logStorage,
       final Consumer<SyncLogStream> logStreamConsumer) {
+    final var meterRegistry = new SimpleMeterRegistry();
     final var logStream =
         SyncLogStream.builder()
             .withLogName(name)
@@ -166,11 +168,12 @@ public final class TestStreams {
             .withPartitionId(partitionId)
             .withClock(clock)
             .withActorSchedulingService(actorScheduler)
+            .withMeterRegistry(meterRegistry)
             .build();
 
     logStreamConsumer.accept(logStream);
 
-    final LogContext logContext = LogContext.createLogContext(logStream);
+    final LogContext logContext = new LogContext(logStream, meterRegistry);
     logContextMap.put(name, logContext);
     closeables.manage(logContext);
     closeables.manage(() -> logContextMap.remove(name));
@@ -480,20 +483,13 @@ public final class TestStreams {
     }
   }
 
-  private static final class LogContext implements AutoCloseable {
-    private final SynchronousLogStream logStream;
-
-    private LogContext(final SynchronousLogStream logStream) {
-      this.logStream = logStream;
-    }
-
-    public static LogContext createLogContext(final SyncLogStream logStream) {
-      return new LogContext(logStream);
-    }
+  public record LogContext(SynchronousLogStream logStream, MeterRegistry meterRegistry)
+      implements AutoCloseable {
 
     @Override
     public void close() {
       logStream.close();
+      MicrometerUtil.closeRegistry(meterRegistry);
     }
 
     public SynchronousLogStream getLogStream() {

@@ -14,6 +14,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.function.Consumer;
 import org.agrona.CloseHelper;
 import org.junit.rules.ExternalResource;
@@ -73,7 +74,8 @@ public final class LogStreamRule extends ExternalResource {
             .withPartitionId(0)
             .withLogName("logStream-0")
             .withLogStorage(listLogStorage)
-            .withClock(clock);
+            .withClock(clock)
+            .withMeterRegistry(new SimpleMeterRegistry());
 
     // apply additional configs
     streamBuilder.accept(builder);
