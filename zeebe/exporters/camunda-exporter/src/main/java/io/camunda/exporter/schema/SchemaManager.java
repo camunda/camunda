@@ -76,16 +76,30 @@ public class SchemaManager {
   }
 
   private void updateSchemaSettings() {
-    indexTemplateDescriptors.forEach(
-        desc -> {
-          searchEngineClient.updateIndexTemplateSettings(
-              desc, getIndexSettings(desc.getIndexName()));
+    final var existingTemplateNames =
+        searchEngineClient
+            .getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX_TEMPLATE)
+            .keySet();
 
-          // update matching index for the index template descriptor
-          updateIndexReplicaCount(desc);
-        });
+    final var existingIndexNames =
+        searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet();
 
-    indexDescriptors.forEach(this::updateIndexReplicaCount);
+    indexTemplateDescriptors.stream()
+        .filter(desc -> existingTemplateNames.contains(desc.getTemplateName()))
+        .forEach(
+            desc -> {
+              searchEngineClient.updateIndexTemplateSettings(
+                  desc, getIndexSettings(desc.getIndexName()));
+            });
+
+    // update matching index for the index template descriptor
+    indexTemplateDescriptors.stream()
+        .filter(desc -> existingIndexNames.contains(desc.getFullQualifiedName()))
+        .forEach(this::updateIndexReplicaCount);
+
+    indexDescriptors.stream()
+        .filter(desc -> existingIndexNames.contains(desc.getFullQualifiedName()))
+        .forEach(this::updateIndexReplicaCount);
   }
 
   private void updateIndexReplicaCount(final IndexDescriptor indexDescriptor) {
