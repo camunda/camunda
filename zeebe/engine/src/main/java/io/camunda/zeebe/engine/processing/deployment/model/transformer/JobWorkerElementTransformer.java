@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.Lin
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskDefinitionTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskHeadersTransformer;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
+import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResources;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
@@ -50,8 +51,9 @@ public final class JobWorkerElementTransformer<T extends FlowElement>
 
     final var taskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
     taskHeadersTransformer.transform(jobWorkerElement, taskHeaders, element);
-
-    final var linkedResources = element.getSingleExtensionElement(ZeebeLinkedResources.class);
-    linkedResourcesTransformer.transform(jobWorkerElement, linkedResources);
+    if (element instanceof ServiceTask) {
+      final var linkedResources = element.getSingleExtensionElement(ZeebeLinkedResources.class);
+      linkedResourcesTransformer.transform(jobWorkerElement, linkedResources);
+    }
   }
 }
