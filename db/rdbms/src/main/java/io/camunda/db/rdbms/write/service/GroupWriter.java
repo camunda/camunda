@@ -13,6 +13,7 @@ import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.util.function.Function;
 
 public class GroupWriter {
@@ -27,6 +28,7 @@ public class GroupWriter {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.GROUP,
+            WriteStatementType.INSERT,
             group.groupKey(),
             "io.camunda.db.rdbms.sql.GroupMapper.insert",
             group));
@@ -39,6 +41,7 @@ public class GroupWriter {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.GROUP,
+              WriteStatementType.UPDATE,
               group.groupKey(),
               "io.camunda.db.rdbms.sql.GroupMapper.update",
               group));
@@ -49,6 +52,7 @@ public class GroupWriter {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.GROUP,
+            WriteStatementType.INSERT,
             member.groupKey(),
             "io.camunda.db.rdbms.sql.GroupMapper.insertMember",
             member));
@@ -58,6 +62,7 @@ public class GroupWriter {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.GROUP,
+            WriteStatementType.DELETE,
             member.groupKey(),
             "io.camunda.db.rdbms.sql.GroupMapper.deleteMember",
             member));
@@ -66,10 +71,15 @@ public class GroupWriter {
   public void delete(final long groupKey) {
     executionQueue.executeInQueue(
         new QueueItem(
-            ContextType.GROUP, groupKey, "io.camunda.db.rdbms.sql.GroupMapper.delete", groupKey));
+            ContextType.GROUP,
+            WriteStatementType.DELETE,
+            groupKey,
+            "io.camunda.db.rdbms.sql.GroupMapper.delete",
+            groupKey));
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.GROUP,
+            WriteStatementType.DELETE,
             groupKey,
             "io.camunda.db.rdbms.sql.GroupMapper.deleteAllMembers",
             groupKey));
