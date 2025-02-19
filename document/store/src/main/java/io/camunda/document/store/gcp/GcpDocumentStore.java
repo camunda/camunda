@@ -23,6 +23,8 @@ import io.camunda.document.api.DocumentLink;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
+import io.camunda.document.store.DocumentHashProcessor;
+import io.camunda.document.store.DocumentHashProcessor.HashResult;
 import io.camunda.zeebe.util.Either;
 import java.nio.channels.Channels;
 import java.security.DigestInputStream;
@@ -165,6 +167,8 @@ public class GcpDocumentStore implements DocumentStore {
       // should never happen
       return Either.left(new UnknownDocumentError(e));
     }
+
+    final HashResult hashResult = DocumentHashProcessor.hash(request.contentInputStream());
     final DigestInputStream digestStream = new DigestInputStream(request.contentInputStream(), md);
     final var contentHash = HexFormat.of().formatHex(md.digest());
 
