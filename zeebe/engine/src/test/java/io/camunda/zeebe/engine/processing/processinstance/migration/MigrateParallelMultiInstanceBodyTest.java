@@ -1014,4 +1014,130 @@ public class MigrateParallelMultiInstanceBodyTest {
         .describedAs("Expect that the second entry is collected as output")
         .hasValue("[1,2,null]");
   }
+
+  @Test
+  public void shouldMigrateMultiInstanceSubprocessContainingEventSubprocess() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .subProcess(
+                        "sub1",
+                        sub ->
+                            sub.multiInstance(
+                                b ->
+                                    b.zeebeInputCollectionExpression("indices")
+                                        .zeebeInputElement("i")))
+                    .embeddedSubProcess()
+                    .startEvent()
+                    .serviceTask("A", t -> t.zeebeJobType("A"))
+                    .endEvent()
+                    .subProcessDone()
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .subProcess(
+                        "sub2",
+                        sub ->
+                            sub.multiInstance(
+                                b ->
+                                    b.zeebeInputCollectionExpression("indices")
+                                        .zeebeInputElement("i")))
+                    .embeddedSubProcess()
+                    .eventSubProcess(
+                        "eventSub",
+                        s ->
+                            s.startEvent("start1")
+                                .message(m -> m.name("msg").zeebeCorrelationKeyExpression("i"))
+                                .userTask("eventSubprocessUserTask")
+                                .endEvent())
+                    .startEvent()
+                    .serviceTask("B", t -> t.zeebeJobType("B"))
+                    .endEvent()
+                    .subProcessDone()
+                    .endEvent("multi_instance_target_process_end")
+                    .done())
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariable("indices", Arrays.asList("a", "b", "c"))
+            .create();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("A")
+                .limit(3))
+        .describedAs("Wait until all service tasks have activated")
+        .hasSize(3);
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("sub1", "sub2")
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition key is changed")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that bpmn process id and element id changed")
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("sub2")
+        .describedAs("Expect that version number did not change")
+        .hasVersion(1);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.SUB_PROCESS)
+                .limit(3))
+        .extracting(Record::getValue)
+        .extracting(
+            r ->
+                tuple(
+                    r.getProcessDefinitionKey(),
+                    r.getBpmnProcessId(),
+                    r.getElementId(),
+                    r.getVersion()))
+        .describedAs("Expect that all subprocesses of the multi-instance body are migrated")
+        .containsExactly(
+            tuple(targetProcessDefinitionKey, targetProcessId, "sub2", 1),
+            tuple(targetProcessDefinitionKey, targetProcessId, "sub2", 1),
+            tuple(targetProcessDefinitionKey, targetProcessId, "sub2", 1));
+
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(3))
+        .extracting(Record::getValue)
+        .extracting(MessageSubscriptionRecordValue::getCorrelationKey)
+        .describedAs(
+            "Expect that message subscriptions are created ONLY for each instance of the multi instance body")
+        .containsExactlyInAnyOrder("a", "b", "c");
+  }
+
 }
