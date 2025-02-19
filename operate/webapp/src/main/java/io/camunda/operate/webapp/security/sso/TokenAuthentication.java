@@ -188,7 +188,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   public String getNewTokenByRefreshToken() {
     try {
       final TokenRequest tokenRequest = getAuthAPI().renewAuth(refreshToken);
-      final TokenHolder tokenHolder = tokenRequest.execute();
+      final TokenHolder tokenHolder = tokenRequest.execute().getBody();
       authenticate(
           tokenHolder.getIdToken(), tokenHolder.getRefreshToken(), tokenHolder.getAccessToken());
       LOGGER.info("New tokens received and validated.");

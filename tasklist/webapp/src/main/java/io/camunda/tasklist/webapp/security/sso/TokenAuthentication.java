@@ -38,7 +38,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken implements 
   public static final String ORGANIZATION_ID = "id";
   public static final String ROLES_KEY = "roles";
 
-  private transient Logger logger = LoggerFactory.getLogger(this.getClass());
+  private transient Logger logger = LoggerFactory.getLogger(getClass());
 
   @Value("${" + TasklistProperties.PREFIX + ".auth0.claimName}")
   private String claimName;
@@ -61,7 +61,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken implements 
   private String accessToken;
   private String salesPlanType;
 
-  private List<Permission> permissions = new ArrayList<>();
+  private final List<Permission> permissions = new ArrayList<>();
 
   public TokenAuthentication() {
     super(null);
@@ -74,7 +74,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken implements 
   // Need this because this class will be serialized in session
   private Logger getLogger() {
     if (logger == null) {
-      logger = LoggerFactory.getLogger(this.getClass());
+      logger = LoggerFactory.getLogger(getClass());
     }
     return logger;
   }
@@ -83,8 +83,8 @@ public class TokenAuthentication extends AbstractAuthenticationToken implements 
     return permissions;
   }
 
-  public void addPermission(Permission permission) {
-    this.permissions.add(permission);
+  public void addPermission(final Permission permission) {
+    permissions.add(permission);
   }
 
   @Override
@@ -102,15 +102,51 @@ public class TokenAuthentication extends AbstractAuthenticationToken implements 
     return super.isAuthenticated();
   }
 
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final TokenAuthentication that = (TokenAuthentication) o;
+    return claimName.equals(that.claimName)
+        && organization.equals(that.organization)
+        && domain.equals(that.domain)
+        && clientId.equals(that.clientId)
+        && clientSecret.equals(that.clientSecret)
+        && idToken.equals(that.idToken)
+        && Objects.equals(refreshToken, that.refreshToken)
+        && Objects.equals(salesPlanType, that.salesPlanType);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(),
+        claimName,
+        organization,
+        domain,
+        clientId,
+        clientSecret,
+        idToken,
+        refreshToken,
+        salesPlanType);
+  }
+
   public String getNewTokenByRefreshToken() {
     try {
       final TokenRequest tokenRequest = getAuthAPI().renewAuth(refreshToken);
-      final TokenHolder tokenHolder = tokenRequest.execute();
+      final TokenHolder tokenHolder = tokenRequest.execute().getBody();
       authenticate(
           tokenHolder.getIdToken(), tokenHolder.getRefreshToken(), tokenHolder.getAccessToken());
       getLogger().info("New tokens received and validated.");
       return accessToken;
-    } catch (Auth0Exception e) {
+    } catch (final Auth0Exception e) {
       getLogger().error(e.getMessage(), e.getCause());
       setAuthenticated(false);
       return null;
@@ -164,7 +200,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken implements 
       if (claims != null) {
         setAuthenticated(claims.stream().anyMatch(this::isIdEqualsOrganization));
       }
-    } catch (JWTDecodeException e) {
+    } catch (final JWTDecodeException e) {
       getLogger().debug("Read organization claim as list of maps failed.", e);
     }
   }
@@ -185,7 +221,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken implements 
     try {
       final Map<String, Claim> claims = getClaims();
       return findRolesForOrganization(claims, organizationsKey, organization);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       getLogger().error("Could not get roles. Return empty roles list.", e);
     }
     return List.of();
@@ -204,7 +240,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken implements 
           return (List<String>) orgInfo.get().get(ROLES_KEY);
         }
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       getLogger()
           .error(
               String.format(
@@ -229,42 +265,6 @@ public class TokenAuthentication extends AbstractAuthenticationToken implements 
 
   public String getOrganization() {
     return organization;
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final TokenAuthentication that = (TokenAuthentication) o;
-    return claimName.equals(that.claimName)
-        && organization.equals(that.organization)
-        && domain.equals(that.domain)
-        && clientId.equals(that.clientId)
-        && clientSecret.equals(that.clientSecret)
-        && idToken.equals(that.idToken)
-        && Objects.equals(refreshToken, that.refreshToken)
-        && Objects.equals(salesPlanType, that.salesPlanType);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        super.hashCode(),
-        claimName,
-        organization,
-        domain,
-        clientId,
-        clientSecret,
-        idToken,
-        refreshToken,
-        salesPlanType);
   }
 
   @Override
