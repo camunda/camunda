@@ -53,7 +53,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Execution(ExecutionMode.CONCURRENT)
 class UnavailableBrokersTest {
-  private static final MeterRegistry registry = new SimpleMeterRegistry();
+  private static final MeterRegistry REGISTRY = new SimpleMeterRegistry();
 
   private static Gateway gateway;
   private static AtomixCluster cluster;
@@ -69,7 +69,7 @@ class UnavailableBrokersTest {
     final GatewayCfg config = new GatewayCfg().setNetwork(networkCfg);
     config.init(InetAddress.getLocalHost().getHostName());
 
-    cluster = AtomixCluster.builder(registry).build();
+    cluster = AtomixCluster.builder(REGISTRY).build();
     cluster.start();
 
     actorScheduler = ActorScheduler.newActorScheduler().build();
@@ -78,7 +78,7 @@ class UnavailableBrokersTest {
     topologyManager =
         new BrokerTopologyManagerImpl(
             () -> cluster.getMembershipService().getMembers(),
-            new BrokerClientTopologyMetrics(registry));
+            new BrokerClientTopologyMetrics(REGISTRY));
     actorScheduler.submitActor(topologyManager).join();
     cluster.getMembershipService().addListener(topologyManager);
 
@@ -89,7 +89,7 @@ class UnavailableBrokersTest {
             cluster.getEventService(),
             actorScheduler,
             topologyManager,
-            new BrokerClientRequestMetrics(registry));
+            new BrokerClientRequestMetrics(REGISTRY));
     jobStreamClient = new JobStreamClientImpl(actorScheduler, cluster.getCommunicationService());
     jobStreamClient.start().join();
 
@@ -107,7 +107,7 @@ class UnavailableBrokersTest {
             jobStreamClient.streamer(),
             mock(UserServices.class),
             mock(PasswordEncoder.class),
-            registry);
+            REGISTRY);
     gateway.start().join();
 
     final String gatewayAddress = NetUtil.toSocketAddressString(networkCfg.toSocketAddress());
@@ -124,7 +124,7 @@ class UnavailableBrokersTest {
         topologyManager,
         actorScheduler,
         () -> cluster.stop().join(),
-        () -> MicrometerUtil.closeRegistry(registry));
+        () -> MicrometerUtil.closeRegistry(REGISTRY));
   }
 
   @ParameterizedTest(name = "{0}")
