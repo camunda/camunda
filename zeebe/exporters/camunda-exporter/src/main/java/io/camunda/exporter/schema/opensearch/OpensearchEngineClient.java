@@ -241,6 +241,10 @@ public class OpensearchEngineClient implements SearchEngineClient {
     }
   }
 
+  @Override
+  public void updateIndexTemplateSettings(
+      final IndexTemplateDescriptor indexDescriptor, final IndexSettings currentSettings) {}
+
   private SearchRequest allImportPositionDocuments(
       final int partitionId, final List<IndexDescriptor> importPositionIndices) {
     final var importPositionIndicesNames =
@@ -383,7 +387,10 @@ public class OpensearchEngineClient implements SearchEngineClient {
       final var templateFields =
           deserializeJson(
               IndexTemplateMapping._DESERIALIZER,
-              utils.appendToFileSchemaSettings(templateFile, settings));
+              utils.new SchemaSettingsAppender(templateFile)
+                  .withNumberOfShards(settings.getNumberOfShards())
+                  .withNumberOfReplicas(settings.getNumberOfReplicas())
+                  .build());
 
       return new PutIndexTemplateRequest.Builder()
           .name(indexTemplateDescriptor.getTemplateName())
@@ -413,7 +420,10 @@ public class OpensearchEngineClient implements SearchEngineClient {
       final var templateFields =
           deserializeJson(
               IndexTemplateMapping._DESERIALIZER,
-              utils.appendToFileSchemaSettings(templateFile, settings));
+              utils.new SchemaSettingsAppender(templateFile)
+                  .withNumberOfShards(settings.getNumberOfShards())
+                  .withNumberOfReplicas(settings.getNumberOfReplicas())
+                  .build());
 
       return new CreateIndexRequest.Builder()
           .index(indexDescriptor.getFullQualifiedName())

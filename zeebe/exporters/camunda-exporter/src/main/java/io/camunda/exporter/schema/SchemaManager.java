@@ -14,6 +14,7 @@ import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -60,6 +61,7 @@ public class SchemaManager {
         "Update index template schema. '{}' index templates need to be updated",
         newIndexProperties.size());
     updateSchemaMappings(newIndexTemplateProperties);
+    updateSchemaSettings();
 
     final RetentionConfiguration retention = config.getArchiver().getRetention();
     if (retention.isEnabled()) {
@@ -71,6 +73,26 @@ public class SchemaManager {
           retention.getPolicyName(), retention.getMinimumAge());
     }
     LOG.info("Schema management completed.");
+  }
+
+  private void updateSchemaSettings() {
+    indexTemplateDescriptors.forEach(
+        desc -> {
+          searchEngineClient.updateIndexTemplateSettings(
+              desc, getIndexSettings(desc.getIndexName()));
+
+          // update matching index for the index template descriptor
+          updateIndexReplicaCount(desc);
+        });
+
+    indexDescriptors.forEach(this::updateIndexReplicaCount);
+  }
+
+  private void updateIndexReplicaCount(final IndexDescriptor indexDescriptor) {
+    final var indexSettings = getIndexSettings(indexDescriptor.getIndexName());
+    searchEngineClient.putSettings(
+        List.of(indexDescriptor),
+        Map.of("index.number_of_replicas", indexSettings.getNumberOfReplicas().toString()));
   }
 
   public void initialiseResources() {

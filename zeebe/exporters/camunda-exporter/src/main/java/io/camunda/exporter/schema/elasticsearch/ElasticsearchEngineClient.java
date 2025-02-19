@@ -227,6 +227,29 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
+  /**
+   * Overwrites the settings of the existing index template with the settings block in the
+   * descriptor schema json file.
+   *
+   * @param indexTemplateDescriptor of the index template to have its settings overwritten.
+   */
+  @Override
+  public void updateIndexTemplateSettings(
+      final IndexTemplateDescriptor indexTemplateDescriptor, final IndexSettings currentSettings) {
+    final var updateIndexTemplateSettingsRequest =
+        updateTemplateSettings(indexTemplateDescriptor, currentSettings);
+
+    try {
+      client.indices().putIndexTemplate(updateIndexTemplateSettingsRequest);
+    } catch (final IOException | ElasticsearchException e) {
+      throw new ElasticsearchExporterException(
+          String.format(
+              "Failed to update index template settings for [%s]",
+              indexTemplateDescriptor.getTemplateName()),
+          e);
+    }
+  }
+
   private SearchRequest allImportPositionDocuments(
       final int partitionId, final List<IndexDescriptor> importPositionIndices) {
     final var importPositionIndicesNames =
@@ -379,6 +402,47 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           .composedOf(indexTemplateDescriptor.getComposedOf())
           .create(create)
           .build();
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException(
+          "Failed to load file "
+              + indexTemplateDescriptor.getMappingsClasspathFilename()
+              + " from classpath.",
+          e);
+    }
+  }
+
+  private PutIndexTemplateRequest updateTemplateSettings(
+      final IndexTemplateDescriptor indexTemplateDescriptor, final IndexSettings currentSettings) {
+    try (final var templateFile =
+        getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
+      final var updatedTemplateSettings =
+          deserializeJson(
+                  IndexTemplateMapping._DESERIALIZER,
+                  utils.new SchemaSettingsAppender(templateFile)
+                      .withNumberOfShards(currentSettings.getNumberOfShards())
+                      .withNumberOfReplicas(currentSettings.getNumberOfReplicas())
+                      .build())
+              .settings();
+
+      final var currentIndexTemplateState =
+          client
+              .indices()
+              .getIndexTemplate(r -> r.name(indexTemplateDescriptor.getTemplateName()))
+              .indexTemplates()
+              .getFirst()
+              .indexTemplate()
+              .template();
+
+      return new PutIndexTemplateRequest.Builder()
+          .name(indexTemplateDescriptor.getTemplateName())
+          .indexPatterns(indexTemplateDescriptor.getIndexPattern())
+          .template(
+              t ->
+                  t.settings(updatedTemplateSettings)
+                      .mappings(currentIndexTemplateState.mappings())
+                      .aliases(currentIndexTemplateState.aliases()))
+          .build();
+
     } catch (final IOException e) {
       throw new ElasticsearchExporterException(
           "Failed to load file "
