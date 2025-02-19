@@ -90,6 +90,7 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.api.search.query.AdHocSubprocessActivityQuery;
 import io.camunda.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.client.api.search.query.DecisionInstanceQuery;
 import io.camunda.client.api.search.query.DecisionRequirementsQuery;
@@ -166,6 +167,7 @@ import io.camunda.client.impl.fetch.UserTaskGetRequestImpl;
 import io.camunda.client.impl.fetch.VariableGetRequestImpl;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.http.HttpClientFactory;
+import io.camunda.client.impl.search.query.AdHocSubprocessActivityQueryImpl;
 import io.camunda.client.impl.search.query.DecisionDefinitionQueryImpl;
 import io.camunda.client.impl.search.query.DecisionInstanceQueryImpl;
 import io.camunda.client.impl.search.query.DecisionRequirementsQueryImpl;
@@ -671,6 +673,22 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public FlowNodeInstanceGetRequest newFlowNodeInstanceGetRequest(final long flowNodeInstanceKey) {
     return new FlowNodeInstanceGetRequestImpl(httpClient, flowNodeInstanceKey);
+  }
+
+  @Override
+  public AdHocSubprocessActivityQuery newAdHocSubprocessActivityQuery() {
+    return new AdHocSubprocessActivityQueryImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public AdHocSubprocessActivityQuery newAdHocSubprocessActivityQuery(
+      final long processDefinitionKey, final String adHocSubprocessId) {
+    return newAdHocSubprocessActivityQuery()
+        .filter(
+            filter ->
+                filter
+                    .processDefinitionKey(processDefinitionKey)
+                    .adHocSubprocessId(adHocSubprocessId));
   }
 
   @Override
