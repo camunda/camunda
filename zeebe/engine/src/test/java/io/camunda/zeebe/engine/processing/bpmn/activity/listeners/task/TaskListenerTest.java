@@ -2949,4 +2949,108 @@ public class TaskListenerTest {
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.CANCELED);
   }
+
+  @Test
+  public void shouldTriggerCancelingAfterHavingBeenInterrupted() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask(
+                    USER_TASK_ELEMENT_ID,
+                    t ->
+                        t.zeebeUserTask()
+                            .zeebeTaskListener(l -> l.canceling().type(listenerType))
+                            .zeebeTaskListener(l -> l.canceling().type(listenerType + "_2"))
+                            .zeebeTaskListener(l -> l.canceling().type(listenerType + "_3")))
+                .boundaryEvent("timer_boundary_event")
+                .timerWithDate("=now()")
+                .endEvent("boundary_end")
+                .moveToActivity(USER_TASK_ELEMENT_ID)
+                .endEvent("user_task_end")
+                .done());
+
+    // when
+    completeJobs(processInstanceKey, listenerType);
+
+    // cancel a process instance
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectPartialSuccess().cancel();
+
+    completeJobs(processInstanceKey, listenerType + "_2", listenerType + "_3");
+
+    assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.CANCELING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
+    // `CANCELING` and `CANCELED` events
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.CANCELING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.CANCELED);
+  }
+
+  @Test
+  public void shouldTriggerCancelingAfterHavingBeenInterruptedByNestedBoundaryEvent() {
+    // given
+    final long processInstanceKey =
+        createProcessInstanceWithVariables(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subProcess",
+                    s ->
+                        s.embeddedSubProcess()
+                            .startEvent()
+                            .userTask(
+                                USER_TASK_ELEMENT_ID,
+                                t ->
+                                    t.zeebeUserTask()
+                                        .zeebeTaskListener(l -> l.canceling().type(listenerType))
+                                        .zeebeTaskListener(
+                                            l -> l.canceling().type(listenerType + "_2"))
+                                        .zeebeTaskListener(
+                                            l -> l.canceling().type(listenerType + "_3")))
+                            .boundaryEvent("inner_timer_boundary_event")
+                            .timerWithDate("=now()")
+                            .endEvent("boundary_end")
+                            .moveToActivity(USER_TASK_ELEMENT_ID)
+                            .endEvent("user_task_end"))
+                .boundaryEvent("message_boundary_event")
+                .message(m -> m.name("msg").zeebeCorrelationKeyExpression("correlationKey"))
+                .endEvent("message_boundary_event_end")
+                .moveToActivity("subProcess")
+                .endEvent("end")
+                .done(),
+            Map.of("correlationKey", "key_123"));
+
+    // when
+    completeJobs(processInstanceKey, listenerType);
+
+    ENGINE.message().withName("msg").withCorrelationKey("key_123").publish();
+
+    completeJobs(processInstanceKey, listenerType + "_2", listenerType + "_3");
+
+    assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.CANCELING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
+    // `CANCELING` and `CANCELED` events
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.CANCELING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.CANCELED);
+  }
 }
