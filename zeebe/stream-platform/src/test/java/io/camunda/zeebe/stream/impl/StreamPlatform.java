@@ -38,6 +38,8 @@ import io.camunda.zeebe.stream.impl.state.DbLastProcessedPositionState;
 import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -155,6 +157,7 @@ public final class StreamPlatform {
    * @return the create log context
    */
   public LogContext createLogContext(final ListLogStorage logStorage, final int partitionId) {
+    final var meterRegistry = new SimpleMeterRegistry();
     final var logStream =
         SyncLogStream.builder()
             .withLogName(STREAM_NAME + partitionId)
@@ -162,10 +165,11 @@ public final class StreamPlatform {
             .withClock(clock)
             .withPartitionId(partitionId)
             .withActorSchedulingService(actorScheduler)
+            .withMeterRegistry(meterRegistry)
             .build();
 
     logStorage.setPositionListener(logStream::setLastWrittenPosition);
-    return new LogContext(logStream);
+    return new LogContext(logStream, meterRegistry);
   }
 
   public SynchronousLogStream getLogStream() {
@@ -368,7 +372,8 @@ public final class StreamPlatform {
     return processorContext.zeebeDb;
   }
 
-  public record LogContext(SynchronousLogStream logStream) implements AutoCloseable {
+  public record LogContext(SynchronousLogStream logStream, MeterRegistry meterRegistry)
+      implements AutoCloseable {
 
     public LogStreamWriter setupWriter() {
       return logStream.newLogStreamWriter();
@@ -377,6 +382,7 @@ public final class StreamPlatform {
     @Override
     public void close() {
       logStream.close();
+      MicrometerUtil.closeRegistry(meterRegistry);
     }
   }
 

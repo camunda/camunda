@@ -98,6 +98,13 @@ public final class MicrometerUtil {
     registry.close();
   }
 
+  /** Returns a timer builder pre-configured based on the given documentation. */
+  public static Timer.Builder buildTimer(final ExtendedMeterDocumentation documentation) {
+    return Timer.builder(documentation.getName())
+        .description(documentation.getDescription())
+        .serviceLevelObjectives(documentation.getTimerSLOs());
+  }
+
   /**
    * Produce an array with exponentially spaced values by a factor. Used to create similar buckets
    * to the prometheus function on Histograms "exponentialBuckets"
