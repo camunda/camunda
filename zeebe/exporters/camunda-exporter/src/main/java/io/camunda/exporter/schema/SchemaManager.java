@@ -14,6 +14,7 @@ import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -124,13 +125,14 @@ public class SchemaManager {
     }
 
     final var existingIndexNames =
-        searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet();
+        Collections.synchronizedSet(
+            searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet());
 
     LOG.info(
         "Found '{}' existing indices. Create missing index templates based on '{}' descriptors.",
         existingIndexNames.size(),
         indexTemplateDescriptors.size());
-    indexDescriptors.stream()
+    indexDescriptors.parallelStream()
         .filter(descriptor -> !existingIndexNames.contains(descriptor.getFullQualifiedName()))
         .forEach(
             descriptor -> {
@@ -147,15 +149,16 @@ public class SchemaManager {
     }
 
     final var existingTemplateNames =
-        searchEngineClient
-            .getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX_TEMPLATE)
-            .keySet();
+        Collections.synchronizedSet(
+            searchEngineClient
+                .getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX_TEMPLATE)
+                .keySet());
 
     LOG.info(
         "Found '{}' existing index templates. Create missing index templates based on '{}' descriptors.",
         existingTemplateNames.size(),
         indexTemplateDescriptors.size());
-    indexTemplateDescriptors.stream()
+    indexTemplateDescriptors.parallelStream()
         .filter(descriptor -> !existingTemplateNames.contains(descriptor.getTemplateName()))
         .forEach(
             descriptor -> {
