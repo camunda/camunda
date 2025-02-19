@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior.LinkedResourceProps;
@@ -22,6 +24,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Map;
+import org.camunda.bpm.model.xml.impl.util.ReflectUtil;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -73,5 +76,25 @@ public class ServiceTaskTest {
     Assertions.assertThat(jobCreated.getValue())
         .hasCustomHeaders(
             Map.of("linkedResources", MAPPER.writeValueAsString(List.of(resourceProps))));
+  }
+
+  @Test
+  public void shouldNotIncludeLinkedResourcesWhenTheyAreNotInServiceTask() {
+    final BpmnModelInstance modelInstance =
+        Bpmn.readModelFromStream(
+            ReflectUtil.getResourceAsStream("resource/test-send-task-with-linked-resources.bpmn"));
+
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> jobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(jobCreated.getValue().getCustomHeaders()).doesNotContainKey("linkedResources");
   }
 }
