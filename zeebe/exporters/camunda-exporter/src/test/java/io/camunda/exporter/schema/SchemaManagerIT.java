@@ -435,6 +435,120 @@ public class SchemaManagerIT {
     assertThat(mappingsMatch(updatedIndex.get("mappings"), newMappingsFile)).isTrue();
   }
 
+  @TestTemplate
+  void shouldUpdateSettingsForIndexTemplatesButNotUpdateIndexSettingsWhenSchemaChanges(
+      final ExporterConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+    // given
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    schemaManager.startup();
+
+    final var indexTemplateSettingsToBeAppended =
+        "/index_template/template/settings/index/refresh_interval";
+    final var indexSettingsToBeAppended = "/settings/index/refresh_interval";
+
+    final var initialTemplate =
+        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+    final var initialMatchingIndex =
+        searchClientAdapter.getIndexAsNode(indexTemplate.getFullQualifiedName());
+
+    assertThat(initialTemplate.at(indexTemplateSettingsToBeAppended).asText()).isEqualTo("");
+    assertThat(initialMatchingIndex.at(indexSettingsToBeAppended).asText()).isEqualTo("");
+
+    // when
+    when(indexTemplate.getMappingsClasspathFilename())
+        .thenReturn("/mappings-and-updated-settings.json");
+
+    // change index template schema to have new updated settings and trigger update
+    schemaManager.startup();
+
+    // then
+    final var updatedTemplate =
+        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+    final var updatedMatchingIndex =
+        searchClientAdapter.getIndexAsNode(indexTemplate.getFullQualifiedName());
+
+    assertThat(updatedTemplate.at(indexTemplateSettingsToBeAppended).asText()).isEqualTo("5s");
+    assertThat(updatedMatchingIndex.at(indexSettingsToBeAppended).asText()).isEqualTo("");
+  }
+
+  @TestTemplate
+  void shouldUpdateIndexTemplateWithNewReplicaAndShardCount(
+      final ExporterConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+    // given
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    schemaManager.startup();
+
+    final var replicaSettingPath = "/index_template/template/settings/index/number_of_replicas";
+    final var shardsSettingPath = "/index_template/template/settings/index/number_of_shards";
+
+    final var initialTemplate =
+        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+
+    assertThat(initialTemplate.at(replicaSettingPath).asInt()).isEqualTo(0);
+    assertThat(initialTemplate.at(shardsSettingPath).asInt()).isEqualTo(1);
+
+    // when
+    config.getIndex().setNumberOfReplicas(5);
+    config.getIndex().setNumberOfShards(5);
+
+    schemaManager.startup();
+
+    // then
+    final var updatedTemplate =
+        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+
+    assertThat(updatedTemplate.at(replicaSettingPath).asInt()).isEqualTo(5);
+    assertThat(updatedTemplate.at(shardsSettingPath).asInt()).isEqualTo(5);
+  }
+
+  @TestTemplate
+  void shouldUpdateIndexWithNewReplicaCountButNotNewShardCount(
+      final ExporterConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+    // given
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config), Set.of(index), Set.of(), config, objectMapper);
+
+    schemaManager.startup();
+
+    final var replicaSettingPath = "/settings/index/number_of_replicas";
+    final var shardsSettingPath = "/settings/index/number_of_shards";
+
+    final var initialIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
+
+    assertThat(initialIndex.at(replicaSettingPath).asInt()).isEqualTo(0);
+    assertThat(initialIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
+
+    // when
+    config.getIndex().setNumberOfReplicas(5);
+    config.getIndex().setNumberOfShards(5);
+
+    schemaManager.startup();
+
+    // then
+    final var updatedIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
+
+    assertThat(updatedIndex.at(replicaSettingPath).asInt()).isEqualTo(5);
+    assertThat(updatedIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
+  }
+
   @RegressionTestTemplate("https://github.com/camunda/camunda/issues/26056")
   void shouldNotHaveValidationIssuesWithTheSameIndices(
       final ExporterConfiguration config, final SearchClientAdapter searchClientAdapter) {
