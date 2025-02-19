@@ -34,6 +34,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.netty.util.NetUtil;
 import java.io.File;
 import java.io.IOException;
@@ -62,7 +63,6 @@ public final class EmbeddedBrokerRule extends ExternalResource {
   public static final TimeUnit INSTALL_TIMEOUT_UNIT = TimeUnit.MINUTES;
   protected static final Logger LOG = TestLoggers.TEST_LOGGER;
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
-  private static final boolean ENABLE_HTTP_EXPORTER = false;
   private static final String SNAPSHOTS_DIRECTORY = "snapshots";
   private static final String STATE_DIRECTORY = "state";
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -159,6 +159,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
         LOG.error("Unexpected error on deleting data.", e);
       }
 
+      MicrometerUtil.close(meterRegistry);
       controlledActorClock.reset();
     }
   }

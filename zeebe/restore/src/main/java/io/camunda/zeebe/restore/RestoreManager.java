@@ -20,6 +20,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
@@ -116,18 +117,7 @@ public class RestoreManager {
             new ChecksumProviderRocksDBImpl())
         .restore(backupId, validator)
         .thenAccept(backup -> logSuccessfulRestore(backup, raftPartition.id().id(), backupId))
-        .whenComplete(
-            (ok, error) -> {
-              registry.clear();
-              registry.close();
-              registry.remove(meterRegistry);
-            });
-  }
-
-  private void closeRegistry(final CompositeMeterRegistry registry) {
-    registry.clear();
-    registry.close();
-    registry.remove(meterRegistry);
+        .whenComplete((ok, error) -> MicrometerUtil.close(registry));
   }
 
   private Set<InstrumentedRaftPartition> collectPartitions() {
@@ -147,10 +137,9 @@ public class RestoreManager {
 
   private InstrumentedRaftPartition createRaftPartition(
       final PartitionMetadata metadata, final RaftPartitionFactory factory) {
-    final var partitionRegistry = new CompositeMeterRegistry();
-    final var partitionId = metadata.id().id().toString();
-    partitionRegistry.config().commonTags(PartitionKeyNames.PARTITION.asString(), partitionId);
-    partitionRegistry.add(meterRegistry);
+    final var partitionId = metadata.id().id();
+    final var partitionRegistry =
+        MicrometerUtil.wrap(meterRegistry, PartitionKeyNames.tags(partitionId));
 
     return new InstrumentedRaftPartition(
         factory.createRaftPartition(metadata, partitionRegistry), partitionRegistry);

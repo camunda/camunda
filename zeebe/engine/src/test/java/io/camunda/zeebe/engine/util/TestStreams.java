@@ -489,7 +489,7 @@ public final class TestStreams {
     @Override
     public void close() {
       logStream.close();
-      MicrometerUtil.closeRegistry(meterRegistry);
+      MicrometerUtil.close(meterRegistry);
     }
 
     public SynchronousLogStream getLogStream() {
