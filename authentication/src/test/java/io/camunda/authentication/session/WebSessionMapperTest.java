@@ -37,7 +37,7 @@ public class WebSessionMapperTest {
   }
 
   @Test
-  void toPersistentSessionWithCamundaPrinciple() {
+  void toPersistentSessionWithCamundaPrincipal() {
     // given
     final var securityContext = new SecurityContextImpl();
     final UsernamePasswordAuthenticationToken authenticationToken =
@@ -127,7 +127,7 @@ public class WebSessionMapperTest {
   }
 
   @Test
-  void fromPersistentSessionWithCamundaPrinciple() {
+  void fromPersistentSessionWithCamundaPrincipal() {
     // given
     final var now = Instant.now();
     final var maxInactiveInterval = Duration.ofSeconds(1800);
