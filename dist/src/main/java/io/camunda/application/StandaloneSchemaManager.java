@@ -9,6 +9,7 @@ package io.camunda.application;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.listeners.ApplicationErrorListener;
+import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -114,7 +115,8 @@ public class StandaloneSchemaManager {
         applicationContext.getBean(io.camunda.operate.schema.SchemaStartup.class);
     final io.camunda.tasklist.schema.SchemaStartup tasklistSchemaStartup =
         applicationContext.getBean(io.camunda.tasklist.schema.SchemaStartup.class);
-
+    new io.camunda.zeebe.exporter.SchemaManager(new ElasticsearchExporterConfiguration())
+        .createSchema();
     LOG.info("... finished creating/updating Elasticsearch schema for Camunda");
     System.exit(0);
   }
