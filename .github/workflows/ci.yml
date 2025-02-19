@@ -1034,37 +1034,12 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.0.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
-            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
-      - uses: actions/setup-java@v4.6.0
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-      # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
-      - name: 'Create settings.xml'
-        uses: s4u/maven-settings-action@v3.1.0
-        with:
-          githubServer: false
-          servers: |
-            [{
-              "id": "camunda-nexus",
-              "username": "${{ steps.secrets.outputs.ARTIFACTS_USR }}",
-              "password": "${{ steps.secrets.outputs.ARTIFACTS_PSW }}"
-            }]
-          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "zeebe,zeebe-snapshots", "name": "camunda Nexus"}]'
-      - name: Configure Maven
-        uses: ./.github/actions/setup-maven-cache
+      - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: snapshots
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-frontend
         id: build-operate-fe
         with:
@@ -1081,9 +1056,6 @@ jobs:
       # necessary when using annotation preprocessors for code generation, as otherwise the symbols are
       # not resolve-able by the Javadoc generator
       - run: ./mvnw -B -D skipTests -D skipChecks -PskipFrontendBuild compile generate-sources source:jar javadoc:jar deploy
-        env:
-          MAVEN_USERNAME: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
-          MAVEN_PASSWORD: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
       - name: Observe build status
         if: always()
         continue-on-error: true
