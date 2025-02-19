@@ -99,8 +99,10 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
     }
 
     LOG.info(
-        "Retrying to distribute retriable command {} to partition {}",
+        "Retrying to distribute retriable command {} ({}.{}) to partition {}",
         retriable.distributionKey,
+        commandDistributionRecord.getValueType(),
+        commandDistributionRecord.getIntent(),
         retriable.partitionId);
 
     commandSender.sendCommand(
