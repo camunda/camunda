@@ -3597,7 +3597,7 @@ paths:
           $ref: "#/components/responses/InternalServerError"
 
   /element-instances/{elementInstanceKey}/variables:
-    put:
+    post:
       tags:
         - Element instance
       operationId: createElementInstanceVariables
@@ -6095,10 +6095,6 @@ components:
             As a result, the completion request is rejected and the task remains active.
             Defaults to false.
           nullable: true
-        deniedReason:
-          type: string
-          description: The reason provided by the user task listener for denying the work.
-          nullable: true
         corrections:
           $ref: "#/components/schemas/JobResultCorrections"
     JobResultCorrections:
@@ -7401,8 +7397,8 @@ components:
         tenantId:
           description: The tenant ID of the form.
           type: string
-        formId:
-          description: The user-provided identifier of the form.
+        bpmnId:
+          description: The BPMN ID of the form.
           type: string
         schema:
           description: The form content.
@@ -7412,7 +7408,7 @@ components:
           type: integer
           format: int64
         formKey:
-          description: The assigned key, which acts as a unique identifier for this form.
+          description: The key of the form.
           type: string
   responses:
     InternalServerError:

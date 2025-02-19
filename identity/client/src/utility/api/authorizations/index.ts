@@ -47,7 +47,7 @@ export enum OwnerType {
   "ROLE" = "ROLE",
   "GROUP" = "GROUP",
   "MAPPING" = "MAPPING",
-  "UNSPECIFIED" = "UNSPECIFIED",
+  "UNSPECIFICED" = "UNSPECIFICED",
 }
 
 export enum ResourceType {

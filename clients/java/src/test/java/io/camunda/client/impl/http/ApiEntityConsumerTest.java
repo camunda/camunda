@@ -75,11 +75,8 @@ class ApiEntityConsumerTest {
     assertThat(entity).isInstanceOf(Error.class);
     final ProblemDetail response = entity.problem();
     assertThat(response).isNotNull();
-    assertThat(response.getTitle()).isEqualTo("Cannot parse the server JSON response");
-    assertThat(response.getDetail())
-        .contains(jsonResponse)
-        .contains("The client failed to parse the JSON response")
-        .contains("Unrecognized field \"foo\"");
+    assertThat(response.getTitle()).isEqualTo("Unexpected server response");
+    assertThat(response.getDetail()).isEqualTo(jsonResponse);
   }
 
   @Test
@@ -102,11 +99,8 @@ class ApiEntityConsumerTest {
     assertThat(entity).isInstanceOf(Error.class);
     final ProblemDetail response = entity.problem();
     assertThat(response).isNotNull();
-    assertThat(response.getTitle()).isEqualTo("Cannot parse the server JSON response");
-    assertThat(response.getDetail())
-        .contains(jsonResponse)
-        .contains("The client failed to parse the JSON response")
-        .contains("Unrecognized field \"foo\"");
+    assertThat(response.getTitle()).isEqualTo("Unexpected server response");
+    assertThat(response.getDetail()).isEqualTo(jsonResponse);
   }
 
   @Test

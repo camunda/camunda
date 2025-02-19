@@ -14,7 +14,7 @@ const DeleteModal: FC<UseEntityModalProps<User>> = ({
   onSuccess,
   entity: { username },
 }) => {
-  const { t, Translate } = useTranslate();
+  const { t } = useTranslate();
   const { enqueueNotification } = useNotifications();
   const [apiCall, { loading }] = useApiCall(deleteUser);
 
@@ -35,18 +35,17 @@ const DeleteModal: FC<UseEntityModalProps<User>> = ({
   return (
     <Modal
       open={open}
-      headline={t("Delete user")}
+      headline={t(
+        'Are you sure you want to delete the user "{{ username }}"?',
+        {
+          username,
+        },
+      )}
       onSubmit={handleSubmit}
       loading={loading}
-      loadingDescription={t("Deleting user...")}
+      loadingDescription={t("Deleting user")}
       onClose={onClose}
-    >
-      <p>
-        <Translate>Are you sure you want to delete the user</Translate>{" "}
-        <strong>{username}</strong>?{" "}
-        <Translate>this action cannot be undone.</Translate>
-      </p>
-    </Modal>
+    />
   );
 };
 

@@ -129,7 +129,6 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
     updateFields.put(PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
     updateFields.put(FLOW_NODE_ID, entity.getFlowNodeId());
     updateFields.put(POSITION, entity.getPosition());
-    updateFields.put(TREE_PATH, entity.getTreePath());
     batchRequest.upsert(indexName, String.valueOf(entity.getKey()), entity, updateFields);
   }
 
@@ -145,7 +144,7 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
     final List<Integer> callingElementPath = value.getCallingElementPath();
     final List<Long> processDefinitionPath = value.getProcessDefinitionPath();
 
-    final Long processInstanceKey = value.getProcessInstanceKey();
+    final Long processInstanceKey = Long.valueOf(value.getProcessInstanceKey());
 
     // example of how the tree path is built when current instance is on the third level of calling
     // hierarchy:

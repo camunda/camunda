@@ -101,7 +101,7 @@ public final class MicrometerUtil {
   }
 
   /** Returns a timer builder pre-configured based on the given documentation. */
-  public static Timer.Builder buildTimer(final ExtendedMeterDocumentation documentation) {
+  public static Timer.Builder timer(final ExtendedMeterDocumentation documentation) {
     return Timer.builder(documentation.getName())
         .description(documentation.getDescription())
         .serviceLevelObjectives(documentation.getTimerSLOs());

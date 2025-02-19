@@ -103,14 +103,7 @@ public interface TypedApiEntityConsumer<T> {
         // write the original JSON response into an error response
         final String jsonString = getJsonString();
         return ApiEntity.of(
-            new ProblemDetail()
-                .title("Cannot parse the server JSON response")
-                .status(500)
-                .detail(
-                    "The client failed to parse the JSON response: "
-                        + ioe.getMessage()
-                        + ". The received JSON payload is: "
-                        + jsonString));
+            new ProblemDetail().title("Unexpected server response").status(500).detail(jsonString));
       }
     }
 

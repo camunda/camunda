@@ -40,7 +40,6 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.hc.core5.http.HttpStatus;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -48,11 +47,6 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-// Suppressing resource warning because JobWorker instances are managed and closed automatically
-// by `CamundaClient#close()`, which is invoked via the JUnit 5 extension due to the `client`
-// being annotated with `@AutoClose`. This ensures proper cleanup without requiring explicit
-// try-with-resources statements in each test.
-@SuppressWarnings("resource")
 @ZeebeIntegration
 public class UserTaskListenersTest {
 
@@ -288,46 +282,6 @@ public class UserTaskListenersTest {
   }
 
   @Test
-  void shouldRejectUserTaskUpdateWhenUpdatingTaskListenerDeniesTheWork() {
-    // given
-    final var listenerType = "complete_with_denial";
-    final var userTaskKey =
-        resourcesHelper.createSingleUserTask(
-            t -> t.zeebeTaskListener(l -> l.updating().type(listenerType)));
-
-    final JobHandler completeJobWithDenialHandler =
-        (jobClient, job) -> client.newCompleteCommand(job).withResult().deny(true).send().join();
-    client.newWorker().jobType(listenerType).handler(completeJobWithDenialHandler).open();
-
-    // when: invoke `UPDATE` user task command
-    final var updateUserTaskFuture =
-        client.newUserTaskUpdateCommand(userTaskKey).candidateUsers("user123").send();
-
-    // then: TL job should be successfully completed with the result "denied" set correctly
-    ZeebeAssertHelper.assertJobCompleted(
-        listenerType,
-        userTaskListener -> assertThat(userTaskListener.getResult().isDenied()).isTrue());
-
-    // and: verify the rejection
-    final var rejectionReason =
-        String.format(
-            "Command 'UPDATE' rejected with code 'INVALID_STATE': Update of the User Task with key '%s' was denied by Task Listener",
-            userTaskKey);
-    assertThatExceptionOfType(ProblemException.class)
-        .isThrownBy(updateUserTaskFuture::join)
-        .satisfies(
-            ex -> {
-              assertThat(ex.details().getTitle()).isEqualTo(RejectionType.INVALID_STATE.name());
-              assertThat(ex.details().getDetail()).isEqualTo(rejectionReason);
-              assertThat(ex.details().getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
-            });
-
-    // and: verify the expected sequence of User Task intents
-    assertUserTaskIntentsSequence(
-        UserTaskIntent.UPDATING, UserTaskIntent.DENY_TASK_LISTENER, UserTaskIntent.UPDATE_DENIED);
-  }
-
-  @Test
   public void shouldRejectUserTaskCompletionWhenTaskListenerDeniesTheWork() {
     // given
     final var listenerType = "my_listener";
@@ -348,7 +302,9 @@ public class UserTaskListenersTest {
     // TL job should be successfully completed with the result "denied" set correctly
     ZeebeAssertHelper.assertJobCompleted(
         listenerType,
-        userTaskListener -> assertThat(userTaskListener.getResult().isDenied()).isTrue());
+        (userTaskListener) -> {
+          assertThat(userTaskListener.getResult().isDenied()).isTrue();
+        });
 
     final var rejectionReason =
         String.format(
@@ -370,168 +326,6 @@ public class UserTaskListenersTest {
         UserTaskIntent.COMPLETING,
         UserTaskIntent.DENY_TASK_LISTENER,
         UserTaskIntent.COMPLETION_DENIED);
-  }
-
-  @Test
-  void shouldUpdateUserTaskWithUpdatingTaskListenerWithCorrections() {
-    // given
-    final var listenerType = "complete_updating_listener_with_corrections";
-    final var userTaskKey =
-        resourcesHelper.createSingleUserTask(
-            t ->
-                t.zeebeTaskListener(l -> l.updating().type(listenerType))
-                    .zeebeCandidateGroups("initial_group_A, initial_group_B")
-                    .zeebeTaskPriority("22"));
-
-    final JobHandler completeJobWithCorrectionsHandler =
-        (jobClient, job) ->
-            client
-                .newCompleteCommand(job)
-                .withResult()
-                .correctAssignee("new_assignee")
-                .correctDueDate("new_due_date")
-                .correctFollowUpDate("new_follow_up_date")
-                .correctCandidateUsers(List.of("new_user_A", "new_user_B"))
-                .correctCandidateGroups(List.of("new_group_C"))
-                .correctPriority(99)
-                .send()
-                .join();
-
-    client.newWorker().jobType(listenerType).handler(completeJobWithCorrectionsHandler).open();
-
-    // when: invoke `UPDATE` user task command
-    final var updateUserTaskFuture =
-        client.newUserTaskUpdateCommand(userTaskKey).priority(55).action("escalate").send();
-
-    final JobResult expectedResult =
-        new JobResult()
-            .setDenied(false)
-            .setCorrections(
-                new JobResultCorrections()
-                    .setAssignee("new_assignee")
-                    .setDueDate("new_due_date")
-                    .setFollowUpDate("new_follow_up_date")
-                    .setCandidateUsersList(List.of("new_user_A", "new_user_B"))
-                    .setCandidateGroupsList(List.of("new_group_C"))
-                    .setPriority(99))
-            .setCorrectedAttributes(
-                Arrays.asList(
-                    UserTaskRecord.ASSIGNEE,
-                    UserTaskRecord.DUE_DATE,
-                    UserTaskRecord.FOLLOW_UP_DATE,
-                    UserTaskRecord.CANDIDATE_USERS,
-                    UserTaskRecord.CANDIDATE_GROUPS,
-                    UserTaskRecord.PRIORITY));
-
-    // TL job should be successfully completed with expected JobResult
-    ZeebeAssertHelper.assertJobCompleted(
-        listenerType, tl -> assertThat(tl.getResult()).isEqualTo(expectedResult));
-
-    // wait for successful `UPDATE` user task command completion
-    assertThatCode(updateUserTaskFuture::join).doesNotThrowAnyException();
-
-    // then: verify the state of `UPDATED` user task record
-    ZeebeAssertHelper.assertUserTaskUpdated(
-        userTaskKey,
-        (userTask) -> {
-          assertThat(userTask.getAssignee()).isEqualTo("new_assignee");
-          assertThat(userTask.getDueDate()).isEqualTo("new_due_date");
-          assertThat(userTask.getFollowUpDate()).isEqualTo("new_follow_up_date");
-          assertThat(userTask.getCandidateUsersList()).containsExactly("new_user_A", "new_user_B");
-          assertThat(userTask.getCandidateGroupsList()).containsExactly("new_group_C");
-          assertThat(userTask.getPriority()).isEqualTo(99);
-        });
-  }
-
-  @Test
-  void shouldUpdateUserTaskWithUpdatingTaskListenerWithPartialCorrections() {
-    // given
-    final var listenerType = "updating_listener_with_partial_corrections";
-    final var initialDueDate = "2015-01-02T15:35+02:00";
-    final var updatedDueDate = "2016-01-02T15:35+02:00";
-    final var correctedDueDate = "2017-01-02T15:35+02:00";
-    final var initialFollowUpDate = "2020-02-02T15:35+02:00";
-    final var correctedFollowUpDate = "2021-02-02T15:35+02:00";
-
-    final var userTaskKey =
-        resourcesHelper.createSingleUserTask(
-            t ->
-                t.zeebeTaskListener(l -> l.updating().type(listenerType))
-                    .zeebeAssignee("initial_assignee")
-                    .zeebeDueDate(initialDueDate)
-                    .zeebeFollowUpDate(initialFollowUpDate)
-                    .zeebeCandidateUsers("initial_user_a, initial_user_b")
-                    .zeebeCandidateGroups("initial_group_a, initial_group_b")
-                    .zeebeTaskPriority("10"));
-
-    // Define a task listener handler that applies corrections (some overriding the update request)
-    final JobHandler completeJobWithCorrectionsHandler =
-        (jobClient, job) ->
-            client
-                .newCompleteCommand(job)
-                .withResult()
-                .correctAssignee("corrected_assignee")
-                .correctDueDate(correctedDueDate) // overrides the update
-                .correctFollowUpDate(correctedFollowUpDate)
-                .correctCandidateUsers(List.of("corrected_user_a", "corrected_user_b"))
-                .correctPriority(10) // resets to the initial value, overriding the update
-                .send()
-                .join();
-
-    client.newWorker().jobType(listenerType).handler(completeJobWithCorrectionsHandler).open();
-
-    // when: send an `UPDATE` command with explicit changes
-    final var updateUserTaskFuture =
-        client
-            .newUserTaskUpdateCommand(userTaskKey)
-            .dueDate(updatedDueDate)
-            .candidateGroups("updated_group")
-            .priority(99) // will be reset to the initial value by correction
-            .send();
-
-    // wait for successful `UPDATE` command execution
-    assertThatCode(updateUserTaskFuture::join).doesNotThrowAnyException();
-
-    // then: verify the state of `UPDATED` user task record
-    ZeebeAssertHelper.assertUserTaskUpdated(
-        userTaskKey,
-        (userTask) -> {
-          // Verify attributes that were updated successfully
-          assertThat(userTask.getCandidateGroupsList())
-              .describedAs("Candidate groups should reflect the requested update")
-              .containsExactly("updated_group");
-
-          // Verify attributes that were corrected by the task listener
-          assertThat(userTask.getAssignee())
-              .describedAs("Assignee should be updated based on correction")
-              .isEqualTo("corrected_assignee");
-
-          assertThat(userTask.getDueDate())
-              .describedAs("Due date should reflect correction (overriding the update request)")
-              .isEqualTo(correctedDueDate);
-
-          assertThat(userTask.getFollowUpDate())
-              .describedAs("Follow-up date should be set based on correction")
-              .isEqualTo(correctedFollowUpDate);
-
-          assertThat(userTask.getCandidateUsersList())
-              .describedAs("Candidate users should match corrected values")
-              .containsExactly("corrected_user_a", "corrected_user_b");
-
-          assertThat(userTask.getChangedAttributes())
-              .describedAs("Changed attributes should reflect only actual modifications")
-              .containsExactly(
-                  UserTaskRecord.ASSIGNEE,
-                  UserTaskRecord.CANDIDATE_GROUPS,
-                  UserTaskRecord.CANDIDATE_USERS,
-                  UserTaskRecord.DUE_DATE,
-                  UserTaskRecord.FOLLOW_UP_DATE);
-
-          // Verify unchanged attribute
-          assertThat(userTask.getPriority())
-              .describedAs("Priority should have the initial value as it was reset by correction")
-              .isEqualTo(10);
-        });
   }
 
   @Test

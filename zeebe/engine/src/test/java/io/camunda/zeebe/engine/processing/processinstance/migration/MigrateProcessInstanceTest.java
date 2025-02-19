@@ -20,7 +20,6 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -134,12 +133,7 @@ public class MigrateProcessInstanceTest {
         .hasBpmnProcessId(otherProcessId)
         .hasElementId(otherProcessId)
         .describedAs("Expect that version number did not change")
-        .hasVersion(1)
-        .hasElementInstancePath(List.of(processInstanceKey))
-        .describedAs(
-            "Expect that process definition path changed to contain new process definition key")
-        .hasProcessDefinitionPath(List.of(otherProcessDefinitionKey))
-        .hasCallingElementPath(List.of());
+        .hasVersion(1);
   }
 
   @Test
@@ -198,10 +192,6 @@ public class MigrateProcessInstanceTest {
         .hasVersion(2)
         .describedAs("Expect that bpmn process id and element id did not change")
         .hasBpmnProcessId(processId)
-        .hasElementInstancePath(List.of(processInstanceKey))
-        .describedAs(
-            "Expect that process definition path changed to contain new process definition key")
-        .hasProcessDefinitionPath(List.of(v2ProcessDefinitionKey))
-        .hasCallingElementPath(List.of());
+        .hasElementId(processId);
   }
 }

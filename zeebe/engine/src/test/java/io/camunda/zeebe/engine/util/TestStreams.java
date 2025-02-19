@@ -54,7 +54,6 @@ import io.camunda.zeebe.stream.impl.TypedEventRegistry;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
@@ -161,19 +160,17 @@ public final class TestStreams {
       final int partitionId,
       final LogStorage logStorage,
       final Consumer<TestLogStream> logStreamConsumer) {
-    final var meterRegistry = new SimpleMeterRegistry();
     final var logStream =
         TestLogStream.builder()
             .withLogName(name)
             .withLogStorage(logStorage)
             .withPartitionId(partitionId)
             .withClock(clock)
-            .withMeterRegistry(meterRegistry)
             .build();
 
     logStreamConsumer.accept(logStream);
 
-    final LogContext logContext = new LogContext(logStream, meterRegistry);
+    final LogContext logContext = LogContext.createLogContext(logStream);
     logContextMap.put(name, logContext);
     closeables.manage(logContext);
     closeables.manage(() -> logContextMap.remove(name));
@@ -499,17 +496,24 @@ public final class TestStreams {
     }
   }
 
-  public record LogContext(TestLogStream logStream, MeterRegistry meterRegistry)
-      implements AutoCloseable {
+  private static final class LogContext implements AutoCloseable {
+    private final TestLogStream logStream;
+
+    private LogContext(final TestLogStream logStream) {
+      this.logStream = logStream;
+    }
+
+    public static LogContext createLogContext(final TestLogStream logStream) {
+      return new LogContext(logStream);
+    }
 
     @Override
     public void close() {
       logStream.close();
-      MicrometerUtil.closeRegistry(meterRegistry);
     }
 
     public TestLogStream getLogStream() {
-      return logStream();
+      return logStream;
     }
 
     public LogStreamWriter newLogStreamWriter() {

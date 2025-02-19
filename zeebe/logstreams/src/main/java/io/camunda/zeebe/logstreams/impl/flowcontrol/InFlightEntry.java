@@ -10,15 +10,15 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 import com.netflix.concurrency.limits.Limiter.Listener;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
-import io.camunda.zeebe.util.CloseableSilently;
+import io.prometheus.client.Histogram;
 import java.util.List;
 
 public final class InFlightEntry {
   final LogStreamMetrics metrics;
   List<LogAppendEntryMetadata> entryMetadata;
   Listener requestListener;
-  CloseableSilently writeTimer;
-  CloseableSilently commitTimer;
+  Histogram.Timer writeTimer;
+  Histogram.Timer commitTimer;
 
   public InFlightEntry(
       final LogStreamMetrics metrics,

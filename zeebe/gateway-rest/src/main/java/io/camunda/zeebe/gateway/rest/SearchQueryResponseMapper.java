@@ -460,7 +460,7 @@ public final class SearchQueryResponseMapper {
   public static FormResult toFormItem(final FormEntity f) {
     return new FormResult()
         .formKey(KeyUtil.keyToString(f.formKey()))
-        .formId(f.formId())
+        .bpmnId(f.formId())
         .version(f.version())
         .schema(f.schema())
         .tenantId(f.tenantId());

@@ -220,9 +220,6 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessInstanceIntent.ELEMENT_MIGRATED,
         new ProcessInstanceElementMigratedApplier(elementInstanceState, processState));
-    register(
-        ProcessInstanceIntent.ANCESTOR_MIGRATED,
-        new ProcessInstanceAncestorMigratedApplier(elementInstanceState));
   }
 
   private void registerProcessInstanceCreationAppliers(final MutableProcessingState state) {
@@ -434,7 +431,6 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskIntent.CORRECTED, new UserTaskCorrectedApplier(state));
     register(UserTaskIntent.COMPLETION_DENIED, new UserTaskCompletionDeniedApplier(state));
     register(UserTaskIntent.ASSIGNMENT_DENIED, new UserTaskAssignmentDeniedApplier(state));
-    register(UserTaskIntent.UPDATE_DENIED, new UserTaskUpdateDeniedApplier(state));
   }
 
   private void registerCompensationSubscriptionApplier(

@@ -151,9 +151,7 @@ public class IncidentHandlerTest {
                 "bpmnProcessId",
                 incidentRecordValue.getBpmnProcessId(),
                 "processDefinitionKey",
-                incidentRecordValue.getProcessDefinitionKey(),
-                "treePath",
-                incidentEntity.getTreePath()));
+                incidentRecordValue.getProcessDefinitionKey()));
     verify(incidentNotifier).notifyAsync(List.of(incidentEntity));
   }
 

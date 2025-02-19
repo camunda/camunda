@@ -110,7 +110,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
       {
         "formKey": "0",
         "tenantId": "tenant-1",
-        "formId": "formId",
+        "bpmnId": "formId",
         "schema": "schema",
         "version": 1
       }

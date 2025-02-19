@@ -1,4 +1,4 @@
-import { ChangeEvent, FC, useId, useMemo } from "react";
+import { ChangeEvent, FC } from "react";
 import { PasswordInput, TextArea, TextInput } from "@carbon/react";
 import useTranslate from "src/utility/localization";
 
@@ -10,16 +10,22 @@ export type TextFieldProps = {
   placeholder?: string;
   cols?: number;
   autoFocus?: boolean;
-  type?: "text" | "password" | "email";
-  onBlur?: () => void;
-  readOnly?: boolean;
-  onChange?: (newValue: string) => void;
-};
+  type?: "text" | "password";
+} & (
+  | {
+      onChange: (newValue: string) => void;
+      disabled?: false;
+    }
+  | {
+      onChange?: () => void;
+      disabled: true;
+    }
+);
 
 const TextField: FC<TextFieldProps> = ({
-  onChange,
-  onBlur,
-  errors = [],
+  onChange = () => null,
+  disabled = false,
+  errors,
   value,
   helperText,
   placeholder,
@@ -27,13 +33,10 @@ const TextField: FC<TextFieldProps> = ({
   cols,
   autoFocus = false,
   type = "text",
-  readOnly,
 }) => {
   const { t } = useTranslate();
-  const fieldId = useId();
-
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    onChange?.(e.currentTarget.value);
+    onChange(e.currentTarget.value);
   };
   const InputComponent =
     type === "password"
@@ -42,25 +45,24 @@ const TextField: FC<TextFieldProps> = ({
         ? TextArea
         : TextInput;
 
-  const additionalProps = useMemo(
-    () => (autoFocus ? { "data-modal-primary-focus": true } : {}),
-    [autoFocus],
-  );
+  const additionalProps = autoFocus
+    ? {
+        "data-modal-primary-focus": true,
+      }
+    : {};
 
   return (
     <InputComponent
       labelText={label}
       title={label}
-      id={fieldId}
+      id={label}
       helperText={helperText}
       value={value}
+      disabled={disabled}
       placeholder={placeholder}
       onChange={handleChange}
-      invalid={errors.length > 0}
-      invalidText={errors.map((e) => t(e)).join(" ")}
-      type={type}
-      onBlur={onBlur}
-      readOnly={readOnly}
+      invalid={errors && errors.length > 0}
+      invalidText={errors?.map((e) => t(e)).join(" ")}
       {...additionalProps}
     />
   );

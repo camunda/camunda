@@ -11,7 +11,6 @@ import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import { updateUser, User } from "src/utility/api/users";
-import { isValidEmail } from "./isValidEmail";
 
 const EditModal: FC<UseEntityModalProps<User>> = ({
   open,
@@ -20,9 +19,8 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
   entity,
 }) => {
   const { t } = useTranslate();
-  const [callUpdateUser, { loading }] = useApiCall(updateUser);
+  const [callUpdateUser, { loading, namedErrors }] = useApiCall(updateUser);
   const [user, setUser] = useState<User>(entity);
-  const [emailValid, setEmailValid] = useState(true);
 
   const handleSubmit = async () => {
     const { success } = await callUpdateUser(user);
@@ -42,31 +40,33 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
       confirmLabel={t("Update user")}
     >
       <TextField
-        label={t("Username")}
-        value={user.username}
-        placeholder={t("Enter username")}
-        readOnly
-      />
-      <TextField
         label={t("Name")}
         value={user.name}
-        placeholder={t("Enter name")}
+        placeholder={t("Name")}
         onChange={(name) => setUser({ ...user, name })}
+        errors={namedErrors?.name}
         autoFocus
+      />
+      <TextField
+        label={t("Username")}
+        value={user.username}
+        placeholder={t("Username")}
+        errors={namedErrors?.username}
+        disabled
       />
       <TextField
         label={t("Email")}
         value={user.email}
-        placeholder={t("Enter email address")}
+        placeholder={t("Email")}
         onChange={(email) => setUser({ ...user, email })}
-        onBlur={() => setEmailValid(isValidEmail(user.email))}
-        errors={!emailValid ? [t("Please enter a valid email")] : []}
+        errors={namedErrors?.email}
       />
       <TextField
-        label={t("New Password")}
+        label={t("Password")}
         value={user.password}
-        placeholder={t("Enter new password")}
+        placeholder={t("Password")}
         onChange={(password) => setUser({ ...user, password })}
+        errors={namedErrors?.password}
         type="password"
         helperText={t("Leave empty to keep current password")}
       />

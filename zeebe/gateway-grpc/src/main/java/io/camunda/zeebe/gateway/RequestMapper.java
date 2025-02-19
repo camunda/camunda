@@ -169,9 +169,7 @@ public final class RequestMapper extends RequestUtil {
     }
 
     if (!request.getResult().hasCorrections()) {
-      return new JobResult()
-          .setDenied(request.getResult().getDenied())
-          .setDeniedReason(request.getResult().getDeniedReason());
+      return new JobResult().setDenied(request.getResult().getDenied());
     }
 
     final JobResultCorrections corrections = new JobResultCorrections();
@@ -207,7 +205,6 @@ public final class RequestMapper extends RequestUtil {
 
     return new JobResult()
         .setDenied(request.getResult().getDenied())
-        .setDeniedReason(request.getResult().getDeniedReason())
         .setCorrections(corrections)
         .setCorrectedAttributes(correctedAttributes);
   }

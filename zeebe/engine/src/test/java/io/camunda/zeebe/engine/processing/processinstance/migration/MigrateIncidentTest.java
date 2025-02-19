@@ -97,9 +97,7 @@ public class MigrateIncidentTest {
         .hasElementInstanceKey(incident.getValue().getElementInstanceKey())
         .hasJobKey(incident.getValue().getJobKey())
         .hasVariableScopeKey(incident.getValue().getVariableScopeKey())
-        .hasTenantId(incident.getValue().getTenantId())
-        .describedAs("Expect that the process definition path is updated")
-        .hasOnlyProcessDefinitionPath(targetProcessDefinitionKey);
+        .hasTenantId(incident.getValue().getTenantId());
 
     // after resolving the incident, job can be completed and the process should continue
     ENGINE.job().ofInstance(processInstanceKey).withType("jobTypeA").withRetries(1).updateRetries();
@@ -189,9 +187,7 @@ public class MigrateIncidentTest {
         .hasElementInstanceKey(incident.getValue().getElementInstanceKey())
         .hasJobKey(incident.getValue().getJobKey())
         .hasVariableScopeKey(incident.getValue().getVariableScopeKey())
-        .hasTenantId(incident.getValue().getTenantId())
-        .describedAs("Expect that the process definition path is updated")
-        .hasOnlyProcessDefinitionPath(targetProcessDefinitionKey);
+        .hasTenantId(incident.getValue().getTenantId());
 
     // after resolving the incident, the process should continue as expected
     final Record<IncidentRecordValue> incidentRecord =

@@ -7,28 +7,9 @@
  */
 package io.camunda.zeebe.logstreams.impl;
 
-import static io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.COMMIT_LATENCY;
-import static io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.EXPORTING_RATE;
-import static io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.FLOW_CONTROL_OUTCOME;
-import static io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.INFLIGHT_APPENDS;
-import static io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.INFLIGHT_REQUESTS;
-import static io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.LAST_COMMITTED_POSITION;
-import static io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.LAST_WRITTEN_POSITION;
-import static io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.PARTITION_LOAD;
-import static io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.RECORD_APPENDED;
-import static io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.REQUEST_LIMIT;
-import static io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.TOTAL_APPEND_TRY_COUNT;
-import static io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.TOTAL_DEFERRED_APPEND_COUNT;
-import static io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.TOTAL_DROPPED_REQUESTS;
-import static io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.TOTAL_RECEIVED_REQUESTS;
-import static io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.WRITE_LATENCY;
-import static io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.WRITE_RATE_LIMIT;
-import static io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.WRITE_RATE_MAX_LIMIT;
+import static io.camunda.zeebe.logstreams.impl.LogStreamMetrics.FlowControlOutComeLabels.labelForContext;
+import static io.camunda.zeebe.logstreams.impl.LogStreamMetrics.FlowControlOutComeLabels.labelForReason;
 
-import io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.FlowControlContext;
-import io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.FlowControlKeyNames;
-import io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.FlowControlOutcome;
-import io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.RecordAppendedKeyNames;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.logstreams.log.WriteContext;
@@ -40,71 +21,199 @@ import io.camunda.zeebe.logstreams.log.WriteContext.UserCommand;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.util.CloseableSilently;
-import io.camunda.zeebe.util.collection.Map3D;
-import io.camunda.zeebe.util.collection.Table;
-import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Gauge;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
+import io.prometheus.client.Counter;
+import io.prometheus.client.Gauge;
+import io.prometheus.client.Histogram;
+import io.prometheus.client.Histogram.Timer;
+import java.util.EnumSet;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 public final class LogStreamMetrics {
-  private final AtomicLong inflightAppends = new AtomicLong();
-  private final AtomicLong inflightRequests = new AtomicLong();
-  private final AtomicLong requestLimit = new AtomicLong();
-  private final AtomicLong lastCommitted = new AtomicLong();
-  private final AtomicLong lastWritten = new AtomicLong();
-  private final AtomicLong exportingRate = new AtomicLong();
-  private final AtomicLong writeRateMaxLimit = new AtomicLong();
-  private final AtomicLong writeRateLimit = new AtomicLong();
-  private final AtomicLong partitionLoad = new AtomicLong();
-  private final Map3D<RecordType, ValueType, Intent, Counter> recordAppended = Map3D.simple();
-  private final Table<FlowControlContext, FlowControlOutcome, Counter> flowControlOutcome =
-      Table.ofEnum(FlowControlContext.class, FlowControlOutcome.class, Counter[]::new);
+  private static final Counter FLOW_CONTROL_OUTCOME =
+      Counter.build()
+          .namespace("zeebe")
+          .subsystem("flow_control")
+          .name("outcome")
+          .help(
+              "The count of records passing through the flow control, organized by context and outcome")
+          .labelNames("partition", "context", "outcome")
+          .register();
 
-  private final MeterRegistry registry;
-  private final Counter deferredAppends;
-  private final Counter triedAppends;
-  private final Counter receivedRequests;
-  private final Counter droppedRequests;
-  private final Timer commitLatency;
-  private final Timer appendLatency;
+  private static final Counter TOTAL_DEFERRED_APPEND_COUNT =
+      Counter.build()
+          .namespace("zeebe")
+          .name("deferred_append_count_total")
+          .help("Number of deferred appends due to backpressure")
+          .labelNames("partition")
+          .register();
 
-  public LogStreamMetrics(final MeterRegistry registry) {
-    this.registry = registry;
-    deferredAppends = registerCounter(TOTAL_DEFERRED_APPEND_COUNT);
-    triedAppends = registerCounter(TOTAL_APPEND_TRY_COUNT);
-    receivedRequests = registerCounter(TOTAL_RECEIVED_REQUESTS);
-    droppedRequests = registerCounter(TOTAL_DROPPED_REQUESTS);
-    commitLatency = MicrometerUtil.buildTimer(COMMIT_LATENCY).register(registry);
-    appendLatency = MicrometerUtil.buildTimer(WRITE_LATENCY).register(registry);
+  private static final Counter TOTAL_APPEND_TRY_COUNT =
+      Counter.build()
+          .namespace("zeebe")
+          .name("try_to_append_total")
+          .help("Number of tries to append")
+          .labelNames("partition")
+          .register();
 
-    registerGauge(INFLIGHT_APPENDS, inflightAppends);
-    registerGauge(INFLIGHT_REQUESTS, inflightAppends);
-    registerGauge(REQUEST_LIMIT, requestLimit);
-    registerGauge(LAST_COMMITTED_POSITION, lastCommitted);
-    registerGauge(LAST_WRITTEN_POSITION, lastWritten);
-    registerGauge(EXPORTING_RATE, exportingRate);
-    registerGauge(WRITE_RATE_MAX_LIMIT, writeRateMaxLimit);
+  private static final Gauge INFLIGHT_APPENDS =
+      Gauge.build()
+          .namespace("zeebe")
+          .name("backpressure_inflight_append_count")
+          .help("Current number of append inflight")
+          .labelNames("partition")
+          .register();
 
-    Gauge.builder(WRITE_RATE_LIMIT.getName(), writeRateLimit, LogStreamMetrics::longToDouble)
-        .description(WRITE_RATE_LIMIT.getDescription())
-        .register(registry);
-    Gauge.builder(PARTITION_LOAD.getName(), partitionLoad, LogStreamMetrics::longToDouble)
-        .description(PARTITION_LOAD.getDescription())
-        .register(registry);
+  private static final Counter TOTAL_RECEIVED_REQUESTS =
+      Counter.build()
+          .namespace("zeebe")
+          .name("received_request_count_total")
+          .help("Number of requests received")
+          .labelNames("partition")
+          .register();
+
+  private static final Counter TOTAL_DROPPED_REQUESTS =
+      Counter.build()
+          .namespace("zeebe")
+          .name("dropped_request_count_total")
+          .help("Number of requests dropped due to backpressure")
+          .labelNames("partition")
+          .register();
+
+  private static final Gauge INFLIGHT_REQUESTS =
+      Gauge.build()
+          .namespace("zeebe")
+          .name("backpressure_inflight_requests_count")
+          .help("Current number of request inflight")
+          .labelNames("partition")
+          .register();
+
+  private static final Gauge REQUEST_LIMIT =
+      Gauge.build()
+          .namespace("zeebe")
+          .name("backpressure_requests_limit")
+          .help("Current limit for number of inflight requests")
+          .labelNames("partition")
+          .register();
+
+  private static final Gauge LAST_COMMITTED_POSITION =
+      Gauge.build()
+          .namespace("zeebe")
+          .name("log_appender_last_committed_position")
+          .help("The last committed position.")
+          .labelNames("partition")
+          .register();
+
+  private static final Gauge LAST_WRITTEN_POSITION =
+      Gauge.build()
+          .namespace("zeebe")
+          .name("log_appender_last_appended_position")
+          .help("The last appended position by the appender.")
+          .labelNames("partition")
+          .register();
+
+  private static final Histogram WRITE_LATENCY =
+      Histogram.build()
+          .namespace("zeebe")
+          .name("log_appender_append_latency")
+          .help("Latency to append an event to the log in seconds")
+          .labelNames("partition")
+          .register();
+  private static final Histogram COMMIT_LATENCY =
+      Histogram.build()
+          .namespace("zeebe")
+          .name("log_appender_commit_latency")
+          .help("Latency to commit an event to the log in seconds")
+          .labelNames("partition")
+          .register();
+
+  private static final Counter RECORD_APPENDED =
+      Counter.build()
+          .namespace("zeebe")
+          .subsystem("log_appender")
+          .name("record_appended")
+          .labelNames("partition", "recordType", "valueType", "intent")
+          .help("Count of records appended per partition, record type, value type, and intent")
+          .register();
+
+  private static final Gauge EXPORTING_RATE =
+      Gauge.build()
+          .namespace("zeebe")
+          .subsystem("flow_control")
+          .name("exporting_rate")
+          .help("The rate of exporting records from the log appender")
+          .labelNames("partition")
+          .register();
+
+  private static final Gauge WRITE_RATE_MAX_LIMIT =
+      Gauge.build()
+          .namespace("zeebe")
+          .subsystem("flow_control")
+          .name("write_rate_maximum")
+          .help("The maximum write rate limit")
+          .labelNames("partition")
+          .register();
+
+  private static final Gauge WRITE_RATE_LIMIT =
+      Gauge.build()
+          .namespace("zeebe")
+          .subsystem("flow_control")
+          .name("write_rate_limit")
+          .help("The current write rate limit")
+          .labelNames("partition")
+          .register();
+
+  private static final Gauge PARTITION_LOAD =
+      Gauge.build()
+          .namespace("zeebe")
+          .subsystem("flow_control")
+          .name("partition_load")
+          .labelNames("partition")
+          .help(
+              "The current load of the partition. Determined by observed write rate compared to the write rate limit")
+          .register();
+
+  private final Counter.Child deferredAppends;
+  private final Counter.Child triedAppends;
+  private final Gauge.Child inflightAppends;
+  private final Counter.Child receivedRequests;
+  private final Counter.Child droppedRequests;
+  private final Gauge.Child inflightRequests;
+  private final Gauge.Child requestLimit;
+  private final Gauge.Child lastCommitted;
+  private final Gauge.Child lastWritten;
+  private final Histogram.Child commitLatency;
+  private final Histogram.Child appendLatency;
+  private final Gauge.Child exportingRate;
+  private final Gauge.Child writeRateMaxLimit;
+  private final Gauge.Child writeRateLimit;
+  private final Gauge.Child partitionLoad;
+  private final String partitionLabel;
+
+  public LogStreamMetrics(final int partitionId) {
+    partitionLabel = String.valueOf(partitionId);
+    deferredAppends = TOTAL_DEFERRED_APPEND_COUNT.labels(partitionLabel);
+    triedAppends = TOTAL_APPEND_TRY_COUNT.labels(partitionLabel);
+    inflightAppends = INFLIGHT_APPENDS.labels(partitionLabel);
+    receivedRequests = TOTAL_RECEIVED_REQUESTS.labels(partitionLabel);
+    droppedRequests = TOTAL_DROPPED_REQUESTS.labels(partitionLabel);
+    inflightRequests = INFLIGHT_REQUESTS.labels(partitionLabel);
+    requestLimit = REQUEST_LIMIT.labels(partitionLabel);
+    lastCommitted = LAST_COMMITTED_POSITION.labels(partitionLabel);
+    lastWritten = LAST_WRITTEN_POSITION.labels(partitionLabel);
+    commitLatency = COMMIT_LATENCY.labels(partitionLabel);
+    appendLatency = WRITE_LATENCY.labels(partitionLabel);
+    exportingRate = EXPORTING_RATE.labels(partitionLabel);
+    writeRateMaxLimit = WRITE_RATE_MAX_LIMIT.labels(partitionLabel);
+    writeRateLimit = WRITE_RATE_LIMIT.labels(partitionLabel);
+    partitionLoad = PARTITION_LOAD.labels(partitionLabel);
   }
 
   public void increaseInflightAppends() {
-    inflightAppends.incrementAndGet();
+    inflightAppends.inc();
   }
 
   public void decreaseInflightAppends() {
-    inflightAppends.decrementAndGet();
+    inflightAppends.dec();
   }
 
   public void setInflightRequests(final int count) {
@@ -116,19 +225,19 @@ public final class LogStreamMetrics {
   }
 
   public void increaseInflightRequests() {
-    inflightRequests.incrementAndGet();
+    inflightRequests.inc();
   }
 
   public void decreaseInflightRequests() {
-    inflightRequests.decrementAndGet();
+    inflightRequests.dec();
   }
 
-  public CloseableSilently startWriteTimer() {
-    return MicrometerUtil.timer(appendLatency, Timer.start(registry));
+  public Timer startWriteTimer() {
+    return appendLatency.startTimer();
   }
 
-  public CloseableSilently startCommitTimer() {
-    return MicrometerUtil.timer(commitLatency, Timer.start(registry));
+  public Timer startCommitTimer() {
+    return commitLatency.startTimer();
   }
 
   public void setLastWrittenPosition(final long position) {
@@ -144,45 +253,60 @@ public final class LogStreamMetrics {
       final RecordType recordType,
       final ValueType valueType,
       final Intent intent) {
-    recordAppended
-        .computeIfAbsent(recordType, valueType, intent, this::registerRecordAppendedCounter)
-        .increment(amount);
+    RECORD_APPENDED
+        .labels(partitionLabel, recordType.name(), valueType.name(), intent.name())
+        .inc(amount);
+  }
+
+  public void remove() {
+    TOTAL_DEFERRED_APPEND_COUNT.remove(partitionLabel);
+    TOTAL_APPEND_TRY_COUNT.remove(partitionLabel);
+    INFLIGHT_APPENDS.remove(partitionLabel);
+    INFLIGHT_REQUESTS.remove(partitionLabel);
+    REQUEST_LIMIT.remove(partitionLabel);
+    LAST_COMMITTED_POSITION.remove(partitionLabel);
+    LAST_WRITTEN_POSITION.remove(partitionLabel);
+    COMMIT_LATENCY.remove(partitionLabel);
+    WRITE_LATENCY.remove(partitionLabel);
+    EXPORTING_RATE.remove(partitionLabel);
+    WRITE_RATE_MAX_LIMIT.remove(partitionLabel);
+    WRITE_RATE_LIMIT.remove(partitionLabel);
+    PARTITION_LOAD.remove(partitionLabel);
+    for (final var contextLabel : FlowControlOutComeLabels.allContextLabels()) {
+      for (final var reasonLabel : FlowControlOutComeLabels.allReasonLabels()) {
+        FLOW_CONTROL_OUTCOME.remove(partitionLabel, contextLabel, reasonLabel);
+      }
+    }
   }
 
   public void flowControlAccepted(
       final WriteContext context, final List<LogAppendEntryMetadata> batchMetadata) {
-    triedAppends.increment();
-
+    triedAppends.inc();
     if (context instanceof UserCommand) {
-      receivedRequests.increment();
+      receivedRequests.inc();
     }
-
-    flowControlOutcome
-        .computeIfAbsent(
-            tagForContext(context),
-            FlowControlOutcome.ACCEPTED,
-            this::registerFlowControlOutcomeCounter)
-        .increment(batchMetadata.size());
+    FLOW_CONTROL_OUTCOME
+        .labels(partitionLabel, labelForContext(context), "accepted")
+        .inc(batchMetadata.size());
   }
 
   public void flowControlRejected(
       final WriteContext context,
       final List<LogAppendEntryMetadata> batchMetadata,
       final Rejection reason) {
-    triedAppends.increment();
-    deferredAppends.increment();
-
+    triedAppends.inc();
+    deferredAppends.inc();
     if (context instanceof UserCommand) {
-      receivedRequests.increment();
-      droppedRequests.increment();
+      receivedRequests.inc();
+      droppedRequests.inc();
     }
+    FLOW_CONTROL_OUTCOME
+        .labels(partitionLabel, labelForContext(context), labelForReason(reason))
+        .inc(batchMetadata.size());
+  }
 
-    flowControlOutcome
-        .computeIfAbsent(
-            tagForContext(context),
-            tagForRejection(reason),
-            this::registerFlowControlOutcomeCounter)
-        .increment(batchMetadata.size());
+  public void setPartitionLoad(final float load) {
+    partitionLoad.set(load);
   }
 
   public void setExportingRate(final long value) {
@@ -193,61 +317,57 @@ public final class LogStreamMetrics {
     writeRateMaxLimit.set(value);
   }
 
-  public void setPartitionLoad(final double load) {
-    partitionLoad.set(Double.doubleToLongBits(load));
-  }
-
   public void setWriteRateLimit(final double value) {
-    writeRateLimit.set(Double.doubleToLongBits(value));
+    writeRateLimit.set(value);
   }
 
-  private Counter registerRecordAppendedCounter(
-      final RecordType recordType, final ValueType valueType, final Intent intent) {
-    return Counter.builder(RECORD_APPENDED.getName())
-        .description(RECORD_APPENDED.getDescription())
-        .tag(RecordAppendedKeyNames.RECORD_TYPE.asString(), recordType.name())
-        .tag(RecordAppendedKeyNames.VALUE_TYPE.asString(), valueType.name())
-        .tag(RecordAppendedKeyNames.INTENT.asString(), intent.name())
-        .register(registry);
-  }
+  static final class FlowControlOutComeLabels {
 
-  private Counter registerFlowControlOutcomeCounter(
-      final FlowControlContext flowControlContext, final FlowControlOutcome flowControlOutcome) {
-    return Counter.builder(FLOW_CONTROL_OUTCOME.getName())
-        .description(FLOW_CONTROL_OUTCOME.getDescription())
-        .tag(FlowControlKeyNames.CONTEXT.asString(), flowControlContext.getValue())
-        .tag(FlowControlKeyNames.OUTCOME.asString(), flowControlOutcome.getValue())
-        .register(registry);
-  }
+    private FlowControlOutComeLabels() {}
 
-  private void registerGauge(final ExtendedMeterDocumentation doc, final AtomicLong gauge) {
-    Gauge.builder(doc.getName(), gauge, AtomicLong::get)
-        .description(doc.getDescription())
-        .register(registry);
-  }
+    static String[] allReasonLabels() {
+      return EnumSet.allOf(Rejection.class).stream()
+          .map(FlowControlOutComeLabels::labelForReason)
+          .toArray(String[]::new);
+    }
 
-  private Counter registerCounter(final ExtendedMeterDocumentation doc) {
-    return Counter.builder(doc.getName()).description(doc.getDescription()).register(registry);
-  }
+    static String[] allContextLabels() {
+      final var labels = WriteContextLabel.values();
+      final var labelNames = new String[labels.length];
+      for (var i = 0; i < labels.length; i++) {
+        labelNames[i] = labels[i].labelName;
+      }
+      return labelNames;
+    }
 
-  private static double longToDouble(final AtomicLong value) {
-    return Double.longBitsToDouble(value.get());
-  }
+    static String labelForReason(final Rejection reason) {
+      return switch (reason) {
+        case WriteRateLimitExhausted -> "writeRateLimitExhausted";
+        case RequestLimitExhausted -> "requestLimitExhausted";
+      };
+    }
 
-  private static FlowControlOutcome tagForRejection(final Rejection reason) {
-    return switch (reason) {
-      case WriteRateLimitExhausted -> FlowControlOutcome.WRITE_RATE_LIMIT_EXHAUSTED;
-      case RequestLimitExhausted -> FlowControlOutcome.REQUEST_LIMIT_EXHAUSTED;
-    };
-  }
+    static String labelForContext(final WriteContext context) {
+      return switch (context) {
+        case final UserCommand ignored -> WriteContextLabel.UserCommand.labelName;
+        case final ProcessingResult ignored -> WriteContextLabel.ProcessingResult.labelName;
+        case final InterPartition ignored -> WriteContextLabel.InterPartition.labelName;
+        case final Scheduled ignored -> WriteContextLabel.Scheduled.labelName;
+        case final Internal ignored -> WriteContextLabel.Internal.labelName;
+      };
+    }
 
-  private static FlowControlContext tagForContext(final WriteContext context) {
-    return switch (context) {
-      case final UserCommand ignored -> FlowControlContext.USER_COMMAND;
-      case final ProcessingResult ignored -> FlowControlContext.PROCESSING_RESULT;
-      case final InterPartition ignored -> FlowControlContext.INTER_PARTITION;
-      case final Scheduled ignored -> FlowControlContext.SCHEDULED;
-      case final Internal ignored -> FlowControlContext.INTERNAL;
-    };
+    private enum WriteContextLabel {
+      UserCommand("userCommand"),
+      ProcessingResult("processingResult"),
+      InterPartition("interPartition"),
+      Scheduled("scheduled"),
+      Internal("internal");
+      private final String labelName;
+
+      WriteContextLabel(final String labelName) {
+        this.labelName = labelName;
+      }
+    }
   }
 }
