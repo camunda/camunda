@@ -54,7 +54,7 @@ public class ElasticsearchExporter implements Exporter {
   private ElasticsearchClient client;
   private ElasticsearchRecordCounters recordCounters;
   private MeterRegistry registry;
-
+  private SchemaManager schemaManager;
   private long lastPosition = -1;
 
   @Override
@@ -85,6 +85,8 @@ public class ElasticsearchExporter implements Exporter {
             .orElse(new ElasticsearchRecordCounters());
 
     scheduleDelayedFlush();
+    schemaManager = new SchemaManager(client, configuration);
+
     log.info("Exporter opened");
   }
 
@@ -115,7 +117,7 @@ public class ElasticsearchExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
-    new SchemaManager(client, configuration).createSchema();
+    schemaManager.createSchema();
 
     final var recordSequence = recordCounters.getNextRecordSequence(record);
     final var isRecordIndexedToBatch = client.index(record, recordSequence);
