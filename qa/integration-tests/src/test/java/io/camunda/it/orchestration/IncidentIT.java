@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.exporter;
+package io.camunda.it.orchestration;
 
 import static io.camunda.client.api.search.response.IncidentState.ACTIVE;
 import static io.camunda.client.api.search.response.IncidentState.RESOLVED;
@@ -30,7 +30,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
-public class IncidentExporterIT {
+public class IncidentIT {
 
   private static CamundaClient client;
   private static final String CALL_ACTIVITY_ID = "child";
