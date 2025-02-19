@@ -1417,7 +1417,7 @@ public class ModifyProcessInstanceTest {
   }
 
   @Test
-  public void shouldUseAncestorSelectionInsideMultiInstances() throws InterruptedException {
+  public void shouldUseAncestorSelectionInsideMultiInstances() {
     // given
     ENGINE
         .deployment()
@@ -1487,6 +1487,39 @@ public class ModifyProcessInstanceTest {
             aTasks.get(0).getValue().getFlowScopeKey(), aTasks.get(2).getValue().getFlowScopeKey());
   }
 
+  @Test
+  public void shouldReActivateElementAndUpdateTreePath() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask("A", a -> a.zeebeJobType("A"))
+                .serviceTask("B", b -> b.zeebeJobType("B"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementBeforeModification =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst();
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(elementBeforeModification.getKey())
+        .activateElement("A")
+        .modify();
+
+    // then
+    verifyThatElementTreePathIsUpdated(elementBeforeModification);
+  }
+
   private static void verifyThatElementIsCompleted(
       final long processInstanceKey, final String elementId) {
 
@@ -1552,5 +1585,31 @@ public class ModifyProcessInstanceTest {
                 .withElementId(elementId)
                 .exists())
         .isTrue();
+  }
+
+  private void verifyThatElementTreePathIsUpdated(
+      final Record<ProcessInstanceRecordValue> elementBeforeModification) {
+    final var elementInstance = elementBeforeModification.getValue();
+
+    final var modifiedRecord =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(elementInstance.getProcessInstanceKey())
+            .withElementId(elementInstance.getElementId())
+            .withElementType(elementInstance.getBpmnElementType())
+            .withFlowScopeKey(elementInstance.getFlowScopeKey())
+            .limit(2)
+            .getLast();
+    final var modifiedElementInstance = modifiedRecord.getValue();
+    final var modifiedTreePath = modifiedElementInstance.getElementInstancePath();
+
+    assertThat(modifiedRecord.getKey())
+        .describedAs("Expect the element instance key to be updated")
+        .isNotEqualTo(elementBeforeModification.getKey());
+
+    assertThat(modifiedTreePath)
+        .isNotNull()
+        .isNotEmpty()
+        .describedAs("Expect the tree path to be updated")
+        .isNotEqualTo(elementInstance.getElementInstancePath());
   }
 }
