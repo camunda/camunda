@@ -202,36 +202,6 @@ describe('Processes', () => {
     );
   });
 
-  it('should disable the start button', async () => {
-    window.localStorage.setItem('hasConsentedToStartProcess', 'true');
-    nodeMockServer.use(
-      http.get('/v1/internal/processes', () => {
-        return HttpResponse.json([createMockProcess('process-0')]);
-      }),
-      http.get(
-        '/v2/authentication/me',
-        () => {
-          return HttpResponse.json(userMocks.currentRestrictedUser);
-        },
-        {once: true},
-      ),
-    );
-
-    render(<Component />, {
-      wrapper: getWrapper(),
-    });
-
-    await waitForElementToBeRemoved(() =>
-      screen.queryAllByTestId('process-skeleton'),
-    );
-
-    expect(
-      within(screen.getByTestId('process-tile')).getByRole('button', {
-        name: 'Start process',
-      }),
-    ).toBeDisabled();
-  });
-
   it('should show the filter dropdown', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     nodeMockServer.use(

@@ -205,62 +205,6 @@ describe('<Header />', () => {
     expect(screen.getByText('Unassigned')).toBeInTheDocument();
   });
 
-  it('should not render assignment button on assigned tasks', async () => {
-    nodeMockServer.use(
-      http.get('/v2/authentication/me', () => {
-        return HttpResponse.json(userMocks.currentRestrictedUser);
-      }),
-      http.patch('/v1/tasks/:taskId/unassign', () => {
-        return HttpResponse.json(taskMocks.unassignedTask);
-      }),
-    );
-
-    render(
-      <Header
-        task={taskMocks.assignedTask()}
-        user={userMocks.currentRestrictedUser}
-        onAssignmentError={noop}
-      />,
-      {
-        wrapper: getWrapper(),
-      },
-    );
-
-    expect(screen.getByText('Nice Process')).toBeInTheDocument();
-    expect(screen.getByText('Assigned to me')).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', {name: /^unassign$/i}),
-    ).not.toBeInTheDocument();
-  });
-
-  it('should not render assignment on unassigned tasks', async () => {
-    nodeMockServer.use(
-      http.get('/v2/authentication/me', () => {
-        return HttpResponse.json(userMocks.currentRestrictedUser);
-      }),
-      http.patch('/v1/tasks/:taskId/assign', () => {
-        return HttpResponse.json(taskMocks.assignedTask);
-      }),
-    );
-
-    render(
-      <Header
-        task={taskMocks.unassignedTask()}
-        user={userMocks.currentRestrictedUser}
-        onAssignmentError={noop}
-      />,
-      {
-        wrapper: getWrapper(),
-      },
-    );
-
-    expect(screen.getByText('Nice Process')).toBeInTheDocument();
-    expect(screen.getByText('Unassigned')).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', {name: /^assign$/i}),
-    ).not.toBeInTheDocument();
-  });
-
   it('should render a task assigned to someone else', async () => {
     nodeMockServer.use(
       http.get('/v2/authentication/me', () => {

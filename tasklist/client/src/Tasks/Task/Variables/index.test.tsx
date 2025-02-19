@@ -16,7 +16,6 @@ import {http, HttpResponse} from 'msw';
 import noop from 'lodash/noop';
 import {currentUser} from 'modules/mock-schema/mocks/current-user';
 import type {Variable} from 'modules/types';
-import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 
@@ -793,68 +792,6 @@ describe('<Variables />', () => {
         },
       ]),
     );
-  });
-
-  it('should not be able to change variable, add variable and complete task if user has no permission', async () => {
-    const UserName: React.FC = () => {
-      const {data: currentUser} = useCurrentUser();
-
-      return <div>{currentUser?.displayName}</div>;
-    };
-
-    nodeMockServer.use(
-      http.get(
-        '/v2/authentication/me',
-        () => {
-          return HttpResponse.json(userMocks.currentRestrictedUser);
-        },
-        {once: true},
-      ),
-      http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
-        async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.variables);
-          }
-
-          return HttpResponse.json(
-            [
-              {
-                message: 'Invalid variables',
-              },
-            ],
-            {
-              status: 400,
-            },
-          );
-        },
-      ),
-    );
-
-    const mockOnSubmit = vi.fn();
-
-    render(
-      <>
-        <UserName />
-        <Variables
-          task={taskMocks.assignedTask()}
-          user={currentUser}
-          onSubmit={mockOnSubmit}
-          onSubmitFailure={noop}
-          onSubmitSuccess={noop}
-        />
-      </>,
-      {
-        wrapper: getWrapper(),
-      },
-    );
-
-    expect(await screen.findByText('Demo User')).toBeInTheDocument();
-    expect(await screen.findByText(/myVar/)).toBeInTheDocument();
-
-    expect(screen.getByText(/add variable/i)).toBeDisabled();
-    expect(screen.queryByLabelText('myVar')).not.toBeInTheDocument();
-    expect(screen.getByText(/complete task/i)).toBeDisabled();
   });
 
   it('should add new variable and complete task', async () => {

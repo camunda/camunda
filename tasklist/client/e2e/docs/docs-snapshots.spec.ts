@@ -249,7 +249,6 @@ async function mockCurrentUser(page: Page) {
       body: JSON.stringify({
         userId: 'demo',
         displayName: 'demo',
-        permissions: ['READ', 'WRITE'],
         salesPlanType: null,
         roles: null,
         c8Links: [],

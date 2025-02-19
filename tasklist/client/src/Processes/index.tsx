@@ -36,7 +36,6 @@ import {logger} from 'modules/utils/logger';
 import {NewProcessInstanceTasksPolling} from './NewProcessInstanceTasksPolling';
 import {tracking} from 'modules/tracking';
 import {useProcesses} from 'modules/queries/useProcesses';
-import {usePermissions} from 'modules/hooks/usePermissions';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {pages} from 'modules/routing';
@@ -114,7 +113,6 @@ const FilterDropdown: React.FC<{
 const Processes: React.FC = observer(() => {
   const {t} = useTranslation();
   const {instance} = newProcessInstance;
-  const {hasPermission} = usePermissions(['write']);
   const {data: currentUser} = useCurrentUser();
   const {isMultiTenancyVisible} = useMultiTenancyDropdown();
   const hasMultipleTenants = (currentUser?.tenants.length ?? 0) > 1;
@@ -399,9 +397,8 @@ const Processes: React.FC = observer(() => {
                             process={process}
                             isFirst={idx === 0}
                             isStartButtonDisabled={
-                              (instance !== null &&
-                                instance.id !== process.bpmnProcessId) ||
-                              !hasPermission
+                              instance !== null &&
+                              instance.id !== process.bpmnProcessId
                             }
                             data-testid="process-tile"
                             tenantId={selectedTenantId}

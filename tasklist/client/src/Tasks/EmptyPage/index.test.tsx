@@ -163,31 +163,4 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
 
     expect(container).toBeEmptyDOMElement();
   });
-
-  it('should show an empty page message for old readonly users', async () => {
-    nodeMockServer.use(
-      http.get(
-        '/v2/authentication/me',
-        () => {
-          return HttpResponse.json(userMocks.currentRestrictedUser);
-        },
-        {once: true},
-      ),
-      http.post('/v1/tasks/search', async () => {
-        return HttpResponse.json([generateTask('0')]);
-      }),
-    );
-
-    storeStateLocally('hasCompletedTask', true);
-
-    render(<Component />, {
-      wrapper: getWrapper(),
-    });
-
-    expect(
-      await screen.findByRole('heading', {
-        name: 'Pick a task to view details',
-      }),
-    ).toBeInTheDocument();
-  });
 });
