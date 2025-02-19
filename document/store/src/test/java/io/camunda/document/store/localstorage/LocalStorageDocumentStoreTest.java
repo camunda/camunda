@@ -15,7 +15,6 @@ import static org.mockito.Mockito.mockStatic;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.*;
 import io.camunda.document.api.DocumentError.*;
-import io.camunda.document.store.DocumentHashProcessor;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -53,7 +52,7 @@ class LocalStorageDocumentStoreTest {
   void createDocumentShouldSucceed() {
     // given
     final String documentId = UUID.randomUUID().toString();
-    final byte[] content = "test-content".getBytes();
+    final byte[] content = "some content I don't know".getBytes();
     final ByteArrayInputStream inputStream = new ByteArrayInputStream(content);
     final DocumentMetadataModel metadata = givenMetadata(content);
     final DocumentCreationRequest request =
@@ -64,7 +63,11 @@ class LocalStorageDocumentStoreTest {
 
     // then
     assertTrue(result.isRight());
-    assertEquals(documentId, result.get().documentId());
+    final var documentReference = result.get();
+    assertEquals(documentId, documentReference.documentId());
+    assertEquals(
+        "577bac45ad58fe5ee4e7f50d2d39a955d65baa825a61a970ba790d579f78e40e",
+        documentReference.contentHash());
     assertTrue(Files.exists(storagePath.resolve(documentId)));
     assertTrue(
         Files.exists(storagePath.resolve(documentId + LocalStorageDocumentStore.METADATA_SUFFIX)));
@@ -177,8 +180,7 @@ class LocalStorageDocumentStoreTest {
     final byte[] content = "test-content".getBytes();
     createDocumentForTest(content, documentId);
 
-    final String contentHash =
-        DocumentHashProcessor.hash(new ByteArrayInputStream(content)).contentHash();
+    final String contentHash = "0a3666a0710c08aa6d0de92ce72beeb5b93124cce1bf3701c9d6cdeb543cb73e";
 
     // when
     final var result = documentStore.verifyContentHash(documentId, contentHash).join();
