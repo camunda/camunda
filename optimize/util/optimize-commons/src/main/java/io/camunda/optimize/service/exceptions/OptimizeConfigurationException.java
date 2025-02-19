@@ -7,27 +7,15 @@
  */
 package io.camunda.optimize.service.exceptions;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
 import lombok.Getter;
 
 @Getter
 public class OptimizeConfigurationException extends OptimizeRuntimeException {
-  private Map<String, String> deletedKeysAndDocumentationLink = Collections.emptyMap();
-
-  public OptimizeConfigurationException(String message) {
+  public OptimizeConfigurationException(final String message) {
     super(message);
   }
 
-  public OptimizeConfigurationException(String message, Exception e) {
+  public OptimizeConfigurationException(final String message, final Exception e) {
     super(message, e);
-  }
-
-  public OptimizeConfigurationException(
-      String message, Map<String, String> deletedKeysAndDocumentationLink) {
-    super(message);
-    this.deletedKeysAndDocumentationLink =
-        Optional.ofNullable(deletedKeysAndDocumentationLink).orElse(Collections.emptyMap());
   }
 }
