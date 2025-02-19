@@ -15,6 +15,9 @@
  */
 package io.camunda.spring.client.jobhandling.result;
 
+import static org.mockito.Mockito.mock;
+
+import io.camunda.zeebe.client.api.response.ActivatedJob;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -26,8 +29,10 @@ class DefaultResultProcessorTest {
   public void testProcessMethodShouldReturnResult() {
     // Given
     final String inputValue = "input";
+    final ActivatedJob job = mock(ActivatedJob.class);
+    final ResultProcessorContext context = new ResultProcessorContext(inputValue, job);
     // When
-    final Object resultValue = defaultResultProcessor.process(inputValue);
+    final Object resultValue = defaultResultProcessor.process(context);
     // Then
     Assertions.assertEquals(inputValue, resultValue);
   }
