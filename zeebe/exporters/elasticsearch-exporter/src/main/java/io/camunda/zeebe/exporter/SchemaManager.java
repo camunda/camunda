@@ -2,6 +2,8 @@ package io.camunda.zeebe.exporter;
 
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +24,17 @@ public class SchemaManager {
       final ElasticsearchClient client, final ElasticsearchExporterConfiguration configuration) {
     this.client = client;
     this.configuration = configuration;
+  }
+
+  /**
+   * Creates a new schema manager, and is only used by the StandaloneSchemaManager.
+   *
+   * @param configuration the exporter configuration
+   */
+  public SchemaManager(final ElasticsearchExporterConfiguration configuration) {
+    this.configuration = configuration;
+    final MeterRegistry registry = new SimpleMeterRegistry();
+    client = new ElasticsearchClient(configuration, registry);
   }
 
   public void createSchema() {
