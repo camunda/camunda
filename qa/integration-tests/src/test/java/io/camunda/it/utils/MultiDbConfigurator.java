@@ -160,6 +160,15 @@ public class MultiDbConfigurator {
                   "authentication",
                   Map.of("username", userName, "password", userPassword)));
         });
+
+    testApplication.withProperty(
+        "camunda.database.type", io.camunda.search.connect.configuration.DatabaseType.OPENSEARCH);
+    testApplication.withProperty("camunda.operate.database", "opensearch");
+    testApplication.withProperty("camunda.tasklist.database", "opensearch");
+    testApplication.withProperty("camunda.database.indexPrefix", indexPrefix);
+    testApplication.withProperty("camunda.database.username", userName);
+    testApplication.withProperty("camunda.database.password", userPassword);
+    testApplication.withProperty("camunda.database.url", opensearchUrl);
   }
 
   public void configureRDBMSSupport() {
@@ -178,5 +187,13 @@ public class MultiDbConfigurator {
           cfg.setClassName("-");
           cfg.setArgs(Map.of("flushInterval", "0"));
         });
+  }
+
+  public OperateProperties getOperateProperties() {
+    return operateProperties;
+  }
+
+  public TasklistProperties getTasklistProperties() {
+    return tasklistProperties;
   }
 }
