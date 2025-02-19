@@ -52,7 +52,7 @@ public class CamundaVolume extends ZeebeVolume {
    * Extracts the contents of this volume to the given destination.
    *
    * @param destination the destination to extract the contents of this volume to
-   * @param modifier an operator which takes in a pre-configured builder and can modify it
+   * @param modifier ignored
    * @throws IOException
    */
   @Override
@@ -85,6 +85,9 @@ public class CamundaVolume extends ZeebeVolume {
         TarArchiveEntry entry;
         while ((entry = tarInput.getNextEntry()) != null) {
           final Path entryPath = destination.resolve(entry.getName()).normalize();
+          if (!entryPath.startsWith(destination)) {
+            throw new IOException("Bad tar entry: " + entry.getName());
+          }
 
           if (entry.isDirectory()) {
             Files.createDirectories(entryPath);
