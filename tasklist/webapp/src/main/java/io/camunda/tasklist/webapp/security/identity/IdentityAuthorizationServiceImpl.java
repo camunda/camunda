@@ -9,45 +9,26 @@ package io.camunda.tasklist.webapp.security.identity;
 
 import static io.camunda.tasklist.property.IdentityProperties.FULL_GROUP_ACCESS;
 
-import io.camunda.identity.autoconfigure.IdentityProperties;
-import io.camunda.identity.sdk.Identity;
+import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.tasklist.util.SpringContextHolder;
-import io.camunda.tasklist.webapp.security.sso.TokenAuthentication;
+import io.camunda.security.entity.AuthenticationMethod;
 import java.util.ArrayList;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 @Component
 public class IdentityAuthorizationServiceImpl implements IdentityAuthorizationService {
 
-  private final Logger logger = LoggerFactory.getLogger(IdentityAuthorizationServiceImpl.class);
-
   @Autowired private SecurityConfiguration securityConfiguration;
-  @Autowired private IdentityProperties identityProperties;
+  @Autowired private CamundaUserService camundaUserService;
 
   @Override
   public List<String> getUserGroups() {
-    final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    String accessToken = null;
 
-    final Identity identity = SpringContextHolder.getBean(Identity.class);
-    // Extract access token based on authentication type
-    if (authentication instanceof IdentityAuthentication) {
-      accessToken = ((IdentityAuthentication) authentication).getTokens().getAccessToken();
-      return identity.authentication().getGroups(accessToken);
-    } else if (authentication instanceof TokenAuthentication) {
-      accessToken = ((TokenAuthentication) authentication).getAccessToken();
-      final String organization = ((TokenAuthentication) authentication).getOrganization();
-      // Sending explicit the audience null to get the groups in the organization
-      // Method getGroups is not used because it returns the groups of the user without consider
-      // organization
-      return identity.authentication().getGroupsInOrganization(accessToken, null, organization);
+    if (securityConfiguration.getAuthentication().getMethod() == AuthenticationMethod.BASIC
+        || securityConfiguration.getAuthentication().getMethod() == AuthenticationMethod.OIDC) {
+      return camundaUserService.getCurrentUser().groups();
     }
 
     // Fallback groups if authentication type is unrecognized or access token is null

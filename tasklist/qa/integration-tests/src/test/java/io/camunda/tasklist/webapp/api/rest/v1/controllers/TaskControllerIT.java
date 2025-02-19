@@ -13,12 +13,14 @@ import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.RandomStringUtils.randomNumeric;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
+import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.queries.RangeValueFilter;
 import io.camunda.tasklist.queries.RangeValueFilter.RangeValueFilterBuilder;
@@ -79,6 +81,8 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
   public void setUp() {
     mockMvcHelper =
         new MockMvcHelper(MockMvcBuilders.webAppContextSetup(context).build(), objectMapper);
+    when(camundaUserService.getCurrentUser()).thenReturn(mock(CamundaUserDTO.class));
+    when(camundaUserService.getCurrentUser().userId()).thenReturn(DEFAULT_USER_ID);
   }
 
   private TasklistTester createTask(
@@ -180,6 +184,9 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           mockMvcHelper.doRequest(
               post(TasklistURIs.TASKS_URL_V1.concat("/search")),
               new TaskSearchRequest().setState(TaskState.CREATED));
+
+      when(camundaUserService.getCurrentUser()).thenReturn(mock(CamundaUserDTO.class));
+      when(camundaUserService.getCurrentUser().userId()).thenReturn(DEFAULT_USER_ID);
 
       // then
       assertThat(result)
@@ -744,6 +751,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       // Mock identity service behaviour
       identityProperties.setUserAccessRestrictionsEnabled(true);
       tasklistProperties.setIdentity(identityProperties);
+
       when(identityAuthorizationService.getUserGroups()).thenReturn(emptyList());
 
       // when
