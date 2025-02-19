@@ -26,24 +26,22 @@ import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
-import io.camunda.it.utils.BrokerITInvocationProvider;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.it.utils.MultiDbTest;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.assertj.core.api.ThrowingConsumer;
-import org.junit.jupiter.api.TestTemplate;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
 
-@ExtendWith(BrokerITInvocationProvider.class)
+@MultiDbTest
 public class ProcessMigrationIT {
 
-  @TestTemplate
-  void shouldMigrateProcess(final TestStandaloneBroker testBroker) {
-    final var client = testBroker.newClientBuilder().build();
+  private static CamundaClient client;
 
+  @Test
+  void shouldMigrateProcess() {
     // given
     final var definitionKey1 =
         deployProcessFromClasspath(client, "process/migration-process_v1.bpmn");
@@ -97,10 +95,8 @@ public class ProcessMigrationIT {
             "alice", v -> v.getValue().equals("\"bob\"")));
   }
 
-  @TestTemplate
-  void shouldMigrateProcessWithIncident(final TestStandaloneBroker testBroker) {
-    final var client = testBroker.newClientBuilder().build();
-
+  @Test
+  void shouldMigrateProcessWithIncident() {
     // given
     final var definitionKey1 =
         deployProcessFromClasspath(client, "process/migration-process_v1.bpmn");
@@ -132,10 +128,8 @@ public class ProcessMigrationIT {
         });
   }
 
-  @TestTemplate
-  void shouldMigrateProcessWithResolvedIncident(final TestStandaloneBroker testBroker) {
-    final var client = testBroker.newClientBuilder().build();
-
+  @Test
+  void shouldMigrateProcessWithResolvedIncident() {
     // given
     final var definitionKey1 =
         deployProcessFromClasspath(client, "process/migration-process_v1.bpmn");
