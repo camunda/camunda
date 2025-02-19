@@ -24,7 +24,9 @@ import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateUtil;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Stream;
@@ -478,12 +480,12 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         "state",
         ops -> new ProcessInstanceFilter.Builder().stateOperations(ops).build(),
         List.of(
-            List.of(Operation.eq(String.valueOf(ProcessInstanceState.ACTIVE))),
-            List.of(Operation.neq(String.valueOf(ProcessInstanceState.CANCELED))),
+            List.of(Operation.eq(String.valueOf(ProcessInstanceStateEnum.ACTIVE))),
+            List.of(Operation.neq(String.valueOf(ProcessInstanceStateEnum.COMPLETED))),
             List.of(
                 Operation.in(
-                    String.valueOf(ProcessInstanceState.COMPLETED),
-                    String.valueOf(ProcessInstanceState.ACTIVE)),
+                    String.valueOf(ProcessInstanceStateEnum.COMPLETED),
+                    String.valueOf(ProcessInstanceStateEnum.ACTIVE)),
                 Operation.like("act"))),
         true);
     stringOperationTestCases(
@@ -533,5 +535,43 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
     verify(processInstanceServices)
         .search(new ProcessInstanceQuery.Builder().filter(filter).build());
+  }
+
+  @Test
+  void shouldSearchProcessInstancesByState() {
+    for (var state : ProcessInstanceStateEnum.values()) {
+      // given
+      final var request =
+          """
+              {
+                  "filter": {"state": "%s"}
+              }"""
+              .formatted(state);
+      System.out.println("request = " + request);
+      final ProcessInstanceFilter filter =
+          new ProcessInstanceFilter.Builder()
+              .states(ProcessInstanceStateUtil.toInternalStateAsString(state))
+              .build();
+
+      // when
+      when(processInstanceServices.search(queryCaptor.capture())).thenReturn(SEARCH_QUERY_RESULT);
+      webClient
+          .post()
+          .uri(PROCESS_INSTANCES_SEARCH_URL)
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(request)
+          .exchange()
+          .expectStatus()
+          .isOk()
+          .expectHeader()
+          .contentType(MediaType.APPLICATION_JSON)
+          .expectBody()
+          .json(EXPECTED_SEARCH_RESPONSE);
+
+      // then
+      verify(processInstanceServices)
+          .search(new ProcessInstanceQuery.Builder().filter(filter).build());
+    }
   }
 }
