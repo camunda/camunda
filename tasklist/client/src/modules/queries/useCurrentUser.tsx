@@ -19,12 +19,10 @@ function useCurrentUser() {
 
       if (response !== null) {
         const currentUser = await response.json();
-        const permissions: unknown[] | undefined = currentUser?.permissions;
+        const permissions: unknown[] = currentUser?.permissions ?? [];
         return {
           ...currentUser,
-          permissions:
-            permissions &&
-            permissions
+          permissions: permissions
               .filter<string>(
                 (permission): permission is string =>
                   typeof permission === 'string',
