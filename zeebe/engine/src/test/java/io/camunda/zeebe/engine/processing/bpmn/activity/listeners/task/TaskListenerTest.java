@@ -2891,15 +2891,12 @@ public class TaskListenerTest {
 
     // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
     // `CANCELING` and `CANCELED` events
-    // TODO fix, not yet fully implemented
-    /*assertUserTaskIntentsSequence(
-    UserTaskIntent.CREATING,
-    UserTaskIntent.CREATED,
-    UserTaskIntent.CANCELING,
-    UserTaskIntent.COMPLETE_TASK_LISTENER,
-    UserTaskIntent.COMPLETE_TASK_LISTENER,
-    UserTaskIntent.COMPLETE_TASK_LISTENER,
-    UserTaskIntent.CANCELED);*/
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.CANCELING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.CANCELED);
   }
 
   @Test
@@ -2945,14 +2942,11 @@ public class TaskListenerTest {
 
     // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
     // `CANCELING` and `CANCELED` events
-    // TODO fix, not yet fully implemented
-    /*assertUserTaskIntentsSequence(
-    UserTaskIntent.CREATING,
-    UserTaskIntent.CREATED,
-    UserTaskIntent.CANCELING,
-    UserTaskIntent.COMPLETE_TASK_LISTENER,
-    UserTaskIntent.COMPLETE_TASK_LISTENER,
-    UserTaskIntent.COMPLETE_TASK_LISTENER,
-    UserTaskIntent.CANCELED);*/
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.CANCELING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.CANCELED);
   }
 }
