@@ -302,7 +302,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
                         SIGNAL_PROCESS_END));
   }
 
-  @DisabledIf("isZeebeVersionPre87")
+  @EnabledIf("isZeebeVersion87O_OrLater")
   @Test
   public void importZeebeProcess_processContainsAdHocSubProcess() {
     // given

@@ -89,7 +89,7 @@ public abstract class AbstractCCSMIT extends AbstractIT {
         .matches();
   }
 
-  protected static boolean isZeebeVersion87OrLater() {
+  protected static boolean isZeebeVersion87O_OrLater() {
     final Pattern zeebeVersionPattern = Pattern.compile("8.([7-9]|\\d{2,})");
     return zeebeVersionPattern
             .matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion())
@@ -104,10 +104,6 @@ public abstract class AbstractCCSMIT extends AbstractIT {
 
   protected static boolean isZeebeVersionWithMultiTenancy() {
     return !isZeebeVersionPre83();
-  }
-
-  protected static boolean isZeebeVersionPre87() {
-    return !isZeebeVersion87OrLater();
   }
 
   @BeforeEach

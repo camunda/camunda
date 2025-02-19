@@ -547,7 +547,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
             createSimpleNativeUserTaskProcessWithAssignee(TEST_PROCESS, null, ASSIGNEE_ID));
     waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
 
-    if (isZeebeVersion87OrLater()) {
+    if (isZeebeVersion87O_OrLater()) {
       // to wait for `ASSIGNED` event triggered by Zeebe after UT creation with the defined
       // `assignee`
       waitUntilUserTaskRecordWithIntentExported(1, ASSIGNED);
@@ -586,7 +586,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
                   createRunningUserTaskInstance(instance, exportedEvents);
               runningUserTaskInstance.setIdleDurationInMs(0L);
               runningUserTaskInstance.setWorkDurationInMs(
-                  isZeebeVersion87OrLater()
+                  isZeebeVersion87O_OrLater()
                       ? getDurationInMsBetweenStartDateAndLastAssignedOperation(exportedEvents)
                       : getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents));
               runningUserTaskInstance.setAssigneeOperations(
@@ -624,7 +624,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
 
     List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
 
-    if (isZeebeVersion87OrLater()) {
+    if (isZeebeVersion87O_OrLater()) {
       // to wait for `ASSIGNED` event triggered by Zeebe after UT creation with the defined
       // `assignee`
       waitUntilUserTaskRecordWithIntentExported(1, ASSIGNED);
@@ -646,7 +646,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
         createRunningUserTaskInstance(instance, exportedEvents);
     expectedUserTask.setIdleDurationInMs(0L);
     expectedUserTask.setWorkDurationInMs(
-        isZeebeVersion87OrLater()
+        isZeebeVersion87O_OrLater()
             ? getDurationInMsBetweenStartDateAndLastAssignedOperation(exportedEvents)
             : getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents));
     expectedUserTask.setAssigneeOperations(
@@ -660,7 +660,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
                 getExpectedIdFromRecords(exportedEvents, ASSIGNED),
                 UNCLAIM_OPERATION_TYPE,
                 null,
-                isZeebeVersion87OrLater()
+                isZeebeVersion87O_OrLater()
                     ? getTimestampForZeebeLastAssignedEvents(exportedEvents, "")
                     : getTimestampForZeebeUnassignEvent(exportedEvents))));
 
