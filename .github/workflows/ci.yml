@@ -727,7 +727,7 @@ jobs:
     permissions: {}  # GITHUB_TOKEN unused in this job
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/stable/8.7'
     concurrency:
-      group: deploy-maven-snapshot
+      group: deploy-maven-snapshot8.7
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
@@ -799,7 +799,7 @@ jobs:
     permissions: {}  # GITHUB_TOKEN unused in this job
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/stable/8.7'
     concurrency:
-      group: deploy-camunda-docker-snapshot
+      group: deploy-camunda-docker-snapshot8.7
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
