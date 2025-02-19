@@ -87,7 +87,7 @@ public class PermissionsService {
    */
   public boolean hasPermissionForResource(
       final Long deploymentKey, final PermissionType permissionType) {
-    return hasPermissionForResource(
+    return hasPermissionForResourceType(
         deploymentKey.toString(), AuthorizationResourceType.RESOURCE, permissionType);
   }
 
@@ -98,7 +98,7 @@ public class PermissionsService {
    */
   public boolean hasPermissionForProcess(
       final String bpmnProcessId, final PermissionType permissionType) {
-    return hasPermissionForResource(
+    return hasPermissionForResourceType(
         bpmnProcessId, AuthorizationResourceType.PROCESS_DEFINITION, permissionType);
   }
 
@@ -109,7 +109,7 @@ public class PermissionsService {
    */
   public boolean hasPermissionForDecision(
       final String decisionId, final PermissionType permissionType) {
-    return hasPermissionForResource(
+    return hasPermissionForResourceType(
         decisionId, AuthorizationResourceType.DECISION_DEFINITION, permissionType);
   }
 
@@ -118,7 +118,7 @@ public class PermissionsService {
    *
    * @return true if the user has the given permission for the resource
    */
-  private boolean hasPermissionForResource(
+  private boolean hasPermissionForResourceType(
       final String resourceId,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
