@@ -90,7 +90,7 @@ jobs:
       generation: Zeebe SNAPSHOT
       maxTestDuration: P1D
       clusterPlan: Multiregion test simulation
-      fault: \"2-region-dataloss-failover\"
+      fault: '"2-region-dataloss-failover"'
       maxInstanceDuration: 40m
     secrets: inherit
 
@@ -102,6 +102,6 @@ jobs:
       generation: Zeebe SNAPSHOT
       maxTestDuration: PT4H
       clusterPlan: Production - M
-      fault: \"scale-brokers\"
+      fault: '"scale-brokers"'
       maxInstanceDuration: 40m
     secrets: inherit
