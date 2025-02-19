@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 
-@Import(io.camunda.optimize.Main.class)
+@Import(io.camunda.optimize.TestsEntry.class)
 @Configuration
 @Conditional(CCSMCondition.class)
 public class SpringDefaultC8ITConfig {

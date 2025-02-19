@@ -20,9 +20,7 @@ import org.springframework.context.annotation.Profile;
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(
     basePackages = "io.camunda.optimize",
-    excludeFilters = {
-      @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = Main.class)
-    })
+    excludeFilters = {})
 @Profile("optimize")
 public class OptimizeModuleConfiguration {
 
