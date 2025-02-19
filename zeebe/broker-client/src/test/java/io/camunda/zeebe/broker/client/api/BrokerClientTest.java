@@ -82,7 +82,7 @@ public final class BrokerClientTest {
     final var topologyManager =
         new BrokerTopologyManagerImpl(
             () -> atomixCluster.getMembershipService().getMembers(),
-            BrokerClientTopologyMetrics.of(meterRegistry));
+            new BrokerClientTopologyMetrics(meterRegistry));
     this.topologyManager = topologyManager;
     actorScheduler.submitActor(topologyManager).join();
     atomixCluster.getMembershipService().addListener(topologyManager);
@@ -99,7 +99,7 @@ public final class BrokerClientTest {
             atomixCluster.getEventService(),
             actorScheduler,
             topologyManager,
-            BrokerClientRequestMetrics.of(meterRegistry));
+            new BrokerClientRequestMetrics(meterRegistry));
     client.start().forEach(ActorFuture::join);
   }
 

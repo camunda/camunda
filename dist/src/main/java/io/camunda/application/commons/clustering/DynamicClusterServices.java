@@ -44,7 +44,7 @@ public class DynamicClusterServices {
     clusterMembershipService = atomixCluster.getMembershipService();
     clusterCommunicationService = atomixCluster.getCommunicationService();
     this.meterRegistry = meterRegistry;
-    brokerTopologyMetrics = BrokerClientTopologyMetrics.of(meterRegistry);
+    brokerTopologyMetrics = new BrokerClientTopologyMetrics(meterRegistry);
   }
 
   @Bean
