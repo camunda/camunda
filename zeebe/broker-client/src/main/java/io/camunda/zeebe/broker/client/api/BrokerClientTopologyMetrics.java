@@ -7,34 +7,49 @@
  */
 package io.camunda.zeebe.broker.client.api;
 
+import static io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.PARTITION_ROLE;
+
 import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.PartitionRoleValues;
-import io.camunda.zeebe.broker.client.impl.BrokerClientTopologyMetricsImpl;
+import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.TopologyKeyNames;
+import io.camunda.zeebe.util.collection.Table;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Metrics related to the cluster topology as seen by the current gateway. See {@link
  * BrokerClientMetricsDoc} for documentation on the specific metrics.
  */
-public interface BrokerClientTopologyMetrics {
-  Noop NOOP = new Noop();
+public final class BrokerClientTopologyMetrics {
 
-  /** Returns an implementation which will register and updates metrics on the given registry */
-  static BrokerClientTopologyMetrics of(final MeterRegistry meterRegistry) {
-    return new BrokerClientTopologyMetricsImpl(meterRegistry);
+  private final MeterRegistry registry;
+  private final Table<Integer, Integer, AtomicInteger> brokerTopologyRole;
+
+  public BrokerClientTopologyMetrics(final MeterRegistry registry) {
+    this.registry = Objects.requireNonNull(registry, "must specify a meter registry");
+    brokerTopologyRole = Table.simple();
   }
 
   /**
    * Sets the role of the broker with the given {@code brokerId} for the partition with the given
    * {@code partitionId}
    */
-  void setRoleForPartition(
-      final int partitionId, final int brokerId, final PartitionRoleValues roleValue);
+  public void setRoleForPartition(
+      final int partitionId, final int brokerId, final PartitionRoleValues roleValue) {
+    brokerTopologyRole
+        .computeIfAbsent(partitionId, brokerId, this::registerBrokerTopologyRole)
+        .set(roleValue.value());
+  }
 
-  /** An implementation which simply does nothing, mostly useful for testing. */
-  final class Noop implements BrokerClientTopologyMetrics {
-
-    @Override
-    public void setRoleForPartition(
-        final int partitionId, final int brokerId, final PartitionRoleValues roleValue) {}
+  private AtomicInteger registerBrokerTopologyRole(final int partitionId, final int brokerId) {
+    final var role = new AtomicInteger();
+    Gauge.builder(PARTITION_ROLE.getName(), role, Number::intValue)
+        .description(PARTITION_ROLE.getDescription())
+        .tag(PartitionKeyNames.PARTITION.asString(), String.valueOf(partitionId))
+        .tag(TopologyKeyNames.BROKER.asString(), String.valueOf(brokerId))
+        .register(registry);
+    return role;
   }
 }
