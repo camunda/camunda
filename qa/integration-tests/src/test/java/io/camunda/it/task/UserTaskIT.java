@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.exporter;
+package io.camunda.it.task;
 
 import static io.camunda.client.api.search.response.UserTaskState.COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,6 +14,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
+import io.camunda.it.exporter.ExporterTestUtil;
 import io.camunda.it.utils.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
@@ -27,7 +28,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
-public class UserTaskExporterIT {
+public class UserTaskIT {
 
   private static CamundaClient client;
 
