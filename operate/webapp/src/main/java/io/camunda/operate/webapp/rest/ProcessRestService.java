@@ -47,8 +47,7 @@ public class ProcessRestService extends InternalAPIErrorController {
   public String getProcessDiagram(@PathVariable("id") final String processId) {
     final Long processDefinitionKey = Long.valueOf(processId);
     final ProcessEntity processEntity = processReader.getProcess(processDefinitionKey);
-    checkIdentityReadPermission(
-        processEntity.getBpmnProcessId(), PermissionType.READ_PROCESS_DEFINITION);
+    checkReadPermission(processEntity.getBpmnProcessId(), PermissionType.READ_PROCESS_DEFINITION);
     return processReader.getDiagram(processDefinitionKey);
   }
 
@@ -56,8 +55,7 @@ public class ProcessRestService extends InternalAPIErrorController {
   @GetMapping(path = "/{id}")
   public ProcessDto getProcess(@PathVariable("id") final String processId) {
     final ProcessEntity processEntity = processReader.getProcess(Long.valueOf(processId));
-    checkIdentityReadPermission(
-        processEntity.getBpmnProcessId(), PermissionType.READ_PROCESS_INSTANCE);
+    checkReadPermission(processEntity.getBpmnProcessId(), PermissionType.READ_PROCESS_INSTANCE);
     return DtoCreator.create(processEntity, ProcessDto.class);
   }
 
@@ -82,11 +80,11 @@ public class ProcessRestService extends InternalAPIErrorController {
   public BatchOperationEntity deleteProcessDefinition(
       @ValidLongId @PathVariable("id") final String processId) {
     final ProcessEntity processEntity = processReader.getProcess(Long.valueOf(processId));
-    checkIdentityDeletePermission(processEntity.getKey());
+    checkDeletePermission(processEntity.getKey());
     return batchOperationWriter.scheduleDeleteProcessDefinition(processEntity);
   }
 
-  private void checkIdentityReadPermission(
+  private void checkReadPermission(
       final String bpmnProcessId, final PermissionType permissionType) {
     if (permissionsService.permissionsEnabled()
         && !permissionsService.hasPermissionForProcess(bpmnProcessId, permissionType)) {
@@ -95,7 +93,7 @@ public class ProcessRestService extends InternalAPIErrorController {
     }
   }
 
-  private void checkIdentityDeletePermission(final Long processDefinitionKey) {
+  private void checkDeletePermission(final Long processDefinitionKey) {
     if (permissionsService.permissionsEnabled()
         && !permissionsService.hasPermissionForResource(
             processDefinitionKey, PermissionType.DELETE_PROCESS)) {

@@ -14,14 +14,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
-import java.net.Authenticator;
-import java.net.PasswordAuthentication;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.Builder;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.util.Base64;
 import java.util.List;
 
 public class TestRestOperateClient implements AutoCloseable {
@@ -30,37 +30,25 @@ public class TestRestOperateClient implements AutoCloseable {
 
   private final URI endpoint;
   private final HttpClient httpClient;
+  private String username;
+  private String password;
 
   public TestRestOperateClient(final URI endpoint, final String username, final String password) {
-    this(
-        endpoint,
-        HttpClient.newBuilder()
-            .authenticator(
-                new Authenticator() {
-                  @Override
-                  protected PasswordAuthentication getPasswordAuthentication() {
-                    return new PasswordAuthentication(username, password.toCharArray());
-                  }
-                })
-            .build());
+    this(endpoint);
+    this.username = username;
+    this.password = password;
   }
 
   public TestRestOperateClient(final URI endpoint) {
-    this(endpoint, HttpClient.newHttpClient());
-  }
-
-  private TestRestOperateClient(final URI endpoint, final HttpClient httpClient) {
     this.endpoint = endpoint;
-    this.httpClient = httpClient;
+    httpClient = HttpClient.newBuilder().build();
   }
 
   private Either<Exception, HttpRequest> createProcessInstanceRequest(final long key) {
     final HttpRequest request;
     try {
       request =
-          HttpRequest.newBuilder()
-              .uri(new URI(String.format("%sv1/process-instances/search", endpoint)))
-              .header("content-type", "application/json")
+          createBuilder(String.format("%sv1/process-instances/search", endpoint))
               .POST(
                   HttpRequest.BodyPublishers.ofString(
                       String.format(
@@ -73,15 +61,30 @@ public class TestRestOperateClient implements AutoCloseable {
     return Either.right(request);
   }
 
+  private Builder createBuilder(final String uri) throws URISyntaxException {
+    final HttpRequest.Builder builder =
+        HttpRequest.newBuilder().uri(new URI(uri)).header("content-type", "application/json");
+    return addAuthHeader(builder);
+  }
+
+  private Builder addAuthHeader(Builder builder) {
+    if (username != null) {
+      builder =
+          builder.header(
+              "Authorization",
+              "Basic %s"
+                  .formatted(
+                      Base64.getEncoder()
+                          .encodeToString("%s:%s".formatted(username, password).getBytes())));
+    }
+    return builder;
+  }
+
   private Either<Exception, HttpRequest> createInternalGetProcessDefinitionByKeyRequest(
       final long key) {
     final HttpRequest request;
     try {
-      request =
-          HttpRequest.newBuilder()
-              .uri(new URI(String.format("%sapi/processes/%d", endpoint, key)))
-              .GET()
-              .build();
+      request = createBuilder(String.format("%sapi/processes/%d", endpoint, key)).GET().build();
     } catch (final URISyntaxException e) {
       return Either.left(e);
     }
