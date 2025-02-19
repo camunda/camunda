@@ -107,7 +107,7 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
             .setBpmnProcessId("p2")
             .setProcessDefinitionKey(400L)
             .setStartDate(
-                OffsetDateTime.of(2025, 3, 1, 17, 15, 14, 235, OffsetDateTime.now().getOffset()))
+                OffsetDateTime.of(2018, 3, 1, 17, 15, 14, 235, OffsetDateTime.now().getOffset()))
             .setEndDate(
                 OffsetDateTime.of(2018, 3, 1, 20, 15, 14, 235, OffsetDateTime.now().getOffset()))
             .setProcessInstanceKey(101L)
