@@ -91,7 +91,18 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
    * This intent is written during the processing of a CLAIM command and marks the User Task with
    * the `CLAIMING` lifecycle state.
    */
-  CLAIMING(20);
+  CLAIMING(20),
+
+  /**
+   * Represents the intent indicating that the User Task update will not be applied, and the task
+   * will be reverted to the `CREATED` lifecycle state. This occurs when an `updating` task listener
+   * denies the transition, preventing any modifications to the user task attributes.
+   *
+   * <p>Once this intent is written, the processing of the user task is halted, all previous
+   * corrections within the same update transition are discarded, and the user task remains in its
+   * prior state.
+   */
+  UPDATE_DENIED(21);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -153,6 +164,8 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
         return ASSIGNMENT_DENIED;
       case 20:
         return CLAIMING;
+      case 21:
+        return UPDATE_DENIED;
       default:
         return UNKNOWN;
     }
@@ -181,6 +194,7 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
       case CORRECTED:
       case ASSIGNMENT_DENIED:
       case CLAIMING:
+      case UPDATE_DENIED:
         return true;
       default:
         return false;

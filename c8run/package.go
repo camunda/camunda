@@ -160,11 +160,6 @@ func Package(camundaVersion string, elasticsearchVersion string, connectorsVersi
 		return fmt.Errorf("Package "+osType+": failed to download camunda %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, authToken, extractFunc)
-	if err != nil {
-		return fmt.Errorf("Package "+osType+": failed to fetch camunda: %w\n%s", err, debug.Stack())
-	}
-
 	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, javaArtifactsToken, func(_, _ string) error { return nil })
 	if err != nil {
 		return fmt.Errorf("Package "+osType+": failed to fetch connectors: %w\n%s", err, debug.Stack())
