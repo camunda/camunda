@@ -74,10 +74,10 @@ paths:
         - License
       operationId: getLicense
       summary: Get license status
-      description: Obtains the status of the current Camunda license
+      description: Obtains the status of the current Camunda license.
       responses:
         "200":
-          description: Obtains the current status of the Camunda license
+          description: Obtains the current status of the Camunda license.
           content:
             application/json:
               schema:
