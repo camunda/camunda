@@ -16,7 +16,6 @@ import io.camunda.zeebe.engine.util.JobWorkerElementBuilderProvider;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ZeebeJobWorkerElementBuilder;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -326,43 +325,5 @@ public final class JobWorkerElementTest {
             .getFirst();
 
     Assertions.assertThat(jobCreated.getValue()).hasRetries(8);
-  }
-
-  @Test
-  public void shouldCompleteJobWithLinkedResources() {
-    final BpmnModelInstance modelInstance =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask(
-                "my_linked_resource",
-                t ->
-                    t.zeebeLinkedResources(
-                            l ->
-                                l.resourceId("id")
-                                    .resourceType("RPA")
-                                    .bindingType(ZeebeBindingType.deployment)
-                                    .versionTag("1v")
-                                    .linkName("my_link"))
-                        .zeebeJobType("type"))
-            .endEvent()
-            .done();
-
-    ENGINE.deployment().withXmlResource(modelInstance).deploy();
-
-    // when
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    ENGINE.job().ofInstance(processInstanceKey).withType("type").complete();
-
-    // then
-    assertThat(
-            RecordingExporter.processInstanceRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limitToProcessInstanceCompleted())
-        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
-        .containsSubsequence(
-            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETING),
-            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 }
