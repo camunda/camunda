@@ -7,6 +7,7 @@
  */
 package io.camunda.migration.process;
 
+import io.camunda.webapps.schema.descriptors.operate.OperateIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
@@ -68,5 +69,31 @@ public interface TestData {
         .setAliasName(ProcessIndex.INDEX_NAME)
         .setIndexName(ProcessIndex.INDEX_NAME)
         .setCompleted(completed);
+  }
+
+  /**
+   * Fork of {@link ProcessIndex} but does not include form related fields to cause the update to
+   * fail for ES/OS to return an error.
+   */
+  class MisconfiguredProcessIndex extends OperateIndexDescriptor {
+
+    public MisconfiguredProcessIndex(final String indexPrefix, final boolean isElasticsearch) {
+      super(indexPrefix, isElasticsearch);
+    }
+
+    @Override
+    public String getMappingsClasspathFilename() {
+      return "/misconfigured-process-index.json";
+    }
+
+    @Override
+    public String getVersion() {
+      return "8.3.0";
+    }
+
+    @Override
+    public String getIndexName() {
+      return "process";
+    }
   }
 }

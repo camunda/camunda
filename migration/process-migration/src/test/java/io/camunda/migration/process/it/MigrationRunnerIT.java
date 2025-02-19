@@ -387,4 +387,33 @@ public class MigrationRunnerIT extends AdapterTest {
     final var ex = assertThrows(MigrationException.class, migrator::call);
     assertThat(ex.getMessage()).isEqualTo("Failed to fetch last migrated process");
   }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldNotFlushStepOnError(final boolean isElasticsearch) throws IOException {
+    this.isElasticsearch = isElasticsearch;
+
+    if (isElasticsearch) {
+      ES_CONFIGURATION.setIndexPrefix(MISCONFIGURED_PREFIX);
+    } else {
+      OS_CONFIGURATION.setIndexPrefix(MISCONFIGURED_PREFIX);
+    }
+
+    final Adapter adapter =
+        isElasticsearch
+            ? new ElasticsearchAdapter(properties, ES_CONFIGURATION)
+            : new OpensearchAdapter(properties, OS_CONFIGURATION);
+    final ProcessEntity entityToBeMigrated = TestData.processEntityWithPublicFormId(1L);
+    writeToMisconfiguredProcessToIndex(entityToBeMigrated);
+    final String migratedEntityId =
+        adapter.migrate(List.of(MigrationUtil.migrate(entityToBeMigrated)));
+
+    assertThat(migratedEntityId).isNull();
+
+    if (isElasticsearch) {
+      ES_CONFIGURATION.setIndexPrefix(null);
+    } else {
+      OS_CONFIGURATION.setIndexPrefix(null);
+    }
+  }
 }
