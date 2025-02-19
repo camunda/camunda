@@ -77,6 +77,7 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
         .withPartitionId(context.getPartitionId())
         .withMaxFragmentSize(context.getMaxFragmentSize())
         .withActorSchedulingService(context.getActorSchedulingService())
+<<<<<<< HEAD
         .withClock(context.getStreamClock())
         .withRequestLimit(
             flowControlCfg.getRequest() != null
@@ -85,6 +86,10 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
         .withWriteRateLimit(
             flowControlCfg.getWrite() != null ? flowControlCfg.getWrite().buildLimit() : null)
         .build();
+=======
+        .withMeterRegistry(context.getPartitionMeterRegistry())
+        .buildAsync();
+>>>>>>> df85a699 (refactor: migrate sequencer metrics to micrometer)
   }
 
   private boolean shouldInstallOnTransition(final Role newRole, final Role currentRole) {
