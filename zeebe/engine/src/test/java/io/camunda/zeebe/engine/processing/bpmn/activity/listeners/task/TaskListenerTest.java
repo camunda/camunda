@@ -1602,6 +1602,12 @@ public class TaskListenerTest {
         ZeebeTaskListenerEventType.completing, u -> u, UserTaskClient::complete, "complete");
   }
 
+  @Test
+  public void shouldAppendUserTaskCorrectedWhenCancelingTaskListenerCompletesWithCorrections() {
+    testAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections(
+        ZeebeTaskListenerEventType.canceling, u -> u, ignore -> cancelProcessInstance(), "");
+  }
+
   private void testAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections(
       final ZeebeTaskListenerEventType eventType,
       final UnaryOperator<UserTaskBuilder> userTaskBuilder,
@@ -1819,6 +1825,22 @@ public class TaskListenerTest {
             UserTaskIntent.COMPLETED));
   }
 
+  @Test
+  public void shouldPropagateCorrectedDataToCancelingListenerJobHeadersOnTaskCancellation() {
+    verifyUserTaskDataPropagationAcrossListenerJobHeaders(
+        ZeebeTaskListenerEventType.canceling,
+        false,
+        ignore -> cancelProcessInstance(),
+        List.of(
+            UserTaskIntent.CANCELING,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CORRECTED,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CORRECTED,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CANCELED));
+  }
+
   /**
    * Verifies the propagation of user task data across listener job headers during the task
    * lifecycle.
@@ -2010,6 +2032,15 @@ public class TaskListenerTest {
         false,
         UserTaskClient::complete,
         UserTaskIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldTrackChangedAttributesOnlyForActuallyCorrectedValuesOnTaskCancellation() {
+    verifyChangedAttributesAreTrackedOnlyForActuallyCorrectedValues(
+        ZeebeTaskListenerEventType.canceling,
+        false,
+        ignore -> cancelProcessInstance(),
+        UserTaskIntent.CANCELED);
   }
 
   /**
@@ -2292,6 +2323,15 @@ public class TaskListenerTest {
         u -> u,
         UserTaskClient::complete,
         UserTaskIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldPersistCorrectedUserTaskDataWhenCancelingTaskListenerCompletes() {
+    testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
+        ZeebeTaskListenerEventType.canceling,
+        u -> u,
+        ignore -> cancelProcessInstance(),
+        UserTaskIntent.CANCELED);
   }
 
   private void testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
