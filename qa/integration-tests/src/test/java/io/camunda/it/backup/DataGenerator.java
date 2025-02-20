@@ -14,6 +14,7 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.client.api.search.response.UserTaskState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
@@ -31,7 +32,7 @@ public class DataGenerator implements AutoCloseable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DataGenerator.class);
   // process id -> process instance key
-  public final ConcurrentSkipListSet<Long> instancekeys = new ConcurrentSkipListSet<>();
+  public final ConcurrentSkipListSet<Long> instanceKeys = new ConcurrentSkipListSet<>();
   final String assignee = "user";
   private CamundaClient camundaClient;
   private final OneTaskProcess process;
@@ -46,7 +47,7 @@ public class DataGenerator implements AutoCloseable {
 
   public void generateCompletedProcesses(final int processNumber) {
     generateUncompletedProcesses(processNumber);
-    completeProcesses(processNumber);
+    completeProcesses();
     verifyAllExported(ProcessInstanceState.COMPLETED);
 
     // wait for everything to be exported
@@ -60,19 +61,15 @@ public class DataGenerator implements AutoCloseable {
     }
   }
 
-  public void completeProcesses(final int processNumber) {
-    completeTask(process.tasks[0], "var1", processNumber);
+  /**
+   * Completes all process instances that are present in {@link DataGenerator#instanceKeys}. Once
+   * completed, the processes will be removed that map.
+   */
+  public void completeProcesses() {
+    completeTask(process.tasks[0], "var1");
     LOGGER.debug("Service task completed");
-    completeUserTasks(processNumber);
+    completeUserTasks();
     LOGGER.debug("User task completed");
-  }
-
-  public void setCamundaClient(final CamundaClient camundaClient) {
-    this.camundaClient = camundaClient;
-  }
-
-  public void clearInstanceKeys() {
-    instancekeys.clear();
   }
 
   public void verifyAllExported(final ProcessInstanceState state) {
@@ -85,63 +82,85 @@ public class DataGenerator implements AutoCloseable {
                       .newProcessInstanceQuery()
                       .filter(
                           b ->
-                              b.processInstanceKey(p -> p.in(instancekeys.stream().toList()))
+                              b.processInstanceKey(p -> p.in(instanceKeys.stream().toList()))
                                   .state(state))
-                      .page(b -> b.limit(instancekeys.size()).from(0))
+                      .page(b -> b.limit(instanceKeys.size()).from(0))
                       .send();
               assertThat(response)
                   .succeedsWithin(timeout)
                   .extracting(SearchQueryResponse::items)
                   .asInstanceOf(InstanceOfAssertFactories.LIST)
-                  .hasSameSizeAs(instancekeys);
+                  .hasSameSizeAs(instanceKeys);
+
+              // remove all completed instances
+              response.get().items().stream()
+                  .filter(inst -> inst.getState().equals(ProcessInstanceState.COMPLETED))
+                  .map(ProcessInstance::getProcessInstanceKey)
+                  .forEach(instanceKeys::remove);
             });
-    if (state.equals(ProcessInstanceState.COMPLETED)) {
-      clearInstanceKeys();
-    }
   }
 
-  private void completeTask(final String jobType, final String varName, final int number) {
-    // FIXME
-    // it's really a set
+  private void completeTask(final String jobType, final String varName) {
     final var completedJobs = new ConcurrentHashMap<Long, Object>();
+    LOGGER.debug(
+        "Starting to {} complete tasks of type {} with processInstanceKeys={}",
+        instanceKeys.size(),
+        jobType,
+        instanceKeys);
     final var worker =
         camundaClient
             .newWorker()
             .jobType(jobType)
             .handler(
                 (jobClient, job) -> {
-                  LOGGER.debug("Completing job {}", job.getKey());
-                  jobClient.newCompleteCommand(job.getKey()).variable(varName, job.getKey()).send();
-                  completedJobs.put(job.getKey(), job);
+                  LOGGER.debug(
+                      "Completing job {} of process {}", job.getKey(), job.getProcessInstanceKey());
+                  jobClient
+                      .newCompleteCommand(job.getKey())
+                      .variable(varName, job.getKey())
+                      .send()
+                      .join();
+                  completedJobs.put(job.getProcessInstanceKey(), job);
                 })
             .timeout(timeout.toSeconds())
-            .name("completeTask");
-    try (final var jobWorker = worker.open()) {
+            .name("completeTask")
+            .open();
+    try {
       Awaitility.await("until all jobs have been completed")
           .atMost(timeout)
-          .untilAsserted(() -> assertThat(completedJobs).hasSize(instancekeys.size()));
+          .untilAsserted(() -> assertThat(completedJobs).hasSize(instanceKeys.size()));
+    } finally {
+      worker.close();
+      // this is needed otherwise there is a risk that the worker may receive some new
+      // processInstances
+      // even though it was already closed, but was still polling
+      Awaitility.await("worker has stopped polling").atMost(timeout).until(worker::isClosed);
     }
   }
 
-  private void completeUserTasks(final int number) {
+  private void completeUserTasks() {
+    LOGGER.debug("Starting to {} complete user tasks", instanceKeys.size());
     final List<UserTask> items =
         Awaitility.await("all user tasks are ready")
             .atMost(timeout)
             .until(
                 () -> {
                   try {
-                    return camundaClient
-                        .newUserTaskQuery()
-                        .filter(f -> f.assignee(assignee))
-                        .send()
-                        .join()
-                        .items();
+                    final var itemsFromQuery =
+                        camundaClient
+                            .newUserTaskQuery()
+                            .filter(f -> f.assignee(assignee).state(UserTaskState.CREATED))
+                            .send()
+                            .join()
+                            .items();
+                    LOGGER.debug("Found {} user tasks", itemsFromQuery.size());
+                    return itemsFromQuery;
                   } catch (final RuntimeException e) {
                     LOGGER.warn("Failed to complete user tasks, will retry", e);
                     return List.of();
                   }
                 },
-                l -> l.size() == number);
+                l -> l.size() == instanceKeys.size());
     LOGGER.debug("Fetched {} user tasks", items.size());
 
     items.forEach(
@@ -195,7 +214,7 @@ public class DataGenerator implements AutoCloseable {
               .send()
               .join();
       LOGGER.debug("Process instance started with key {}", evt.getProcessInstanceKey());
-      instancekeys.add(evt.getProcessInstanceKey());
+      instanceKeys.add(evt.getProcessInstanceKey());
     }
 
     private void deploy() {

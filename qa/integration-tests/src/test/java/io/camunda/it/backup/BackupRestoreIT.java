@@ -20,7 +20,11 @@ import io.camunda.qa.util.cluster.HistoryBackupClient;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.BackupStateDto;
+import io.camunda.webapps.backup.Metadata;
+import io.camunda.webapps.backup.repository.SnapshotNameProvider;
+import io.camunda.webapps.schema.descriptors.backup.SnapshotIndexCollection;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
@@ -33,19 +37,26 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.testcontainers.AzuriteContainer;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.agrona.CloseHelper;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -53,12 +64,18 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @ZeebeIntegration
 public class BackupRestoreIT {
+  private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreIT.class);
   private static final String REPOSITORY_NAME = "test-repository";
   private static final String INDEX_PREFIX = "backup-restore";
   private static final String PROCESS_ID = "backup-process";
   private static final long BACKUP_ID = 3L;
   private static final int PROCESS_INSTANCE_NUMBER = 10;
+
+  private static final Duration TIMEOUT = Duration.ofSeconds(500);
+  private static final SnapshotNameProvider SNAPSHOT_NAME_PROVIDER =
+      new ZeebeSnapshotNameProvider();
   @Container private static final AzuriteContainer AZURITE_CONTAINER = new AzuriteContainer();
+  @AutoClose private static final Executor EXECUTOR = Executors.newSingleThreadExecutor();
   protected CamundaClient camundaClient;
   protected ExportingActuator exportingActuator;
   protected BackupActuator backupActuator;
@@ -66,7 +83,7 @@ public class BackupRestoreIT {
   @TestZeebe(autoStart = false)
   protected TestStandaloneApplication<?> testStandaloneApplication;
 
-  protected BackupDBClient backupDbClient;
+  protected BackupDBClient webappsDBClient;
 
   @RegisterExtension
   @SuppressWarnings("unused")
@@ -80,16 +97,17 @@ public class BackupRestoreIT {
   private GenericContainer<?> searchContainer;
   private DataGenerator generator;
   private HistoryBackupClient historyBackupClient;
+  private MultiDbConfigurator configurator;
 
   @AfterEach
   public void tearDown() {
-    CloseHelper.quietCloseAll(backupDbClient, camundaClient, generator, searchContainer);
+    CloseHelper.quietCloseAll(webappsDBClient, camundaClient, generator, searchContainer);
   }
 
   private void setup(final BackupRestoreTestConfig config) throws Exception {
     testStandaloneApplication =
         new TestSimpleCamundaApplication().withAuthenticationMethod(AuthenticationMethod.BASIC);
-    final var configurator = new MultiDbConfigurator(testStandaloneApplication);
+    configurator = new MultiDbConfigurator(testStandaloneApplication);
     testStandaloneApplication.withBrokerConfig(this::configureZeebeBackupStore);
     final String dbUrl;
     searchContainer =
@@ -132,14 +150,18 @@ public class BackupRestoreIT {
 
     testStandaloneApplication.start().awaitCompleteTopology();
 
-    camundaClient = testStandaloneApplication.newClientBuilder().build();
+    camundaClient =
+        testStandaloneApplication
+            .newClientBuilder()
+            .defaultRequestTimeout(Duration.ofSeconds(1))
+            .build();
     exportingActuator = ExportingActuator.of(testStandaloneApplication);
     backupActuator = BackupActuator.of(testStandaloneApplication);
 
     historyBackupClient = HistoryBackupClient.of(testStandaloneApplication);
-    backupDbClient = BackupDBClient.create(dbUrl, config.databaseType);
-    backupDbClient.createRepository(REPOSITORY_NAME);
-    generator = new DataGenerator(camundaClient, PROCESS_ID, Duration.ofSeconds(50));
+    webappsDBClient = BackupDBClient.create(dbUrl, config.databaseType, EXECUTOR);
+    webappsDBClient.createRepository(REPOSITORY_NAME);
+    generator = new DataGenerator(camundaClient, PROCESS_ID, TIMEOUT);
   }
 
   public static Stream<BackupRestoreTestConfig> sources() {
@@ -163,7 +185,7 @@ public class BackupRestoreIT {
 
     // generate some processes, but do not complete them,
     // we will complete them after the restore
-    //    generator.generateUncompletedProcesses(PROCESS_INSTANCE_NUMBER);
+    generator.generateUncompletedProcesses(PROCESS_INSTANCE_NUMBER);
 
     // BACKUP PROCEDURE
     // Zeebe is soft-paused
@@ -176,19 +198,21 @@ public class BackupRestoreIT {
     // when
     // if we stop all apps and restart elasticsearch
     testStandaloneApplication.stop();
+    // Zeebe's folder is deleted by ZeebeIntegration automatically when the application is stop()
 
-    backupDbClient.deleteAllIndices(INDEX_PREFIX);
-    Awaitility.await().untilAsserted(() -> assertThat(backupDbClient.cat()).isEmpty());
+    webappsDBClient.deleteAllIndices(INDEX_PREFIX);
+
+    Awaitility.await().untilAsserted(() -> assertThat(webappsDBClient.cat()).isEmpty());
 
     // RESTORE PROCEDURE
-    backupDbClient.restore(REPOSITORY_NAME, snapshots);
+    webappsDBClient.restore(REPOSITORY_NAME, snapshots);
     restoreZeebe();
 
     testStandaloneApplication.start();
 
-    //    generator.verifyAllExported(ProcessInstanceState.ACTIVE);
+    generator.verifyAllExported(ProcessInstanceState.ACTIVE);
     // complete the processes that were not terminated before stopping the apps
-    //    generator.completeProcesses(PROCESS_INSTANCE_NUMBER);
+    generator.completeProcesses();
 
     // then
     generator.verifyAllExported(ProcessInstanceState.COMPLETED);
@@ -206,7 +230,6 @@ public class BackupRestoreIT {
   private void restoreZeebe() {
     try (final var restoreApp =
         new TestRestoreApp(testStandaloneApplication.brokerConfig()).withBackupId(BACKUP_ID)) {
-
       assertThatNoException().isThrownBy(restoreApp::start);
     }
   }
@@ -217,7 +240,6 @@ public class BackupRestoreIT {
         .extracting(TakeBackupHistoryResponse::getScheduledSnapshots)
         .asInstanceOf(InstanceOfAssertFactories.LIST)
         .isNotEmpty();
-    System.out.println("ciao");
     final var snapshots = takeResponse.getScheduledSnapshots();
 
     Awaitility.await("Webapps Backup completed")
@@ -237,6 +259,41 @@ public class BackupRestoreIT {
   }
 
   private void takeZeebeBackup() {
+    final var metadata = new Metadata(BACKUP_ID, "current", 1, 1);
+    final List<String> indices;
+    try {
+      indices =
+          webappsDBClient.cat().stream()
+              .filter(name -> name.startsWith(configurator.zeebeIndexPrefix()))
+              .toList();
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
+    assertThat(indices).isNotEmpty();
+
+    final var zeebeIndicesBackupStatus = new AtomicReference<String>();
+
+    final var backupRepository =
+        webappsDBClient.zeebeBackupRepository(REPOSITORY_NAME, SNAPSHOT_NAME_PROVIDER);
+
+    backupRepository.executeSnapshotting(
+        new SnapshotRequest(
+            REPOSITORY_NAME,
+            SNAPSHOT_NAME_PROVIDER.getSnapshotName(metadata),
+            new SnapshotIndexCollection(indices, List.of()),
+            metadata),
+        () -> {
+          zeebeIndicesBackupStatus.set("COMPLETED");
+          LOGGER.info("Backup of zeebe ES/OS records completed");
+        },
+        () -> {
+          zeebeIndicesBackupStatus.set("FAILURE");
+          LOGGER.error("Failed to take backup of zeeebe ES/OS records");
+        });
+    Awaitility.await("zeebe indices have been backed up")
+        .untilAsserted(() -> assertThat(zeebeIndicesBackupStatus.get()).isNotNull());
+    assertThat(zeebeIndicesBackupStatus.get()).isEqualTo("COMPLETED");
+
     backupActuator.take(BACKUP_ID);
     Awaitility.await("Zeebe backup completed")
         .untilAsserted(
