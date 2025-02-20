@@ -25,7 +25,8 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
   private static final Logger LOG =
       LoggerFactory.getLogger(WebApplicationAuthorizationCheckFilter.class);
   private static final List<String> WEB_APPLICATIONS = List.of("identity", "operate", "tasklist");
-  private static final List<String> STATIC_RESOURCES = List.of(".css", ".js", ".jpg", ".png");
+  private static final List<String> STATIC_RESOURCES =
+      List.of(".css", ".js", ".jpg", ".png", "woff2");
 
   @Override
   protected void doFilterInternal(
@@ -36,13 +37,19 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
 
     if (!isAllowed(request)) {
       LOG.warn("Access denied for request: {}", request.getRequestURI());
-      response.sendError(HttpServletResponse.SC_FORBIDDEN);
+      response.sendRedirect(
+          String.format("%s/%s/403", request.getContextPath(), findWebApplication(request)));
       return;
     }
     filterChain.doFilter(request, response);
   }
 
   private boolean isAllowed(final HttpServletRequest request) {
+
+    if (request.getRequestURL().toString().endsWith("403")) {
+      return true;
+    }
+
     if (isStaticResource(request)) {
       return true;
     }
@@ -53,8 +60,8 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
     }
 
     final CamundaPrincipal principal = findCurrentCamundaPrincipal();
-    return principal != null
-        && principal.getAuthenticationContext().authorizedApplications().contains(application);
+    return principal == null
+        || principal.getAuthenticationContext().authorizedApplications().contains(application);
   }
 
   private boolean isStaticResource(final HttpServletRequest request) {
@@ -72,7 +79,9 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
 
   private CamundaPrincipal findCurrentCamundaPrincipal() {
     final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    if (auth != null && auth.getPrincipal() instanceof final CamundaPrincipal principal) {
+    if (auth != null
+        && auth.isAuthenticated()
+        && auth.getPrincipal() instanceof final CamundaPrincipal principal) {
       return principal;
     }
     return null;
