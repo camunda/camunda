@@ -399,7 +399,7 @@ describe('process exclusive updates', () => {
 describe('getDefaultSorting', () => {
   it('should sort raw data a descending order by the start date', () => {
     expect(
-      getDefaultSorting({reportType: 'process', data: {...report, view: {property: 'rawData'}}})
+      getDefaultSorting({data: {...report, view: {property: 'rawData'}}})
     ).toEqual({
       by: 'startDate',
       order: 'desc',
@@ -410,7 +410,6 @@ describe('getDefaultSorting', () => {
     isCategorical.mockReturnValueOnce(true);
     expect(
       getDefaultSorting({
-        reportType: 'process',
         data: {...report, visualization: 'bar'},
       })
     ).toEqual({
@@ -422,7 +421,6 @@ describe('getDefaultSorting', () => {
   it('should sort number variable by key in ascending order', () => {
     expect(
       getDefaultSorting({
-        reportType: 'process',
         data: {
           ...report,
           groupBy: {type: 'variable', value: {type: 'Double'}},
@@ -438,7 +436,6 @@ describe('getDefaultSorting', () => {
   it('should sort flow node table report by label in ascending order', () => {
     expect(
       getDefaultSorting({
-        reportType: 'process',
         data: {
           ...report,
           view: {entity: 'flowNode', properties: ['frequency']},

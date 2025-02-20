@@ -7,7 +7,7 @@
  */
 
 import {post} from 'request';
-import {Report, ReportType} from 'types';
+import {Report} from 'types';
 import { getFullURL } from '../api';
 
 interface ConfigParams {
@@ -43,13 +43,13 @@ type DeepPartial<T> = T extends object
     }
   : T;
 
-export type ReportEvaluationPayload<T extends ReportType> = DeepPartial<Report<T>>;
+export type ReportEvaluationPayload = DeepPartial<Report>;
 
-export async function evaluateReport<T extends ReportType>(
-  payload: ReportEvaluationPayload<T>,
+export async function evaluateReport(
+  payload: ReportEvaluationPayload,
   filter = [],
   query = {}
-): Promise<Report<T>> {
+): Promise<Report> {
   let response;
 
   if (typeof payload !== 'object') {
@@ -59,7 +59,7 @@ export async function evaluateReport<T extends ReportType>(
     // evaluate unsaved report
     // we dont want to send report result in payload to prevent exceedeing request size limit
     const {result: _result, ...evaluationPayload} = payload;
-    response = await post(getFullURL(`api/report/evaluate`), evaluationPayload, {query});
+    response = await post(getFullURL(`api/report/evaluate`), {...evaluationPayload, combined: false, reportType: "process"}, {query});
   }
 
   return await response.json();

@@ -41,7 +41,6 @@ beforeEach(() => {
 });
 
 const report = {
-  reportType: 'process',
   data: {
     configuration: {
       targetValue: {active: false},
@@ -123,7 +122,6 @@ it('should show the view label underneath the number', () => {
 
   node.setProps({
     report: {
-      reportType: 'process',
       result: {
         measures: [{data: 123, aggregationType: {type: 'avg', value: null}, property: 'duration'}],
       },
