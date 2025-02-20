@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
@@ -69,6 +70,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
             authCheckBehavior,
             List.of(
                 this::checkTaskListenerJobForProvidingVariables,
+                this::checkCancelingTaskListenerJobForDenying,
                 this::checkTaskListenerJobForDenyingWithCorrections,
                 this::checkTaskListenerJobForUnknownPropertyCorrections));
     this.jobMetrics = jobMetrics;
@@ -184,6 +186,26 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
               denied. The corrections would be reverted by the denial. Either complete the job with \
               corrections without setting denied, or complete the job with a denied result but no \
               corrections."""));
+    } else {
+      return Either.right(job);
+    }
+  }
+
+  private Either<Rejection, JobRecord> checkCancelingTaskListenerJobForDenying(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    // Check if the current job is a `canceling` user task listener job
+    // and if it attempts to deny cancellation
+    if (job.getJobKind() == JobKind.TASK_LISTENER
+        && job.getJobListenerEventType() == JobListenerEventType.CANCELING
+        && command.getValue().getResult().isDenied()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              """
+                  Expected to complete a '%s' task listener job, but the job result is set to \
+                  `denied`. `Canceling` task listeners cannot deny user task cancellation. \
+                  Please complete the job without setting the `denied=true`."""
+                  .formatted(JobListenerEventType.CANCELING)));
     } else {
       return Either.right(job);
     }

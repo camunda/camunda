@@ -3121,4 +3121,35 @@ public class TaskListenerTest {
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.CANCELED);
   }
+
+  @Test
+  public void shouldRejectDenyingCancelingTaskListener() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.canceling, listenerType, listenerType + "_2"));
+
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectPartialSuccess().cancel();
+
+    // when
+    final var rejection =
+        ENGINE
+            .job()
+            .ofInstance(processInstanceKey)
+            .withType(listenerType)
+            .withResult(new JobResult().setDenied(true))
+            .expectRejection()
+            .complete();
+
+    // then
+    Assertions.assertThat(rejection)
+        .describedAs("Expect that the `CANCELING` job completion with `denied=true` is rejected")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            """
+                Expected to complete a 'CANCELING' task listener job, but the job result is set to \
+                `denied`. `Canceling` task listeners cannot deny user task cancellation. \
+                Please complete the job without setting the `denied=true`.""");
+  }
 }
