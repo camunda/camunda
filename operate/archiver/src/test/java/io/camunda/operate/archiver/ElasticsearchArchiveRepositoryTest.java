@@ -107,10 +107,7 @@ public class ElasticsearchArchiveRepositoryTest {
         when(timer.stop(any())).thenReturn(1000L);
         mockedTimer.when(Timer::start).thenReturn(timer);
         mockedStatic
-            .when(
-                () ->
-                    ElasticsearchUtil.deleteAsyncWithConnectionRelease(
-                        any(), anyString(), anyString(), any(), any(), any()))
+            .when(() -> ElasticsearchUtil.deleteAsync(any(), any(), any()))
             .thenReturn(CompletableFuture.completedFuture(1000L));
         final CompletableFuture<Void> res = underTest.deleteDocuments("index", "id", List.of());
         res.join();
@@ -128,10 +125,7 @@ public class ElasticsearchArchiveRepositoryTest {
         final CompletableFuture<Void> failedFuture = new CompletableFuture<>();
         failedFuture.completeExceptionally(new Exception("test error"));
         mockedStatic
-            .when(
-                () ->
-                    ElasticsearchUtil.deleteAsyncWithConnectionRelease(
-                        any(), anyString(), anyString(), any(), any(), any()))
+            .when(() -> ElasticsearchUtil.deleteAsync(any(), any(), any()))
             .thenReturn(failedFuture);
         final CompletableFuture<Void> res = underTest.deleteDocuments("index", "id", List.of());
         try {
@@ -151,10 +145,7 @@ public class ElasticsearchArchiveRepositoryTest {
         when(timer.stop(any())).thenReturn(1000L);
         mockedTimer.when(Timer::start).thenReturn(timer);
         mockedStatic
-            .when(
-                () ->
-                    ElasticsearchUtil.reindexAsyncWithConnectionRelease(
-                        any(), any(), anyString(), any()))
+            .when(() -> ElasticsearchUtil.reindexAsync(any(), any(), any()))
             .thenReturn(CompletableFuture.completedFuture(1000L));
         final CompletableFuture<Void> res =
             underTest.reindexDocuments("sourceIndex", "destinationIndex", "id", List.of());
@@ -173,10 +164,7 @@ public class ElasticsearchArchiveRepositoryTest {
         final CompletableFuture<Void> failedFuture = new CompletableFuture<>();
         failedFuture.completeExceptionally(new Exception("test error"));
         mockedStatic
-            .when(
-                () ->
-                    ElasticsearchUtil.reindexAsyncWithConnectionRelease(
-                        any(), any(), anyString(), any()))
+            .when(() -> ElasticsearchUtil.reindexAsync(any(), any(), any()))
             .thenReturn(failedFuture);
         final CompletableFuture<Void> res =
             underTest.reindexDocuments("sourceIndex", "destinationIndex", "id", List.of());
