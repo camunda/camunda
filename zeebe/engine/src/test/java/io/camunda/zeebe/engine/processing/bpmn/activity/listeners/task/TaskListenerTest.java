@@ -2627,6 +2627,19 @@ public class TaskListenerTest {
         userTask -> Assertions.assertThat(userTask).hasAction("update"));
   }
 
+  @Test
+  @Ignore(
+      "Fails on variable UPDATE with the following error: Expected to update variables for element with key '<kep>', but no such element was found")
+  public void shouldRetryUserTaskCancelCommandAfterExtractValueErrorIncidentResolution() {
+    testUserTaskCommandRetryAfterExtractValueError(
+        ZeebeTaskListenerEventType.canceling,
+        "canceling_listener_var_name",
+        "expression_canceling_listener_2",
+        ignore -> cancelProcessInstance(),
+        UserTaskIntent.CANCELED,
+        userTask -> Assertions.assertThat(userTask).isNotNull());
+  }
+
   private void testUserTaskCommandRetryAfterExtractValueError(
       final ZeebeTaskListenerEventType eventType,
       final String variableName,
