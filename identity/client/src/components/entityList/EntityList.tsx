@@ -120,7 +120,6 @@ type EntityListProps<D extends EntityData> = (
   addEntityDisabled?: boolean;
   onAddEntity?: () => void;
   onEntityClick?: (element: D) => void;
-  onSearch?: (value: string) => void;
   menuItems?:
     | [MenuItem<D>]
     | [MenuItem<D>, MenuItem<D>]
@@ -152,7 +151,6 @@ const EntityList = <D extends EntityData>({
   addEntityDisabled,
   onAddEntity,
   onEntityClick,
-  onSearch,
   menuItems,
   sortProperty,
   loading,
@@ -274,34 +272,27 @@ const EntityList = <D extends EntityData>({
             <>
               <TableToolbar {...getToolbarProps()}>
                 <TableToolbarContent>
-                  {onSearch && (
-                    <TableToolbarSearch
-                      placeholder={searchPlaceholder}
-                      persistent
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                        const { value } = e.target;
-                        debounce(() => {
-                          if (onSearch) {
-                            onSearch(value);
-                          } else {
-                            onInputChange(e);
-                          }
-                        });
-                      }}
-                      onFocus={(event: unknown, handleExpand: HandleExpand) => {
-                        handleExpand(event, true);
-                      }}
-                      onBlur={(
-                        event: { target: { value: unknown } },
-                        handleExpand: HandleExpand,
-                      ) => {
-                        const { value } = event.target;
-                        if (!value) {
-                          handleExpand(event, false);
-                        }
-                      }}
-                    />
-                  )}
+                  <TableToolbarSearch
+                    placeholder={searchPlaceholder}
+                    persistent
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                      debounce(() => {
+                        onInputChange(e);
+                      });
+                    }}
+                    onFocus={(event: unknown, handleExpand: HandleExpand) => {
+                      handleExpand(event, true);
+                    }}
+                    onBlur={(
+                      event: { target: { value: unknown } },
+                      handleExpand: HandleExpand,
+                    ) => {
+                      const { value } = event.target;
+                      if (!value) {
+                        handleExpand(event, false);
+                      }
+                    }}
+                  />
                   {filter && (
                     <ToolbarMultiSelect
                       type="inline"

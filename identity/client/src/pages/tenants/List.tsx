@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-import { FC, useState } from "react";
+import { FC } from "react";
 import { Edit, TrashCan } from "@carbon/react/icons";
 import { Stack } from "@carbon/react";
 import { spacing06 } from "@carbon/elements";
@@ -31,7 +31,6 @@ import DeleteModal from "src/pages/tenants/modals/DeleteModal";
 const List: FC = () => {
   const { t, Translate } = useTranslate();
   const navigate = useNavigate();
-  const [, setSearch] = useState("");
   const {
     data: tenantSearchResults,
     loading,
@@ -85,7 +84,6 @@ const List: FC = () => {
         onEntityClick={showDetails}
         addEntityLabel={t("Create tenant")}
         onAddEntity={addTenant}
-        onSearch={setSearch}
         loading={loading}
         menuItems={[
           {
