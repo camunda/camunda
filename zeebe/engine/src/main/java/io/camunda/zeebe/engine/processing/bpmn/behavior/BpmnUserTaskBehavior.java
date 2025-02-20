@@ -329,8 +329,10 @@ public final class BpmnUserTaskBehavior {
     if (userTaskKey > 0) {
       final LifecycleState lifecycleState = userTaskState.getLifecycleState(userTaskKey);
       if (LifecycleState.CANCELING == lifecycleState) {
-        final UserTaskRecord userTask = userTaskState.getUserTask(userTaskKey);
-        stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELED, userTask);
+        final var intermediateRecord = userTaskState.getIntermediateState(userTaskKey).getRecord();
+        final var currentUserTask = userTaskState.getUserTask(userTaskKey);
+        intermediateRecord.setDiffAsChangedAttributes(currentUserTask);
+        stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELED, intermediateRecord);
       }
     }
   }
