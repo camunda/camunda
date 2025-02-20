@@ -15,6 +15,7 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
+import co.elastic.clients.elasticsearch.indices.IndexTemplateSummary;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
@@ -244,8 +245,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     } catch (final IOException | ElasticsearchException e) {
       throw new ElasticsearchExporterException(
           String.format(
-              "Failed to update index template settings for [%s]",
-              indexTemplateDescriptor.getTemplateName()),
+              "Expected to update index template settings '%s' with '%s', but failed ",
+              indexTemplateDescriptor.getTemplateName(), updateIndexTemplateSettingsRequest),
           e);
     }
   }
@@ -424,14 +425,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                       .build())
               .settings();
 
-      final var currentIndexTemplateState =
-          client
-              .indices()
-              .getIndexTemplate(r -> r.name(indexTemplateDescriptor.getTemplateName()))
-              .indexTemplates()
-              .getFirst()
-              .indexTemplate()
-              .template();
+      final var currentIndexTemplateState = getIndexTemplateState(indexTemplateDescriptor);
 
       return new PutIndexTemplateRequest.Builder()
           .name(indexTemplateDescriptor.getTemplateName())
@@ -448,6 +442,24 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           "Failed to load file "
               + indexTemplateDescriptor.getMappingsClasspathFilename()
               + " from classpath.",
+          e);
+    }
+  }
+
+  private IndexTemplateSummary getIndexTemplateState(
+      final IndexTemplateDescriptor indexTemplateDescriptor) {
+    try {
+      return client
+          .indices()
+          .getIndexTemplate(r -> r.name(indexTemplateDescriptor.getTemplateName()))
+          .indexTemplates()
+          .getFirst()
+          .indexTemplate()
+          .template();
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException(
+          String.format(
+              "Failed to retrieve index template '%s'", indexTemplateDescriptor.getTemplateName()),
           e);
     }
   }

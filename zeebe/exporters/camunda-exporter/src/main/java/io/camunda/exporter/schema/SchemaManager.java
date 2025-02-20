@@ -59,7 +59,7 @@ public class SchemaManager {
     updateSchemaMappings(newIndexProperties);
     LOG.info(
         "Update index template schema. '{}' index templates need to be updated",
-        newIndexProperties.size());
+        newIndexTemplateProperties.size());
     updateSchemaMappings(newIndexTemplateProperties);
     updateSchemaSettings();
 
@@ -89,7 +89,7 @@ public class SchemaManager {
         .forEach(
             desc -> {
               searchEngineClient.updateIndexTemplateSettings(
-                  desc, getIndexSettings(desc.getIndexName()));
+                  desc, getIndexSettingsFromConfig(desc.getIndexName()));
             });
 
     // update matching index for the index template descriptor
@@ -103,10 +103,10 @@ public class SchemaManager {
   }
 
   private void updateIndexReplicaCount(final IndexDescriptor indexDescriptor) {
-    final var indexSettings = getIndexSettings(indexDescriptor.getIndexName());
+    final var indexReplicaCount =
+        String.valueOf(getNumberOfReplicasFromConfig(indexDescriptor.getIndexName()));
     searchEngineClient.putSettings(
-        List.of(indexDescriptor),
-        Map.of("index.number_of_replicas", indexSettings.getNumberOfReplicas().toString()));
+        List.of(indexDescriptor), Map.of("index.number_of_replicas", indexReplicaCount));
   }
 
   public void initialiseResources() {
@@ -133,7 +133,7 @@ public class SchemaManager {
             descriptor -> {
               LOG.info("Create missing index '{}'", descriptor.getFullQualifiedName());
               searchEngineClient.createIndex(
-                  descriptor, getIndexSettings(descriptor.getIndexName()));
+                  descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()));
             });
   }
 
@@ -158,13 +158,13 @@ public class SchemaManager {
             descriptor -> {
               LOG.info("Create missing index template '{}'", descriptor.getTemplateName());
               searchEngineClient.createIndexTemplate(
-                  descriptor, getIndexSettings(descriptor.getIndexName()), true);
+                  descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()), true);
               LOG.info(
                   "Create missing index '{}', for template '{}'",
                   descriptor.getFullQualifiedName(),
                   descriptor.getTemplateName());
               searchEngineClient.createIndex(
-                  descriptor, getIndexSettings(descriptor.getIndexName()));
+                  descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()));
             });
   }
 
@@ -179,7 +179,7 @@ public class SchemaManager {
             "Updating template: '{}'", ((IndexTemplateDescriptor) descriptor).getTemplateName());
         searchEngineClient.createIndexTemplate(
             (IndexTemplateDescriptor) descriptor,
-            getIndexSettings(descriptor.getIndexName()),
+            getIndexSettingsFromConfig(descriptor.getIndexName()),
             false);
       } else {
         LOG.info(
@@ -191,12 +191,8 @@ public class SchemaManager {
     }
   }
 
-  private IndexSettings getIndexSettings(final String indexName) {
-    final var templateReplicas =
-        config
-            .getIndex()
-            .getReplicasByIndexName()
-            .getOrDefault(indexName, config.getIndex().getNumberOfReplicas());
+  private IndexSettings getIndexSettingsFromConfig(final String indexName) {
+    final var templateReplicas = getNumberOfReplicasFromConfig(indexName);
     final var templateShards =
         config
             .getIndex()
@@ -208,6 +204,13 @@ public class SchemaManager {
     settings.setNumberOfReplicas(templateReplicas);
 
     return settings;
+  }
+
+  private int getNumberOfReplicasFromConfig(final String indexName) {
+    return config
+        .getIndex()
+        .getReplicasByIndexName()
+        .getOrDefault(indexName, config.getIndex().getNumberOfReplicas());
   }
 
   private Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndices(
