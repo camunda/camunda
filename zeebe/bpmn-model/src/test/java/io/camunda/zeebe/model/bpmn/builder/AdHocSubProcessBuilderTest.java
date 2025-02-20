@@ -81,4 +81,60 @@ class AdHocSubProcessBuilderTest {
         .extracting(ZeebeAdHoc::getActiveElementsCollection)
         .contains("=[\"A\"]");
   }
+
+  @Test
+  void shouldSetCompletionCondition() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess -> {
+                  adHocSubProcess.zeebeCompletionConditionExpression("true");
+                  adHocSubProcess.task("A");
+                })
+            .endEvent()
+            .done();
+
+    // when/then
+    final ModelElementInstance adHocSubProcess = process.getModelElementById("ad-hoc");
+
+    final ExtensionElements extensionElements =
+        (ExtensionElements) adHocSubProcess.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements).isNotNull();
+
+    assertThat(extensionElements.getChildElementsByType(ZeebeAdHoc.class))
+        .hasSize(1)
+        .extracting(ZeebeAdHoc::getCompletionCondition)
+        .contains("=true");
+  }
+
+  @Test
+  void shouldSetCancelRemainingInstances() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess -> {
+                  adHocSubProcess.zeebeCancelRemainingInstances(true);
+                  adHocSubProcess.task("A");
+                })
+            .endEvent()
+            .done();
+
+    // when/then
+    final ModelElementInstance adHocSubProcess = process.getModelElementById("ad-hoc");
+
+    final ExtensionElements extensionElements =
+        (ExtensionElements) adHocSubProcess.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements).isNotNull();
+
+    assertThat(extensionElements.getChildElementsByType(ZeebeAdHoc.class))
+        .hasSize(1)
+        .extracting(ZeebeAdHoc::isCancelRemainingInstancesEnabled)
+        .contains(true);
+  }
 }

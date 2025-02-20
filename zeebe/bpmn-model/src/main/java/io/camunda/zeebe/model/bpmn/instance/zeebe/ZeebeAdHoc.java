@@ -32,4 +32,30 @@ public interface ZeebeAdHoc extends BpmnModelElementInstance {
    * @param activateElements the collection of element to be activated
    */
   void setActiveElementsCollection(final String activateElements);
+
+  /**
+   * @return the completion condition to determine if the ad-hoc subprocess is completed.
+   */
+  String getCompletionCondition();
+
+  /**
+   * Sets the completion condition to determine if the ad-hoc subprocess is completed.
+   *
+   * @param completionCondition the completion condition to evaluate
+   */
+  void setCompletionCondition(final String completionCondition);
+
+  /**
+   * @return whether the ad-hoc subprocess should cancel remaining instances when completion
+   *     condition evaluates to true.
+   */
+  boolean isCancelRemainingInstancesEnabled();
+
+  /**
+   * Defines if the ad-hoc subprocess should cancel remaining instances when completion condition
+   * evaluates to true.
+   *
+   * @param cancelRemainingInstances whether to cancel remaining instances on completion
+   */
+  void setCancelRemainingInstancesEnabled(final boolean cancelRemainingInstances);
 }

@@ -27,6 +27,8 @@ import org.camunda.bpm.model.xml.type.attribute.Attribute;
 public class ZeebeAdHocImpl extends BpmnModelElementInstanceImpl implements ZeebeAdHoc {
 
   private static Attribute<String> activeElementsCollectionAttribute;
+  private static Attribute<String> completionConditionAttribute;
+  private static Attribute<Boolean> cancelRemainingInstancesAttribute;
 
   public ZeebeAdHocImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
@@ -45,6 +47,18 @@ public class ZeebeAdHocImpl extends BpmnModelElementInstanceImpl implements Zeeb
             .namespace(BpmnModelConstants.ZEEBE_NS)
             .build();
 
+    completionConditionAttribute =
+        typeBuilder
+            .stringAttribute(ZeebeConstants.ATTRIBUTE_COMPLETION_CONDITION)
+            .namespace(BpmnModelConstants.ZEEBE_NS)
+            .build();
+
+    cancelRemainingInstancesAttribute =
+        typeBuilder
+            .booleanAttribute(ZeebeConstants.ATTRIBUTE_CANCEL_REMAINING_INSTANCES)
+            .namespace(BpmnModelConstants.ZEEBE_NS)
+            .build();
+
     typeBuilder.build();
   }
 
@@ -56,5 +70,25 @@ public class ZeebeAdHocImpl extends BpmnModelElementInstanceImpl implements Zeeb
   @Override
   public void setActiveElementsCollection(final String activeElementsCollection) {
     activeElementsCollectionAttribute.setValue(this, activeElementsCollection);
+  }
+
+  @Override
+  public String getCompletionCondition() {
+    return completionConditionAttribute.getValue(this);
+  }
+
+  @Override
+  public void setCompletionCondition(final String completionCondition) {
+    completionConditionAttribute.setValue(this, completionCondition);
+  }
+
+  @Override
+  public boolean isCancelRemainingInstancesEnabled() {
+    return cancelRemainingInstancesAttribute.getValue(this);
+  }
+
+  @Override
+  public void setCancelRemainingInstancesEnabled(final boolean cancelRemainingInstances) {
+    cancelRemainingInstancesAttribute.setValue(this, cancelRemainingInstances);
   }
 }
