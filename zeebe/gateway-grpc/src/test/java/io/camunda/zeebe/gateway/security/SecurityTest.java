@@ -185,6 +185,11 @@ final class SecurityTest {
     brokerClient.start().forEach(ActorFuture::join);
     topologyManager.addTopologyListener(jobStreamClient);
     atomix.getMembershipService().addListener(topologyManager);
-    return new Gateway(gatewayCfg, brokerClient, actorScheduler, jobStreamClient.streamer());
+    return new Gateway(
+        gatewayCfg,
+        brokerClient,
+        actorScheduler,
+        jobStreamClient.streamer(),
+        new SimpleMeterRegistry());
   }
 }

@@ -90,7 +90,9 @@ final class InterceptorIT {
             new BrokerClientRequestMetrics(new SimpleMeterRegistry()));
 
     jobStreamClient = new JobStreamClientImpl(scheduler, cluster.getCommunicationService());
-    gateway = new Gateway(config, brokerClient, scheduler, jobStreamClient.streamer());
+    gateway =
+        new Gateway(
+            config, brokerClient, scheduler, jobStreamClient.streamer(), new SimpleMeterRegistry());
 
     cluster.start().join();
     scheduler.start();

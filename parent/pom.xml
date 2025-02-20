@@ -67,7 +67,6 @@
     <version.identity>8.6.8</version.identity>
     <version.surefire>3.5.2</version.surefire>
     <version.jackson>2.17.2</version.jackson>
-    <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
     <version.junit>5.11.4</version.junit>
     <version.junit4>4.13.2</version.junit4>
     <version.log4j>2.24.3</version.log4j>
@@ -1422,18 +1421,6 @@
       </dependency>
 
       <dependency>
-        <groupId>io.prometheus</groupId>
-        <artifactId>simpleclient_httpserver</artifactId>
-        <version>${version.prometheus}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.prometheus</groupId>
-        <artifactId>simpleclient_hotspot</artifactId>
-        <version>${version.prometheus}</version>
-      </dependency>
-
-      <dependency>
         <groupId>org.apache.httpcomponents.client5</groupId>
         <artifactId>httpclient5</artifactId>
         <version>${version.httpclient5}</version>
@@ -1443,18 +1430,6 @@
         <groupId>org.apache.httpcomponents.core5</groupId>
         <artifactId>httpcore5</artifactId>
         <version>${version.httpcore5}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>me.dinowernli</groupId>
-        <artifactId>java-grpc-prometheus</artifactId>
-        <version>${version.java-grpc-prometheus}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-all</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
 
       <!-- Interface based code generation -->
