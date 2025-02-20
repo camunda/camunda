@@ -49,7 +49,7 @@ public class Engine implements RecordProcessor {
       "Expected to process record '%s' without errors, but exception occurred with message '%s'.";
 
   private static final EnumSet<ValueType> SUPPORTED_VALUETYPES =
-      EnumSet.range(ValueType.JOB, ValueType.AUTHORIZATION);
+      EnumSet.range(ValueType.JOB, ValueType.RESOURCE);
 
   private EventApplier eventApplier;
   private RecordProcessorMap recordProcessorMap;
