@@ -14,7 +14,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -30,9 +29,9 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
 
   @Override
   protected void doFilterInternal(
-      final @NotNull HttpServletRequest request,
-      final @NotNull HttpServletResponse response,
-      final @NotNull FilterChain filterChain)
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final FilterChain filterChain)
       throws ServletException, IOException {
 
     if (!isAllowed(request)) {
