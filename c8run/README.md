@@ -19,7 +19,6 @@ Once extracted, go to the extracted folder and run one of the following commands
 ```
 Usage: start.sh
 Options:
-  --config     - Applies the specified configuration file
   --detached   - Starts Camunda Run as a detached process
 ```
 
