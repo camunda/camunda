@@ -190,18 +190,14 @@ public final class BpmnJobBehavior {
 
   private Either<Failure, String> resolveLinkedResourceKey(
       final LinkedResource linkedResource, final BpmnElementContext context, final long scopeKey) {
-    final Either<Failure, PersistedResource> resource =
-        findLinkedResource(
+    return findLinkedResource(
             linkedResource.getResourceId(),
             linkedResource.getBindingType(),
             linkedResource.getVersionTag(),
             context,
-            scopeKey);
-    if (resource.isRight()) {
-      return Either.right(resource.map(PersistedResource::getResourceKey).get().toString());
-    } else {
-      return Either.left(resource.getLeft());
-    }
+            scopeKey)
+        .map(PersistedResource::getResourceKey)
+        .map(String::valueOf);
   }
 
   private Either<Failure, PersistedResource> findLinkedResource(
