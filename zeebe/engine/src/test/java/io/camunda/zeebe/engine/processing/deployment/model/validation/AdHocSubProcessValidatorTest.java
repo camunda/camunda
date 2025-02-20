@@ -28,7 +28,7 @@ public class AdHocSubProcessValidatorTest {
   }
 
   @Test
-  void withNoActiveElementsCollection() {
+  void withNoActiveElementsCollectionOrCompletionConditionExpression() {
     // given
     final BpmnModelInstance process = process(adHocSubProcess -> adHocSubProcess.task("A"));
 
@@ -71,6 +71,50 @@ public class AdHocSubProcessValidatorTest {
         process(
             adHocSubProcess -> {
               adHocSubProcess.zeebeActiveElementsCollectionExpression("???");
+              adHocSubProcess.task("A");
+            });
+
+    // when/then
+    ProcessValidationUtil.validateProcess(
+        process,
+        ExpectedValidationResult.expect(ZeebeAdHoc.class, "failed to parse expression '???'"));
+  }
+
+  @Test
+  void withEmptyCompletionConditionExpression() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeCompletionConditionExpression("");
+              adHocSubProcess.task("A");
+            });
+
+    // when/then
+    ProcessValidationUtil.validateProcess(process);
+  }
+
+  @Test
+  void withCompletionConditionExpression() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeCompletionConditionExpression("elements");
+              adHocSubProcess.task("A");
+            });
+
+    // when/then
+    ProcessValidationUtil.validateProcess(process);
+  }
+
+  @Test
+  void withInvalidCompletionConditionExpression() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeCompletionConditionExpression("???");
               adHocSubProcess.task("A");
             });
 
