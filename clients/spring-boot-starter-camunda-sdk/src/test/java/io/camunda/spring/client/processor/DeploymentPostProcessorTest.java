@@ -110,6 +110,7 @@ public class DeploymentPostProcessorTest {
         .thenReturn(new Resource[] {resources[1]});
 
     when(deployStep1.addResourceStream(any(), anyString())).thenReturn(deployStep2);
+    when(deployStep2.addResourceStream(any(), anyString())).thenReturn(deployStep2);
 
     when(deployStep2.send()).thenReturn(camundaFuture);
 
@@ -123,7 +124,7 @@ public class DeploymentPostProcessorTest {
 
     // then
     verify(deployStep1).addResourceStream(any(), eq("1.bpmn"));
-    verify(deployStep1).addResourceStream(any(), eq("2.bpmn"));
+    verify(deployStep2).addResourceStream(any(), eq("2.bpmn"));
 
     verify(deployStep2).send();
     verify(camundaFuture).join();
