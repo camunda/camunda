@@ -391,6 +391,7 @@ public class MigrationRunnerIT extends AdapterTest {
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
   public void shouldNotFlushStepOnError(final boolean isElasticsearch) throws IOException {
+    // given
     this.isElasticsearch = isElasticsearch;
 
     if (isElasticsearch) {
@@ -405,9 +406,12 @@ public class MigrationRunnerIT extends AdapterTest {
             : new OpensearchAdapter(properties, OS_CONFIGURATION);
     final ProcessEntity entityToBeMigrated = TestData.processEntityWithPublicFormId(1L);
     writeToMisconfiguredProcessToIndex(entityToBeMigrated);
+
+    // when
     final String migratedEntityId =
         adapter.migrate(List.of(MigrationUtil.migrate(entityToBeMigrated)));
 
+    // then
     assertThat(migratedEntityId).isNull();
 
     if (isElasticsearch) {
