@@ -35,13 +35,13 @@ public class MultiDbConfigurator {
     /* Tasklist */
     elasticsearchProperties.put("camunda.tasklist.elasticsearch.url", elasticsearchUrl);
     elasticsearchProperties.put("camunda.tasklist.zeebeElasticsearch.url", elasticsearchUrl);
-    elasticsearchProperties.put("camunda.tasklist.elasticsearch.index-prefix", indexPrefix);
+    elasticsearchProperties.put("camunda.tasklist.elasticsearch.indexPrefix", indexPrefix);
     elasticsearchProperties.put("camunda.tasklist.zeebeElasticsearch.prefix", indexPrefix);
 
     /* Operate */
     elasticsearchProperties.put("camunda.operate.elasticsearch.url", elasticsearchUrl);
     elasticsearchProperties.put("camunda.operate.zeebeElasticsearch.url", elasticsearchUrl);
-    elasticsearchProperties.put("camunda.operate.elasticsearch.index-prefix", indexPrefix);
+    elasticsearchProperties.put("camunda.operate.elasticsearch.indexPrefix", indexPrefix);
     elasticsearchProperties.put("camunda.operate.zeebeElasticsearch.prefix", indexPrefix);
 
     /* Camunda */
@@ -96,7 +96,7 @@ public class MultiDbConfigurator {
     /* Tasklist */
     opensearchProperties.put("camunda.tasklist.opensearch.url", opensearchUrl);
     opensearchProperties.put("camunda.tasklist.zeebeOpensearch.url", opensearchUrl);
-    opensearchProperties.put("camunda.tasklist.opensearch.index-prefix", indexPrefix);
+    opensearchProperties.put("camunda.tasklist.opensearch.indexPrefix", indexPrefix);
     opensearchProperties.put("camunda.tasklist.zeebeOpensearch.prefix", indexPrefix);
     opensearchProperties.put("camunda.tasklist.opensearch.username", userName);
     opensearchProperties.put("camunda.tasklist.opensearch.password", userPassword);
@@ -104,7 +104,7 @@ public class MultiDbConfigurator {
     /* Operate */
     opensearchProperties.put("camunda.operate.opensearch.url", opensearchUrl);
     opensearchProperties.put("camunda.operate.zeebeOpensearch.url", opensearchUrl);
-    opensearchProperties.put("camunda.operate.opensearch.index-prefix", indexPrefix);
+    opensearchProperties.put("camunda.operate.opensearch.indexPrefix", indexPrefix);
     opensearchProperties.put("camunda.operate.zeebeOpensearch.prefix", indexPrefix);
     opensearchProperties.put("camunda.operate.opensearch.username", userName);
     opensearchProperties.put("camunda.operate.opensearch.password", userPassword);
