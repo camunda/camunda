@@ -9,7 +9,6 @@ package io.camunda.optimize.dto.optimize.query.ui_configuration;
 
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.service.util.configuration.OptimizeProfile;
-import java.util.List;
 import java.util.Map;
 
 public class UIConfigurationResponseDto {
@@ -25,7 +24,6 @@ public class UIConfigurationResponseDto {
   private OptimizeProfile optimizeProfile;
   private Map<AppName, String> webappsLinks; // links for the app switcher
   private String notificationsUrl;
-  private List<String> webhooks;
   private boolean logoutHidden;
   private int maxNumDataSourcesForReport;
   private Integer exportCsvLimit;
@@ -51,7 +49,6 @@ public class UIConfigurationResponseDto {
       final OptimizeProfile optimizeProfile,
       final Map<AppName, String> webappsLinks,
       final String notificationsUrl,
-      final List<String> webhooks,
       final boolean logoutHidden,
       final int maxNumDataSourcesForReport,
       final Integer exportCsvLimit,
@@ -71,7 +68,6 @@ public class UIConfigurationResponseDto {
     this.optimizeProfile = optimizeProfile;
     this.webappsLinks = webappsLinks;
     this.notificationsUrl = notificationsUrl;
-    this.webhooks = webhooks;
     this.logoutHidden = logoutHidden;
     this.maxNumDataSourcesForReport = maxNumDataSourcesForReport;
     this.exportCsvLimit = exportCsvLimit;
@@ -170,14 +166,6 @@ public class UIConfigurationResponseDto {
 
   public void setNotificationsUrl(final String notificationsUrl) {
     this.notificationsUrl = notificationsUrl;
-  }
-
-  public List<String> getWebhooks() {
-    return webhooks;
-  }
-
-  public void setWebhooks(final List<String> webhooks) {
-    this.webhooks = webhooks;
   }
 
   public boolean isLogoutHidden() {
@@ -298,8 +286,6 @@ public class UIConfigurationResponseDto {
         + getWebappsLinks()
         + ", notificationsUrl="
         + getNotificationsUrl()
-        + ", webhooks="
-        + getWebhooks()
         + ", logoutHidden="
         + isLogoutHidden()
         + ", maxNumDataSourcesForReport="

@@ -11,7 +11,6 @@ import static io.camunda.optimize.service.util.configuration.ConfigurationParser
 import static io.camunda.optimize.service.util.configuration.ConfigurationUtil.getLocationsAsInputStream;
 import static java.util.stream.Collectors.toMap;
 
-import com.google.common.collect.Lists;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -20,13 +19,11 @@ import com.jayway.jsonpath.ReadContext;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.util.SuppressionConstants;
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 public class ConfigurationValidator {
@@ -60,7 +57,6 @@ public class ConfigurationValidator {
   public void validate(final ConfigurationService configurationService) {
     validateNoDeletedConfigKeysUsed(configurationService.getConfigJsonContext());
     configurationService.getEmailAuthenticationConfiguration().validate();
-    validateWebhooks(configurationService);
   }
 
   public static ConfigurationValidator createValidatorWithoutDeletions() {
@@ -101,60 +97,6 @@ public class ConfigurationValidator {
     if (!usedDeletionKeysWithNewDocumentationPath.isEmpty()) {
       throw new OptimizeConfigurationException(
           "Configuration contains deleted entries", usedDeletionKeysWithNewDocumentationPath);
-    }
-  }
-
-  private void validateWebhooks(final ConfigurationService configurationService) {
-    final Map<String, WebhookConfiguration> webhookMap =
-        configurationService.getConfiguredWebhooks();
-    final List<String> webhooksWithoutPayload = Lists.newArrayList();
-    final List<String> webhooksWithoutPlaceholder = Lists.newArrayList();
-    final List<String> webhooksWithoutUrl = Lists.newArrayList();
-
-    for (final Map.Entry<String, WebhookConfiguration> webhookConfigEntry : webhookMap.entrySet()) {
-      final String defaultPayload = webhookConfigEntry.getValue().getDefaultPayload();
-      final String url = webhookConfigEntry.getValue().getUrl();
-      final boolean usesPlaceholderString =
-          Arrays.stream(WebhookConfiguration.Placeholder.values())
-              .anyMatch(placeholder -> defaultPayload.contains(placeholder.getPlaceholderString()));
-
-      if (url.isEmpty()) {
-        webhooksWithoutUrl.add(webhookConfigEntry.getKey());
-      }
-      if (defaultPayload.isEmpty()) {
-        webhooksWithoutPayload.add(webhookConfigEntry.getKey());
-      } else if (!usesPlaceholderString) {
-        webhooksWithoutPlaceholder.add(webhookConfigEntry.getKey());
-      }
-    }
-
-    String errorMsg = "";
-    if (!webhooksWithoutPayload.isEmpty()) {
-      errorMsg =
-          errorMsg
-              + String.format(
-                  "The following webhooks are missing their payload configuration: %s.%n",
-                  webhooksWithoutPayload);
-    }
-    if (!webhooksWithoutUrl.isEmpty()) {
-      errorMsg =
-          errorMsg
-              + String.format(
-                  "The following webhooks are missing their URL configuration: %s.%n",
-                  webhooksWithoutUrl);
-    }
-    if (!webhooksWithoutPlaceholder.isEmpty()) {
-      errorMsg =
-          errorMsg
-              + String.format(
-                  "At least one alert placeholder [%s] must be used in the following webhooks: %s",
-                  Arrays.stream(WebhookConfiguration.Placeholder.values())
-                      .map(WebhookConfiguration.Placeholder::getPlaceholderString)
-                      .collect(Collectors.joining(", ")),
-                  webhooksWithoutPlaceholder);
-    }
-    if (!errorMsg.isEmpty()) {
-      throw new OptimizeConfigurationException(errorMsg);
     }
   }
 }
