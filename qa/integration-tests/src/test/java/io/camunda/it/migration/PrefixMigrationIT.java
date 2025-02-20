@@ -50,10 +50,7 @@ public class PrefixMigrationIT {
           .withStartupTimeout(Duration.ofMinutes(5)); // can be slow in CI
 
   private GenericContainer<?> createCamundaContainer(
-      final String image,
-      final String operatePrefix,
-      final String tasklistPrefix,
-      final String newPrefix) {
+      final String image, final String operatePrefix, final String tasklistPrefix) {
     final var esUrl = String.format("http://%s:%d", ELASTIC_ALIAS, 9200);
 
     final var container =
@@ -129,7 +126,7 @@ public class PrefixMigrationIT {
     // given
     final var camunda87 =
         createCamundaContainer(
-            "camunda/camunda:8.7.0-SNAPSHOT", OLD_OPERATE_PREFIX, OLD_TASKLIST_PREFIX, NEW_PREFIX);
+            "camunda/camunda:8.7.0-SNAPSHOT", OLD_OPERATE_PREFIX, OLD_TASKLIST_PREFIX);
     camunda87.start();
 
     final var camunda87Client = createCamundaClient(camunda87);
