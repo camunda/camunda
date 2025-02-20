@@ -123,11 +123,14 @@ public class StandaloneSchemaManager {
         new ExporterConfiguration("elasticsearch", elasticsearchArgs.getArgs())
             .instantiate(ElasticsearchExporterConfiguration.class);
 
-    final io.camunda.operate.schema.SchemaStartup schemaStartup =
-        applicationContext.getBean(io.camunda.operate.schema.SchemaStartup.class);
-    final io.camunda.tasklist.schema.SchemaStartup tasklistSchemaStartup =
-        applicationContext.getBean(io.camunda.tasklist.schema.SchemaStartup.class);
-    new io.camunda.zeebe.exporter.SchemaManager(elasticsearchConfig).createSchema();
+    try {
+      applicationContext.getBean(io.camunda.operate.schema.SchemaStartup.class);
+      applicationContext.getBean(io.camunda.tasklist.schema.SchemaStartup.class);
+      new io.camunda.zeebe.exporter.SchemaManager(elasticsearchConfig).createSchema();
+    } catch (final Exception e) {
+      LOG.error("Failed to create/update schemas", e);
+      System.exit(-1);
+    }
 
     LOG.info("... finished creating/updating Elasticsearch schema for Camunda");
     System.exit(0);
