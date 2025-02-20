@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.exporter;
+package io.camunda.it.orchestration;
 
 import static io.camunda.client.api.search.response.IncidentState.ACTIVE;
 import static io.camunda.client.api.search.response.IncidentState.RESOLVED;
@@ -15,34 +15,68 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.IncidentErrorType;
 import io.camunda.client.api.search.response.IncidentState;
 import io.camunda.client.api.search.response.ProcessInstance;
-import io.camunda.it.utils.BrokerITInvocationProvider;
+import io.camunda.it.utils.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.TestTemplate;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 
-final class IncidentUpdateIT {
+@MultiDbTest
+public class IncidentIT {
 
-  // RDBMS doesn't support Incidents up to now
-  @RegisterExtension
-  static final BrokerITInvocationProvider PROVIDER =
-      new BrokerITInvocationProvider().withoutRdbmsExporter();
-
+  private static CamundaClient client;
   private static final String CALL_ACTIVITY_ID = "child";
   private static final String TASK_ID = "task";
   private final String parentProcessId = Strings.newRandomValidBpmnId();
   private final String childProcessId = Strings.newRandomValidBpmnId();
   private final String jobType = Strings.newRandomValidBpmnId();
 
-  @TestTemplate
-  void shouldMarkAllInstancesWithIncident(final CamundaClient client) {
+  @Test
+  void shouldExportIncident() {
+    final var resource =
+        client
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("process/error-end-event.bpmn")
+            .send()
+            .join();
+
+    final var processInstanceKey =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId(resource.getProcesses().getFirst().getBpmnProcessId())
+            .latestVersion()
+            .send()
+            .join()
+            .getProcessInstanceKey();
+
+    waitForIncident(client, f -> f.processInstanceKey(processInstanceKey));
+
+    final var incidents =
+        client
+            .newIncidentQuery()
+            .filter(f -> f.processInstanceKey(processInstanceKey))
+            .send()
+            .join()
+            .items();
+
+    // then
+    assertThat(incidents).isNotEmpty();
+    assertThat(incidents.size()).isEqualTo(1);
+    assertThat(incidents.getFirst().getErrorType())
+        .isEqualTo(IncidentErrorType.UNHANDLED_ERROR_EVENT);
+    assertThat(incidents.getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
+  }
+
+  @Test
+  void shouldMarkAllInstancesWithIncident() {
     // given
     final var parentInstanceKey = createUndeployedProcessInstance(client);
     final var childInstanceKey = getChildProcessInstanceKey(client);
@@ -60,8 +94,8 @@ final class IncidentUpdateIT {
     assertFlowNodeInstanceIncidentState(client, childInstanceKey, TASK_ID, true);
   }
 
-  @TestTemplate
-  void shouldUnmarkAllInstancesWithIncident(final CamundaClient client) {
+  @Test
+  void shouldUnmarkAllInstancesWithIncident() {
     // given
     final var parentInstanceKey = createUndeployedProcessInstance(client);
     final var childInstanceKey = getChildProcessInstanceKey(client);
@@ -211,6 +245,45 @@ final class IncidentUpdateIT {
         .join();
   }
 
+  @Test
+  void shouldExportUnhandledErrorIncident() {
+
+    final var resource =
+        client
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("process/errorProcess.bpmn")
+            .send()
+            .join();
+
+    final var processInstanceKey =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId(resource.getProcesses().getFirst().getBpmnProcessId())
+            .latestVersion()
+            .send()
+            .join()
+            .getProcessInstanceKey();
+
+    throwIncident(client, "errorTask", "this-errorcode-does-not-exists", "Process error");
+
+    waitForIncident(client, f -> f.processInstanceKey(processInstanceKey));
+
+    final var incidents =
+        client
+            .newIncidentQuery()
+            .filter(f -> f.processInstanceKey(processInstanceKey))
+            .send()
+            .join()
+            .items();
+
+    // then
+    assertThat(incidents).isNotEmpty();
+    assertThat(incidents.size()).isEqualTo(1);
+    assertThat(incidents.getFirst().getErrorType())
+        .isEqualTo(IncidentErrorType.UNHANDLED_ERROR_EVENT);
+    assertThat(incidents.getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
+  }
+
   private Incident waitForIncident(
       final CamundaClient client, final Consumer<IncidentFilter> filterFn) {
     return Awaitility.await()
@@ -220,5 +293,30 @@ final class IncidentUpdateIT {
             () -> client.newIncidentQuery().filter(filterFn).send().join().items(),
             Predicate.not(List::isEmpty))
         .getFirst();
+  }
+
+  private void throwIncident(
+      final CamundaClient client,
+      final String jobType,
+      final String errorCode,
+      final String errorMessage) {
+    client
+        .newActivateJobsCommand()
+        .jobType(jobType)
+        .maxJobsToActivate(1)
+        .workerName(UUID.randomUUID().toString())
+        .send()
+        .join()
+        .getJobs()
+        .forEach(
+            j -> {
+              final var inc =
+                  client
+                      .newThrowErrorCommand(j.getKey())
+                      .errorCode(errorCode)
+                      .errorMessage(errorMessage)
+                      .send()
+                      .join();
+            });
   }
 }
