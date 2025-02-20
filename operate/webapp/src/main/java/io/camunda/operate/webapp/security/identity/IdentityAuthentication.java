@@ -16,7 +16,6 @@ import io.camunda.identity.sdk.impl.rest.exception.RestException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.webapp.security.Permission;
-import io.camunda.operate.webapp.security.SessionRepository;
 import io.camunda.operate.webapp.security.tenant.OperateTenant;
 import io.camunda.operate.webapp.security.tenant.TenantAwareAuthentication;
 import java.io.Serial;
@@ -29,8 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 public class IdentityAuthentication extends AbstractAuthenticationToken
     implements Serializable, TenantAwareAuthentication {
@@ -216,18 +213,6 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     expires = accessToken.getToken().getExpiresAt();
     LOGGER.info("Access token will expire at {}", expires);
     setAuthenticated(!hasExpired());
-  }
-
-  private boolean isPolling() {
-    final ServletRequestAttributes requestAttributes =
-        (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-    if (requestAttributes != null) {
-      return Boolean.TRUE.equals(
-          Boolean.parseBoolean(
-              requestAttributes.getRequest().getHeader(SessionRepository.POLLING_HEADER)));
-    } else {
-      return false;
-    }
   }
 
   private void retrieveName(final UserDetails userDetails) {
