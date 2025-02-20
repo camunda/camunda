@@ -10,7 +10,9 @@ package io.camunda.it.migration;
 import io.camunda.application.commons.migration.PrefixMigrationHelper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CredentialsProvider;
+import io.camunda.it.utils.MultiDbConfigurator;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
@@ -162,16 +164,25 @@ public class PrefixMigrationIT {
     prefixMigration(NEW_PREFIX);
 
     // then
-    final var currentCamunda =
-        createCamundaContainer(
-            "localhost:5000/camunda/camunda:current-test", NEW_PREFIX, NEW_PREFIX, NEW_PREFIX);
-    currentCamunda.start();
-
-    final var currentCamundaClient = createCamundaClient(currentCamunda);
+    final var currentCamundaClient = startLatestCamunda();
 
     final var processDefinitions = currentCamundaClient.newProcessDefinitionQuery().send().join();
     Assertions.assertThat(processDefinitions.items().size()).isEqualTo(1);
     Assertions.assertThat(processDefinitions.items().getFirst().getProcessDefinitionKey())
         .isEqualTo(event.getProcesses().getFirst().getProcessDefinitionKey());
+  }
+
+  private CamundaClient startLatestCamunda() {
+    final TestSimpleCamundaApplication testSimpleCamundaApplication =
+        new TestSimpleCamundaApplication();
+    final MultiDbConfigurator multiDbConfigurator =
+        new MultiDbConfigurator(testSimpleCamundaApplication);
+    final var esUrl = String.format("http://localhost:%d", esContainer.getMappedPort(9200));
+    multiDbConfigurator.configureElasticsearchSupport(esUrl, NEW_PREFIX);
+    testSimpleCamundaApplication.start();
+    testSimpleCamundaApplication.awaitCompleteTopology();
+
+    final var currentCamundaClient = testSimpleCamundaApplication.newClientBuilder().build();
+    return currentCamundaClient;
   }
 }
