@@ -35,7 +35,6 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   @Serial private static final long serialVersionUID = 1L;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IdentityAuthentication.class);
-  private static final String POLLING_HEADER = "x-is-polling";
   private Tokens tokens;
   private String id;
   private String name;
@@ -43,8 +42,6 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   @JsonIgnore private List<IdentityAuthorization> authorizations;
   private String subject;
   private Date expires;
-
-  private Date refreshTokenExpiresAt;
 
   private List<OperateTenant> tenants;
 
