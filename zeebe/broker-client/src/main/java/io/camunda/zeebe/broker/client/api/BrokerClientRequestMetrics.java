@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.client.api;
 
+import static io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.FAILED_REQUESTS;
 import static io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.REQUEST_LATENCY;
 import static io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.TOTAL_REQUESTS;
 
@@ -63,8 +64,8 @@ public final class BrokerClientRequestMetrics {
 
   private Counter registerFailedRequestCounter(
       final int partitionId, final String requestType, final Enum<?> error) {
-    return Counter.builder(TOTAL_REQUESTS.getName())
-        .description(TOTAL_REQUESTS.getDescription())
+    return Counter.builder(FAILED_REQUESTS.getName())
+        .description(FAILED_REQUESTS.getDescription())
         .tag(RequestKeyNames.REQUEST_TYPE.asString(), requestType)
         .tag(PartitionKeyNames.PARTITION.asString(), String.valueOf(partitionId))
         .tag(RequestKeyNames.ERROR.asString(), error.name())
