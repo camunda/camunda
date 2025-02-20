@@ -115,15 +115,18 @@ public class StandaloneSchemaManager {
             .listeners(new ApplicationErrorListener())
             .build(args);
 
-    final ConfigurableApplicationContext applicationContext =
-        standaloneSchemaManagerApplication.run(args);
-    final ExporterCfg elasticsearchArgs =
-        applicationContext.getBean(BrokerBasedProperties.class).getExporters().get("elasticsearch");
-    final ElasticsearchExporterConfiguration elasticsearchConfig =
-        new ExporterConfiguration("elasticsearch", elasticsearchArgs.getArgs())
-            .instantiate(ElasticsearchExporterConfiguration.class);
-
     try {
+      final ConfigurableApplicationContext applicationContext =
+          standaloneSchemaManagerApplication.run(args);
+      final ExporterCfg elasticsearchArgs =
+          applicationContext
+              .getBean(BrokerBasedProperties.class)
+              .getExporters()
+              .get("elasticsearch");
+      final ElasticsearchExporterConfiguration elasticsearchConfig =
+          new ExporterConfiguration("elasticsearch", elasticsearchArgs.getArgs())
+              .instantiate(ElasticsearchExporterConfiguration.class);
+
       applicationContext.getBean(io.camunda.operate.schema.SchemaStartup.class);
       applicationContext.getBean(io.camunda.tasklist.schema.SchemaStartup.class);
       new io.camunda.zeebe.exporter.SchemaManager(elasticsearchConfig).createSchema();
