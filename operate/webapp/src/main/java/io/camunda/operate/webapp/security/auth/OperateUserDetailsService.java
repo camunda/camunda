@@ -79,11 +79,7 @@ public class OperateUserDetailsService implements UserDetailsService {
   }
 
   private boolean needsToCreateUser() {
-    if (DatabaseInfo.isOpensearch()) {
-      return operateProperties.getOpensearch().isCreateSchema();
-    } else {
-      return operateProperties.getElasticsearch().isCreateSchema();
-    }
+    return (operateProperties.getUserId() != null);
   }
 
   private OperateUserDetailsService addUserWith(
