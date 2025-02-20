@@ -203,7 +203,6 @@ func getBaseCommandSettings(baseCommand string) (C8RunSettings, error) {
 
 func createStartFlagSet(settings *C8RunSettings) *flag.FlagSet {
 	startFlagSet := flag.NewFlagSet("start", flag.ExitOnError)
-	startFlagSet.StringVar(&settings.config, "config", "", "Applies the specified configuration file.")
 	startFlagSet.BoolVar(&settings.detached, "detached", false, "Starts Camunda Run as a detached process")
 	return startFlagSet
 }
@@ -232,13 +231,10 @@ func main() {
 		fmt.Println("Failed to set envVars:", err)
 	}
 
-	// classPath := filepath.Join(parentDir, "configuration", "userlib") + "," + filepath.Join(parentDir, "configuration", "keystore")
-
 	baseCommand, err := getBaseCommand()
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	settings, err := getBaseCommandSettings(baseCommand)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
