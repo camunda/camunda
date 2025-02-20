@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.usertask.processors;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
@@ -16,7 +17,6 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
-import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -47,21 +47,22 @@ public class UserTaskCancelProcessor implements UserTaskCommandProcessor {
   @Override
   public void onCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
-    // nothing to do
-    System.out.println("UserTaskCancelProcessor#onCommand - should not be called");
+    // nothing to do, currently we have no cases when this method should be triggered
   }
 
   @Override
   public void onFinalizeCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
-    final var context = new BpmnElementContextImpl();
-    final ElementInstance elementInstance =
-        stateBehavior.getElementInstance(userTaskRecord.getElementInstanceKey());
-    context.init(elementInstance.getKey(), elementInstance.getValue(), elementInstance.getState());
-
+    final var context = buildContext(userTaskRecord.getElementInstanceKey());
     final var element = getUserTaskElement(userTaskRecord);
-
     userTaskProcessor.onFinalizeTerminate(element, context);
+  }
+
+  private BpmnElementContext buildContext(final long elementInstanceKey) {
+    final var elementInstance = stateBehavior.getElementInstance(elementInstanceKey);
+    final var context = new BpmnElementContextImpl();
+    context.init(elementInstance.getKey(), elementInstance.getValue(), elementInstance.getState());
+    return context;
   }
 
   private ExecutableUserTask getUserTaskElement(final UserTaskRecord userTaskRecord) {
