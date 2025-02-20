@@ -51,7 +51,7 @@ public final class JobWorkerElementTransformer<T extends FlowElement>
 
     final var taskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
     taskHeadersTransformer.transform(jobWorkerElement, taskHeaders, element);
-    if (element instanceof ServiceTask) {
+    if (type.equals(ServiceTask.class)) {
       final var linkedResources = element.getSingleExtensionElement(ZeebeLinkedResources.class);
       linkedResourcesTransformer.transform(jobWorkerElement, linkedResources);
     }
