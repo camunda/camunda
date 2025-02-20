@@ -116,7 +116,7 @@ class UnavailableBrokersTest {
         topologyManager,
         actorScheduler,
         () -> cluster.stop().join(),
-        () -> MicrometerUtil.closeRegistry(REGISTRY));
+        () -> MicrometerUtil.close(REGISTRY));
   }
 
   @ParameterizedTest(name = "{0}")
