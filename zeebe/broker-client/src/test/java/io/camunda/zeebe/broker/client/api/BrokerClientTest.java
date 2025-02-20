@@ -36,6 +36,7 @@ import io.camunda.zeebe.test.broker.protocol.brokerapi.StubBroker;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
