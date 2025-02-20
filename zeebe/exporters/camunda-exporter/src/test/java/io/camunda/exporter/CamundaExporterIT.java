@@ -129,8 +129,10 @@ final class CamundaExporterIT {
         Optional.ofNullable(System.getProperty(IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY)).orElse("");
     if (openSearchAwsInstanceUrl.isEmpty()) {
       searchDB.esClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
+      searchDB.esClient().indices().delete(req -> req.index("zeebe-record*"));
     }
     searchDB.osClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
+    searchDB.osClient().indices().delete(req -> req.index("zeebe-record*"));
   }
 
   @TestTemplate
