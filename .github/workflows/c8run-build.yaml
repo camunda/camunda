@@ -216,11 +216,19 @@ jobs:
           JAVA_VERSION: "22.0.2"
 
       - name: Run c8run
-        run: .\c8run.exe start
+        run: .\c8run.exe start --config e2e_tests/prefix-config.yaml
         working-directory: .\c8run
         shell: cmd
         env:
           JAVA_VERSION: "22.0.2"
+
+      - name: Install jq
+        run: choco install jq
+
+      - name: Run test
+        shell: bash
+        run: ./api_tests.sh
+        working-directory: .\c8run\e2e_tests
 
       - uses: actions/setup-node@v4
         with:
