@@ -74,7 +74,7 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
     final ListenerDto actual3 = resultListeners.get(1);
     assertEquals("21", actual3.getListenerKey());
     assertEquals(ListenerType.TASK_LISTENER, actual3.getListenerType());
-    assertEquals(ListenerEventType.UNKNOWN, actual3.getEvent());
+    assertEquals(ListenerEventType.UPDATING, actual3.getEvent());
     assertEquals(ListenerState.ACTIVE, actual3.getState());
     assertNull(actual3.getTime());
 
@@ -116,7 +116,7 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
     final ListenerDto actual0 = resultListeners.get(0);
     assertEquals("21", actual0.getListenerKey());
     assertEquals(ListenerType.TASK_LISTENER, actual0.getListenerType());
-    assertEquals(ListenerEventType.UNKNOWN, actual0.getEvent());
+    assertEquals(ListenerEventType.UPDATING, actual0.getEvent());
     assertEquals(ListenerState.ACTIVE, actual0.getState());
     assertNull(actual0.getTime());
 
