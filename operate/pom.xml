@@ -79,7 +79,7 @@
     <version.failsafe>2.4.4</version.failsafe>
     <version.log4j.testjar>2.19.0</version.log4j.testjar>
     <version.awssdk>2.25.70</version.awssdk>
-    <version.aws-java-sdk>1.12.781</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.782</version.aws-java-sdk>
     <version.jetbrains-annotations>24.1.0</version.jetbrains-annotations>
     <version.grpc>1.65.1</version.grpc>
     <version.protobuf>3.25.6</version.protobuf>
