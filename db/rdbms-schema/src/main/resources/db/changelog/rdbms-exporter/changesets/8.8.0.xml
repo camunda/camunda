@@ -319,10 +319,12 @@
       <column name="OUTPUT_ID" type="VARCHAR(255)">
         <constraints primaryKey="true"/>
       </column>
+      <column name="RULE_INDEX" type="SMALLINT">
+        <constraints primaryKey="true"/>
+      </column>
       <column name="OUTPUT_NAME" type="VARCHAR(255)"/>
       <column name="OUTPUT_VALUE" type="VARCHAR(4000)" />
       <column name="RULE_ID" type="VARCHAR(255)"/>
-      <column name="RULE_INDEX" type="SMALLINT" />
     </createTable>
     <!-- No additional index for DECISION_INSTANCE_KEY needed -->
   </changeSet>
