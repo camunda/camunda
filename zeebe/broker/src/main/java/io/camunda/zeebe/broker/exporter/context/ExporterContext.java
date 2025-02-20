@@ -12,6 +12,8 @@ import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.EnsureUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
@@ -26,7 +28,6 @@ public final class ExporterContext implements Context, AutoCloseable {
   private final Configuration configuration;
   private final int partitionId;
   private final CompositeMeterRegistry meterRegistry;
-  private final MeterRegistry underlyingMetricRegistry;
   private final InstantSource clock;
 
   private RecordFilter filter = DEFAULT_FILTER;
@@ -40,18 +41,11 @@ public final class ExporterContext implements Context, AutoCloseable {
     this.logger = logger;
     this.configuration = configuration;
     this.partitionId = partitionId;
-    underlyingMetricRegistry = meterRegistry;
-    this.meterRegistry = new CompositeMeterRegistry();
-    // meterRegistry is null in tests
-    if (meterRegistry != null) {
-      this.meterRegistry.add(meterRegistry);
-    }
-    this.meterRegistry
-        .config()
-        .commonTags(
-            Tags.of(
-                "partition", Integer.toString(partitionId),
-                "exporterId", configuration.getId()));
+    this.meterRegistry =
+        MicrometerUtil.wrap(
+            meterRegistry,
+            Tags.concat(
+                PartitionKeyNames.tags(partitionId), Tags.of("exporterId", configuration.getId())));
     this.clock = clock;
   }
 
@@ -92,14 +86,7 @@ public final class ExporterContext implements Context, AutoCloseable {
 
   @Override
   public void close() {
-    // Clear the registry, so the metrics created are deleted:
-    // it must be done before removing the parent registry
-    meterRegistry.clear();
-    // remove the parentMeterRegistry so it's not closed when we close the composite.
-    if (underlyingMetricRegistry != null) {
-      meterRegistry.remove(underlyingMetricRegistry);
-    }
-    meterRegistry.close();
+    MicrometerUtil.close(meterRegistry);
   }
 
   private static final class AcceptAllRecordsFilter implements RecordFilter {
