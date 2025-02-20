@@ -14,49 +14,68 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter {
 
-  private static final List<String> webApplications = List.of("identity", "operate", "tasklist");
-  private static final List<String> staticResources = List.of(".css", ".js", ".jpg", ".png");
+  private static final Logger LOG =
+      LoggerFactory.getLogger(WebApplicationAuthorizationCheckFilter.class);
+  private static final List<String> WEB_APPLICATIONS = List.of("identity", "operate", "tasklist");
+  private static final List<String> STATIC_RESOURCES = List.of(".css", ".js", ".jpg", ".png");
 
   @Override
   protected void doFilterInternal(
-      final HttpServletRequest request,
+      final @NotNull HttpServletRequest request,
       final @NotNull HttpServletResponse response,
       final @NotNull FilterChain filterChain)
       throws ServletException, IOException {
 
-    if (!isStaticResource(request)) {
-      final Optional<String> application = extractApplication(request);
-      if (application.isPresent()) {
-        final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof final CamundaPrincipal principal) {
-          if (!principal
-              .getAuthenticationContext()
-              .authorizedApplications()
-              .contains(application.get())) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN);
-          }
-        }
-      }
+    if (!isAllowed(request)) {
+      LOG.warn("Access denied for request: {}", request.getRequestURI());
+      response.sendError(HttpServletResponse.SC_FORBIDDEN);
+      return;
     }
     filterChain.doFilter(request, response);
   }
 
-  private static boolean isStaticResource(final HttpServletRequest request) {
-    return staticResources.stream()
-        .anyMatch(resource -> request.getRequestURI().endsWith(resource));
+  private boolean isAllowed(final HttpServletRequest request) {
+    if (isStaticResource(request)) {
+      return true;
+    }
+
+    final String application = findWebApplication(request);
+    if (application == null) {
+      return true;
+    }
+
+    final CamundaPrincipal principal = findCurrentCamundaPrincipal();
+    return principal != null
+        && principal.getAuthenticationContext().authorizedApplications().contains(application);
   }
 
-  public Optional<String> extractApplication(final HttpServletRequest request) {
-    return webApplications.stream()
-        .filter(wa -> request.getRequestURL().toString().contains(wa + "/"))
-        .findFirst();
+  private boolean isStaticResource(final HttpServletRequest request) {
+    final String requestUri = request.getRequestURI();
+    return STATIC_RESOURCES.stream().anyMatch(requestUri::endsWith);
+  }
+
+  private String findWebApplication(final HttpServletRequest request) {
+    final String requestUrl = request.getRequestURL().toString();
+    return WEB_APPLICATIONS.stream()
+        .filter(wa -> requestUrl.contains(wa + "/"))
+        .findFirst()
+        .orElse(null);
+  }
+
+  private CamundaPrincipal findCurrentCamundaPrincipal() {
+    final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth != null && auth.getPrincipal() instanceof final CamundaPrincipal principal) {
+      return principal;
+    }
+    return null;
   }
 }
