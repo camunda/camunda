@@ -5,9 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.exporter;
+package io.camunda.it.orchestration;
 
-import static io.camunda.it.exporter.ExporterTestUtil.startProcessInstance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -26,24 +25,22 @@ import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
-import io.camunda.it.utils.BrokerITInvocationProvider;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.it.utils.MultiDbTest;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.assertj.core.api.ThrowingConsumer;
-import org.junit.jupiter.api.TestTemplate;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
 
-@ExtendWith(BrokerITInvocationProvider.class)
+@MultiDbTest
 public class ProcessMigrationIT {
 
-  @TestTemplate
-  void shouldMigrateProcess(final TestStandaloneBroker testBroker) {
-    final var client = testBroker.newClientBuilder().build();
+  private static CamundaClient client;
 
+  @Test
+  void shouldMigrateProcess() {
     // given
     final var definitionKey1 =
         deployProcessFromClasspath(client, "process/migration-process_v1.bpmn");
@@ -97,16 +94,14 @@ public class ProcessMigrationIT {
             "alice", v -> v.getValue().equals("\"bob\"")));
   }
 
-  @TestTemplate
-  void shouldMigrateProcessWithIncident(final TestStandaloneBroker testBroker) {
-    final var client = testBroker.newClientBuilder().build();
-
+  @Test
+  void shouldMigrateProcessWithIncident() {
     // given
     final var definitionKey1 =
         deployProcessFromClasspath(client, "process/migration-process_v1.bpmn");
     final var definitionKey2 =
         deployProcessFromClasspath(client, "process/migration-process_v2.bpmn");
-    final var processInstanceKey = startProcessInstance(client, "migration-process_v1");
+    final var processInstanceKey = startProcessInstance(client, "migration-process_v1", Map.of());
     throwIncident(client, processInstanceKey, "taskB", "error", "error message");
 
     // when
@@ -132,16 +127,14 @@ public class ProcessMigrationIT {
         });
   }
 
-  @TestTemplate
-  void shouldMigrateProcessWithResolvedIncident(final TestStandaloneBroker testBroker) {
-    final var client = testBroker.newClientBuilder().build();
-
+  @Test
+  void shouldMigrateProcessWithResolvedIncident() {
     // given
     final var definitionKey1 =
         deployProcessFromClasspath(client, "process/migration-process_v1.bpmn");
     final var definitionKey2 =
         deployProcessFromClasspath(client, "process/migration-process_v2.bpmn");
-    final var processInstanceKey = startProcessInstance(client, "migration-process_v1");
+    final var processInstanceKey = startProcessInstance(client, "migration-process_v1", Map.of());
     throwIncident(client, processInstanceKey, "taskB", "error", "error message");
     resolveIncidents(client, processInstanceKey);
 
@@ -378,5 +371,17 @@ public class ProcessMigrationIT {
               final var result = client.newUserTaskQuery().filter(filter).send().join().items();
               asserter.accept(result);
             });
+  }
+
+  public static Long startProcessInstance(
+      final CamundaClient client, final String processId, final Map<String, Object> variables) {
+    return client
+        .newCreateInstanceCommand()
+        .bpmnProcessId(processId)
+        .latestVersion()
+        .variables(variables)
+        .send()
+        .join()
+        .getProcessInstanceKey();
   }
 }

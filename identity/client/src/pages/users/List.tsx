@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-import { FC, useState } from "react";
+import { FC } from "react";
 import { useNavigate } from "react-router";
 import { Stack } from "@carbon/react";
 import { Add, Edit, TrashCan } from "@carbon/react/icons";
@@ -29,7 +29,6 @@ import DeleteModal from "src/pages/users/modals/DeleteModal";
 const List: FC = () => {
   const { t, Translate } = useTranslate();
   const navigate = useNavigate();
-  const [, setSearch] = useState("");
   const {
     data: userSearchResults,
     loading,
@@ -118,7 +117,6 @@ const List: FC = () => {
           onEntityClick={showDetails}
           addEntityLabel={t("Create user")}
           onAddEntity={addUser}
-          onSearch={setSearch}
           loading={loading}
           searchPlaceholder={t("Search by username")}
         />

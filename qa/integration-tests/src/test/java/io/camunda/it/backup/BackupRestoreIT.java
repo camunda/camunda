@@ -92,8 +92,11 @@ public class BackupRestoreIT {
               throw new IllegalArgumentException(
                   "Unsupported database type: " + config.databaseType);
         };
-    configurator.getOperateProperties().getBackup().setRepositoryName(REPOSITORY_NAME);
-    configurator.getTasklistProperties().getBackup().setRepositoryName(REPOSITORY_NAME);
+
+    testStandaloneApplication.withProperty(
+        "camunda.tasklist.backup.repositoryName", REPOSITORY_NAME);
+    testStandaloneApplication.withProperty(
+        "camunda.operate.backup.repositoryName", REPOSITORY_NAME);
 
     testStandaloneApplication.start().awaitCompleteTopology();
 
