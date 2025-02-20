@@ -198,6 +198,9 @@ public final class ZeebeRuntimeValidators {
             .hasValidExpression(
                 ZeebeAdHoc::getActiveElementsCollection,
                 expression -> expression.isOptional().isNonStatic())
+            .hasValidExpression(
+                ZeebeAdHoc::getCompletionCondition,
+                expression -> expression.isOptional().isNonStatic())
             .build(expressionLanguage));
   }
 }
