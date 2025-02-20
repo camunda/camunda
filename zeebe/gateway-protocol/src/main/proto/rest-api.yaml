@@ -3933,7 +3933,7 @@ components:
             - $ref: "#/components/schemas/DateTimeFilterProperty"
         processInstanceVariables:
           type: array
-          description: Process Instance variables associated with the user task.
+          description: Process instance variables associated with the user task.
           items:
             $ref: "#/components/schemas/UserTaskVariableFilterRequest"
         localVariables:
