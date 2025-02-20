@@ -29,6 +29,11 @@ public final class UserTaskCompletedV2Applier
 
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
+    final String deniedReason = value.getDeniedReason();
+    final UserTaskRecord userTask = userTaskState.getUserTask(key);
+    userTask.setDeniedReason(deniedReason);
+    userTaskState.update(userTask);
+
     userTaskState.delete(key);
     userTaskState.deleteIntermediateState(key);
     userTaskState.deleteRecordRequestMetadata(key);

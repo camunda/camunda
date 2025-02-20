@@ -30,6 +30,11 @@ public class UserTaskAssignmentDeniedApplier
 
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
+    final String deniedReason = value.getDeniedReason();
+    final UserTaskRecord userTask = userTaskState.getUserTask(key);
+    userTask.setDeniedReason(deniedReason);
+    userTaskState.update(userTask);
+
     userTaskState.updateUserTaskLifecycleState(key, LifecycleState.CREATED);
     userTaskState.deleteIntermediateState(key);
     userTaskState.deleteRecordRequestMetadata(key);
