@@ -205,13 +205,32 @@ public class AdHocSubProcessProcessor
 
   @Override
   public void afterExecutionPathCompleted(
-      final ExecutableAdHocSubProcess element,
+      final ExecutableAdHocSubProcess adHocSubProcess,
       final BpmnElementContext adHocSubProcessContext,
       final BpmnElementContext childContext,
       final Boolean satisfiesCompletionCondition) {
-
-    if (stateBehavior.canBeCompleted(childContext)) {
-      stateTransitionBehavior.completeElement(adHocSubProcessContext);
+    final Expression completionConditionExpression = adHocSubProcess.getCompletionCondition();
+    if (completionConditionExpression == null) {
+      if (stateBehavior.canBeCompleted(childContext)) {
+        stateTransitionBehavior.completeElement(adHocSubProcessContext);
+      }
+    } else {
+      expressionProcessor
+          .evaluateBooleanExpression(
+              completionConditionExpression, adHocSubProcessContext.getElementInstanceKey())
+          .thenDo(
+              completionCondition -> {
+                if (completionCondition && stateBehavior.canBeCompleted(childContext)) {
+                  stateTransitionBehavior.completeElement(adHocSubProcessContext);
+                }
+              })
+          .ifLeft(
+              failure ->
+                  incidentBehavior.createIncident(
+                      new Failure(
+                          "Failed to evaluate completion condition. " + failure.getMessage(),
+                          ErrorType.EXTRACT_VALUE_ERROR),
+                      adHocSubProcessContext));
     }
   }
 
