@@ -95,6 +95,19 @@ public abstract class AbstractCCSMIT extends AbstractIT {
         .matches();
   }
 
+  protected static boolean isZeebeVersion87_OrLater() {
+    final Pattern zeebeVersionPattern = Pattern.compile("8.([7-9]|\\d{2,})");
+    return zeebeVersionPattern
+            .matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion())
+            .matches()
+        || isZeebeVersionSnapshot();
+  }
+
+  protected static boolean isZeebeVersionSnapshot() {
+    final String dockerVersion = IntegrationTestConfigurationUtil.getZeebeDockerVersion();
+    return dockerVersion.equalsIgnoreCase("snapshot");
+  }
+
   protected static boolean isZeebeVersionWithMultiTenancy() {
     return !isZeebeVersionPre83();
   }

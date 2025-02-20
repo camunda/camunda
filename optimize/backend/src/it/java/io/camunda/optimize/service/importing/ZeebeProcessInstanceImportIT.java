@@ -763,6 +763,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
             });
   }
 
+  @EnabledIf("isZeebeVersion87_OrLater")
   @Test
   public void importZeebeProcessInstanceData_processContainsAdHocSubProcess() {
     // given
