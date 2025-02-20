@@ -50,4 +50,12 @@ if [[ "$returnCode" != 0 ]]; then
    exit 1
 fi
 
+printf "\nTest: test --config flag\n"
+
+PREFIX="$( curl localhost:9600/actuator/configprops | jq '.contexts.application.beans.["io.camunda.tasklist.property.TasklistProperties"].properties.zeebeElasticsearch.prefix' )"
+echo $PREFIX
+if [[ "$PREFIX" != "\"extra-prefix-zeebe-record\"" ]]; then
+   echo "test failed"
+   exit 1
+fi
 
