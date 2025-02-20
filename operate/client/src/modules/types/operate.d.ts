@@ -111,6 +111,7 @@ interface ListenerEntity {
     | 'END'
     | 'COMPLETING'
     | 'ASSIGNING'
+    | 'UPDATING'
     | 'UNKNOWN'
     | 'UNSPECIFIED';
   time: string;
