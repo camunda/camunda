@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.protocol.record;
 
+import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
@@ -62,6 +63,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.RedistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
+import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
@@ -236,6 +238,11 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.PROCESS_INSTANCE_BATCH,
         new Mapping<>(ProcessInstanceBatchRecordValue.class, ProcessInstanceBatchIntent.class));
+    mapping.put(
+        ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION,
+        new Mapping<>(
+            AdHocSubProcessActivityActivationRecordValue.class,
+            AdHocSubProcessActivityActivationIntent.class));
     mapping.put(ValueType.FORM, new Mapping<>(Form.class, FormIntent.class));
     mapping.put(ValueType.RESOURCE, new Mapping<>(Resource.class, ResourceIntent.class));
     mapping.put(
