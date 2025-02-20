@@ -586,7 +586,7 @@
               <mainClass>io.camunda.operate.schema.migration.SchemaMigration</mainClass>
             </program>
             <program>
-              <id>schemaManager</id>
+              <id>schema</id>
               <mainClass>io.camunda.application.StandaloneSchemaManager</mainClass>
             </program>
             <program>
