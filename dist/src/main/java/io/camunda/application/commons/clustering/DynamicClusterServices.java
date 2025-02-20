@@ -10,6 +10,7 @@ package io.camunda.application.commons.clustering;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.GatewayClusterConfigurationService;
@@ -32,6 +33,7 @@ public class DynamicClusterServices {
   private final ClusterMembershipService clusterMembershipService;
   private final ClusterCommunicationService clusterCommunicationService;
   private final MeterRegistry meterRegistry;
+  private final BrokerClientTopologyMetrics brokerTopologyMetrics;
 
   @Autowired
   public DynamicClusterServices(
@@ -42,6 +44,7 @@ public class DynamicClusterServices {
     clusterMembershipService = atomixCluster.getMembershipService();
     clusterCommunicationService = atomixCluster.getCommunicationService();
     this.meterRegistry = meterRegistry;
+    brokerTopologyMetrics = new BrokerClientTopologyMetrics(meterRegistry);
   }
 
   @Bean
@@ -63,7 +66,7 @@ public class DynamicClusterServices {
   @Bean
   public BrokerTopologyManager brokerTopologyManager() {
     final var brokerTopologyManager =
-        new BrokerTopologyManagerImpl(clusterMembershipService::getMembers);
+        new BrokerTopologyManagerImpl(clusterMembershipService::getMembers, brokerTopologyMetrics);
     scheduler.submitActor(brokerTopologyManager).join();
     clusterMembershipService.addListener(brokerTopologyManager);
     return brokerTopologyManager;
