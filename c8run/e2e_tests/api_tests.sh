@@ -19,7 +19,6 @@ if [[ "$returnCode" != 0 ]]; then
    exit 1
 fi
 
-fic
 printf "\nTest: Tasklist user task\n"
 curl -f -L -X POST 'http://localhost:8080/v2/user-tasks/search' \
 -H 'Content-Type: application/json' \
