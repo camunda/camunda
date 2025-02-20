@@ -1,0 +1,79 @@
+---
+name: Statistics Daily
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '0 8 * * 2-5'  # Tuesdays to Fridays
+
+jobs:
+  flaky-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@a1b77a09293a4366e48a5067a86692ac6e94fdc0 # v3.1.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_ZEEBECI_WEBHOOK_URL;
+            secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
+
+      - name: Login to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f # v2
+        with:
+          credentials_json: ${{ steps.secrets.outputs.gcloud_sa_key }}
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@6189d56e4096ee891640bb02ac264be376592d6a # v2
+
+      - name: Print Google Cloud SDK version used
+        shell: bash
+        run: |
+          gcloud info
+
+      - name: Create message with BigQuery data
+        id: message
+        shell: bash
+        run: |
+          NUMBER_OF_ALL_JOBS=$(bq query --format=json --use_legacy_sql=false --quiet=true 'SELECT COUNT(*) as number_of_all_jobs FROM `ci-30-162810.prod_ci_analytics.build_status_v2` WHERE TIMESTAMP_SUB(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, DAY), INTERVAL 1 DAY)<=report_time AND report_time<=TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, DAY) AND ci_url="https://github.com/camunda/camunda"' | jq -r '.[0].number_of_all_jobs')
+          NUMBER_OF_FLAKYTESTS_JOBS=$(bq query --format=json --use_legacy_sql=false --quiet=true 'SELECT COUNT(*) as number_of_all_jobs FROM `ci-30-162810.prod_ci_analytics.build_status_v2` WHERE TIMESTAMP_SUB(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, DAY), INTERVAL 1 DAY)<=report_time AND report_time<=TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, DAY) AND ci_url="https://github.com/camunda/camunda" AND user_reason="flaky-tests"' | jq -r '.[0].number_of_all_jobs')
+          TOP5_FLAKYTESTS=$(bq query --format=json --use_legacy_sql=false --quiet=true 'SELECT test_class_name, test_name, COUNT(*) as number_of_flakes FROM `ci-30-162810.prod_ci_analytics.test_status_v1` ts LEFT OUTER JOIN `ci-30-162810.prod_ci_analytics.build_status_v2` bs ON ts.ci_url=bs.ci_url AND ts.build_id=bs.build_id AND ts.job_name=bs.job_name WHERE TIMESTAMP_SUB(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, DAY), INTERVAL 1 DAY)<=ts.report_time AND ts.report_time<=TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, DAY) AND ts.ci_url="https://github.com/camunda/camunda" GROUP BY test_class_name, test_name ORDER BY number_of_flakes DESC LIMIT 5')
+
+          {
+            echo "MESSAGE<<EOF"
+            echo "📈 ~$(expr $NUMBER_OF_FLAKYTESTS_JOBS / $NUMBER_OF_ALL_JOBS)% of jobs had flaky tests yesterday ($NUMBER_OF_FLAKYTESTS_JOBS from total of $NUMBER_OF_ALL_JOBS jobs)."
+            echo ""
+            echo "🥇 Top 5 flakiest tests yesterday:"
+            echo ""
+            echo "$TOP5_FLAKYTESTS" | jq -c '.[]' | while read -r top_flakytest; do
+              NUMBER_OF_FLAKES=$(echo "$top_flakytest" | jq -r '.number_of_flakes')
+              TEST_CLASS_NAME=$(echo "$top_flakytest" | jq -r '.test_class_name')
+              TEST_NAME=$(echo "$top_flakytest" | jq -r '.test_name')
+              echo "• ${NUMBER_OF_FLAKES}x \`${TEST_CLASS_NAME##*.}.$TEST_NAME\`\n"
+            done
+            echo ""
+            echo "<https://dashboard.int.camunda.com/d/ae2j69npxh3b4f/flaky-tests-camunda-camunda-monorepo?orgId=1&from=now-1d%2Fd&to=now-1d%2Fd&timezone=browser&var-branch=main|Check out Grafana for links and more details.>"
+          } >> $GITHUB_OUTPUT
+
+      - name: Send notification
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
+        with:
+          webhook: ${{ steps.secrets.outputs.SLACK_ZEEBECI_WEBHOOK_URL }}
+          webhook-type: webhook-trigger
+          # For posting a rich message using Block Kit
+          payload: |
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "${{ steps.message.outputs.MESSAGE }}"
