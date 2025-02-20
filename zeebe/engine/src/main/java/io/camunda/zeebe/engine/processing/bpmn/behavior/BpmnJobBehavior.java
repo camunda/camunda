@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
+import io.camunda.zeebe.engine.processing.deployment.model.element.LinkedResource;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -93,6 +95,7 @@ public final class BpmnJobBehavior {
     return Either.<Failure, JobProperties>right(new JobProperties())
         .flatMap(p -> evalTypeExp(jobWorkerProps.getType(), scopeKey).map(p::type))
         .flatMap(p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey).map(p::retries))
+        .flatMap(p -> evalLinkedResourceProps(jobWorkerProps, scopeKey).map(p::linkedResources))
         .flatMap(
             p ->
                 userTaskBehavior
@@ -132,6 +135,29 @@ public final class BpmnJobBehavior {
                         scopeKey)
                     .map(key -> Objects.toString(key, null))
                     .map(p::formKey));
+  }
+
+  private Either<Failure, List<LinkedResourceProps>> evalLinkedResourceProps(
+      final JobWorkerProperties props, final long scopeKey) {
+    final List<LinkedResource> linkedResources = props.getLinkedResources();
+    if (linkedResources == null || linkedResources.isEmpty()) {
+      return Either.right(null);
+    }
+    final List<LinkedResourceProps> linkedResourceProps = new ArrayList<>();
+    for (final LinkedResource linkedResource : linkedResources) {
+      final LinkedResourceProps resourceProps = new LinkedResourceProps();
+      resourceProps.setResourceKey(resolveLinkedResourceKey(linkedResource, scopeKey));
+      resourceProps.setResourceType(linkedResource.getResourceType());
+      resourceProps.setLinkName(linkedResource.getLinkName());
+      linkedResourceProps.add(resourceProps);
+    }
+    return Either.right(linkedResourceProps);
+  }
+
+  private String resolveLinkedResourceKey(
+      final LinkedResource linkedResource, final long scopeKey) {
+    // TODO Add implementation in the next PR
+    return "";
   }
 
   private static String asListLiteralOrNull(final List<String> list) {
@@ -237,7 +263,7 @@ public final class BpmnJobBehavior {
     final String dueDate = props.getDueDate();
     final String followUpDate = props.getFollowUpDate();
     final String formKey = props.getFormKey();
-    final List<LinkedResource> linkedResources = props.getLinkedResources();
+    final List<LinkedResourceProps> linkedResources = props.getLinkedResources();
 
     if (assignee != null && !assignee.isEmpty()) {
       headers.put(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, assignee);
@@ -303,7 +329,7 @@ public final class BpmnJobBehavior {
     private String dueDate;
     private String followUpDate;
     private String formKey;
-    private List<LinkedResource> linkedResources;
+    private List<LinkedResourceProps> linkedResources;
 
     public JobProperties type(final String type) {
       this.type = type;
@@ -377,17 +403,17 @@ public final class BpmnJobBehavior {
       return formKey;
     }
 
-    public JobProperties linkedResources(final List<LinkedResource> linkedResources) {
+    public JobProperties linkedResources(final List<LinkedResourceProps> linkedResources) {
       this.linkedResources = linkedResources;
       return this;
     }
 
-    public List<LinkedResource> getLinkedResources() {
+    public List<LinkedResourceProps> getLinkedResources() {
       return linkedResources;
     }
   }
 
-  public static final class LinkedResource {
+  public static final class LinkedResourceProps {
     private String resourceKey;
     private String resourceType;
     private String linkName;
