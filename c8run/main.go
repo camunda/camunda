@@ -502,13 +502,7 @@ func main() {
 		if err != nil {
 			fmt.Print("Failed to write to file: " + connectorsPidPath + " continuing...")
 		}
-		var extraArgs string
-		if settings.config != "" {
-			extraArgs = "--spring.config.location=" + filepath.Join(parentDir, settings.config)
-		} else {
-			extraArgs = "--spring.config.location=" + filepath.Join(parentDir, "configuration")
-		}
-		camundaCmd := c8.CamundaCmd(camundaVersion, parentDir, extraArgs, javaOpts)
+		camundaCmd := c8.CamundaCmd(camundaVersion, parentDir, "", javaOpts)
 		camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
 		camundaLogFile, err := os.OpenFile(camundaLogPath, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
