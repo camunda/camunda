@@ -549,6 +549,44 @@ public class SchemaManagerIT {
     assertThat(updatedIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
   }
 
+  @TestTemplate
+  void shouldUseReplicaAndShardFromConfigIfConflictingWithValuesInJsonSchema(
+      final ExporterConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    schemaManager.startup();
+
+    final var replicaSettingPath = "/index_template/template/settings/index/number_of_replicas";
+    final var shardsSettingPath = "/index_template/template/settings/index/number_of_shards";
+
+    final var initialTemplate =
+        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+
+    assertThat(initialTemplate.at(replicaSettingPath).asInt()).isEqualTo(0);
+    assertThat(initialTemplate.at(shardsSettingPath).asInt()).isEqualTo(1);
+
+    when(indexTemplate.getMappingsClasspathFilename())
+        .thenReturn("/mappings-settings-replica-and-shards.json");
+
+    config.getIndex().setNumberOfReplicas(5);
+    config.getIndex().setNumberOfShards(5);
+
+    schemaManager.startup();
+
+    final var updatedTemplate =
+        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+
+    assertThat(updatedTemplate.at(replicaSettingPath).asInt()).isEqualTo(5);
+    assertThat(updatedTemplate.at(shardsSettingPath).asInt()).isEqualTo(5);
+  }
+
   @RegressionTestTemplate("https://github.com/camunda/camunda/issues/26056")
   void shouldNotHaveValidationIssuesWithTheSameIndices(
       final ExporterConfiguration config, final SearchClientAdapter searchClientAdapter) {
