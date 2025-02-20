@@ -737,6 +737,15 @@ public class TaskListenerTest {
         UserTaskIntent.COMPLETED);
   }
 
+  @Test
+  public void shouldRetryCancelingListenerWhenListenerJobFailedOnTaskCancellation() {
+    verifyListenerIsRetriedWhenListenerJobFailed(
+        ZeebeTaskListenerEventType.canceling,
+        UnaryOperator.identity(),
+        ignore -> cancelProcessInstance(),
+        UserTaskIntent.CANCELED);
+  }
+
   private void verifyListenerIsRetriedWhenListenerJobFailed(
       final ZeebeTaskListenerEventType eventType,
       final UnaryOperator<UserTaskBuilder> userTaskBuilder,
@@ -824,6 +833,25 @@ public class TaskListenerTest {
         UnaryOperator.identity(),
         UserTaskClient::complete,
         UserTaskIntent.COMPLETED);
+  }
+
+  @Test
+  public void
+      shouldCreateJobNoRetriesIncidentForCancelingListenerAndContinueAfterResolutionOnTaskCancellation() {
+    verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
+        ZeebeTaskListenerEventType.canceling,
+        UnaryOperator.identity(),
+        ignore -> cancelProcessInstance(),
+        UserTaskIntent.CANCELED);
+  }
+
+  private static void cancelProcessInstance() {
+    final long processInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst()
+            .getKey();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectPartialSuccess().cancel();
   }
 
   private void verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
