@@ -9,9 +9,19 @@ package io.camunda.it.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import static io.camunda.it.migration.util.PrefixMigrationHelper.*;
+import static io.camunda.it.migration.util.PrefixMigrationHelper.ELASTIC_ALIAS;
+import static io.camunda.it.migration.util.PrefixMigrationHelper.GATEWAY_GRPC_PORT;
+import static io.camunda.it.migration.util.PrefixMigrationHelper.MANAGEMENT_PORT;
+import static io.camunda.it.migration.util.PrefixMigrationHelper.NETWORK;
+import static io.camunda.it.migration.util.PrefixMigrationHelper.NEW_PREFIX;
+import static io.camunda.it.migration.util.PrefixMigrationHelper.OLD_OPERATE_PREFIX;
+import static io.camunda.it.migration.util.PrefixMigrationHelper.OLD_TASKLIST_PREFIX;
+import static io.camunda.it.migration.util.PrefixMigrationHelper.SERVER_PORT;
+import static io.camunda.it.migration.util.PrefixMigrationHelper.createCamundaClient;
+
 import io.camunda.application.commons.migration.PrefixMigrationHelper;
 import io.camunda.client.CamundaClient;
-import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
@@ -26,15 +36,12 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.Base64;
-import java.util.Optional;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -46,14 +53,6 @@ import org.testcontainers.utility.DockerImageName;
 public class PrefixMigrationIT {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(PrefixMigrationIT.class);
-  private static final int SERVER_PORT = 8080;
-  private static final int MANAGEMENT_PORT = 9600;
-  private static final int GATEWAY_GRPC_PORT = 26500;
-  private static final String ELASTIC_ALIAS = "elasticsearch";
-  private static final Network NETWORK = Network.newNetwork();
-  private static final String OLD_OPERATE_PREFIX = "operate-dev";
-  private static final String OLD_TASKLIST_PREFIX = "tasklist-dev";
-  private static final String NEW_PREFIX = "new-prefix";
 
   @Container
   private final ElasticsearchContainer esContainer =
@@ -67,12 +66,11 @@ public class PrefixMigrationIT {
     esContainer.followOutput(new Slf4jLogConsumer(LOGGER));
   }
 
-  private GenericContainer<?> createCamundaContainer(
-      final String image, final String operatePrefix, final String tasklistPrefix) {
+  private GenericContainer<?> createCamundaContainer() {
     final var esUrl = String.format("http://%s:%d", ELASTIC_ALIAS, 9200);
 
     final var container =
-        new GenericContainer<>(DockerImageName.parse(image))
+        new GenericContainer<>(DockerImageName.parse("camunda/camunda:8.7.0-SNAPSHOT"))
             .waitingFor(
                 new HttpWaitStrategy()
                     .forPort(MANAGEMENT_PORT)
@@ -86,8 +84,8 @@ public class PrefixMigrationIT {
             .withEnv("SPRING_PROFILES_ACTIVE", "broker,operate,tasklist,identity,consolidated-auth")
             .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "BASIC")
             .withEnv("CAMUNDA_DATABASE_URL", esUrl)
-            .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_INDEX_PREFIX", operatePrefix)
-            .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_INDEX_PREFIX", tasklistPrefix)
+            .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_INDEX_PREFIX", OLD_OPERATE_PREFIX)
+            .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_INDEX_PREFIX", OLD_TASKLIST_PREFIX)
             .withEnv(
                 "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
                 "io.camunda.zeebe.exporter.ElasticsearchExporter")
@@ -179,9 +177,7 @@ public class PrefixMigrationIT {
   @Test
   void shouldReindexDocumentsDuringPrefixMigration() throws IOException, InterruptedException {
     // given
-    final var camunda87 =
-        createCamundaContainer(
-            "camunda/camunda:8.7.0-SNAPSHOT", OLD_OPERATE_PREFIX, OLD_TASKLIST_PREFIX);
+    final var camunda87 = createCamundaContainer();
     camunda87.start();
 
     final var camunda87Client = createCamundaClient(camunda87);
