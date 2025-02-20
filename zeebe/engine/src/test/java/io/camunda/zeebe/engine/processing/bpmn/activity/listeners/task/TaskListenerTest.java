@@ -1431,6 +1431,141 @@ public class TaskListenerTest {
   }
 
   @Test
+  public void shouldAcceptUserTaskCompletionAfterTaskListenerRejectsTheOperationWithDeniedReason() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(createProcessWithCompletingTaskListeners(listenerType));
+
+    // deny the completion
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(
+            new JobResult().setDenied(true).setDeniedReason("Reason to deny lifecycle transition"))
+        .complete();
+
+    // completion is successful
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
+    completeJobs(processInstanceKey);
+
+    // validate reason to deny lifecycle transition in events
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
+        .extracting(Record::getIntent, r -> getDeniedReason(r.getValue()))
+        .describedAs(
+            "The reason to deny lifecycle transition should be present when task listener denies the work")
+        .containsExactly(
+            tuple(UserTaskIntent.CREATING, ""),
+            tuple(UserTaskIntent.CREATED, ""),
+            tuple(UserTaskIntent.COMPLETING, ""),
+            tuple(UserTaskIntent.DENY_TASK_LISTENER, "Reason to deny lifecycle transition"),
+            tuple(UserTaskIntent.COMPLETION_DENIED, "Reason to deny lifecycle transition"),
+            tuple(UserTaskIntent.COMPLETING, "Reason to deny lifecycle transition"),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, ""),
+            tuple(UserTaskIntent.COMPLETED, ""));
+  }
+
+  @Test
+  public void shouldAcceptUserTaskAssignmentAfterTaskListenerRejectsTheOperationWithDeniedReason() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(createProcessWithAssigningTaskListeners(listenerType));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).assign(ut -> ut.setAssignee("new_assignee"));
+
+    // deny the assignment
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(
+            new JobResult().setDenied(true).setDeniedReason("Reason to deny lifecycle transition"))
+        .complete();
+
+    // accept the assignment
+    ENGINE.userTask().ofInstance(processInstanceKey).assign(ut -> ut.setAssignee("new_assignee"));
+    completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
+    completeJobs(processInstanceKey);
+
+    // validate the reason to deny lifecycle transition
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.ASSIGNED))
+        .extracting(Record::getIntent, r -> getDeniedReason(r.getValue()))
+        .describedAs(
+            "The reason to deny lifecycle transition should be present when task listener denies the work")
+        .containsExactly(
+            tuple(UserTaskIntent.CREATING, ""),
+            tuple(UserTaskIntent.CREATED, ""),
+            tuple(UserTaskIntent.ASSIGNING, ""),
+            tuple(UserTaskIntent.DENY_TASK_LISTENER, "Reason to deny lifecycle transition"),
+            tuple(UserTaskIntent.ASSIGNMENT_DENIED, "Reason to deny lifecycle transition"),
+            tuple(UserTaskIntent.ASSIGNING, "Reason to deny lifecycle transition"),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, ""),
+            tuple(UserTaskIntent.ASSIGNED, ""));
+  }
+
+  @Test
+  public void shouldAcceptUserTaskUpdateAfterTaskListenerRejectsTheOperationWithDeniedReason() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.updating, listenerType));
+
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .update(new UserTaskRecord().setPriority(80).setPriorityChanged());
+
+    // deny the update
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(
+            new JobResult().setDenied(true).setDeniedReason("Reason to deny lifecycle transition"))
+        .complete();
+
+    // accept the update
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .update(new UserTaskRecord().setPriority(80).setPriorityChanged());
+    completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
+    completeJobs(processInstanceKey);
+
+    // validate the reason to deny lifecycle transition
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.UPDATED))
+        .extracting(Record::getIntent, r -> getDeniedReason(r.getValue()))
+        .describedAs(
+            "The reason to deny lifecycle transition should be present when task listener denies the work")
+        .containsExactly(
+            tuple(UserTaskIntent.CREATING, ""),
+            tuple(UserTaskIntent.CREATED, ""),
+            tuple(UserTaskIntent.UPDATING, ""),
+            tuple(UserTaskIntent.DENY_TASK_LISTENER, "Reason to deny lifecycle transition"),
+            tuple(UserTaskIntent.UPDATE_DENIED, "Reason to deny lifecycle transition"),
+            tuple(UserTaskIntent.UPDATING, "Reason to deny lifecycle transition"),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, ""),
+            tuple(UserTaskIntent.UPDATED, ""));
+  }
+
+  private String getDeniedReason(final UserTaskRecordValue record) {
+    // This is to be removed when denied reason is exposed in the UserTaskRecordValue interface.
+    // Currently added in order to separate processing implementation.
+    return ((UserTaskRecord) record).getDeniedReason();
+  }
+
+  @Test
   public void shouldCompleteTaskWhenCompletingTaskListenerAcceptsTransitionAfterDenial() {
     // given
     final long processInstanceKey =
