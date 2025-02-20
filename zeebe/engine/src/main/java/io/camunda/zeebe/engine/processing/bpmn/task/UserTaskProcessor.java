@@ -159,7 +159,19 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   @Override
   protected void onFinalizeTerminateInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
-    userTaskBehavior.finalizeUserTaskCancellation(context);
+
+    final var elementInstance = stateBehavior.getElementInstance(context);
+    final long userTaskKey = elementInstance.getUserTaskKey();
+    if (userTaskKey > 0) {
+      final LifecycleState lifecycleState = userTaskState.getLifecycleState(userTaskKey);
+      if (LifecycleState.CANCELING == lifecycleState) {
+        final var intermediateRecord = userTaskState.getIntermediateState(userTaskKey).getRecord();
+        final var currentUserTask = userTaskState.getUserTask(userTaskKey);
+        intermediateRecord.setDiffAsChangedAttributes(currentUserTask);
+        stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELED, intermediateRecord);
+      }
+    }
+
     incidentBehavior.resolveIncidents(context); // ? should it be before or after `canceling` UTLs ?
 
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
