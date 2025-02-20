@@ -10,23 +10,20 @@ package io.camunda.zeebe.engine.processing.bpmn.activity;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior.LinkedResourceProps;
-import io.camunda.zeebe.engine.state.ProcessingDbState;
-import io.camunda.zeebe.engine.state.mutable.MutableResourceState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
-import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Map;
 import org.camunda.bpm.model.xml.impl.util.ReflectUtil;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -36,20 +33,24 @@ public class ServiceTaskTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
   private static final ObjectMapper MAPPER = new ObjectMapper();
-  private static final String RESOURCE_ID = "id";
-  private static final String VERSION_TAG = "1v";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldCreateJobWithLinkedResources() throws JsonProcessingException {
-    final var record = createResourceRecord();
-    final MutableResourceState resourceState =
-        ((ProcessingDbState) ENGINE.getProcessingState()).getResourceState();
-    resourceState.storeResourceInResourceColumnFamily(record);
-    resourceState.storeResourceInResourceKeyByResourceIdAndVersionTagColumnFamily(record);
+  public void shouldCreateJobWithLinkedResourcesVersionTagBinding() throws JsonProcessingException {
+    final var rpaScript =
+        """
+          {
+          "type": "default",
+          "id": "Rpa_0w7r08e",
+          "executionPlatform": "Camunda Cloud",
+          "executionPlatformVersion": "8.1.0",
+          "schemaVersion": 7,
+          "versionTag": "1v",
+          "resource": "Script content"
+        }""";
 
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("process")
@@ -59,16 +60,20 @@ public class ServiceTaskTest {
                 t ->
                     t.zeebeLinkedResources(
                             l ->
-                                l.resourceId(RESOURCE_ID)
+                                l.resourceId("Rpa_0w7r08e")
                                     .resourceType("RPA")
                                     .bindingType(ZeebeBindingType.versionTag)
-                                    .versionTag(VERSION_TAG)
+                                    .versionTag("1v")
                                     .linkName("my_link"))
                         .zeebeJobType("type"))
             .endEvent()
             .done();
 
-    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+    ENGINE
+        .deployment()
+        .withJsonResource(rpaScript.getBytes(StandardCharsets.UTF_8), "my_resource.rpa")
+        .withXmlResource(modelInstance)
+        .deploy();
 
     // when
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -78,14 +83,135 @@ public class ServiceTaskTest {
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
-    final LinkedResourceProps resourceProps = new LinkedResourceProps();
-    resourceProps.setResourceType("RPA");
-    resourceProps.setLinkName("my_link");
-    resourceProps.setResourceKey("1");
 
-    Assertions.assertThat(jobCreated.getValue())
-        .hasCustomHeaders(
-            Map.of("linkedResources", MAPPER.writeValueAsString(List.of(resourceProps))));
+    assertThat(jobCreated.getValue().getCustomHeaders()).containsKey("linkedResources");
+    final List<LinkedResourceProps> resourcePropsList =
+        MAPPER.readValue(
+            jobCreated.getValue().getCustomHeaders().get("linkedResources"),
+            new TypeReference<>() {});
+
+    assertThat(resourcePropsList).hasSize(1);
+    final LinkedResourceProps resourceProps = resourcePropsList.get(0);
+    assertThat(resourceProps)
+        .hasFieldOrPropertyWithValue("resourceType", "RPA")
+        .hasFieldOrPropertyWithValue("linkName", "my_link");
+    assertThat(resourceProps.getResourceKey()).matches("\\d+");
+  }
+
+  @Test
+  public void shouldCreateJobWithLinkedResourcesLatestBinding() throws JsonProcessingException {
+    final var rpaScript =
+        """
+          {
+          "type": "default",
+          "id": "Rpa_0w7r08e",
+          "executionPlatform": "Camunda Cloud",
+          "executionPlatformVersion": "8.1.0",
+          "schemaVersion": 7,
+          "resource": "Script content"
+        }""";
+
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "my_linked_resource",
+                t ->
+                    t.zeebeLinkedResources(
+                            l ->
+                                l.resourceId("Rpa_0w7r08e")
+                                    .resourceType("RPA")
+                                    .bindingType(ZeebeBindingType.latest)
+                                    .linkName("my_link"))
+                        .zeebeJobType("type"))
+            .endEvent()
+            .done();
+
+    ENGINE
+        .deployment()
+        .withJsonResource(rpaScript.getBytes(StandardCharsets.UTF_8), "my_resource.rpa")
+        .withXmlResource(modelInstance)
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> jobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(jobCreated.getValue().getCustomHeaders()).containsKey("linkedResources");
+    final List<LinkedResourceProps> resourcePropsList =
+        MAPPER.readValue(
+            jobCreated.getValue().getCustomHeaders().get("linkedResources"),
+            new TypeReference<>() {});
+
+    assertThat(resourcePropsList).hasSize(1);
+    final LinkedResourceProps resourceProps = resourcePropsList.get(0);
+    assertThat(resourceProps)
+        .hasFieldOrPropertyWithValue("resourceType", "RPA")
+        .hasFieldOrPropertyWithValue("linkName", "my_link");
+    assertThat(resourceProps.getResourceKey()).matches("\\d+");
+  }
+
+  @Test
+  public void shouldCreateJobWithLinkedResourcesDeploymentBinding() throws JsonProcessingException {
+    final var rpaScript =
+        """
+          {
+          "type": "default",
+          "id": "Rpa_0w7r08e",
+          "executionPlatform": "Camunda Cloud",
+          "executionPlatformVersion": "8.1.0",
+          "schemaVersion": 7,
+          "resource": "Script content"
+        }""";
+
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "my_linked_resource",
+                t ->
+                    t.zeebeLinkedResources(
+                            l ->
+                                l.resourceId("Rpa_0w7r08e")
+                                    .resourceType("RPA")
+                                    .bindingType(ZeebeBindingType.deployment)
+                                    .linkName("my_link"))
+                        .zeebeJobType("type"))
+            .endEvent()
+            .done();
+
+    ENGINE
+        .deployment()
+        .withJsonResource(rpaScript.getBytes(StandardCharsets.UTF_8), "my_resource.rpa")
+        .withXmlResource(modelInstance)
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> jobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(jobCreated.getValue().getCustomHeaders()).containsKey("linkedResources");
+    final List<LinkedResourceProps> resourcePropsList =
+        MAPPER.readValue(
+            jobCreated.getValue().getCustomHeaders().get("linkedResources"),
+            new TypeReference<>() {});
+
+    assertThat(resourcePropsList).hasSize(1);
+    final LinkedResourceProps resourceProps = resourcePropsList.get(0);
+    assertThat(resourceProps)
+        .hasFieldOrPropertyWithValue("resourceType", "RPA")
+        .hasFieldOrPropertyWithValue("linkName", "my_link");
+    assertThat(resourceProps.getResourceKey()).matches("\\d+");
   }
 
   @Test
@@ -102,7 +228,7 @@ public class ServiceTaskTest {
                                 l.resourceId("2")
                                     .resourceType("RPA")
                                     .bindingType(ZeebeBindingType.versionTag)
-                                    .versionTag(VERSION_TAG)
+                                    .versionTag("1v")
                                     .linkName("my_link"))
                         .zeebeJobType("type"))
             .endEvent()
@@ -119,16 +245,6 @@ public class ServiceTaskTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .exists())
         .isFalse();
-  }
-
-  private static ResourceRecord createResourceRecord() {
-    final var record = new ResourceRecord();
-    record.setResourceId(RESOURCE_ID);
-    record.setVersionTag(VERSION_TAG);
-    record.setResourceName("name");
-    record.setVersion(1);
-    record.setResourceKey(1L);
-    return record;
   }
 
   @Test
