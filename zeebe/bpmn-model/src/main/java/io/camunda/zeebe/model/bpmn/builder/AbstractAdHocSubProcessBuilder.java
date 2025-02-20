@@ -47,6 +47,30 @@ public class AbstractAdHocSubProcessBuilder<B extends AbstractAdHocSubProcessBui
     return myself;
   }
 
+  /**
+   * Sets the expression to retrieve the optional completion condition.
+   *
+   * @param expression the expression for the completion condition
+   * @return the builder object
+   */
+  public B zeebeCompletionConditionExpression(final String expression) {
+    final ZeebeAdHoc adHoc = getCreateSingleExtensionElement(ZeebeAdHoc.class);
+    adHoc.setCompletionCondition(asZeebeExpression(expression));
+    return myself;
+  }
+
+  /**
+   * Sets the flag to cancel remaining instances when the completion condition evaluates to true.
+   *
+   * @param cancelRemainingInstances whether to cancel remaining instances
+   * @return the builder object
+   */
+  public B zeebeCancelRemainingInstances(final boolean cancelRemainingInstances) {
+    final ZeebeAdHoc adHoc = getCreateSingleExtensionElement(ZeebeAdHoc.class);
+    adHoc.setCancelRemainingInstancesEnabled(cancelRemainingInstances);
+    return myself;
+  }
+
   @Override
   protected <T extends FlowNode> T createTarget(final Class<T> typeClass, final String identifier) {
     if (isDone) {

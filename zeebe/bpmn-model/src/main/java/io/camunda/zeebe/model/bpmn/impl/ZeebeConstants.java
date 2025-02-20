@@ -65,6 +65,8 @@ public class ZeebeConstants {
   public static final String ATTRIBUTE_PRIORITY = "priority";
 
   public static final String ATTRIBUTE_ACTIVE_ELEMENTS_COLLECTION = "activeElementsCollection";
+  public static final String ATTRIBUTE_COMPLETION_CONDITION = "completionCondition";
+  public static final String ATTRIBUTE_CANCEL_REMAINING_INSTANCES = "cancelRemainingInstances";
 
   public static final String ATTRIBUTE_RESOURCE_ID = "resourceId";
   public static final String ATTRIBUTE_RESOURCE_TYPE = "resourceType";
