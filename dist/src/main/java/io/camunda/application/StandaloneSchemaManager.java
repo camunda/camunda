@@ -8,7 +8,11 @@
 package io.camunda.application;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.application.StandaloneSchemaManager.BrokerBasedProperties;
 import io.camunda.application.listeners.ApplicationErrorListener;
+import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +20,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -70,13 +76,14 @@ import org.springframework.context.annotation.Primary;
  * `CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX`
  */
 @SpringBootConfiguration
-@EnableConfigurationProperties
+@EnableConfigurationProperties(BrokerBasedProperties.class)
+@ConfigurationPropertiesScan
 @ComponentScan(
     basePackages = {
       "io.camunda.operate.property",
       "io.camunda.operate.schema",
       "io.camunda.tasklist.property",
-      "io.camunda.tasklist.schema"
+      "io.camunda.tasklist.schema",
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 public class StandaloneSchemaManager {
@@ -110,13 +117,18 @@ public class StandaloneSchemaManager {
 
     final ConfigurableApplicationContext applicationContext =
         standaloneSchemaManagerApplication.run(args);
+    final ExporterCfg elasticsearchArgs =
+        applicationContext.getBean(BrokerBasedProperties.class).getExporters().get("elasticsearch");
+    final ElasticsearchExporterConfiguration elasticsearchConfig =
+        new ExporterConfiguration("elasticsearch", elasticsearchArgs.getArgs())
+            .instantiate(ElasticsearchExporterConfiguration.class);
 
     final io.camunda.operate.schema.SchemaStartup schemaStartup =
         applicationContext.getBean(io.camunda.operate.schema.SchemaStartup.class);
     final io.camunda.tasklist.schema.SchemaStartup tasklistSchemaStartup =
         applicationContext.getBean(io.camunda.tasklist.schema.SchemaStartup.class);
-    new io.camunda.zeebe.exporter.SchemaManager(new ElasticsearchExporterConfiguration())
-        .createSchema();
+    new io.camunda.zeebe.exporter.SchemaManager(elasticsearchConfig).createSchema();
+
     LOG.info("... finished creating/updating Elasticsearch schema for Camunda");
     System.exit(0);
   }
@@ -128,4 +140,7 @@ public class StandaloneSchemaManager {
   public ObjectMapper defaultObjectMapper() {
     return new ObjectMapper();
   }
+
+  @ConfigurationProperties("zeebe.broker")
+  public static final class BrokerBasedProperties extends BrokerCfg {}
 }
