@@ -230,7 +230,25 @@ public class TaskController extends ApiErrorController {
   }
 
   private boolean hasAccessToTask(final LazySupplier<TaskDTO> taskSupplier) {
-    return true;
+    final String userName = userReader.getCurrentUserId();
+    final List<String> listOfUserGroups = identityAuthorizationService.getUserGroups();
+    final var task = taskSupplier.get();
+    final boolean allUsersTask =
+        task.getCandidateUsers() == null && task.getCandidateGroups() == null;
+    final boolean candidateGroupTasks =
+        task.getCandidateGroups() != null
+            && !Collections.disjoint(Arrays.asList(task.getCandidateGroups()), listOfUserGroups);
+    final boolean candidateUserTasks =
+        task.getCandidateUsers() != null
+            && Arrays.asList(task.getCandidateUsers()).contains(userName);
+    final boolean assigneeTasks = task.getAssignee() != null && task.getAssignee().equals(userName);
+    final boolean noRestrictions = listOfUserGroups.contains(IdentityProperties.FULL_GROUP_ACCESS);
+
+    return candidateUserTasks
+        || assigneeTasks
+        || candidateGroupTasks
+        || allUsersTask
+        || noRestrictions;
   }
 
   @Operation(

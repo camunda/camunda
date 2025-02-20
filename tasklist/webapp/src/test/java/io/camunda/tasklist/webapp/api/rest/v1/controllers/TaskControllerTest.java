@@ -48,7 +48,6 @@ import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -1084,7 +1083,6 @@ class TaskControllerTest {
       }
 
       @Test
-      @Disabled
       void accessRestrictionsShouldReturnTasksForCandidateUser() throws Exception {
         // Given
         final var providedTask =
@@ -1296,7 +1294,6 @@ class TaskControllerTest {
       }
 
       @Test
-      @Disabled
       void completeTaskShouldReturnForbiddenWhenUserHasNoAccess() throws Exception {
         // Given
         final var taskId = "55555555";
@@ -1369,7 +1366,7 @@ class TaskControllerTest {
         when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
         when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
-        when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
+        when(userReader.getCurrentUserId()).thenReturn("demo");
         when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
         when(taskService.getTask(taskId)).thenReturn(providedTask);
         when(taskMapper.toTaskResponse(providedTask)).thenReturn(taskResponse);
@@ -1445,7 +1442,6 @@ class TaskControllerTest {
       }
 
       @Test
-      @Disabled
       void accessRestrictionsShouldReturnForbiddenWhenUserHasNoAccess() throws Exception {
         // Given
         final var providedTask =
