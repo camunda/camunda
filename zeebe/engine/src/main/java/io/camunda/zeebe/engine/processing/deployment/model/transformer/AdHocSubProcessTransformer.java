@@ -33,23 +33,37 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
         process.getElementById(element.getId(), ExecutableAdHocSubProcess.class);
 
     final var expressionLanguage = context.getExpressionLanguage();
-    setActiveElementsCollection(executableAdHocSubProcess, element, expressionLanguage);
+    transformAttributes(executableAdHocSubProcess, element, expressionLanguage);
 
     final Collection<AbstractFlowElement> childElements =
         executableAdHocSubProcess.getChildElements();
     setAdHocActivities(executableAdHocSubProcess, childElements);
   }
 
-  private static void setActiveElementsCollection(
+  private static void transformAttributes(
       final ExecutableAdHocSubProcess executableAdHocSubProcess,
       final AdHocSubProcess element,
       final ExpressionLanguage expressionLanguage) {
-    Optional.ofNullable(element.getSingleExtensionElement(ZeebeAdHoc.class))
-        .flatMap(
-            extensionElement -> Optional.ofNullable(extensionElement.getActiveElementsCollection()))
+    final var extensionElement = element.getSingleExtensionElement(ZeebeAdHoc.class);
+    if (extensionElement == null) {
+      return;
+    }
+
+    // activeElementsCollection
+    Optional.ofNullable(extensionElement.getActiveElementsCollection())
         .filter(expression -> !expression.isBlank())
         .map(expressionLanguage::parseExpression)
         .ifPresent(executableAdHocSubProcess::setActiveElementsCollection);
+
+    // completionCondition
+    Optional.ofNullable(extensionElement.getCompletionCondition())
+        .filter(expression -> !expression.isBlank())
+        .map(expressionLanguage::parseExpression)
+        .ifPresent(executableAdHocSubProcess::setCompletionCondition);
+
+    // cancelRemainingInstances
+    executableAdHocSubProcess.setCancelRemainingInstancesEnabled(
+        extensionElement.isCancelRemainingInstancesEnabled());
   }
 
   private static void setAdHocActivities(
