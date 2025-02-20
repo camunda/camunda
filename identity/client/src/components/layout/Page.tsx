@@ -54,14 +54,17 @@ export const PageHeader: FC<PageHeaderProps> = ({
   linkUrl,
 }) => {
   const { Translate } = useTranslate();
+
   return (
     <StackWithMargin gap={spacing04}>
       <PageTitle>{title}</PageTitle>
       <PageSubTitle>
-        <Translate>For more information, see documentation on</Translate>{" "}
-        <DocumentationLink path={linkUrl} withIcon>
-          {linkText}
-        </DocumentationLink>
+        <Translate i18nKey="moreInfo">
+          For more information, see documentation on{" "}
+          <DocumentationLink path={linkUrl} withIcon>
+            {linkText}
+          </DocumentationLink>
+        </Translate>
       </PageSubTitle>
     </StackWithMargin>
   );
