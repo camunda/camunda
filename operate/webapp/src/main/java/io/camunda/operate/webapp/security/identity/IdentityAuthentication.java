@@ -44,8 +44,6 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   private String subject;
   private Date expires;
 
-  private Date refreshTokenExpiresAt;
-
   private List<OperateTenant> tenants;
 
   public IdentityAuthentication() {
