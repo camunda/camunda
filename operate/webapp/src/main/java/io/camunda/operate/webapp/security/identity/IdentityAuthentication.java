@@ -28,8 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 public class IdentityAuthentication extends AbstractAuthenticationToken
     implements Serializable, TenantAwareAuthentication {
@@ -215,17 +213,6 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     expires = accessToken.getToken().getExpiresAt();
     LOGGER.info("Access token will expire at {}", expires);
     setAuthenticated(!hasExpired());
-  }
-
-  private boolean isPolling() {
-    final ServletRequestAttributes requestAttributes =
-        (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-    if (requestAttributes != null) {
-      return Boolean.TRUE.equals(
-          Boolean.parseBoolean(requestAttributes.getRequest().getHeader(POLLING_HEADER)));
-    } else {
-      return false;
-    }
   }
 
   private void retrieveName(final UserDetails userDetails) {
