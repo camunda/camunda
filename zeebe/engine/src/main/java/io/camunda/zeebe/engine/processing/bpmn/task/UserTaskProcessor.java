@@ -135,6 +135,8 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
     }
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
+    incidentBehavior.resolveIncidents(context);
+
     final var elementInstance = stateBehavior.getElementInstance(context);
     final long userTaskKey = elementInstance.getUserTaskKey();
 
@@ -171,8 +173,6 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
         stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELED, intermediateRecord);
       }
     }
-
-    incidentBehavior.resolveIncidents(context); // ? should it be before or after `canceling` UTLs ?
 
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
     eventSubscriptionBehavior
