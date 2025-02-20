@@ -22,6 +22,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.camunda.zeebe.client.CredentialsProvider;
@@ -33,6 +35,7 @@ import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,7 +69,6 @@ public class CredentialsProviderSaasTest {
   static WireMockExtension wm =
       WireMockExtension.newInstance().options(new WireMockConfiguration().dynamicPort()).build();
 
-  private static final String ACCESS_TOKEN = "access-token";
   @MockBean ZeebeClientExecutorService zeebeClientExecutorService;
   @Autowired ZeebeClientConfigurationImpl configuration;
 
@@ -96,7 +98,8 @@ public class CredentialsProviderSaasTest {
     final CredentialsProvider credentialsProvider = configuration.getCredentialsProvider();
     final Map<String, String> headers = new HashMap<>();
 
-    final String accessToken = ACCESS_TOKEN;
+    final String accessToken =
+        JWT.create().withExpiresAt(Instant.now().plusSeconds(300)).sign(Algorithm.none());
     wm.stubFor(
         post("/auth-server")
             .willReturn(
