@@ -104,7 +104,6 @@ import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
 import org.junit.Assert;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.Description;
@@ -146,7 +145,6 @@ public class ClusteringRule extends ExternalResource {
   private final Map<Integer, SpringBrokerBridge> springBrokerBridge;
   private final Map<Integer, SystemContext> systemContexts;
   private final ActorClockConfiguration actorClockConfiguration;
-  @AutoClose private MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   public ClusteringRule() {
     this(3);
@@ -341,6 +339,7 @@ public class ClusteringRule extends ExternalResource {
     final var brokerBase = getBrokerBase(nodeId);
     final var brokerCfg = getBrokerCfg(nodeId);
     final var brokerSpringConfig = getBrokerConfiguration(brokerBase, brokerCfg);
+    final var meterRegistry = new SimpleMeterRegistry();
     brokerCfg.init(brokerBase.getAbsolutePath());
 
     final var atomixCluster =
@@ -362,7 +361,7 @@ public class ClusteringRule extends ExternalResource {
     final var brokerClientConfig = brokerSpringConfig.brokerClientConfig();
     final var brokerClientConfiguration =
         new BrokerClientConfiguration(
-            brokerClientConfig, atomixCluster, scheduler, topologyManager);
+            brokerClientConfig, atomixCluster, scheduler, topologyManager, meterRegistry);
     final var brokerClient = brokerClientConfiguration.brokerClient();
 
     final var systemContext =
@@ -373,7 +372,7 @@ public class ClusteringRule extends ExternalResource {
             scheduler,
             atomixCluster,
             brokerClient,
-            new SimpleMeterRegistry());
+            meterRegistry);
     systemContexts.put(nodeId, systemContext);
 
     final Broker broker =
@@ -473,6 +472,7 @@ public class ClusteringRule extends ExternalResource {
     final var config = new GatewayBasedConfiguration(gatewayCfg, new LifecycleProperties());
     final var clusterConfig = config.clusterConfig();
     final var actorConfig = config.schedulerConfiguration();
+    final var meterRegistry = new SimpleMeterRegistry();
 
     final ActorScheduler actorScheduler =
         new ActorSchedulerConfiguration(
@@ -490,9 +490,8 @@ public class ClusteringRule extends ExternalResource {
     final var brokerClientConfig = config.brokerClientConfig();
     final var brokerClientConfiguration =
         new BrokerClientConfiguration(
-            brokerClientConfig, atomixCluster, actorScheduler, topologyManager);
+            brokerClientConfig, atomixCluster, actorScheduler, topologyManager, meterRegistry);
     final var brokerClient = brokerClientConfiguration.brokerClient();
-
     final var jobStreamClient =
         new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster);
     jobStreamClient.start().join();
@@ -502,11 +501,22 @@ public class ClusteringRule extends ExternalResource {
     topologyManager.addTopologyListener(jobStreamClient);
 
     final var gateway =
-        new Gateway(gatewayCfg, brokerClient, actorScheduler, jobStreamClient.streamer());
+        new Gateway(
+            gatewayCfg,
+            brokerClient,
+            actorScheduler,
+            jobStreamClient.streamer(),
+            new SimpleMeterRegistry());
     gateway.start().join();
 
     return new GatewayResource(
-        gatewayCfg, actorScheduler, atomixCluster, brokerClient, jobStreamClient, gateway);
+        gatewayCfg,
+        actorScheduler,
+        atomixCluster,
+        brokerClient,
+        jobStreamClient,
+        gateway,
+        meterRegistry);
   }
 
   private ZeebeClient createClient() {
@@ -667,6 +677,9 @@ public class ClusteringRule extends ExternalResource {
       } catch (final InterruptedException | ExecutionException e) {
         LangUtil.rethrowUnchecked(e);
       }
+
+      broker.getSystemContext().getMeterRegistry().clear();
+      broker.getSystemContext().getMeterRegistry().close();
     }
   }
 
@@ -959,13 +972,20 @@ public class ClusteringRule extends ExternalResource {
       AtomixCluster cluster,
       BrokerClient brokerClient,
       JobStreamClient jobStreamClient,
-      Gateway gateway)
+      Gateway gateway,
+      MeterRegistry meterRegistry)
       implements AutoCloseable {
 
     @Override
     public void close() {
       CloseHelper.quietCloseAll(
-          gateway, jobStreamClient, brokerClient, scheduler, () -> cluster.stop().join());
+          gateway,
+          jobStreamClient,
+          brokerClient,
+          scheduler,
+          () -> cluster.stop().join(),
+          meterRegistry::clear,
+          meterRegistry::close);
     }
   }
 

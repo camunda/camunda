@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
+import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -30,6 +32,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.grpc.StatusRuntimeException;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.util.NetUtil;
 import java.time.Duration;
 import java.util.List;
@@ -72,7 +75,9 @@ final class InterceptorIT {
             .withAddress(Address.from(clusterAddress.getHostName(), clusterAddress.getPort()))
             .build();
     topologyManager =
-        new BrokerTopologyManagerImpl(() -> cluster.getMembershipService().getMembers());
+        new BrokerTopologyManagerImpl(
+            () -> cluster.getMembershipService().getMembers(),
+            new BrokerClientTopologyMetrics(new SimpleMeterRegistry()));
     cluster.getMembershipService().addListener(topologyManager);
 
     brokerClient =
@@ -81,10 +86,13 @@ final class InterceptorIT {
             cluster.getMessagingService(),
             cluster.getEventService(),
             scheduler,
-            topologyManager);
+            topologyManager,
+            new BrokerClientRequestMetrics(new SimpleMeterRegistry()));
 
     jobStreamClient = new JobStreamClientImpl(scheduler, cluster.getCommunicationService());
-    gateway = new Gateway(config, brokerClient, scheduler, jobStreamClient.streamer());
+    gateway =
+        new Gateway(
+            config, brokerClient, scheduler, jobStreamClient.streamer(), new SimpleMeterRegistry());
 
     cluster.start().join();
     scheduler.start();

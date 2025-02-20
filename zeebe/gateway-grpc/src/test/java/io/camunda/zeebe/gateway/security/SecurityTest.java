@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
+import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.gateway.Gateway;
@@ -24,6 +26,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.File;
 import java.io.IOException;
@@ -161,7 +164,9 @@ final class SecurityTest {
     actorScheduler = ActorScheduler.newActorScheduler().build();
     actorScheduler.start();
     topologyManager =
-        new BrokerTopologyManagerImpl(() -> atomix.getMembershipService().getMembers());
+        new BrokerTopologyManagerImpl(
+            () -> atomix.getMembershipService().getMembers(),
+            new BrokerClientTopologyMetrics(new SimpleMeterRegistry()));
     actorScheduler.submitActor(topologyManager).join();
 
     brokerClient =
@@ -170,7 +175,8 @@ final class SecurityTest {
             atomix.getMessagingService(),
             atomix.getEventService(),
             actorScheduler,
-            topologyManager);
+            topologyManager,
+            new BrokerClientRequestMetrics(new SimpleMeterRegistry()));
     jobStreamClient = new JobStreamClientImpl(actorScheduler, atomix.getCommunicationService());
     jobStreamClient.start().join();
 
@@ -179,6 +185,11 @@ final class SecurityTest {
     brokerClient.start().forEach(ActorFuture::join);
     topologyManager.addTopologyListener(jobStreamClient);
     atomix.getMembershipService().addListener(topologyManager);
-    return new Gateway(gatewayCfg, brokerClient, actorScheduler, jobStreamClient.streamer());
+    return new Gateway(
+        gatewayCfg,
+        brokerClient,
+        actorScheduler,
+        jobStreamClient.streamer(),
+        new SimpleMeterRegistry());
   }
 }
