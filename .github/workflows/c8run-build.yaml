@@ -54,12 +54,19 @@ jobs:
           ./mvnw -B -T1C -DskipTests -DskipChecks -Dflatten.skip=true -Dskip.fe.build=false package
           export ARTIFACT=$(./mvnw -pl dist/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
           echo "distball=dist/target/${ARTIFACT}.tar.gz" >> $GITHUB_OUTPUT
+          echo "distzip=dist/target/${ARTIFACT}.zip" >> $GITHUB_OUTPUT
 
       - name: Upload camunda-dist
         uses: actions/upload-artifact@v4
         with:
           name: camunda-platform-dist
           path: ${{ steps.build-dist.outputs.distball }}
+
+      - name: Upload camunda-dist-zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: camunda-platform-dist-zip
+          path: ${{ steps.build-dist.outputs.distzip }}
 
   test_c8run:
     strategy:
@@ -174,11 +181,11 @@ jobs:
       - name: Download Camunda Core Dist
         uses: actions/download-artifact@v4
         with:
-          name: camunda-platform-dist
+          name: camunda-platform-dist-zip
           path: c8run
 
       - name: Get version of camunda-dist
-        run: echo CAMUNDA_VERSION=$(ls camunda-zeebe*.tar.gz | grep -o 'camunda-zeebe-.*' | sed 's/camunda-zeebe-//' | sed 's/\.tar\.gz//') >> $GITHUB_ENV
+        run: echo CAMUNDA_VERSION=$(ls camunda-zeebe*.zip | grep -o 'camunda-zeebe-.*' | sed 's/camunda-zeebe-//' | sed 's/\.zip//') >> $GITHUB_ENV
         shell: bash
         working-directory: .\c8run
 
@@ -211,11 +218,19 @@ jobs:
         run: echo "JAVA_HOME=$env:JAVA_HOME_22_x64" >> $env:GITHUB_ENV
 
       - name: Run c8run
-        run: .\c8run.exe start
+        run: .\c8run.exe start --config e2e_tests/prefix-config.yaml
         working-directory: .\c8run
         shell: cmd
         env:
           JAVA_VERSION: "22.0.2"
+
+      - name: Install jq
+        run: choco install jq
+
+      - name: Run test
+        shell: bash
+        run: ./api_tests.sh
+        working-directory: .\c8run\e2e_tests
 
       - uses: actions/setup-node@v4
         with:
