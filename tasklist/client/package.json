@@ -99,7 +99,7 @@
     "eslint-plugin-testing-library": "7.1.1",
     "jsdom": "26.0.0",
     "monaco-editor": "0.52.2",
-    "msw": "2.7.0",
+    "msw": "2.7.1",
     "prettier": "3.4.2",
     "rollup-plugin-license": "3.5.3",
     "serve": "14.2.4",
