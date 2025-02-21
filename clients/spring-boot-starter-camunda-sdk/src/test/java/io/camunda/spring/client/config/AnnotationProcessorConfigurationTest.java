@@ -19,6 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.spring.client.annotation.processor.AbstractCamundaAnnotationProcessor;
 import io.camunda.spring.client.annotation.processor.CamundaAnnotationProcessorRegistry;
+import io.camunda.spring.client.annotation.processor.DeploymentAnnotationProcessor;
+import io.camunda.spring.client.annotation.processor.JobWorkerAnnotationProcessor;
 import io.camunda.spring.client.configuration.AnnotationProcessorConfiguration;
 import io.camunda.spring.client.jobhandling.JobWorkerManager;
 import java.util.List;
@@ -38,5 +40,9 @@ public class AnnotationProcessorConfigurationTest {
   void shouldRun() {
     final List<AbstractCamundaAnnotationProcessor> processors = registry.getProcessors();
     assertThat(processors).hasSize(2);
+    assertThat(processors)
+        .anySatisfy(p -> assertThat(p).isInstanceOf(JobWorkerAnnotationProcessor.class));
+    assertThat(processors)
+        .anySatisfy(p -> assertThat(p).isInstanceOf(DeploymentAnnotationProcessor.class));
   }
 }
