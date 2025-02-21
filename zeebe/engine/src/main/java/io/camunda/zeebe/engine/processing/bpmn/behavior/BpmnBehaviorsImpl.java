@@ -87,11 +87,15 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             clock,
             transientProcessMessageSubscriptionState);
 
+    stateBehavior = new BpmnStateBehavior(processingState, variableBehavior);
+
     eventTriggerBehavior =
         new EventTriggerBehavior(
-            processingState.getKeyGenerator(), catchEventBehavior, writers, processingState);
-
-    stateBehavior = new BpmnStateBehavior(processingState, variableBehavior);
+            processingState.getKeyGenerator(),
+            catchEventBehavior,
+            writers,
+            processingState,
+            stateBehavior);
 
     bpmnDecisionBehavior =
         new BpmnDecisionBehavior(
@@ -154,7 +158,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getKeyGenerator(),
             writers,
             catchEventBehavior,
-            processingState.getElementInstanceState());
+            processingState.getElementInstanceState(),
+            stateBehavior);
 
     signalBehavior =
         new BpmnSignalBehavior(
