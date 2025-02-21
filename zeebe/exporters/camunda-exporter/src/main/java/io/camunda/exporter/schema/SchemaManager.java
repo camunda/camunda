@@ -14,7 +14,9 @@ import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,11 +57,12 @@ public class SchemaManager {
 
     //  used to update existing indices/templates
     LOG.info("Update index schema. '{}' indices need to be updated", newIndexProperties.size());
-    updateSchema(newIndexProperties);
+    updateSchemaMappings(newIndexProperties);
     LOG.info(
         "Update index template schema. '{}' index templates need to be updated",
-        newIndexProperties.size());
-    updateSchema(newIndexTemplateProperties);
+        newIndexTemplateProperties.size());
+    updateSchemaMappings(newIndexTemplateProperties);
+    updateSchemaSettings();
 
     final RetentionConfiguration retention = config.getArchiver().getRetention();
     if (retention.isEnabled()) {
@@ -71,6 +74,42 @@ public class SchemaManager {
           retention.getPolicyName(), retention.getMinimumAge());
     }
     LOG.info("Schema management completed.");
+  }
+
+  private void updateSchemaSettings() {
+    final var existingTemplateNames =
+        searchEngineClient
+            .getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX_TEMPLATE)
+            .keySet();
+
+    final var existingIndexNames =
+        allIndexNames().isBlank()
+            ? Set.of()
+            : searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet();
+
+    indexTemplateDescriptors.stream()
+        .filter(desc -> existingTemplateNames.contains(desc.getTemplateName()))
+        .forEach(
+            desc -> {
+              searchEngineClient.updateIndexTemplateSettings(
+                  desc, getIndexSettingsFromConfig(desc.getIndexName()));
+            });
+
+    // update matching index for the index template descriptor
+    indexTemplateDescriptors.stream()
+        .filter(desc -> existingIndexNames.contains(desc.getFullQualifiedName()))
+        .forEach(this::updateIndexReplicaCount);
+
+    indexDescriptors.stream()
+        .filter(desc -> existingIndexNames.contains(desc.getFullQualifiedName()))
+        .forEach(this::updateIndexReplicaCount);
+  }
+
+  private void updateIndexReplicaCount(final IndexDescriptor indexDescriptor) {
+    final var indexReplicaCount =
+        String.valueOf(getNumberOfReplicasFromConfig(indexDescriptor.getIndexName()));
+    searchEngineClient.putSettings(
+        List.of(indexDescriptor), Map.of("index.number_of_replicas", indexReplicaCount));
   }
 
   public void initialiseResources() {
@@ -97,7 +136,7 @@ public class SchemaManager {
             descriptor -> {
               LOG.info("Create missing index '{}'", descriptor.getFullQualifiedName());
               searchEngineClient.createIndex(
-                  descriptor, getIndexSettings(descriptor.getIndexName()));
+                  descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()));
             });
   }
 
@@ -122,17 +161,18 @@ public class SchemaManager {
             descriptor -> {
               LOG.info("Create missing index template '{}'", descriptor.getTemplateName());
               searchEngineClient.createIndexTemplate(
-                  descriptor, getIndexSettings(descriptor.getIndexName()), true);
+                  descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()), true);
               LOG.info(
                   "Create missing index '{}', for template '{}'",
                   descriptor.getFullQualifiedName(),
                   descriptor.getTemplateName());
               searchEngineClient.createIndex(
-                  descriptor, getIndexSettings(descriptor.getIndexName()));
+                  descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()));
             });
   }
 
-  public void updateSchema(final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields) {
+  public void updateSchemaMappings(
+      final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields) {
     for (final var newFieldEntry : newFields.entrySet()) {
       final var descriptor = newFieldEntry.getKey();
       final var newProperties = newFieldEntry.getValue();
@@ -142,7 +182,7 @@ public class SchemaManager {
             "Updating template: '{}'", ((IndexTemplateDescriptor) descriptor).getTemplateName());
         searchEngineClient.createIndexTemplate(
             (IndexTemplateDescriptor) descriptor,
-            getIndexSettings(descriptor.getIndexName()),
+            getIndexSettingsFromConfig(descriptor.getIndexName()),
             false);
       } else {
         LOG.info(
@@ -154,12 +194,8 @@ public class SchemaManager {
     }
   }
 
-  private IndexSettings getIndexSettings(final String indexName) {
-    final var templateReplicas =
-        config
-            .getIndex()
-            .getReplicasByIndexName()
-            .getOrDefault(indexName, config.getIndex().getNumberOfReplicas());
+  private IndexSettings getIndexSettingsFromConfig(final String indexName) {
+    final var templateReplicas = getNumberOfReplicasFromConfig(indexName);
     final var templateShards =
         config
             .getIndex()
@@ -171,6 +207,13 @@ public class SchemaManager {
     settings.setNumberOfReplicas(templateReplicas);
 
     return settings;
+  }
+
+  private int getNumberOfReplicasFromConfig(final String indexName) {
+    return config
+        .getIndex()
+        .getReplicasByIndexName()
+        .getOrDefault(indexName, config.getIndex().getNumberOfReplicas());
   }
 
   private Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndices(
