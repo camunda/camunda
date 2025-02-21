@@ -245,12 +245,9 @@ public class TaskListenerTest {
         .userTask()
         .ofInstance(processInstanceKey)
         .withAction("my_update_action")
-        .update(
-            new UserTaskRecord()
-                .setCandidateUsersList(List.of("samwise", "frodo"))
-                .setCandidateUsersChanged()
-                .setPriority(88)
-                .setPriorityChanged());
+        .withCandidateUsers("samwise", "frodo")
+        .withPriority(88)
+        .update();
     completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
 
     // then
@@ -301,10 +298,8 @@ public class TaskListenerTest {
     ENGINE
         .userTask()
         .ofInstance(processInstanceKey)
-        .update(
-            new UserTaskRecord()
-                .setCandidateUsersList(List.of("frodo", "samwise"))
-                .setCandidateUsersChanged());
+        .withCandidateUsers("frodo", "samwise")
+        .update();
 
     // complete all `updating` listener jobs
     completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
@@ -314,12 +309,9 @@ public class TaskListenerTest {
         .userTask()
         .ofInstance(processInstanceKey)
         .withAction("escalate")
-        .update(
-            new UserTaskRecord()
-                .setCandidateUsersList(List.of("aragorn", "legolas"))
-                .setCandidateUsersChanged()
-                .setPriority(99)
-                .setPriorityChanged());
+        .withCandidateUsers("aragorn", "legolas")
+        .withPriority(99)
+        .update();
 
     // complete all `updating` listener jobs for the second update
     completeRecreatedJobs(
@@ -497,10 +489,7 @@ public class TaskListenerTest {
             createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.updating, listenerType));
 
     // when: attempting to update the user task priority for the first time
-    ENGINE
-        .userTask()
-        .ofInstance(processInstanceKey)
-        .update(new UserTaskRecord().setPriority(80).setPriorityChanged());
+    ENGINE.userTask().ofInstance(processInstanceKey).withPriority(80).update();
 
     // and: task listener denies the first update attempt
     ENGINE
@@ -511,10 +500,7 @@ public class TaskListenerTest {
         .complete();
 
     // when: retrying the update operation with a new priority value
-    ENGINE
-        .userTask()
-        .ofInstance(processInstanceKey)
-        .update(new UserTaskRecord().setPriority(100).setPriorityChanged());
+    ENGINE.userTask().ofInstance(processInstanceKey).withPriority(100).update();
 
     // and: completing the re-created task listener job
     completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
@@ -723,7 +709,7 @@ public class TaskListenerTest {
     verifyListenerIsRetriedWhenListenerJobFailed(
         ZeebeTaskListenerEventType.updating,
         UnaryOperator.identity(),
-        userTaskClient -> userTaskClient.update(new UserTaskRecord()),
+        UserTaskClient::update,
         UserTaskIntent.UPDATED);
   }
 
@@ -811,7 +797,7 @@ public class TaskListenerTest {
     verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
         ZeebeTaskListenerEventType.updating,
         UnaryOperator.identity(),
-        userTaskClient -> userTaskClient.update(new UserTaskRecord()),
+        UserTaskClient::update,
         UserTaskIntent.UPDATED);
   }
 
@@ -1084,16 +1070,16 @@ public class TaskListenerTest {
                         .zeebeFollowUpDate("2095-09-21T11:22:33+02:00")
                         .zeebeTaskListener(l -> l.completing().type(listenerType))));
 
-    final var changes =
-        new UserTaskRecord()
-            .setCandidateGroupsList(List.of("group_J", "group_R"))
-            .setCandidateUsersList(List.of("user_T"))
-            .setDueDate("2087-09-21T11:22:33+02:00")
-            .setFollowUpDate("2097-09-21T11:22:33+02:00")
-            .setPriority(42);
-
     // when
-    ENGINE.userTask().ofInstance(processInstanceKey).update(changes);
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .withCandidateGroups("group_J", "group_R")
+        .withCandidateUsers("user_T")
+        .withDueDate("2087-09-21T11:22:33+02:00")
+        .withFollowUpDate("2097-09-21T11:22:33+02:00")
+        .withPriority(42)
+        .update();
     final var userTaskCommand = ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
     // then
@@ -1128,18 +1114,18 @@ public class TaskListenerTest {
                         .zeebeFollowUpDate("2095-09-21T11:22:33+02:00")
                         .zeebeTaskListener(listener -> listener.completing().type(listenerType))));
 
-    final var changes =
-        new UserTaskRecord()
-            // Clear candidate groups and users, due date, and follow-up date
-            .setCandidateGroupsList(List.of())
-            .setCandidateUsersList(List.of())
-            .setDueDate("")
-            .setFollowUpDate("")
-            // Update priority
-            .setPriority(1);
-
     // when: updating the user task with the specified changes
-    ENGINE.userTask().ofInstance(processInstanceKey).update(changes);
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        // Clear candidate groups and users, due date, and follow-up date
+        .withCandidateGroups()
+        .withCandidateUsers()
+        .withDueDate("")
+        .withFollowUpDate("")
+        // Update priority
+        .withPriority(1)
+        .update();
 
     // and: completing the user task
     final var userTaskCommand = ENGINE.userTask().ofInstance(processInstanceKey).complete();
@@ -1393,10 +1379,7 @@ public class TaskListenerTest {
         createProcessInstance(
             createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.updating, listenerType));
 
-    ENGINE
-        .userTask()
-        .ofInstance(processInstanceKey)
-        .update(new UserTaskRecord().setPriority(99).setPriorityChanged());
+    ENGINE.userTask().ofInstance(processInstanceKey).withPriority(99).update();
 
     // when: complete `updating` a listener job with a denied result
     ENGINE
@@ -1700,10 +1683,7 @@ public class TaskListenerTest {
   @Test
   public void shouldAppendUserTaskCorrectedWhenUpdatingTaskListenerCompletesWithCorrections() {
     testAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections(
-        ZeebeTaskListenerEventType.updating,
-        u -> u,
-        userTask -> userTask.update(new UserTaskRecord()),
-        "update");
+        ZeebeTaskListenerEventType.updating, u -> u, UserTaskClient::update, "update");
   }
 
   @Test
@@ -1895,12 +1875,12 @@ public class TaskListenerTest {
         ZeebeTaskListenerEventType.updating,
         false,
         userTask ->
-            userTask.update(
-                new UserTaskRecord()
-                    .setCandidateUsersList(List.of("initial_candidate_user"))
-                    .setCandidateGroupsList(List.of("initial_candidate_group"))
-                    .setDueDate("2085-09-21T11:22:33+02:00")
-                    .setFollowUpDate("2095-09-21T11:22:33+02:00")),
+            userTask
+                .withCandidateUsers("initial_candidate_user")
+                .withCandidateGroups("initial_candidate_group")
+                .withDueDate("2085-09-21T11:22:33+02:00")
+                .withFollowUpDate("2095-09-21T11:22:33+02:00")
+                .update(),
         List.of(
             UserTaskIntent.UPDATE,
             UserTaskIntent.UPDATING,
@@ -2110,10 +2090,7 @@ public class TaskListenerTest {
   @Test
   public void shouldTrackChangedAttributesOnlyForActuallyCorrectedValuesOnTaskUpdate() {
     verifyChangedAttributesAreTrackedOnlyForActuallyCorrectedValues(
-        ZeebeTaskListenerEventType.updating,
-        false,
-        userTask -> userTask.update(new UserTaskRecord()),
-        UserTaskIntent.UPDATED);
+        ZeebeTaskListenerEventType.updating, false, UserTaskClient::update, UserTaskIntent.UPDATED);
   }
 
   @Test
@@ -2413,16 +2390,11 @@ public class TaskListenerTest {
     ENGINE
         .userTask()
         .ofInstance(processInstanceKey)
-        .update(
-            new UserTaskRecord()
-                .setCandidateGroupsList(List.of("elves", "dwarves"))
-                .setCandidateGroupsChanged()
-                .setCandidateUsersList(List.of("legolas", "thorin")) // same as initial users
-                .setCandidateUsersChanged()
-                .setDueDate("updated_due_date")
-                .setDueDateChanged()
-                .setPriority(99)
-                .setPriorityChanged());
+        .withCandidateGroups("elves", "dwarves")
+        .withCandidateUsers("legolas", "thorin") // same as initial users
+        .withDueDate("updated_due_date")
+        .withPriority(99)
+        .update();
 
     // then
     assertActivatedJob(
@@ -2716,7 +2688,7 @@ public class TaskListenerTest {
     testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
         ZeebeTaskListenerEventType.updating,
         u -> u,
-        userTask -> userTask.update(new UserTaskRecord()),
+        UserTaskClient::update,
         UserTaskIntent.UPDATED);
   }
 
@@ -2835,7 +2807,7 @@ public class TaskListenerTest {
     testRevertCorrectedUserTaskDataWhenTaskListenerDenies(
         ZeebeTaskListenerEventType.updating,
         u -> u,
-        userTask -> userTask.update(new UserTaskRecord()),
+        UserTaskClient::update,
         UserTaskIntent.UPDATE_DENIED);
   }
 
@@ -3017,7 +2989,7 @@ public class TaskListenerTest {
         ZeebeTaskListenerEventType.updating,
         "updating_listener_var_name",
         "expression_updating_listener_2",
-        userTask -> userTask.update(new UserTaskRecord()),
+        UserTaskClient::update,
         UserTaskIntent.UPDATED,
         userTask -> Assertions.assertThat(userTask).hasAction("update"));
   }
