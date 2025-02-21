@@ -68,7 +68,8 @@ public class AnnotationProcessorConfigurationTest {
     }
   }
 
-  private static class MockCamundaAnnotationProcessor extends AbstractCamundaAnnotationProcessor {
+  private static final class MockCamundaAnnotationProcessor
+      extends AbstractCamundaAnnotationProcessor {
     private MockedBean mockedBean;
 
     @Override
@@ -92,7 +93,7 @@ public class AnnotationProcessorConfigurationTest {
     public void stop(final CamundaClient client) {}
   }
 
-  private static class MockedBean {
+  private static final class MockedBean {
     private boolean configured;
     private boolean started;
 
