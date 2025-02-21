@@ -32,16 +32,10 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnMissingBean(ZeebeClientExecutorService.class)
 public class ExecutorServiceConfiguration {
 
-  private final ZeebeClientConfigurationProperties configurationProperties;
-
-  public ExecutorServiceConfiguration(
-      final ZeebeClientConfigurationProperties configurationProperties) {
-    this.configurationProperties = configurationProperties;
-  }
-
   @Bean
   public ZeebeClientExecutorService zeebeClientThreadPool(
-      @Autowired(required = false) final MeterRegistry meterRegistry) {
+      @Autowired(required = false) final MeterRegistry meterRegistry,
+      final ZeebeClientConfigurationProperties configurationProperties) {
     final ScheduledExecutorService threadPool =
         Executors.newScheduledThreadPool(configurationProperties.getNumJobWorkerExecutionThreads());
     if (meterRegistry != null) {
