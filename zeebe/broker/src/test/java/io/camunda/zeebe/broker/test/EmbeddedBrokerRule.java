@@ -19,7 +19,6 @@ import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.TestLoggers;
-import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -34,7 +33,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.netty.util.NetUtil;
 import java.io.File;
 import java.io.IOException;
@@ -159,7 +157,6 @@ public final class EmbeddedBrokerRule extends ExternalResource {
         LOG.error("Unexpected error on deleting data.", e);
       }
 
-      MicrometerUtil.close(meterRegistry);
       controlledActorClock.reset();
     }
   }
@@ -170,10 +167,6 @@ public final class EmbeddedBrokerRule extends ExternalResource {
 
   public SpringBrokerBridge getSpringBrokerBridge() {
     return springBrokerBridge;
-  }
-
-  public ClusterServices getClusterServices() {
-    return broker.getBrokerContext().getClusterServices();
   }
 
   public AtomixCluster getAtomixCluster() {
