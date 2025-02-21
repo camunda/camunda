@@ -56,13 +56,13 @@ public class SchemaManager {
     initialiseResources();
 
     //  used to update existing indices/templates
+    updateSchemaSettings();
     LOG.info("Update index schema. '{}' indices need to be updated", newIndexProperties.size());
     updateSchemaMappings(newIndexProperties);
     LOG.info(
         "Update index template schema. '{}' index templates need to be updated",
         newIndexTemplateProperties.size());
     updateSchemaMappings(newIndexTemplateProperties);
-    updateSchemaSettings();
 
     final RetentionConfiguration retention = config.getArchiver().getRetention();
     if (retention.isEnabled()) {
