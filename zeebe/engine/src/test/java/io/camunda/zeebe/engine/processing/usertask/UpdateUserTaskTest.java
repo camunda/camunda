@@ -70,7 +70,7 @@ public final class UpdateUserTaskTest {
             .getKey();
 
     // when
-    final var updatingRecord = ENGINE.userTask().withKey(userTaskKey).update(new UserTaskRecord());
+    final var updatingRecord = ENGINE.userTask().withKey(userTaskKey).update();
 
     // then
     Assertions.assertThat(updatingRecord)
@@ -106,11 +106,7 @@ public final class UpdateUserTaskTest {
 
     // when
     final var updatingRecord =
-        ENGINE
-            .userTask()
-            .withKey(userTaskKey)
-            .withAction("customAction")
-            .update(new UserTaskRecord());
+        ENGINE.userTask().withKey(userTaskKey).withAction("customAction").update();
 
     // then
     Assertions.assertThat(updatingRecord)
@@ -138,8 +134,7 @@ public final class UpdateUserTaskTest {
     final int key = 123;
 
     // when
-    final var updatingRecord =
-        ENGINE.userTask().withKey(key).expectRejection().update(new UserTaskRecord());
+    final var updatingRecord = ENGINE.userTask().withKey(key).expectRejection().update();
 
     // then
     Assertions.assertThat(updatingRecord).hasRejectionType(RejectionType.NOT_FOUND);
@@ -166,10 +161,8 @@ public final class UpdateUserTaskTest {
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
-            .update(
-                new UserTaskRecord()
-                    .setCandidateGroupsList(List.of("updated_group_C", "updated_group_D"))
-                    .setCandidateGroupsChanged());
+            .withCandidateGroups("updated_group_C", "updated_group_D")
+            .update();
 
     // then
     Assertions.assertThat(updatingRecord)
@@ -214,10 +207,8 @@ public final class UpdateUserTaskTest {
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
-            .update(
-                new UserTaskRecord()
-                    .setCandidateUsersList(List.of("updated_user_C", "updated_user_D"))
-                    .setCandidateUsersChanged());
+            .withCandidateUsers("updated_user_C", "updated_user_D")
+            .update();
 
     // then
     Assertions.assertThat(updatingRecord)
@@ -259,10 +250,7 @@ public final class UpdateUserTaskTest {
 
     // when
     final var updatingRecord =
-        ENGINE
-            .userTask()
-            .ofInstance(processInstanceKey)
-            .update(new UserTaskRecord().setDueDate("updated_dueDate").setDueDateChanged());
+        ENGINE.userTask().ofInstance(processInstanceKey).withDueDate("updated_dueDate").update();
 
     // then
     Assertions.assertThat(updatingRecord)
@@ -307,10 +295,8 @@ public final class UpdateUserTaskTest {
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
-            .update(
-                new UserTaskRecord()
-                    .setFollowUpDate("updated_followUpDate")
-                    .setFollowUpDateChanged());
+            .withFollowUpDate("updated_followUpDate")
+            .update();
 
     // then
     Assertions.assertThat(updatingRecord)
@@ -353,10 +339,7 @@ public final class UpdateUserTaskTest {
 
     // when
     final var updatingRecord =
-        ENGINE
-            .userTask()
-            .ofInstance(processInstanceKey)
-            .update(new UserTaskRecord().setPriority(newPriority).setPriorityChanged());
+        ENGINE.userTask().ofInstance(processInstanceKey).withPriority(newPriority).update();
 
     // then
     Assertions.assertThat(updatingRecord)
@@ -398,7 +381,7 @@ public final class UpdateUserTaskTest {
 
     // when
     final var updatingRecord =
-        ENGINE.userTask().ofInstance(processInstanceKey).update(new UserTaskRecord());
+        ENGINE.userTask().ofInstance(processInstanceKey).withAllAttributesChanged().update();
 
     // then
     Assertions.assertThat(updatingRecord)
@@ -443,13 +426,12 @@ public final class UpdateUserTaskTest {
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
-            .update(
-                new UserTaskRecord()
-                    .setCandidateGroupsList(List.of("initial_group_A", "initial_group_B"))
-                    .setCandidateUsersList(List.of("initial_user_A", "initial_user_B"))
-                    .setDueDate("2023-03-02T15:35+02:00")
-                    .setFollowUpDate("2023-03-02T16:35+02:00")
-                    .setPriority(84));
+            .withCandidateGroups("initial_group_A", "initial_group_B")
+            .withCandidateUsers("initial_user_A", "initial_user_B")
+            .withDueDate("2023-03-02T15:35+02:00")
+            .withFollowUpDate("2023-03-02T16:35+02:00")
+            .withPriority(84)
+            .update();
 
     // then
     Assertions.assertThat(updatingRecord)
@@ -497,13 +479,12 @@ public final class UpdateUserTaskTest {
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
-            .update(
-                new UserTaskRecord()
-                    .setCandidateGroupsList(List.of("updated_group_F")) // changed
-                    .setCandidateUsersList(List.of("initial_user_A", "initial_user_B")) // unchanged
-                    .setDueDate("updated_dueDate") // changed
-                    .setFollowUpDate("2023-03-02T16:35+02:00") // unchanged
-                    .setPriority(55)); // changed
+            .withCandidateGroups("updated_group_F") // changed
+            .withCandidateUsers("initial_user_A", "initial_user_B") // unchanged
+            .withDueDate("updated_dueDate") // changed
+            .withFollowUpDate("2023-03-02T16:35+02:00") // unchanged
+            .withPriority(55) // changed
+            .update();
 
     // then
     Assertions.assertThat(updatingRecord)
@@ -579,11 +560,7 @@ public final class UpdateUserTaskTest {
 
     // when
     final var updatingRecord =
-        ENGINE
-            .userTask()
-            .ofInstance(processInstanceKey)
-            .expectRejection()
-            .update(new UserTaskRecord());
+        ENGINE.userTask().ofInstance(processInstanceKey).expectRejection().update();
 
     // then
     Assertions.assertThat(updatingRecord).hasRejectionType(RejectionType.NOT_FOUND);
@@ -599,11 +576,7 @@ public final class UpdateUserTaskTest {
 
     // when
     final var updatingRecord =
-        ENGINE
-            .userTask()
-            .ofInstance(processInstanceKey)
-            .withAuthorizedTenantIds(tenantId)
-            .update(new UserTaskRecord());
+        ENGINE.userTask().ofInstance(processInstanceKey).withAuthorizedTenantIds(tenantId).update();
 
     // then
     Assertions.assertThat(updatingRecord)
@@ -635,7 +608,7 @@ public final class UpdateUserTaskTest {
             .ofInstance(processInstanceKey)
             .withAuthorizedTenantIds(falseTenantId)
             .expectRejection()
-            .update(new UserTaskRecord());
+            .update();
 
     // then
     Assertions.assertThat(updatingRecord).hasRejectionType(RejectionType.NOT_FOUND);
