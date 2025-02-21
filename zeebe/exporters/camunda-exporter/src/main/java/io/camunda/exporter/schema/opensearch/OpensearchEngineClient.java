@@ -7,14 +7,12 @@
  */
 package io.camunda.exporter.schema.opensearch;
 
-import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.camunda.exporter.SchemaResourceSerializer;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
-import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.IndexSchemaValidationException;
 import io.camunda.exporter.exceptions.OpensearchExporterException;
 import io.camunda.exporter.schema.IndexMapping;
@@ -258,13 +256,19 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
     try {
       client.indices().putIndexTemplate(updateIndexTemplateSettingsRequest);
-    } catch (final IOException | ElasticsearchException e) {
-      throw new ElasticsearchExporterException(
+    } catch (final IOException | OpenSearchException e) {
+      throw new OpensearchExporterException(
           String.format(
               "Expected to update index template settings '%s' with '%s', but failed ",
               indexTemplateDescriptor.getTemplateName(), updateIndexTemplateSettingsRequest),
           e);
     }
+  }
+
+  @Override
+  public void removeBreakingIndexTemplates(
+      final Collection<IndexTemplateDescriptor> indexTemplateDescriptors) {
+    // Opensearch client does not have breaking index templates.
   }
 
   private SearchRequest allImportPositionDocuments(
