@@ -8,11 +8,23 @@
 package io.camunda.webapps.schema.entities.tasklist;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 
-public class TaskEntity extends TasklistEntity<TaskEntity> {
+public class TaskEntity
+    implements ExporterEntity<TaskEntity>, PartitionedEntity<TaskEntity>, TenantOwned {
+
+  private String id;
+
+  private long key;
+
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+
+  private int partitionId;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String flowNodeBpmnId;
@@ -93,6 +105,47 @@ public class TaskEntity extends TasklistEntity<TaskEntity> {
   private TaskImplementation implementation;
 
   public TaskEntity() {}
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public TaskEntity setId(final String id) {
+    this.id = id;
+    return this;
+  }
+
+  public long getKey() {
+    return key;
+  }
+
+  public TaskEntity setKey(final long key) {
+    this.key = key;
+    return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public TaskEntity setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public TaskEntity setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
 
   public String getFlowNodeBpmnId() {
     return flowNodeBpmnId;

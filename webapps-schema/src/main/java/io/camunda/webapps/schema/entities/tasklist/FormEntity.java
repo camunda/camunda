@@ -8,9 +8,15 @@
 package io.camunda.webapps.schema.entities.tasklist;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
-public class FormEntity extends TasklistEntity<FormEntity> {
+public class FormEntity implements ExporterEntity<FormEntity>, TenantOwned {
+
+  private String id;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  private long key;
 
   @JsonProperty("bpmnId")
   private String formId;
@@ -20,6 +26,36 @@ public class FormEntity extends TasklistEntity<FormEntity> {
   private Boolean isDeleted;
   private String processDefinitionId;
   private boolean embedded;
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public FormEntity setId(final String id) {
+    this.id = id;
+    return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public FormEntity setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
+  public long getKey() {
+    return key;
+  }
+
+  public FormEntity setKey(final long key) {
+    this.key = key;
+    return this;
+  }
 
   public String getFormId() {
     return formId;
@@ -77,7 +113,7 @@ public class FormEntity extends TasklistEntity<FormEntity> {
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), formId, schema, version, isDeleted);
+    return Objects.hash(id, key, tenantId, formId, schema, version, isDeleted);
   }
 
   @Override
@@ -88,11 +124,11 @@ public class FormEntity extends TasklistEntity<FormEntity> {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
     final FormEntity that = (FormEntity) o;
-    return Objects.equals(formId, that.formId)
+    return Objects.equals(id, that.id)
+        && key == that.key
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(formId, that.formId)
         && Objects.equals(schema, that.schema)
         && Objects.equals(version, that.version)
         && Objects.equals(isDeleted, that.isDeleted);
@@ -101,7 +137,15 @@ public class FormEntity extends TasklistEntity<FormEntity> {
   @Override
   public String toString() {
     return "FormEntity{"
-        + "formId='"
+        + "id='"
+        + id
+        + '\''
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + ", key="
+        + key
+        + ", formId='"
         + formId
         + '\''
         + ", schema='"
