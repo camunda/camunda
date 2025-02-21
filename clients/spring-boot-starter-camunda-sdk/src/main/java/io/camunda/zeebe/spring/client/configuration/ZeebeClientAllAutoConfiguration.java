@@ -52,19 +52,11 @@ import org.springframework.context.annotation.Import;
 })
 public class ZeebeClientAllAutoConfiguration {
 
-  private final ZeebeClientConfigurationProperties configurationProperties;
-  private final CamundaClientProperties camundaClientProperties;
-
-  public ZeebeClientAllAutoConfiguration(
-      final ZeebeClientConfigurationProperties configurationProperties,
-      final CamundaClientProperties camundaClientProperties) {
-    this.configurationProperties = configurationProperties;
-    this.camundaClientProperties = camundaClientProperties;
-  }
-
   @Bean
   @ConditionalOnMissingBean
-  public ZeebeClientExecutorService zeebeClientExecutorService() {
+  public ZeebeClientExecutorService zeebeClientExecutorService(
+      final ZeebeClientConfigurationProperties configurationProperties,
+      final CamundaClientProperties camundaClientProperties) {
     return ZeebeClientExecutorService.createDefault(
         getOrLegacyOrDefault(
             "NumJobWorkerExecutionThreads",
@@ -119,7 +111,9 @@ public class ZeebeClientAllAutoConfiguration {
 
   @Bean("propertyBasedZeebeWorkerValueCustomizer")
   @ConditionalOnMissingBean(name = "propertyBasedZeebeWorkerValueCustomizer")
-  public ZeebeWorkerValueCustomizer propertyBasedZeebeWorkerValueCustomizer() {
+  public ZeebeWorkerValueCustomizer propertyBasedZeebeWorkerValueCustomizer(
+      final ZeebeClientConfigurationProperties configurationProperties,
+      final CamundaClientProperties camundaClientProperties) {
     return new PropertyBasedZeebeWorkerValueCustomizer(
         configurationProperties, camundaClientProperties);
   }
