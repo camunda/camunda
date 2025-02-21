@@ -252,9 +252,6 @@ public class IncidentEntity
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
     final IncidentEntity incident = (IncidentEntity) o;
     return Objects.equals(id, incident.id)
         && key == incident.key

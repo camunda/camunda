@@ -112,9 +112,6 @@ public class DecisionRequirementsEntity
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
     final DecisionRequirementsEntity that = (DecisionRequirementsEntity) o;
     return Objects.equals(id, that.id)
         && key == that.key

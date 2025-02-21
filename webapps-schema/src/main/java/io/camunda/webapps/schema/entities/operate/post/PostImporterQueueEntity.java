@@ -111,9 +111,6 @@ public class PostImporterQueueEntity extends AbstractExporterEntity<PostImporter
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
     final PostImporterQueueEntity that = (PostImporterQueueEntity) o;
     return Objects.equals(key, that.key)
         && actionType == that.actionType

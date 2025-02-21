@@ -236,9 +236,6 @@ public class EventEntity
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
     final EventEntity that = (EventEntity) o;
     return Objects.equals(id, that.id)
         && key == that.key

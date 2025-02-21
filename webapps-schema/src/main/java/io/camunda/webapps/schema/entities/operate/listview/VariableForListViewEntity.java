@@ -152,9 +152,6 @@ public class VariableForListViewEntity
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
     final VariableForListViewEntity that = (VariableForListViewEntity) o;
     return Objects.equals(id, that.id)
         && partitionId == that.partitionId

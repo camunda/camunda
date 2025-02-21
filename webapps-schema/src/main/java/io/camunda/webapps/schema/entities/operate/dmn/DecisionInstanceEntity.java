@@ -365,9 +365,6 @@ public class DecisionInstanceEntity
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
     final DecisionInstanceEntity that = (DecisionInstanceEntity) o;
     return Objects.equals(id, that.id)
         && key == that.key

@@ -131,9 +131,6 @@ public class ImportPositionEntity extends AbstractExporterEntity<ImportPositionE
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
     final ImportPositionEntity that = (ImportPositionEntity) o;
     return partitionId == that.partitionId
         && position == that.position
