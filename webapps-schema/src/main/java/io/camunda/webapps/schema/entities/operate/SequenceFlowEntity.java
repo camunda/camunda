@@ -87,9 +87,6 @@ public class SequenceFlowEntity extends AbstractExporterEntity<SequenceFlowEntit
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
     final SequenceFlowEntity that = (SequenceFlowEntity) o;
     return Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)

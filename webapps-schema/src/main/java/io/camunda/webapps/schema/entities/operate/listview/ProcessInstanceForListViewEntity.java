@@ -284,9 +284,6 @@ public class ProcessInstanceForListViewEntity
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
     final ProcessInstanceForListViewEntity that = (ProcessInstanceForListViewEntity) o;
     return Objects.equals(id, that.id)
         && key == that.key
