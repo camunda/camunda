@@ -1,0 +1,26 @@
+{
+  "index_patterns": ["my-index-*"],
+  "template": {
+    "mappings": {
+      "properties": {
+        "hello": {
+          "type": "text"
+        },
+        "world": {
+          "type": "keyword"
+        }
+      }
+    },
+    "settings": {
+      "index": {
+        "analysis": {
+          "normalizer": {
+            "case_insensitive": {
+              "filter": "lowercase"
+            }
+          }
+        }
+      }
+    }
+  }
+}

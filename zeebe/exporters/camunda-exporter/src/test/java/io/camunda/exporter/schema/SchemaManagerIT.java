@@ -28,6 +28,7 @@ import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
 import io.camunda.exporter.utils.SearchClientAdapter;
 import io.camunda.exporter.utils.SearchDBExtension;
 import io.camunda.exporter.utils.TestObjectMapper;
+import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -35,11 +36,16 @@ import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.test.util.junit.RegressionTestTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.apache.http.HttpHost;
+import org.elasticsearch.client.Request;
+import org.elasticsearch.client.Response;
+import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -585,6 +591,44 @@ public class SchemaManagerIT {
 
     assertThat(updatedTemplate.at(replicaSettingPath).asInt()).isEqualTo(5);
     assertThat(updatedTemplate.at(shardsSettingPath).asInt()).isEqualTo(5);
+  }
+
+  @TestTemplate
+  void shouldSchemaStartupWithBreakingIndexTemplatesInitiallyExisting(
+      final ExporterConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+
+    if (config.getConnect().getTypeEnum().equals(DatabaseType.OPENSEARCH)) {
+      // error does not happen with the opensearch client.
+      return;
+    }
+
+    // given
+    // cannot create an erroneous index template state with the java client so must use rest client.
+    try (final RestClient client =
+        RestClient.builder(HttpHost.create(config.getConnect().getUrl())).build()) {
+      final String settingsJson =
+          new String(
+              getClass().getResourceAsStream("/error-causing-settings.json").readAllBytes(),
+              StandardCharsets.UTF_8);
+      // the name must contain list-view as the legacy list-view template is not compatible with the
+      // streamlined SchemaManager
+      final Request request = new Request("PUT", "_index_template/operate-list-view");
+      request.setJsonEntity(settingsJson);
+      final Response response = client.performRequest(request);
+    }
+    searchClientAdapter.refresh();
+
+    // when, then
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    assertThatNoException().isThrownBy(schemaManager::startup);
   }
 
   @RegressionTestTemplate("https://github.com/camunda/camunda/issues/26056")
