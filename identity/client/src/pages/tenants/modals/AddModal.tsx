@@ -12,6 +12,8 @@ import useTranslate from "src/utility/localization";
 import { FormModal, UseModalProps } from "src/components/modal";
 import { createTenant } from "src/utility/api/tenants";
 import { useNotifications } from "src/components/notifications";
+import { Stack } from "@carbon/react";
+import { spacing06 } from "@carbon/elements";
 
 const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("tenants");
@@ -52,28 +54,33 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       confirmLabel={t("Create tenant")}
       onSubmit={handleSubmit}
     >
-      <TextField
-        label={t("Tenant name")}
-        placeholder={t("Enter tenant name")}
-        onChange={setName}
-        value={name}
-        errors={namedErrors?.name}
-        autoFocus
-      />
-      <TextField
-        label={t("Tenant ID")}
-        placeholder={t("Enter tenant ID")}
-        onChange={setTenantId}
-        value={tenantId}
-        errors={namedErrors?.tenantId}
-      />
-      <TextField
-        label={t("Description")}
-        value={description}
-        placeholder={t("Enter a tenant description")}
-        onChange={setDescription}
-        errors={namedErrors?.description}
-      />
+      <Stack orientation="vertical" gap={spacing06}>
+        <TextField
+          label={t("Tenant ID")}
+          placeholder={t("Enter tenant ID")}
+          onChange={setTenantId}
+          value={tenantId}
+          errors={namedErrors?.tenantId}
+          helperText="The tenant ID must be unique and cannot be modified."
+          autoFocus
+        />
+        <TextField
+          label={t("Tenant name")}
+          placeholder={t("Enter tenant name")}
+          onChange={setName}
+          value={name}
+          errors={namedErrors?.name}
+        />
+        <TextField
+          label={t("Description")}
+          value={description}
+          placeholder={t("Enter a tenant description (Max 255 characters)")}
+          onChange={setDescription}
+          errors={namedErrors?.description}
+          cols={2}
+          enableCounter
+        />
+      </Stack>
     </FormModal>
   );
 };

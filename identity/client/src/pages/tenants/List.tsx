@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 import { FC } from "react";
-import { Edit, TrashCan } from "@carbon/react/icons";
+import { TrashCan } from "@carbon/react/icons";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
@@ -18,7 +18,6 @@ import { useNavigate } from "react-router";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "src/pages/tenants/modals/AddModal";
-import EditModal from "src/pages/tenants/modals/EditModal";
 import DeleteModal from "src/pages/tenants/modals/DeleteModal";
 
 const List: FC = () => {
@@ -32,7 +31,6 @@ const List: FC = () => {
   } = useApi(searchTenant);
 
   const [addTenant, addTenantModal] = useModal(AddModal, reload);
-  const [editTenant, editTenantModal] = useEntityModal(EditModal, reload);
   const [deleteTenant, deleteTenantModal] = useEntityModal(DeleteModal, reload);
 
   const showDetails = ({ tenantId }: Tenant) => navigate(`${tenantId}`);
@@ -84,16 +82,6 @@ const List: FC = () => {
         loading={loading}
         menuItems={[
           {
-            label: t("Rename"),
-            icon: Edit,
-            onClick: (tenant) =>
-              editTenant({
-                tenantId: tenant.tenantId,
-                name: tenant.name,
-                description: tenant.description,
-              }),
-          },
-          {
             label: t("Delete"),
             icon: TrashCan,
             isDangerous: true,
@@ -113,7 +101,6 @@ const List: FC = () => {
         />
       )}
       {addTenantModal}
-      {editTenantModal}
       {deleteTenantModal}
     </Page>
   );

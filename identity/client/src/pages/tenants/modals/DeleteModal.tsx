@@ -20,7 +20,7 @@ const DeleteTenantModal: FC<UseEntityModalProps<DeleteTenantParams>> = ({
   onSuccess,
   entity: { tenantId, name },
 }) => {
-  const { t } = useTranslate();
+  const { t, Translate } = useTranslate();
   const { enqueueNotification } = useNotifications();
   const [apiCall, { loading }] = useApiCall(deleteTenant);
 
@@ -42,14 +42,19 @@ const DeleteTenantModal: FC<UseEntityModalProps<DeleteTenantParams>> = ({
   return (
     <Modal
       open={open}
-      headline={t('Are you sure you want to delete the tenant "{{ name }}"?', {
-        name,
-      })}
+      headline={t("Delete tenant")}
       onSubmit={handleSubmit}
       loading={loading}
       loadingDescription={t("Deleting tenant")}
       onClose={onClose}
-    />
+      confirmLabel={t("Delete tenant")}
+    >
+      <p>
+        <Translate>Are you sure you want to delete</Translate>{" "}
+        <strong>{tenantId}</strong>?{" "}
+        <Translate>This action cannot be undone.</Translate>
+      </p>
+    </Modal>
   );
 };
 
