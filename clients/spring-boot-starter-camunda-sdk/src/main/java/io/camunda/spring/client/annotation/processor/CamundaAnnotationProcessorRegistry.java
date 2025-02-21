@@ -80,7 +80,7 @@ public class CamundaAnnotationProcessorRegistry implements BeanPostProcessor, Or
     beans.forEach(
         (beanName, bean) -> {
           final ClassInfo classInfo = ClassInfo.builder().bean(bean).beanName(beanName).build();
-          for (final AbstractCamundaAnnotationProcessor zeebePostProcessor : processors) {
+          for (final AbstractCamundaAnnotationProcessor camundaProcessor : processors) {
             if (zeebePostProcessor.isApplicableFor(classInfo)) {
               LOG.debug(
                   "Configuring bean {} with post processor {}",
