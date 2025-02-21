@@ -7,7 +7,6 @@
  */
 package io.camunda.it.migration;
 
-import static io.camunda.it.migration.util.PrefixMigrationHelper.*;
 import static io.camunda.it.migration.util.PrefixMigrationHelper.ELASTIC_ALIAS;
 import static io.camunda.it.migration.util.PrefixMigrationHelper.GATEWAY_GRPC_PORT;
 import static io.camunda.it.migration.util.PrefixMigrationHelper.MANAGEMENT_PORT;
@@ -79,17 +78,15 @@ public class PrefixMigrationIT {
     return container;
   }
 
-  private void prefixMigration(final String newPrefix) throws IOException {
+  private void prefixMigration() throws IOException {
     final var operate = new OperateProperties();
     final var tasklist = new TasklistProperties();
     final var connect = new ConnectConfiguration();
 
     operate.getElasticsearch().setIndexPrefix(OLD_OPERATE_PREFIX);
     tasklist.getElasticsearch().setIndexPrefix(OLD_TASKLIST_PREFIX);
-    connect.setUrl("http://localhost:" + esContainer.getMappedPort(9200));
-    if (!newPrefix.isBlank()) {
-      connect.setIndexPrefix(newPrefix);
-    }
+    connect.setUrl(esContainer.getHttpHostAddress());
+    connect.setIndexPrefix(NEW_PREFIX);
     PrefixMigrationHelper.runPrefixMigration(operate, tasklist, connect);
   }
 
@@ -114,7 +111,7 @@ public class PrefixMigrationIT {
     camunda87.stop();
 
     // when
-    prefixMigration(NEW_PREFIX);
+    prefixMigration();
 
     // then
     final var currentCamundaClient = startLatestCamunda();
@@ -130,8 +127,8 @@ public class PrefixMigrationIT {
         new TestSimpleCamundaApplication();
     final MultiDbConfigurator multiDbConfigurator =
         new MultiDbConfigurator(testSimpleCamundaApplication);
-    final var esUrl = String.format("http://localhost:%d", esContainer.getMappedPort(9200));
-    multiDbConfigurator.configureElasticsearchSupport(esUrl, NEW_PREFIX);
+    multiDbConfigurator.configureElasticsearchSupport(
+        "http://" + esContainer.getHttpHostAddress(), NEW_PREFIX);
     testSimpleCamundaApplication.withProperty("camunda.tasklist.zeebeElasticsearch.prefix", null);
     testSimpleCamundaApplication.withProperty("camunda.operate.zeebeElasticsearch.prefix", null);
     testSimpleCamundaApplication.start();
