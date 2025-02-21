@@ -18,6 +18,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +32,7 @@ public class SchemaManager {
   private final Collection<IndexTemplateDescriptor> indexTemplateDescriptors;
   private final ExporterConfiguration config;
   private final ObjectMapper objectMapper;
+  private final ExecutorService virtualThreadExecutor;
 
   public SchemaManager(
       final SearchEngineClient searchEngineClient,
@@ -36,6 +40,7 @@ public class SchemaManager {
       final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
       final ExporterConfiguration config,
       final ObjectMapper objectMapper) {
+    virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
     this.searchEngineClient = searchEngineClient;
     this.indexDescriptors = indexDescriptors;
     this.indexTemplateDescriptors = indexTemplateDescriptors;
@@ -132,14 +137,24 @@ public class SchemaManager {
         "Found '{}' existing indices. Create missing index templates based on '{}' descriptors.",
         existingIndexNames.size(),
         indexTemplateDescriptors.size());
-    indexDescriptors.parallelStream()
-        .filter(descriptor -> !existingIndexNames.contains(descriptor.getFullQualifiedName()))
-        .forEach(
-            descriptor -> {
-              LOG.info("Create missing index '{}'", descriptor.getFullQualifiedName());
-              searchEngineClient.createIndex(
-                  descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()));
-            });
+    final var futures =
+        indexDescriptors.stream()
+            .filter(descriptor -> !existingIndexNames.contains(descriptor.getFullQualifiedName()))
+            .map(
+                descriptor ->
+                    // run creation of indices async as virtual thread
+                    CompletableFuture.runAsync(
+                        () -> {
+                          LOG.info("Create missing index '{}'", descriptor.getFullQualifiedName());
+                          searchEngineClient.createIndex(
+                              descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()));
+                        },
+                        virtualThreadExecutor))
+            .toArray(CompletableFuture[]::new);
+
+    // We need to wait for the completion, to make sure all indices has been created successfully
+    // Doing this in parallel is still speeding up the bootstrap time
+    CompletableFuture.allOf(futures).join();
   }
 
   private void initialiseIndexTemplates() {
@@ -158,20 +173,34 @@ public class SchemaManager {
         "Found '{}' existing index templates. Create missing index templates based on '{}' descriptors.",
         existingTemplateNames.size(),
         indexTemplateDescriptors.size());
-    indexTemplateDescriptors.parallelStream()
-        .filter(descriptor -> !existingTemplateNames.contains(descriptor.getTemplateName()))
-        .forEach(
-            descriptor -> {
-              LOG.info("Create missing index template '{}'", descriptor.getTemplateName());
-              searchEngineClient.createIndexTemplate(
-                  descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()), true);
-              LOG.info(
-                  "Create missing index '{}', for template '{}'",
-                  descriptor.getFullQualifiedName(),
-                  descriptor.getTemplateName());
-              searchEngineClient.createIndex(
-                  descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()));
-            });
+    final var futures =
+        indexTemplateDescriptors.stream()
+            .filter(descriptor -> !existingTemplateNames.contains(descriptor.getTemplateName()))
+            .map(
+                descriptor ->
+                    // run creation of indices async as virtual thread
+                    CompletableFuture.runAsync(
+                        () -> {
+                          LOG.info(
+                              "Create missing index template '{}'", descriptor.getTemplateName());
+                          searchEngineClient.createIndexTemplate(
+                              descriptor,
+                              getIndexSettingsFromConfig(descriptor.getIndexName()),
+                              true);
+                          LOG.info(
+                              "Create missing index '{}', for template '{}'",
+                              descriptor.getFullQualifiedName(),
+                              descriptor.getTemplateName());
+                          searchEngineClient.createIndex(
+                              descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()));
+                        },
+                        virtualThreadExecutor))
+            .toArray(CompletableFuture[]::new);
+
+    // We need to wait for the completion, to make sure all indices and templates have been created
+    // successfully
+    // Doing this in parallel is still speeding up the bootstrap time
+    CompletableFuture.allOf(futures).join();
   }
 
   public void updateSchemaMappings(
