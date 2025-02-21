@@ -7,6 +7,14 @@
  */
 package io.atomix.cluster.messaging.impl;
 
+<<<<<<< HEAD
+=======
+import static io.atomix.cluster.messaging.impl.NettyDnsMetricsDoc.*;
+
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Meter.MeterProvider;
+import io.micrometer.core.instrument.MeterRegistry;
+>>>>>>> 07f812b2 (fix: NettyDnsMetrics use a MeterProvider instead of a HashMap to avoid concurrency issues)
 import io.netty.channel.ChannelFuture;
 import io.netty.handler.codec.dns.DnsQuestion;
 import io.netty.handler.codec.dns.DnsResponseCode;
@@ -14,8 +22,13 @@ import io.netty.resolver.dns.DnsQueryLifecycleObserver;
 import io.prometheus.client.Counter;
 import java.net.InetSocketAddress;
 import java.util.List;
+<<<<<<< HEAD
+=======
+import net.jcip.annotations.ThreadSafe;
+>>>>>>> 07f812b2 (fix: NettyDnsMetrics use a MeterProvider instead of a HashMap to avoid concurrency issues)
 
 final class NettyDnsMetrics implements DnsQueryLifecycleObserver {
+<<<<<<< HEAD
   private static final Counter ERROR =
       Counter.build()
           .help("Counts how often DNS queries fail with an error")
@@ -45,6 +58,27 @@ final class NettyDnsMetrics implements DnsQueryLifecycleObserver {
           .subsystem("dns")
           .name("success")
           .register();
+=======
+
+  private final Counter error;
+  private final Counter written;
+  private final Counter succeded;
+
+  /** indexed by {@link DnsResponseCode#intValue()} */
+  private final MeterProvider<Counter> failed;
+
+  NettyDnsMetrics(final MeterRegistry registry) {
+    error = Counter.builder(ERROR.getName()).description(ERROR.getDescription()).register(registry);
+    written =
+        Counter.builder(WRITTEN.getName()).description(WRITTEN.getDescription()).register(registry);
+    succeded =
+        Counter.builder(SUCCESS.getName()).description(SUCCESS.getDescription()).register(registry);
+    failed =
+        Counter.builder(FAILED.getName())
+            .description(FAILED.getDescription())
+            .withRegistry(registry);
+  }
+>>>>>>> 07f812b2 (fix: NettyDnsMetrics use a MeterProvider instead of a HashMap to avoid concurrency issues)
 
   @Override
   public void queryWritten(final InetSocketAddress dnsServerAddress, final ChannelFuture future) {
@@ -66,7 +100,11 @@ final class NettyDnsMetrics implements DnsQueryLifecycleObserver {
 
   @Override
   public DnsQueryLifecycleObserver queryNoAnswer(final DnsResponseCode code) {
+<<<<<<< HEAD
     FAILED.labels(code.toString()).inc();
+=======
+    failed.withTag(NettyDnsKeyName.CODE.asString(), code.toString()).increment();
+>>>>>>> 07f812b2 (fix: NettyDnsMetrics use a MeterProvider instead of a HashMap to avoid concurrency issues)
     return this;
   }
 
@@ -77,6 +115,10 @@ final class NettyDnsMetrics implements DnsQueryLifecycleObserver {
 
   @Override
   public void querySucceed() {
+<<<<<<< HEAD
     SUCCESS.inc();
+=======
+    succeded.increment();
+>>>>>>> 07f812b2 (fix: NettyDnsMetrics use a MeterProvider instead of a HashMap to avoid concurrency issues)
   }
 }
