@@ -584,7 +584,7 @@ public class ProcessDefinitionQueryTest {
                       .join();
 
               assertThat(resultForm.getFormId().equals("test"));
-              assertEquals(2L,resultForm.getVersion());
+              assertEquals(2L, resultForm.getVersion());
             });
   }
 }
