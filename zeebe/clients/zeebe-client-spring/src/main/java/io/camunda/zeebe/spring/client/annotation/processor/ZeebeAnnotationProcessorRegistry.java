@@ -19,7 +19,11 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.spring.client.bean.ClassInfo;
 import io.camunda.zeebe.spring.client.configuration.AnnotationProcessorConfiguration;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -34,8 +38,8 @@ import org.springframework.core.Ordered;
 public class ZeebeAnnotationProcessorRegistry implements BeanPostProcessor, Ordered {
   private static final Logger LOG = LoggerFactory.getLogger(ZeebeAnnotationProcessorRegistry.class);
 
-  private final List<AbstractZeebeAnnotationProcessor> processors = new ArrayList<>();
-  private final List<ClassInfo> beans = new ArrayList<>();
+  private final Set<AbstractZeebeAnnotationProcessor> processors = new HashSet<>();
+  private final Map<String, Object> beans = new HashMap<>();
 
   @Override
   public Object postProcessAfterInitialization(final Object bean, final String beanName)
@@ -44,7 +48,7 @@ public class ZeebeAnnotationProcessorRegistry implements BeanPostProcessor, Orde
       LOG.debug("Found processor: {}", beanName);
       processors.add(processor);
     } else {
-      beans.add(ClassInfo.builder().bean(bean).beanName(beanName).build());
+      beans.put(beanName, bean);
     }
     return bean;
   }
@@ -65,14 +69,15 @@ public class ZeebeAnnotationProcessorRegistry implements BeanPostProcessor, Orde
 
   private void processBeans() {
     beans.forEach(
-        bean -> {
+        (beanName, bean) -> {
+          final ClassInfo classInfo = ClassInfo.builder().bean(bean).beanName(beanName).build();
           for (final AbstractZeebeAnnotationProcessor zeebePostProcessor : processors) {
-            if (zeebePostProcessor.isApplicableFor(bean)) {
+            if (zeebePostProcessor.isApplicableFor(classInfo)) {
               LOG.debug(
                   "Configuring bean {} with post processor {}",
-                  bean,
+                  beanName,
                   zeebePostProcessor.getBeanName());
-              zeebePostProcessor.configureFor(bean);
+              zeebePostProcessor.configureFor(classInfo);
             }
           }
         });
