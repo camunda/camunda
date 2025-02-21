@@ -83,7 +83,7 @@ public class AuthorizationServices
 
   public List<String> getAuthorizedApplications(final Set<String> ownerIds) {
     return getAuthorizedResources(
-        ownerIds, PermissionType.READ, AuthorizationResourceType.APPLICATION);
+        ownerIds, PermissionType.ACCESS, AuthorizationResourceType.APPLICATION);
   }
 
   public Set<String> fetchAssignedPermissions(
