@@ -92,10 +92,7 @@ public class SchemaManager {
             .getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX_TEMPLATE)
             .keySet();
 
-    final var existingIndexNames =
-        allIndexNames().isBlank()
-            ? Set.of()
-            : searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet();
+    final var existingIndexNames = existingIndexNames();
 
     indexTemplateDescriptors.stream()
         .filter(desc -> existingTemplateNames.contains(desc.getTemplateName()))
@@ -166,6 +163,8 @@ public class SchemaManager {
       LOG.info("Do not create any index templates, as descriptors are missing");
       return;
     }
+
+    final var existingIndexNames = existingIndexNames();
 
     final var existingTemplateNames =
         Collections.synchronizedSet(
@@ -325,6 +324,12 @@ public class SchemaManager {
         indexTemplateDescriptors.stream()
             .map(IndexDescriptor.class::cast)
             .collect(Collectors.toSet()));
+  }
+
+  private Set<String> existingIndexNames() {
+    return allIndexNames().isBlank()
+        ? Set.of()
+        : searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet();
   }
 
   private String allIndexNames() {
