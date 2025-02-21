@@ -18,6 +18,7 @@ import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
@@ -97,9 +98,15 @@ public class CamundaMultiDBExtension
   private String testPrefix;
   private final MultiDbConfigurator multiDbConfigurator;
   private MultiDbSetupHelper setupHelper = new NoopDBSetupHelper();
+  private Consumer<TestStandaloneApplication<?>> configure;
 
   public CamundaMultiDBExtension() {
+    this((Consumer<TestStandaloneApplication<?>>) null);
+  }
+
+  public CamundaMultiDBExtension(final Consumer<TestStandaloneApplication<?>> configure) {
     this(new TestStandaloneBroker());
+    this.configure = configure;
     closeables.add(testApplication);
     testApplication
         .withBrokerConfig(cfg -> cfg.getGateway().setEnable(true))
@@ -107,9 +114,16 @@ public class CamundaMultiDBExtension
             "recordingExporter", cfg -> cfg.setClassName(RecordingExporter.class.getName()));
   }
 
-  public CamundaMultiDBExtension(final TestStandaloneApplication testApplication) {
+  public CamundaMultiDBExtension(final TestStandaloneApplication<?> testApplication) {
+    this(testApplication, null);
+  }
+
+  public CamundaMultiDBExtension(
+      final TestStandaloneApplication<?> testApplication,
+      final Consumer<TestStandaloneApplication<?>> configure) {
     this.testApplication = testApplication;
     multiDbConfigurator = new MultiDbConfigurator(testApplication);
+    this.configure = configure;
     // resolve active database and exporter type
     final String property = System.getProperty(PROP_CAMUNDA_IT_DATABASE_TYPE);
     databaseType =
@@ -152,6 +166,9 @@ public class CamundaMultiDBExtension
         .timeout(TIMEOUT_DATABASE_READINESS)
         .until(setupHelper::validateConnection);
 
+    if (configure != null) {
+      configure.accept(testApplication);
+    }
     testApplication.start();
     testApplication.awaitCompleteTopology();
 
@@ -205,7 +222,7 @@ public class CamundaMultiDBExtension
     return createCamundaClient();
   }
 
-  private CamundaClient createCamundaClient() {
+  public CamundaClient createCamundaClient() {
     final CamundaClient camundaClient = testApplication.newClientBuilder().build();
     closeables.add(camundaClient);
     return camundaClient;
