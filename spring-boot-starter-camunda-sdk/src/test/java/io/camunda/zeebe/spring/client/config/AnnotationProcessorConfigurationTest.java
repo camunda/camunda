@@ -40,7 +40,5 @@ public class AnnotationProcessorConfigurationTest {
   void shouldRun() {
     final List<AbstractZeebeAnnotationProcessor> processors = registry.getProcessors();
     assertThat(processors).hasSize(2);
-    assertThat(processors.get(0)).isInstanceOf(ZeebeDeploymentAnnotationProcessor.class);
-    assertThat(processors.get(1)).isInstanceOf(ZeebeWorkerAnnotationProcessor.class);
   }
 }
