@@ -24,6 +24,7 @@ import io.camunda.db.rdbms.read.service.UserReader;
 import io.camunda.db.rdbms.read.service.UserTaskReader;
 import io.camunda.db.rdbms.read.service.VariableReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 
 /** A holder for all rdbms services */
@@ -148,11 +149,11 @@ public class RdbmsService {
     return mappingReader;
   }
 
-  public RdbmsWriter createWriter(final long partitionId) {
-    return rdbmsWriterFactory.createWriter(partitionId, -1);
+  public RdbmsWriter createWriter(final long partitionId) { // todo fix in all itests afterwards?
+    return createWriter(new RdbmsWriterConfig.Builder().partitionId((int) partitionId).build());
   }
 
-  public RdbmsWriter createWriter(final long partitionId, final int queueSize) {
-    return rdbmsWriterFactory.createWriter(partitionId, queueSize);
+  public RdbmsWriter createWriter(final RdbmsWriterConfig config) {
+    return rdbmsWriterFactory.createWriter(config);
   }
 }

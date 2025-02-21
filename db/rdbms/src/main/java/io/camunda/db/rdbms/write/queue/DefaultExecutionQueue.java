@@ -82,7 +82,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
   public int flush() {
     synchronized (queue) {
       if (queue.isEmpty()) {
-        LOG.debug(
+        LOG.trace(
             "[RDBMS ExecutionQueue, Partition {}] Skip Flushing because execution queue is empty",
             partitionId);
         return 0;
