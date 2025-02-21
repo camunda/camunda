@@ -1,0 +1,42 @@
+{
+  "index_patterns": [
+    "zeebe-record_ad-hoc-subprocess-activity-activation_*"
+  ],
+  "composed_of": [
+    "zeebe-record"
+  ],
+  "priority": 20,
+  "version": 1,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.queries.cache.enabled": false
+    },
+    "aliases": {
+      "zeebe-record-process-instance-modification": {}
+    },
+    "mappings": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "adHocSubProcessInstanceKey": {
+              "type": "keyword"
+            },
+            "flowNodes": {
+              "properties": {
+                "flowNodeId": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "tenantId": {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    }
+  }
+}
