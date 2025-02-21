@@ -788,6 +788,7 @@
         #     userTask: true
         #     variable: true
         #     variableDocument: true
+        #     adHocSubProcessActivityActivation: true
         #
         #   retention:
         #     enabled: false
