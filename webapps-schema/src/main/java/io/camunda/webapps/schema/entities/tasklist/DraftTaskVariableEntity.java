@@ -7,16 +7,42 @@
  */
 package io.camunda.webapps.schema.entities.tasklist;
 
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
 /** Represents draft variable with its value when task is in created state. */
-public class DraftTaskVariableEntity extends TasklistEntity<DraftTaskVariableEntity> {
+public class DraftTaskVariableEntity
+    implements ExporterEntity<DraftTaskVariableEntity>, TenantOwned {
 
+  private String id;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
   private String taskId;
   private String name;
   private String value;
   private String fullValue;
   private boolean isPreview;
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public DraftTaskVariableEntity setId(final String id) {
+    this.id = id;
+    return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public DraftTaskVariableEntity setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
 
   public String getTaskId() {
     return taskId;
@@ -65,7 +91,7 @@ public class DraftTaskVariableEntity extends TasklistEntity<DraftTaskVariableEnt
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), taskId, name, value, fullValue, isPreview);
+    return Objects.hash(id, taskId, name, value, fullValue, isPreview);
   }
 
   @Override
@@ -76,11 +102,9 @@ public class DraftTaskVariableEntity extends TasklistEntity<DraftTaskVariableEnt
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
     final DraftTaskVariableEntity that = (DraftTaskVariableEntity) o;
-    return isPreview == that.isPreview
+    return Objects.equals(id, that.id)
+        && isPreview == that.isPreview
         && Objects.equals(taskId, that.taskId)
         && Objects.equals(name, that.name)
         && Objects.equals(value, that.value)
