@@ -21,11 +21,15 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.agrona.LangUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SchemaManager {
+
+  public static final int INDEX_CREATION_TIMEOUT_SECONDS = 60;
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManager.class);
   private final SearchEngineClient searchEngineClient;
   private final Collection<IndexDescriptor> indexDescriptors;
@@ -154,7 +158,7 @@ public class SchemaManager {
 
     // We need to wait for the completion, to make sure all indices has been created successfully
     // Doing this in parallel is still speeding up the bootstrap time
-    CompletableFuture.allOf(futures).join();
+    joinOnFutures(futures);
   }
 
   private void initialiseIndexTemplates() {
@@ -200,7 +204,23 @@ public class SchemaManager {
     // We need to wait for the completion, to make sure all indices and templates have been created
     // successfully
     // Doing this in parallel is still speeding up the bootstrap time
-    CompletableFuture.allOf(futures).join();
+    joinOnFutures(futures);
+  }
+
+  /**
+   * Join on given futures with {@link SchemaManager#INDEX_CREATION_TIMEOUT_SECONDS} as timeout.
+   *
+   * <p>All exceptions, including timeout exception, are rethrown as unchecked exception. To reduce
+   * boilerplate (exception handling), but make sure startup fails.
+   *
+   * @param futures futures that be joined on
+   */
+  private void joinOnFutures(final CompletableFuture<?>[] futures) {
+    try {
+      CompletableFuture.allOf(futures).get(INDEX_CREATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    } catch (final Exception e) {
+      LangUtil.rethrowUnchecked(e);
+    }
   }
 
   public void updateSchemaMappings(
