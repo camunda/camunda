@@ -1,0 +1,13 @@
+# This is a comment.
+# Each line is a file pattern followed by one or more owners.
+
+# These owners will be the default owners for everything in
+# the repo. Unless a later match takes precedence,
+# @global-owner1 and @global-owner2 will be requested for
+# review when someone opens a pull request.
+#
+# If you'd like to be added as an owner, don't hesitate to reach out to one of the existing ones.
+
+# Testing guide
+testing.md       @npepinpe @ChrisKujawa
+assets/testing*  @npepinpe @ChrisKujawa
