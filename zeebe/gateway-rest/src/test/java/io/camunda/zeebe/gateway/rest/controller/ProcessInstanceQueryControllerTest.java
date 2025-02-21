@@ -34,6 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -537,41 +538,40 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .search(new ProcessInstanceQuery.Builder().filter(filter).build());
   }
 
-  @Test
-  void shouldSearchProcessInstancesByState() {
-    for (var state : ProcessInstanceStateEnum.values()) {
-      // given
-      final var request =
-          """
-              {
-                  "filter": {"state": "%s"}
-              }"""
-              .formatted(state);
-      System.out.println("request = " + request);
-      final ProcessInstanceFilter filter =
-          new ProcessInstanceFilter.Builder()
-              .states(ProcessInstanceStateUtil.toInternalStateAsString(state))
-              .build();
+  @ParameterizedTest
+  @EnumSource(ProcessInstanceStateEnum.class)
+  void shouldSearchProcessInstancesByState(ProcessInstanceStateEnum state) {
+    // given
+    final var request =
+        """
+            {
+                "filter": {"state": "%s"}
+            }"""
+            .formatted(state);
+    System.out.println("request = " + request);
+    final ProcessInstanceFilter filter =
+        new ProcessInstanceFilter.Builder()
+            .states(ProcessInstanceStateUtil.toInternalStateAsString(state))
+            .build();
 
-      // when
-      when(processInstanceServices.search(queryCaptor.capture())).thenReturn(SEARCH_QUERY_RESULT);
-      webClient
-          .post()
-          .uri(PROCESS_INSTANCES_SEARCH_URL)
-          .accept(MediaType.APPLICATION_JSON)
-          .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(request)
-          .exchange()
-          .expectStatus()
-          .isOk()
-          .expectHeader()
-          .contentType(MediaType.APPLICATION_JSON)
-          .expectBody()
-          .json(EXPECTED_SEARCH_RESPONSE);
+    // when
+    when(processInstanceServices.search(queryCaptor.capture())).thenReturn(SEARCH_QUERY_RESULT);
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
 
-      // then
-      verify(processInstanceServices)
-          .search(new ProcessInstanceQuery.Builder().filter(filter).build());
-    }
+    // then
+    verify(processInstanceServices)
+        .search(new ProcessInstanceQuery.Builder().filter(filter).build());
   }
 }
