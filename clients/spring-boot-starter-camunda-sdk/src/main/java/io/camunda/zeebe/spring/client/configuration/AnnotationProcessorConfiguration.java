@@ -16,7 +16,6 @@
 package io.camunda.zeebe.spring.client.configuration;
 
 import io.camunda.zeebe.spring.client.annotation.customizer.ZeebeWorkerValueCustomizer;
-import io.camunda.zeebe.spring.client.annotation.processor.AbstractZeebeAnnotationProcessor;
 import io.camunda.zeebe.spring.client.annotation.processor.ZeebeAnnotationProcessorRegistry;
 import io.camunda.zeebe.spring.client.annotation.processor.ZeebeDeploymentAnnotationProcessor;
 import io.camunda.zeebe.spring.client.annotation.processor.ZeebeWorkerAnnotationProcessor;
@@ -28,9 +27,8 @@ import org.springframework.context.annotation.Bean;
 public class AnnotationProcessorConfiguration {
 
   @Bean
-  public ZeebeAnnotationProcessorRegistry zeebeAnnotationProcessorRegistry(
-      final List<AbstractZeebeAnnotationProcessor> processors) {
-    return new ZeebeAnnotationProcessorRegistry(processors);
+  public static ZeebeAnnotationProcessorRegistry zeebeAnnotationProcessorRegistry() {
+    return new ZeebeAnnotationProcessorRegistry();
   }
 
   @Bean
