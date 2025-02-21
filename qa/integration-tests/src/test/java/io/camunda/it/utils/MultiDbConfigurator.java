@@ -94,6 +94,7 @@ public class MultiDbConfigurator {
     final Map<String, Object> opensearchProperties = new HashMap<>();
 
     /* Tasklist */
+    opensearchProperties.put("camunda.tasklist.database", "opensearch");
     opensearchProperties.put("camunda.tasklist.opensearch.url", opensearchUrl);
     opensearchProperties.put("camunda.tasklist.zeebeOpensearch.url", opensearchUrl);
     opensearchProperties.put("camunda.tasklist.opensearch.indexPrefix", indexPrefix);
@@ -102,6 +103,7 @@ public class MultiDbConfigurator {
     opensearchProperties.put("camunda.tasklist.opensearch.password", userPassword);
 
     /* Operate */
+    opensearchProperties.put("camunda.operate.database", "opensearch");
     opensearchProperties.put("camunda.operate.opensearch.url", opensearchUrl);
     opensearchProperties.put("camunda.operate.zeebeOpensearch.url", opensearchUrl);
     opensearchProperties.put("camunda.operate.opensearch.indexPrefix", indexPrefix);
@@ -112,8 +114,6 @@ public class MultiDbConfigurator {
     /* Camunda */
     opensearchProperties.put(
         "camunda.database.type", io.camunda.search.connect.configuration.DatabaseType.OPENSEARCH);
-    opensearchProperties.put("camunda.operate.database", "opensearch");
-    opensearchProperties.put("camunda.tasklist.database", "opensearch");
     opensearchProperties.put("camunda.database.indexPrefix", indexPrefix);
     opensearchProperties.put("camunda.database.username", userName);
     opensearchProperties.put("camunda.database.password", userPassword);
@@ -160,15 +160,6 @@ public class MultiDbConfigurator {
                   "authentication",
                   Map.of("username", userName, "password", userPassword)));
         });
-
-    testApplication.withProperty(
-        "camunda.database.type", io.camunda.search.connect.configuration.DatabaseType.OPENSEARCH);
-    testApplication.withProperty("camunda.operate.database", "opensearch");
-    testApplication.withProperty("camunda.tasklist.database", "opensearch");
-    testApplication.withProperty("camunda.database.indexPrefix", indexPrefix);
-    testApplication.withProperty("camunda.database.username", userName);
-    testApplication.withProperty("camunda.database.password", userPassword);
-    testApplication.withProperty("camunda.database.url", opensearchUrl);
   }
 
   public void configureRDBMSSupport() {
@@ -187,13 +178,5 @@ public class MultiDbConfigurator {
           cfg.setClassName("-");
           cfg.setArgs(Map.of("flushInterval", "0"));
         });
-  }
-
-  public OperateProperties getOperateProperties() {
-    return operateProperties;
-  }
-
-  public TasklistProperties getTasklistProperties() {
-    return tasklistProperties;
   }
 }
