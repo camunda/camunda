@@ -17,7 +17,8 @@ import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices;
 import java.util.Objects;
-import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -53,10 +54,14 @@ public class CamundaUserDetailsService implements UserDetailsService {
 
     final Long userKey = storedUser.userKey();
 
-    final var authorizedApplications =
-        authorizationServices.getAuthorizedApplications(Set.of(storedUser.username()));
-
     final var roles = roleServices.findAll(RoleQuery.of(q -> q.filter(f -> f.memberKey(userKey))));
+
+    final var authorizedApplications =
+        authorizationServices.getAuthorizedApplications(
+            Stream.concat(
+                    roles.stream().map(r -> r.roleKey().toString()),
+                    Stream.of(storedUser.username()))
+                .collect(Collectors.toSet()));
 
     final var tenants =
         tenantServices.getTenantsByMemberKey(userKey).stream()
