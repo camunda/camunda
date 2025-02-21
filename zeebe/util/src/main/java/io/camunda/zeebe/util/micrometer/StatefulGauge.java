@@ -14,14 +14,12 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Measurement;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Statistic;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.noop.NoopGauge;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.util.Collections;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
@@ -79,7 +77,7 @@ public sealed class StatefulGauge extends AbstractMeter {
 
   @Override
   public Iterable<Measurement> measure() {
-    return Collections.singletonList(new Measurement(this::value, Statistic.VALUE));
+    return delegate.measure();
   }
 
   public void set(final long value) {
