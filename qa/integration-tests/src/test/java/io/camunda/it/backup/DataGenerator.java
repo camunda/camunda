@@ -107,35 +107,22 @@ public class DataGenerator implements AutoCloseable {
         instanceKeys.size(),
         jobType,
         instanceKeys);
-    final var worker =
+    final var activateJobsResponse =
         camundaClient
-            .newWorker()
+            .newActivateJobsCommand()
             .jobType(jobType)
-            .handler(
-                (jobClient, job) -> {
-                  LOGGER.debug(
-                      "Completing job {} of process {}", job.getKey(), job.getProcessInstanceKey());
-                  jobClient
-                      .newCompleteCommand(job.getKey())
-                      .variable(varName, job.getKey())
-                      .send()
-                      .join();
-                  completedJobs.put(job.getProcessInstanceKey(), job);
-                })
-            .timeout(timeout.toSeconds())
-            .name("completeTask")
-            .open();
-    try {
-      Awaitility.await("until all jobs have been completed")
-          .atMost(timeout)
-          .untilAsserted(() -> assertThat(completedJobs).hasSize(instanceKeys.size()));
-    } finally {
-      worker.close();
-      // this is needed otherwise there is a risk that the worker may receive some new
-      // processInstances
-      // even though it was already closed, but was still polling
-      Awaitility.await("worker has stopped polling").atMost(timeout).until(worker::isClosed);
-    }
+            .maxJobsToActivate(instanceKeys.size())
+            .send()
+            .join();
+    activateJobsResponse
+        .getJobs()
+        .forEach(
+            job ->
+                camundaClient
+                    .newCompleteCommand(job.getKey())
+                    .variable(varName, job.getKey())
+                    .send()
+                    .join());
   }
 
   private void completeUserTasks() {
