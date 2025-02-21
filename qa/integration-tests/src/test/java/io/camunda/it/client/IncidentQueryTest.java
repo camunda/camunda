@@ -82,7 +82,7 @@ class IncidentQueryTest {
 
     // then
     assertThat(result).isNotNull();
-    assertThat(result.getIncidentKey()).isEqualTo(incidentKey);
+    assertThat(result).isEqualTo(incident);
   }
 
   @Test
