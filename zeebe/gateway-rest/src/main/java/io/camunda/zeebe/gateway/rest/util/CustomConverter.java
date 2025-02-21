@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.rest.util;
 
 public interface CustomConverter<T> {
 
-  boolean canConvert(Object value);
+  boolean canConvert(final Object value);
 
   T convertValue(final Object value);
 }
