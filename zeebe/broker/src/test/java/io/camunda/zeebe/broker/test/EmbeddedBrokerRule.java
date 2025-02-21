@@ -33,6 +33,9 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.util.NetUtil;
 import java.io.File;
 import java.io.IOException;
@@ -77,6 +80,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
   private File brokerBase;
   private String dataDirectory;
   private SystemContext systemContext;
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @SafeVarargs
   public EmbeddedBrokerRule(final Consumer<BrokerCfg>... configurators) {
@@ -156,6 +160,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
       } catch (final IOException e) {
         LOG.error("Unexpected error on deleting data.", e);
       }
+      MicrometerUtil.closeRegistry(meterRegistry);
 
       controlledActorClock.reset();
     }
@@ -225,7 +230,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     }
 
     final var scheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg, controlledActorClock);
-    atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg);
+    atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg, meterRegistry);
     systemContext =
         new SystemContext(
             brokerCfg,
@@ -305,6 +310,10 @@ public final class EmbeddedBrokerRule extends ExternalResource {
         deleteSnapshots(stateDirectory);
       }
     }
+  }
+
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
   }
 
   private static class LeaderPartitionListener implements PartitionListener {

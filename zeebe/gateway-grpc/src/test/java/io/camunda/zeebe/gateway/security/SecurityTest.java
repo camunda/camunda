@@ -25,7 +25,10 @@ import io.camunda.zeebe.gateway.impl.stream.JobStreamClientImpl;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.File;
@@ -35,6 +38,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+@AutoCloseResources
 final class SecurityTest {
   private SelfSignedCertificate certificate;
   private Gateway gateway;
@@ -43,6 +47,7 @@ final class SecurityTest {
   private BrokerClient brokerClient;
   private JobStreamClient jobStreamClient;
   private BrokerTopologyManagerImpl topologyManager;
+  @AutoCloseResource private MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @BeforeEach
   void beforeEach() throws Exception {
@@ -158,7 +163,7 @@ final class SecurityTest {
   private Gateway buildGateway(final GatewayCfg gatewayCfg) {
     final var clusterAddress = SocketUtil.getNextAddress();
     atomix =
-        AtomixCluster.builder()
+        AtomixCluster.builder(meterRegistry)
             .withAddress(Address.from(clusterAddress.getHostName(), clusterAddress.getPort()))
             .build();
     actorScheduler = ActorScheduler.newActorScheduler().build();
@@ -166,7 +171,7 @@ final class SecurityTest {
     topologyManager =
         new BrokerTopologyManagerImpl(
             () -> atomix.getMembershipService().getMembers(),
-            new BrokerClientTopologyMetrics(new SimpleMeterRegistry()));
+            new BrokerClientTopologyMetrics(meterRegistry));
     actorScheduler.submitActor(topologyManager).join();
 
     brokerClient =
@@ -176,7 +181,7 @@ final class SecurityTest {
             atomix.getEventService(),
             actorScheduler,
             topologyManager,
-            new BrokerClientRequestMetrics(new SimpleMeterRegistry()));
+            new BrokerClientRequestMetrics(meterRegistry));
     jobStreamClient = new JobStreamClientImpl(actorScheduler, atomix.getCommunicationService());
     jobStreamClient.start().join();
 
@@ -186,10 +191,6 @@ final class SecurityTest {
     topologyManager.addTopologyListener(jobStreamClient);
     atomix.getMembershipService().addListener(topologyManager);
     return new Gateway(
-        gatewayCfg,
-        brokerClient,
-        actorScheduler,
-        jobStreamClient.streamer(),
-        new SimpleMeterRegistry());
+        gatewayCfg, brokerClient, actorScheduler, jobStreamClient.streamer(), meterRegistry);
   }
 }

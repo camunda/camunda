@@ -20,6 +20,8 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.transport.stream.api.ClientStream;
@@ -36,6 +38,8 @@ import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
 import io.camunda.zeebe.transport.stream.api.StreamResponseException;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -56,6 +60,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /** Tests end-to-end stream management from client to server */
+@AutoCloseResources
 final class StreamIntegrationTest {
   private final ActorScheduler actorScheduler =
       ActorScheduler.newActorScheduler()
@@ -64,16 +69,15 @@ final class StreamIntegrationTest {
           .build();
   private final List<Node> clusterNodes =
       List.of(createNode("server1"), createNode("server2"), createNode("client"));
+  private final TestSerializableData metadata = new TestSerializableData(1);
+  private ClientStreamer<TestSerializableData> clientStreamer;
+  @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final TestServer server1 =
       new TestServer(createClusterNode(clusterNodes.get(0), clusterNodes));
   private final TestServer server2 =
       new TestServer(createClusterNode(clusterNodes.get(1), clusterNodes));
   private final TestClient client =
       new TestClient(createClusterNode(clusterNodes.get(2), clusterNodes));
-
-  private final TestSerializableData metadata = new TestSerializableData(1);
-
-  private ClientStreamer<TestSerializableData> clientStreamer;
 
   @BeforeEach
   void setup() {
@@ -199,7 +203,7 @@ final class StreamIntegrationTest {
   }
 
   private AtomixCluster createClusterNode(final Node localNode, final Collection<Node> nodes) {
-    return AtomixCluster.builder()
+    return AtomixCluster.builder(meterRegistry)
         .withAddress(localNode.address())
         .withMemberId(localNode.id().id())
         .withMembershipProvider(new BootstrapDiscoveryProvider(nodes))

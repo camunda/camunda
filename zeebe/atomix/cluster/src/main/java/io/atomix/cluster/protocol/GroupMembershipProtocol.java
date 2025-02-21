@@ -23,6 +23,7 @@ import io.atomix.cluster.discovery.NodeDiscoveryService;
 import io.atomix.utils.NamedType;
 import io.atomix.utils.config.Configured;
 import io.atomix.utils.event.ListenerService;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -74,6 +75,6 @@ public interface GroupMembershipProtocol
      * @param config the protocol configuration
      * @return the protocol instance
      */
-    GroupMembershipProtocol newProtocol(C config);
+    GroupMembershipProtocol newProtocol(C config, final MeterRegistry registry);
   }
 }
