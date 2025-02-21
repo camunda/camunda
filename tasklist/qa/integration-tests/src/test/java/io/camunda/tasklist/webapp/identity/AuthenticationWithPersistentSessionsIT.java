@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.tasklist.util.apps.identity.AuthIdentityApplication;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
@@ -60,6 +61,8 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   @Autowired private TestRestTemplate testRestTemplate;
 
   @MockBean private IdentityService identityService;
+
+  @MockBean private CamundaUserService camundaUserService;
 
   @Test
   public void testAccessNoPermission() {

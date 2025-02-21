@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
+import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
@@ -48,6 +49,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 public class JwtAuthenticationIT {
 
   @MockBean JwtDecoder jwtDecoder;
+  @MockBean CamundaUserService camundaUserService;
   @Autowired private TestRestTemplate testRestTemplate;
 
   @Test
