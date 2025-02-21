@@ -251,6 +251,29 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
+  @Override
+  public void removeBreakingIndexTemplates(
+      final Collection<IndexTemplateDescriptor> indexTemplateDescriptors) {
+    final var breakingIndexTemplates =
+        indexTemplateDescriptors.stream()
+            .map(IndexTemplateDescriptor::getTemplateName)
+            .filter(templateName -> templateName.contains("list-view"))
+            .toList();
+
+    try {
+      for (final var templateName : breakingIndexTemplates) {
+        if (client.indices().existsIndexTemplate(r -> r.name(templateName)).value()) {
+          client.indices().deleteIndexTemplate(r -> r.name(breakingIndexTemplates));
+        }
+      }
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException(
+          String.format(
+              "Failed to delete breaking legacy index templates %s", breakingIndexTemplates),
+          e);
+    }
+  }
+
   private SearchRequest allImportPositionDocuments(
       final int partitionId, final List<IndexDescriptor> importPositionIndices) {
     final var importPositionIndicesNames =

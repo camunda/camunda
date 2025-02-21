@@ -47,4 +47,6 @@ public interface SearchEngineClient {
 
   void updateIndexTemplateSettings(
       final IndexTemplateDescriptor indexTemplateDescriptor, final IndexSettings currentSettings);
+
+  void removeBreakingIndexTemplates(Collection<IndexTemplateDescriptor> indexTemplateDescriptors);
 }

@@ -49,6 +49,10 @@ public class SchemaManager {
       return;
     }
     LOG.info("Schema creation is enabled. Start Schema management.");
+
+    // remove legacy index template which is not compatible with current schema manager
+    searchEngineClient.removeBreakingIndexTemplates(indexTemplateDescriptors);
+
     final var schemaValidator = new IndexSchemaValidator(objectMapper);
     final var newIndexProperties = validateIndices(schemaValidator);
     final var newIndexTemplateProperties = validateIndexTemplates(schemaValidator);
@@ -77,23 +81,16 @@ public class SchemaManager {
   }
 
   private void updateSchemaSettings() {
-    final var existingTemplateNames =
-        searchEngineClient
-            .getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX_TEMPLATE)
-            .keySet();
-
     final var existingIndexNames =
         allIndexNames().isBlank()
             ? Set.of()
             : searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet();
 
-    indexTemplateDescriptors.stream()
-        .filter(desc -> existingTemplateNames.contains(desc.getTemplateName()))
-        .forEach(
-            desc -> {
-              searchEngineClient.updateIndexTemplateSettings(
-                  desc, getIndexSettingsFromConfig(desc.getIndexName()));
-            });
+    indexTemplateDescriptors.forEach(
+        desc -> {
+          searchEngineClient.createIndexTemplate(
+              desc, getIndexSettingsFromConfig(desc.getIndexName()), false);
+        });
 
     // update matching index for the index template descriptor
     indexTemplateDescriptors.stream()
