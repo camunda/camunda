@@ -24,7 +24,7 @@ import {
 import AuthorizationList from "./AuthorizationsList";
 
 const List: FC = () => {
-  const { t, Translate } = useTranslate("authorizations");
+  const { t } = useTranslate("authorizations");
   const [activeTab, setActiveTab] = useState<string>(ResourceType.APPLICATION);
   const { data, loading, reload, success } = useApi(searchAuthorization, {
     filter: { resourceType: activeTab },
@@ -39,16 +39,14 @@ const List: FC = () => {
         linkText="authorizations"
         linkUrl="/concepts/authorizations/"
       />
-      <TabsTitle>
-        <Translate>Resource type</Translate>
-      </TabsTitle>
+      <TabsTitle>{t("resourceType")}</TabsTitle>
       <TabsContainer>
         <TabsVertical
           onChange={(tab: { selectedIndex: number }) => {
             setActiveTab(authorizationTabs[tab.selectedIndex]);
           }}
         >
-          <CustomTabListVertical aria-label="Authorization type">
+          <CustomTabListVertical aria-label={t("authorizationType")}>
             {authorizationTabs.map((tab) => (
               <Tab key={tab}>{t(tab)}</Tab>
             ))}
@@ -69,8 +67,8 @@ const List: FC = () => {
       </TabsContainer>
       {!loading && !success && (
         <TranslatedErrorInlineNotification
-          title={t("The list of authorizations could not be loaded.")}
-          actionButton={{ label: t("Retry"), onClick: reload }}
+          title={t("authorizationLoadError")}
+          actionButton={{ label: t("retry"), onClick: reload }}
         />
       )}
     </Page>

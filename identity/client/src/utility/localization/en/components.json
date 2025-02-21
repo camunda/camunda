@@ -1,5 +1,21 @@
 {
   "Users": "Users",
   "Groups": "Groups",
-  "Roles": "Roles"
+  "Roles": "Roles",
+  "Tenants": "Tenants",
+  "Mappings": "Mappings",
+  "Authorizations": "Authorizations",
+  "unauthorized": "Unauthorized",
+  "sessionExpired": "Looks like your session has expired",
+  "forbidden": "Forbidden",
+  "accessDenied": "You don't have access to perform this operation on given resource",
+  "notFound": "Not found",
+  "entityNotFound": "The requested entity has not been found",
+  "errorOccurred": "An error occurred",
+  "tryAgainLater": "Please try again later",
+  "moreInfo": "For more information, see documentation on <1>{{linkText}}</1>",
+  "loading": "Loading",
+  "close": "Close",
+  "cancel": "Cancel",
+  "delete": "Delete"
 }

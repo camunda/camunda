@@ -25,7 +25,7 @@ const DeleteAuthorizationModal: FC<UseEntityModalProps<Authorization>> = ({
   onSuccess,
   entity: { authorizationKey, ownerId, ownerType, resourceId, permissionTypes },
 }) => {
-  const { t, Translate } = useTranslate();
+  const { t } = useTranslate("authorizations");
   const { enqueueNotification } = useNotifications();
   const [apiCall, { loading }] = useApiCall(deleteAuthorization);
 
@@ -35,7 +35,7 @@ const DeleteAuthorizationModal: FC<UseEntityModalProps<Authorization>> = ({
     if (success) {
       enqueueNotification({
         kind: "success",
-        title: t("Authorization deleted"),
+        title: t("authorizationDeleted"),
       });
       onSuccess();
     }
@@ -44,43 +44,29 @@ const DeleteAuthorizationModal: FC<UseEntityModalProps<Authorization>> = ({
   return (
     <Modal
       open={open}
-      headline={t("Delete authorization")}
+      headline={t("deleteAuthorization")}
       onSubmit={handleSubmit}
       loading={loading}
-      loadingDescription={t("Deleting authorization")}
+      loadingDescription={t("deletingAuthorization")}
       onClose={onClose}
     >
       <Stack gap={spacing04}>
-        <Translate>
-          Are you sure you want to delete the following authorization:
-        </Translate>
+        {t("deleteConfirmation")}
         <UnorderedList>
           <ListItem>
-            <strong>
-              <Translate>Owner ID</Translate>
-            </strong>
-            : {ownerId}
+            <strong>{t("ownerId")}</strong>: {ownerId}
           </ListItem>
           <ListItem>
-            <strong>
-              <Translate>Owner type</Translate>
-            </strong>
-            : {ownerType}
+            <strong>{t("ownerType")}</strong>: {ownerType}
           </ListItem>
           <ListItem>
-            <strong>
-              <Translate>Resource ID</Translate>
-            </strong>
-            : {resourceId}
+            <strong>{t("resourceId")}</strong>: {resourceId}
           </ListItem>
           <ListItem>
-            <strong>
-              <Translate>Permission</Translate>
-            </strong>
-            : {permissionTypes.join(" , ")}
+            <strong>{t("permission")}</strong>: {permissionTypes.join(", ")}
           </ListItem>
         </UnorderedList>
-        <Translate>this action cannot be undone.</Translate>
+        {t("irreversibleAction")}
       </Stack>
     </Modal>
   );

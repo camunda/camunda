@@ -76,32 +76,29 @@ const useApiCall: UseApiCall = <R, P>(
           case 401:
             enqueueNotification({
               kind: "error",
-              title: t("Unauthorized"),
-              subtitle: t("Looks like your session has expired") ?? "",
+              title: t("unauthorized"),
+              subtitle: t("sessionExpired"),
             });
             break;
           case 403:
             enqueueNotification({
               kind: "error",
-              title: t("Forbidden"),
-              subtitle:
-                t(
-                  "You don't have access to perform this operation on given resource",
-                ) ?? "",
+              title: t("forbidden"),
+              subtitle: t("accessDenied"),
             });
             break;
           case 404:
             enqueueNotification({
               kind: "error",
-              title: t("Not found"),
-              subtitle: t("The requested entity has not been found") ?? "",
+              title: t("notFound"),
+              subtitle: t("entityNotFound"),
             });
             break;
           default:
             enqueueNotification({
               kind: "error",
-              title: t("An error occurred"),
-              subtitle: t("Please try again later") ?? "",
+              title: t("errorOccurred"),
+              subtitle: t("tryAgainLater"),
             });
             break;
         }
