@@ -15,7 +15,7 @@ import java.util.Base64;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 
-public class PrefixMigrationHelper {
+public final class PrefixMigrationHelper {
   public static final int SERVER_PORT = 8080;
   public static final int MANAGEMENT_PORT = 9600;
   public static final int GATEWAY_GRPC_PORT = 26500;

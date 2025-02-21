@@ -98,17 +98,15 @@ public class PrefixMigrationIT {
     return container;
   }
 
-  private void prefixMigration(final String newPrefix) throws IOException {
+  private void prefixMigration() throws IOException {
     final var operate = new OperateProperties();
     final var tasklist = new TasklistProperties();
     final var connect = new ConnectConfiguration();
 
     operate.getElasticsearch().setIndexPrefix(OLD_OPERATE_PREFIX);
     tasklist.getElasticsearch().setIndexPrefix(OLD_TASKLIST_PREFIX);
-    connect.setUrl("http://localhost:" + esContainer.getMappedPort(9200));
-    if (!newPrefix.isBlank()) {
-      connect.setIndexPrefix(newPrefix);
-    }
+    connect.setUrl(esContainer.getHttpHostAddress());
+    connect.setIndexPrefix(NEW_PREFIX);
     PrefixMigrationHelper.runPrefixMigration(operate, tasklist, connect);
   }
 
@@ -216,7 +214,7 @@ public class PrefixMigrationIT {
     camunda87.stop();
 
     // when
-    prefixMigration(NEW_PREFIX);
+    prefixMigration();
 
     // then
     final var currentCamundaClient = startLatestCamunda();
@@ -232,8 +230,8 @@ public class PrefixMigrationIT {
         new TestSimpleCamundaApplication();
     final MultiDbConfigurator multiDbConfigurator =
         new MultiDbConfigurator(testSimpleCamundaApplication);
-    final var esUrl = String.format("http://localhost:%d", esContainer.getMappedPort(9200));
-    multiDbConfigurator.configureElasticsearchSupportIncludingOldExporter(esUrl, NEW_PREFIX);
+    multiDbConfigurator.configureElasticsearchSupportIncludingOldExporter(
+        "http://" + esContainer.getHttpHostAddress(), NEW_PREFIX);
     testSimpleCamundaApplication.start();
     testSimpleCamundaApplication.awaitCompleteTopology();
 
