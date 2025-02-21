@@ -19,11 +19,15 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.spring.client.bean.ClassInfo;
 import io.camunda.zeebe.spring.client.configuration.AnnotationProcessorConfiguration;
 import java.util.ArrayList;
+<<<<<<< HEAD
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+=======
+import java.util.List;
+>>>>>>> 7c613cf4 (fix: bean post processor produced warn logs)
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -38,17 +42,28 @@ import org.springframework.core.Ordered;
 public class ZeebeAnnotationProcessorRegistry implements BeanPostProcessor, Ordered {
   private static final Logger LOG = LoggerFactory.getLogger(ZeebeAnnotationProcessorRegistry.class);
 
+<<<<<<< HEAD
   private final Set<AbstractZeebeAnnotationProcessor> processors = new HashSet<>();
   private final Map<String, Object> beans = new HashMap<>();
+=======
+  private final List<AbstractZeebeAnnotationProcessor> processors = new ArrayList<>();
+  private final List<ClassInfo> beans = new ArrayList<>();
+>>>>>>> 7c613cf4 (fix: bean post processor produced warn logs)
 
   @Override
   public Object postProcessAfterInitialization(final Object bean, final String beanName)
       throws BeansException {
     if (bean instanceof final AbstractZeebeAnnotationProcessor processor) {
+<<<<<<< HEAD
       LOG.debug("Found processor: {}", beanName);
       processors.add(processor);
     } else {
       beans.put(beanName, bean);
+=======
+      processors.add(processor);
+    } else {
+      beans.add(ClassInfo.builder().bean(bean).beanName(beanName).build());
+>>>>>>> 7c613cf4 (fix: bean post processor produced warn logs)
     }
     return bean;
   }
@@ -69,6 +84,7 @@ public class ZeebeAnnotationProcessorRegistry implements BeanPostProcessor, Orde
 
   private void processBeans() {
     beans.forEach(
+<<<<<<< HEAD
         (beanName, bean) -> {
           final ClassInfo classInfo = ClassInfo.builder().bean(bean).beanName(beanName).build();
           for (final AbstractZeebeAnnotationProcessor zeebePostProcessor : processors) {
@@ -78,6 +94,12 @@ public class ZeebeAnnotationProcessorRegistry implements BeanPostProcessor, Orde
                   beanName,
                   zeebePostProcessor.getBeanName());
               zeebePostProcessor.configureFor(classInfo);
+=======
+        bean -> {
+          for (final AbstractZeebeAnnotationProcessor zeebePostProcessor : processors) {
+            if (zeebePostProcessor.isApplicableFor(bean)) {
+              zeebePostProcessor.configureFor(bean);
+>>>>>>> 7c613cf4 (fix: bean post processor produced warn logs)
             }
           }
         });

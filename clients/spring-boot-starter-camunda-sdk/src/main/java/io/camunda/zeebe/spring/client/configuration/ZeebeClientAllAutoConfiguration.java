@@ -50,6 +50,10 @@ public class ZeebeClientAllAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public ZeebeClientExecutorService zeebeClientExecutorService(
+<<<<<<< HEAD
+=======
+      final ZeebeClientConfigurationProperties configurationProperties,
+>>>>>>> 7c613cf4 (fix: bean post processor produced warn logs)
       final CamundaClientProperties camundaClientProperties) {
     return ZeebeClientExecutorService.createDefault(
         ofNullable(camundaClientProperties.getZeebe().getExecutionThreads())
@@ -100,7 +104,14 @@ public class ZeebeClientAllAutoConfiguration {
   @Bean("propertyBasedZeebeWorkerValueCustomizer")
   @ConditionalOnMissingBean(name = "propertyBasedZeebeWorkerValueCustomizer")
   public ZeebeWorkerValueCustomizer propertyBasedZeebeWorkerValueCustomizer(
+<<<<<<< HEAD
       final CamundaClientProperties camundaClientProperties) {
     return new PropertyBasedZeebeWorkerValueCustomizer(camundaClientProperties);
+=======
+      final ZeebeClientConfigurationProperties configurationProperties,
+      final CamundaClientProperties camundaClientProperties) {
+    return new PropertyBasedZeebeWorkerValueCustomizer(
+        configurationProperties, camundaClientProperties);
+>>>>>>> 7c613cf4 (fix: bean post processor produced warn logs)
   }
 }

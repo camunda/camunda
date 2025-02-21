@@ -37,6 +37,10 @@ public class ExecutorServiceConfiguration {
   @Bean
   public ZeebeClientExecutorService zeebeClientThreadPool(
       @Autowired(required = false) final MeterRegistry meterRegistry,
+<<<<<<< HEAD
+=======
+      final ZeebeClientConfigurationProperties configurationProperties,
+>>>>>>> 7c613cf4 (fix: bean post processor produced warn logs)
       final CamundaClientProperties camundaClientProperties) {
     final ScheduledExecutorService threadPool =
         Executors.newScheduledThreadPool(

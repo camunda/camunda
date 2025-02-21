@@ -40,9 +40,14 @@ public class AnnotationProcessorConfigurationTest {
   void shouldRun() {
     final List<AbstractZeebeAnnotationProcessor> processors = registry.getProcessors();
     assertThat(processors).hasSize(2);
+<<<<<<< HEAD
     assertThat(processors)
         .anySatisfy(p -> assertThat(p).isInstanceOf(ZeebeWorkerAnnotationProcessor.class));
     assertThat(processors)
         .anySatisfy(p -> assertThat(p).isInstanceOf(ZeebeDeploymentAnnotationProcessor.class));
+=======
+    assertThat(processors.get(0)).isInstanceOf(ZeebeDeploymentAnnotationProcessor.class);
+    assertThat(processors.get(1)).isInstanceOf(ZeebeWorkerAnnotationProcessor.class);
+>>>>>>> 7c613cf4 (fix: bean post processor produced warn logs)
   }
 }
