@@ -86,7 +86,7 @@ public class ZeebePartitionTest {
     when(brokerCheckMock.componentName()).thenReturn("Broker-0");
     when(ctx.brokerHealthCheckService()).thenReturn(brokerCheckMock);
     when(ctx.getComponentTreeListener()).thenReturn(ComponentTreeListener.noop());
-    when(ctx.getBrokerMeterRegistry()).thenReturn(new SimpleMeterRegistry());
+    when(ctx.getPartitionStartupMeterRegistry()).thenReturn(new SimpleMeterRegistry());
 
     partition = new ZeebePartition(ctx, transition, List.of(new NoopStartupStep()));
   }

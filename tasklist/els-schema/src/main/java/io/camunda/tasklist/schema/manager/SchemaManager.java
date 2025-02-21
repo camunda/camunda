@@ -24,6 +24,9 @@ public interface SchemaManager {
 
   String getIndexPrefix();
 
+  /**
+   * @deprecated schema updates should only be done via the CamundaExporter onwards
+   */
   void updateSchema(Map<IndexDescriptor, Set<IndexMappingProperty>> newFields);
 
   void createIndex(IndexDescriptor testIndex);

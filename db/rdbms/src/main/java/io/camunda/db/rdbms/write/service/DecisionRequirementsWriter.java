@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.write.domain.DecisionRequirementsDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
 
 public class DecisionRequirementsWriter {
 
@@ -24,6 +25,7 @@ public class DecisionRequirementsWriter {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.DECISION_DEFINITION,
+            WriteStatementType.INSERT,
             decisionRequirements.decisionRequirementsKey(),
             "io.camunda.db.rdbms.sql.DecisionRequirementsMapper.insert",
             decisionRequirements));

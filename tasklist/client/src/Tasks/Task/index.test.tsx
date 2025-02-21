@@ -76,7 +76,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -121,7 +121,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -186,7 +186,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -251,7 +251,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -299,7 +299,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -352,7 +352,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -405,7 +405,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -476,7 +476,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -535,7 +535,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -589,7 +589,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -661,7 +661,7 @@ describe('<Task />', () => {
   it('should render created task with variables in embedded form', async () => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },

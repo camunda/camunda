@@ -9,7 +9,6 @@ package io.camunda.optimize.service.util.configuration;
 
 public class GlobalCacheConfiguration {
 
-  private CacheConfiguration tenants;
   private CacheConfiguration definitions;
   private CacheConfiguration definitionEngines;
   private CloudUserCacheConfiguration cloudUsers;
@@ -17,14 +16,6 @@ public class GlobalCacheConfiguration {
   private CacheConfiguration users;
 
   public GlobalCacheConfiguration() {}
-
-  public CacheConfiguration getTenants() {
-    return tenants;
-  }
-
-  public void setTenants(final CacheConfiguration tenants) {
-    this.tenants = tenants;
-  }
 
   public CacheConfiguration getDefinitions() {
     return definitions;
@@ -82,9 +73,7 @@ public class GlobalCacheConfiguration {
 
   @Override
   public String toString() {
-    return "GlobalCacheConfiguration(tenants="
-        + getTenants()
-        + ", definitions="
+    return "GlobalCacheConfiguration(definitions="
         + getDefinitions()
         + ", definitionEngines="
         + getDefinitionEngines()

@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.write.domain.MappingDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
 
 public class MappingWriter {
 
@@ -24,6 +25,7 @@ public class MappingWriter {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.MAPPING,
+            WriteStatementType.INSERT,
             mapping.mappingKey(),
             "io.camunda.db.rdbms.sql.MappingMapper.insert",
             mapping));
@@ -33,6 +35,7 @@ public class MappingWriter {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.MAPPING,
+            WriteStatementType.DELETE,
             mappingKey,
             "io.camunda.db.rdbms.sql.MappingMapper.delete",
             mappingKey));

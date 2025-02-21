@@ -18,6 +18,7 @@ package io.camunda.spring.client.annotation.processor;
 import io.camunda.client.CamundaClient;
 import io.camunda.spring.client.bean.ClassInfo;
 import io.camunda.spring.client.configuration.AnnotationProcessorConfiguration;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
@@ -30,11 +31,15 @@ import org.springframework.core.Ordered;
  */
 public class CamundaAnnotationProcessorRegistry implements BeanPostProcessor, Ordered {
 
-  private final List<AbstractCamundaAnnotationProcessor> processors;
+  private final List<AbstractCamundaAnnotationProcessor> processors = new ArrayList<>();
 
-  public CamundaAnnotationProcessorRegistry(
-      final List<AbstractCamundaAnnotationProcessor> processors) {
-    this.processors = processors;
+  @Override
+  public Object postProcessBeforeInitialization(final Object bean, final String beanName)
+      throws BeansException {
+    if (bean instanceof final AbstractCamundaAnnotationProcessor processor) {
+      processors.add(processor);
+    }
+    return BeanPostProcessor.super.postProcessBeforeInitialization(bean, beanName);
   }
 
   @Override
@@ -49,6 +54,11 @@ public class CamundaAnnotationProcessorRegistry implements BeanPostProcessor, Or
     }
 
     return bean;
+  }
+
+  public List<AbstractCamundaAnnotationProcessor> getProcessors() {
+    // do not manipulate the list from outside
+    return new ArrayList<>(processors);
   }
 
   public void startAll(final CamundaClient client) {

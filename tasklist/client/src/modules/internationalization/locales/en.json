@@ -224,7 +224,6 @@
     "taskFilterPanelNewFilter": "New filter",
     "taskFilterPanelTitle": "Filters",
     "taskFilterPanelCollapse": "Collapse",
-    "taskEmptyPickPromptRestricted": "Pick a task to view details",
     "taskEmptyPickPrompt": "Pick a task to work on",
     "taskEmptyHeader": "Welcome to Tasklist",
     "taskEmptyDetail1": "Here you can perform user tasks you specify",

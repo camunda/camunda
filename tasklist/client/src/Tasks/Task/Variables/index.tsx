@@ -16,7 +16,6 @@ import {Button, Heading, type InlineLoadingProps, Layer} from '@carbon/react';
 import {Information, Add} from '@carbon/react/icons';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
 import type {Variable, CurrentUser, Task} from 'modules/types';
-import {usePermissions} from 'modules/hooks/usePermissions';
 import {
   ScrollableContent,
   TaskDetailsContainer,
@@ -65,7 +64,6 @@ const Variables: React.FC<Props> = ({
 }) => {
   const formRef = useRef<HTMLFormElement | null>(null);
   const {assignee, taskState} = task;
-  const {hasPermission} = usePermissions(['write']);
   const {t} = useTranslation();
   const {
     data,
@@ -86,10 +84,7 @@ const Variables: React.FC<Props> = ({
   const [submissionState, setSubmissionState] =
     useState<NonNullable<InlineLoadingProps['status']>>('inactive');
   const canCompleteTask =
-    user.userId === assignee &&
-    taskState === 'CREATED' &&
-    hasPermission &&
-    status === 'success';
+    user.userId === assignee && taskState === 'CREATED' && status === 'success';
   const hasEmptyNewVariable = (values: FormValues) =>
     values.newVariables?.some((variable) => variable === undefined);
   const variables = data ?? [];

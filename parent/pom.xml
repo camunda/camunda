@@ -61,10 +61,10 @@
     <version.hamcrest>3.0</version.hamcrest>
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.14</version.httpclient>
-    <version.httpclient5>5.4.1</version.httpclient5>
-    <version.httpcore5>5.3</version.httpcore5>
+    <version.httpclient5>5.4.2</version.httpclient5>
+    <version.httpcore5>5.3.3</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.6.7</version.identity>
+    <version.identity>8.6.8</version.identity>
     <version.surefire>3.5.2</version.surefire>
     <version.jackson>2.18.2</version.jackson>
     <version.junit>5.11.4</version.junit>
@@ -92,7 +92,7 @@
     <version.wiremock>3.10.0</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
-    <version.testcontainers>1.20.4</version.testcontainers>
+    <version.testcontainers>1.20.5</version.testcontainers>
     <version.mariadb-java-client>3.4.1</version.mariadb-java-client>
     <version.testcontainer-mariadb>1.20.0</version.testcontainer-mariadb>
     <version.postgressql-testcontainer>1.20.1</version.postgressql-testcontainer>
@@ -101,9 +101,9 @@
     <version.feel-scala>1.19.1</version.feel-scala>
     <version.dmn-scala>1.10.1</version.dmn-scala>
     <version.rest-assured>5.5.1</version.rest-assured>
-    <version.spring>6.2.1</version.spring>
-    <version.spring-security>6.4.2</version.spring-security>
-    <version.spring-boot>3.4.1</version.spring-boot>
+    <version.spring>6.2.3</version.spring>
+    <version.spring-security>6.4.3</version.spring-security>
+    <version.spring-boot>3.4.2</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
@@ -156,20 +156,20 @@
     <version.thymeleaf>3.1.3.RELEASE</version.thymeleaf>
     <version.unboundid-ldapsdk>7.0.2</version.unboundid-ldapsdk>
     <version.parsson>1.1.7</version.parsson>
-    <version.springdoc>2.6.0</version.springdoc>
+    <version.springdoc>2.8.5</version.springdoc>
     <version.jakarta.json>2.0.1</version.jakarta.json>
 
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.aws-java-sdk>1.12.781</version.aws-java-sdk>
-    <version.elasticsearch-test-container>1.20.4</version.elasticsearch-test-container>
+    <version.aws-java-sdk>1.12.782</version.aws-java-sdk>
+    <version.elasticsearch-test-container>1.20.5</version.elasticsearch-test-container>
     <version.postgres-test-container>1.20.4</version.postgres-test-container>
     <version.elasticsearch7>7.17.27</version.elasticsearch7>
     <!-- the lucene version must be coupled with version.elasticsearch7 -->
     <version.lucene>8.11.3</version.lucene>
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
-    <version.joda-time>2.13.0</version.joda-time>
+    <version.joda-time>2.13.1</version.joda-time>
     <version.commons-collections4>4.4</version.commons-collections4>
     <version.xmlunit-core>2.10.0</version.xmlunit-core>
 
@@ -515,6 +515,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-backup-store-azure</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-backup-store-filesystem</artifactId>
         <version>${project.version}</version>
       </dependency>
 

@@ -74,10 +74,10 @@ paths:
         - License
       operationId: getLicense
       summary: Get license status
-      description: Obtains the status of the current Camunda license
+      description: Obtains the status of the current Camunda license.
       responses:
         "200":
-          description: Obtains the current status of the Camunda license
+          description: Obtains the current status of the Camunda license.
           content:
             application/json:
               schema:
@@ -3597,7 +3597,7 @@ paths:
           $ref: "#/components/responses/InternalServerError"
 
   /element-instances/{elementInstanceKey}/variables:
-    post:
+    put:
       tags:
         - Element instance
       operationId: createElementInstanceVariables
@@ -3933,7 +3933,7 @@ components:
             - $ref: "#/components/schemas/DateTimeFilterProperty"
         processInstanceVariables:
           type: array
-          description: Process Instance variables associated with the user task.
+          description: Process instance variables associated with the user task.
           items:
             $ref: "#/components/schemas/UserTaskVariableFilterRequest"
         localVariables:
@@ -4667,6 +4667,7 @@ components:
             - PROCESS
             - SUB_PROCESS
             - EVENT_SUB_PROCESS
+            - AD_HOC_SUB_PROCESS
             - START_EVENT
             - INTERMEDIATE_CATCH_EVENT
             - INTERMEDIATE_THROW_EVENT
@@ -4750,6 +4751,7 @@ components:
             - PROCESS
             - SUB_PROCESS
             - EVENT_SUB_PROCESS
+            - AD_HOC_SUB_PROCESS
             - START_EVENT
             - INTERMEDIATE_CATCH_EVENT
             - INTERMEDIATE_THROW_EVENT
@@ -6094,6 +6096,10 @@ components:
             In this example, the completion of a task is represented by a job that the worker can complete as denied.
             As a result, the completion request is rejected and the task remains active.
             Defaults to false.
+          nullable: true
+        deniedReason:
+          type: string
+          description: The reason provided by the user task listener for denying the work.
           nullable: true
         corrections:
           $ref: "#/components/schemas/JobResultCorrections"

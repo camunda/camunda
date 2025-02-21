@@ -7,14 +7,7 @@
  */
 package io.camunda.optimize.service.exceptions;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
-
 public class OptimizeConfigurationException extends OptimizeRuntimeException {
-
-  @SuppressWarnings("checkstyle:MutableException")
-  private Map<String, String> deletedKeysAndDocumentationLink = Collections.emptyMap();
 
   public OptimizeConfigurationException(final String message) {
     super(message);
@@ -22,16 +15,5 @@ public class OptimizeConfigurationException extends OptimizeRuntimeException {
 
   public OptimizeConfigurationException(final String message, final Exception e) {
     super(message, e);
-  }
-
-  public OptimizeConfigurationException(
-      final String message, final Map<String, String> deletedKeysAndDocumentationLink) {
-    super(message);
-    this.deletedKeysAndDocumentationLink =
-        Optional.ofNullable(deletedKeysAndDocumentationLink).orElse(Collections.emptyMap());
-  }
-
-  public Map<String, String> getDeletedKeysAndDocumentationLink() {
-    return deletedKeysAndDocumentationLink;
   }
 }

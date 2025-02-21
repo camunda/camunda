@@ -9,13 +9,19 @@ package io.camunda.db.rdbms.write.queue;
 
 import java.util.function.Function;
 
-public record QueueItem(ContextType contextType, Object id, String statementId, Object parameter) {
+public record QueueItem(
+    ContextType contextType,
+    WriteStatementType statementType,
+    Object id,
+    String statementId,
+    Object parameter) {
 
   public QueueItem copy(final Function<QueueItemBuilder, QueueItemBuilder> builderFunction) {
     return builderFunction
         .apply(
             new QueueItemBuilder()
                 .contextType(contextType)
+                .statementType(statementType)
                 .id(id)
                 .statementId(statementId)
                 .parameter(parameter))
@@ -26,12 +32,18 @@ public record QueueItem(ContextType contextType, Object id, String statementId, 
   public static class QueueItemBuilder {
 
     private ContextType contextType;
+    private WriteStatementType statementType;
     private Object id;
     private String statementId;
     private Object parameter;
 
     public QueueItemBuilder contextType(final ContextType contextType) {
       this.contextType = contextType;
+      return this;
+    }
+
+    public QueueItemBuilder statementType(final WriteStatementType statementType) {
+      this.statementType = statementType;
       return this;
     }
 
@@ -51,7 +63,7 @@ public record QueueItem(ContextType contextType, Object id, String statementId, 
     }
 
     public QueueItem build() {
-      return new QueueItem(contextType, id, statementId, parameter);
+      return new QueueItem(contextType, statementType, id, statementId, parameter);
     }
   }
 }

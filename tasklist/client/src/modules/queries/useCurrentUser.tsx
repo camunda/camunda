@@ -15,21 +15,10 @@ function useCurrentUser() {
   return useQuery<CurrentUser, RequestError | Error>({
     queryKey: ['currentUser'],
     queryFn: async () => {
-      const {response, error} = await request(api.v1.getCurrentUser());
+      const {response, error} = await request(api.v2.getCurrentUser());
 
       if (response !== null) {
-        const currentUser = await response.json();
-        const permissions: unknown[] = currentUser?.permissions ?? [];
-
-        return {
-          ...currentUser,
-          permissions: permissions
-            .filter<string>(
-              (permission): permission is string =>
-                typeof permission === 'string',
-            )
-            .map((permission) => permission.toLowerCase()),
-        };
+        return response.json();
       }
 
       throw error ?? new Error('Could not fetch current user');
