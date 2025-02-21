@@ -1649,7 +1649,7 @@ paths:
       tags:
         - Ad-hoc subprocess
       operationId: findAdHocSubprocessActivities
-      summary: Query activatable activities within ad-hoc subprocesses
+      summary: Query activatable activities
       description: |
         Search for activatable activities within ad-hoc subprocesses based on given criteria.
 
@@ -4528,7 +4528,7 @@ components:
           description: The flow node name for this activity.
           type: string
         type:
-          description: Type of activity as defined set of values.
+          description: Type of activity with a defined set of values.
           type: string
           enum:
             - UNSPECIFIED
