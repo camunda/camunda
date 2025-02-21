@@ -13,7 +13,6 @@ import static io.camunda.webapps.schema.descriptors.operate.index.MetricIndex.*;
 import static io.camunda.webapps.schema.descriptors.operate.index.MetricIndex.VALUE;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.entities.MetricEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
@@ -22,6 +21,7 @@ import io.camunda.operate.store.elasticsearch.dao.Query;
 import io.camunda.operate.store.elasticsearch.dao.UsageMetricDAO;
 import io.camunda.operate.store.elasticsearch.dao.response.AggregationResponse;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
+import io.camunda.webapps.schema.entities.MetricEntity;
 import java.time.OffsetDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
