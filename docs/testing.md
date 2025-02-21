@@ -45,7 +45,7 @@ A test which validates/verified the behavior of just one component or unit, with
 > [!Note]
 >
 > The key properties are rule of thumb, we should try to stick with it, there might be cases to break with this.
-
+>
 > [!Note]
 >
 > **It is fine to repeat yourself in tests.**
@@ -58,15 +58,14 @@ A test which validates/verified the behavior of just one component or unit, with
 ### Small scoped
 
 **Why:**
-  * To separate concerns
-      * To make sure we test on component/unit in isolation, building confidence that this unit itself behaves correctly
-          * The test behavior is more controllable and observable
-          * If not small scoped we might not test one unit, and can't be sure whether any other behavior influences the test
-      * A test fail shows specific that one unit and behavior is affected
-  * Allows to be quick in execution time, when focusing on one small unit with little setup
-  * Reduces the maintainability/readability
-      * as tests are not affected by changes in other components
-      * it makes clear and understandable what is tested
+
+* To separate concerns
+  - To make sure we test on component/unit in isolation, building confidence that this unit itself behaves correctly. The test behavior is more controllable and observable
+  - A test fail shows specific that one unit and behavior is affected. If not small scoped we might not test one unit, and can't be sure whether any other behavior influences the test
+* Allows to be quick in execution time, when focusing on one small unit with little setup
+* Reduces the maintainability/readability
+  - as tests are not affected by changes in other components
+  - it makes clear and understandable what is tested
 
 #### Do's:
 
@@ -117,8 +116,8 @@ This test is not a unit test, because:
 * It is not small scoped:
   * it tests one behavior, but it depends on other components to run
 * Test is an integration test, as we are integrating with a dependency.
-    * It might be flaky due to the dependency
-    * The dependency might be not fully under control, which means there might be many cases we can't test in such a test
+  * It might be flaky due to the dependency
+  * The dependency might be not fully under control, which means there might be many cases we can't test in such a test
 * It may also be slow, setting up the database
 
 #### Dont's: Testing multiple behaviors
@@ -152,10 +151,10 @@ public void shouldAddAndSubstract() {
 This test is **not a good** unit test, _because_:
 
 * It is not small scoped:
-    * it tests multiple behaviors at once
-        * Good indicator of such, is the `And` in the name
-    * it has a dependency, to an early behavior of the component
-        * In general this might be fine, if multiple tests exist to validate the different behaviors individually
+  * it tests multiple behaviors at once
+    * Good indicator of such, is the `And` in the name
+  * it has a dependency, to an early behavior of the component
+    * In general this might be fine, if multiple tests exist to validate the different behaviors individually
 
 **How to improve this:**
 
