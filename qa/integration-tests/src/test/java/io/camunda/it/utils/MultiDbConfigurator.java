@@ -20,8 +20,10 @@ import java.util.UUID;
  * Helper class to configure any {@link TestStandaloneApplication}, with specific secondary storage.
  */
 public class MultiDbConfigurator {
+  public static String zeebePrefix = "-zeebe-records";
 
   private final TestStandaloneApplication<?> testApplication;
+  private String indexPrefix;
 
   public MultiDbConfigurator(final TestStandaloneApplication<?> testApplication) {
     this.testApplication = testApplication;
@@ -29,20 +31,20 @@ public class MultiDbConfigurator {
 
   public void configureElasticsearchSupport(
       final String elasticsearchUrl, final String indexPrefix) {
-
+    this.indexPrefix = indexPrefix;
     final Map<String, Object> elasticsearchProperties = new HashMap<>();
 
     /* Tasklist */
     elasticsearchProperties.put("camunda.tasklist.elasticsearch.url", elasticsearchUrl);
     elasticsearchProperties.put("camunda.tasklist.zeebeElasticsearch.url", elasticsearchUrl);
     elasticsearchProperties.put("camunda.tasklist.elasticsearch.indexPrefix", indexPrefix);
-    elasticsearchProperties.put("camunda.tasklist.zeebeElasticsearch.prefix", indexPrefix);
+    elasticsearchProperties.put("camunda.tasklist.zeebeElasticsearch.prefix", zeebeIndexPrefix());
 
     /* Operate */
     elasticsearchProperties.put("camunda.operate.elasticsearch.url", elasticsearchUrl);
     elasticsearchProperties.put("camunda.operate.zeebeElasticsearch.url", elasticsearchUrl);
     elasticsearchProperties.put("camunda.operate.elasticsearch.indexPrefix", indexPrefix);
-    elasticsearchProperties.put("camunda.operate.zeebeElasticsearch.prefix", indexPrefix);
+    elasticsearchProperties.put("camunda.operate.zeebeElasticsearch.prefix", zeebeIndexPrefix());
 
     /* Camunda */
     elasticsearchProperties.put(
@@ -80,7 +82,7 @@ public class MultiDbConfigurator {
           cfg.setArgs(
               Map.of(
                   "url", elasticsearchUrl,
-                  "index", Map.of("prefix", indexPrefix),
+                  "index", Map.of("prefix", zeebeIndexPrefix()),
                   "bulk", Map.of("size", 1)));
         });
   }
@@ -90,6 +92,7 @@ public class MultiDbConfigurator {
       final String indexPrefix,
       final String userName,
       final String userPassword) {
+    this.indexPrefix = indexPrefix;
 
     final Map<String, Object> opensearchProperties = new HashMap<>();
 
@@ -97,7 +100,7 @@ public class MultiDbConfigurator {
     opensearchProperties.put("camunda.tasklist.opensearch.url", opensearchUrl);
     opensearchProperties.put("camunda.tasklist.zeebeOpensearch.url", opensearchUrl);
     opensearchProperties.put("camunda.tasklist.opensearch.indexPrefix", indexPrefix);
-    opensearchProperties.put("camunda.tasklist.zeebeOpensearch.prefix", indexPrefix);
+    opensearchProperties.put("camunda.tasklist.zeebeOpensearch.prefix", zeebeIndexPrefix());
     opensearchProperties.put("camunda.tasklist.opensearch.username", userName);
     opensearchProperties.put("camunda.tasklist.opensearch.password", userPassword);
 
@@ -105,7 +108,7 @@ public class MultiDbConfigurator {
     opensearchProperties.put("camunda.operate.opensearch.url", opensearchUrl);
     opensearchProperties.put("camunda.operate.zeebeOpensearch.url", opensearchUrl);
     opensearchProperties.put("camunda.operate.opensearch.indexPrefix", indexPrefix);
-    opensearchProperties.put("camunda.operate.zeebeOpensearch.prefix", indexPrefix);
+    opensearchProperties.put("camunda.operate.zeebeOpensearch.prefix", zeebeIndexPrefix());
     opensearchProperties.put("camunda.operate.opensearch.username", userName);
     opensearchProperties.put("camunda.operate.opensearch.password", userPassword);
 
@@ -154,7 +157,7 @@ public class MultiDbConfigurator {
                   "url",
                   opensearchUrl,
                   "index",
-                  Map.of("prefix", indexPrefix),
+                  Map.of("prefix", zeebeIndexPrefix()),
                   "bulk",
                   Map.of("size", 1),
                   "authentication",
@@ -178,5 +181,13 @@ public class MultiDbConfigurator {
           cfg.setClassName("-");
           cfg.setArgs(Map.of("flushInterval", "0"));
         });
+  }
+
+  public String getIndexPrefix() {
+    return indexPrefix;
+  }
+
+  public String zeebeIndexPrefix() {
+    return indexPrefix != null ? indexPrefix + zeebePrefix : indexPrefix;
   }
 }

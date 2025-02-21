@@ -7,6 +7,7 @@
  */
 package io.camunda.it.utils;
 
+import static io.camunda.it.utils.MultiDbConfigurator.zeebePrefix;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 public class MultiDbConfiguratorTest {
 
   public static final String EXPECTED_PREFIX = "custom";
+  public static final String EXPECTED_ZEEBE_PREFIX = "custom" + zeebePrefix;
   public static final String EXPECTED_URL = "localhost";
   public static final String EXPECTED_USER = "user";
   public static final String EXPECTED_PW = "pw";
@@ -65,7 +67,7 @@ public class MultiDbConfiguratorTest {
     assertProperty(
         testSimpleCamundaApplication,
         "camunda.tasklist.zeebeElasticsearch.prefix",
-        EXPECTED_PREFIX);
+        EXPECTED_ZEEBE_PREFIX);
 
     /* Operate Config Assertions */
     assertProperty(
@@ -76,7 +78,9 @@ public class MultiDbConfiguratorTest {
     assertProperty(
         testSimpleCamundaApplication, "camunda.operate.elasticsearch.indexPrefix", EXPECTED_PREFIX);
     assertProperty(
-        testSimpleCamundaApplication, "camunda.operate.zeebeElasticsearch.prefix", EXPECTED_PREFIX);
+        testSimpleCamundaApplication,
+        "camunda.operate.zeebeElasticsearch.prefix",
+        EXPECTED_ZEEBE_PREFIX);
 
     /* Camunda Config Assertions */
 
@@ -126,7 +130,9 @@ public class MultiDbConfiguratorTest {
     assertProperty(
         testSimpleCamundaApplication, "camunda.tasklist.opensearch.indexPrefix", EXPECTED_PREFIX);
     assertProperty(
-        testSimpleCamundaApplication, "camunda.tasklist.zeebeOpensearch.prefix", EXPECTED_PREFIX);
+        testSimpleCamundaApplication,
+        "camunda.tasklist.zeebeOpensearch.prefix",
+        EXPECTED_ZEEBE_PREFIX);
     assertProperty(
         testSimpleCamundaApplication, "camunda.tasklist.opensearch.username", EXPECTED_USER);
     assertProperty(
@@ -141,7 +147,9 @@ public class MultiDbConfiguratorTest {
     assertProperty(
         testSimpleCamundaApplication, "camunda.operate.opensearch.indexPrefix", EXPECTED_PREFIX);
     assertProperty(
-        testSimpleCamundaApplication, "camunda.operate.zeebeOpensearch.prefix", EXPECTED_PREFIX);
+        testSimpleCamundaApplication,
+        "camunda.operate.zeebeOpensearch.prefix",
+        EXPECTED_ZEEBE_PREFIX);
     assertProperty(
         testSimpleCamundaApplication, "camunda.operate.opensearch.username", EXPECTED_USER);
     assertProperty(
