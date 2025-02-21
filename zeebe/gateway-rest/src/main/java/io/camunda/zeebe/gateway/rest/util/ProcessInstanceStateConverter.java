@@ -8,26 +8,29 @@
 package io.camunda.zeebe.gateway.rest.util;
 
 import io.camunda.search.entities.ProcessInstanceEntity;
-import io.camunda.zeebe.gateway.protocol.rest.AdvancedProcessInstanceStateFilter;
-import io.camunda.zeebe.gateway.protocol.rest.AdvancedStringFilter;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
-import io.camunda.zeebe.gateway.protocol.rest.StringFilterProperty;
 
-public class ProcessInstanceStateUtil {
+public class ProcessInstanceStateConverter implements CustomConverter<String> {
 
-  public static StringFilterProperty toInternalProcessInstanceStateFilter(
-      AdvancedProcessInstanceStateFilter filterProperty) {
+  @Override
+  public boolean canConvert(Object value) {
+    return (value instanceof ProcessInstanceStateEnum processInstanceStateEnum);
+  }
 
-    final AdvancedStringFilter stringFilterProperty = new AdvancedStringFilter();
-    stringFilterProperty.set$Eq(toInternalStateAsString(filterProperty.get$Eq()));
-    stringFilterProperty.set$Neq(toInternalStateAsString(filterProperty.get$Neq()));
-    stringFilterProperty.set$Exists(filterProperty.get$Exists());
-    stringFilterProperty.set$Like(filterProperty.get$Like());
-    filterProperty
-        .get$In()
-        .forEach(item -> stringFilterProperty.add$InItem(toInternalStateAsString(item)));
-
-    return stringFilterProperty;
+  @Override
+  public String convertValue(Object value) {
+    if (value == null) {
+      return null;
+    }
+    if (value instanceof ProcessInstanceStateEnum processInstanceStateEnum) {
+      return toInternalStateAsString(processInstanceStateEnum);
+    }
+    throw new IllegalArgumentException(
+        "Cannot convert value [%s] of type [%s]. Expected type: [%s]"
+            .formatted(
+                value,
+                value.getClass().getSimpleName(),
+                ProcessInstanceStateEnum.class.getSimpleName()));
   }
 
   public static String toInternalStateAsString(ProcessInstanceStateEnum processInstanceStateEnum) {

@@ -26,7 +26,7 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateUtil;
+import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Stream;
@@ -551,7 +551,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
     System.out.println("request = " + request);
     final ProcessInstanceFilter filter =
         new ProcessInstanceFilter.Builder()
-            .states(ProcessInstanceStateUtil.toInternalStateAsString(state))
+            .states(ProcessInstanceStateConverter.toInternalStateAsString(state))
             .build();
 
     // when
