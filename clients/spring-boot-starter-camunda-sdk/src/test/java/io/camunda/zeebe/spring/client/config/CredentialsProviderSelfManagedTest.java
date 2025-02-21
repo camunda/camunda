@@ -66,8 +66,6 @@ public class CredentialsProviderSelfManagedTest {
   static WireMockExtension wm =
       WireMockExtension.newInstance().options(new WireMockConfiguration().dynamicPort()).build();
 
-  private static final String ACCESS_TOKEN =
-      JWT.create().withExpiresAt(Instant.now().plusSeconds(300)).sign(Algorithm.none());
   @MockBean ZeebeClientExecutorService zeebeClientExecutorService;
   @Autowired ZeebeClientConfigurationImpl configuration;
 
@@ -97,7 +95,8 @@ public class CredentialsProviderSelfManagedTest {
     final CredentialsProvider credentialsProvider = configuration.getCredentialsProvider();
     final Map<String, String> headers = new HashMap<>();
 
-    final String accessToken = ACCESS_TOKEN;
+    final String accessToken =
+        JWT.create().withExpiresAt(Instant.now().plusSeconds(300)).sign(Algorithm.none());
     wm.stubFor(
         post("/auth-server")
             .willReturn(
