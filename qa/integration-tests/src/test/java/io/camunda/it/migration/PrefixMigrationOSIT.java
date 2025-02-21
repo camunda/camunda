@@ -48,7 +48,7 @@ public class PrefixMigrationOSIT {
   private GenericContainer<?> createCamundaContainer() {
     final var osUrl = String.format("http://%s:%d", OPENSEARCH_ALIAS, 9200);
 
-    return new GenericContainer<>(DockerImageName.parse("camunda/camunda:8.7.0-alpha4"))
+    return new GenericContainer<>(DockerImageName.parse("camunda/camunda:8.7.0-SNAPSHOT"))
         .waitingFor(
             new HttpWaitStrategy()
                 .forPort(MANAGEMENT_PORT)
@@ -60,7 +60,6 @@ public class PrefixMigrationOSIT {
         .withEnv("CAMUNDA_DATABASE_TYPE", "opensearch")
         .withEnv("CAMUNDA_OPERATE_DATABASE", "opensearch")
         .withEnv("CAMUNDA_TASKLIST_DATABASE", "opensearch")
-        .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", NEW_PREFIX)
         .withEnv("CAMUNDA_OPERATE_CSRFPREVENTIONENABLED", "false")
         .withEnv("CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED", "false")
         .withEnv("SPRING_PROFILES_ACTIVE", "broker,operate,tasklist,identity,consolidated-auth")
@@ -72,11 +71,11 @@ public class PrefixMigrationOSIT {
         .withEnv(
             "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME",
             "io.camunda.zeebe.exporter.opensearch.OpensearchExporter")
-        .withEnv("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL", osUrl)
         .withEnv("CAMUNDA_OPERATE_OPENSEARCH_URL", osUrl)
         .withEnv("CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL", osUrl)
         .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", osUrl)
-        .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", osUrl);
+        .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", osUrl)
+        .withEnv("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL", osUrl);
   }
 
   private void prefixMigration() throws IOException {
@@ -131,6 +130,8 @@ public class PrefixMigrationOSIT {
         new MultiDbConfigurator(testSimpleCamundaApplication);
     multiDbConfigurator.configureOpenSearchSupport(
         osContainer.getHttpHostAddress(), NEW_PREFIX, "admin", "admin");
+    testSimpleCamundaApplication.withProperty("camunda.tasklist.zeebeOpensearch.prefix", null);
+    testSimpleCamundaApplication.withProperty("camunda.operate.zeebeOpensearch.prefix", null);
     testSimpleCamundaApplication.start();
     testSimpleCamundaApplication.awaitCompleteTopology();
 
