@@ -19,7 +19,13 @@ import io.camunda.client.CamundaClient;
 import io.camunda.spring.client.bean.ClassInfo;
 import io.camunda.spring.client.configuration.AnnotationProcessorConfiguration;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.core.Ordered;
@@ -30,8 +36,10 @@ import org.springframework.core.Ordered;
  * <p>Keeps a list of all annotations and reads them after all Spring beans are initialized
  */
 public class CamundaAnnotationProcessorRegistry implements BeanPostProcessor, Ordered {
-
-  private final List<AbstractCamundaAnnotationProcessor> processors = new ArrayList<>();
+  private static final Logger LOG =
+      LoggerFactory.getLogger(CamundaAnnotationProcessorRegistry.class);
+  private final Set<AbstractCamundaAnnotationProcessor> processors = new HashSet<>();
+  private final Map<String, Object> beans = new HashMap<>();
 
   @Override
   public Object postProcessBeforeInitialization(final Object bean, final String beanName)
@@ -45,14 +53,12 @@ public class CamundaAnnotationProcessorRegistry implements BeanPostProcessor, Or
   @Override
   public Object postProcessAfterInitialization(final Object bean, final String beanName)
       throws BeansException {
-    final ClassInfo beanInfo = ClassInfo.builder().bean(bean).beanName(beanName).build();
-
-    for (final AbstractCamundaAnnotationProcessor camundaPostProcessor : processors) {
-      if (camundaPostProcessor.isApplicableFor(beanInfo)) {
-        camundaPostProcessor.configureFor(beanInfo);
-      }
+    if (bean instanceof final AbstractCamundaAnnotationProcessor processor) {
+      LOG.debug("Found processor: {}", beanName);
+      processors.add(processor);
+    } else {
+      beans.put(beanName, bean);
     }
-
     return bean;
   }
 
@@ -62,11 +68,29 @@ public class CamundaAnnotationProcessorRegistry implements BeanPostProcessor, Or
   }
 
   public void startAll(final CamundaClient client) {
+    processBeans();
     processors.forEach(camundaPostProcessor -> camundaPostProcessor.start(client));
   }
 
   public void stopAll(final CamundaClient client) {
     processors.forEach(camundaPostProcessor -> camundaPostProcessor.stop(client));
+  }
+
+  private void processBeans() {
+    beans.forEach(
+        (beanName, bean) -> {
+          final ClassInfo classInfo = ClassInfo.builder().bean(bean).beanName(beanName).build();
+          for (final AbstractCamundaAnnotationProcessor camundaProcessor : processors) {
+            if (camundaProcessor.isApplicableFor(classInfo)) {
+              LOG.debug(
+                  "Configuring bean {} with post processor {}",
+                  beanName,
+                  camundaProcessor.getBeanName());
+              camundaProcessor.configureFor(classInfo);
+            }
+          }
+        });
+    beans.clear();
   }
 
   @Override
