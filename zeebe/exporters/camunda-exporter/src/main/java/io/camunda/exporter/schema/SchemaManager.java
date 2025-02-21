@@ -81,16 +81,23 @@ public class SchemaManager {
   }
 
   private void updateSchemaSettings() {
+    final var existingTemplateNames =
+        searchEngineClient
+            .getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX_TEMPLATE)
+            .keySet();
+
     final var existingIndexNames =
         allIndexNames().isBlank()
             ? Set.of()
             : searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet();
 
-    indexTemplateDescriptors.forEach(
-        desc -> {
-          searchEngineClient.createIndexTemplate(
-              desc, getIndexSettingsFromConfig(desc.getIndexName()), false);
-        });
+    indexTemplateDescriptors.stream()
+        .filter(desc -> existingTemplateNames.contains(desc.getTemplateName()))
+        .forEach(
+            desc -> {
+              searchEngineClient.updateIndexTemplateSettings(
+                  desc, getIndexSettingsFromConfig(desc.getIndexName()));
+            });
 
     // update matching index for the index template descriptor
     indexTemplateDescriptors.stream()
