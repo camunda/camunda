@@ -82,10 +82,7 @@ public class SchemaManager {
             .getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX_TEMPLATE)
             .keySet();
 
-    final var existingIndexNames =
-        allIndexNames().isBlank()
-            ? Set.of()
-            : searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet();
+    final var existingIndexNames = existingIndexNames();
 
     indexTemplateDescriptors.stream()
         .filter(desc -> existingTemplateNames.contains(desc.getTemplateName()))
@@ -123,8 +120,7 @@ public class SchemaManager {
       return;
     }
 
-    final var existingIndexNames =
-        searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet();
+    final var existingIndexNames = existingIndexNames();
 
     LOG.info(
         "Found '{}' existing indices. Create missing index templates based on '{}' descriptors.",
@@ -146,6 +142,8 @@ public class SchemaManager {
       return;
     }
 
+    final var existingIndexNames = existingIndexNames();
+
     final var existingTemplateNames =
         searchEngineClient
             .getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX_TEMPLATE)
@@ -155,6 +153,22 @@ public class SchemaManager {
         "Found '{}' existing index templates. Create missing index templates based on '{}' descriptors.",
         existingTemplateNames.size(),
         indexTemplateDescriptors.size());
+
+    indexTemplateDescriptors.stream()
+        .filter(
+            desc ->
+                existingTemplateNames.contains(desc.getTemplateName())
+                    && !existingIndexNames.contains(desc.getFullQualifiedName()))
+        .forEach(
+            desc -> {
+              LOG.warn(
+                  "Index template '{}' already exists but corresponding index '{}' does not, this is an anomalous state which should not happen, fixing by creating the index",
+                  desc.getTemplateName(),
+                  desc.getFullQualifiedName());
+
+              searchEngineClient.createIndex(desc, getIndexSettingsFromConfig(desc.getIndexName()));
+            });
+
     indexTemplateDescriptors.stream()
         .filter(descriptor -> !existingTemplateNames.contains(descriptor.getTemplateName()))
         .forEach(
@@ -251,6 +265,12 @@ public class SchemaManager {
         indexTemplateDescriptors.stream()
             .map(IndexDescriptor.class::cast)
             .collect(Collectors.toSet()));
+  }
+
+  private Set<String> existingIndexNames() {
+    return allIndexNames().isBlank()
+        ? Set.of()
+        : searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet();
   }
 
   private String allIndexNames() {
