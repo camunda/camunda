@@ -64,6 +64,8 @@ final class TestSupport {
       case MESSAGE_CORRELATION -> config.messageCorrelation = value;
       case USER -> config.user = value;
       case AUTHORIZATION -> config.authorization = value;
+      case AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION ->
+          config.adHocSubProcessActivityActivation = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
