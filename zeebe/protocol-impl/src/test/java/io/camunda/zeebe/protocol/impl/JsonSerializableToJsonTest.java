@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
+import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
@@ -2205,6 +2206,50 @@ final class JsonSerializableToJsonTest {
         {
           "resourceKey":1,
           "tenantId": "<default>"
+        }
+        """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////// AdHocSubProcessActivityActivationRecord //////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "AdHocSubProcessActivityActivationRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final var adHocSubProcessActivityActivationRecord =
+                  new AdHocSubProcessActivityActivationRecord()
+                      .setAdHocSubProcessInstanceKey("1234")
+                      .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+              adHocSubProcessActivityActivationRecord.flowNodes().add().setFlowNodeId("123");
+
+              return adHocSubProcessActivityActivationRecord;
+            },
+        """
+        {
+          "adHocSubProcessInstanceKey": "1234",
+          "tenantId": "<default>",
+          "flowNodes": [
+            {
+              "flowNodeId": "123"
+            }
+          ]
+        }
+        """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      /////////////////////// Empty AdHocSubProcessActivityActivationRecord ///////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty AdHocSubProcessActivityActivationRecord",
+        (Supplier<UnifiedRecordValue>) AdHocSubProcessActivityActivationRecord::new,
+        """
+        {
+          "adHocSubProcessInstanceKey": "",
+          "tenantId": "<default>",
+          "flowNodes": []
         }
         """
       },
