@@ -9,6 +9,9 @@ package io.camunda.tasklist;
 
 import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.operate.webapp.security.UserService;
+import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.AssigneeMigratorNoImpl;
@@ -20,6 +23,7 @@ import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -41,6 +45,8 @@ import org.springframework.security.core.Authentication;
 @Configuration(proxyBeanMethods = false)
 @Profile("tasklist & operate")
 public class TasklistSecurityStubsConfiguration {
+
+  @Autowired private SecurityConfiguration securityConfiguration;
 
   /** UserReader that gets user details using Operate's UserService */
   @Bean
@@ -118,7 +124,13 @@ public class TasklistSecurityStubsConfiguration {
   /** TO BE DONE: move it to a unified config layer */
   @Bean
   public IdentityAuthorizationService stubIdentityAuthorizationService() {
-    return new IdentityAuthorizationServiceImpl();
+    if (securityConfiguration.getAuthentication().getMethod() == AuthenticationMethod.BASIC
+        || securityConfiguration.getAuthentication().getMethod() == AuthenticationMethod.OIDC) {
+      return new IdentityAuthorizationServiceImpl();
+    } else {
+      // Not supporter method
+      return () -> List.of(IdentityProperties.FULL_GROUP_ACCESS);
+    }
   }
 
   @Bean
