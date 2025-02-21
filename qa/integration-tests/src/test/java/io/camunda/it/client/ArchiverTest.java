@@ -7,7 +7,6 @@
  */
 package io.camunda.it.client;
 
-import static io.camunda.it.client.QueryTest.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -16,7 +15,6 @@ import co.elastic.clients.elasticsearch.ilm.MoveToStepRequest;
 import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.api.search.response.Incident;
 import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -50,16 +48,16 @@ public class ArchiverTest {
           .serviceTask(SERVICE_TASK, b -> b.zeebeJobType(SERVICE_TASK))
           .endEvent()
           .done();
-  private static final int RETENTION_SECS = 1;
 
-  private static TestStandaloneApplication<?> CAMUNDA;
+  private static TestStandaloneApplication<?> camunda;
 
   @RegisterExtension
   private static final CamundaMultiDBExtension CAMUNDA_MULTI_DB_EXTENSION =
       new CamundaMultiDBExtension(
           application -> {
-            var exporterCfg = application.brokerConfig().getExporters().get("CamundaExporter");
-            var args = new HashMap<>(exporterCfg.getArgs());
+            final var exporterCfg =
+                application.brokerConfig().getExporters().get("CamundaExporter");
+            final var args = new HashMap<>(exporterCfg.getArgs());
             final var archiver =
                 Map.of(
                     "waitPeriodBeforeArchiving",
@@ -77,19 +75,18 @@ public class ArchiverTest {
 
             args.put("archiver", archiver);
             application.withExporter("CamundaExporter", exporter -> exporter.setArgs(args));
-            CAMUNDA = application;
+            camunda = application;
           });
 
   // No need to close it, it's closed by the extension
-  private static CamundaClient CLIENT;
-  private static Incident incident;
+  private static CamundaClient client;
   private static final Duration TIMEOUT = Duration.ofSeconds(30);
-  private final String processId = Strings.newRandomValidBpmnId();
-  private final String taskType = Strings.newRandomValidBpmnId();
+  private static final String PROCESS_ID = Strings.newRandomValidBpmnId();
+  private static final String TASK_TYPE = Strings.newRandomValidBpmnId();
 
   @BeforeAll
   static void beforeAll() {
-    CLIENT = CAMUNDA_MULTI_DB_EXTENSION.createCamundaClient();
+    client = CAMUNDA_MULTI_DB_EXTENSION.createCamundaClient();
   }
 
   @Test
@@ -114,7 +111,7 @@ public class ArchiverTest {
         .forEach(
             job -> {
               archivedPis.add(job.getProcessInstanceKey());
-              CLIENT.newCompleteCommand(job.getKey()).send().join();
+              client.newCompleteCommand(job.getKey()).send().join();
             });
     LOGGER.debug("Process instance {} completed", archivedPis);
 
@@ -123,7 +120,7 @@ public class ArchiverTest {
         .forEach(
             job -> {
               nonArchivedPis.add(job.getProcessInstanceKey());
-              CLIENT.newCompleteCommand(job.getKey()).send().join();
+              client.newCompleteCommand(job.getKey()).send().join();
             });
     for (final var pi : pis) {
       if (!archivedPis.contains(pi) & !nonArchivedPis.contains(pi)) {
@@ -146,13 +143,13 @@ public class ArchiverTest {
         .untilAsserted(
             () -> {
               final var processInstanceList =
-                  CLIENT.newProcessInstanceQuery().send().join().items();
+                  client.newProcessInstanceQuery().send().join().items();
               assertThat(processInstanceList).hasSize(nonArchivedPis.size());
             });
   }
 
   private void pinClock(final Instant instant) {
-    CLIENT.newClockPinCommand().time(instant).send().join();
+    client.newClockPinCommand().time(instant).send().join();
   }
 
   private void assertProcessInstancesArchived(final Instant endTime, final List<Long> archivePiKeys)
@@ -160,7 +157,7 @@ public class ArchiverTest {
     forceDeletionOfArchiverIndices(endTime);
 
     final var archivedPis =
-        CLIENT
+        client
             .newProcessInstanceQuery()
             .filter(f -> f.processInstanceKey(p -> p.in(archivePiKeys)))
             .send()
@@ -172,7 +169,7 @@ public class ArchiverTest {
   }
 
   private void forceDeletionOfArchiverIndices(final Instant endTime) throws IOException {
-    final var properties = CAMUNDA.bean(SearchClientProperties.class);
+    final var properties = camunda.bean(SearchClientProperties.class);
     final var connector = new ElasticsearchConnector(properties);
     final var esClient = connector.createClient();
     final var date = new SimpleDateFormat("yyyy-MM-dd").format(Date.from(endTime));
@@ -211,7 +208,7 @@ public class ArchiverTest {
 
   private void assertProcessInstancesAreVisible(final List<Long> keys) {
     final var result =
-        CLIENT
+        client
             .newProcessInstanceQuery()
             .filter(f -> f.processInstanceKey(k -> k.in(keys)))
             .send()
@@ -224,9 +221,9 @@ public class ArchiverTest {
         .atMost(TIMEOUT)
         .until(
             () ->
-                CLIENT
+                client
                     .newActivateJobsCommand()
-                    .jobType(taskType)
+                    .jobType(TASK_TYPE)
                     .maxJobsToActivate(count)
                     .send()
                     .join()
@@ -235,7 +232,7 @@ public class ArchiverTest {
   }
 
   private long createProcessInstance(final long processKey) {
-    return CLIENT
+    return client
         .newCreateInstanceCommand()
         .processDefinitionKey(processKey)
         .send()
@@ -245,12 +242,12 @@ public class ArchiverTest {
 
   private long deployOneTaskProcess() {
     final var process =
-        Bpmn.createExecutableProcess(processId)
+        Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
-            .serviceTask(taskType, b -> b.zeebeJobType(taskType))
+            .serviceTask(TASK_TYPE, b -> b.zeebeJobType(TASK_TYPE))
             .endEvent()
             .done();
-    return CLIENT
+    return client
         .newDeployResourceCommand()
         .addProcessModel(process, "process.bpmn")
         .send()
