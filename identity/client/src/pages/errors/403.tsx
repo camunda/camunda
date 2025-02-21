@@ -7,23 +7,23 @@
  */
 
 // src/pages/Error403.tsx
-import {FC} from 'react';
+import { FC } from "react";
 import useTranslate from "src/utility/localization";
 import ErrorPage from "src/components/global/ErrorPage.tsx";
-import {Link} from "@carbon/react";
+import { Link } from "@carbon/react";
 
 const Error403: FC = () => {
   const { Translate } = useTranslate();
 
   return (
-      <ErrorPage title={<Translate>Failmunda - 403 forbidden</Translate>}>
-        <Translate>
-          You do not have permission to access this page, sorry!
-        </Translate>
-        <Link href="/">
-          <Translate>Click here to go back home</Translate>
-        </Link>
-      </ErrorPage>
+    <ErrorPage title={<Translate>Failmunda - 403 forbidden</Translate>}>
+      <Translate>
+        You do not have permission to access this page, sorry!
+      </Translate>
+      <Link href="/">
+        <Translate>Click here to go back home</Translate>
+      </Link>
+    </ErrorPage>
   );
 };
 
