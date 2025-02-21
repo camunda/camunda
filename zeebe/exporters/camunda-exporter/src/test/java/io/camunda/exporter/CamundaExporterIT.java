@@ -66,6 +66,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -683,6 +684,7 @@ final class CamundaExporterIT {
         final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
         throws IOException {
       // given
+      config.getIndex().setZeebeIndexPrefix(UUID.randomUUID().toString());
       createSchemas(config, clientAdapter);
       indexImportPositionEntity("decision", false, clientAdapter);
       clientAdapter.refresh();
