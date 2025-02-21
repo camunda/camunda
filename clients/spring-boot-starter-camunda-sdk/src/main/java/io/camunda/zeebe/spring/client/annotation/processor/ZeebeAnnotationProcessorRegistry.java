@@ -18,7 +18,14 @@ package io.camunda.zeebe.spring.client.annotation.processor;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.spring.client.bean.ClassInfo;
 import io.camunda.zeebe.spring.client.configuration.AnnotationProcessorConfiguration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.core.Ordered;
@@ -29,33 +36,52 @@ import org.springframework.core.Ordered;
  * <p>Keeps a list of all annotations and reads them after all Spring beans are initialized
  */
 public class ZeebeAnnotationProcessorRegistry implements BeanPostProcessor, Ordered {
+  private static final Logger LOG = LoggerFactory.getLogger(ZeebeAnnotationProcessorRegistry.class);
 
-  private final List<AbstractZeebeAnnotationProcessor> processors;
-
-  public ZeebeAnnotationProcessorRegistry(final List<AbstractZeebeAnnotationProcessor> processors) {
-    this.processors = processors;
-  }
+  private final Set<AbstractZeebeAnnotationProcessor> processors = new HashSet<>();
+  private final Map<String, Object> beans = new HashMap<>();
 
   @Override
   public Object postProcessAfterInitialization(final Object bean, final String beanName)
       throws BeansException {
-    final ClassInfo beanInfo = ClassInfo.builder().bean(bean).beanName(beanName).build();
-
-    for (final AbstractZeebeAnnotationProcessor zeebePostProcessor : processors) {
-      if (zeebePostProcessor.isApplicableFor(beanInfo)) {
-        zeebePostProcessor.configureFor(beanInfo);
-      }
+    if (bean instanceof final AbstractZeebeAnnotationProcessor processor) {
+      LOG.debug("Found processor: {}", beanName);
+      processors.add(processor);
+    } else {
+      beans.put(beanName, bean);
     }
-
     return bean;
   }
 
+  public List<AbstractZeebeAnnotationProcessor> getProcessors() {
+    // do not manipulate the list from outside
+    return new ArrayList<>(processors);
+  }
+
   public void startAll(final ZeebeClient client) {
+    processBeans();
     processors.forEach(zeebePostProcessor -> zeebePostProcessor.start(client));
   }
 
   public void stopAll(final ZeebeClient client) {
     processors.forEach(zeebePostProcessor -> zeebePostProcessor.stop(client));
+  }
+
+  private void processBeans() {
+    beans.forEach(
+        (beanName, bean) -> {
+          final ClassInfo classInfo = ClassInfo.builder().bean(bean).beanName(beanName).build();
+          for (final AbstractZeebeAnnotationProcessor zeebePostProcessor : processors) {
+            if (zeebePostProcessor.isApplicableFor(classInfo)) {
+              LOG.debug(
+                  "Configuring bean {} with post processor {}",
+                  beanName,
+                  zeebePostProcessor.getBeanName());
+              zeebePostProcessor.configureFor(classInfo);
+            }
+          }
+        });
+    beans.clear();
   }
 
   @Override

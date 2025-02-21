@@ -36,19 +36,11 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnMissingBean(ZeebeClientExecutorService.class)
 public class ExecutorServiceConfiguration {
 
-  private final ZeebeClientConfigurationProperties configurationProperties;
-  private final CamundaClientProperties camundaClientProperties;
-
-  public ExecutorServiceConfiguration(
-      final ZeebeClientConfigurationProperties configurationProperties,
-      final CamundaClientProperties camundaClientProperties) {
-    this.configurationProperties = configurationProperties;
-    this.camundaClientProperties = camundaClientProperties;
-  }
-
   @Bean
   public ZeebeClientExecutorService zeebeClientThreadPool(
-      @Autowired(required = false) final MeterRegistry meterRegistry) {
+      @Autowired(required = false) final MeterRegistry meterRegistry,
+      final ZeebeClientConfigurationProperties configurationProperties,
+      final CamundaClientProperties camundaClientProperties) {
     final ScheduledExecutorService threadPool =
         Executors.newScheduledThreadPool(
             getOrLegacyOrDefault(
