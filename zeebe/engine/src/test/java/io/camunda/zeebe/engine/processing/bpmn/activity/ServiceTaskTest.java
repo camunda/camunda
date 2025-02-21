@@ -22,9 +22,11 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.nio.charset.StandardCharsets;
@@ -36,6 +38,48 @@ import org.junit.Test;
 
 public class ServiceTaskTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  private static final String RPA_RESOURCE_1V =
+      """
+        {
+        "type": "default",
+        "id": "Rpa_0w7r08e",
+        "executionPlatform": "Camunda Cloud",
+        "executionPlatformVersion": "8.7.0",
+        "schemaVersion": 7,
+        "versionTag": "1v",
+        "resource": "Script content"
+      }""";
+  private static final String RPA_RESOURCE_2V =
+      """
+        {
+        "type": "default",
+        "id": "Rpa_0w7r08e",
+        "executionPlatform": "Camunda Cloud",
+        "executionPlatformVersion": "8.7.0",
+        "schemaVersion": 7,
+        "versionTag": "2v",
+        "resource": "Script content2"
+      }""";
+  private static final String RPA_RESOURCE_1 =
+      """
+        {
+        "type": "default",
+        "id": "Rpa_0w7r08e",
+        "executionPlatform": "Camunda Cloud",
+        "executionPlatformVersion": "8.7.0",
+        "schemaVersion": 7,
+        "resource": "Script content"
+      }""";
+  private static final String RPA_RESOURCE_2 =
+      """
+        {
+        "type": "default",
+        "id": "Rpa_0w7r08e",
+        "executionPlatform": "Camunda Cloud",
+        "executionPlatformVersion": "8.7.0",
+        "schemaVersion": 7,
+        "resource": "Script content2"
+      }""";
   private static final String PROCESS_ID = "process";
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -45,17 +89,6 @@ public class ServiceTaskTest {
 
   @Test
   public void shouldCreateJobWithLinkedResourcesVersionTagBinding() throws JsonProcessingException {
-    final var rpaScript =
-        """
-          {
-          "type": "default",
-          "id": "Rpa_0w7r08e",
-          "executionPlatform": "Camunda Cloud",
-          "executionPlatformVersion": "8.1.0",
-          "schemaVersion": 7,
-          "versionTag": "1v",
-          "resource": "Script content"
-        }""";
 
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("process")
@@ -76,9 +109,15 @@ public class ServiceTaskTest {
 
     ENGINE
         .deployment()
-        .withJsonResource(rpaScript.getBytes(StandardCharsets.UTF_8), "my_resource.rpa")
-        .withXmlResource(modelInstance)
+        .withJsonResource(RPA_RESOURCE_1V.getBytes(StandardCharsets.UTF_8), "my_resource.rpa")
         .deploy();
+
+    ENGINE
+        .deployment()
+        .withJsonResource(RPA_RESOURCE_2V.getBytes(StandardCharsets.UTF_8), "my_resource.rpa")
+        .deploy();
+
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
 
     // when
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -100,21 +139,23 @@ public class ServiceTaskTest {
     assertThat(resourceProps)
         .hasFieldOrPropertyWithValue("resourceType", "RPA")
         .hasFieldOrPropertyWithValue("linkName", "my_link");
-    assertThat(resourceProps.getResourceKey()).matches("\\d+");
+
+    final List<Record<Resource>> resourceRecords =
+        RecordingExporter.resourceRecords()
+            .withResourceId("Rpa_0w7r08e")
+            .withIntent(ResourceIntent.CREATED)
+            .limit(2)
+            .toList();
+    // The second record is present
+    assertThat(resourceRecords).hasSize(2);
+    assertThat(resourceRecords.getFirst().getValue().getVersionTag()).isEqualTo("1v");
+    // Binded to the first record that has a correct tag
+    assertThat(resourceProps.getResourceKey())
+        .isEqualTo(String.valueOf(resourceRecords.getFirst().getKey()));
   }
 
   @Test
   public void shouldCreateJobWithLinkedResourcesLatestBinding() throws JsonProcessingException {
-    final var rpaScript =
-        """
-          {
-          "type": "default",
-          "id": "Rpa_0w7r08e",
-          "executionPlatform": "Camunda Cloud",
-          "executionPlatformVersion": "8.1.0",
-          "schemaVersion": 7,
-          "resource": "Script content"
-        }""";
 
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("process")
@@ -134,10 +175,15 @@ public class ServiceTaskTest {
 
     ENGINE
         .deployment()
-        .withJsonResource(rpaScript.getBytes(StandardCharsets.UTF_8), "my_resource.rpa")
+        .withJsonResource(RPA_RESOURCE_1.getBytes(StandardCharsets.UTF_8), "my_resource.rpa")
         .withXmlResource(modelInstance)
         .deploy();
 
+    // Latest deployment
+    ENGINE
+        .deployment()
+        .withJsonResource(RPA_RESOURCE_2.getBytes(StandardCharsets.UTF_8), "my_resource.rpa")
+        .deploy();
     // when
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
@@ -158,22 +204,21 @@ public class ServiceTaskTest {
     assertThat(resourceProps)
         .hasFieldOrPropertyWithValue("resourceType", "RPA")
         .hasFieldOrPropertyWithValue("linkName", "my_link");
-    assertThat(resourceProps.getResourceKey()).matches("\\d+");
+    final List<Record<Resource>> resourceRecords =
+        RecordingExporter.resourceRecords()
+            .withResourceId("Rpa_0w7r08e")
+            .withIntent(ResourceIntent.CREATED)
+            .limit(2)
+            .toList();
+    // The second record is present
+    assertThat(resourceRecords).hasSize(2);
+    // The key is taken from the last record
+    assertThat(resourceProps.getResourceKey())
+        .isEqualTo(String.valueOf(resourceRecords.getLast().getKey()));
   }
 
   @Test
   public void shouldCreateJobWithLinkedResourcesDeploymentBinding() throws JsonProcessingException {
-    final var rpaScript =
-        """
-          {
-          "type": "default",
-          "id": "Rpa_0w7r08e",
-          "executionPlatform": "Camunda Cloud",
-          "executionPlatformVersion": "8.1.0",
-          "schemaVersion": 7,
-          "resource": "Script content"
-        }""";
-
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("process")
             .startEvent()
@@ -192,8 +237,14 @@ public class ServiceTaskTest {
 
     ENGINE
         .deployment()
-        .withJsonResource(rpaScript.getBytes(StandardCharsets.UTF_8), "my_resource.rpa")
+        .withJsonResource(RPA_RESOURCE_1.getBytes(StandardCharsets.UTF_8), "my_resource.rpa")
         .withXmlResource(modelInstance)
+        .deploy();
+
+    // Second resource with the same id
+    ENGINE
+        .deployment()
+        .withJsonResource(RPA_RESOURCE_2.getBytes(StandardCharsets.UTF_8), "my_resource.rpa")
         .deploy();
 
     // when
@@ -216,7 +267,17 @@ public class ServiceTaskTest {
     assertThat(resourceProps)
         .hasFieldOrPropertyWithValue("resourceType", "RPA")
         .hasFieldOrPropertyWithValue("linkName", "my_link");
-    assertThat(resourceProps.getResourceKey()).matches("\\d+");
+    final List<Record<Resource>> resourceRecords =
+        RecordingExporter.resourceRecords()
+            .withResourceId("Rpa_0w7r08e")
+            .withIntent(ResourceIntent.CREATED)
+            .limit(2)
+            .toList();
+    // The second record is present
+    assertThat(resourceRecords).hasSize(2);
+    // But the key is taken from the first one
+    assertThat(resourceProps.getResourceKey())
+        .isEqualTo(String.valueOf(resourceRecords.getFirst().getKey()));
   }
 
   @Test
@@ -276,7 +337,7 @@ public class ServiceTaskTest {
             .endEvent()
             .done();
 
-    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+    final var deployment = ENGINE.deployment().withXmlResource(modelInstance).deploy();
 
     // when
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -289,11 +350,11 @@ public class ServiceTaskTest {
             .getValue();
     assertThat(incidentRecordValue.getErrorType()).isEqualTo(ErrorType.RESOURCE_NOT_FOUND);
     assertThat(incidentRecordValue.getErrorMessage())
-        .matches(
+        .isEqualTo(
             String.format(
                 BpmnJobBehavior.FIND_RESOURCE_BY_ID_IN_SAME_DEPLOYMENT_FAILED_MESSAGE,
                 "2",
-                "\\d+"));
+                deployment.getKey()));
   }
 
   @Test
@@ -343,7 +404,7 @@ public class ServiceTaskTest {
                 t ->
                     t.zeebeLinkedResources(
                             l ->
-                                l.resourceId("2")
+                                l.resourceId("Rpa_0w7r08e")
                                     .resourceType("RPA")
                                     .bindingType(ZeebeBindingType.latest)
                                     .versionTag("1v")
@@ -364,19 +425,9 @@ public class ServiceTaskTest {
     assertThat(incident).isNotNull();
     // when
     // deploy missing rpa
-    final var rpaScript =
-        """
-          {
-          "type": "default",
-          "id": "Rpa_0w7r08e",
-          "executionPlatform": "Camunda Cloud",
-          "executionPlatformVersion": "8.1.0",
-          "schemaVersion": 7,
-          "resource": "Script content"
-        }""";
     ENGINE
         .deployment()
-        .withJsonResource(rpaScript.getBytes(StandardCharsets.UTF_8), "my_resource.rpa")
+        .withJsonResource(RPA_RESOURCE_1.getBytes(StandardCharsets.UTF_8), "my_resource.rpa")
         .deploy();
     // resolve incident
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
@@ -387,6 +438,11 @@ public class ServiceTaskTest {
         .containsExactly(
             tuple(incident.getKey(), IncidentIntent.CREATED),
             tuple(incident.getKey(), IncidentIntent.RESOLVED));
+
+    final Record<JobRecordValue> jobCreated =
+        RecordingExporter.jobRecords().withProcessInstanceKey(processInstanceKey).getFirst();
+
+    assertThat(jobCreated.getValue().getCustomHeaders()).containsKey("linkedResources");
   }
 
   @Test
