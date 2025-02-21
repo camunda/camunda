@@ -163,24 +163,6 @@ serialization:
   # fetching date data from the engine(should be the same as in the engine)
   engineDateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
 
-plugin:
-  variableImport:
-    #Look in the given base package list for variable import adaption plugins.
-    #If empty, the import is not influenced.
-    basePackages: []
-  engineRestFilter:
-    #Look in the given base package list for engine rest filter plugins.
-    #If empty, the REST calls are not influenced.
-    basePackages: []
-  authenticationExtractor:
-    # Looks in the given base package list for authentication extractor plugins.
-    # If empty, the standard Optimize authentication mechanism is used.
-    basePackages: []
-  elasticsearchCustomHeader:
-    # Look in the given base package list for Elasticsearch custom header fetching plugins.
-    # If empty, ES requests are not influenced.
-    basePackages: []
-
 email:
   # A switch to control email sending process.
   enabled: false
