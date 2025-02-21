@@ -48,7 +48,7 @@ public class ProcessInstanceReaderIT extends OperateSearchAbstractIT {
     processInstanceData =
         new ProcessInstanceForListViewEntity()
             .setId("2251799813685251")
-            .setParentProcessInstanceKey(processInstanceKey)
+            .setKey(processInstanceKey)
             .setPartitionId(1)
             .setProcessDefinitionKey(2251799813685249L)
             .setProcessName("Demo process")
