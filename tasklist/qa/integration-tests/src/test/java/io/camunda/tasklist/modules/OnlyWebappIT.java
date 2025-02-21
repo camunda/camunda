@@ -10,14 +10,12 @@ package io.camunda.tasklist.modules;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.tasklist.ImportModuleConfiguration;
 import io.camunda.tasklist.WebappModuleConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.controllers.TasklistIndexController;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.TestPropertySource;
 
 @TestPropertySource(
@@ -26,8 +24,6 @@ import org.springframework.test.context.TestPropertySource;
       TasklistProperties.PREFIX + ".archiverEnabled = false",
     })
 public class OnlyWebappIT extends ModuleIntegrationTest {
-
-  @MockBean private CamundaUserService camundaUserService;
 
   @Test
   public void testWebappModuleIsPresent() {
