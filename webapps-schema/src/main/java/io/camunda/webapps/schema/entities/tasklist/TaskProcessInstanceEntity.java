@@ -8,8 +8,19 @@
 package io.camunda.webapps.schema.entities.tasklist;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import java.util.Objects;
 
-public class TaskProcessInstanceEntity extends TasklistEntity<TaskProcessInstanceEntity> {
+public class TaskProcessInstanceEntity
+    implements ExporterEntity<TaskProcessInstanceEntity>,
+        PartitionedEntity<TaskProcessInstanceEntity>,
+        TenantOwned {
+
+  private String id;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  private int partitionId;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long processInstanceId;
@@ -19,9 +30,36 @@ public class TaskProcessInstanceEntity extends TasklistEntity<TaskProcessInstanc
 
   public TaskProcessInstanceEntity() {}
 
-  public TaskProcessInstanceEntity(
-      final String id, final Long key, final String tenantId, final int partitionId) {
-    super(id, key, tenantId, partitionId);
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public TaskProcessInstanceEntity setId(final String id) {
+    this.id = id;
+    return this;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public TaskProcessInstanceEntity setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public TaskProcessInstanceEntity setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
+    return this;
   }
 
   public TaskJoinRelationship getJoin() {
@@ -40,5 +78,22 @@ public class TaskProcessInstanceEntity extends TasklistEntity<TaskProcessInstanc
   public TaskProcessInstanceEntity setProcessInstanceId(final Long processInstanceId) {
     this.processInstanceId = processInstanceId;
     return this;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, tenantId, partitionId, processInstanceId, join);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (!(o instanceof final TaskProcessInstanceEntity that)) {
+      return false;
+    }
+    return partitionId == that.partitionId
+        && Objects.equals(id, that.id)
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(processInstanceId, that.processInstanceId)
+        && Objects.equals(join, that.join);
   }
 }
