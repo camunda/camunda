@@ -7,10 +7,13 @@
  */
 package io.camunda.webapps.schema.entities.operate;
 
-import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
-public class SequenceFlowEntity extends AbstractExporterEntity<SequenceFlowEntity> {
+public class SequenceFlowEntity implements ExporterEntity<SequenceFlowEntity>, TenantOwned {
+
+  private String id;
 
   private Long processInstanceKey;
 
@@ -21,7 +24,18 @@ public class SequenceFlowEntity extends AbstractExporterEntity<SequenceFlowEntit
   private String bpmnProcessId;
 
   private String activityId;
-  private String tenantId = DEFAULT_TENANT_ID;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public SequenceFlowEntity setId(final String id) {
+    this.id = id;
+    return this;
+  }
 
   public Long getProcessInstanceKey() {
     return processInstanceKey;
@@ -59,6 +73,7 @@ public class SequenceFlowEntity extends AbstractExporterEntity<SequenceFlowEntit
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }
@@ -71,12 +86,7 @@ public class SequenceFlowEntity extends AbstractExporterEntity<SequenceFlowEntit
   @Override
   public int hashCode() {
     return Objects.hash(
-        super.hashCode(),
-        processInstanceKey,
-        processDefinitionKey,
-        bpmnProcessId,
-        activityId,
-        tenantId);
+        id, processInstanceKey, processDefinitionKey, bpmnProcessId, activityId, tenantId);
   }
 
   @Override
@@ -88,7 +98,8 @@ public class SequenceFlowEntity extends AbstractExporterEntity<SequenceFlowEntit
       return false;
     }
     final SequenceFlowEntity that = (SequenceFlowEntity) o;
-    return Objects.equals(processInstanceKey, that.processInstanceKey)
+    return Objects.equals(id, that.id)
+        && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(activityId, that.activityId)

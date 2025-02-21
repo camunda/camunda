@@ -7,11 +7,13 @@
  */
 package io.camunda.webapps.schema.entities.operate.post;
 
-import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public class PostImporterQueueEntity extends AbstractExporterEntity<PostImporterQueueEntity> {
+public class PostImporterQueueEntity implements ExporterEntity<PostImporterQueueEntity> {
+
+  private String id;
 
   private Long key;
 
@@ -26,6 +28,17 @@ public class PostImporterQueueEntity extends AbstractExporterEntity<PostImporter
   private Long processInstanceKey;
 
   private Long position;
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public PostImporterQueueEntity setId(final String id) {
+    this.id = id;
+    return this;
+  }
 
   public Long getKey() {
     return key;
@@ -93,14 +106,7 @@ public class PostImporterQueueEntity extends AbstractExporterEntity<PostImporter
   @Override
   public int hashCode() {
     return Objects.hash(
-        super.hashCode(),
-        key,
-        actionType,
-        intent,
-        creationTime,
-        partitionId,
-        processInstanceKey,
-        position);
+        id, key, actionType, intent, creationTime, partitionId, processInstanceKey, position);
   }
 
   @Override
@@ -112,7 +118,8 @@ public class PostImporterQueueEntity extends AbstractExporterEntity<PostImporter
       return false;
     }
     final PostImporterQueueEntity that = (PostImporterQueueEntity) o;
-    return Objects.equals(key, that.key)
+    return Objects.equals(id, that.id)
+        && Objects.equals(key, that.key)
         && actionType == that.actionType
         && Objects.equals(intent, that.intent)
         && Objects.equals(creationTime, that.creationTime)
