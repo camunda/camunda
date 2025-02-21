@@ -7,11 +7,7 @@
  */
 package io.camunda.tasklist;
 
-import io.camunda.authentication.service.BasicCamundaUserService;
-import io.camunda.authentication.service.CamundaUserService;
-import io.camunda.authentication.service.OidcCamundaUserService;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.tasklist.webapp.management.WebappManagementModuleConfiguration;
 import io.camunda.tasklist.webapp.security.WebappSecurityModuleConfiguration;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
@@ -75,15 +71,6 @@ public class TasklistModuleConfiguration {
   @Bean
   public IdentityAuthorizationService stubIdentityAuthorizationService() {
     return new IdentityAuthorizationServiceImpl();
-  }
-
-  @Bean
-  public CamundaUserService stubCamundaUserDetailsService() {
-    if (AuthenticationMethod.OIDC.equals(securityConfiguration.getAuthentication().getMethod())) {
-      return new OidcCamundaUserService();
-    } else {
-      return new BasicCamundaUserService();
-    }
   }
 
   @Configuration(proxyBeanMethods = false)
