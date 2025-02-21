@@ -9,7 +9,6 @@ package io.camunda.tasklist;
 
 import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.operate.webapp.security.UserService;
-import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.AssigneeMigratorNoImpl;
@@ -17,6 +16,7 @@ import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationServiceImpl;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import java.util.List;
 import java.util.Optional;
@@ -115,10 +115,10 @@ public class TasklistSecurityStubsConfiguration {
     return new AssigneeMigratorNoImpl();
   }
 
-  /** stub to IdentityAuthorizationService that provides full access to user */
+  /** TO BE DONE: move it to a unified config layer */
   @Bean
   public IdentityAuthorizationService stubIdentityAuthorizationService() {
-    return () -> List.of(IdentityProperties.FULL_GROUP_ACCESS);
+    return new IdentityAuthorizationServiceImpl();
   }
 
   @Bean
