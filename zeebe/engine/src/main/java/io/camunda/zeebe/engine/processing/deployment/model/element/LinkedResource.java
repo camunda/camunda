@@ -14,6 +14,7 @@ public class LinkedResource {
   private String resourceType;
   private String linkName;
   private ZeebeBindingType bindingType;
+  private String versionTag;
 
   public String getResourceId() {
     return resourceId;
@@ -45,5 +46,13 @@ public class LinkedResource {
 
   public ZeebeBindingType getBindingType() {
     return bindingType;
+  }
+
+  public String getVersionTag() {
+    return versionTag;
+  }
+
+  public void setVersionTag(final String versionTag) {
+    this.versionTag = versionTag;
   }
 }

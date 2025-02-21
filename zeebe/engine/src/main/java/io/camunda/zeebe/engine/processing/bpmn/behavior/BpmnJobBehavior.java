@@ -23,9 +23,12 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.deployment.PersistedResource;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
+import io.camunda.zeebe.engine.state.immutable.ResourceState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
@@ -54,12 +57,29 @@ import org.slf4j.LoggerFactory;
 
 public final class BpmnJobBehavior {
 
+  public static final String FIND_LATEST_RESOURCE_BY_ID_FAILED_MESSAGE =
+      """
+      Expected to link a resource with id '%s', but no resource with this id is found, \
+      at least a resource with this id should be available. \
+      To resolve the Incident please deploy a resource with the same id.
+      """;
+  public static final String FIND_RESOURCE_BY_ID_AND_VERSION_TAG_FAILED_MESSAGE =
+      """
+      Expected to link a resource with id '%s' and version tag '%s', but no such resource found. \
+      To resolve the incident, deploy a resource with the given id and version tag.
+      """;
+  public static final String FIND_RESOURCE_BY_ID_IN_SAME_DEPLOYMENT_FAILED_MESSAGE =
+      """
+      Expected to link a resource with id '%s' and binding type 'deployment', \
+      but no such resource found in the deployment with key %s which contained the current process. \
+      To resolve this incident, migrate the process instance to a process definition \
+      that is deployed together with the intended resource to use.\
+      """;
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BpmnJobBehavior.class.getPackageName());
   private static final Set<State> CANCELABLE_STATES =
       EnumSet.of(State.ACTIVATABLE, State.ACTIVATED, State.FAILED, State.ERROR_THROWN);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
   private final JobRecord jobRecord = new JobRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);
   private final HeaderEncoder headerEncoder = new HeaderEncoder(LOGGER);
   private final KeyGenerator keyGenerator;
@@ -67,6 +87,7 @@ public final class BpmnJobBehavior {
   private final JobState jobState;
   private final ExpressionProcessor expressionBehavior;
   private final BpmnStateBehavior stateBehavior;
+  private final ResourceState resourceState;
   private final BpmnIncidentBehavior incidentBehavior;
   private final JobMetrics jobMetrics;
   private final BpmnJobActivationBehavior jobActivationBehavior;
@@ -78,6 +99,7 @@ public final class BpmnJobBehavior {
       final Writers writers,
       final ExpressionProcessor expressionBehavior,
       final BpmnStateBehavior stateBehavior,
+      final ResourceState resourceState,
       final BpmnIncidentBehavior incidentBehavior,
       final BpmnJobActivationBehavior jobActivationBehavior,
       final JobMetrics jobMetrics,
@@ -87,6 +109,7 @@ public final class BpmnJobBehavior {
     this.expressionBehavior = expressionBehavior;
     stateWriter = writers.state();
     this.stateBehavior = stateBehavior;
+    this.resourceState = resourceState;
     this.incidentBehavior = incidentBehavior;
     this.jobMetrics = jobMetrics;
     this.jobActivationBehavior = jobActivationBehavior;
@@ -99,7 +122,8 @@ public final class BpmnJobBehavior {
     return Either.<Failure, JobProperties>right(new JobProperties())
         .flatMap(p -> evalTypeExp(jobWorkerProps.getType(), scopeKey).map(p::type))
         .flatMap(p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey).map(p::retries))
-        .flatMap(p -> evalLinkedResourceProps(jobWorkerProps, scopeKey).map(p::linkedResources))
+        .flatMap(
+            p -> evalLinkedResourceProps(jobWorkerProps, context, scopeKey).map(p::linkedResources))
         .flatMap(
             p ->
                 userTaskBehavior
@@ -142,7 +166,7 @@ public final class BpmnJobBehavior {
   }
 
   private Either<Failure, List<LinkedResourceProps>> evalLinkedResourceProps(
-      final JobWorkerProperties props, final long scopeKey) {
+      final JobWorkerProperties props, final BpmnElementContext context, final long scopeKey) {
     final List<LinkedResource> linkedResources = props.getLinkedResources();
     if (linkedResources == null || linkedResources.isEmpty()) {
       return Either.right(null);
@@ -150,7 +174,13 @@ public final class BpmnJobBehavior {
     final List<LinkedResourceProps> linkedResourceProps = new ArrayList<>();
     for (final LinkedResource linkedResource : linkedResources) {
       final LinkedResourceProps resourceProps = new LinkedResourceProps();
-      resourceProps.setResourceKey(resolveLinkedResourceKey(linkedResource, scopeKey));
+      final Either<Failure, String> keyEitherFailure =
+          resolveLinkedResourceKey(linkedResource, context, scopeKey);
+      if (keyEitherFailure.isRight()) {
+        resourceProps.setResourceKey(keyEitherFailure.get());
+      } else {
+        return Either.left(keyEitherFailure.getLeft());
+      }
       resourceProps.setResourceType(linkedResource.getResourceType());
       resourceProps.setLinkName(linkedResource.getLinkName());
       linkedResourceProps.add(resourceProps);
@@ -158,10 +188,74 @@ public final class BpmnJobBehavior {
     return Either.right(linkedResourceProps);
   }
 
-  private String resolveLinkedResourceKey(
-      final LinkedResource linkedResource, final long scopeKey) {
-    // TODO Add implementation in the next PR
-    return "";
+  private Either<Failure, String> resolveLinkedResourceKey(
+      final LinkedResource linkedResource, final BpmnElementContext context, final long scopeKey) {
+    return findLinkedResource(
+            linkedResource.getResourceId(),
+            linkedResource.getBindingType(),
+            linkedResource.getVersionTag(),
+            context,
+            scopeKey)
+        .map(PersistedResource::getResourceKey)
+        .map(String::valueOf);
+  }
+
+  private Either<Failure, PersistedResource> findLinkedResource(
+      final String resourceId,
+      final ZeebeBindingType bindingType,
+      final String versionTag,
+      final BpmnElementContext context,
+      final long scopeKey) {
+    return switch (bindingType) {
+      case deployment -> findResourceByIdInSameDeployment(resourceId, context, scopeKey);
+      case latest -> findLatestResourceById(resourceId, context.getTenantId(), scopeKey);
+      case versionTag ->
+          findResourceByIdAndVersionTag(resourceId, versionTag, context.getTenantId(), scopeKey);
+    };
+  }
+
+  private Either<Failure, PersistedResource> findResourceByIdInSameDeployment(
+      final String resourceId, final BpmnElementContext context, final long scopeKey) {
+    return stateBehavior
+        .getDeploymentKey(context.getProcessDefinitionKey(), context.getTenantId())
+        .flatMap(
+            deploymentKey ->
+                Either.ofOptional(
+                        resourceState.findResourceByIdAndDeploymentKey(
+                            resourceId, deploymentKey, context.getTenantId()))
+                    .orElse(
+                        new Failure(
+                            String.format(
+                                FIND_RESOURCE_BY_ID_IN_SAME_DEPLOYMENT_FAILED_MESSAGE,
+                                resourceId,
+                                deploymentKey),
+                            ErrorType.RESOURCE_NOT_FOUND,
+                            scopeKey)));
+  }
+
+  private Either<Failure, PersistedResource> findLatestResourceById(
+      final String resourceId, final String tenantId, final long scopeKey) {
+    return Either.ofOptional(resourceState.findLatestResourceById(resourceId, tenantId))
+        .orElse(
+            new Failure(
+                String.format(FIND_LATEST_RESOURCE_BY_ID_FAILED_MESSAGE, resourceId),
+                ErrorType.RESOURCE_NOT_FOUND,
+                scopeKey));
+  }
+
+  private Either<Failure, PersistedResource> findResourceByIdAndVersionTag(
+      final String resourceId,
+      final String versionTag,
+      final String tenantId,
+      final long scopeKey) {
+    return Either.ofOptional(
+            resourceState.findResourceByIdAndVersionTag(resourceId, versionTag, tenantId))
+        .orElse(
+            new Failure(
+                String.format(
+                    FIND_RESOURCE_BY_ID_AND_VERSION_TAG_FAILED_MESSAGE, resourceId, versionTag),
+                ErrorType.RESOURCE_NOT_FOUND,
+                scopeKey));
   }
 
   private static String asListLiteralOrNull(final List<String> list) {
