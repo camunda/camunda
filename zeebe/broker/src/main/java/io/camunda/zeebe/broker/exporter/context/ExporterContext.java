@@ -11,12 +11,16 @@ import io.camunda.zeebe.exporter.api.context.Configuration;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.EnsureUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import java.time.InstantSource;
 import org.slf4j.Logger;
 
-public final class ExporterContext implements Context {
+public final class ExporterContext implements Context, CloseableSilently {
 
   private static final RecordFilter DEFAULT_FILTER = new AcceptAllRecordsFilter();
 
@@ -37,7 +41,11 @@ public final class ExporterContext implements Context {
     this.logger = logger;
     this.configuration = configuration;
     this.partitionId = partitionId;
-    this.meterRegistry = meterRegistry;
+    this.meterRegistry =
+        MicrometerUtil.wrap(
+            meterRegistry,
+            Tags.concat(
+                PartitionKeyNames.tags(partitionId), Tags.of("exporterId", configuration.getId())));
     this.clock = clock;
   }
 
@@ -74,6 +82,11 @@ public final class ExporterContext implements Context {
   public void setFilter(final RecordFilter filter) {
     EnsureUtil.ensureNotNull("filter", filter);
     this.filter = filter;
+  }
+
+  @Override
+  public void close() {
+    MicrometerUtil.close(meterRegistry);
   }
 
   private static final class AcceptAllRecordsFilter implements RecordFilter {

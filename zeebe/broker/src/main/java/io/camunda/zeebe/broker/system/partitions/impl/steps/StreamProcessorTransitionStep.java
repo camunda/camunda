@@ -142,7 +142,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         List.of(engine, context.getCheckpointProcessor());
     final var scheduledCommandCache =
         BoundedScheduledCommandCache.ofIntent(
-            new BoundedCommandCacheMetrics(context.getPartitionMeterRegistry()),
+            new BoundedCommandCacheMetrics(context.getPartitionTransitionMeterRegistry()),
             TimerIntent.TRIGGER,
             JobIntent.TIME_OUT,
             JobIntent.RECUR_AFTER_BACKOFF,
@@ -151,7 +151,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         SkipPositionsFilter.of(context.getBrokerCfg().getProcessing().skipPositions());
 
     return StreamProcessor.builder()
-        .meterRegistry(context.getPartitionMeterRegistry())
+        .meterRegistry(context.getPartitionTransitionMeterRegistry())
         .logStream(context.getLogStream())
         .actorSchedulingService(context.getActorSchedulingService())
         .zeebeDb(context.getZeebeDb())

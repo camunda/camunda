@@ -12,6 +12,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.agrona.LangUtil;
 import org.junit.rules.ExternalResource;
@@ -74,8 +75,7 @@ public final class ActorSchedulerRule extends ExternalResource {
 
     actorScheduler = null;
     builder = null;
-    meterRegistry.clear();
-    meterRegistry.close();
+    MicrometerUtil.close(meterRegistry);
   }
 
   public ActorFuture<Void> submitActor(final Actor actor) {

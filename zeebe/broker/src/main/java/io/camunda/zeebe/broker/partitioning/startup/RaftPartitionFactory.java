@@ -31,14 +31,13 @@ public final class RaftPartitionFactory {
   public static final String GROUP_NAME = "raft-partition";
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private final BrokerCfg brokerCfg;
-  private final MeterRegistry meterRegistry;
 
-  public RaftPartitionFactory(final BrokerCfg brokerCfg, final MeterRegistry meterRegistry) {
+  public RaftPartitionFactory(final BrokerCfg brokerCfg) {
     this.brokerCfg = brokerCfg;
-    this.meterRegistry = meterRegistry;
   }
 
-  public RaftPartition createRaftPartition(final PartitionMetadata partitionMetadata) {
+  public RaftPartition createRaftPartition(
+      final PartitionMetadata partitionMetadata, final MeterRegistry partitionMeterRegistry) {
     final var partitionDirectory =
         Paths.get(brokerCfg.getData().getDirectory())
             .resolve(GROUP_NAME)
@@ -56,11 +55,13 @@ public final class RaftPartitionFactory {
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
-    return createRaftPartition(partitionMetadata, partitionDirectory);
+    return createRaftPartition(partitionMetadata, partitionDirectory, partitionMeterRegistry);
   }
 
   public RaftPartition createRaftPartition(
-      final PartitionMetadata partitionMetadata, final Path partitionDirectory) {
+      final PartitionMetadata partitionMetadata,
+      final Path partitionDirectory,
+      final MeterRegistry partitionMeterRegistry) {
     final var storageConfig = new RaftStorageConfig();
     final var partitionConfig = new RaftPartitionConfig();
 
@@ -108,7 +109,7 @@ public final class RaftPartitionFactory {
         brokerCfg.getExperimental().getRaft().getPreferSnapshotReplicationThreshold());
 
     return new RaftPartition(
-        partitionMetadata, partitionConfig, partitionDirectory.toFile(), meterRegistry);
+        partitionMetadata, partitionConfig, partitionDirectory.toFile(), partitionMeterRegistry);
   }
 
   private RaftLogFlusher.Factory createFlusherFactory(

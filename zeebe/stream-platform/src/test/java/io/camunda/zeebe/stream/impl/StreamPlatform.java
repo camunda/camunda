@@ -382,7 +382,7 @@ public final class StreamPlatform {
     @Override
     public void close() {
       logStream.close();
-      MicrometerUtil.closeRegistry(meterRegistry);
+      MicrometerUtil.close(meterRegistry);
     }
   }
 

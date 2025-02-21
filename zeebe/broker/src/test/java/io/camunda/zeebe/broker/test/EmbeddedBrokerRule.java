@@ -19,7 +19,6 @@ import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.TestLoggers;
-import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -62,7 +61,6 @@ public final class EmbeddedBrokerRule extends ExternalResource {
   public static final TimeUnit INSTALL_TIMEOUT_UNIT = TimeUnit.MINUTES;
   protected static final Logger LOG = TestLoggers.TEST_LOGGER;
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
-  private static final boolean ENABLE_HTTP_EXPORTER = false;
   private static final String SNAPSHOTS_DIRECTORY = "snapshots";
   private static final String STATE_DIRECTORY = "state";
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -169,10 +167,6 @@ public final class EmbeddedBrokerRule extends ExternalResource {
 
   public SpringBrokerBridge getSpringBrokerBridge() {
     return springBrokerBridge;
-  }
-
-  public ClusterServices getClusterServices() {
-    return broker.getBrokerContext().getClusterServices();
   }
 
   public AtomixCluster getAtomixCluster() {
