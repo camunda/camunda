@@ -256,9 +256,6 @@ public class FlowNodeInstanceForListViewEntity
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
     final FlowNodeInstanceForListViewEntity that = (FlowNodeInstanceForListViewEntity) o;
     return Objects.equals(id, that.id)
         && key == that.key
