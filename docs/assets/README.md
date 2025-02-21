@@ -6,6 +6,7 @@ We should try to make sure to reference the sources of such images, so engineers
 
 Assets:
 
-| Asset | Source |
-|-------|--------|
+|        Asset        |                                      Source                                       |
+|---------------------|-----------------------------------------------------------------------------------|
 | testing-pyramid.png | [Miro board](https://miro.com/app/board/uXjVLFkHbeY=/?share_link_id=541141577158) |
+
