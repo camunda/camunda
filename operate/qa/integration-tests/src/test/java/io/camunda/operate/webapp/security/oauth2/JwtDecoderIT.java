@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.webapp.security.oauth2;
 
+import static io.camunda.operate.webapp.security.SecurityTestUtil.signAndSerialize;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
@@ -15,22 +16,14 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSSigner;
-import com.nimbusds.jose.crypto.ECDSASigner;
-import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
 import io.camunda.identity.sdk.IdentityConfiguration;
-import java.util.Date;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -216,45 +209,5 @@ public class JwtDecoderIT {
         .keyUse(KeyUse.SIGNATURE)
         .keyID("345")
         .generate();
-  }
-
-  private String signAndSerialize(final RSAKey rsaKey, final JWSAlgorithm alg)
-      throws JOSEException {
-    // Create RSA-signer with the private key
-    final JWSSigner rsaSigner = new RSASSASigner(rsaKey);
-
-    final SignedJWT rsaSignedJWT =
-        new SignedJWT(
-            new JWSHeader.Builder(alg).type(JOSEObjectType.JWT).keyID(rsaKey.getKeyID()).build(),
-            getClaimsSet());
-
-    rsaSignedJWT.sign(rsaSigner);
-    final String serializedJwt = rsaSignedJWT.serialize();
-    System.out.println("JWT serialized=" + serializedJwt);
-    return serializedJwt;
-  }
-
-  private String signAndSerialize(final ECKey ecKey, final JWSAlgorithm alg) throws JOSEException {
-    // Create EC-signer with the private key
-    final ECDSASigner ecSigner = new ECDSASigner(ecKey);
-
-    final SignedJWT ecSignedJWT =
-        new SignedJWT(
-            new JWSHeader.Builder(alg).type(JOSEObjectType.JWT).keyID(ecKey.getKeyID()).build(),
-            getClaimsSet());
-
-    ecSignedJWT.sign(ecSigner);
-    final String ecSerializedJwt = ecSignedJWT.serialize();
-    System.out.println("JWT serialized=" + ecSerializedJwt);
-    return ecSerializedJwt;
-  }
-
-  private JWTClaimsSet getClaimsSet() {
-    // prepare default JWT claims set
-    return new JWTClaimsSet.Builder()
-        .subject("alice")
-        .issuer("http://localhost")
-        .expirationTime(new Date(new Date().getTime() + 60 * 1000))
-        .build();
   }
 }

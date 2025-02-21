@@ -56,9 +56,7 @@ public class ConfigurationServiceTest {
   private static final int CUSTOM_SECOND_ES_PORT = 9202;
   // note: these are not valid package names but just serve the purpose of special character
   // handling on parsing
-  private static final String DEFAULT_PACKAGE_2 = "package:2";
   private static final String CUSTOM_PACKAGE_2 = "pack2";
-  private static final String DEFAULT_PACKAGE_3 = "";
   private static final String CUSTOM_PACKAGE_3 = "pack_3";
   private static final String API_SECRET = "secret";
   private static final String ACCESS_URL = "accessUrl";
@@ -238,8 +236,6 @@ public class ConfigurationServiceTest {
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_BATCH_SIZE",
         String.valueOf(CUSTOM_HISTORY_CLEANUP_BATCH_SIZE));
     environmentVariablesExtension.set(
-        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(true));
-    environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED", String.valueOf(true));
     environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_CONTAINER_HTTP2_ENABLED", String.valueOf(true));
@@ -310,8 +306,6 @@ public class ConfigurationServiceTest {
     System.setProperty(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_BATCH_SIZE",
         String.valueOf(CUSTOM_HISTORY_CLEANUP_BATCH_SIZE));
-    System.setProperty(
-        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_HTTP2_ENABLED", String.valueOf(true));
@@ -389,8 +383,6 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_BATCH_SIZE", String.valueOf(1000));
     environmentVariablesExtension.set(
-        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(false));
-    environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED",
         String.valueOf(false));
     environmentVariablesExtension.set(
@@ -452,8 +444,6 @@ public class ConfigurationServiceTest {
     System.setProperty(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_BATCH_SIZE",
         String.valueOf(CUSTOM_HISTORY_CLEANUP_BATCH_SIZE));
-    System.setProperty(
-        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_HTTP2_ENABLED", String.valueOf(true));
@@ -538,8 +528,6 @@ public class ConfigurationServiceTest {
     System.setProperty(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_BATCH_SIZE",
         String.valueOf(CUSTOM_HISTORY_CLEANUP_BATCH_SIZE));
-    System.setProperty(
-        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_HTTP2_ENABLED", String.valueOf(true));
@@ -666,12 +654,6 @@ public class ConfigurationServiceTest {
     assertThat(
             underTest
                 .getCleanupServiceConfiguration()
-                .getDecisionCleanupConfiguration()
-                .isEnabled())
-        .isFalse();
-    assertThat(
-            underTest
-                .getCleanupServiceConfiguration()
                 .getExternalVariableCleanupConfiguration()
                 .isEnabled())
         .isFalse();
@@ -759,12 +741,6 @@ public class ConfigurationServiceTest {
                 .getProcessDataCleanupConfiguration()
                 .getBatchSize())
         .isEqualTo(CUSTOM_HISTORY_CLEANUP_BATCH_SIZE);
-    assertThat(
-            underTest
-                .getCleanupServiceConfiguration()
-                .getDecisionCleanupConfiguration()
-                .isEnabled())
-        .isTrue();
     assertThat(
             underTest
                 .getCleanupServiceConfiguration()

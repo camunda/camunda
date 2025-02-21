@@ -240,7 +240,7 @@ jobs:
       # Set up an elastic search service container
       # https://docs.github.com/en/actions/use-cases-and-examples/using-containerized-services/about-service-containers
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.17.1
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.17.2
         # Exposing the ports allow to be accessible via http://localhost:9200 in the runner
         ports:
           - 9200:9200
@@ -402,6 +402,70 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  rdbms-h2-integration-tests:
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes ]
+    name: "[IT] RDBMS - H2"
+    timeout-minutes: 10
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    runs-on: gcp-perf-core-8-default
+    env:
+      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: it-elasticsearch
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      # Build the platform before running the integration tests; skipping frontend
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+      # Run specific integration tests with H2 inmemory database
+      #
+      # To communicate to the IT what database to expect and run against:
+      # -Dcamunda.it.database.type=rdbms
+      #
+      - name: Run integration test with InMemory H2
+        run: >
+          ./mvnw -B -T 2 --no-snapshot-updates
+          -D forkCount=3
+          -D maven.javadoc.skip=true
+          -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
+          -D test.integration.camunda.database.type=rdbms
+          -pl 'qa/integration-tests'
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[IT] RDBMS - H2"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "[IT] ${{ matrix.name }}"
@@ -469,18 +533,6 @@ jobs:
           version: current-test
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
-      - name: Build Camunda Docker Image
-        if: matrix.group == 'root'
-        uses: ./.github/actions/build-platform-docker
-        id: build-camunda-docker
-        with:
-          repository: localhost:5000/camunda/camunda
-          version: current-test
-          distball: ${{ steps.build-zeebe.outputs.distball }}
-          platforms: ${{ env.DOCKER_PLATFORMS }}
-          dockerfile: camunda.Dockerfile
-          # push is needed for multi-arch images as buildkit does not support loading them locally
-          push: true
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
@@ -944,6 +996,7 @@ jobs:
       - optimize-backend-unit-tests
       - optimize-frontend-unit-tests
       - protobuf-checks
+      - rdbms-h2-integration-tests
       - tasklist-frontend-tests
       - zeebe-ci
     steps:
@@ -960,8 +1013,8 @@ jobs:
   deploy-snapshots:
     name: Deploy snapshot artifacts
     needs: [ check-results ]
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 25
     permissions: {}  # GITHUB_TOKEN unused in this job
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
@@ -969,37 +1022,12 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.0.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
-            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
-      - uses: actions/setup-java@v4.6.0
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-      # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
-      - name: 'Create settings.xml'
-        uses: s4u/maven-settings-action@v3.1.0
-        with:
-          githubServer: false
-          servers: |
-            [{
-              "id": "camunda-nexus",
-              "username": "${{ steps.secrets.outputs.ARTIFACTS_USR }}",
-              "password": "${{ steps.secrets.outputs.ARTIFACTS_PSW }}"
-            }]
-          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "zeebe,zeebe-snapshots", "name": "camunda Nexus"}]'
-      - name: Configure Maven
-        uses: ./.github/actions/setup-maven-cache
+      - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: snapshots
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-frontend
         id: build-operate-fe
         with:
@@ -1015,10 +1043,7 @@ jobs:
       # compile and generate-sources to ensure that the Javadoc can be properly generated; compile is
       # necessary when using annotation preprocessors for code generation, as otherwise the symbols are
       # not resolve-able by the Javadoc generator
-      - run: ./mvnw -B -D skipTests -D skipChecks -PskipFrontendBuild compile generate-sources source:jar javadoc:jar deploy
-        env:
-          MAVEN_USERNAME: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
-          MAVEN_PASSWORD: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
+      - run: ./mvnw -B -T1C -D skipTests -D skipChecks -PskipFrontendBuild compile generate-sources source:jar javadoc:jar deploy
       - name: Observe build status
         if: always()
         continue-on-error: true

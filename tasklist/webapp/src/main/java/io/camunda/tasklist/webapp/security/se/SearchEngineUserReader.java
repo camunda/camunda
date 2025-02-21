@@ -33,6 +33,9 @@ public class SearchEngineUserReader implements UserReader {
 
   @Override
   public Optional<UserDTO> getCurrentUserBy(final Authentication authentication) {
+    if (authentication == null) {
+      return Optional.empty();
+    }
     final Object principal = authentication.getPrincipal();
     if (principal instanceof CamundaUser) {
       final CamundaUser user = (CamundaUser) principal;

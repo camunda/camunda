@@ -44,7 +44,7 @@ describe('Task Details', () => {
   beforeEach(() => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => HttpResponse.json(userMocks.currentUser),
         {once: true},
       ),

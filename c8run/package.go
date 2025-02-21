@@ -88,7 +88,6 @@ func getFilesToArchive(osType, elasticsearchVersion, connectorsFilePath, camunda
 		filepath.Join("c8run", connectorsFilePath),
 		filepath.Join("c8run", "elasticsearch-"+elasticsearchVersion),
 		filepath.Join("c8run", "custom_connectors"),
-		filepath.Join("c8run", "configuration"),
 		filepath.Join("c8run", "endpoints.txt"),
 		filepath.Join("c8run", "log"),
 		filepath.Join("c8run", "camunda-zeebe-"+camundaVersion),
@@ -158,11 +157,6 @@ func Package(camundaVersion string, elasticsearchVersion string, connectorsVersi
 	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, javaArtifactsToken, extractFunc)
 	if err != nil {
 		return fmt.Errorf("Package "+osType+": failed to download camunda %w\n%s", err, debug.Stack())
-	}
-
-	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, authToken, extractFunc)
-	if err != nil {
-		return fmt.Errorf("Package "+osType+": failed to fetch camunda: %w\n%s", err, debug.Stack())
 	}
 
 	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, javaArtifactsToken, func(_, _ string) error { return nil })

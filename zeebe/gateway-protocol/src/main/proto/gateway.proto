@@ -123,6 +123,8 @@ message JobResult{
   //   * `priority` - minimum 0, maximum 100, default 50
   //  Omitting any of the attributes will preserve the persisted attribute's value.
   optional JobResultCorrections corrections = 2;
+  // The reason provided by the user task listener for denying the work.
+  optional string deniedReason = 3;
 }
 
 message JobResultCorrections {

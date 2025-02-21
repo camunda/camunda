@@ -9,10 +9,11 @@
 import {expect} from '@playwright/test';
 import subscribeFormSchema from '@/resources/subscribeForm.json' assert {type: 'json'};
 import {test} from '@/visual-fixtures';
+import {URL_API_V1_PATTERN} from '@/constants';
 
 test.describe('start process from form page', () => {
   test('initial page', async ({page}) => {
-    await page.route(/^.*\/v1.*$/i, (route) => {
+    await page.route(URL_API_V1_PATTERN, (route) => {
       if (route.request().url().includes('v1/external/process/foo/form')) {
         return route.fulfill({
           status: 200,
@@ -46,7 +47,7 @@ test.describe('start process from form page', () => {
   });
 
   test('process not found', async ({page}) => {
-    await page.route(/^.*\/v1.*$/i, (route) => {
+    await page.route(URL_API_V1_PATTERN, (route) => {
       if (route.request().url().includes('v1/external/process/foo/form')) {
         return route.fulfill({
           status: 404,
@@ -77,7 +78,7 @@ test.describe('start process from form page', () => {
   });
 
   test('invalid schema', async ({page}) => {
-    await page.route(/^.*\/v1.*$/i, (route) => {
+    await page.route(URL_API_V1_PATTERN, (route) => {
       if (route.request().url().includes('v1/external/process/foo/form')) {
         return route.fulfill({
           status: 200,
@@ -110,7 +111,7 @@ test.describe('start process from form page', () => {
   });
 
   test('successful submission', async ({page}) => {
-    await page.route(/^.*\/v1.*$/i, (route) => {
+    await page.route(URL_API_V1_PATTERN, (route) => {
       if (route.request().url().includes('v1/external/process/foo/form')) {
         return route.fulfill({
           status: 200,
@@ -159,7 +160,7 @@ test.describe('start process from form page', () => {
   });
 
   test('failed submission', async ({page}) => {
-    await page.route(/^.*\/v1.*$/i, (route) => {
+    await page.route(URL_API_V1_PATTERN, (route) => {
       if (route.request().url().includes('v1/external/process/foo/form')) {
         return route.fulfill({
           status: 200,

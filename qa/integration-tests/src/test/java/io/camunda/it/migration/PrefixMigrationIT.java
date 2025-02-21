@@ -10,7 +10,9 @@ package io.camunda.it.migration;
 import io.camunda.application.commons.migration.PrefixMigrationHelper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CredentialsProvider;
+import io.camunda.it.utils.MultiDbConfigurator;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
@@ -48,10 +50,7 @@ public class PrefixMigrationIT {
           .withStartupTimeout(Duration.ofMinutes(5)); // can be slow in CI
 
   private GenericContainer<?> createCamundaContainer(
-      final String image,
-      final String operatePrefix,
-      final String tasklistPrefix,
-      final String newPrefix) {
+      final String image, final String operatePrefix, final String tasklistPrefix) {
     final var esUrl = String.format("http://%s:%d", ELASTIC_ALIAS, 9200);
 
     final var container =
@@ -78,21 +77,7 @@ public class PrefixMigrationIT {
             .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", esUrl)
             .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", esUrl)
             .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", esUrl)
-            .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", esUrl)
-            .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", newPrefix)
-            .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL", esUrl)
-            .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE", "1")
-            .withEnv(
-                "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME",
-                "io.camunda.exporter.CamundaExporter")
-            .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX", newPrefix)
-            .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_ELASTICSEARCH_URL", esUrl)
-            .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL", esUrl)
-            .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE", "1")
-            .withEnv(
-                "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME",
-                "io.camunda.exporter.CamundaExporter")
-            .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX", newPrefix);
+            .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", esUrl);
 
     return container;
   }
@@ -141,7 +126,7 @@ public class PrefixMigrationIT {
     // given
     final var camunda87 =
         createCamundaContainer(
-            "camunda/camunda:8.7.0-alpha4", OLD_OPERATE_PREFIX, OLD_TASKLIST_PREFIX, NEW_PREFIX);
+            "camunda/camunda:8.7.0-SNAPSHOT", OLD_OPERATE_PREFIX, OLD_TASKLIST_PREFIX);
     camunda87.start();
 
     final var camunda87Client = createCamundaClient(camunda87);
@@ -162,16 +147,27 @@ public class PrefixMigrationIT {
     prefixMigration(NEW_PREFIX);
 
     // then
-    final var currentCamunda =
-        createCamundaContainer(
-            "localhost:5000/camunda/camunda:current-test", NEW_PREFIX, NEW_PREFIX, NEW_PREFIX);
-    currentCamunda.start();
-
-    final var currentCamundaClient = createCamundaClient(currentCamunda);
+    final var currentCamundaClient = startLatestCamunda();
 
     final var processDefinitions = currentCamundaClient.newProcessDefinitionQuery().send().join();
     Assertions.assertThat(processDefinitions.items().size()).isEqualTo(1);
     Assertions.assertThat(processDefinitions.items().getFirst().getProcessDefinitionKey())
         .isEqualTo(event.getProcesses().getFirst().getProcessDefinitionKey());
+  }
+
+  private CamundaClient startLatestCamunda() {
+    final TestSimpleCamundaApplication testSimpleCamundaApplication =
+        new TestSimpleCamundaApplication();
+    final MultiDbConfigurator multiDbConfigurator =
+        new MultiDbConfigurator(testSimpleCamundaApplication);
+    final var esUrl = String.format("http://localhost:%d", esContainer.getMappedPort(9200));
+    multiDbConfigurator.configureElasticsearchSupport(esUrl, NEW_PREFIX);
+    testSimpleCamundaApplication.withProperty("camunda.tasklist.zeebeElasticsearch.prefix", null);
+    testSimpleCamundaApplication.withProperty("camunda.operate.zeebeElasticsearch.prefix", null);
+    testSimpleCamundaApplication.start();
+    testSimpleCamundaApplication.awaitCompleteTopology();
+
+    final var currentCamundaClient = testSimpleCamundaApplication.newClientBuilder().build();
+    return currentCamundaClient;
   }
 }

@@ -348,31 +348,6 @@ public class ConfigurationService {
     this.maximumBackoff = maximumBackoff;
   }
 
-  public int getEngineConnectTimeout() {
-    if (engineConnectTimeout == null) {
-      engineConnectTimeout =
-          configJsonContext.read(
-              ConfigurationServiceConstants.ENGINE_CONNECT_TIMEOUT, Integer.class);
-    }
-    return engineConnectTimeout;
-  }
-
-  public void setEngineConnectTimeout(final Integer engineConnectTimeout) {
-    this.engineConnectTimeout = engineConnectTimeout;
-  }
-
-  public int getEngineReadTimeout() {
-    if (engineReadTimeout == null) {
-      engineReadTimeout =
-          configJsonContext.read(ConfigurationServiceConstants.ENGINE_READ_TIMEOUT, Integer.class);
-    }
-    return engineReadTimeout;
-  }
-
-  public void setEngineReadTimeout(final Integer engineReadTimeout) {
-    this.engineReadTimeout = engineReadTimeout;
-  }
-
   public int getCurrentTimeBackoffMilliseconds() {
     if (currentTimeBackoffMilliseconds == null) {
       currentTimeBackoffMilliseconds =

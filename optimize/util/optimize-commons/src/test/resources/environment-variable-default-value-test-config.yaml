@@ -17,9 +17,5 @@ es:
       - host: ${ES_HOST_2:default2}
         httpPort: ${ES_PORT_2:9200}
 
-plugin:
-  variableImport:
-    basePackages: ['1', '${PACKAGE_2:package:2}', '${PACKAGE_3:}']
-
 container:
   accessUrl: ${ACCESS_URL:null}

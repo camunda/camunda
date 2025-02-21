@@ -120,7 +120,7 @@ public class LocalStorageDocumentStore implements DocumentStore {
       return Either.left(new UnknownDocumentError(e));
     }
     return Either.right(
-        new DocumentReference(request.documentId(), hashResult.contentHash(), request.metadata()));
+        new DocumentReference(documentId, hashResult.contentHash(), request.metadata()));
   }
 
   private Either<DocumentError, DocumentContent> getDocumentInternal(final String documentId) {

@@ -15,6 +15,8 @@ import io.atomix.utils.net.Address;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
+import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.gateway.Gateway;
@@ -169,7 +171,9 @@ final class SecurityTest {
     actorScheduler = ActorScheduler.newActorScheduler().build();
     actorScheduler.start();
     topologyManager =
-        new BrokerTopologyManagerImpl(() -> atomix.getMembershipService().getMembers());
+        new BrokerTopologyManagerImpl(
+            () -> atomix.getMembershipService().getMembers(),
+            new BrokerClientTopologyMetrics(new SimpleMeterRegistry()));
     actorScheduler.submitActor(topologyManager).join();
 
     brokerClient =
@@ -178,7 +182,8 @@ final class SecurityTest {
             atomix.getMessagingService(),
             atomix.getEventService(),
             actorScheduler,
-            topologyManager);
+            topologyManager,
+            new BrokerClientRequestMetrics(new SimpleMeterRegistry()));
     jobStreamClient = new JobStreamClientImpl(actorScheduler, atomix.getCommunicationService());
     jobStreamClient.start().join();
 

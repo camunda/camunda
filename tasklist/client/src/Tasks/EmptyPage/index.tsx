@@ -9,7 +9,6 @@
 import {Column, Grid, Link} from '@carbon/react';
 import CheckImage from 'modules/images/orange-check-mark.svg';
 import {getStateLocally} from 'modules/utils/localStorage';
-import {Restricted} from 'modules/components/Restricted';
 import {useTasks} from 'modules/queries/useTasks';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {useEffect} from 'react';
@@ -79,12 +78,7 @@ const EmptyPage: React.FC = () => {
         xlg={10}
       >
         {isOldUser ? (
-          <Restricted
-            fallback={<h3>{t('taskEmptyPickPromptRestricted')}</h3>}
-            scopes={['write']}
-          >
-            <h3>{t('taskEmptyPickPrompt')}</h3>
-          </Restricted>
+          <h3>{t('taskEmptyPickPrompt')}</h3>
         ) : (
           <>
             <h3>{t('taskEmptyHeader')}</h3>

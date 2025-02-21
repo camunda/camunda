@@ -27,14 +27,14 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
 
 public class FlowNodeInstanceFromProcessInstanceHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -52,24 +52,23 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     assertThat(underTest.getEntityType()).isEqualTo(FlowNodeInstanceEntity.class);
   }
 
-  @Test
-  public void shouldHandleRecord() {
-    final Set<ProcessInstanceIntent> intents2Handle =
-        Set.of(
-            ProcessInstanceIntent.ELEMENT_ACTIVATING,
-            ProcessInstanceIntent.ELEMENT_COMPLETED,
-            ProcessInstanceIntent.ELEMENT_TERMINATED,
-            ProcessInstanceIntent.ELEMENT_MIGRATED);
-
-    intents2Handle.stream()
-        .forEach(
-            intent -> {
-              final Record<ProcessInstanceRecordValue> processInstanceRecord = createRecord(intent);
-              // when - then
-              assertThat(underTest.handlesRecord(processInstanceRecord))
-                  .as("Handles intent %s", intent)
-                  .isTrue();
-            });
+  @ParameterizedTest
+  @EnumSource(
+      value = ProcessInstanceIntent.class,
+      names = {
+        "ELEMENT_ACTIVATING",
+        "ELEMENT_COMPLETED",
+        "ELEMENT_TERMINATED",
+        "ELEMENT_MIGRATED",
+        "ANCESTOR_MIGRATED"
+      },
+      mode = Mode.INCLUDE)
+  public void shouldHandleRecord(final ProcessInstanceIntent intent) {
+    final Record<ProcessInstanceRecordValue> processInstanceRecord = createRecord(intent);
+    // when - then
+    assertThat(underTest.handlesRecord(processInstanceRecord))
+        .as("Handles intent %s", intent)
+        .isTrue();
   }
 
   private Record<ProcessInstanceRecordValue> createRecord(final ProcessInstanceIntent intent) {
@@ -85,28 +84,23 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     return processInstanceRecord;
   }
 
-  @Test
-  public void shouldNotHandleRecord() {
-    final Set<ProcessInstanceIntent> intents2Handle =
-        Set.of(
-            ProcessInstanceIntent.ELEMENT_ACTIVATING,
-            ProcessInstanceIntent.ELEMENT_COMPLETED,
-            ProcessInstanceIntent.ELEMENT_TERMINATED,
-            ProcessInstanceIntent.ELEMENT_MIGRATED);
-    final Set<ProcessInstanceIntent> intents2Ignore =
-        Arrays.stream(ProcessInstanceIntent.values())
-            .filter(intent -> !intents2Handle.contains(intent))
-            .collect(Collectors.toSet());
-
-    intents2Ignore.stream()
-        .forEach(
-            intent -> {
-              final Record<ProcessInstanceRecordValue> processInstanceRecord = createRecord(intent);
-              // when - then
-              assertThat(underTest.handlesRecord(processInstanceRecord))
-                  .as("Does not handle intent %s", intent)
-                  .isFalse();
-            });
+  @ParameterizedTest
+  @EnumSource(
+      value = ProcessInstanceIntent.class,
+      names = {
+        "ELEMENT_ACTIVATING",
+        "ELEMENT_COMPLETED",
+        "ELEMENT_TERMINATED",
+        "ELEMENT_MIGRATED",
+        "ANCESTOR_MIGRATED"
+      },
+      mode = Mode.EXCLUDE)
+  public void shouldNotHandleRecord(final ProcessInstanceIntent intent) {
+    final Record<ProcessInstanceRecordValue> processInstanceRecord = createRecord(intent);
+    // when - then
+    assertThat(underTest.handlesRecord(processInstanceRecord))
+        .as("Does not handle intent %s", intent)
+        .isFalse();
   }
 
   @Test
@@ -399,6 +393,8 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
             r ->
                 r.withIntent(ProcessInstanceIntent.ELEMENT_MIGRATED)
                     .withValue(processInstanceRecordValue));
+    final String defaultTreePath =
+        processInstanceRecordValue.getProcessInstanceKey() + "/" + processInstanceRecord.getKey();
 
     // when
     final FlowNodeInstanceEntity flowNodeInstanceEntity = new FlowNodeInstanceEntity();
@@ -409,5 +405,39 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     assertThat(flowNodeInstanceEntity.getStartDate()).isNull();
     assertThat(flowNodeInstanceEntity.getEndDate()).isNull();
     assertThat(flowNodeInstanceEntity.getPosition()).isNull();
+    assertThat(flowNodeInstanceEntity.getTreePath()).isEqualTo(defaultTreePath);
+  }
+
+  @ParameterizedTest
+  @EnumSource(BpmnElementType.class)
+  public void shouldSetFlowNodeType(final BpmnElementType bpmnElementType) {
+    // given
+    final ProcessInstanceRecordValue processInstanceRecordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(bpmnElementType)
+            .build();
+
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                    .withValue(processInstanceRecordValue));
+
+    // when
+    final FlowNodeInstanceEntity entity = new FlowNodeInstanceEntity();
+
+    underTest.updateEntity(processInstanceRecord, entity);
+
+    // then
+    assertThat(entity.getType())
+        .describedAs(
+            """
+            Should set flow-node type for element: %s. \
+            Probably, the BPMN element is new and need to be added to the enum FlowNodeType.""",
+            bpmnElementType)
+        .isNotNull()
+        .isNotEqualTo(FlowNodeType.UNKNOWN);
   }
 }

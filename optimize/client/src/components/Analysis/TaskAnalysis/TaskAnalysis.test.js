@@ -243,8 +243,8 @@ it('should open details modal on node click', async () => {
 });
 
 it('should load variables data and display details table', async () => {
-  loadNodesOutliers.mockClear();
   getFlowNodeNames.mockClear();
+  loadNodesOutliers.mockClear();
 
   const node = shallow(<TaskAnalysis />);
 
@@ -256,9 +256,9 @@ it('should load variables data and display details table', async () => {
 
   await flushPromises();
   runAllEffects();
-  await flushPromises();
 
-  expect(loadCommonOutliersVariables).toHaveBeenCalled();
+  expect(getFlowNodeNames).toHaveBeenCalled();
+  expect(loadNodesOutliers).toHaveBeenCalled();
   expect(node.find(OutlierDetailsTable)).toExist();
 });
 

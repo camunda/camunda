@@ -10,9 +10,7 @@ package io.camunda.it.utils;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -33,8 +31,6 @@ public class MultiDbConfiguratorTest {
     new MultiDbConfigurator(testSimpleCamundaApplication);
 
     // then
-    assertThat(testSimpleCamundaApplication.bean(OperateProperties.class)).isNotNull();
-    assertThat(testSimpleCamundaApplication.bean(TasklistProperties.class)).isNotNull();
 
     final BrokerBasedProperties brokerBasedProperties =
         testSimpleCamundaApplication.bean(BrokerBasedProperties.class);
@@ -52,25 +48,40 @@ public class MultiDbConfiguratorTest {
     multiDbConfigurator.configureElasticsearchSupport(EXPECTED_URL, EXPECTED_PREFIX);
 
     // then
-    final String configuredPrefix =
-        testSimpleCamundaApplication.property("camunda.database.indexPrefix", String.class, "");
-    assertThat(configuredPrefix).isEqualTo(EXPECTED_PREFIX);
-    final String configuredUrl =
-        testSimpleCamundaApplication.property("camunda.database.url", String.class, "");
-    assertThat(configuredUrl).isEqualTo(EXPECTED_URL);
 
-    final OperateProperties operateProperties =
-        testSimpleCamundaApplication.bean(OperateProperties.class);
-    assertThat(operateProperties).isNotNull();
+    /* Tasklist Config Assertions */
+    assertProperty(
+        testSimpleCamundaApplication,
+        "camunda.tasklist.elasticsearch.indexPrefix",
+        EXPECTED_PREFIX);
+    assertProperty(
+        testSimpleCamundaApplication, "camunda.tasklist.elasticsearch.url", EXPECTED_URL);
+    assertProperty(
+        testSimpleCamundaApplication, "camunda.tasklist.zeebeElasticsearch.url", EXPECTED_URL);
+    assertProperty(
+        testSimpleCamundaApplication,
+        "camunda.tasklist.elasticsearch.indexPrefix",
+        EXPECTED_PREFIX);
+    assertProperty(
+        testSimpleCamundaApplication,
+        "camunda.tasklist.zeebeElasticsearch.prefix",
+        EXPECTED_PREFIX);
 
-    assertThat(operateProperties.getElasticsearch().getIndexPrefix()).isEqualTo(EXPECTED_PREFIX);
-    assertThat(operateProperties.getElasticsearch().getUrl()).isEqualTo(EXPECTED_URL);
+    /* Operate Config Assertions */
+    assertProperty(
+        testSimpleCamundaApplication, "camunda.operate.elasticsearch.indexPrefix", EXPECTED_PREFIX);
+    assertProperty(testSimpleCamundaApplication, "camunda.operate.elasticsearch.url", EXPECTED_URL);
+    assertProperty(
+        testSimpleCamundaApplication, "camunda.operate.zeebeElasticsearch.url", EXPECTED_URL);
+    assertProperty(
+        testSimpleCamundaApplication, "camunda.operate.elasticsearch.indexPrefix", EXPECTED_PREFIX);
+    assertProperty(
+        testSimpleCamundaApplication, "camunda.operate.zeebeElasticsearch.prefix", EXPECTED_PREFIX);
 
-    final TasklistProperties tasklistProperties =
-        testSimpleCamundaApplication.bean(TasklistProperties.class);
-    assertThat(tasklistProperties).isNotNull();
-    assertThat(tasklistProperties.getElasticsearch().getIndexPrefix()).isEqualTo(EXPECTED_PREFIX);
-    assertThat(tasklistProperties.getElasticsearch().getUrl()).isEqualTo(EXPECTED_URL);
+    /* Camunda Config Assertions */
+
+    assertProperty(testSimpleCamundaApplication, "camunda.database.indexPrefix", EXPECTED_PREFIX);
+    assertProperty(testSimpleCamundaApplication, "camunda.database.url", EXPECTED_URL);
 
     final BrokerBasedProperties brokerBasedProperties =
         testSimpleCamundaApplication.bean(BrokerBasedProperties.class);
@@ -105,35 +116,43 @@ public class MultiDbConfiguratorTest {
         EXPECTED_URL, EXPECTED_PREFIX, EXPECTED_USER, EXPECTED_PW);
 
     // then
-    final String configuredPrefix =
-        testSimpleCamundaApplication.property("camunda.database.indexPrefix", String.class, "");
-    assertThat(configuredPrefix).isEqualTo(EXPECTED_PREFIX);
-    final String configuredUser =
-        testSimpleCamundaApplication.property("camunda.database.username", String.class, "");
-    assertThat(configuredUser).isEqualTo(EXPECTED_USER);
-    final String configuredPassword =
-        testSimpleCamundaApplication.property("camunda.database.password", String.class, "");
-    assertThat(configuredPassword).isEqualTo(EXPECTED_PW);
-    final String configuredUrl =
-        testSimpleCamundaApplication.property("camunda.database.url", String.class, "");
-    assertThat(configuredUrl).isEqualTo(EXPECTED_URL);
 
-    final OperateProperties operateProperties =
-        testSimpleCamundaApplication.bean(OperateProperties.class);
-    assertThat(operateProperties).isNotNull();
+    /* Tasklist Config Assertions */
+    assertProperty(
+        testSimpleCamundaApplication, "camunda.tasklist.opensearch.indexPrefix", EXPECTED_PREFIX);
+    assertProperty(testSimpleCamundaApplication, "camunda.tasklist.opensearch.url", EXPECTED_URL);
+    assertProperty(
+        testSimpleCamundaApplication, "camunda.tasklist.zeebeOpensearch.url", EXPECTED_URL);
+    assertProperty(
+        testSimpleCamundaApplication, "camunda.tasklist.opensearch.indexPrefix", EXPECTED_PREFIX);
+    assertProperty(
+        testSimpleCamundaApplication, "camunda.tasklist.zeebeOpensearch.prefix", EXPECTED_PREFIX);
+    assertProperty(
+        testSimpleCamundaApplication, "camunda.tasklist.opensearch.username", EXPECTED_USER);
+    assertProperty(
+        testSimpleCamundaApplication, "camunda.tasklist.opensearch.password", EXPECTED_PW);
 
-    assertThat(operateProperties.getOpensearch().getIndexPrefix()).isEqualTo(EXPECTED_PREFIX);
-    assertThat(operateProperties.getOpensearch().getUrl()).isEqualTo(EXPECTED_URL);
-    assertThat(operateProperties.getOpensearch().getPassword()).isEqualTo(EXPECTED_PW);
-    assertThat(operateProperties.getOpensearch().getUsername()).isEqualTo(EXPECTED_USER);
+    /* Operate Config Assertions */
+    assertProperty(
+        testSimpleCamundaApplication, "camunda.operate.opensearch.indexPrefix", EXPECTED_PREFIX);
+    assertProperty(testSimpleCamundaApplication, "camunda.operate.opensearch.url", EXPECTED_URL);
+    assertProperty(
+        testSimpleCamundaApplication, "camunda.operate.zeebeOpensearch.url", EXPECTED_URL);
+    assertProperty(
+        testSimpleCamundaApplication, "camunda.operate.opensearch.indexPrefix", EXPECTED_PREFIX);
+    assertProperty(
+        testSimpleCamundaApplication, "camunda.operate.zeebeOpensearch.prefix", EXPECTED_PREFIX);
+    assertProperty(
+        testSimpleCamundaApplication, "camunda.operate.opensearch.username", EXPECTED_USER);
+    assertProperty(
+        testSimpleCamundaApplication, "camunda.operate.opensearch.password", EXPECTED_PW);
 
-    final TasklistProperties tasklistProperties =
-        testSimpleCamundaApplication.bean(TasklistProperties.class);
-    assertThat(tasklistProperties).isNotNull();
-    assertThat(tasklistProperties.getOpenSearch().getIndexPrefix()).isEqualTo(EXPECTED_PREFIX);
-    assertThat(tasklistProperties.getOpenSearch().getUrl()).isEqualTo(EXPECTED_URL);
-    assertThat(tasklistProperties.getOpenSearch().getPassword()).isEqualTo(EXPECTED_PW);
-    assertThat(tasklistProperties.getOpenSearch().getUsername()).isEqualTo(EXPECTED_USER);
+    /* Camunda Config Assertions */
+
+    assertProperty(testSimpleCamundaApplication, "camunda.database.indexPrefix", EXPECTED_PREFIX);
+    assertProperty(testSimpleCamundaApplication, "camunda.database.url", EXPECTED_URL);
+    assertProperty(testSimpleCamundaApplication, "camunda.database.username", EXPECTED_USER);
+    assertProperty(testSimpleCamundaApplication, "camunda.database.password", EXPECTED_PW);
 
     final BrokerBasedProperties brokerBasedProperties =
         testSimpleCamundaApplication.bean(BrokerBasedProperties.class);
@@ -158,5 +177,14 @@ public class MultiDbConfiguratorTest {
                 EXPECTED_USER,
                 "password",
                 EXPECTED_PW));
+  }
+
+  private <T> void assertProperty(
+      final TestSimpleCamundaApplication applicationContext,
+      final String propertyKey,
+      final T expectedValue) {
+    final T propertyValue =
+        applicationContext.property(propertyKey, (Class<T>) expectedValue.getClass(), null);
+    assertThat(propertyValue).isEqualTo(expectedValue);
   }
 }

@@ -14,6 +14,7 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
+import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.Loggers;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
@@ -233,6 +235,9 @@ public final class SystemContext {
         case AZURE ->
             AzureBackupStore.validateConfig(
                 AzureBackupStoreConfig.toStoreConfig(backup.getAzure()));
+        case FILESYSTEM ->
+            FilesystemBackupStore.validateConfig(
+                FilesystemBackupStoreConfig.toStoreConfig(backup.getFilesystem()));
         default ->
             throw new UnsupportedOperationException(
                 "Does not support validating configuration of backup store %s"

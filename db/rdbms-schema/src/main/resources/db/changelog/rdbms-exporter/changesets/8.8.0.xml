@@ -155,14 +155,24 @@
 
     <createTable tableName="${prefix}CANDIDATE_USER">
       <column name="USER_TASK_KEY" type="BIGINT">
-        <constraints foreignKeyName="FK_CANDIDATE_USER_USER_TASK"/>
+        <constraints
+          foreignKeyName="${prefix}FK_CANDIDATE_USER_USER_TASK"
+          referencedTableName="${prefix}USER_TASK"
+          referencedColumnNames="USER_TASK_KEY"
+          deleteCascade="true"/>
+        />
       </column>
       <column name="CANDIDATE_USER" type="VARCHAR(255)"/>
     </createTable>
 
     <createTable tableName="${prefix}CANDIDATE_GROUP">
       <column name="USER_TASK_KEY" type="BIGINT">
-        <constraints foreignKeyName="FK_CANDIDATE_GROUP_USER_TASK"/>
+        <constraints
+          foreignKeyName="${prefix}FK_CANDIDATE_GROUP_USER_TASK"
+          referencedTableName="${prefix}USER_TASK"
+          referencedColumnNames="USER_TASK_KEY"
+          deleteCascade="true"/>
+        />
       </column>
       <column name="CANDIDATE_GROUP" type="VARCHAR(255)"/>
     </createTable>
@@ -278,7 +288,13 @@
   <changeSet id="create_decision_instance_input_table" author="cthiel">
     <createTable tableName="${prefix}DECISION_INSTANCE_INPUT">
       <column name="DECISION_INSTANCE_ID" type="VARCHAR(255)">
-        <constraints primaryKey="true"/>
+        <constraints
+          primaryKey="true"
+          foreignKeyName="${prefix}FK_DEC_INST_INPUT_DEC_INST"
+          referencedTableName="${prefix}DECISION_INSTANCE"
+          referencedColumnNames="DECISION_INSTANCE_ID"
+          deleteCascade="true"/>
+        />
       </column>
       <column name="INPUT_ID" type="VARCHAR(255)">
         <constraints primaryKey="true"/>
@@ -292,15 +308,23 @@
   <changeSet id="create_decision_instance_output_table" author="cthiel">
     <createTable tableName="${prefix}DECISION_INSTANCE_OUTPUT">
       <column name="DECISION_INSTANCE_ID" type="VARCHAR(255)">
-        <constraints primaryKey="true"/>
+        <constraints
+          primaryKey="true"
+          foreignKeyName="${prefix}FK_DEC_INST_OUTPUT_DEC_INST"
+          referencedTableName="${prefix}DECISION_INSTANCE"
+          referencedColumnNames="DECISION_INSTANCE_ID"
+          deleteCascade="true"/>
+        />
       </column>
       <column name="OUTPUT_ID" type="VARCHAR(255)">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="RULE_INDEX" type="SMALLINT">
         <constraints primaryKey="true"/>
       </column>
       <column name="OUTPUT_NAME" type="VARCHAR(255)"/>
       <column name="OUTPUT_VALUE" type="VARCHAR(4000)" />
       <column name="RULE_ID" type="VARCHAR(255)"/>
-      <column name="RULE_INDEX" type="SMALLINT" />
     </createTable>
     <!-- No additional index for DECISION_INSTANCE_KEY needed -->
   </changeSet>

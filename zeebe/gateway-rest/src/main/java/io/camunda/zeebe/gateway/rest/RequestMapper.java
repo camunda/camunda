@@ -828,6 +828,7 @@ public class RequestMapper {
 
     final JobResult jobResult = new JobResult();
     jobResult.setDenied(getBooleanOrDefault(request, r -> r.getResult().getDenied(), false));
+    jobResult.setDeniedReason(getStringOrEmpty(request, r -> r.getResult().getDeniedReason()));
 
     final var jobResultCorrections = request.getResult().getCorrections();
     if (jobResultCorrections == null) {
