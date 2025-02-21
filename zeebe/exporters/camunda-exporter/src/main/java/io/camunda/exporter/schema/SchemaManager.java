@@ -14,20 +14,29 @@ import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.agrona.LangUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SchemaManager {
+
+  public static final int INDEX_CREATION_TIMEOUT_SECONDS = 60;
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManager.class);
   private final SearchEngineClient searchEngineClient;
   private final Collection<IndexDescriptor> indexDescriptors;
   private final Collection<IndexTemplateDescriptor> indexTemplateDescriptors;
   private final ExporterConfiguration config;
   private final ObjectMapper objectMapper;
+  private final ExecutorService virtualThreadExecutor;
 
   public SchemaManager(
       final SearchEngineClient searchEngineClient,
@@ -35,6 +44,7 @@ public class SchemaManager {
       final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
       final ExporterConfiguration config,
       final ObjectMapper objectMapper) {
+    virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
     this.searchEngineClient = searchEngineClient;
     this.indexDescriptors = indexDescriptors;
     this.indexTemplateDescriptors = indexTemplateDescriptors;
@@ -124,20 +134,31 @@ public class SchemaManager {
     }
 
     final var existingIndexNames =
-        searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet();
+        Collections.synchronizedSet(
+            searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet());
 
     LOG.info(
         "Found '{}' existing indices. Create missing index templates based on '{}' descriptors.",
         existingIndexNames.size(),
         indexTemplateDescriptors.size());
-    indexDescriptors.stream()
-        .filter(descriptor -> !existingIndexNames.contains(descriptor.getFullQualifiedName()))
-        .forEach(
-            descriptor -> {
-              LOG.info("Create missing index '{}'", descriptor.getFullQualifiedName());
-              searchEngineClient.createIndex(
-                  descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()));
-            });
+    final var futures =
+        indexDescriptors.stream()
+            .filter(descriptor -> !existingIndexNames.contains(descriptor.getFullQualifiedName()))
+            .map(
+                descriptor ->
+                    // run creation of indices async as virtual thread
+                    CompletableFuture.runAsync(
+                        () -> {
+                          LOG.info("Create missing index '{}'", descriptor.getFullQualifiedName());
+                          searchEngineClient.createIndex(
+                              descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()));
+                        },
+                        virtualThreadExecutor))
+            .toArray(CompletableFuture[]::new);
+
+    // We need to wait for the completion, to make sure all indices has been created successfully
+    // Doing this in parallel is still speeding up the bootstrap time
+    joinOnFutures(futures);
   }
 
   private void initialiseIndexTemplates() {
@@ -147,28 +168,59 @@ public class SchemaManager {
     }
 
     final var existingTemplateNames =
-        searchEngineClient
-            .getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX_TEMPLATE)
-            .keySet();
+        Collections.synchronizedSet(
+            searchEngineClient
+                .getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX_TEMPLATE)
+                .keySet());
 
     LOG.info(
         "Found '{}' existing index templates. Create missing index templates based on '{}' descriptors.",
         existingTemplateNames.size(),
         indexTemplateDescriptors.size());
-    indexTemplateDescriptors.stream()
-        .filter(descriptor -> !existingTemplateNames.contains(descriptor.getTemplateName()))
-        .forEach(
-            descriptor -> {
-              LOG.info("Create missing index template '{}'", descriptor.getTemplateName());
-              searchEngineClient.createIndexTemplate(
-                  descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()), true);
-              LOG.info(
-                  "Create missing index '{}', for template '{}'",
-                  descriptor.getFullQualifiedName(),
-                  descriptor.getTemplateName());
-              searchEngineClient.createIndex(
-                  descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()));
-            });
+    final var futures =
+        indexTemplateDescriptors.stream()
+            .filter(descriptor -> !existingTemplateNames.contains(descriptor.getTemplateName()))
+            .map(
+                descriptor ->
+                    // run creation of indices async as virtual thread
+                    CompletableFuture.runAsync(
+                        () -> {
+                          LOG.info(
+                              "Create missing index template '{}'", descriptor.getTemplateName());
+                          searchEngineClient.createIndexTemplate(
+                              descriptor,
+                              getIndexSettingsFromConfig(descriptor.getIndexName()),
+                              true);
+                          LOG.info(
+                              "Create missing index '{}', for template '{}'",
+                              descriptor.getFullQualifiedName(),
+                              descriptor.getTemplateName());
+                          searchEngineClient.createIndex(
+                              descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()));
+                        },
+                        virtualThreadExecutor))
+            .toArray(CompletableFuture[]::new);
+
+    // We need to wait for the completion, to make sure all indices and templates have been created
+    // successfully
+    // Doing this in parallel is still speeding up the bootstrap time
+    joinOnFutures(futures);
+  }
+
+  /**
+   * Join on given futures with {@link SchemaManager#INDEX_CREATION_TIMEOUT_SECONDS} as timeout.
+   *
+   * <p>All exceptions, including timeout exception, are rethrown as unchecked exception. To reduce
+   * boilerplate (exception handling), but make sure startup fails.
+   *
+   * @param futures futures that be joined on
+   */
+  private void joinOnFutures(final CompletableFuture<?>[] futures) {
+    try {
+      CompletableFuture.allOf(futures).get(INDEX_CREATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    } catch (final Exception e) {
+      LangUtil.rethrowUnchecked(e);
+    }
   }
 
   public void updateSchemaMappings(
