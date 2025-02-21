@@ -7,12 +7,20 @@
  */
 package io.camunda.tasklist;
 
+import io.camunda.authentication.service.BasicCamundaUserService;
+import io.camunda.authentication.service.CamundaUserService;
+import io.camunda.authentication.service.OidcCamundaUserService;
+import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.tasklist.webapp.management.WebappManagementModuleConfiguration;
 import io.camunda.tasklist.webapp.security.WebappSecurityModuleConfiguration;
+import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationServiceImpl;
 import io.camunda.tasklist.zeebeimport.security.ImporterSecurityModuleConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.gateway.Gateway;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
@@ -55,11 +63,27 @@ public class TasklistModuleConfiguration {
   // that the gateway is started first
   private final Gateway gateway;
 
+  @Autowired private SecurityConfiguration securityConfiguration;
+
   public TasklistModuleConfiguration(
       @Autowired(required = false) final Broker broker,
       @Autowired(required = false) final Gateway gateway) {
     this.broker = broker;
     this.gateway = gateway;
+  }
+
+  @Bean
+  public IdentityAuthorizationService stubIdentityAuthorizationService() {
+    return new IdentityAuthorizationServiceImpl();
+  }
+
+  @Bean
+  public CamundaUserService stubCamundaUserDetailsService() {
+    if (AuthenticationMethod.OIDC.equals(securityConfiguration.getAuthentication().getMethod())) {
+      return new OidcCamundaUserService();
+    } else {
+      return new BasicCamundaUserService();
+    }
   }
 
   @Configuration(proxyBeanMethods = false)
