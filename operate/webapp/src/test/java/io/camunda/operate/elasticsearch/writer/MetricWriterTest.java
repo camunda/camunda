@@ -43,13 +43,12 @@ public class MetricWriterTest {
     // Then
     verify(batchRequest)
         .add(
-            eq(metricIndex.getFullQualifiedName()),
-            argThat(
-                entity ->
-                    ((MetricEntity) entity).getEvent().equals(EVENT_PROCESS_INSTANCE_STARTED)
-                        && ((MetricEntity) entity).getValue().equals(key)
-                        && ((MetricEntity) entity).getEventTime().equals(now)
-                        && ((MetricEntity) entity).getTenantId().equals(tenantId)));
+            metricIndex.getFullQualifiedName(),
+            new MetricEntity()
+                .setEvent(EVENT_PROCESS_INSTANCE_STARTED)
+                .setValue(key)
+                .setEventTime(now)
+                .setTenantId(tenantId));
   }
 
   @Test
@@ -65,12 +64,11 @@ public class MetricWriterTest {
     // Then
     verify(batchRequest)
         .add(
-            eq(metricIndex.getFullQualifiedName()),
-            argThat(
-                entity ->
-                    ((MetricEntity) entity).getEvent().equals(EVENT_DECISION_INSTANCE_EVALUATED)
-                        && ((MetricEntity) entity).getValue().equals(key)
-                        && ((MetricEntity) entity).getEventTime().equals(now)
-                        && ((MetricEntity) entity).getTenantId().equals(tenantId)));
+            metricIndex.getFullQualifiedName(),
+            new MetricEntity()
+                .setEvent(EVENT_DECISION_INSTANCE_EVALUATED)
+                .setValue(key)
+                .setEventTime(now)
+                .setTenantId(tenantId));
   }
 }
