@@ -13,12 +13,12 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
 public class ProcessInstanceStateConverter implements CustomConverter<String> {
 
   @Override
-  public boolean canConvert(Object value) {
+  public boolean canConvert(final Object value) {
     return (value instanceof ProcessInstanceStateEnum processInstanceStateEnum);
   }
 
   @Override
-  public String convertValue(Object value) {
+  public String convertValue(final Object value) {
     if (value == null) {
       return null;
     }
