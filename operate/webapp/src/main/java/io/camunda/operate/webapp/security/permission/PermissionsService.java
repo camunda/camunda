@@ -9,8 +9,6 @@ package io.camunda.operate.webapp.security.permission;
 
 import io.camunda.authentication.entity.CamundaPrincipal;
 import io.camunda.authentication.entity.CamundaUser;
-import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.Authorization;
@@ -88,9 +86,9 @@ public class PermissionsService {
    * @return true if the user has the given permission for the process
    */
   public boolean hasPermissionForResource(
-      final Long deploymentKey, final IdentityPermission identityPermission) {
-    return hasPermissionForResource(
-        deploymentKey.toString(), AuthorizationResourceType.RESOURCE, identityPermission);
+      final Long deploymentKey, final PermissionType permissionType) {
+    return hasPermissionForResourceType(
+        deploymentKey.toString(), AuthorizationResourceType.RESOURCE, permissionType);
   }
 
   /**
@@ -99,9 +97,9 @@ public class PermissionsService {
    * @return true if the user has the given permission for the process
    */
   public boolean hasPermissionForProcess(
-      final String bpmnProcessId, final IdentityPermission identityPermission) {
-    return hasPermissionForResource(
-        bpmnProcessId, AuthorizationResourceType.PROCESS_DEFINITION, identityPermission);
+      final String bpmnProcessId, final PermissionType permissionType) {
+    return hasPermissionForResourceType(
+        bpmnProcessId, AuthorizationResourceType.PROCESS_DEFINITION, permissionType);
   }
 
   /**
@@ -110,9 +108,9 @@ public class PermissionsService {
    * @return true if the user has the given permission for the decision
    */
   public boolean hasPermissionForDecision(
-      final String decisionId, final IdentityPermission identityPermission) {
-    return hasPermissionForResource(
-        decisionId, AuthorizationResourceType.DECISION_DEFINITION, identityPermission);
+      final String decisionId, final PermissionType permissionType) {
+    return hasPermissionForResourceType(
+        decisionId, AuthorizationResourceType.DECISION_DEFINITION, permissionType);
   }
 
   /**
@@ -120,19 +118,16 @@ public class PermissionsService {
    *
    * @return true if the user has the given permission for the resource
    */
-  private boolean hasPermissionForResource(
+  private boolean hasPermissionForResourceType(
       final String resourceId,
       final AuthorizationResourceType resourceType,
-      final IdentityPermission identityPermission) {
+      final PermissionType permissionType) {
     if (!permissionsEnabled()) {
       return true;
     }
     if (!isAuthorized()) {
       return false;
     }
-
-    final PermissionType permissionType = getPermission(identityPermission);
-
     return isAuthorizedFor(resourceId, resourceType, permissionType);
   }
 
@@ -142,9 +137,8 @@ public class PermissionsService {
    * @return processes for which the user has the given permission; the result matches either all
    *     processes, or a list of bpmnProcessId
    */
-  public ResourcesAllowed getProcessesWithPermission(final IdentityPermission identityPermission) {
-    return getResourcesWithPermission(
-        AuthorizationResourceType.PROCESS_DEFINITION, identityPermission);
+  public ResourcesAllowed getProcessesWithPermission(final PermissionType permissionType) {
+    return getResourcesWithPermission(AuthorizationResourceType.PROCESS_DEFINITION, permissionType);
   }
 
   /**
@@ -153,9 +147,9 @@ public class PermissionsService {
    * @return decisions for which the user has the given permission; the result matches either all
    *     decisions, or a list of decisionId
    */
-  public ResourcesAllowed getDecisionsWithPermission(final IdentityPermission identityPermission) {
+  public ResourcesAllowed getDecisionsWithPermission(final PermissionType permissionType) {
     return getResourcesWithPermission(
-        AuthorizationResourceType.DECISION_DEFINITION, identityPermission);
+        AuthorizationResourceType.DECISION_DEFINITION, permissionType);
   }
 
   /**
@@ -165,7 +159,7 @@ public class PermissionsService {
    *     resources, or a list of resourceIds
    */
   private ResourcesAllowed getResourcesWithPermission(
-      final AuthorizationResourceType resourceType, final IdentityPermission identityPermission) {
+      final AuthorizationResourceType resourceType, final PermissionType permissionType) {
     if (!permissionsEnabled()) {
       return ResourcesAllowed.all();
     }
@@ -173,7 +167,6 @@ public class PermissionsService {
       return ResourcesAllowed.withIds(Set.of());
     }
 
-    final PermissionType permissionType = getPermission(identityPermission);
     final Authorization authorization = new Authorization(resourceType, permissionType);
     final SecurityContext securityContext = getSecurityContext(authorization);
     final List<String> ids = authorizationChecker.retrieveAuthorizedResourceKeys(securityContext);
@@ -249,15 +242,6 @@ public class PermissionsService {
         .roleKeys(authenticatedRoleKeys)
         .tenants(authorizedTenants)
         .build();
-  }
-
-  private PermissionType getPermission(final IdentityPermission permission) {
-    try {
-      return PermissionType.valueOf(permission.name());
-    } catch (final Exception ex) {
-      throw new OperateRuntimeException(
-          String.format("No PermissionType found for IdentityPermission [%s]", permission));
-    }
   }
 
   /** ResourcesAllowed */

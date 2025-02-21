@@ -23,11 +23,11 @@ import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.reader.DecisionReader;
 import io.camunda.operate.webapp.rest.DecisionRestService;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -64,7 +64,7 @@ public class DecisionRestServiceIT extends OperateAbstractIT {
         .thenReturn(new DecisionDefinitionEntity().setDecisionId(decisionId));
     when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.hasPermissionForDecision(
-            decisionId, IdentityPermission.READ_DECISION_INSTANCE))
+            decisionId, PermissionType.READ_DECISION_INSTANCE))
         .thenReturn(false);
     final MvcResult mvcResult =
         getRequestShouldFailWithNoAuthorization(
@@ -83,7 +83,7 @@ public class DecisionRestServiceIT extends OperateAbstractIT {
         .thenReturn(new DecisionDefinitionEntity().setDecisionId(decisionId));
     when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.hasPermissionForDecision(
-            decisionId, IdentityPermission.DELETE_DECISION_INSTANCE))
+            decisionId, PermissionType.DELETE_DECISION_INSTANCE))
         .thenReturn(true);
     when(batchOperationWriter.scheduleDeleteDecisionDefinition(any()))
         .thenReturn(new BatchOperationEntity());
@@ -134,7 +134,7 @@ public class DecisionRestServiceIT extends OperateAbstractIT {
         .thenReturn(new DecisionDefinitionEntity().setDecisionId(decisionId));
     when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.hasPermissionForDecision(
-            decisionId, IdentityPermission.DELETE_DECISION_INSTANCE))
+            decisionId, PermissionType.DELETE_DECISION_INSTANCE))
         .thenReturn(false);
     when(batchOperationWriter.scheduleDeleteDecisionDefinition(any()))
         .thenReturn(new BatchOperationEntity());
