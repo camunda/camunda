@@ -7,12 +7,19 @@
  */
 package io.camunda.webapps.schema.entities.operate;
 
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.Objects;
 
-public class JobEntity extends OperateZeebeEntity<JobEntity> {
+public class JobEntity
+    implements ExporterEntity<JobEntity>, PartitionedEntity<JobEntity>, TenantOwned {
 
+  private String id;
+  private long key;
+  private int partitionId;
   private Long processInstanceKey;
   private Long flowNodeInstanceId;
   private String flowNodeId;
@@ -43,6 +50,37 @@ public class JobEntity extends OperateZeebeEntity<JobEntity> {
   private Boolean denied;
   private String deniedReason;
 
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public JobEntity setId(final String id) {
+    this.id = id;
+    return this;
+  }
+
+  public long getKey() {
+    return key;
+  }
+
+  public JobEntity setKey(final long key) {
+    this.key = key;
+    return this;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public JobEntity setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
+
   public Long getProcessInstanceKey() {
     return processInstanceKey;
   }
@@ -70,6 +108,7 @@ public class JobEntity extends OperateZeebeEntity<JobEntity> {
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }
@@ -235,7 +274,9 @@ public class JobEntity extends OperateZeebeEntity<JobEntity> {
   @Override
   public int hashCode() {
     return Objects.hash(
-        super.hashCode(),
+        id,
+        key,
+        partitionId,
         processInstanceKey,
         flowNodeInstanceId,
         flowNodeId,
@@ -271,7 +312,10 @@ public class JobEntity extends OperateZeebeEntity<JobEntity> {
       return false;
     }
     final JobEntity jobEntity = (JobEntity) o;
-    return jobFailedWithRetriesLeft == jobEntity.jobFailedWithRetriesLeft
+    return Objects.equals(id, jobEntity.id)
+        && key == jobEntity.key
+        && partitionId == jobEntity.partitionId
+        && jobFailedWithRetriesLeft == jobEntity.jobFailedWithRetriesLeft
         && Objects.equals(processInstanceKey, jobEntity.processInstanceKey)
         && Objects.equals(flowNodeInstanceId, jobEntity.flowNodeInstanceId)
         && Objects.equals(flowNodeId, jobEntity.flowNodeId)

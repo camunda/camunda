@@ -8,10 +8,20 @@
 package io.camunda.webapps.schema.entities.operate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
+public class IncidentEntity
+    implements ExporterEntity<IncidentEntity>, PartitionedEntity<IncidentEntity>, TenantOwned {
+
+  private String id;
+
+  private long key;
+
+  private int partitionId;
 
   private ErrorType errorType;
 
@@ -38,11 +48,42 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
 
   private String treePath;
 
-  private String tenantId = DEFAULT_TENANT_ID;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   private Long position;
 
   @Deprecated @JsonIgnore private boolean pending = true;
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public IncidentEntity setId(final String id) {
+    this.id = id;
+    return this;
+  }
+
+  public long getKey() {
+    return key;
+  }
+
+  public IncidentEntity setKey(final long key) {
+    this.key = key;
+    return this;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public IncidentEntity setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
 
   public ErrorType getErrorType() {
     return errorType;
@@ -162,6 +203,7 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }
@@ -183,7 +225,9 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
   @Override
   public int hashCode() {
     return Objects.hash(
-        super.hashCode(),
+        id,
+        key,
+        partitionId,
         errorType,
         errorMessage,
         errorMessageHash,
@@ -212,7 +256,10 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
       return false;
     }
     final IncidentEntity incident = (IncidentEntity) o;
-    return pending == incident.pending
+    return Objects.equals(id, incident.id)
+        && key == incident.key
+        && partitionId == incident.partitionId
+        && pending == incident.pending
         && errorType == incident.errorType
         && Objects.equals(errorMessage, incident.errorMessage)
         && Objects.equals(errorMessageHash, incident.errorMessageHash)
@@ -233,7 +280,7 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
   public String toString() {
     return "IncidentEntity{"
         + "key="
-        + getKey()
+        + key
         + ", errorType="
         + errorType
         + ", errorMessageHash="
