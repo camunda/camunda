@@ -8,12 +8,16 @@
 package io.camunda.webapps.schema.entities.operate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
+public class ProcessEntity implements ExporterEntity<ProcessEntity>, TenantOwned {
 
+  private String id;
+  private long key;
   private String name;
   private int version;
   private String versionTag;
@@ -26,7 +30,7 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
   private String formKey;
   private Boolean isFormEmbedded;
   private Boolean isPublic;
-  private String tenantId = DEFAULT_TENANT_ID;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   public String getName() {
     return name;
@@ -38,16 +42,31 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
   }
 
   @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
   public ProcessEntity setId(final String id) {
-    super.setId(id);
+    this.id = id;
     setKey(Long.valueOf(id));
+    return this;
+  }
+
+  public long getKey() {
+    return key;
+  }
+
+  public ProcessEntity setKey(final long key) {
+    this.key = key;
     return this;
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
-        super.hashCode(),
+        id,
+        key,
         name,
         version,
         versionTag,
@@ -75,7 +94,9 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
       return false;
     }
     final ProcessEntity that = (ProcessEntity) o;
-    return version == that.version
+    return Objects.equals(id, that.id)
+        && key == that.key
+        && version == that.version
         && Objects.equals(versionTag, that.versionTag)
         && Objects.equals(name, that.name)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
@@ -195,6 +216,7 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }

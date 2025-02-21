@@ -7,11 +7,14 @@
  */
 package io.camunda.webapps.schema.entities.operate;
 
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public class MessageEntity extends OperateZeebeEntity<MessageEntity> {
+public class MessageEntity implements ExporterEntity<MessageEntity>, TenantOwned {
 
+  private String id;
   private String messageName;
   private String correlationKey;
   private OffsetDateTime publishDate;
@@ -20,7 +23,18 @@ public class MessageEntity extends OperateZeebeEntity<MessageEntity> {
   private Long timeToLive;
   private String messageId;
   private String variables;
-  private String tenantId = DEFAULT_TENANT_ID;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public MessageEntity setId(final String id) {
+    this.id = id;
+    return this;
+  }
 
   public String getMessageName() {
     return messageName;
@@ -94,6 +108,7 @@ public class MessageEntity extends OperateZeebeEntity<MessageEntity> {
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }
@@ -106,7 +121,7 @@ public class MessageEntity extends OperateZeebeEntity<MessageEntity> {
   @Override
   public int hashCode() {
     return Objects.hash(
-        super.hashCode(),
+        id,
         messageName,
         correlationKey,
         publishDate,
@@ -130,7 +145,8 @@ public class MessageEntity extends OperateZeebeEntity<MessageEntity> {
       return false;
     }
     final MessageEntity that = (MessageEntity) o;
-    return Objects.equals(messageName, that.messageName)
+    return Objects.equals(id, that.id)
+        && Objects.equals(messageName, that.messageName)
         && Objects.equals(correlationKey, that.correlationKey)
         && Objects.equals(publishDate, that.publishDate)
         && Objects.equals(expireDate, that.expireDate)

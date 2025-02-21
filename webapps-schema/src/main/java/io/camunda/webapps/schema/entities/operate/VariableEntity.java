@@ -8,11 +8,18 @@
 package io.camunda.webapps.schema.entities.operate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
+public class VariableEntity
+    implements ExporterEntity<VariableEntity>, PartitionedEntity<VariableEntity>, TenantOwned {
 
+  private String id;
+  private long key;
+  private int partitionId;
   private String name;
   private String value;
   private String fullValue;
@@ -26,11 +33,42 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
   /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
   private String bpmnProcessId;
 
-  private String tenantId = DEFAULT_TENANT_ID;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   private Long position;
 
   @JsonIgnore private Object[] sortValues;
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public VariableEntity setId(final String id) {
+    this.id = id;
+    return this;
+  }
+
+  public long getKey() {
+    return key;
+  }
+
+  public VariableEntity setKey(final long key) {
+    this.key = key;
+    return this;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public VariableEntity setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
 
   public String getName() {
     return name;
@@ -104,6 +142,7 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }
@@ -135,7 +174,9 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
   public int hashCode() {
     int result =
         Objects.hash(
-            super.hashCode(),
+            id,
+            key,
+            partitionId,
             name,
             value,
             fullValue,
@@ -162,7 +203,10 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
       return false;
     }
     final VariableEntity that = (VariableEntity) o;
-    return isPreview == that.isPreview
+    return Objects.equals(id, that.id)
+        && key == that.key
+        && partitionId == that.partitionId
+        && isPreview == that.isPreview
         && Objects.equals(name, that.name)
         && Objects.equals(value, that.value)
         && Objects.equals(fullValue, that.fullValue)

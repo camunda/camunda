@@ -8,15 +8,23 @@
 package io.camunda.webapps.schema.entities.operate.dmn;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.webapps.schema.entities.operate.OperateZeebeEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceEntity> {
+public class DecisionInstanceEntity
+    implements ExporterEntity<DecisionInstanceEntity>,
+        PartitionedEntity<DecisionInstanceEntity>,
+        TenantOwned {
 
+  private String id;
+  private long key;
+  private int partitionId;
   private Integer executionIndex;
   private DecisionInstanceState state;
   private OffsetDateTime evaluationDate;
@@ -43,9 +51,40 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
   private String result;
   private List<DecisionInstanceInputEntity> evaluatedInputs = new ArrayList<>();
   private List<DecisionInstanceOutputEntity> evaluatedOutputs = new ArrayList<>();
-  private String tenantId = DEFAULT_TENANT_ID;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   @JsonIgnore private Object[] sortValues;
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public DecisionInstanceEntity setId(final String id) {
+    this.id = id;
+    return this;
+  }
+
+  public long getKey() {
+    return key;
+  }
+
+  public DecisionInstanceEntity setKey(final long key) {
+    this.key = key;
+    return this;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public DecisionInstanceEntity setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
 
   public static Long extractKey(final String id) {
     return Long.valueOf(id.split("-")[0]);
@@ -273,6 +312,7 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }
@@ -286,7 +326,9 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
   public int hashCode() {
     int result1 =
         Objects.hash(
-            super.hashCode(),
+            id,
+            key,
+            partitionId,
             executionIndex,
             state,
             evaluationDate,
@@ -327,7 +369,10 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
       return false;
     }
     final DecisionInstanceEntity that = (DecisionInstanceEntity) o;
-    return decisionRequirementsKey == that.decisionRequirementsKey
+    return Objects.equals(id, that.id)
+        && key == that.key
+        && partitionId == that.partitionId
+        && decisionRequirementsKey == that.decisionRequirementsKey
         && processDefinitionKey == that.processDefinitionKey
         && processInstanceKey == that.processInstanceKey
         && elementInstanceKey == that.elementInstanceKey

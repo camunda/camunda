@@ -10,14 +10,21 @@ package io.camunda.webapps.schema.entities.operate.listview;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.webapps.schema.entities.operate.OperateZeebeEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 
 public class ProcessInstanceForListViewEntity
-    extends OperateZeebeEntity<ProcessInstanceForListViewEntity> {
+    implements ExporterEntity<ProcessInstanceForListViewEntity>,
+        PartitionedEntity<ProcessInstanceForListViewEntity>,
+        TenantOwned {
 
+  private String id;
+  private long key;
+  private int partitionId;
   private Long processDefinitionKey;
   private String processName;
   private Integer processVersion;
@@ -39,7 +46,7 @@ public class ProcessInstanceForListViewEntity
 
   private boolean incident;
 
-  private String tenantId = DEFAULT_TENANT_ID;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   private ListViewJoinRelation joinRelation =
       new ListViewJoinRelation(PROCESS_INSTANCE_JOIN_RELATION);
@@ -47,6 +54,37 @@ public class ProcessInstanceForListViewEntity
   private Long position;
 
   @JsonIgnore private Object[] sortValues;
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public ProcessInstanceForListViewEntity setId(final String id) {
+    this.id = id;
+    return this;
+  }
+
+  public long getKey() {
+    return key;
+  }
+
+  public ProcessInstanceForListViewEntity setKey(final long key) {
+    this.key = key;
+    return this;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public ProcessInstanceForListViewEntity setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
 
   public Long getProcessInstanceKey() {
     return getKey();
@@ -177,6 +215,7 @@ public class ProcessInstanceForListViewEntity
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }
@@ -216,7 +255,9 @@ public class ProcessInstanceForListViewEntity
   @Override
   public int hashCode() {
     return Objects.hash(
-        super.hashCode(),
+        id,
+        key,
+        partitionId,
         processDefinitionKey,
         processName,
         processVersion,
@@ -247,7 +288,10 @@ public class ProcessInstanceForListViewEntity
       return false;
     }
     final ProcessInstanceForListViewEntity that = (ProcessInstanceForListViewEntity) o;
-    return incident == that.incident
+    return Objects.equals(id, that.id)
+        && key == that.key
+        && partitionId == that.partitionId
+        && incident == that.incident
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processName, that.processName)
         && Objects.equals(processVersion, that.processVersion)

@@ -7,10 +7,18 @@
  */
 package io.camunda.webapps.schema.entities.operate;
 
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public class EventEntity extends OperateZeebeEntity<EventEntity> {
+public class EventEntity
+    implements ExporterEntity<EventEntity>, PartitionedEntity<EventEntity>, TenantOwned {
+
+  private String id;
+  private long key;
+  private int partitionId;
 
   /** Process data. */
   private Long processDefinitionKey;
@@ -32,12 +40,43 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
   /** Metadata */
   private EventMetadataEntity metadata;
 
-  private String tenantId = DEFAULT_TENANT_ID;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   private Long position;
   private Long positionIncident;
   private Long positionProcessMessageSubscription;
   private Long positionJob;
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public EventEntity setId(final String id) {
+    this.id = id;
+    return this;
+  }
+
+  public long getKey() {
+    return key;
+  }
+
+  public EventEntity setKey(final long key) {
+    this.key = key;
+    return this;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public EventEntity setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
 
   public Long getProcessDefinitionKey() {
     return processDefinitionKey;
@@ -120,6 +159,7 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }
@@ -169,7 +209,9 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
   @Override
   public int hashCode() {
     return Objects.hash(
-        super.hashCode(),
+        id,
+        key,
+        partitionId,
         processDefinitionKey,
         processInstanceKey,
         bpmnProcessId,
@@ -198,7 +240,10 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
       return false;
     }
     final EventEntity that = (EventEntity) o;
-    return Objects.equals(processDefinitionKey, that.processDefinitionKey)
+    return Objects.equals(id, that.id)
+        && key == that.key
+        && partitionId == that.partitionId
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(flowNodeId, that.flowNodeId)
