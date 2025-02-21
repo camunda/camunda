@@ -133,9 +133,6 @@ public class ConfigurationServiceConstants {
   public static final String IMPORT_INDEX_AUTO_STORAGE_INTERVAL =
       "$.import.importIndexStorageIntervalInSec";
 
-  public static final String ENGINE_CONNECT_TIMEOUT = "$.engine-commons.connection.timeout";
-  public static final String ENGINE_READ_TIMEOUT = "$.engine-commons.read.timeout";
-
   public static final String INITIAL_BACKOFF_INTERVAL = "$.import.handler.backoff.initial";
   public static final String MAXIMUM_BACK_OFF = "$.import.handler.backoff.max";
   public static final String ES_AGGREGATION_BUCKET_LIMIT = "$.es.settings.aggregationBucketLimit";
