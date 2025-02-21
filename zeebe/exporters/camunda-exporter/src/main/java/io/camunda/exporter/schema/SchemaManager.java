@@ -16,6 +16,7 @@ import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,7 +83,9 @@ public class SchemaManager {
             .keySet();
 
     final var existingIndexNames =
-        searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet();
+        allIndexNames().isBlank()
+            ? Set.of()
+            : searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet();
 
     indexTemplateDescriptors.stream()
         .filter(desc -> existingTemplateNames.contains(desc.getTemplateName()))
