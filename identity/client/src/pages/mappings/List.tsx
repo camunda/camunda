@@ -6,12 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 import { FC } from "react";
-import { Stack } from "@carbon/react";
-import { spacing06 } from "@carbon/elements";
 import { Edit, TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
-import Page, { PageTitle } from "src/components/layout/Page";
+import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList, {
   DocumentationDescription,
 } from "src/components/entityList";
@@ -35,27 +33,30 @@ const List: FC = () => {
   } = useApi(searchMapping);
 
   const [addMapping, addMappingModal] = useModal(AddModal, reload);
+  const pageHeader = (
+    <PageHeader
+      title="Mappings"
+      linkText="mappings"
+      linkUrl="/concepts/mappings/"
+    />
+  );
 
   if (success && !mappingSearchResults?.items.length) {
     return (
       <Page>
-        <Stack gap={spacing06}>
-          <PageTitle>
-            <Translate>Mappings</Translate>
-          </PageTitle>
-          <C3EmptyState
-            heading={t("You don’t have any mappings yet")}
-            description={t("Mapping of JWT token")}
-            button={{
-              label: t("Create a mapping"),
-              onClick: addMapping,
-            }}
-            link={{
-              href: documentationHref("/concepts/mapping/", ""),
-              label: t("Learn more about mapping"),
-            }}
-          />
-        </Stack>
+        {pageHeader}
+        <C3EmptyState
+          heading={t("You don’t have any mappings yet")}
+          description={t("Mapping of JWT token")}
+          button={{
+            label: t("Create a mapping"),
+            onClick: addMapping,
+          }}
+          link={{
+            href: documentationHref("/concepts/mapping/", ""),
+            label: t("Learn more about mapping"),
+          }}
+        />
         {addMappingModal}
       </Page>
     );
@@ -63,8 +64,8 @@ const List: FC = () => {
 
   return (
     <Page>
+      {pageHeader}
       <EntityList
-        title={t("Mappings")}
         data={mappingSearchResults == null ? [] : mappingSearchResults.items}
         headers={[
           { header: t("Mapping Key"), key: "mappingKey" },

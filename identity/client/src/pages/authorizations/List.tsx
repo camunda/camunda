@@ -6,8 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 import { FC, useState } from "react";
-import { spacing06 } from "@carbon/elements";
-import { Stack, TabsVertical, Tab, TabPanels } from "@carbon/react";
+import { TabsVertical, Tab, TabPanels } from "@carbon/react";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
 import Page, { PageHeader } from "src/components/layout/Page";
@@ -35,13 +34,11 @@ const List: FC = () => {
 
   return (
     <Page>
-      <Stack gap={spacing06}>
-        <PageHeader
-          title="Authorizations"
-          linkText="authorizations"
-          linkUrl="/concepts/authorizations/"
-        />
-      </Stack>
+      <PageHeader
+        title="Authorizations"
+        linkText="authorizations"
+        linkUrl="/concepts/authorizations/"
+      />
       <TabsTitle>
         <Translate>Resource type</Translate>
       </TabsTitle>
