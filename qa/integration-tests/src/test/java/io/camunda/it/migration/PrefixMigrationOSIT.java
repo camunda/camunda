@@ -7,13 +7,13 @@
  */
 package io.camunda.it.migration;
 
-import static io.camunda.it.migration.util.PrefixMigrationHelper.ELASTIC_ALIAS;
 import static io.camunda.it.migration.util.PrefixMigrationHelper.GATEWAY_GRPC_PORT;
 import static io.camunda.it.migration.util.PrefixMigrationHelper.MANAGEMENT_PORT;
 import static io.camunda.it.migration.util.PrefixMigrationHelper.NETWORK;
 import static io.camunda.it.migration.util.PrefixMigrationHelper.NEW_PREFIX;
 import static io.camunda.it.migration.util.PrefixMigrationHelper.OLD_OPERATE_PREFIX;
 import static io.camunda.it.migration.util.PrefixMigrationHelper.OLD_TASKLIST_PREFIX;
+import static io.camunda.it.migration.util.PrefixMigrationHelper.OPENSEARCH_ALIAS;
 import static io.camunda.it.migration.util.PrefixMigrationHelper.SERVER_PORT;
 import static io.camunda.it.migration.util.PrefixMigrationHelper.createCamundaClient;
 
@@ -29,53 +29,53 @@ import java.io.IOException;
 import java.time.Duration;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
-public class PrefixMigrationIT {
+public class PrefixMigrationOSIT {
 
   @Container
-  private final ElasticsearchContainer esContainer =
-      TestSearchContainers.createDefeaultElasticsearchContainer()
+  private final OpensearchContainer osContainer =
+      TestSearchContainers.createDefaultOpensearchContainer()
           .withNetwork(NETWORK)
-          .withNetworkAliases(ELASTIC_ALIAS)
-          .withStartupTimeout(Duration.ofMinutes(5)); // can be slow in CI
+          .withNetworkAliases(OPENSEARCH_ALIAS);
 
   private GenericContainer<?> createCamundaContainer() {
-    final var esUrl = String.format("http://%s:%d", ELASTIC_ALIAS, 9200);
+    final var osUrl = String.format("http://%s:%d", OPENSEARCH_ALIAS, 9200);
 
-    final var container =
-        new GenericContainer<>(DockerImageName.parse("camunda/camunda:8.7.0-SNAPSHOT"))
-            .waitingFor(
-                new HttpWaitStrategy()
-                    .forPort(MANAGEMENT_PORT)
-                    .forPath("/actuator/health")
-                    .withReadTimeout(Duration.ofSeconds(30)))
-            .withNetwork(NETWORK)
-            .withNetworkAliases("camunda")
-            .withExposedPorts(SERVER_PORT, MANAGEMENT_PORT, GATEWAY_GRPC_PORT)
-            .withEnv("CAMUNDA_OPERATE_CSRFPREVENTIONENABLED", "false")
-            .withEnv("CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED", "false")
-            .withEnv("SPRING_PROFILES_ACTIVE", "broker,operate,tasklist,identity,consolidated-auth")
-            .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "BASIC")
-            .withEnv("CAMUNDA_DATABASE_URL", esUrl)
-            .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_INDEX_PREFIX", OLD_OPERATE_PREFIX)
-            .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_INDEX_PREFIX", OLD_TASKLIST_PREFIX)
-            .withEnv(
-                "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
-                "io.camunda.zeebe.exporter.ElasticsearchExporter")
-            .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", esUrl)
-            .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", esUrl)
-            .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", esUrl)
-            .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", esUrl)
-            .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", esUrl);
-
-    return container;
+    return new GenericContainer<>(DockerImageName.parse("camunda/camunda:8.7.0-SNAPSHOT"))
+        .waitingFor(
+            new HttpWaitStrategy()
+                .forPort(MANAGEMENT_PORT)
+                .forPath("/actuator/health")
+                .withReadTimeout(Duration.ofSeconds(30)))
+        .withNetwork(NETWORK)
+        .withNetworkAliases("camunda")
+        .withExposedPorts(SERVER_PORT, MANAGEMENT_PORT, GATEWAY_GRPC_PORT)
+        .withEnv("CAMUNDA_DATABASE_TYPE", "opensearch")
+        .withEnv("CAMUNDA_OPERATE_DATABASE", "opensearch")
+        .withEnv("CAMUNDA_TASKLIST_DATABASE", "opensearch")
+        .withEnv("CAMUNDA_OPERATE_CSRFPREVENTIONENABLED", "false")
+        .withEnv("CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED", "false")
+        .withEnv("SPRING_PROFILES_ACTIVE", "broker,operate,tasklist,identity,consolidated-auth")
+        .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "BASIC")
+        .withEnv("CAMUNDA_DATABASE_URL", osUrl)
+        .withEnv("CAMUNDA_OPERATE_OPENSEARCH_INDEX_PREFIX", OLD_OPERATE_PREFIX)
+        .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_INDEX_PREFIX", OLD_TASKLIST_PREFIX)
+        .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX", OLD_TASKLIST_PREFIX)
+        .withEnv(
+            "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME",
+            "io.camunda.zeebe.exporter.opensearch.OpensearchExporter")
+        .withEnv("CAMUNDA_OPERATE_OPENSEARCH_URL", osUrl)
+        .withEnv("CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL", osUrl)
+        .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", osUrl)
+        .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", osUrl)
+        .withEnv("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL", osUrl);
   }
 
   private void prefixMigration() throws IOException {
@@ -83,9 +83,10 @@ public class PrefixMigrationIT {
     final var tasklist = new TasklistProperties();
     final var connect = new ConnectConfiguration();
 
-    operate.getElasticsearch().setIndexPrefix(OLD_OPERATE_PREFIX);
-    tasklist.getElasticsearch().setIndexPrefix(OLD_TASKLIST_PREFIX);
-    connect.setUrl(esContainer.getHttpHostAddress());
+    operate.getOpensearch().setIndexPrefix(OLD_OPERATE_PREFIX);
+    tasklist.getOpenSearch().setIndexPrefix(OLD_TASKLIST_PREFIX);
+    connect.setType("opensearch");
+    connect.setUrl(osContainer.getHttpHostAddress());
     connect.setIndexPrefix(NEW_PREFIX);
     PrefixMigrationHelper.runPrefixMigration(operate, tasklist, connect);
   }
@@ -114,12 +115,12 @@ public class PrefixMigrationIT {
     prefixMigration();
 
     // then
-    final var currentCamundaClient = startLatestCamunda();
-
-    final var processDefinitions = currentCamundaClient.newProcessDefinitionQuery().send().join();
-    Assertions.assertThat(processDefinitions.items().size()).isEqualTo(1);
-    Assertions.assertThat(processDefinitions.items().getFirst().getProcessDefinitionKey())
-        .isEqualTo(event.getProcesses().getFirst().getProcessDefinitionKey());
+    try (final var currentCamundaClient = startLatestCamunda()) {
+      final var processDefinitions = currentCamundaClient.newProcessDefinitionQuery().send().join();
+      Assertions.assertThat(processDefinitions.items().size()).isEqualTo(1);
+      Assertions.assertThat(processDefinitions.items().getFirst().getProcessDefinitionKey())
+          .isEqualTo(event.getProcesses().getFirst().getProcessDefinitionKey());
+    }
   }
 
   private CamundaClient startLatestCamunda() {
@@ -127,10 +128,10 @@ public class PrefixMigrationIT {
         new TestSimpleCamundaApplication();
     final MultiDbConfigurator multiDbConfigurator =
         new MultiDbConfigurator(testSimpleCamundaApplication);
-    multiDbConfigurator.configureElasticsearchSupport(
-        "http://" + esContainer.getHttpHostAddress(), NEW_PREFIX);
-    testSimpleCamundaApplication.withProperty("camunda.tasklist.zeebeElasticsearch.prefix", null);
-    testSimpleCamundaApplication.withProperty("camunda.operate.zeebeElasticsearch.prefix", null);
+    multiDbConfigurator.configureOpenSearchSupport(
+        osContainer.getHttpHostAddress(), NEW_PREFIX, "admin", "admin");
+    testSimpleCamundaApplication.withProperty("camunda.tasklist.zeebeOpensearch.prefix", null);
+    testSimpleCamundaApplication.withProperty("camunda.operate.zeebeOpensearch.prefix", null);
     testSimpleCamundaApplication.start();
     testSimpleCamundaApplication.awaitCompleteTopology();
 
