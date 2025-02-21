@@ -263,7 +263,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     try {
       for (final var templateName : breakingIndexTemplates) {
         if (client.indices().existsIndexTemplate(r -> r.name(templateName)).value()) {
-          client.indices().deleteIndexTemplate(r -> r.name(breakingIndexTemplates));
+          client.indices().deleteIndexTemplate(r -> r.name(templateName));
         }
       }
     } catch (final IOException e) {
