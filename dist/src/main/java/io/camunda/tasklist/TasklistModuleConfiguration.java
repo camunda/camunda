@@ -7,21 +7,26 @@
  */
 package io.camunda.tasklist;
 
+import static io.camunda.tasklist.property.IdentityProperties.FULL_GROUP_ACCESS;
+
+import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.webapp.management.WebappManagementModuleConfiguration;
 import io.camunda.tasklist.webapp.security.WebappSecurityModuleConfiguration;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationServiceImpl;
 import io.camunda.tasklist.zeebeimport.security.ImporterSecurityModuleConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.gateway.Gateway;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
 /**
@@ -69,8 +74,19 @@ public class TasklistModuleConfiguration {
   }
 
   @Bean
-  public IdentityAuthorizationService stubIdentityAuthorizationService() {
-    return new IdentityAuthorizationServiceImpl();
+  @Primary
+  @ConditionalOnProperty(name = "security.auth.method", havingValue = "consolidated-auth")
+  public IdentityAuthorizationService consolidatedIdentityAuthorizationService(
+      final CamundaUserService camundaUserService) {
+    return () -> camundaUserService.getCurrentUser().groups();
+  }
+
+  // In case the consolidated auth method is not set, we use the default identity authorization
+  // Authorization is only supported using the consolidated auth method
+  @Bean
+  @Primary
+  public IdentityAuthorizationService defaultIdentityAuthorizationService() {
+    return () -> List.of(FULL_GROUP_ACCESS);
   }
 
   @Configuration(proxyBeanMethods = false)

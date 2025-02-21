@@ -7,19 +7,20 @@
  */
 package io.camunda.tasklist.webapp.security.identity;
 
-import io.camunda.authentication.service.CamundaUserService;
+import static io.camunda.tasklist.property.IdentityProperties.FULL_GROUP_ACCESS;
+
+import java.util.ArrayList;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("consolidated-auth")
-public class IdentityAuthorizationServiceImpl implements IdentityAuthorizationService {
-  @Autowired private CamundaUserService camundaUserService;
-
+@Profile("!consolidated-auth")
+public class DefaultIdentityAuthorizationServiceImpl implements IdentityAuthorizationService {
   @Override
   public List<String> getUserGroups() {
-    return camundaUserService.getCurrentUser().groups();
+    final List<String> defaultGroups = new ArrayList<>();
+    defaultGroups.add(FULL_GROUP_ACCESS);
+    return defaultGroups;
   }
 }
