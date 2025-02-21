@@ -308,9 +308,6 @@ public class JobEntity
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
     final JobEntity jobEntity = (JobEntity) o;
     return Objects.equals(id, jobEntity.id)
         && key == jobEntity.key

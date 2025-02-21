@@ -88,9 +88,6 @@ public class MetricEntity implements ExporterEntity<MetricEntity>, TenantOwned {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
     final MetricEntity that = (MetricEntity) o;
     return Objects.equals(id, that.id)
         && Objects.equals(tenantId, that.tenantId)

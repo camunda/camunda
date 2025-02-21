@@ -258,9 +258,6 @@ public class FlowNodeInstanceEntity
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
     final FlowNodeInstanceEntity that = (FlowNodeInstanceEntity) o;
     return Objects.equals(id, that.id)
         && key == that.key

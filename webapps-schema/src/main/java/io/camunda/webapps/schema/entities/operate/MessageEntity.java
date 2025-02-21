@@ -141,9 +141,6 @@ public class MessageEntity implements ExporterEntity<MessageEntity>, TenantOwned
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
     final MessageEntity that = (MessageEntity) o;
     return Objects.equals(id, that.id)
         && Objects.equals(messageName, that.messageName)
