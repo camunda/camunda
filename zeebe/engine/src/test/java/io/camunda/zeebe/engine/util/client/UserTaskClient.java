@@ -114,6 +114,26 @@ public final class UserTaskClient {
     return this;
   }
 
+  /**
+   * Adds a custom attribute to the {@code changedAttributes} list of the {@link UserTaskRecord}.
+   *
+   * <p><strong>Intended use:</strong> This method is primarily intended for testing scenarios where
+   * an unknown attribute is provided in the {@code changedAttributes} list. It allows simulating
+   * cases where unexpected attributes are used in an update command.
+   *
+   * <p><strong>Recommendation:</strong> For standard attribute updates, prefer using dedicated
+   * {@code with<UpdatableAttributeName>} methods (e.g., {@link #withCandidateGroups}, {@link
+   * #withPriority}, etc.). These methods provide a more explicit way to define which attribute and
+   * with what new value is updated, ensuring better code clarity.
+   *
+   * @param changedAttribute the name of the attribute to add to the {@code changedAttributes} list
+   * @return {@link UserTaskClient} instance
+   */
+  public UserTaskClient withChangedAttribute(final String changedAttribute) {
+    userTaskRecord.addChangedAttribute(changedAttribute);
+    return this;
+  }
+
   public UserTaskClient withAllAttributesChanged() {
     userTaskRecord.setChangedAttributes(
         List.of(

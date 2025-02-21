@@ -537,21 +537,17 @@ public final class UpdateUserTaskTest {
     // given
     ENGINE.deployment().withXmlResource(process()).deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var unknownAttributeName = "unknown_attribute";
 
     // when: updating the user task with both valid and unknown attributes
     final var updatingRecord =
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
-            .update(
-                new UserTaskRecord()
-                    .setCandidateGroupsList(List.of("updated_group"))
-                    .setPriority(99)
-                    .setChangedAttributes(
-                        List.of(
-                            UserTaskRecord.CANDIDATE_GROUPS,
-                            "unknown_attribute",
-                            UserTaskRecord.PRIORITY)));
+            .withCandidateGroups("updated_group")
+            .withPriority(90)
+            .withChangedAttribute(unknownAttributeName)
+            .update();
 
     // then
     Assertions.assertThat(updatingRecord)
@@ -568,7 +564,7 @@ public final class UpdateUserTaskTest {
             recordValue ->
                 Assertions.assertThat(recordValue)
                     .describedAs("Expect that unknown attributes are not tracked")
-                    .doesNotHaveChangedAttributes("unknown_attribute")
+                    .doesNotHaveChangedAttributes(unknownAttributeName)
                     .hasOnlyChangedAttributes(
                         UserTaskRecord.CANDIDATE_GROUPS, UserTaskRecord.PRIORITY));
   }
