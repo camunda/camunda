@@ -18,7 +18,6 @@ import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -216,22 +215,6 @@ public final class UserTaskClient {
             username,
             userTaskRecord.setUserTaskKey(userTaskKey),
             TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    return expectation.apply(position);
-  }
-
-  public Record<UserTaskRecordValue> assign(
-      final Consumer<UserTaskRecord> userTaskRecordCustomizer) {
-    final long userTaskKey = findUserTaskKey();
-    final UserTaskRecord taskRecord = userTaskRecord.setUserTaskKey(userTaskKey);
-    userTaskRecordCustomizer.accept(taskRecord);
-    final long position =
-        writer.writeCommand(
-            userTaskKey,
-            DEFAULT_REQUEST_STREAM_ID,
-            DEFAULT_REQUEST_ID,
-            UserTaskIntent.ASSIGN,
-            taskRecord,
-            authorizedTenantIds.toArray(new String[0]));
     return expectation.apply(position);
   }
 

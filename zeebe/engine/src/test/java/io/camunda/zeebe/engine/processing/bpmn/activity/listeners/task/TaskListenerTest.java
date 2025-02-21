@@ -414,7 +414,7 @@ public class TaskListenerTest {
     final long processInstanceKey =
         createProcessInstance(createProcessWithAssigningTaskListeners(listenerType));
 
-    ENGINE.userTask().ofInstance(processInstanceKey).assign(ut -> ut.setAssignee("new_assignee"));
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("new_assignee").assign();
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
@@ -447,7 +447,7 @@ public class TaskListenerTest {
         createProcessInstance(
             createProcessWithAssigningTaskListeners(
                 listenerType, listenerType + "_2", listenerType + "_3"));
-    ENGINE.userTask().ofInstance(processInstanceKey).assign(ut -> ut.setAssignee("new_assignee"));
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("new_assignee").assign();
     // assignment fails
     ENGINE
         .job()
@@ -456,7 +456,7 @@ public class TaskListenerTest {
         .withResult(new JobResult().setDenied(true))
         .complete();
 
-    ENGINE.userTask().ofInstance(processInstanceKey).assign(ut -> ut.setAssignee("new_assignee"));
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("new_assignee").assign();
     // assignment is successful
     completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
     completeJobs(processInstanceKey, listenerType + "_2", listenerType + "_3");
@@ -543,10 +543,7 @@ public class TaskListenerTest {
         .withResult(new JobResult().setDenied(false))
         .complete();
 
-    ENGINE
-        .userTask()
-        .ofInstance(processInstanceKey)
-        .assign(ut -> ut.setAssignee("second_assignee"));
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("second_assignee").assign();
 
     completeRecreatedJobWithTypeAndResult(
         ENGINE, processInstanceKey, listenerType, new JobResult().setDenied(true));
