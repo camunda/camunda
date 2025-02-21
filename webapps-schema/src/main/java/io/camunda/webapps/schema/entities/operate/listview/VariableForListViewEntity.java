@@ -8,11 +8,19 @@
 package io.camunda.webapps.schema.entities.operate.listview;
 
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
-import io.camunda.webapps.schema.entities.operate.OperateZeebeEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
-public class VariableForListViewEntity extends OperateZeebeEntity<VariableForListViewEntity> {
+public class VariableForListViewEntity
+    implements ExporterEntity<VariableForListViewEntity>,
+        PartitionedEntity<VariableForListViewEntity>,
+        TenantOwned {
 
+  private String id;
+  private long key;
+  private int partitionId;
   private Long processInstanceKey;
   private Long scopeKey;
   private String varName;
@@ -25,6 +33,37 @@ public class VariableForListViewEntity extends OperateZeebeEntity<VariableForLis
 
   public static String getIdBy(final long scopeKey, final String name) {
     return String.format("%d-%s", scopeKey, name);
+  }
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public VariableForListViewEntity setId(final String id) {
+    this.id = id;
+    return this;
+  }
+
+  public long getKey() {
+    return key;
+  }
+
+  public VariableForListViewEntity setKey(final long key) {
+    this.key = key;
+    return this;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public VariableForListViewEntity setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
   }
 
   public Long getProcessInstanceKey() {
@@ -63,6 +102,7 @@ public class VariableForListViewEntity extends OperateZeebeEntity<VariableForLis
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }
@@ -93,7 +133,8 @@ public class VariableForListViewEntity extends OperateZeebeEntity<VariableForLis
   @Override
   public int hashCode() {
     return Objects.hash(
-        super.hashCode(),
+        id,
+        partitionId,
         processInstanceKey,
         scopeKey,
         varName,
@@ -115,7 +156,9 @@ public class VariableForListViewEntity extends OperateZeebeEntity<VariableForLis
       return false;
     }
     final VariableForListViewEntity that = (VariableForListViewEntity) o;
-    return Objects.equals(processInstanceKey, that.processInstanceKey)
+    return Objects.equals(id, that.id)
+        && partitionId == that.partitionId
+        && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(scopeKey, that.scopeKey)
         && Objects.equals(varName, that.varName)
         && Objects.equals(varValue, that.varValue)

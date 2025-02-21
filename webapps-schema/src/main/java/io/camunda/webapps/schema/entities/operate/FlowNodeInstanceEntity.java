@@ -8,12 +8,21 @@
 package io.camunda.webapps.schema.entities.operate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceEntity> {
+public class FlowNodeInstanceEntity
+    implements ExporterEntity<FlowNodeInstanceEntity>,
+        PartitionedEntity<FlowNodeInstanceEntity>,
+        TenantOwned {
 
+  private String id;
+  private long key;
+  private int partitionId;
   private String flowNodeId;
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
@@ -32,10 +41,41 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
   private int level;
   private Long position;
   private boolean incident;
-  private String tenantId = DEFAULT_TENANT_ID;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
   private Long scopeKey;
 
   @JsonIgnore private Object[] sortValues;
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public FlowNodeInstanceEntity setId(final String id) {
+    this.id = id;
+    return this;
+  }
+
+  public long getKey() {
+    return key;
+  }
+
+  public FlowNodeInstanceEntity setKey(final long key) {
+    this.key = key;
+    return this;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public FlowNodeInstanceEntity setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
 
   public String getFlowNodeId() {
     return flowNodeId;
@@ -165,6 +205,7 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }
@@ -187,7 +228,9 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
   public int hashCode() {
     int result =
         Objects.hash(
-            super.hashCode(),
+            id,
+            key,
+            partitionId,
             flowNodeId,
             startDate,
             endDate,
@@ -219,7 +262,10 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
       return false;
     }
     final FlowNodeInstanceEntity that = (FlowNodeInstanceEntity) o;
-    return level == that.level
+    return Objects.equals(id, that.id)
+        && key == that.key
+        && partitionId == that.partitionId
+        && level == that.level
         && incident == that.incident
         && Objects.equals(flowNodeId, that.flowNodeId)
         && Objects.equals(startDate, that.startDate)
