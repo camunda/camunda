@@ -65,7 +65,7 @@ public class SchemaManager {
   }
 
   private void createIndexTemplates() {
-    if (configuration.retention.isEnabled()) {
+    if (configuration.retention.isEnabled() && configuration.retention.isManagePolicy()) {
       createIndexLifecycleManagementPolicy();
     }
 
