@@ -30,50 +30,6 @@ container:
   # If no value specified the container host and port are used instead.
   accessUrl: null
 
-# Configuration for engines used to import data. Please note that you have to have at
-# least one engine configured at all times.
-engines:
-  # An alias of the engine, which will be used for internal purposes like
-  # logging and displaying which data belong to which engine.
-  'camunda-bpm':
-    # The process engines name on the platform, this is the unique engine identifier on the platforms REST API.
-    name: default
-    # A default tenant to the be injected on data from this engine where no tenant is configured in the engine itself.
-    # This property is only relevant in the context of a `One Process Engine Per Tenant`.
-    # For details consult the Multi-Tenancy documentation.
-    defaultTenant:
-      # the id used for this default tenant on persisted entities
-      id: null
-      # the name used for this tenant when displayed in the UI
-      name: null
-    # A base URL that will be used for connections to the Camunda Engine REST API.
-    rest: 'http://localhost:8080/engine-rest'
-    # Determines whether this instance of Optimize should import definition & historical data from this engine.
-    importEnabled: true
-    authentication:
-      # Toggles basic authentication on or off. When enabling basic
-      # authentication, please be aware that you also need to adjust the values
-      # of the user and password.
-      # Also note, when enabled, it is required that the user has
-      # * READ & READ_HISTORY permission on the Process and Decision Definition resources
-      # * READ permission on the Authorization, Group, User, Deployment & Tenant resources
-      # to enable users to log in and Optimize to import the engine data.
-      enabled: false
-      #When basic authentication is enabled, this password is used to
-      #authenticate against the engine.
-      password: ''
-      #When basic authentication is enabled, this user is used to authenticate
-      #against the engine.
-      user: ''
-    # The webapps configuration allows Optimize to directly link
-    # to the other Camunda Web Applications, e.g. to jump from
-    # Optimize directly to a dedicated process instance in Cockpit
-    webapps:
-      # Defines the endpoint where to find the camunda webapps
-      endpoint: 'http://localhost:8080/camunda'
-      # Enables/disables linking to other Camunda Web Applications
-      enabled: true
-
 # everything that is related with configuring Elasticsearch or creating
 # a connection to it.
 es:
@@ -82,10 +38,10 @@ es:
     # an Elasticsearch cluster with several nodes it is recommended to define
     # several connection points in case one node fails.
     nodes:
-    # the address/hostname under which the Elasticsearch node is available.
-    - host: 'localhost'
-      # A port number used by Elasticsearch to accept HTTP connections.
-      httpPort: 9200
+      # the address/hostname under which the Elasticsearch node is available.
+      - host: 'localhost'
+        # A port number used by Elasticsearch to accept HTTP connections.
+        httpPort: 9200
     # HTTP forward proxy configuration
     proxy:
       # whether an HTTP proxy should be used for requests to elasticsearch
