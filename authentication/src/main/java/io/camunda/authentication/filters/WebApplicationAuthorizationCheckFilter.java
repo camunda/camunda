@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.UrlPathHelper;
 
 public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter {
 
@@ -61,7 +62,8 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
 
     final CamundaPrincipal principal = findCurrentCamundaPrincipal();
     return principal == null
-        || principal.getAuthenticationContext().authorizedApplications().contains(application);
+        || principal.getAuthenticationContext().authorizedApplications().contains(application)
+        || principal.getAuthenticationContext().authorizedApplications().contains("*");
   }
 
   private boolean isStaticResource(final HttpServletRequest request) {
@@ -70,11 +72,10 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
   }
 
   private String findWebApplication(final HttpServletRequest request) {
-    final String requestUrl = request.getRequestURL().toString();
-    return WEB_APPLICATIONS.stream()
-        .filter(wa -> requestUrl.contains(wa + "/"))
-        .findFirst()
-        .orElse(null);
+    final UrlPathHelper urlPathHelper = new UrlPathHelper();
+    final String requestUrl =
+        urlPathHelper.getPathWithinApplication(request).substring(1).split("/")[0];
+    return WEB_APPLICATIONS.stream().filter(requestUrl::equals).findFirst().orElse(null);
   }
 
   private CamundaPrincipal findCurrentCamundaPrincipal() {
