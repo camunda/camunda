@@ -41,6 +41,7 @@ public class ZeebeAnnotationProcessorRegistry implements BeanPostProcessor, Orde
   public Object postProcessAfterInitialization(final Object bean, final String beanName)
       throws BeansException {
     if (bean instanceof final AbstractZeebeAnnotationProcessor processor) {
+      LOG.debug("Found processor: {}", beanName);
       processors.add(processor);
     } else {
       beans.add(ClassInfo.builder().bean(bean).beanName(beanName).build());
@@ -67,6 +68,10 @@ public class ZeebeAnnotationProcessorRegistry implements BeanPostProcessor, Orde
         bean -> {
           for (final AbstractZeebeAnnotationProcessor zeebePostProcessor : processors) {
             if (zeebePostProcessor.isApplicableFor(bean)) {
+              LOG.debug(
+                  "Configuring bean {} with post processor {}",
+                  bean,
+                  zeebePostProcessor.getBeanName());
               zeebePostProcessor.configureFor(bean);
             }
           }
