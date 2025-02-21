@@ -9,16 +9,23 @@ package io.camunda.webapps.schema.entities.operate.listview;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.PartitionedEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
-import io.camunda.webapps.schema.entities.operate.OperateZeebeEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 public class FlowNodeInstanceForListViewEntity
-    extends OperateZeebeEntity<FlowNodeInstanceForListViewEntity> {
+    implements ExporterEntity<FlowNodeInstanceForListViewEntity>,
+        PartitionedEntity<FlowNodeInstanceForListViewEntity>,
+        TenantOwned {
 
+  private String id;
+  private long key;
+  private int partitionId;
   private Long processInstanceKey;
   private String activityId;
   private FlowNodeState activityState;
@@ -28,7 +35,7 @@ public class FlowNodeInstanceForListViewEntity
   private boolean incident;
   private boolean jobFailedWithRetriesLeft = false;
 
-  private String tenantId;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   @Deprecated @JsonIgnore private boolean pendingIncident;
 
@@ -41,6 +48,37 @@ public class FlowNodeInstanceForListViewEntity
 
   @JsonIgnore private Long startTime;
   @JsonIgnore private Long endTime;
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public FlowNodeInstanceForListViewEntity setId(final String id) {
+    this.id = id;
+    return this;
+  }
+
+  public long getKey() {
+    return key;
+  }
+
+  public FlowNodeInstanceForListViewEntity setKey(final long key) {
+    this.key = key;
+    return this;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public FlowNodeInstanceForListViewEntity setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
 
   public Long getProcessInstanceKey() {
     return processInstanceKey;
@@ -110,6 +148,7 @@ public class FlowNodeInstanceForListViewEntity
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }
@@ -192,7 +231,9 @@ public class FlowNodeInstanceForListViewEntity
   @Override
   public int hashCode() {
     return Objects.hash(
-        super.hashCode(),
+        id,
+        key,
+        partitionId,
         processInstanceKey,
         activityId,
         activityState,
@@ -219,7 +260,10 @@ public class FlowNodeInstanceForListViewEntity
       return false;
     }
     final FlowNodeInstanceForListViewEntity that = (FlowNodeInstanceForListViewEntity) o;
-    return incident == that.incident
+    return Objects.equals(id, that.id)
+        && key == that.key
+        && partitionId == that.partitionId
+        && incident == that.incident
         && jobFailedWithRetriesLeft == that.jobFailedWithRetriesLeft
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(activityId, that.activityId)
