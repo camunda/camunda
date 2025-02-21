@@ -10,12 +10,12 @@ package io.camunda.operate.elasticsearch.writer;
 import static io.camunda.operate.store.MetricsStore.*;
 import static org.mockito.Mockito.*;
 
-import io.camunda.operate.entities.MetricEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.store.elasticsearch.ElasticsearchMetricsStore;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
+import io.camunda.webapps.schema.entities.MetricEntity;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,12 +43,13 @@ public class MetricWriterTest {
     // Then
     verify(batchRequest)
         .add(
-            metricIndex.getFullQualifiedName(),
-            new MetricEntity()
-                .setEvent(EVENT_PROCESS_INSTANCE_STARTED)
-                .setValue(key)
-                .setEventTime(now)
-                .setTenantId(tenantId));
+            eq(metricIndex.getFullQualifiedName()),
+            argThat(
+                entity ->
+                    ((MetricEntity) entity).getEvent().equals(EVENT_PROCESS_INSTANCE_STARTED)
+                        && ((MetricEntity) entity).getValue().equals(key)
+                        && ((MetricEntity) entity).getEventTime().equals(now)
+                        && ((MetricEntity) entity).getTenantId().equals(tenantId)));
   }
 
   @Test
@@ -64,11 +65,12 @@ public class MetricWriterTest {
     // Then
     verify(batchRequest)
         .add(
-            metricIndex.getFullQualifiedName(),
-            new MetricEntity()
-                .setEvent(EVENT_DECISION_INSTANCE_EVALUATED)
-                .setValue(key)
-                .setEventTime(now)
-                .setTenantId(tenantId));
+            eq(metricIndex.getFullQualifiedName()),
+            argThat(
+                entity ->
+                    ((MetricEntity) entity).getEvent().equals(EVENT_DECISION_INSTANCE_EVALUATED)
+                        && ((MetricEntity) entity).getValue().equals(key)
+                        && ((MetricEntity) entity).getEventTime().equals(now)
+                        && ((MetricEntity) entity).getTenantId().equals(tenantId)));
   }
 }
