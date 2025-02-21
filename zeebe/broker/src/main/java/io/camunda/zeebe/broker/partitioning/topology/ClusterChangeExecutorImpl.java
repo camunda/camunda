@@ -20,7 +20,6 @@ import io.camunda.zeebe.stream.api.StreamClock;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,27 +47,6 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
         () -> {
           try {
             exporterRepository.getExporters().forEach(this::purgeExporter);
-            final var failed =
-                SchemaManagerProvider.purgeUsingSchemaManager()
-                    .thenAccept(
-                        schemaManager -> {
-                          Stream.of("operate-*", "tasklist-*")
-                              .forEach(
-                                  name ->
-                                      schemaManager.deleteIndicesFor(
-                                          prefixedName(schemaManager.getIndexPrefix(), name)));
-                          Stream.of("operate-*", "tasklist-*")
-                              .forEach(
-                                  name ->
-                                      schemaManager.deleteTemplatesFor(
-                                          prefixedName(schemaManager.getIndexPrefix(), name)));
-                          schemaManager.deleteDefaults();
-                          schemaManager.createDefaults(); // TODO temporary workaround
-                        })
-                    .isCompletedExceptionally();
-            if (failed) {
-              LOG.info("SchemaManager not found");
-            }
             result.complete(null);
           } catch (final Exception e) {
             result.completeExceptionally(e);

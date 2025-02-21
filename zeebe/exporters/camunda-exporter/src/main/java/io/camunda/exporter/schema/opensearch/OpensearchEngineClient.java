@@ -41,6 +41,8 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
+import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
+import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.generic.Body;
 import org.opensearch.client.opensearch.generic.Request;
@@ -283,43 +285,16 @@ public class OpensearchEngineClient implements SearchEngineClient {
   }
 
   @Override
-  public void deleteIndexTemplate(final String indexTemplateName) {
-    try {
-      client.indices().deleteIndexTemplate(req -> req.name(indexTemplateName));
-      LOG.debug("Index template [{}] was successfully deleted", indexTemplateName);
-    } catch (final IOException ioe) {
-      final var errMsg = String.format("Index template [%s] was not deleted", indexTemplateName);
-      LOG.error(errMsg, ioe);
-      throw new OpensearchExporterException(errMsg, ioe);
-    }
-  }
+  public void emptyIndex(final String indexName) {
+    LOG.info("Truncating index [{}]", indexName);
+    final DeleteByQueryRequest request =
+        new DeleteByQueryRequest.Builder().index(indexName).query(q -> q.matchAll(m -> m)).build();
 
-  @Override
-  public void deleteIndexLifeCyclePolicy(final String policyName) {
     try {
-      client
-          .generic()
-          .execute(
-              Requests.builder()
-                  .method("DELETE")
-                  .endpoint("_plugins/_ism/policies/" + policyName)
-                  .build());
-      LOG.debug("Index state management policy [{}] was successfully deleted", policyName);
-    } catch (final IOException | OpenSearchException e) {
-      final var errMsg =
-          String.format("Index state management policy [%s] was not deleted", policyName);
-      LOG.error(errMsg, e);
-      throw new OpensearchExporterException(errMsg, e);
-    }
-  }
-
-  @Override
-  public void deleteComponentTemplate(final String templateName) {
-    try {
-      client.cluster().deleteComponentTemplate(req -> req.name(templateName));
-      LOG.debug("Component template [{}] was successfully deleted", templateName);
+      final DeleteByQueryResponse response = client.deleteByQuery(request);
+      LOG.debug("Deleted {} documents from index {}", response.deleted(), indexName);
     } catch (final IOException ioe) {
-      final var errMsg = String.format("Component template [%s] was not deleted", templateName);
+      final var errMsg = String.format("Failed to delete dcos from index %s", indexName);
       LOG.error(errMsg, ioe);
       throw new OpensearchExporterException(errMsg, ioe);
     }

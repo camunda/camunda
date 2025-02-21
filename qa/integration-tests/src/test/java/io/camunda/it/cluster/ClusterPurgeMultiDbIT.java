@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.protocol.rest.ProblemDetail;
@@ -35,10 +37,6 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-/**
- * TODO: We currently only test CamundaExporter (Elasticsearch) because purge is not implemented in
- * the others (yet).
- */
 @MultiDbTest
 public class ClusterPurgeMultiDbIT {
 
@@ -174,6 +172,55 @@ public class ClusterPurgeMultiDbIT {
                   .succeedsWithin(Duration.ofSeconds(TIMEOUT))
                   .extracting(SearchQueryResponse::items)
                   .satisfies(items -> Assertions.assertThat(items).isEmpty());
+            });
+  }
+
+  @Test
+  void clusterShouldBeReusableAfterPurge() throws InterruptedException {
+    // GIVEN
+    final ClusterActuator actuator = ClusterActuator.of(APPLICATION);
+
+    // WHEN
+    final var planChangeResponse = actuator.purge(false);
+
+    // THEN
+    assertThatChangesAreApplied(planChangeResponse);
+
+    final var processModel =
+        Bpmn.createExecutableProcess("test-process")
+            .startEvent()
+            .serviceTask("service-task-1")
+            .zeebeJobType("test")
+            .endEvent()
+            .done();
+    final var processDefinitionKey = deployProcessModel(processModel);
+    final var processInstanceKey = startProcess(processDefinitionKey);
+
+    final var activeJob =
+        client
+            .newActivateJobsCommand()
+            .jobType("test")
+            .maxJobsToActivate(1)
+            .send()
+            .join()
+            .getJobs()
+            .getFirst();
+
+    client.newCompleteCommand(activeJob).send().join();
+
+    // Await that the list of process instances is empty
+    Awaitility.await("until process instance query returns empty list")
+        .atMost(Duration.ofSeconds(2 * TIMEOUT))
+        .untilAsserted(
+            () -> {
+              final Future<ProcessInstance> processInstanceFuture =
+                  client.newProcessInstanceGetRequest(processInstanceKey).send();
+              Assertions.assertThat(processInstanceFuture)
+                  .succeedsWithin(Duration.ofSeconds(TIMEOUT))
+                  .extracting(ProcessInstance::getState)
+                  .satisfies(
+                      state ->
+                          Assertions.assertThat(state).isEqualTo(ProcessInstanceState.COMPLETED));
             });
   }
 
