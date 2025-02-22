@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/camunda/camunda/c8run/internal/health"
-	_package "github.com/camunda/camunda/c8run/internal/package"
+	"github.com/camunda/camunda/c8run/internal/packages"
 	"github.com/camunda/camunda/c8run/internal/unix"
 	"github.com/camunda/camunda/c8run/internal/windows"
 	"github.com/joho/godotenv"
@@ -351,7 +351,7 @@ func main() {
 	case "stop":
 		stopCommand(c8, settings, processInfo)
 	case "package":
-		err := _package.New(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag)
+		err := packages.New(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag)
 		if err != nil {
 			fmt.Printf("%+v", err)
 			os.Exit(1)
@@ -487,7 +487,7 @@ func stopCommand(c8 C8Run, settings C8RunSettings, processes processes) {
 }
 
 func cleanCommand(camundaVersion string, elasticsearchVersion string) {
-	_package.Clean(camundaVersion, elasticsearchVersion)
+	packages.Clean(camundaVersion, elasticsearchVersion)
 }
 
 func setupApplication(cmd *exec.Cmd, pid string, logPath string) {
