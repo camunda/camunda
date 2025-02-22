@@ -19,6 +19,7 @@ import io.camunda.zeebe.snapshots.RestorableSnapshotStore;
 import io.camunda.zeebe.snapshots.SnapshotException;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.Either;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
@@ -36,11 +37,13 @@ public final class FileBasedSnapshotStore extends Actor
       final int brokerId,
       final int partitionId,
       final Path root,
-      final CRC32CChecksumProvider checksumProvider) {
+      final CRC32CChecksumProvider checksumProvider,
+      final MeterRegistry meterRegistry) {
     actorName = buildActorName("SnapshotStore", partitionId);
     this.partitionId = partitionId;
     snapshotStore =
-        new FileBasedSnapshotStoreImpl(brokerId, partitionId, root, checksumProvider, this);
+        new FileBasedSnapshotStoreImpl(
+            brokerId, root, checksumProvider, actor, new SnapshotMetrics(meterRegistry));
   }
 
   @Override
