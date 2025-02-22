@@ -414,13 +414,13 @@ func startCommand(c8 C8Run, settings C8RunSettings, processInfo processes, paren
 
 		elasticsearchCmd := c8.ElasticsearchCmd(processInfo.elasticsearch.version, parentDir)
 		elasticsearchLogFilePath := filepath.Join(parentDir, "log", "elasticsearch.log")
-		setupApplication(elasticsearchCmd, processInfo.elasticsearch.pid, elasticsearchLogFilePath)
+		startApplication(elasticsearchCmd, processInfo.elasticsearch.pid, elasticsearchLogFilePath)
 		health.QueryElasticsearch("Elasticsearch", "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s")
 	}
 
 	connectorsCmd := c8.ConnectorsCmd(javaBinary, parentDir, processInfo.camunda.version)
 	connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
-	setupApplication(connectorsCmd, processInfo.connectors.pid, connectorsLogPath)
+	startApplication(connectorsCmd, processInfo.connectors.pid, connectorsLogPath)
 
 	var extraArgs string
 	if settings.config != "" {
@@ -446,7 +446,7 @@ func startCommand(c8 C8Run, settings C8RunSettings, processInfo processes, paren
 
 	camundaCmd := c8.CamundaCmd(processInfo.camunda.version, parentDir, extraArgs, javaOpts)
 	camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
-	setupApplication(camundaCmd, processInfo.camunda.pid, camundaLogPath)
+	startApplication(camundaCmd, processInfo.camunda.pid, camundaLogPath)
 	err := health.QueryCamunda(c8, "Camunda", settings)
 	if err != nil {
 		fmt.Printf("%+v", err)
@@ -490,7 +490,7 @@ func cleanCommand(camundaVersion string, elasticsearchVersion string) {
 	packages.Clean(camundaVersion, elasticsearchVersion)
 }
 
-func setupApplication(cmd *exec.Cmd, pid string, logPath string) {
+func startApplication(cmd *exec.Cmd, pid string, logPath string) {
 	logFile, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		fmt.Print("Failed to open file: " + logPath)
