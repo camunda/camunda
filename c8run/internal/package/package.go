@@ -1,4 +1,11 @@
-package main
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package _package
 
 import (
 	"encoding/base64"
@@ -123,7 +130,7 @@ func createZipArchive(filesToArchive []string, outputPath string) error {
 	return nil
 }
 
-func Package(camundaVersion string, elasticsearchVersion string, connectorsVersion string, composeTag string) error {
+func New(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag string) error {
 	var osType, architecture, pkgName, extractFunc, err = setOsSpecificValues()
 	if err != nil {
 		fmt.Printf("%+v", err)
@@ -151,27 +158,27 @@ func Package(camundaVersion string, elasticsearchVersion string, connectorsVersi
 
 	err = downloadAndExtract(elasticsearchFilePath, elasticsearchUrl, "elasticsearch-"+elasticsearchVersion, "", extractFunc)
 	if err != nil {
-		return fmt.Errorf("Package "+osType+": failed to fetch elasticsearch: %w\n%s", err, debug.Stack())
+		return fmt.Errorf("New "+osType+": failed to fetch elasticsearch: %w\n%s", err, debug.Stack())
 	}
 
 	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, javaArtifactsToken, extractFunc)
 	if err != nil {
-		return fmt.Errorf("Package "+osType+": failed to download camunda %w\n%s", err, debug.Stack())
+		return fmt.Errorf("New "+osType+": failed to download camunda %w\n%s", err, debug.Stack())
 	}
 
 	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, javaArtifactsToken, func(_, _ string) error { return nil })
 	if err != nil {
-		return fmt.Errorf("Package "+osType+": failed to fetch connectors: %w\n%s", err, debug.Stack())
+		return fmt.Errorf("New "+osType+": failed to fetch connectors: %w\n%s", err, debug.Stack())
 	}
 
 	err = downloadAndExtract(composeFilePath, composeUrl, composeExtractionPath, authToken, extractFunc)
 	if err != nil {
-		return fmt.Errorf("Package "+osType+": failed to fetch compose release %w\n%s", err, debug.Stack())
+		return fmt.Errorf("New "+osType+": failed to fetch compose release %w\n%s", err, debug.Stack())
 	}
 
 	err = os.Chdir("..")
 	if err != nil {
-		return fmt.Errorf("Package "+osType+": failed to chdir %w", err)
+		return fmt.Errorf("New "+osType+": failed to chdir %w", err)
 	}
 
 	filesToArchive := getFilesToArchive(osType, elasticsearchVersion, connectorsFilePath, camundaVersion, composeExtractionPath)
@@ -180,17 +187,17 @@ func Package(camundaVersion string, elasticsearchVersion string, connectorsVersi
 
 	if osType == "linux" || osType == "darwin" {
 		if err := createTarGzArchive(filesToArchive, outputPath); err != nil {
-			return fmt.Errorf("Package %s: %w", osType, err)
+			return fmt.Errorf("New %s: %w", osType, err)
 		}
 	} else {
 		if err := createZipArchive(filesToArchive, outputPath); err != nil {
-			return fmt.Errorf("Package %s: %w", osType, err)
+			return fmt.Errorf("New %s: %w", osType, err)
 		}
 	}
 
 	err = os.Chdir("c8run")
 	if err != nil {
-		return fmt.Errorf("Package "+osType+": failed to chdir %w", err)
+		return fmt.Errorf("New "+osType+": failed to chdir %w", err)
 	}
 
 	return nil
