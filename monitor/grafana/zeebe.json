@@ -5072,6 +5072,18 @@
               "legendFormat": "{{le}}",
               "range": true,
               "refId": "A"
+            },
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(increase(zeebe_snapshot_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
+              "interval": "",
+              "legendFormat": "{{le}}",
+              "range": true,
+              "refId": "B"
             }
           ],
           "title": "Snapshot Operation Duration",
