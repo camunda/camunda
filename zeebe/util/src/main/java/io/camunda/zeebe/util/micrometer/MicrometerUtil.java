@@ -10,6 +10,7 @@ package io.camunda.zeebe.util.micrometer;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
@@ -115,6 +116,14 @@ public final class MicrometerUtil {
     return Timer.builder(documentation.getName())
         .description(documentation.getDescription())
         .serviceLevelObjectives(documentation.getTimerSLOs());
+  }
+
+  /** Returns a summary builder pre-configured based on the given documentation. */
+  public static DistributionSummary.Builder buildSummary(
+      final ExtendedMeterDocumentation documentation) {
+    return DistributionSummary.builder(documentation.getName())
+        .description(documentation.getDescription())
+        .serviceLevelObjectives(documentation.getDistributionSLOs());
   }
 
   /**
