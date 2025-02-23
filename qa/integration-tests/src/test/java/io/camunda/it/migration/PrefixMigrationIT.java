@@ -20,10 +20,14 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Base64;
-import org.assertj.core.api.Assertions;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -33,6 +37,7 @@ import org.testcontainers.utility.DockerImageName;
 @Testcontainers
 public class PrefixMigrationIT {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(PrefixMigrationIT.class);
   private static final int SERVER_PORT = 8080;
   private static final int MANAGEMENT_PORT = 9600;
   private static final int GATEWAY_GRPC_PORT = 26500;
@@ -48,6 +53,11 @@ public class PrefixMigrationIT {
           .withNetwork(NETWORK)
           .withNetworkAliases(ELASTIC_ALIAS)
           .withStartupTimeout(Duration.ofMinutes(5)); // can be slow in CI
+
+  @BeforeEach
+  public void setup() {
+    esContainer.followOutput(new Slf4jLogConsumer(LOGGER));
+  }
 
   private GenericContainer<?> createCamundaContainer(
       final String image, final String operatePrefix, final String tasklistPrefix) {
