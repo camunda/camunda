@@ -29,8 +29,8 @@ import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.IdentityInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository;
-import io.camunda.zeebe.gateway.metrics.LongPollingMetrics.GatewayProtocol;
-import io.camunda.zeebe.gateway.metrics.LongPollingMetricsImpl;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.query.impl.QueryApiImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
@@ -378,7 +378,8 @@ public final class Gateway implements CloseableSilently {
         .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
         .setNoJobsReceivedExceptionProvider(NO_JOBS_RECEIVED_EXCEPTION_PROVIDER)
         .setRequestCanceledExceptionProvider(REQUEST_CANCELED_EXCEPTION_PROVIDER)
-        .setMetrics(new LongPollingMetricsImpl(meterRegistry, GatewayProtocol.GRPC))
+        .setMetrics(
+            new LongPollingMetrics(meterRegistry, LongPollingMetricsDoc.GatewayProtocol.GRPC))
         .build();
   }
 
