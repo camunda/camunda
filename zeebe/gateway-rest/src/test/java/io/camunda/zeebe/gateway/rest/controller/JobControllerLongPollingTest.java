@@ -421,7 +421,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
               .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
               .setNoJobsReceivedExceptionProvider(RuntimeException::new)
               .setRequestCanceledExceptionProvider(reason -> new RuntimeException(reason))
-              .setMetrics(LongPollingMetrics.NOOP)
+              .setMetrics(LongPollingMetrics.noop())
               .build();
       final var future = new CompletableFuture<>();
       final var actor =
