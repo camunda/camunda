@@ -71,7 +71,7 @@ public sealed class StatefulGauge extends AbstractMeter {
   }
 
   @VisibleForTesting("convenience method to assert value in tests")
-  double value() {
+  public double value() {
     return delegate.value();
   }
 
