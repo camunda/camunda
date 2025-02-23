@@ -127,6 +127,12 @@
       <artifactId>micrometer-registry-prometheus</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>prometheus-metrics-model</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <build>
     <resources>
