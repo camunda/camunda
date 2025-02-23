@@ -7,9 +7,12 @@
  */
 package io.camunda.it.migration;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.application.commons.migration.PrefixMigrationHelper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CredentialsProvider;
+import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.it.utils.MultiDbConfigurator;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
@@ -17,10 +20,15 @@ import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
+import java.net.CookieManager;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.Optional;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -131,6 +139,43 @@ public class PrefixMigrationIT {
         .build();
   }
 
+  private HttpResponse<String> requestProcessInstanceFromV1(
+      final String endpoint, final long processInstanceKey) {
+
+    try (final HttpClient httpClient =
+        HttpClient.newBuilder().cookieHandler(new CookieManager()).build(); ) {
+      sendPOSTRequest(
+          httpClient,
+          String.format("%sapi/login?username=%s&password=%s", endpoint, "demo", "demo"),
+          null);
+
+      return sendPOSTRequest(
+          httpClient,
+          String.format("%sv1/process-instances/search", endpoint),
+          String.format(
+              "{\"filter\":{\"key\":%d},\"sort\":[{\"field\":\"endDate\",\"order\":\"ASC\"}],\"size\":20}",
+              processInstanceKey));
+    }
+  }
+
+  private HttpResponse<String> sendPOSTRequest(
+      final HttpClient httpClient, final String path, final String body) {
+    try {
+      final var requestBody = Optional.ofNullable(body).orElse("{}");
+      final var requestBuilder =
+          HttpRequest.newBuilder()
+              .uri(new URI(path))
+              .header("content-type", "application/json")
+              .method("POST", HttpRequest.BodyPublishers.ofString(requestBody));
+
+      final var request = requestBuilder.build();
+
+      return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    } catch (final Exception e) {
+      throw new RuntimeException("Failed to send request", e);
+    }
+  }
+
   @Test
   void shouldReindexDocumentsDuringPrefixMigration() throws IOException, InterruptedException {
     // given
@@ -148,8 +193,28 @@ public class PrefixMigrationIT {
             .send()
             .join();
 
+    final long processDefinitionKey = event.getProcesses().getFirst().getProcessDefinitionKey();
+    final ProcessInstanceEvent processInstanceEvent =
+        camunda87Client
+            .newCreateInstanceCommand()
+            .processDefinitionKey(processDefinitionKey)
+            .send()
+            .join();
+
     // Wait for documents to be written to indices
-    Thread.sleep(5000);
+    Awaitility.await("document should be written")
+        .untilAsserted(
+            () -> {
+              final long processInstanceKey = processInstanceEvent.getProcessInstanceKey();
+              final HttpResponse<String> processInstanceResponse =
+                  requestProcessInstanceFromV1(
+                      String.format("http://localhost:%d/", camunda87.getMappedPort(SERVER_PORT)),
+                      processInstanceKey);
+
+              assertThat(processInstanceResponse.statusCode()).isEqualTo(200);
+              assertThat(processInstanceResponse.body())
+                  .contains(Long.toString(processInstanceKey));
+            });
 
     camunda87.stop();
 
@@ -160,8 +225,8 @@ public class PrefixMigrationIT {
     final var currentCamundaClient = startLatestCamunda();
 
     final var processDefinitions = currentCamundaClient.newProcessDefinitionQuery().send().join();
-    Assertions.assertThat(processDefinitions.items().size()).isEqualTo(1);
-    Assertions.assertThat(processDefinitions.items().getFirst().getProcessDefinitionKey())
+    assertThat(processDefinitions.items().size()).isEqualTo(1);
+    assertThat(processDefinitions.items().getFirst().getProcessDefinitionKey())
         .isEqualTo(event.getProcesses().getFirst().getProcessDefinitionKey());
   }
 
