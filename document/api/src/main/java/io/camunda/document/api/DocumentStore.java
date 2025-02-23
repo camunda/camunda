@@ -12,6 +12,10 @@ import java.util.concurrent.CompletableFuture;
 
 public interface DocumentStore {
 
+  String SETUP_VALIDATION_FAILURE_MESSAGE =
+      "The application will continue to operate, "
+          + "but document handling features may be unavailable or limited.";
+
   CompletableFuture<Either<DocumentError, DocumentReference>> createDocument(
       DocumentCreationRequest request);
 
@@ -24,4 +28,6 @@ public interface DocumentStore {
 
   CompletableFuture<Either<DocumentError, Void>> verifyContentHash(
       String documentId, String contentHash);
+
+  default void validateSetup() {}
 }
