@@ -17,6 +17,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
@@ -53,11 +54,12 @@ final class ClientCancelPendingCommandTest {
         .untilAsserted(
             () ->
                 assertThat(
-                        registry
-                            .get(blockedRequestCount.getName())
-                            .tag(TYPE.asString(), "type")
-                            .gauge())
-                    .returns(1.0, Gauge::value));
+                        (StatefulGauge)
+                            registry
+                                .get(blockedRequestCount.getName())
+                                .tag(TYPE.asString(), "type")
+                                .meter())
+                    .returns(1.0, StatefulGauge::value));
 
     // when - create some jobs after cancellation; the notification will trigger long polling to
     // remove cancelled requests. unfortunately we can't tell when cancellation is finished
