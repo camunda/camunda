@@ -11,7 +11,7 @@
     "@devbookhq/splitter": "1.4.2",
     "@floating-ui/react-dom": "2.1.2",
     "@loadable/component": "^5.15.3",
-    "@monaco-editor/react": "4.6.0",
+    "@monaco-editor/react": "4.7.0",
     "@types/loadable__component": "5.13.9",
     "bpmn-js": "18.1.2",
     "bpmn-moddle": "9.0.1",
