@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.it.client;
 
-import static io.camunda.zeebe.gateway.metrics.LongPollingMetrics.RequestsQueuedKeyNames.TYPE;
+import static io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc.RequestsQueuedKeyNames.TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.zeebe.gateway.metrics.LongPollingMetrics.LongPollingMetricsDoc;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc;
 import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert;

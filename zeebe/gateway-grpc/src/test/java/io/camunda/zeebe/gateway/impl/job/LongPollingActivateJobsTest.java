@@ -98,7 +98,7 @@ public final class LongPollingActivateJobsTest {
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
             .setNoJobsReceivedExceptionProvider(Gateway.NO_JOBS_RECEIVED_EXCEPTION_PROVIDER)
             .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
-            .setMetrics(LongPollingMetrics.NOOP)
+            .setMetrics(LongPollingMetrics.noop())
             .build();
     submitActorToActivateJobs(handler);
 
@@ -265,7 +265,7 @@ public final class LongPollingActivateJobsTest {
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
             .setNoJobsReceivedExceptionProvider(Gateway.NO_JOBS_RECEIVED_EXCEPTION_PROVIDER)
             .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
-            .setMetrics(LongPollingMetrics.NOOP)
+            .setMetrics(LongPollingMetrics.noop())
             .build();
     submitActorToActivateJobs(handler);
 
@@ -295,7 +295,7 @@ public final class LongPollingActivateJobsTest {
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
             .setNoJobsReceivedExceptionProvider(Gateway.NO_JOBS_RECEIVED_EXCEPTION_PROVIDER)
             .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
-            .setMetrics(LongPollingMetrics.NOOP)
+            .setMetrics(LongPollingMetrics.noop())
             .build();
     submitActorToActivateJobs(handler);
 
