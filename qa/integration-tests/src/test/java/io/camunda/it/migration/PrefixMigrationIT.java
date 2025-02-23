@@ -237,8 +237,6 @@ public class PrefixMigrationIT {
         new MultiDbConfigurator(testSimpleCamundaApplication);
     final var esUrl = String.format("http://localhost:%d", esContainer.getMappedPort(9200));
     multiDbConfigurator.configureElasticsearchSupport(esUrl, NEW_PREFIX);
-    testSimpleCamundaApplication.withProperty("camunda.tasklist.zeebeElasticsearch.prefix", null);
-    testSimpleCamundaApplication.withProperty("camunda.operate.zeebeElasticsearch.prefix", null);
     testSimpleCamundaApplication.start();
     testSimpleCamundaApplication.awaitCompleteTopology();
 
