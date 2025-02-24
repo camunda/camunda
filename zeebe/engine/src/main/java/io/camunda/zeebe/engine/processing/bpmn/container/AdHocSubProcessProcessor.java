@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehav
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import java.util.Collections;
@@ -204,44 +205,65 @@ public class AdHocSubProcessProcessor
   }
 
   @Override
+  public Either<Failure, ?> beforeExecutionPathCompleted(
+      final ExecutableAdHocSubProcess adHocSubProcess,
+      final BpmnElementContext adHocSubProcessContext,
+      final BpmnElementContext childContext) {
+    final Expression completionConditionExpression = adHocSubProcess.getCompletionCondition();
+    if (completionConditionExpression == null) {
+      return Either.right(null);
+    }
+
+    return expressionProcessor
+        .evaluateBooleanExpression(
+            completionConditionExpression, adHocSubProcessContext.getElementInstanceKey())
+        .mapLeft(
+            failure ->
+                new Failure(
+                    "Failed to evaluate completion condition. " + failure.getMessage(),
+                    ErrorType.EXTRACT_VALUE_ERROR));
+  }
+
+  @Override
   public void afterExecutionPathCompleted(
       final ExecutableAdHocSubProcess adHocSubProcess,
       final BpmnElementContext adHocSubProcessContext,
       final BpmnElementContext childContext,
       final Boolean satisfiesCompletionCondition) {
-    final Expression completionConditionExpression = adHocSubProcess.getCompletionCondition();
-    if (completionConditionExpression == null) {
+    if (satisfiesCompletionCondition == null) {
       if (stateBehavior.canBeCompleted(childContext)) {
         stateTransitionBehavior.completeElement(adHocSubProcessContext);
       }
     } else {
-      expressionProcessor
-          .evaluateBooleanExpression(
-              completionConditionExpression, adHocSubProcessContext.getElementInstanceKey())
-          .thenDo(
-              completionCondition -> {
-                if (completionCondition && stateBehavior.canBeCompleted(childContext)) {
-                  stateTransitionBehavior.completeElement(adHocSubProcessContext);
-                }
-              })
-          .ifLeft(
-              failure ->
-                  incidentBehavior.createIncident(
-                      new Failure(
-                          "Failed to evaluate completion condition. " + failure.getMessage(),
-                          ErrorType.EXTRACT_VALUE_ERROR),
-                      adHocSubProcessContext));
+      if (satisfiesCompletionCondition) {
+        if (adHocSubProcess.isCancelRemainingInstancesEnabled()) {
+          final boolean hasNoActiveChildren =
+              stateTransitionBehavior.terminateChildInstances(adHocSubProcessContext);
+          if (hasNoActiveChildren) {
+            stateTransitionBehavior.completeElement(adHocSubProcessContext);
+          }
+        } else {
+          if (stateBehavior.canBeCompleted(childContext)) {
+            stateTransitionBehavior.completeElement(adHocSubProcessContext);
+          }
+        }
+      }
     }
   }
 
   @Override
   public void onChildTerminated(
-      final ExecutableAdHocSubProcess element,
+      final ExecutableAdHocSubProcess adHocSubProcess,
       final BpmnElementContext adHocSubProcessContext,
       final BpmnElementContext childContext) {
-
-    if (stateBehavior.canBeTerminated(childContext)) {
-      terminate(element, adHocSubProcessContext);
+    if (adHocSubProcessContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING) {
+      if (stateBehavior.canBeTerminated(childContext)) {
+        terminate(adHocSubProcess, adHocSubProcessContext);
+      }
+    } else if (stateBehavior.canBeCompleted(childContext)) {
+      // complete the ad-hoc subprocess because it's completion condition was met previously and
+      // all remaining child instances were terminated.
+      stateTransitionBehavior.completeElement(adHocSubProcessContext);
     }
   }
 }
