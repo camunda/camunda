@@ -11,6 +11,8 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_EMAIL;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
+import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.USERNAME_PATTERN;
+import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.USERNAME_REGEX;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
@@ -18,15 +20,12 @@ import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Pattern;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.http.ProblemDetail;
 
 public final class UserValidator {
 
   private static final int MAX_USERNAME_LENGTH = 256;
-  private static final String USERNAME_REGEX = "[a-zA-Z0-9@._]+";
-  private static final Pattern USERNAME_PATTERN = Pattern.compile(USERNAME_REGEX);
 
   public static Optional<ProblemDetail> validateUserUpdateRequest(final UserUpdateRequest request) {
     return validate(
