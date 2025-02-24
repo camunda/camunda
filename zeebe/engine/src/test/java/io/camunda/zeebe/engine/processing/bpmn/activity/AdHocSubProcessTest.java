@@ -330,6 +330,93 @@ public final class AdHocSubProcessTest {
   }
 
   @Test
+  public void shouldCancelRemainingInstancesWhenConfigured() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
+              adHocSubProcess.zeebeCompletionConditionExpression("=true");
+              adHocSubProcess.zeebeCancelRemainingInstances(true);
+              adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+              adHocSubProcess
+                  .intermediateCatchEvent("TimerTask")
+                  .timerWithDuration(Duration.ofSeconds(1))
+                  .task("C");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("activateElements", List.of("A", "TimerTask"))
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("TimerTask", ProcessInstanceIntent.TERMINATE_ELEMENT),
+            tuple("TimerTask", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .doesNotContainSubsequence(tuple("C", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void shouldNotCancelRemainingInstancesWhenNotConfigured() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
+              adHocSubProcess.zeebeCompletionConditionExpression("=true");
+              adHocSubProcess.zeebeCancelRemainingInstances(false);
+              adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+              adHocSubProcess
+                  .intermediateCatchEvent("TimerTask")
+                  .timerWithDuration(Duration.ofSeconds(1))
+                  .task("C");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("activateElements", List.of("A", "TimerTask"))
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("TimerTask", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("C", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
   public void shouldApplyInputMappings() {
     // given
     final BpmnModelInstance process =
