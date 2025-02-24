@@ -11,4 +11,12 @@ import java.util.concurrent.CompletionStage;
 
 public interface BackgroundTask {
   CompletionStage<Integer> execute();
+
+  default String getCaption() {
+    final String simpleName = getClass().getSimpleName();
+    if (simpleName == null || simpleName.isEmpty()) {
+      return getClass().getName();
+    }
+    return simpleName;
+  }
 }
