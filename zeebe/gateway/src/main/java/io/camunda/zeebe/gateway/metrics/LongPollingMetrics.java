@@ -28,7 +28,7 @@ public sealed class LongPollingMetrics {
             .tag(GatewayKeyNames.GATEWAY_PROTOCOL.asString(), gatewayProtocol.value())
             .withRegistry(registry);
 
-    requestsQueued = new BoundedMeterCache.Builder<>(registry, provider, TYPE).build();
+    requestsQueued = BoundedMeterCache.of(registry, provider, TYPE);
   }
 
   protected LongPollingMetrics(final BoundedMeterCache<StatefulGauge> requestsQueued) {
