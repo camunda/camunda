@@ -28,6 +28,7 @@ import io.camunda.spring.client.exception.CamundaBpmnError;
 import io.camunda.spring.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
 import io.camunda.spring.client.jobhandling.result.ResultProcessor;
+import io.camunda.spring.client.jobhandling.result.ResultProcessorContext;
 import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.spring.client.metrics.MetricsRecorder;
 import java.io.InputStream;

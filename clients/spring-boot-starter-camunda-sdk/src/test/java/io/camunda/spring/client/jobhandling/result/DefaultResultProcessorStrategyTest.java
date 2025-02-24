@@ -17,7 +17,7 @@ package io.camunda.spring.client.jobhandling.result;
 
 import static org.mockito.Mockito.mock;
 
-import io.camunda.zeebe.spring.client.bean.MethodInfo;
+import io.camunda.spring.client.bean.MethodInfo;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
