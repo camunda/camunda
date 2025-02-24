@@ -73,7 +73,6 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
         loading={loading}
         addEntityLabel={t("Assign user")}
         searchPlaceholder={t("Search by username")}
-        isInsideModal={false}
       />
       {success && !areNoUsersAssigned && (
         <DocumentationDescription>

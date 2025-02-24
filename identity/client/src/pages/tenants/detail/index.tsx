@@ -17,7 +17,6 @@ import Flex from "src/components/layout/Flex";
 import { useEntityModal } from "src/components/modal";
 import EditModal from "src/pages/tenants/modals/EditModal";
 import DeleteModal from "src/pages/tenants/modals/DeleteModal";
-import TenantDetailsTab from "src/pages/tenants/detail/TenantDetailsTab.tsx";
 import Members from "src/pages/tenants/detail/members";
 
 const Details: FC = () => {
@@ -77,13 +76,6 @@ const Details: FC = () => {
           <Section>
             <Tabs
               tabs={[
-                {
-                  key: "details",
-                  label: t("Tenant details"),
-                  content: tenant && (
-                    <TenantDetailsTab tenant={tenant} loading={loading} />
-                  ),
-                },
                 {
                   key: "users",
                   label: t("Users"),
