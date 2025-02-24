@@ -106,7 +106,7 @@ function startBackend() {
       };
 
     backendProcess = spawnWithArgs(
-      `mvn -f optimize/pom.xml exec:java -Dexec.mainClass=io.camunda.optimize.Main`,
+      `mvn -f optimize/backend/pom.xml exec:java -Dexec.mainClass=io.camunda.optimize.Main`,
       {
         cwd: _resolve(__dirname, '..', '..', '..'),
         shell: true,
@@ -131,7 +131,7 @@ function startBackend() {
     });
 
     // wait for the optimize endpoint to be up before resolving the promise
-    serverCheck('http://localhost:8080/api/readyz', resolve);
+    serverCheck('http://localhost:8090/api/readyz', resolve);
   });
 }
 
