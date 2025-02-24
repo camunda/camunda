@@ -42,8 +42,8 @@ jobs:
             Backport of #${pull_number} to `${target_branch}`.
 
             relates to ${issue_refs}
-            original author: @${pull_author}
 
+          add_author_as_assignee: true
           experimental: >
             {
               "conflict_resolution": "draft_commit_conflicts"
