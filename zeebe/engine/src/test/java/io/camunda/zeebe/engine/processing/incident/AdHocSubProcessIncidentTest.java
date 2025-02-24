@@ -186,6 +186,44 @@ public class AdHocSubProcessIncidentTest {
   }
 
   @Test
+  public void shouldCreateIncidentIfCompletionConditionDoesNotResolveToBoolean() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeActiveElementsCollectionExpression("activeElements");
+              adHocSubProcess.zeebeCompletionConditionExpression("completionCondition");
+              adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+              adHocSubProcess.task("C");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(
+                Map.ofEntries(
+                    Map.entry("activeElements", List.of("A", "C")),
+                    Map.entry("completionCondition", "not a boolean")))
+            .create();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasElementId("A")
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Failed to evaluate completion condition. Expected result of the expression 'completionCondition' to be 'BOOLEAN', but was 'STRING'.");
+  }
+
+  @Test
   public void shouldResolveIncidentWithActiveElements() {
     // given
     final BpmnModelInstance process =
