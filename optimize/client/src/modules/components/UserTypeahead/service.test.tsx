@@ -9,7 +9,6 @@ import {
   getUserId,
   identityToItem,
   itemToElement,
-  itemToString,
   searchIdentities,
 } from './service';
 
@@ -55,19 +54,6 @@ describe('UserTypeahead service', () => {
       expect(getUserId('123')).toBe('USER:123');
       expect(getUserId('USER:123')).toBe('USER:123');
       expect(getUserId(null)).toBe('USER:null');
-    });
-  });
-
-  describe('itemToString', () => {
-    it('should return the correct string representation of an item', () => {
-      expect(itemToString({id: '1', label: 'John Doe', subText: 'john@example.com'})).toBe(
-        'John Doe'
-      );
-      expect(itemToString({id: '2', label: '', subText: 'jane@example.com'})).toBe(
-        'jane@example.com'
-      );
-      expect(itemToString({id: '3', label: '', subText: ''})).toBe('3');
-      expect(itemToString(null)).toBe('');
     });
   });
 
