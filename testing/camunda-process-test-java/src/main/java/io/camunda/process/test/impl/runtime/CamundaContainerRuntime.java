@@ -26,6 +26,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,9 @@ public class CamundaContainerRuntime implements AutoCloseable {
   private static final String CAMUNDA_REST_API =
       "http://" + NETWORK_ALIAS_CAMUNDA + ":" + ContainerRuntimePorts.CAMUNDA_REST_API;
 
+  private static final Map<String, String> JAVA_TOOL_OPTION_ENV = Map.of("JAVA_TOOL_OPTIONS", "-XX:UseSVE=0");
+  private static final Map<String, String> ELASTIC_ENV = Map.of("ES_JAVA_OPTS", "-XX:UseSVE=0", "CLI_JAVA_OPTS", "-XX:UseSVE=0");
+
   private final ContainerFactory containerFactory;
 
   private final Network network;
@@ -58,6 +62,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
   private final ConnectorsContainer connectorsContainer;
 
   private final boolean connectorsEnabled;
+
 
   CamundaContainerRuntime(
       final CamundaContainerRuntimeBuilder builder, final ContainerFactory containerFactory) {
@@ -195,6 +200,10 @@ public class CamundaContainerRuntime implements AutoCloseable {
   }
 
   public static CamundaContainerRuntime newDefaultRuntime() {
-    return newBuilder().build();
+    return newBuilder()
+        .withElasticsearchEnv(ELASTIC_ENV)
+        .withCamundaEnv(JAVA_TOOL_OPTION_ENV)
+        .withConnectorsEnv(JAVA_TOOL_OPTION_ENV)
+        .build();
   }
 }
