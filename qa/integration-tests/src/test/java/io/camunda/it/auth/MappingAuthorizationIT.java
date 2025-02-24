@@ -42,8 +42,8 @@ class MappingAuthorizationIT {
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   private static final String ADMIN = "admin";
-  private static final String RESTRICTED = "restricted-user";
-  private static final String UNAUTHORIZED = "unauthorized-user";
+  private static final String RESTRICTED = "restrictedUser";
+  private static final String UNAUTHORIZED = "unauthorizedUser";
   private static final String DEFAULT_PASSWORD = "password";
   private static final String MAPPING_SEARCH_ENDPOINT = "v2/mapping-rules/search";
   private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(15);
