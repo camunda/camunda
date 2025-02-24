@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.FlowNodeInstanceState;
+import io.camunda.client.api.search.response.IncidentErrorType;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
 import io.camunda.process.test.impl.client.IncidentDto;
@@ -163,11 +164,11 @@ public class CamundaProcessResultCollectorTest {
             processInstance2.getProcessInstanceKey()))
         .thenReturn(Arrays.asList(flowNodeInstance3, flowNodeInstance4));
 
-    final IncidentDto incident1 = newIncident("JOB_NO_RETRIES", "No retries left.");
+    final IncidentDto incident1 = newIncident(IncidentErrorType.JOB_NO_RETRIES, "No retries left.");
     final IncidentDto incident2 =
-        newIncident("EXTRACT_VALUE_ERROR", "Failed to evaluate expression.");
+        newIncident(IncidentErrorType.EXTRACT_VALUE_ERROR, "Failed to evaluate expression.");
     final IncidentDto incident3 =
-        newIncident("UNHANDLED_ERROR_EVENT", "No error catch event found.");
+        newIncident(IncidentErrorType.UNHANDLED_ERROR_EVENT, "No error catch event found.");
 
     when(camundaDataSource.getIncidentByKey(flowNodeInstance1.getIncidentKey()))
         .thenReturn(incident1);
@@ -259,10 +260,10 @@ public class CamundaProcessResultCollectorTest {
     return flowNodeInstance;
   }
 
-  private static IncidentDto newIncident(final String type, final String message) {
+  private static IncidentDto newIncident(final IncidentErrorType type, final String message) {
     final IncidentDto incident = new IncidentDto();
-    incident.setType(type);
-    incident.setMessage(message);
+    incident.setErrorType(type);
+    incident.setErrorMessage(message);
     return incident;
   }
 }

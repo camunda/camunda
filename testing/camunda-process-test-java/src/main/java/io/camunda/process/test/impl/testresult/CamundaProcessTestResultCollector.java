@@ -17,10 +17,10 @@ package io.camunda.process.test.impl.testresult;
 
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.FlowNodeInstanceState;
+import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
-import io.camunda.process.test.impl.client.IncidentDto;
-import io.camunda.process.test.impl.client.VariableDto;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -74,7 +74,7 @@ public class CamundaProcessTestResultCollector {
   private Map<String, String> collectVariables(final long processInstanceKey) {
     try {
       return dataSource.getVariablesByProcessInstanceKey(processInstanceKey).stream()
-          .collect(Collectors.toMap(VariableDto::getName, VariableDto::getValue));
+          .collect(Collectors.toMap(Variable::getName, Variable::getValue));
     } catch (final IOException e) {
       LOG.warn("Failed to collect process instance variables for key '{}'", processInstanceKey, e);
     }
@@ -99,9 +99,9 @@ public class CamundaProcessTestResultCollector {
     openIncident.setFlowNodeId(flowNodeInstance.getFlowNodeId());
 
     try {
-      final IncidentDto incident = dataSource.getIncidentByKey(flowNodeInstance.getIncidentKey());
-      openIncident.setType(incident.getType());
-      openIncident.setMessage(incident.getMessage());
+      final Incident incident = dataSource.getIncidentByKey(flowNodeInstance.getIncidentKey());
+      openIncident.setType(incident.getErrorType().name());
+      openIncident.setMessage(incident.getErrorMessage());
 
     } catch (final IOException e) {
       openIncident.setType("?");

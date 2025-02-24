@@ -15,32 +15,85 @@
  */
 package io.camunda.process.test.impl.client;
 
-public class IncidentDto {
-  private long key;
-  private String type;
-  private String message;
+import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.IncidentErrorType;
+import io.camunda.client.api.search.response.IncidentState;
 
-  public long getKey() {
-    return key;
+public class IncidentDto implements Incident {
+
+  private long incidentKey;
+  private IncidentErrorType errorType;
+  private String errorMessage;
+
+  @Override
+  public Long getIncidentKey() {
+    return incidentKey;
   }
 
-  public void setKey(final long key) {
-    this.key = key;
+  public void setIncidentKey(final long incidentKey) {
+    this.incidentKey = incidentKey;
   }
 
-  public String getType() {
-    return type;
+  @Override
+  public Long getProcessDefinitionKey() {
+    return 0L;
   }
 
-  public void setType(final String type) {
-    this.type = type;
+  @Override
+  public String getProcessDefinitionId() {
+    return "";
   }
 
-  public String getMessage() {
-    return message;
+  @Override
+  public Long getProcessInstanceKey() {
+    return 0L;
   }
 
-  public void setMessage(final String message) {
-    this.message = message;
+  @Override
+  public IncidentErrorType getErrorType() {
+    return errorType;
+  }
+
+  public void setErrorType(final IncidentErrorType errorType) {
+    this.errorType = errorType;
+  }
+
+  @Override
+  public String getErrorMessage() {
+    return errorMessage;
+  }
+
+  public void setErrorMessage(final String errorMessage) {
+    this.errorMessage = errorMessage;
+  }
+
+  @Override
+  public String getFlowNodeId() {
+    return "";
+  }
+
+  @Override
+  public Long getFlowNodeInstanceKey() {
+    return 0L;
+  }
+
+  @Override
+  public String getCreationTime() {
+    return "";
+  }
+
+  @Override
+  public IncidentState getState() {
+    return null;
+  }
+
+  @Override
+  public Long getJobKey() {
+    return 0L;
+  }
+
+  @Override
+  public String getTenantId() {
+    return "";
   }
 }

@@ -15,7 +15,9 @@
  */
 package io.camunda.process.test.impl.client;
 
-public class VariableDto {
+import io.camunda.client.api.search.response.Variable;
+
+public class VariableDto implements Variable {
 
   private long key;
   private long processInstanceKey;
@@ -33,22 +35,16 @@ public class VariableDto {
     this.key = key;
   }
 
-  public long getProcessInstanceKey() {
-    return processInstanceKey;
+  public void setTruncated(final boolean truncated) {
+    this.truncated = truncated;
   }
 
-  public void setProcessInstanceKey(final long processInstanceKey) {
-    this.processInstanceKey = processInstanceKey;
+  @Override
+  public Long getVariableKey() {
+    return 0L;
   }
 
-  public long getScopeKey() {
-    return scopeKey;
-  }
-
-  public void setScopeKey(final long scopeKey) {
-    this.scopeKey = scopeKey;
-  }
-
+  @Override
   public String getName() {
     return name;
   }
@@ -57,6 +53,7 @@ public class VariableDto {
     this.name = name;
   }
 
+  @Override
   public String getValue() {
     return value;
   }
@@ -65,19 +62,40 @@ public class VariableDto {
     this.value = value;
   }
 
-  public boolean isTruncated() {
-    return truncated;
+  @Override
+  public String getFullValue() {
+    return "";
   }
 
-  public void setTruncated(final boolean truncated) {
-    this.truncated = truncated;
+  @Override
+  public Long getScopeKey() {
+    return scopeKey;
   }
 
+  @Override
+  public Long getProcessInstanceKey() {
+    return processInstanceKey;
+  }
+
+  public void setProcessInstanceKey(final long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
+  }
+
+  @Override
   public String getTenantId() {
     return tenantId;
   }
 
+  @Override
+  public Boolean isTruncated() {
+    return truncated;
+  }
+
   public void setTenantId(final String tenantId) {
     this.tenantId = tenantId;
+  }
+
+  public void setScopeKey(final long scopeKey) {
+    this.scopeKey = scopeKey;
   }
 }

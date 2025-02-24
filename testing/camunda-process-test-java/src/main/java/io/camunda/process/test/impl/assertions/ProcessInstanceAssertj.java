@@ -18,14 +18,13 @@ package io.camunda.process.test.impl.assertions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
+import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.impl.client.CamundaClientNotFoundException;
-import io.camunda.process.test.impl.client.ProcessInstanceDto;
-import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -47,7 +46,7 @@ public class ProcessInstanceAssertj
   private final VariableAssertj variableAssertj;
   private final String failureMessagePrefix;
 
-  private final AtomicReference<ProcessInstanceDto> actualProcessInstance = new AtomicReference<>();
+  private final AtomicReference<ProcessInstance> actualProcessInstance = new AtomicReference<>();
 
   public ProcessInstanceAssertj(
       final CamundaDataSource dataSource,
@@ -196,7 +195,7 @@ public class ProcessInstanceAssertj
   private void hasProcessInstanceInState(
       final String expectedState,
       final Predicate<ProcessInstanceState> expectedStateMatcher,
-      final Predicate<ProcessInstanceDto> waitCondition) {
+      final Predicate<ProcessInstance> waitCondition) {
     // reset cached process instance
     actualProcessInstance.set(null);
 
@@ -206,17 +205,17 @@ public class ProcessInstanceAssertj
           .failFast(() -> waitCondition.test(actualProcessInstance.get()))
           .untilAsserted(
               () -> {
-                final ProcessInstanceDto processInstance = findProcessInstance();
+                final ProcessInstance processInstance = findProcessInstance();
                 actualProcessInstance.set(processInstance);
 
-                assertThat(processInstance.getProcessInstanceState()).matches(expectedStateMatcher);
+                assertThat(processInstance.getState()).matches(expectedStateMatcher);
               });
 
     } catch (final ConditionTimeoutException | TerminalFailureException e) {
 
       final String actualState =
           Optional.ofNullable(actualProcessInstance.get())
-              .map(ProcessInstanceDto::getProcessInstanceState)
+              .map(ProcessInstance::getState)
               .map(ProcessInstanceAssertj::formatState)
               .orElse("not created");
 
@@ -227,12 +226,11 @@ public class ProcessInstanceAssertj
     }
   }
 
-  private ProcessInstanceDto findProcessInstance() throws IOException {
-    return (ProcessInstanceDto)
-        dataSource.findProcessInstances().stream()
-            .filter(actual::test)
-            .findFirst()
-            .orElseThrow(CamundaClientNotFoundException::new);
+  private ProcessInstance findProcessInstance() {
+    return dataSource.findProcessInstances().stream()
+        .filter(actual::test)
+        .findFirst()
+        .orElseThrow(CamundaClientNotFoundException::new);
   }
 
   private void awaitProcessInstance() {
@@ -241,7 +239,7 @@ public class ProcessInstanceAssertj
           .ignoreException(CamundaClientNotFoundException.class)
           .untilAsserted(
               () -> {
-                final ProcessInstanceDto processInstance = findProcessInstance();
+                final ProcessInstance processInstance = findProcessInstance();
                 actualProcessInstance.set(processInstance);
               });
 
@@ -259,7 +257,7 @@ public class ProcessInstanceAssertj
     return actualProcessInstance.get().getProcessInstanceKey();
   }
 
-  private static boolean isEnded(final ProcessInstanceDto processInstance) {
+  private static boolean isEnded(final ProcessInstance processInstance) {
     return processInstance != null && processInstance.getEndDate() != null;
   }
 
