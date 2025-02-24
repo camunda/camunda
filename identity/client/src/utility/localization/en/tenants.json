@@ -1,0 +1,16 @@
+{
+  "tenants": "Tenants",
+  "tenantId": "Tenant ID",
+  "description": "Description",
+  "delete": "Delete",
+  "openUsersContextMenu": "Open users context menu",
+  "tenantDetails": "Tenant details",
+  "users": "Users",
+  "groups": "Groups",
+  "roles": "Roles",
+  "mappings": "Mappings",
+  "openUsersContextMenu ": "Open users context menu",
+  "username": "Username",
+  "name": "Name",
+  "email": "Email"
+}
