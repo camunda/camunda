@@ -15,8 +15,8 @@ if [[ "$VERSION" =~ ^1\.[0-9]+\.[0-9]+ ]]; then
 else
     # e.g. locally or on self-hosted runners docker-compose can be v2
     echo "Detected v2"
-    echo "Using docker-compose (not docker compose): $(docker-compose version)"
-    DOCKER_COMMAND="docker-compose -f ${FILE} ${COMPOSE_FLAGS}"
+    echo "Using docker compose (not docker-compose): $(docker-compose version)"
+    DOCKER_COMMAND="docker compose -f ${FILE} ${COMPOSE_FLAGS}"
 fi
 
 eval $DOCKER_COMMAND ps
