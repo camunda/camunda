@@ -8,6 +8,9 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
+import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.ID_PATTERN;
+import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.ID_REGEX;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
@@ -25,6 +28,8 @@ public final class TenantRequestValidator {
         violations -> {
           if (request.getTenantId() == null || request.getTenantId().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("tenantId"));
+          } else if (!ID_PATTERN.matcher(request.getTenantId()).matches()) {
+            violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted("tenantId", ID_REGEX));
           }
           if (request.getName() == null || request.getName().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));

@@ -8,6 +8,9 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
+import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.ID_PATTERN;
+import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.ID_REGEX;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
@@ -31,6 +34,8 @@ public class MappingValidator {
           }
           if (request.getId() == null || request.getId().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("id"));
+          } else if (!ID_PATTERN.matcher(request.getId()).matches()) {
+            violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted("id", ID_REGEX));
           }
         });
   }
