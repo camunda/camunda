@@ -21,16 +21,43 @@ type MembersProps = {
 };
 
 const Members: FC<MembersProps> = ({ tenantId }) => {
-  const { t, Translate } = useTranslate();
+  const { t, Translate } = useTranslate("tenants");
 
   const {
-    data: users,
+    // data: users, // @TODO: uncomment
     loading,
     success,
     reload,
   } = useApi(getMembersByTenantId, {
     tenantId: tenantId,
   });
+
+  // @TODO: remove mock users
+  const users = {
+    items: [
+      {
+        key: 1,
+        name: "user1",
+        username: "username1",
+        password: "123",
+        email: "user1@test.com",
+      },
+      {
+        key: 2,
+        name: "user2",
+        username: "username2",
+        password: "123",
+        email: "user2@test.com",
+      },
+      {
+        key: 3,
+        name: "user3",
+        username: "username3",
+        password: "123",
+        email: "user3@test.com",
+      },
+    ],
+  };
 
   const areNoUsersAssigned = !users || users.items?.length === 0;
   if (!loading && !success)
@@ -65,9 +92,9 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
       <EntityList
         data={users?.items}
         headers={[
-          { header: t("Username"), key: "username" },
-          { header: t("Name"), key: "name" },
-          { header: t("Email"), key: "email" },
+          { header: t("username"), key: "username" },
+          { header: t("name"), key: "name" },
+          { header: t("email"), key: "email" },
         ]}
         sortProperty="username"
         loading={loading}
