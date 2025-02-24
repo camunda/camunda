@@ -15,7 +15,7 @@
  */
 package io.camunda.spring.client.jobhandling.result;
 
-import io.camunda.zeebe.spring.client.bean.MethodInfo;
+import io.camunda.spring.client.bean.MethodInfo;
 
 public class DefaultResultProcessorStrategy implements ResultProcessorStrategy {
 
