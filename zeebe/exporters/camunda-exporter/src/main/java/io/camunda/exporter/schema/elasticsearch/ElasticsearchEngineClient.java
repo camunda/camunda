@@ -19,8 +19,6 @@ import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
-import co.elastic.clients.elasticsearch.indices.DeleteIndexTemplateRequest;
-import co.elastic.clients.elasticsearch.indices.DeleteIndexTemplateResponse;
 import co.elastic.clients.elasticsearch.indices.IndexTemplateSummary;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
@@ -280,7 +278,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final DeleteByQueryResponse response = client.deleteByQuery(deleteByQueryRequest);
       LOG.info("Deleted {} documents from index {}", response.deleted(), indexName);
     } catch (final IOException e) {
-      final var errMsg = String.format("Failed to delete dcos from index %s", indexName);
+      final var errMsg = String.format("Failed to delete docs from index %s", indexName);
       LOG.error(errMsg, e);
     }
   }

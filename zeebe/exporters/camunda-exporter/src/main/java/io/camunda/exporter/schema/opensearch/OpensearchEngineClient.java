@@ -294,7 +294,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
       final DeleteByQueryResponse response = client.deleteByQuery(request);
       LOG.debug("Deleted {} documents from index {}", response.deleted(), indexName);
     } catch (final IOException ioe) {
-      final var errMsg = String.format("Failed to delete dcos from index %s", indexName);
+      final var errMsg = String.format("Failed to delete docs from index %s", indexName);
       LOG.error(errMsg, ioe);
       throw new OpensearchExporterException(errMsg, ioe);
     }
