@@ -106,7 +106,7 @@ function startBackend() {
       };
 
     backendProcess = spawnWithArgs(
-      `dist/target/camunda-zeebe/bin/optimize`,
+      `mvn -f optimize/pom.xml exec:java -Dexec.mainClass=io.camunda.optimize.Main`,
       {
         cwd: _resolve(__dirname, '..', '..', '..'),
         shell: true,
@@ -161,7 +161,7 @@ async function setupEnvironment() {
 function buildBackend() {
   return new Promise((resolve, reject) => {
     buildBackendProcess = spawnWithArgs(
-      'mvn clean install -DskipTests -Dskip.docker -Dskip.fe.build -pl optimize/backend -am -T1C',
+      'mvn -f optimize/pom.xml clean install -T1C -DskipTests -Dskip.docker -pl backend -am -P skipFrontendBuild',
       {
         cwd: _resolve(__dirname, '..', '..', '..'),
         shell: true,
