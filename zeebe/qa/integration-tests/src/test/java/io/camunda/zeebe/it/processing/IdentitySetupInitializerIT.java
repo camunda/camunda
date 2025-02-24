@@ -23,6 +23,7 @@ import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -56,7 +57,7 @@ final class IdentitySetupInitializerIT {
   @ValueSource(booleans = {true, false})
   void shouldInitializeIdentity(final boolean enableAuthorizations) {
     // given a broker with authorization enabled or disabled
-    final var username = UUID.randomUUID().toString();
+    final var username = Strings.newRandomValidUsername();
     final var name = UUID.randomUUID().toString();
     final var password = UUID.randomUUID().toString();
     final var email = UUID.randomUUID().toString();

@@ -52,8 +52,8 @@ class UserSearchingAuthorizationIT {
   static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
 
   private static final String ADMIN = "admin";
-  private static final String RESTRICTED = "restricted-user";
-  private static final String RESTRICTED_WITH_READ = "restricted-user-2";
+  private static final String RESTRICTED = "restrictedUser";
+  private static final String RESTRICTED_WITH_READ = "restrictedUser2";
   private static final String DEFAULT_PASSWORD = "password";
   private static final String USER_SEARCH_ENDPOINT = "v2/users/search";
   private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(15);
@@ -119,7 +119,7 @@ class UserSearchingAuthorizationIT {
     // then
     assertThat(userSearchResponse.items())
         .map(UserResponse::username)
-        .contains("demo", "admin", "user1", "user2", "restricted-user-2");
+        .contains("demo", "admin", "user1", "user2", "restrictedUser2");
   }
 
   @Test
@@ -133,7 +133,7 @@ class UserSearchingAuthorizationIT {
     assertThat(tenantSearchResponse.items())
         .hasSize(1)
         .map(UserResponse::username)
-        .containsExactlyInAnyOrder("restricted-user");
+        .containsExactlyInAnyOrder("restrictedUser");
   }
 
   private static void createUser(final CamundaClient adminClient, final String username) {

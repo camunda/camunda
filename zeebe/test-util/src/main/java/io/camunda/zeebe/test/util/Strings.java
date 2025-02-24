@@ -17,4 +17,12 @@ public final class Strings {
   public static String newRandomValidBpmnId() {
     return "id-" + UUID.randomUUID().toString();
   }
+
+  public static String newRandomValidUsername() {
+    return "user" + UUID.randomUUID().toString().replace("-", "");
+  }
+
+  public static String newRandomValidIdentityId() {
+    return UUID.randomUUID().toString().replace("-", "");
+  }
 }
