@@ -9,7 +9,6 @@ package io.camunda.operate.util;
 
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
 import java.util.List;
@@ -89,13 +88,6 @@ public class SearchTestRule extends TestWatcher {
       final Supplier<Object> supplier,
       final Object... arguments) {
     searchTestRuleProvider.processAllRecordsAndWait(predicate, supplier, arguments);
-  }
-
-  public void processRecordsWithTypeAndWait(
-      final ImportValueType importValueType,
-      final Predicate<Object[]> predicate,
-      final Object... arguments) {
-    searchTestRuleProvider.processRecordsWithTypeAndWait(importValueType, predicate, arguments);
   }
 
   public void persistNew(final ExporterEntity... entitiesToPersist) {
