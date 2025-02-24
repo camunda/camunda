@@ -71,7 +71,7 @@ jobs:
           echo "AWS_ROLE_ARN=$(echo $AWS_ROLE_ARN)" >> "$GITHUB_ENV"
           echo "AWS_WEB_IDENTITY_TOKEN_FILE=$(echo $AWS_WEB_IDENTITY_TOKEN_FILE)" >> "$GITHUB_ENV"
           echo "AWS_STS_REGIONAL_ENDPOINTS=$(echo $AWS_STS_REGIONAL_ENDPOINTS)" >> "$GITHUB_ENV"
-          
+
           if [[ "${{ matrix.os_version }}" = "2.9" ]]
           then
             echo "Using OS 2.9"
@@ -100,7 +100,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -T1C -D skipOptimize -D skip.fe.build -D skip.yarn -D skip.docker
+          maven-extra-args: -T1C -D skip.fe.build -D skip.yarn -D skip.docker
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
@@ -108,7 +108,7 @@ jobs:
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
           -D forkCount=${{ matrix.maven-test-fork-count }}
           -D maven.javadoc.skip=true
-          -D skipUTs -D skipChecks -D skipOptimize
+          -D skipUTs -D skipChecks
           -D camunda.it.opensearch.aws.url="${{ env.OS_URL }}"
           -P parallel-tests,extract-flaky-tests
           -pl ${{ matrix.maven-modules }}

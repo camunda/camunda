@@ -2,13 +2,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <parent>
-    <groupId>io.camunda</groupId>
-    <artifactId>zeebe-parent</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
-    <relativePath>../parent/pom.xml</relativePath>
-  </parent>
-
   <groupId>io.camunda.optimize</groupId>
   <artifactId>optimize-parent</artifactId>
   <version>8.8.0-SNAPSHOT</version>
@@ -21,7 +14,7 @@
   </organization>
 
   <modules>
-    <!-- client should be built before distro -->
+    <!-- client should be built before optimize-distro and before backend -->
     <module>client</module>
     <module>util</module>
     <module>backend</module>
@@ -59,6 +52,43 @@
     <project.previousVersion>8.7.0</project.previousVersion>
     <camunda.maven.artifacts.version>7.22.0</camunda.maven.artifacts.version>
 
+    <version.spring>6.2.3</version.spring>
+    <version.spring-boot>3.4.3</version.spring-boot>
+    <version.httpclient>4.5.14</version.httpclient>
+    <version.opensearch>2.14.0</version.opensearch>
+    <version.guava>33.4.0-jre</version.guava>
+    <version.slf4j>2.0.16</version.slf4j>
+    <version.opensearch>2.14.0</version.opensearch>
+    <version.opensearch-java>2.19.0</version.opensearch-java>
+    <version.spotbugs>4.9.1</version.spotbugs>
+    <version.commons-collections4>4.4</version.commons-collections4>
+    <version.httpcomponents>4.4.16</version.httpcomponents>
+    <version.mockito>5.15.2</version.mockito>
+    <version.elasticsearch>8.13.4</version.elasticsearch>
+    <version.nimbus-sdk>11.21.2</version.nimbus-sdk>
+    <version.testcontainers>1.20.5</version.testcontainers>
+    <version.agrona>1.23.1</version.agrona>
+    <version.camunda-license-check>2.10.0</version.camunda-license-check>
+    <version.zeebe-test-container>3.6.5</version.zeebe-test-container>
+    <version.lucene>8.11.3</version.lucene>
+    <version.commons-io>2.18.0</version.commons-io>
+    <version.classgraph>4.8.179</version.classgraph>
+    <version.commons-math>3.6.1</version.commons-math>
+    <version.caffeine>3.2.0</version.caffeine>
+    <version.java-jwt>4.4.0</version.java-jwt>
+    <version.camunda>7.22.0</version.camunda>
+    <version.aws-java-sdk>1.12.782</version.aws-java-sdk>
+    <version.failsafe>2.4.4</version.failsafe>
+    <version.commons-lang>3.17.0</version.commons-lang>
+    <version.jetbrains-annotations>26.0.2</version.jetbrains-annotations>
+    <version.commons-text>1.13.0</version.commons-text>
+    <version.identity>8.6.8</version.identity>
+    <version.javassist>3.30.2-GA</version.javassist>
+    <version.awssdk>2.29.50</version.awssdk>
+
+    <plugin.version.compiler>3.13.0</plugin.version.compiler>
+    <plugin.version.spotbugs>4.8.6.6</plugin.version.spotbugs>
+
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
     <zeebe.version>8.6.0</zeebe.version>
     <identity.version>8.6.0</identity.version>
@@ -93,7 +123,6 @@
     <opensearch.test.version>2.10.0</opensearch.test.version>
     <!-- the opensearch version of the previous Optimize version -->
     <previous.optimize.opensearch.version>2.9.0</previous.optimize.opensearch.version>
-    <awssdk.version>2.29.32</awssdk.version>
     <jsonpath.version>2.9.0</jsonpath.version>
     <apache.http5-client.version>5.4</apache.http5-client.version>
     <quartz.version>2.5.0</quartz.version>
@@ -125,6 +154,11 @@
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
     <spring-boot.version>3.4.3</spring-boot.version>
+
+    <it.test.excludedGroups></it.test.excludedGroups>
+    <it.test.includedGroups></it.test.includedGroups>
+    <test.forkCount></test.forkCount>
+    <version.tomcat>10.1.34</version.tomcat>
   </properties>
 
   <dependencyManagement>
