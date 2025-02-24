@@ -25,6 +25,7 @@ import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.ReindexRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -94,15 +95,41 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
 
   @Override
   public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch() {
-    final var aggregation =
-        createFinishedEntityAggregation(ListViewTemplate.END_DATE, ListViewTemplate.ID);
-    final var searchRequest = createFinishedInstancesSearchRequest(aggregation);
+    final var searchRequest = createFinishedInstancesSearchRequest();
 
     final var timer = Timer.start();
     return client
         .search(searchRequest, Object.class)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenApplyAsync(this::createArchiveBatch, executor);
+        .thenApplyAsync(
+            response -> {
+              final var hits = response.hits().hits();
+              if (hits.isEmpty()) {
+                return new ArchiveBatch(null, List.of());
+              }
+              final var endDate =
+                  hits.getFirst()
+                      .fields()
+                      .get(ListViewTemplate.END_DATE)
+                      .toJson()
+                      .asJsonArray()
+                      .getString(0);
+              final var ids =
+                  hits.stream()
+                      .takeWhile(
+                          hit ->
+                              hit.fields()
+                                  .get(ListViewTemplate.END_DATE)
+                                  .toJson()
+                                  .asJsonArray()
+                                  .getString(0)
+                                  .equals(endDate))
+                      .map(Hit::id)
+                      .toList();
+
+              return new ArchiveBatch(endDate, ids);
+            },
+            executor);
   }
 
   @Override
@@ -200,7 +227,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             executor);
   }
 
-  private SearchRequest createFinishedInstancesSearchRequest(final Aggregation aggregation) {
+  private SearchRequest createFinishedInstancesSearchRequest() {
     final var endDateQ =
         QueryBuilders.range(
             q ->
@@ -215,9 +242,21 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         QueryBuilders.term(q -> q.field(ListViewTemplate.PARTITION_ID).value(partitionId));
     final var combinedQuery =
         QueryBuilders.bool(q -> q.must(endDateQ, isProcessInstanceQ, partitionQ));
-
-    return createSearchRequest(
-        processInstanceIndex, combinedQuery, aggregation, ListViewTemplate.END_DATE);
+    return new Builder()
+        .index(processInstanceIndex)
+        .requestCache(false)
+        .allowNoIndices(true)
+        .ignoreUnavailable(true)
+        .source(source -> source.fetch(false))
+        .fields(
+            fields ->
+                fields.field(ListViewTemplate.END_DATE).format(config.getElsRolloverDateFormat()))
+        .query(query -> query.bool(q -> q.filter(combinedQuery)))
+        .sort(
+            sort ->
+                sort.field(field -> field.field(ListViewTemplate.END_DATE).order(SortOrder.Asc)))
+        .size(config.getRolloverBatchSize())
+        .build();
   }
 
   private CompletableFuture<Void> setIndexLifeCycleToMatchingIndices(
