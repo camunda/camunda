@@ -7,11 +7,21 @@
  */
 package io.camunda.webapps.schema.entities.tasklist;
 
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
 /** Represents variable with its value at the moment when task was completed. */
-public class SnapshotTaskVariableEntity extends TasklistEntity<SnapshotTaskVariableEntity> {
+public class SnapshotTaskVariableEntity
+    implements ExporterEntity<SnapshotTaskVariableEntity>,
+        PartitionedEntity<SnapshotTaskVariableEntity>,
+        TenantOwned {
 
+  private String id;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  private long key;
+  private int partitionId;
   private String taskId;
   private String name;
   private String value;
@@ -20,6 +30,47 @@ public class SnapshotTaskVariableEntity extends TasklistEntity<SnapshotTaskVaria
   private Long processInstanceKey;
 
   public SnapshotTaskVariableEntity() {}
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public SnapshotTaskVariableEntity setId(final String id) {
+    this.id = id;
+    return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public SnapshotTaskVariableEntity setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public SnapshotTaskVariableEntity setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
+
+  public long getKey() {
+    return key;
+  }
+
+  public SnapshotTaskVariableEntity setKey(final long key) {
+    this.key = key;
+    return this;
+  }
 
   public String getTaskId() {
     return taskId;
@@ -77,7 +128,7 @@ public class SnapshotTaskVariableEntity extends TasklistEntity<SnapshotTaskVaria
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), taskId, name, value, fullValue, isPreview);
+    return Objects.hash(id, tenantId, taskId, name, value, fullValue, isPreview);
   }
 
   @Override
@@ -88,11 +139,10 @@ public class SnapshotTaskVariableEntity extends TasklistEntity<SnapshotTaskVaria
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
     final SnapshotTaskVariableEntity that = (SnapshotTaskVariableEntity) o;
-    return isPreview == that.isPreview
+    return Objects.equals(id, that.id)
+        && Objects.equals(tenantId, that.tenantId)
+        && isPreview == that.isPreview
         && Objects.equals(taskId, that.taskId)
         && Objects.equals(name, that.name)
         && Objects.equals(value, that.value)
