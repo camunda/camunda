@@ -17,7 +17,6 @@ package io.camunda.process.test.impl.runtime;
 
 import static io.camunda.process.test.api.CamundaProcessTestExtension.ELASTIC_ENV;
 import static io.camunda.process.test.api.CamundaProcessTestExtension.JAVA_TOOL_OPTION_ENV;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
