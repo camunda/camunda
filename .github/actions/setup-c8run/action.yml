@@ -189,10 +189,20 @@ runs:
       shell: bash
       working-directory: ./c8run
 
-    - if: ${{ inputs.os == 'macos-13' }}
-      name: Set env
+    - uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '22'
+
+    - name: Set env
+      if: ${{ inputs.os == 'ubuntu-latest' || inputs.os == 'macos-13' }}
       shell: bash
-      run: echo "JAVA_HOME=$(echo $JAVA_HOME_21_X64)" >> $GITHUB_ENV
+      run: echo "JAVA_HOME=$(echo $JAVA_HOME_22_X64)" >> $GITHUB_ENV
+
+    - name: Set env
+      if: ${{ inputs.os == 'macos-latest' }}
+      shell: bash
+      run: echo "JAVA_HOME=$(echo $JAVA_HOME_22_ARM64)" >> $GITHUB_ENV
 
     - if: ${{ inputs.os == 'ubuntu-latest' }}
       name: Linux - Run c8run
@@ -200,8 +210,7 @@ runs:
       shell: bash
       working-directory: ./c8run
       env:
-        JAVA_HOME: /usr/lib/jvm/temurin-21-jdk-amd64
-        JAVA_VERSION: 21.0.3
+        JAVA_VERSION: 22.0.3
 
     - if: ${{ startsWith(inputs.os, 'macos') }}
       name: Mac - Run c8run
@@ -209,7 +218,7 @@ runs:
       run: ./c8run start
       working-directory: ./c8run
       env:
-        JAVA_VERSION: 21.0.3
+        JAVA_VERSION: 22.0.3
 
     - uses: actions/upload-artifact@v4
       with:

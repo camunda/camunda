@@ -108,7 +108,7 @@ jobs:
         working-directory: ./c8run/e2e_tests
 
       - name: Wait for camunda process to start
-        run: bash -c 'while ! curl -s -f "http://localhost:8080/operate/login"; do sleep 5; done'
+        run: bash -c 'while ! curl -s -f "http://localhost:9600/actuator/health"; do sleep 5; done; sleep 120'
 
       - name: Run Playwright tests
         run: npx playwright test
