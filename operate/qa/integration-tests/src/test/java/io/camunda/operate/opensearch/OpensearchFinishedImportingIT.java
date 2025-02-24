@@ -105,7 +105,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
     // require multiple checks to avoid race condition. If records are written to zeebe indices and
     // before a refresh, the record reader pulls the import batch is empty so it then says that the
     // record reader is done when it is not.
-    for (int i = 0; i < RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+    for (int i = 0; i < operateProperties.getImporter().getCompletedReaderMinEmptyBatches(); i++) {
       tester.performOneRoundOfImport();
     }
 
@@ -134,7 +134,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
         generateRecord(ValueType.DECISION_EVALUATION, "8.8.0", 1);
     EXPORTER.export(newVersionDecisionEvalRecord);
 
-    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+    for (int i = 0; i <= operateProperties.getImporter().getCompletedReaderMinEmptyBatches(); i++) {
       // simulate existing decision records left to process so it is not marked as completed
       final var decisionRecord2 = generateRecord(ValueType.DECISION, "8.7.0", 2);
       EXPORTER.export(decisionRecord2);
@@ -173,7 +173,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
     tester.performOneRoundOfImport();
 
     // Import empty batches
-    for (int i = 0; i < RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+    for (int i = 0; i < operateProperties.getImporter().getCompletedReaderMinEmptyBatches(); i++) {
       tester.performOneRoundOfImport();
     }
 
@@ -207,7 +207,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
     // require multiple checks to avoid race condition. If records are written to zeebe indices and
     // before a refresh, the record reader pulls the import batch is empty so it then says that the
     // record reader is done when it is not.
-    for (int i = 0; i < RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+    for (int i = 0; i < operateProperties.getImporter().getCompletedReaderMinEmptyBatches(); i++) {
       tester.performOneRoundOfImport();
     }
 
@@ -286,7 +286,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
     osClient.index().refresh("*");
 
     // when
-    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+    for (int i = 0; i <= operateProperties.getImporter().getCompletedReaderMinEmptyBatches(); i++) {
       tester.performOneRoundOfImport();
     }
 
