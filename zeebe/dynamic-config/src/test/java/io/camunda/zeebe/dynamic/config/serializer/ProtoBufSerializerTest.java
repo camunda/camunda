@@ -157,6 +157,7 @@ final class ProtoBufSerializerTest {
             Set.of(MemberId.from("4"), MemberId.from("5")),
             Optional.of(10),
             Optional.of(4),
+            Optional.empty(),
             true);
 
     // when
