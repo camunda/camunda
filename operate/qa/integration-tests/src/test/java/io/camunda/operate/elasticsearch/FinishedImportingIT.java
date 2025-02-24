@@ -107,7 +107,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     // require multiple checks to avoid race condition. If records are written to zeebe indices and
     // before a refresh, the record reader pulls the import batch is empty so it then says that the
     // record reader is done when it is not.
-    for (int i = 0; i < RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+    for (int i = 0; i < operateProperties.getImporter().getCompletedReaderMinEmptyBatches(); i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
@@ -137,7 +137,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
         generateRecord(ValueType.DECISION_EVALUATION, "8.8.0", 1);
     EXPORTER.export(newVersionDecisionEvalRecord);
 
-    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+    for (int i = 0; i <= operateProperties.getImporter().getCompletedReaderMinEmptyBatches(); i++) {
       // simulate existing decision records left to process so it is not marked as completed
       final var decisionRecord2 = generateRecord(ValueType.DECISION, "8.7.0", 2);
       EXPORTER.export(decisionRecord2);
@@ -173,7 +173,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     EXPORTER.export(partitionTwoRecord2);
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
-    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+    for (int i = 0; i <= operateProperties.getImporter().getCompletedReaderMinEmptyBatches(); i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
@@ -196,7 +196,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
     // when
-    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+    for (int i = 0; i <= operateProperties.getImporter().getCompletedReaderMinEmptyBatches(); i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
@@ -231,7 +231,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     EXPORTER.export(partitionTwoRecord2);
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
-    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+    for (int i = 0; i <= operateProperties.getImporter().getCompletedReaderMinEmptyBatches(); i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
@@ -288,7 +288,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     // Otherwise: If records are written to zeebe indices and before a refresh, the record reader
     // pulls an empty import batch, then it might assume falsely
     // that it is done, while it is not.
-    for (int i = 0; i < RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+    for (int i = 0; i < operateProperties.getImporter().getCompletedReaderMinEmptyBatches(); i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
@@ -364,7 +364,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
     // when
-    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+    for (int i = 0; i <= operateProperties.getImporter().getCompletedReaderMinEmptyBatches(); i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
