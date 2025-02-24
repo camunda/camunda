@@ -246,10 +246,11 @@ public class SchemaManager {
     }
   }
 
-  public void emptyIndices() {
+  public List<String> emptyIndices() {
     final var indices =
         indexDescriptors.stream().map(IndexDescriptor::getFullQualifiedName).toList();
     indices.forEach(searchEngineClient::emptyIndex);
+    return indices;
   }
 
   public void deleteArchivedIndices() {

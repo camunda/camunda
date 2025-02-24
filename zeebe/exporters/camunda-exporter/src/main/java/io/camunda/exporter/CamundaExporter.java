@@ -219,7 +219,7 @@ public class CamundaExporter implements Exporter {
     final var schemaManager = createSchemaManager();
 
     // Indices
-    schemaManager.emptyIndices();
+    final var emptiedIndices = schemaManager.emptyIndices();
 
     // Delete archived indices
     schemaManager.deleteArchivedIndices();
@@ -235,9 +235,8 @@ public class CamundaExporter implements Exporter {
     // deleting all indices it manages.
     final var indexNames = String.join(",", prefixedNames("operate-*", "tasklist-*"));
     LOG.info("Purging exporter indexes: {}", indexNames);
-    searchEngineClient
-        .getMappings(indexNames, MappingSource.INDEX)
-        .keySet()
+    searchEngineClient.getMappings(indexNames, MappingSource.INDEX).keySet().stream()
+        .filter(index -> !emptiedIndices.contains(index))
         .forEach(searchEngineClient::emptyIndex);
 
     // At this point, several indices still have data, e.g.

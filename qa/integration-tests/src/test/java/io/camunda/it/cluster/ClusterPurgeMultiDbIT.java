@@ -179,6 +179,7 @@ public class ClusterPurgeMultiDbIT {
   void clusterShouldBeReusableAfterPurge() throws InterruptedException {
     // GIVEN
     final ClusterActuator actuator = ClusterActuator.of(APPLICATION);
+    deployProcessModel(Bpmn.createExecutableProcess("any-process").startEvent().endEvent().done());
 
     // WHEN
     final var planChangeResponse = actuator.purge(false);
