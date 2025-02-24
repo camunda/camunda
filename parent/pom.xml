@@ -179,6 +179,7 @@
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>9.41.2</version.nimbus-jose-jwt>
     <version.keycloak>26.0.6</version.keycloak>
+    <version.keycloak-client>26.0.4</version.keycloak-client>
     <version.jna>5.15.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
 
@@ -1983,7 +1984,7 @@
       <dependency>
         <groupId>org.keycloak</groupId>
         <artifactId>keycloak-admin-client</artifactId>
-        <version>${version.keycloak}</version>
+        <version>${version.keycloak-client}</version>
       </dependency>
       <dependency>
         <groupId>org.keycloak</groupId>
@@ -1993,7 +1994,7 @@
       <dependency>
         <groupId>org.keycloak</groupId>
         <artifactId>keycloak-client-common-synced</artifactId>
-        <version>${version.keycloak}</version>
+        <version>${version.keycloak-client}</version>
       </dependency>
 
       <!-- Auth0 and it's direct dependencies -->
