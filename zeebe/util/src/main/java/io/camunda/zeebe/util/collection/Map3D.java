@@ -10,7 +10,9 @@ package io.camunda.zeebe.util.collection;
 import io.camunda.zeebe.util.function.TriFunction;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntFunction;
+import java.util.function.Supplier;
 
 /**
  * A cuboid is a 3D matrix, also sometimes known as a prism, or 3D tensor. It maps 3 different keys
@@ -76,6 +78,14 @@ public interface Map3D<RowT, ColT, FaceT, T> {
    */
   static <RowT, ColT, FaceT, T> Map3D<RowT, ColT, FaceT, T> simple() {
     return new HashMap3D<>();
+  }
+
+  /**
+   * Returns a basic implementation of a concurrent table. If using bounded types for rows, columns,
+   * and face keys (e.g. enums), use {@link #ofEnum(Class, Class, Class, IntFunction)} instead.
+   */
+  static <RowT, ColT, FaceT, T> Map3D<RowT, ColT, FaceT, T> concurrent() {
+    return new HashMap3D<>(ConcurrentHashMap::new);
   }
 
   /**
@@ -149,8 +159,24 @@ public interface Map3D<RowT, ColT, FaceT, T> {
   }
 
   /** A very simple implementation using a nested maps. */
+  @SuppressWarnings("unchecked")
   final class HashMap3D<RowT, ColT, FaceT, T> implements Map3D<RowT, ColT, FaceT, T> {
-    private final Map<RowT, Map<ColT, Map<FaceT, T>>> cube = new HashMap<>();
+    private final Map<RowT, Map<ColT, Map<FaceT, T>>> cube;
+    private final Supplier<Map<?, ?>> supplier;
+
+    public HashMap3D() {
+      this(HashMap::new);
+    }
+
+    /**
+     * Create an instance with a custom factory for the nested maps
+     *
+     * @param supplier used to create the nested maps
+     */
+    public HashMap3D(final Supplier<Map<?, ?>> supplier) {
+      this.supplier = supplier;
+      cube = (Map<RowT, Map<ColT, Map<FaceT, T>>>) supplier.get();
+    }
 
     @Override
     public T get(final RowT rowKey, final ColT columnKey, final FaceT faceKey) {
@@ -165,8 +191,8 @@ public interface Map3D<RowT, ColT, FaceT, T> {
 
     @Override
     public void put(final RowT rowKey, final ColT columnKey, final FaceT faceKey, final T value) {
-      cube.computeIfAbsent(rowKey, ignored -> new HashMap<>())
-          .computeIfAbsent(columnKey, ignored -> new HashMap<>())
+      cube.computeIfAbsent(rowKey, ignored -> (Map<ColT, Map<FaceT, T>>) supplier.get())
+          .computeIfAbsent(columnKey, ignored -> (Map<FaceT, T>) supplier.get())
           .put(faceKey, value);
     }
 
@@ -176,8 +202,8 @@ public interface Map3D<RowT, ColT, FaceT, T> {
         final ColT columnKey,
         final FaceT faceKey,
         final TriFunction<RowT, ColT, FaceT, T> computer) {
-      return cube.computeIfAbsent(rowKey, ignored -> new HashMap<>())
-          .computeIfAbsent(columnKey, ignored -> new HashMap<>())
+      return cube.computeIfAbsent(rowKey, ignored -> (Map<ColT, Map<FaceT, T>>) supplier.get())
+          .computeIfAbsent(columnKey, ignored -> (Map<FaceT, T>) supplier.get())
           .computeIfAbsent(faceKey, ignored -> computer.apply(rowKey, columnKey, faceKey));
     }
   }

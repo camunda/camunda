@@ -14,7 +14,13 @@ import io.netty.resolver.dns.DnsQueryLifecycleObserver;
 import io.prometheus.client.Counter;
 import java.net.InetSocketAddress;
 import java.util.List;
+<<<<<<< HEAD
+=======
+import net.jcip.annotations.ThreadSafe;
+import org.agrona.collections.Int2ObjectHashMap;
+>>>>>>> 444c8eee (fix: make MessagingMetricsImpl ThreadSafe)
 
+@ThreadSafe
 final class NettyDnsMetrics implements DnsQueryLifecycleObserver {
   private static final Counter ERROR =
       Counter.build()
