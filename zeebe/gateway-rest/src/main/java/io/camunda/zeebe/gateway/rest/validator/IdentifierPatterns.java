@@ -11,6 +11,8 @@ import java.util.regex.Pattern;
 
 public final class IdentifierPatterns {
 
+  public static final int MAX_LENGTH = 256;
+
   /** 1 or more alphanumeric characters, '@', '.', or '_'. */
   public static final String USERNAME_REGEX = "[a-zA-Z0-9@._]+";
 
