@@ -25,6 +25,15 @@
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
   </properties>
 
+  <profiles>
+    <profile>
+      <id>M4-JVM-BUG</id>
+      <properties>
+        <spring.profiles.active>m4</spring.profiles.active>
+      </properties>
+    </profile>
+  </profiles>
+
   <dependencies>
 
     <dependency>
