@@ -26,10 +26,6 @@ class DefaultResultProcessorStrategyTest {
   private final DefaultResultProcessorStrategy resultProcessorStrategy =
       new DefaultResultProcessorStrategy();
 
-  public String test() {
-    return "test";
-  }
-
   @Test
   void createProcessorShouldReturnDefaultProcessor() throws NoSuchMethodException {
     // Given
