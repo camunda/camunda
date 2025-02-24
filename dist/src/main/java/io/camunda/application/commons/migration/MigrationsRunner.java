@@ -9,6 +9,7 @@ package io.camunda.application.commons.migration;
 
 import io.camunda.migration.api.Migrator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
@@ -34,7 +35,26 @@ public class MigrationsRunner implements ApplicationRunner {
   @Override
   public void run(final ApplicationArguments args) throws Exception {
     LOG.info("Starting {} migration tasks", migrators.size());
-    final Exception migrationsExceptions = new Exception("migration is failed");
+    /* Detach from main Spring thread */
+    CompletableFuture.runAsync(
+            () -> {
+              try {
+                startMigrators(args);
+              } catch (final Exception e) {
+                throw new RuntimeException(e);
+              }
+            },
+            Executors.newSingleThreadExecutor())
+        .exceptionally(
+            e -> {
+              LOG.error("Migration failed", e);
+              return null;
+            })
+        .whenComplete((ignored, throwable) -> LOG.info("All migration tasks finished"));
+  }
+
+  private void startMigrators(final ApplicationArguments args) throws Exception {
+    final Exception migrationsExceptions = new Exception("migration failed");
     try (final var executor = Executors.newFixedThreadPool(migrators.size())) {
       final var results = executor.invokeAll(migrators);
       for (final var result : results) {
@@ -50,7 +70,5 @@ public class MigrationsRunner implements ApplicationRunner {
     if (migrationsExceptions.getSuppressed().length > 0) {
       throw migrationsExceptions;
     }
-
-    LOG.info("All migration tasks completed");
   }
 }
