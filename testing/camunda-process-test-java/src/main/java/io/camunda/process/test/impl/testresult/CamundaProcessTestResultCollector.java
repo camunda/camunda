@@ -21,8 +21,6 @@ import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
-import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -49,7 +47,7 @@ public class CamundaProcessTestResultCollector {
               .map(this::collectProcessInstanceResult)
               .collect(Collectors.toList());
       result.setProcessInstanceTestResults(processInstanceResults);
-    } catch (final IOException e) {
+    } catch (final Exception e) {
       LOG.warn("Failed to collect the process instance results.", e);
     }
 
@@ -72,56 +70,32 @@ public class CamundaProcessTestResultCollector {
   }
 
   private Map<String, String> collectVariables(final long processInstanceKey) {
-    try {
-      return dataSource.getVariablesByProcessInstanceKey(processInstanceKey).stream()
-          .collect(Collectors.toMap(Variable::getName, Variable::getValue));
-    } catch (final IOException e) {
-      LOG.warn("Failed to collect process instance variables for key '{}'", processInstanceKey, e);
-    }
-    return Collections.emptyMap();
+    return dataSource.getVariablesByProcessInstanceKey(processInstanceKey).stream()
+        .collect(Collectors.toMap(Variable::getName, Variable::getValue));
   }
 
   private List<OpenIncident> collectOpenIncidents(final long processInstanceKey) {
-    try {
-      return dataSource.getFlowNodeInstancesByProcessInstanceKey(processInstanceKey).stream()
-          .filter(FlowNodeInstance::getIncident)
-          .map(this::getIncident)
-          .collect(Collectors.toList());
-    } catch (final IOException e) {
-      LOG.warn(
-          "Failed to collect incidents for process instance with key '{}'", processInstanceKey, e);
-    }
-    return Collections.emptyList();
+    return dataSource.getFlowNodeInstancesByProcessInstanceKey(processInstanceKey).stream()
+        .filter(FlowNodeInstance::getIncident)
+        .map(this::getIncident)
+        .collect(Collectors.toList());
   }
 
   private OpenIncident getIncident(final FlowNodeInstance flowNodeInstance) {
     final OpenIncident openIncident = new OpenIncident();
     openIncident.setFlowNodeId(flowNodeInstance.getFlowNodeId());
 
-    try {
-      final Incident incident = dataSource.getIncidentByKey(flowNodeInstance.getIncidentKey());
-      openIncident.setType(incident.getErrorType().name());
-      openIncident.setMessage(incident.getErrorMessage());
+    final Incident incident = dataSource.getIncidentByKey(flowNodeInstance.getIncidentKey());
+    openIncident.setType(incident.getErrorType().name());
+    openIncident.setMessage(incident.getErrorMessage());
 
-    } catch (final IOException e) {
-      openIncident.setType("?");
-      openIncident.setMessage("?");
-    }
     return openIncident;
   }
 
   private List<FlowNodeInstance> collectActiveFlowNodeInstances(final long processInstanceKey) {
-    try {
-      return dataSource.getFlowNodeInstancesByProcessInstanceKey(processInstanceKey).stream()
-          .filter(
-              flowNodeInstance -> flowNodeInstance.getState().equals(FlowNodeInstanceState.ACTIVE))
-          .collect(Collectors.toList());
-    } catch (final IOException e) {
-      LOG.warn(
-          "Failed to collect flow-node instances for process instance with key '{}'",
-          processInstanceKey,
-          e);
-    }
-    return Collections.emptyList();
+    return dataSource.getFlowNodeInstancesByProcessInstanceKey(processInstanceKey).stream()
+        .filter(
+            flowNodeInstance -> flowNodeInstance.getState().equals(FlowNodeInstanceState.ACTIVE))
+        .collect(Collectors.toList());
   }
 }

@@ -28,7 +28,6 @@ import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
 import io.camunda.process.test.impl.client.IncidentDto;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
 import io.camunda.process.test.impl.client.VariableDto;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,7 +64,9 @@ public class CamundaProcessResultCollectorTest {
   @Test
   void shouldReturnEmptyResultIfDataSourceThrowsException() {
     // given
-    doThrow(new IOException("expected failure")).when(camundaDataSource).findProcessInstances();
+    doThrow(new RuntimeException("expected failure"))
+        .when(camundaDataSource)
+        .findProcessInstances();
 
     // when
     final ProcessTestResult result = resultCollector.collect();
