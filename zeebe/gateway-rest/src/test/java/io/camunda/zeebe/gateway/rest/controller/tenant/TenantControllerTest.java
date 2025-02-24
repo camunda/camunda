@@ -202,6 +202,38 @@ public class TenantControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldRejectTenantWithTooLongId() {
+    // given
+    final var id = "x".repeat(257);
+    final var request = new TenantCreateRequest().tenantId(id).name("Tenant name");
+
+    // when
+    webClient
+        .post()
+        .uri(TENANT_BASE_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided tenantId exceeds the limit of 256 characters.",
+              "instance": "%s"
+            }"""
+                .formatted(TENANT_BASE_URL));
+
+    // then
+    verifyNoInteractions(tenantServices);
+  }
+
+  @Test
   void updateTenantShouldReturnUpdatedResponse() {
     // given
     final var tenantKey = 100L;

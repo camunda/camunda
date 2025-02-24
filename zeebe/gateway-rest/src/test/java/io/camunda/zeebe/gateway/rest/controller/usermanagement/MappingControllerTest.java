@@ -254,6 +254,32 @@ public class MappingControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldRejectMappingWithTooLongId() {
+    // given
+    final var id = "x".repeat(257);
+    final var request =
+        new MappingRuleCreateRequest()
+            .id(id)
+            .claimName("claimName")
+            .claimValue("claimValue")
+            .name("name");
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided id exceeds the limit of 256 characters.",
+              "instance": "%s"
+            }"""
+            .formatted(MAPPING_RULES_PATH));
+    verifyNoInteractions(mappingServices);
+  }
+
+  @Test
   void deleteMappingShouldReturnNoContent() {
     // given
     final long mappingKey = 100L;
