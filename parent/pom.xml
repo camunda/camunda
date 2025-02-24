@@ -2015,6 +2015,11 @@
         <artifactId>keycloak-core</artifactId>
         <version>${version.keycloak}</version>
       </dependency>
+      <dependency>
+        <groupId>org.keycloak</groupId>
+        <artifactId>keycloak-client-common-synced</artifactId>
+        <version>${version.keycloak}</version>
+      </dependency>
 
       <!-- Auth0 and it's direct dependencies -->
       <dependency>
