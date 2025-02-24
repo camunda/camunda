@@ -107,6 +107,7 @@
     <version.jqwik>1.9.2</version.jqwik>
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
+    <version.json-smart>2.5.2</version.json-smart>
     <version.byte-buddy>1.15.11</version.byte-buddy>
     <version.revapi>0.28.1</version.revapi>
     <version.resilience4j>2.2.0</version.resilience4j>
@@ -1841,7 +1842,7 @@
       <dependency>
         <groupId>net.minidev</groupId>
         <artifactId>json-smart</artifactId>
-        <version>2.4.11</version>
+        <version>${version.json-smart}</version>
       </dependency>
 
       <!-- needed for tests in elasticsearch-exporter -->
