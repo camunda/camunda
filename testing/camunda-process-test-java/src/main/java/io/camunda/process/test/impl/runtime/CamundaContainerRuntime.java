@@ -15,6 +15,9 @@
  */
 package io.camunda.process.test.impl.runtime;
 
+import static io.camunda.process.test.api.CamundaProcessTestExtension.ELASTIC_ENV;
+import static io.camunda.process.test.api.CamundaProcessTestExtension.JAVA_TOOL_OPTION_ENV;
+
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
@@ -26,7 +29,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,9 +52,6 @@ public class CamundaContainerRuntime implements AutoCloseable {
       NETWORK_ALIAS_CAMUNDA + ":" + ContainerRuntimePorts.CAMUNDA_GATEWAY_API;
   private static final String CAMUNDA_REST_API =
       "http://" + NETWORK_ALIAS_CAMUNDA + ":" + ContainerRuntimePorts.CAMUNDA_REST_API;
-
-  private static final Map<String, String> JAVA_TOOL_OPTION_ENV = Map.of("JAVA_TOOL_OPTIONS", "-XX:UseSVE=0");
-  private static final Map<String, String> ELASTIC_ENV = Map.of("ES_JAVA_OPTS", "-XX:UseSVE=0", "CLI_JAVA_OPTS", "-XX:UseSVE=0");
 
   private final ContainerFactory containerFactory;
 
