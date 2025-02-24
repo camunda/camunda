@@ -15,9 +15,12 @@
  */
 package io.camunda.zeebe.spring.client.jobhandling.result;
 
+import io.camunda.zeebe.spring.client.bean.MethodInfo;
+
 public class DefaultResultProcessorStrategy implements ResultProcessorStrategy {
+
   @Override
-  public ResultProcessor createProcessor(Class<?> resultType) {
+  public ResultProcessor createProcessor(final MethodInfo methodInfo) {
     return new DefaultResultProcessor();
   }
 }

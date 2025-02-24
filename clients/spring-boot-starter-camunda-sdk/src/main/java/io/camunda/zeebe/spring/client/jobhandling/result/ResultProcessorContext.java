@@ -15,16 +15,22 @@
  */
 package io.camunda.zeebe.spring.client.jobhandling.result;
 
-import io.camunda.zeebe.spring.client.bean.MethodInfo;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
 
-public interface ResultProcessorStrategy {
+public class ResultProcessorContext {
+  private final Object result;
+  private final ActivatedJob job;
 
-  @Deprecated
-  default ResultProcessor createProcessor(final Class<?> resultType) {
-    return new DefaultResultProcessor();
+  public ResultProcessorContext(final Object result, final ActivatedJob job) {
+    this.result = result;
+    this.job = job;
   }
 
-  default ResultProcessor createProcessor(final MethodInfo methodInfo) {
-    return createProcessor(methodInfo.getReturnType());
+  public Object getResult() {
+    return result;
+  }
+
+  public ActivatedJob getJob() {
+    return job;
   }
 }

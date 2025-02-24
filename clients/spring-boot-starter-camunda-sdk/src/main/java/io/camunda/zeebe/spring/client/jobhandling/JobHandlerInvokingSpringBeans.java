@@ -27,6 +27,7 @@ import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
 import io.camunda.zeebe.spring.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.zeebe.spring.client.jobhandling.parameter.ParameterResolverStrategy;
 import io.camunda.zeebe.spring.client.jobhandling.result.ResultProcessor;
+import io.camunda.zeebe.spring.client.jobhandling.result.ResultProcessorContext;
 import io.camunda.zeebe.spring.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.zeebe.spring.client.metrics.MetricsRecorder;
 import io.camunda.zeebe.spring.common.exception.ZeebeBpmnError;
@@ -67,7 +68,7 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
 
   private ResultProcessor createResultProcessor(
       final ResultProcessorStrategy resultProcessorStrategy) {
-    return resultProcessorStrategy.createProcessor(workerValue.getMethodInfo().getReturnType());
+    return resultProcessorStrategy.createProcessor(workerValue.getMethodInfo());
   }
 
   @Override
@@ -80,7 +81,7 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
       final Object result;
       try {
         final Object methodInvocationResult = workerValue.getMethodInfo().invoke(args.toArray());
-        result = resultProcessor.process(methodInvocationResult);
+        result = resultProcessor.process(new ResultProcessorContext(methodInvocationResult, job));
       } catch (final Throwable t) {
         metricsRecorder.increase(
             MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_FAILED, job.getType());
