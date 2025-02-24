@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
+import org.awaitility.Awaitility;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -162,10 +163,16 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
     EXPORTER.export(record);
     EXPORTER.export(partitionTwoRecord);
-    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-
-    zeebeImporter.performOneRoundOfImport();
-
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .pollInterval(Duration.ofSeconds(1))
+        .until(
+            () -> {
+              esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+              zeebeImporter.performOneRoundOfImport();
+              return isRecordIngested("1-process-instance")
+                  && isRecordIngested("2-process-instance");
+            });
     // when
     final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
     final var partitionTwoRecord2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 2);
@@ -193,7 +200,16 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
     EXPORTER.export(record);
     EXPORTER.export(partitionTwoRecord);
-    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .pollInterval(Duration.ofSeconds(1))
+        .until(
+            () -> {
+              esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+              zeebeImporter.performOneRoundOfImport();
+              return isRecordIngested("1-process-instance")
+                  && isRecordIngested("2-process-instance");
+            });
 
     // when
     for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
@@ -220,9 +236,16 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
     EXPORTER.export(record);
     EXPORTER.export(partitionTwoRecord);
-    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-
-    zeebeImporter.performOneRoundOfImport();
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .pollInterval(Duration.ofSeconds(1))
+        .until(
+            () -> {
+              esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+              zeebeImporter.performOneRoundOfImport();
+              return isRecordIngested("1-process-instance")
+                  && isRecordIngested("2-process-instance");
+            });
 
     // when
     final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
@@ -428,5 +451,30 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
             r.withBrokerVersion(brokerVersion)
                 .withPartitionId(partitionId)
                 .withTimestamp(System.currentTimeMillis()));
+  }
+
+  private boolean isRecordIngested(final String partitionIdFieldValue) throws IOException {
+    final var hits =
+        Arrays.stream(
+                esClient
+                    .search(
+                        new SearchRequest(importPositionIndex.getFullQualifiedName())
+                            .source(new SearchSourceBuilder().size(100)),
+                        RequestOptions.DEFAULT)
+                    .getHits()
+                    .getHits())
+            .map(SearchHit::getSourceAsMap)
+            .toList();
+    if (hits.isEmpty()) {
+      return false;
+    }
+    return (Boolean)
+        hits.stream()
+            .filter(
+                hit ->
+                    hit.get(ImportPositionIndex.ID).equals(partitionIdFieldValue)
+                        && ((Long) hit.get(ImportPositionIndex.SEQUENCE)) > 0)
+            .findFirst()
+            .isPresent();
   }
 }
