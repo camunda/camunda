@@ -73,7 +73,11 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
   public void setUp() throws Exception {
     indexDescriptor = createIndexDescriptor();
     originalSchemaContent = readSchemaContent();
+<<<<<<< HEAD
     assertThat(originalSchemaContent).doesNotContain("\"prop4\"");
+=======
+    assertThat(originalSchemaContent).doesNotContain("\"prop3\"");
+>>>>>>> f52c7849 (fix: allow dynamic fields in the validator)
   }
 
   @AfterEach
@@ -94,10 +98,17 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
     updateSchemaContent(
         originalSchemaContent.replace(
+<<<<<<< HEAD
             "\"properties\":{", "\"properties\": {\"prop4\": {\"type\": \"keyword\" },"));
 
     final String newSchemaContent = readSchemaContent();
     assertThat(newSchemaContent).contains("\"prop4\"");
+=======
+            "\"properties\": {", "\"properties\": {\n    \"prop3\": { \"type\": \"keyword\" },"));
+
+    final String newSchemaContent = readSchemaContent();
+    assertThat(newSchemaContent).contains("\"prop3\"");
+>>>>>>> f52c7849 (fix: allow dynamic fields in the validator)
 
     diff = indexSchemaValidator.validateIndexMappings();
     assertThat(diff).isNotEmpty();
@@ -132,12 +143,17 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
     assertThat(diff).isEmpty();
 
     /* Create document on the dynamic property to cause it to expand */
+<<<<<<< HEAD
     createDocument(indexDescriptor, "prop2", Map.of("custom-key", "custom-value"));
+=======
+    createDocument("prop2", Map.of("custom-key", "custom-value"));
+>>>>>>> f52c7849 (fix: allow dynamic fields in the validator)
 
     diff = indexSchemaValidator.validateIndexMappings();
     assertThat(diff).isEmpty();
   }
 
+<<<<<<< HEAD
   @Test
   public void shouldThrowExceptionOnAmbiguousMappings() throws Exception {
     replaceIndexDescriptorsInValidator(Collections.singleton(indexDescriptor));
@@ -171,6 +187,8 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
     }
   }
 
+=======
+>>>>>>> f52c7849 (fix: allow dynamic fields in the validator)
   private IndexDescriptor createIndexDescriptor() {
     return new IndexDescriptor() {
       @Override
@@ -237,8 +255,12 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
         StandardOpenOption.TRUNCATE_EXISTING);
   }
 
+<<<<<<< HEAD
   private void createDocument(
       final IndexDescriptor descriptor, final String key, final Object value) throws Exception {
+=======
+  private void createDocument(final String key, final Object value) throws Exception {
+>>>>>>> f52c7849 (fix: allow dynamic fields in the validator)
     final Map<String, Object> document = Map.of(key, value);
     final boolean created =
         retryElasticsearchClient.createOrUpdateDocument(

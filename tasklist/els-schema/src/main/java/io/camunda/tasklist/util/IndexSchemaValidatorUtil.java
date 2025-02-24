@@ -97,6 +97,7 @@ public class IndexSchemaValidatorUtil {
     }
 
     // Validate if the difference is dynamic
+<<<<<<< HEAD
     if (difference.getEntriesDiffering() != null
         && difference.getEntriesDiffering().size() > 0
         && difference.getEntriesDiffering().stream()
@@ -108,6 +109,18 @@ public class IndexSchemaValidatorUtil {
               difference.getRightIndexMapping().getIndexName(),
               difference.getEntriesDiffering()));
       return;
+=======
+    if (difference.getEntriesDiffering() != null && difference.getEntriesDiffering().size() > 0) {
+      if (difference.getEntriesDiffering().stream().noneMatch(this::nonDynamicPropertyDifference)) {
+        LOGGER.debug(
+            String.format(
+                "Difference is on dynamic field - continue initialization - left %s, right %s. Actual diff values: %s",
+                difference.getLeftIndexMapping().getIndexName(),
+                difference.getRightIndexMapping().getIndexName(),
+                difference.getEntriesDiffering()));
+        return;
+      }
+>>>>>>> f52c7849 (fix: allow dynamic fields in the validator)
     }
 
     LOGGER.debug(
@@ -183,6 +196,16 @@ public class IndexSchemaValidatorUtil {
                     + difference
                     + ". Difference 2: "
                     + currentDifference);
+<<<<<<< HEAD
+=======
+          } else {
+            LOGGER.debug(
+                String.format(
+                    "Difference is on dynamic field - continue initialization, left: %s, right: %s. Actual diff values: %s",
+                    difference.getLeftIndexMapping().getIndexName(),
+                    difference.getRightIndexMapping().getIndexName(),
+                    difference.getEntriesDiffering()));
+>>>>>>> f52c7849 (fix: allow dynamic fields in the validator)
           }
         }
       }
@@ -194,9 +217,14 @@ public class IndexSchemaValidatorUtil {
     final Object typeDefinition = propertyDifference.getLeftValue().getTypeDefinition();
     if (propertyDifference.getLeftValue().getTypeDefinition() instanceof Map) {
       final Map<String, Object> typeDefMap = (Map<String, Object>) typeDefinition;
+<<<<<<< HEAD
       final boolean isDynamic =
           Boolean.parseBoolean(typeDefMap.getOrDefault("dynamic", "false").toString());
       if (isDynamic) {
+=======
+      final Object dynamicValue = typeDefMap.getOrDefault("dynamic", false);
+      if (dynamicValue.equals("true")) {
+>>>>>>> f52c7849 (fix: allow dynamic fields in the validator)
         return false;
       }
     }
