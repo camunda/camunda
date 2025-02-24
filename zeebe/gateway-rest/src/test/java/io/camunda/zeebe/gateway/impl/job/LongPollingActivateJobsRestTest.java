@@ -116,7 +116,7 @@ public class LongPollingActivateJobsRestTest {
                 msg -> new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, msg))
             .setRequestCanceledExceptionProvider(
                 msg -> new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, msg))
-            .setMetrics(LongPollingMetrics.NOOP)
+            .setMetrics(LongPollingMetrics.noop())
             .build();
     submitActorToActivateJobs(handler);
 
@@ -312,7 +312,7 @@ public class LongPollingActivateJobsRestTest {
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
             .setNoJobsReceivedExceptionProvider(RuntimeException::new)
             .setRequestCanceledExceptionProvider(RuntimeException::new)
-            .setMetrics(LongPollingMetrics.NOOP)
+            .setMetrics(LongPollingMetrics.noop())
             .build();
     submitActorToActivateJobs(handler);
 
@@ -342,7 +342,7 @@ public class LongPollingActivateJobsRestTest {
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
             .setNoJobsReceivedExceptionProvider(RuntimeException::new)
             .setRequestCanceledExceptionProvider(RuntimeException::new)
-            .setMetrics(LongPollingMetrics.NOOP)
+            .setMetrics(LongPollingMetrics.noop())
             .build();
     submitActorToActivateJobs(handler);
 
