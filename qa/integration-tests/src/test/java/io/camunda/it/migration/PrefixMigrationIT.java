@@ -156,7 +156,7 @@ public class PrefixMigrationIT {
             .join();
 
     // Wait for documents to be written to indices
-    Thread.sleep(9000);
+    Thread.sleep(5000);
 
     camunda87.stop();
 

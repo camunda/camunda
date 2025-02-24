@@ -7,19 +7,16 @@
  */
 package io.camunda.tasklist;
 
-import static io.camunda.tasklist.property.IdentityProperties.FULL_GROUP_ACCESS;
-
-import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.webapp.management.WebappManagementModuleConfiguration;
 import io.camunda.tasklist.webapp.security.WebappSecurityModuleConfiguration;
+import io.camunda.tasklist.webapp.security.identity.DefaultIdentityAuthorizationServiceImpl;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationServiceImpl;
 import io.camunda.tasklist.zeebeimport.security.ImporterSecurityModuleConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.gateway.Gateway;
-import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -73,20 +70,36 @@ public class TasklistModuleConfiguration {
     this.gateway = gateway;
   }
 
+  /**
+   * Bean definition for `IdentityAuthorizationService` when the application is running under the
+   * "consolidated-auth" profile.
+   *
+   * <p>- The `@Profile("consolidated-auth")` annotation ensures that this bean is only loaded when
+   * the profile "consolidated-auth" is active.
+   *
+   * <p>This bean provides the **main authorization logic** when consolidated authentication is
+   * enabled.
+   */
   @Bean
   @Primary
-  @ConditionalOnProperty(name = "security.auth.method", havingValue = "consolidated-auth")
-  public IdentityAuthorizationService consolidatedIdentityAuthorizationService(
-      final CamundaUserService camundaUserService) {
-    return () -> camundaUserService.getCurrentUser().groups();
+  @Profile("consolidated-auth")
+  public IdentityAuthorizationService consolidatedIdentityAuthorizationService() {
+    return new IdentityAuthorizationServiceImpl();
   }
 
-  // In case the consolidated auth method is not set, we use the default identity authorization
-  // Authorization is only supported using the consolidated auth method
+  /**
+   * Fallback bean for `IdentityAuthorizationService`, used when the "consolidated-auth" profile is
+   * **not active**.
+   *
+   * <p>- This bean ensures that authorization is always available, even when consolidated
+   * authentication is not enabled. - It provides a **default, full-access authorization service**.
+   *
+   * <p>This bean declaration can be removed after the consolidated authentication is fully
+   * implemented
+   */
   @Bean
-  @Primary
   public IdentityAuthorizationService defaultIdentityAuthorizationService() {
-    return () -> List.of(FULL_GROUP_ACCESS);
+    return new DefaultIdentityAuthorizationServiceImpl();
   }
 
   @Configuration(proxyBeanMethods = false)
