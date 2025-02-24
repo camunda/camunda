@@ -25,7 +25,6 @@ import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
@@ -62,7 +61,7 @@ public class ElementAssertTest {
   }
 
   @BeforeEach
-  void configureMocks() throws IOException {
+  void configureMocks() {
     final ProcessInstanceDto processInstance = new ProcessInstanceDto();
     processInstance.setKey(PROCESS_INSTANCE_KEY);
 
@@ -98,7 +97,7 @@ public class ElementAssertTest {
   class ElementSource {
 
     @BeforeEach
-    void configureMocks() throws IOException {
+    void configureMocks() {
       final FlowNodeInstanceDto flowNodeInstanceA = newActiveFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceB = newActiveFlowNodeInstance("B");
       final FlowNodeInstanceDto flowNodeInstanceC = newCompletedFlowNodeInstance("C");
@@ -218,7 +217,7 @@ public class ElementAssertTest {
   class HasActiveElements {
 
     @Test
-    void shouldHasActiveElements() throws IOException {
+    void shouldHasActiveElements() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newActiveFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceB = newActiveFlowNodeInstance("B");
@@ -234,7 +233,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldHasTwoActiveElements() throws IOException {
+    void shouldHasTwoActiveElements() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceActive = newActiveFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceCompleted = newCompletedFlowNodeInstance("A");
@@ -250,7 +249,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldWaitUntilHasActiveElements() throws IOException {
+    void shouldWaitUntilHasActiveElements() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newActiveFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceB = newActiveFlowNodeInstance("B");
@@ -270,7 +269,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfElementsNotFound() throws IOException {
+    void shouldFailIfElementsNotFound() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newActiveFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceB = newActiveFlowNodeInstance("B");
@@ -292,7 +291,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfElementsNotActive() throws IOException {
+    void shouldFailIfElementsNotActive() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newActiveFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceB = newCompletedFlowNodeInstance("B");
@@ -317,7 +316,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailWithSameElementId() throws IOException {
+    void shouldFailWithSameElementId() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newActiveFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceA2 = newActiveFlowNodeInstance("A");
@@ -338,7 +337,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfProcessInstanceNotFound() throws IOException {
+    void shouldFailIfProcessInstanceNotFound() {
       // given
       when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
 
@@ -356,7 +355,7 @@ public class ElementAssertTest {
   class HasCompletedElements {
 
     @Test
-    void shouldHasCompletedElements() throws IOException {
+    void shouldHasCompletedElements() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceB = newCompletedFlowNodeInstance("B");
@@ -372,7 +371,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldHasTwoCompletedElements() throws IOException {
+    void shouldHasTwoCompletedElements() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceActive = newCompletedFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceCompleted = newActiveFlowNodeInstance("A");
@@ -388,7 +387,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldWaitUntilHasCompletedElements() throws IOException {
+    void shouldWaitUntilHasCompletedElements() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
       final FlowNodeInstanceDto activeFlowNodeInstanceB = newActiveFlowNodeInstance("B");
@@ -409,7 +408,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfElementsNotFound() throws IOException {
+    void shouldFailIfElementsNotFound() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceB = newCompletedFlowNodeInstance("B");
@@ -433,7 +432,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfElementsNotCompleted() throws IOException {
+    void shouldFailIfElementsNotCompleted() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceB = newTerminatedFlowNodeInstance("B");
@@ -456,7 +455,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailWithSameElementId() throws IOException {
+    void shouldFailWithSameElementId() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceA2 = newCompletedFlowNodeInstance("A");
@@ -477,7 +476,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfProcessInstanceNotFound() throws IOException {
+    void shouldFailIfProcessInstanceNotFound() {
       // given
       when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
 
@@ -495,7 +494,7 @@ public class ElementAssertTest {
   class HasTerminatedElements {
 
     @Test
-    void shouldHasTerminatedElements() throws IOException {
+    void shouldHasTerminatedElements() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newTerminatedFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceB = newTerminatedFlowNodeInstance("B");
@@ -511,7 +510,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldHasTwoTerminatedElements() throws IOException {
+    void shouldHasTwoTerminatedElements() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceActive = newTerminatedFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceCompleted = newActiveFlowNodeInstance("A");
@@ -527,7 +526,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldWaitUntilHasTerminatedElements() throws IOException {
+    void shouldWaitUntilHasTerminatedElements() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newTerminatedFlowNodeInstance("A");
       final FlowNodeInstanceDto activeFlowNodeInstanceB = newActiveFlowNodeInstance("B");
@@ -548,7 +547,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfElementsNotFound() throws IOException {
+    void shouldFailIfElementsNotFound() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newTerminatedFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceB = newTerminatedFlowNodeInstance("B");
@@ -572,7 +571,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfElementsNotTerminated() throws IOException {
+    void shouldFailIfElementsNotTerminated() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceB = newTerminatedFlowNodeInstance("B");
@@ -595,7 +594,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailWithSameElementId() throws IOException {
+    void shouldFailWithSameElementId() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceA2 = newCompletedFlowNodeInstance("A");
@@ -616,7 +615,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfProcessInstanceNotFound() throws IOException {
+    void shouldFailIfProcessInstanceNotFound() {
       // given
       when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
 
@@ -634,7 +633,7 @@ public class ElementAssertTest {
   class HasActiveElement {
 
     @Test
-    void shouldHasActiveElement() throws IOException {
+    void shouldHasActiveElement() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newActiveFlowNodeInstance("A");
 
@@ -666,7 +665,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfNumberIsGreater() throws IOException {
+    void shouldFailIfNumberIsGreater() {
       // given
       final FlowNodeInstanceDto flowNodeInstance1 = newActiveFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstance2 = newActiveFlowNodeInstance("A");
@@ -688,7 +687,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfNumberIsLess() throws IOException {
+    void shouldFailIfNumberIsLess() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newActiveFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceB = newActiveFlowNodeInstance("B");
@@ -709,7 +708,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfNotActive() throws IOException {
+    void shouldFailIfNotActive() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA1 = newCompletedFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceA2 = newTerminatedFlowNodeInstance("A");
@@ -731,7 +730,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfNotCreated() throws IOException {
+    void shouldFailIfNotCreated() {
       // given
       when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.emptyList());
@@ -773,7 +772,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldWaitUntilHasActiveElement() throws IOException {
+    void shouldWaitUntilHasActiveElement() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA1 = newActiveFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceB = newActiveFlowNodeInstance("B");
@@ -798,7 +797,7 @@ public class ElementAssertTest {
   class HasCompletedElement {
 
     @Test
-    void shouldHasCompletedElement() throws IOException {
+    void shouldHasCompletedElement() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
 
@@ -830,7 +829,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfNumberIsGreater() throws IOException {
+    void shouldFailIfNumberIsGreater() {
       // given
       final FlowNodeInstanceDto flowNodeInstance1 = newCompletedFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstance2 = newCompletedFlowNodeInstance("A");
@@ -852,7 +851,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfNumberIsLess() throws IOException {
+    void shouldFailIfNumberIsLess() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceB = newCompletedFlowNodeInstance("B");
@@ -873,7 +872,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfNotCompleted() throws IOException {
+    void shouldFailIfNotCompleted() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA1 = newTerminatedFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceA2 = newActiveFlowNodeInstance("A");
@@ -895,7 +894,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfNotCreated() throws IOException {
+    void shouldFailIfNotCreated() {
       // given
       when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.emptyList());
@@ -937,7 +936,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldWaitUntilHasCompletedElement() throws IOException {
+    void shouldWaitUntilHasCompletedElement() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA1 = newCompletedFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceA2 = newActiveFlowNodeInstance("A");
@@ -962,7 +961,7 @@ public class ElementAssertTest {
   class HasTerminatedElement {
 
     @Test
-    void shouldHasTerminatedElement() throws IOException {
+    void shouldHasTerminatedElement() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newTerminatedFlowNodeInstance("A");
 
@@ -994,7 +993,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfNumberIsGreater() throws IOException {
+    void shouldFailIfNumberIsGreater() {
       // given
       final FlowNodeInstanceDto flowNodeInstance1 = newTerminatedFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstance2 = newTerminatedFlowNodeInstance("A");
@@ -1016,7 +1015,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfNumberIsLess() throws IOException {
+    void shouldFailIfNumberIsLess() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newTerminatedFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceB = newTerminatedFlowNodeInstance("B");
@@ -1037,7 +1036,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfNotTerminated() throws IOException {
+    void shouldFailIfNotTerminated() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA1 = newCompletedFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceA2 = newActiveFlowNodeInstance("A");
@@ -1059,7 +1058,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfNotCreated() throws IOException {
+    void shouldFailIfNotCreated() {
       // given
       when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.emptyList());
@@ -1101,7 +1100,7 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldWaitUntilHasTerminatedElement() throws IOException {
+    void shouldWaitUntilHasTerminatedElement() {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA1 = newTerminatedFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceA2 = newActiveFlowNodeInstance("A");

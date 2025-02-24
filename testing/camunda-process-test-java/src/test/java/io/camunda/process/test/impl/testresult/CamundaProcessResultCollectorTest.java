@@ -50,7 +50,7 @@ public class CamundaProcessResultCollectorTest {
   }
 
   @Test
-  void shouldReturnEmptyResult() throws IOException {
+  void shouldReturnEmptyResult() {
     // given
     when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
 
@@ -63,7 +63,7 @@ public class CamundaProcessResultCollectorTest {
   }
 
   @Test
-  void shouldReturnEmptyResultIfDataSourceThrowsException() throws IOException {
+  void shouldReturnEmptyResultIfDataSourceThrowsException() {
     // given
     doThrow(new IOException("expected failure")).when(camundaDataSource).findProcessInstances();
 
@@ -76,7 +76,7 @@ public class CamundaProcessResultCollectorTest {
   }
 
   @Test
-  void shouldReturnProcessInstances() throws IOException {
+  void shouldReturnProcessInstances() {
     // given
     final ProcessInstanceDto processInstance1 = newProcessInstance(1L, "process-a");
     final ProcessInstanceDto processInstance2 = newProcessInstance(2L, "process-b");
@@ -99,7 +99,7 @@ public class CamundaProcessResultCollectorTest {
   }
 
   @Test
-  void shouldReturnProcessInstanceVariables() throws IOException {
+  void shouldReturnProcessInstanceVariables() {
     // given
     final ProcessInstanceDto processInstance1 = newProcessInstance(1L, "process-a");
     final ProcessInstanceDto processInstance2 = newProcessInstance(2L, "process-b");
@@ -134,7 +134,7 @@ public class CamundaProcessResultCollectorTest {
   }
 
   @Test
-  void shouldReturnOpenIncidents() throws IOException {
+  void shouldReturnOpenIncidents() {
     // given
     final ProcessInstanceDto processInstance1 = newProcessInstance(1L, "process-a");
     final ProcessInstanceDto processInstance2 = newProcessInstance(2L, "process-b");
@@ -197,7 +197,7 @@ public class CamundaProcessResultCollectorTest {
   }
 
   @Test
-  void shouldReturnActiveFlowNodeInstances() throws IOException {
+  void shouldReturnActiveFlowNodeInstances() {
     // given
     final ProcessInstanceDto processInstance1 = newProcessInstance(1L, "process-a");
     final ProcessInstanceDto processInstance2 = newProcessInstance(2L, "process-b");

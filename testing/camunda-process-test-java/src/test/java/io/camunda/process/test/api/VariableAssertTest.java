@@ -23,7 +23,6 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
 import io.camunda.process.test.impl.client.VariableDto;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
@@ -71,7 +70,7 @@ public class VariableAssertTest {
   }
 
   @BeforeEach
-  void configureMocks() throws IOException {
+  void configureMocks() {
     final ProcessInstanceDto processInstance = new ProcessInstanceDto();
     processInstance.setKey(PROCESS_INSTANCE_KEY);
 
@@ -103,7 +102,7 @@ public class VariableAssertTest {
   class HasVariableNames {
 
     @Test
-    void shouldHasVariableNames() throws IOException {
+    void shouldHasVariableNames() {
       // given
       final VariableDto variableA = newVariable("a", "1");
       final VariableDto variableB = newVariable("b", "2");
@@ -119,7 +118,7 @@ public class VariableAssertTest {
     }
 
     @Test
-    void shouldWaitUntilHasVariableNames() throws IOException {
+    void shouldWaitUntilHasVariableNames() {
       // given
       final VariableDto variableA = newVariable("a", "1");
       final VariableDto variableB = newVariable("b", "2");
@@ -138,7 +137,7 @@ public class VariableAssertTest {
     }
 
     @Test
-    void shouldFailIfVariableNotExist() throws IOException {
+    void shouldFailIfVariableNotExist() {
       // given
       final VariableDto variableA = newVariable("a", "1");
       final VariableDto variableB = newVariable("b", "2");
@@ -160,7 +159,7 @@ public class VariableAssertTest {
     }
 
     @Test
-    void shouldFailIfProcessInstanceNotFound() throws IOException {
+    void shouldFailIfProcessInstanceNotFound() {
       // given
       when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
 
@@ -179,8 +178,7 @@ public class VariableAssertTest {
 
     @ParameterizedTest
     @MethodSource("io.camunda.process.test.api.VariableAssertTest#variableValues")
-    void shouldHasVariable(final String variableValue, final Object expectedValue)
-        throws IOException {
+    void shouldHasVariable(final String variableValue, final Object expectedValue) {
       // given
       final VariableDto variableA = newVariable("a", variableValue);
 
@@ -195,7 +193,7 @@ public class VariableAssertTest {
     }
 
     @Test
-    void shouldWaitUntilHasVariable() throws IOException {
+    void shouldWaitUntilHasVariable() {
       // given
       final VariableDto variableA = newVariable("a", "1");
       final VariableDto variableB = newVariable("b", "2");
@@ -214,7 +212,7 @@ public class VariableAssertTest {
     }
 
     @Test
-    void shouldWaitUntilVariableHasValue() throws IOException {
+    void shouldWaitUntilVariableHasValue() {
       // given
       final VariableDto variableValue1 = newVariable("a", "1");
       final VariableDto variableValue2 = newVariable("a", "2");
@@ -233,7 +231,7 @@ public class VariableAssertTest {
     }
 
     @Test
-    void shouldFailIfVariableNotExist() throws IOException {
+    void shouldFailIfVariableNotExist() {
       // given
       final VariableDto variableA = newVariable("a", "1");
       final VariableDto variableB = newVariable("b", "2");
@@ -253,7 +251,7 @@ public class VariableAssertTest {
     }
 
     @Test
-    void shouldFailIfVariableHasDifferentValue() throws IOException {
+    void shouldFailIfVariableHasDifferentValue() {
       // given
       final VariableDto variableA = newVariable("a", "1");
       final VariableDto variableB = newVariable("b", "2");
@@ -274,7 +272,7 @@ public class VariableAssertTest {
 
     @ParameterizedTest
     @MethodSource("io.camunda.process.test.api.VariableAssertTest#variableValues")
-    void shouldFailWithMessage(final String variableValue) throws IOException {
+    void shouldFailWithMessage(final String variableValue) {
       // given
       final VariableDto variableA = newVariable("a", variableValue);
 
@@ -293,7 +291,7 @@ public class VariableAssertTest {
     }
 
     @Test
-    void shouldFailIfProcessInstanceNotFound() throws IOException {
+    void shouldFailIfProcessInstanceNotFound() {
       // given
       when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
 
@@ -312,8 +310,7 @@ public class VariableAssertTest {
 
     @ParameterizedTest
     @MethodSource("io.camunda.process.test.api.VariableAssertTest#variableValues")
-    void shouldHasVariables(final String variableValue, final Object expectedValue)
-        throws IOException {
+    void shouldHasVariables(final String variableValue, final Object expectedValue) {
       // given
       final VariableDto variableA = newVariable("a", variableValue);
       final VariableDto variableB = newVariable("b", "100");
@@ -332,7 +329,7 @@ public class VariableAssertTest {
     }
 
     @Test
-    void shouldWaitUntilHasAllVariables() throws IOException {
+    void shouldWaitUntilHasAllVariables() {
       // given
       final VariableDto variableA = newVariable("a", "1");
       final VariableDto variableB = newVariable("b", "2");
@@ -354,7 +351,7 @@ public class VariableAssertTest {
     }
 
     @Test
-    void shouldWaitUntilAllVariablesHaveValue() throws IOException {
+    void shouldWaitUntilAllVariablesHaveValue() {
       // given
       final VariableDto variableValue1 = newVariable("a", "1");
       final VariableDto variableValue2 = newVariable("a", "2");
@@ -377,7 +374,7 @@ public class VariableAssertTest {
     }
 
     @Test
-    void shouldFailIfOneVariableNotExist() throws IOException {
+    void shouldFailIfOneVariableNotExist() {
       // given
       final VariableDto variableA = newVariable("a", "1");
       final VariableDto variableB = newVariable("b", "2");
@@ -401,7 +398,7 @@ public class VariableAssertTest {
     }
 
     @Test
-    void shouldFailIfVariableHasDifferentValue() throws IOException {
+    void shouldFailIfVariableHasDifferentValue() {
       // given
       final VariableDto variableA = newVariable("a", "1");
       final VariableDto variableB = newVariable("b", "2");
@@ -427,7 +424,7 @@ public class VariableAssertTest {
 
     @ParameterizedTest
     @MethodSource("io.camunda.process.test.api.VariableAssertTest#variableValues")
-    void shouldFailWithMessage(final String variableValue) throws IOException {
+    void shouldFailWithMessage(final String variableValue) {
       // given
       final VariableDto variableA = newVariable("a", variableValue);
 
@@ -449,7 +446,7 @@ public class VariableAssertTest {
     }
 
     @Test
-    void shouldFailIfProcessInstanceNotFound() throws IOException {
+    void shouldFailIfProcessInstanceNotFound() {
       // given
       when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
 

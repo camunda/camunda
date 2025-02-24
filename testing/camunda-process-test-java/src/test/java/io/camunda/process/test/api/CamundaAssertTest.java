@@ -23,7 +23,6 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
-import java.io.IOException;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,7 +48,7 @@ public class CamundaAssertTest {
   }
 
   @Test
-  void shouldUseDataSource() throws IOException {
+  void shouldUseDataSource() {
     // given
     final long processInstanceKey = 100L;
     when(processInstanceEvent.getProcessInstanceKey()).thenReturn(processInstanceKey);
