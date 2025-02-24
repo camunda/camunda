@@ -45,10 +45,7 @@ import org.springframework.context.annotation.Import;
     havingValue = "true",
     matchIfMissing = true)
 @Import({AnnotationProcessorConfiguration.class, JsonMapperConfiguration.class})
-@EnableConfigurationProperties({
-  ZeebeClientConfigurationProperties.class,
-  CamundaClientProperties.class
-})
+@EnableConfigurationProperties({CamundaClientProperties.class})
 public class ZeebeClientAllAutoConfiguration {
 
   @Bean
