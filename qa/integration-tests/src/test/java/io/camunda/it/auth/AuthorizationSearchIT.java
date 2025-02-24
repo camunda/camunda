@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.it.utils.BrokerITInvocationProvider;
 import io.camunda.it.utils.CamundaClientTestFactory.Authenticated;
 import io.camunda.it.utils.CamundaClientTestFactory.Permissions;
@@ -37,7 +38,7 @@ class AuthorizationSearchIT {
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
   private static final String ADMIN = "admin";
-  private static final String RESTRICTED = "restricted-user";
+  private static final String RESTRICTED = "restrictedUser";
   private static final String DEFAULT_PASSWORD = "password";
   private static final String AUTH_SEARCH_ENDPOINT = "v2/authorizations/search";
 
@@ -45,11 +46,7 @@ class AuthorizationSearchIT {
       new User(
           ADMIN,
           DEFAULT_PASSWORD,
-          List.of(
-              new Permissions(
-                  AUTHORIZATION,
-                  io.camunda.client.protocol.rest.PermissionTypeEnum.READ,
-                  List.of("*"))));
+          List.of(new Permissions(AUTHORIZATION, PermissionTypeEnum.READ, List.of("*"))));
 
   private static final User RESTRICTED_USER = new User(RESTRICTED, DEFAULT_PASSWORD, List.of());
 
