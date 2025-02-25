@@ -11,20 +11,21 @@ import { C3EmptyState } from "@camunda/camunda-composite-components";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
 import { getMembersByTenantId } from "src/utility/api/membership";
-import EntityList, {
-  DocumentationDescription,
-} from "src/components/entityList";
-import { DocumentationLink } from "src/components/documentation";
+import EntityList from "src/components/entityList";
+import { useEntityModal } from "src/components/modal";
+import { TrashCan } from "@carbon/react/icons";
+import DeleteModal from "src/pages/tenants/detail/members/DeleteModal";
+import AssignMembersModal from "src/pages/tenants/detail/members/AssignMembersModal";
 
 type MembersProps = {
   tenantId: string;
 };
 
 const Members: FC<MembersProps> = ({ tenantId }) => {
-  const { t, Translate } = useTranslate("tenants");
+  const { t } = useTranslate("tenants");
 
   const {
-    // data: users, // @TODO: uncomment
+    data: users,
     loading,
     success,
     reload,
@@ -32,34 +33,23 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
     tenantId: tenantId,
   });
 
-  // @TODO: remove mock users
-  const users = {
-    items: [
-      {
-        key: 1,
-        name: "user1",
-        username: "username1",
-        password: "123",
-        email: "user1@test.com",
-      },
-      {
-        key: 2,
-        name: "user2",
-        username: "username2",
-        password: "123",
-        email: "user2@test.com",
-      },
-      {
-        key: 3,
-        name: "user3",
-        username: "username3",
-        password: "123",
-        email: "user3@test.com",
-      },
-    ],
-  };
-
   const areNoUsersAssigned = !users || users.items?.length === 0;
+  const [assignUsers, assignUsersModal] = useEntityModal(
+    AssignMembersModal,
+    reload,
+    {
+      assignedUsers: users?.items || [],
+    },
+  );
+  const openAssignModal = () => assignUsers({ id: tenantId });
+  const [unassignMember, unassignMemberModal] = useEntityModal(
+    DeleteModal,
+    reload,
+    {
+      tenant: tenantId,
+    },
+  );
+
   if (!loading && !success)
     return (
       <C3EmptyState
@@ -79,11 +69,16 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
           description={t(
             "Members of this Tenant will be given access to the data within the Tenant.",
           )}
+          button={{
+            label: t("Assign members"),
+            onClick: openAssignModal,
+          }}
           link={{
-            label: t("Learn more about groups"),
-            href: `/identity/concepts/access-control/groups`,
+            label: t("Learn more about tenants"),
+            href: `/identity/concepts/access-control/tenants`,
           }}
         />
+        {assignUsersModal}
       </>
     );
 
@@ -99,18 +94,19 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
         sortProperty="username"
         loading={loading}
         addEntityLabel={t("Assign user")}
+        onAddEntity={openAssignModal}
         searchPlaceholder={t("Search by username")}
+        menuItems={[
+          {
+            label: t("Remove"),
+            icon: TrashCan,
+            isDangerous: true,
+            onClick: unassignMember,
+          },
+        ]}
       />
-      {success && !areNoUsersAssigned && (
-        <DocumentationDescription>
-          <Translate>To learn more, visit our</Translate>{" "}
-          <DocumentationLink path="/concepts/access-control/groups">
-            {t("groups documentation")}
-          </DocumentationLink>
-          .
-        </DocumentationDescription>
-      )}
-      <></>
+      {assignUsersModal}
+      {unassignMemberModal}
     </>
   );
 };

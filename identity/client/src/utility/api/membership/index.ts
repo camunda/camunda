@@ -14,23 +14,20 @@ import { TENANTS_ENDPOINT } from "src/utility/api/tenants";
 export type GetGroupMembersParams = {
   groupId: string;
 };
-
-export type GetTenantMembersParams = {
-  tenantId: string;
-};
-
 export const getMembersByGroup: ApiDefinition<
   SearchResponse<User>,
   GetGroupMembersParams
 > = ({ groupId }) => apiGet(`${GROUPS_ENDPOINT}/${groupId}/users`);
 
+export type GetTenantMembersParams = {
+  tenantId: string;
+};
 export const getMembersByTenantId: ApiDefinition<
   SearchResponse<User>,
   GetTenantMembersParams
 > = ({ tenantId }) => apiPost(`${TENANTS_ENDPOINT}/${tenantId}/users/search`);
 
 type AssignGroupMemberParams = GetGroupMembersParams & { userId: string };
-
 export const assignGroupMember: ApiDefinition<
   undefined,
   AssignGroupMemberParams
@@ -38,9 +35,24 @@ export const assignGroupMember: ApiDefinition<
   apiPost(`${GROUPS_ENDPOINT}/${groupId}/users`, { id: userId });
 
 type UnassignGroupMemberParams = AssignGroupMemberParams;
-
 export const unassignGroupMember: ApiDefinition<
   undefined,
   UnassignGroupMemberParams
 > = ({ groupId, userId }) =>
   apiDelete(`${GROUPS_ENDPOINT}/${groupId}/users/${userId}`);
+
+type AssignTenantMemberParams = GetTenantMembersParams & { userId: string };
+export const assignTenantMember: ApiDefinition<
+  undefined,
+  AssignTenantMemberParams
+> = ({ tenantId, userId }) => {
+  console.log("tenant and user", tenantId, userId);
+  return apiPost(`${TENANTS_ENDPOINT}/${tenantId}/users`, { id: userId });
+};
+
+type UnassignTenantMemberParams = AssignTenantMemberParams;
+export const unassignTenantMember: ApiDefinition<
+  undefined,
+  UnassignTenantMemberParams
+> = ({ tenantId, userId }) =>
+  apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/users/${userId}`);
