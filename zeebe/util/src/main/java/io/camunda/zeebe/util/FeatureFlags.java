@@ -16,7 +16,8 @@ public record FeatureFlags(
     boolean enableMessageTTLCheckerAsync,
     boolean enableTimerDueDateCheckerAsync,
     boolean enableStraightThroughProcessingLoopDetector,
-    boolean enablePartitionScaling
+    boolean enablePartitionScaling,
+    boolean enableIdentitySetup
     /*, boolean foo*/ ) {
 
   /* To add a new feature toggle, please follow these steps:
@@ -53,6 +54,7 @@ public record FeatureFlags(
   private static final boolean ENABLE_DUE_DATE_CHECKER_ASYNC = false;
   private static final boolean ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR = true;
   private static final boolean ENABLE_PARTITION_SCALING = false;
+  private static final boolean ENABLE_IDENTITY_SETUP = true;
 
   public static FeatureFlags createDefault() {
     return new FeatureFlags(
@@ -61,7 +63,8 @@ public record FeatureFlags(
         ENABLE_MSG_TTL_CHECKER_ASYNC,
         ENABLE_DUE_DATE_CHECKER_ASYNC,
         ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR,
-        ENABLE_PARTITION_SCALING
+        ENABLE_PARTITION_SCALING,
+        ENABLE_IDENTITY_SETUP
         /*, FOO_DEFAULT*/ );
   }
 
@@ -77,7 +80,8 @@ public record FeatureFlags(
         true, /* ENABLE_MSG_TTL_CHECKER_ASYNC */
         true, /* ENABLE_DUE_DATE_CHECKER_ASYNC */
         true, /* ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR */
-        true /* ENABLE_PARTITION_SCALING */
+        true, /* ENABLE_PARTITION_SCALING */
+        false /* ENABLE_IDENTITY_SETUP */
         /*, FOO_DEFAULT*/ );
   }
 
