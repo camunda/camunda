@@ -116,7 +116,7 @@ final class ZeebeRocksDbTest {
     // given
     final var meterRegistry = new SimpleMeterRegistry();
     final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
-        DefaultZeebeDbFactory.getDefaultFactory(meterRegistry);
+        DefaultZeebeDbFactory.getDefaultFactory(() -> meterRegistry);
     final Counter counter;
 
     // when
@@ -137,7 +137,7 @@ final class ZeebeRocksDbTest {
     // given
     final var meterRegistry = new SimpleMeterRegistry();
     final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
-        DefaultZeebeDbFactory.getDefaultFactory(meterRegistry);
+        DefaultZeebeDbFactory.getDefaultFactory(() -> meterRegistry);
     final MeterRegistry dbRegistry;
 
     // when

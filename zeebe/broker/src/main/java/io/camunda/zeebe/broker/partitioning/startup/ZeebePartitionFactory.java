@@ -61,6 +61,7 @@ import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -181,6 +182,7 @@ public final class ZeebePartitionFactory {
       final ConcurrencyControl concurrencyControl,
       final MeterRegistry partitionMeterRegistry) {
     final Path runtimeDirectory;
+    final var partitionId = raftPartition.id().id();
     if (brokerCfg.getData().useSeparateRuntimeDirectory()) {
       final Path rootRuntimeDirectory = Paths.get(brokerCfg.getData().getRuntimeDirectory());
       try {
@@ -189,7 +191,7 @@ public final class ZeebePartitionFactory {
         throw new UncheckedIOException(
             "Runtime directory %s does not exist".formatted(rootRuntimeDirectory), e);
       }
-      runtimeDirectory = rootRuntimeDirectory.resolve(String.valueOf(raftPartition.id().id()));
+      runtimeDirectory = rootRuntimeDirectory.resolve(String.valueOf(partitionId));
     } else {
       runtimeDirectory = raftPartition.dataDirectory().toPath().resolve("runtime");
     }
@@ -199,8 +201,8 @@ public final class ZeebePartitionFactory {
         new ZeebeRocksDbFactory<>(
             databaseCfg.createRocksDbConfiguration(),
             consistencyChecks.getSettings(),
-            new AccessMetricsConfiguration(databaseCfg.getAccessMetrics(), raftPartition.id().id()),
-            partitionMeterRegistry),
+            new AccessMetricsConfiguration(databaseCfg.getAccessMetrics(), partitionId),
+            () -> MicrometerUtil.wrap(partitionMeterRegistry, PartitionKeyNames.tags(partitionId))),
         snapshotStore,
         runtimeDirectory,
         new AtomixRecordEntrySupplierImpl(raftPartition.getServer()),
