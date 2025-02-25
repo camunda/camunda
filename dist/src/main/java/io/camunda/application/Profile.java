@@ -20,7 +20,6 @@ public enum Profile {
   GATEWAY("gateway"),
   RESTORE("restore"),
   OPERATE("operate"),
-  OPTIMIZE("optimize"),
   TASKLIST("tasklist"),
   IDENTITY("identity"),
 

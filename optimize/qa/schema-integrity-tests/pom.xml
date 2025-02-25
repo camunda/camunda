@@ -30,8 +30,10 @@
     <dependency>
       <groupId>co.elastic.clients</groupId>
       <artifactId>elasticsearch-java</artifactId>
+      <version>${version.elasticsearch}</version>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-client</artifactId>
@@ -42,6 +44,7 @@
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-java</artifactId>
+      <version>${version.opensearch-java}</version>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>

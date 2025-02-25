@@ -34,8 +34,6 @@ import org.springframework.core.env.Environment;
     webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
     properties = {
       INTEGRATION_TESTS + "=true",
-      "useLegacyPort=true" // TODO: Remove once we read the configuration from the single
-      // application
     })
 @Configuration
 public abstract class AbstractIT {
@@ -89,12 +87,7 @@ public abstract class AbstractIT {
 
   private String[] prepareArgs(final Map<String, String> argMap) {
     final String httpsPort = getPortArg(HTTPS_PORT_KEY);
-
     String httpPort = getPortArg(HTTP_PORT_KEY);
-    if ("true".equals(environment.getProperty("useLegacyPort"))) {
-      // TODO: Remove this if block once the configuration is read from the single application.
-      httpPort = "8090";
-    }
 
     final String actuatorPort =
         getArg(
