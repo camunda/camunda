@@ -158,8 +158,9 @@ public final class EngineRule extends ExternalResource {
     forEachPartition(environmentRule::closeStreamProcessor);
   }
 
-  public EngineRule awaitingIdentitySetup() {
+  public EngineRule withIdentitySetup() {
     awaitIdentitySetup = true;
+    withFeatureFlags(ff -> ff.setEnableIdentitySetup(true));
     return this;
   }
 
