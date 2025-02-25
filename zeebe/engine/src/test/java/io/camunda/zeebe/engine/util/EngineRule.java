@@ -96,7 +96,7 @@ public final class EngineRule extends ExternalResource {
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
   private final int partitionCount;
-  private boolean awaitIdentitySetup = true;
+  private boolean awaitIdentitySetup = false;
 
   private Consumer<TypedRecord> onProcessedCallback = record -> {};
   private Consumer<LoggedEvent> onSkippedCallback = record -> {};
@@ -158,8 +158,8 @@ public final class EngineRule extends ExternalResource {
     forEachPartition(environmentRule::closeStreamProcessor);
   }
 
-  public EngineRule withoutAwaitingIdentitySetup() {
-    awaitIdentitySetup = false;
+  public EngineRule awaitingIdentitySetup() {
+    awaitIdentitySetup = true;
     return this;
   }
 
