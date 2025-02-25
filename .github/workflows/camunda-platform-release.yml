@@ -163,8 +163,6 @@ jobs:
           ARTIFACT_DIR=$(mktemp -d)
           cp target/checkout/dist/target/camunda-zeebe-${RELEASE_VERSION}.tar.gz "${ARTIFACT_DIR}/"
           cp target/checkout/dist/target/camunda-zeebe-${RELEASE_VERSION}.zip "${ARTIFACT_DIR}/"
-          cp target/checkout/optimize-distro/target/camunda-optimize-${RELEASE_VERSION}-production.tar.gz "${ARTIFACT_DIR}/"
-          cp target/checkout/optimize-distro/target/camunda-optimize-${RELEASE_VERSION}-production.zip "${ARTIFACT_DIR}/"
           echo "dir=${ARTIFACT_DIR}" >> $GITHUB_OUTPUT
       - name: Upload Release Artifacts
         uses: actions/upload-artifact@v4
@@ -472,97 +470,6 @@ jobs:
             --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
             ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
             ${{ steps.build-operate-docker.outputs.image }}
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  optimize-docker:
-    needs: release
-    name: Optimize Docker Image Release
-    permissions:
-      contents: read           # Required for checking out the repository.
-      packages: write          # Required for pushing Docker images to DockerHub.
-      id-token: write          # Required for authentication with HashiCorp Vault using OIDC.
-      actions: read            # Required to download artifacts.
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    services:
-      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
-      # registry. As we want to verify the images first before pushing them to dockerhub though,
-      # a local registry is used and if verification passes images are pushed to the remote registry.
-      registry:
-        image: registry:2
-        ports:
-          - 5000:5000
-    env:
-      PLATFORMS: "linux/amd64,linux/arm64"
-      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/optimize
-      DOCKER_IMAGE: camunda/optimize
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.RELEASE_BRANCH }}
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_USR;
-            secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_PSW;
-      - name: Login to DockerHub
-        uses: docker/login-action@327cd5a69de6c009b9ce71bce8395f28e651bf99
-        with:
-          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
-          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-      - name: Move optimize artifacts into expected dir
-        run: |
-          mkdir -p "optimize-distro/target"
-          mv camunda-optimize-${RELEASE_VERSION}-production.tar.gz ./optimize-distro/target/
-      - name: Build Optimize Docker Image
-        uses: ./.github/actions/build-platform-docker
-        id: build-optimize-docker
-        with:
-          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
-          version: ${{ inputs.releaseVersion }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          # pushes to local registry for verification prior pushing to remote
-          push: true
-          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
-          platforms: ${{ env.PLATFORMS }}
-          dockerfile: optimize.Dockerfile
-      - name: Verify Optimize Docker image
-        uses: ./.github/actions/verify-platform-docker
-        with:
-          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
-          date: ${{ steps.build-optimize-docker.outputs.date }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          version: ${{ inputs.releaseVersion }}
-          platforms: ${{ env.PLATFORMS }}
-          dockerfile: optimize.Dockerfile
-          goldenfile: optimize-docker-labels.golden.json
-      - name: Sync Optimize Docker Image to DockerHub
-        id: push-docker
-        if: ${{ inputs.dryRun == false }}
-        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        run: |
-          docker buildx imagetools create \
-            --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
-            ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
-            ${{ steps.build-optimize-docker.outputs.image }}
       - name: Observe build status
         if: always()
         continue-on-error: true
