@@ -20,8 +20,8 @@ import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMigrateProcessInstanceRequest;
@@ -42,7 +42,7 @@ import java.util.function.Function;
 
 public final class ProcessInstanceServices
     extends SearchQueryService<
-        ProcessInstanceServices, ProcessInstanceQuery, ProcessInstanceEntity> {
+    ProcessInstanceServices, ProcessInstanceQuery, ProcessInstanceEntity> {
 
   private final ProcessInstanceSearchClient processInstanceSearchClient;
 
@@ -141,9 +141,14 @@ public final class ProcessInstanceServices
 
   public CompletableFuture<Long> cancelProcessInstanceBatchOperationWithResult(
       final ProcessInstanceQuery query) {
+
+    // TODO implement pagination
+    final var processInstanceKeys = search(query).items().stream()
+        .map(ProcessInstanceEntity::processInstanceKey).toList();
+
     final var brokerRequest =
-        new BrokerCancelProcessInstanceBatchOperationRequest()
-            .setQuery(query);
+        new BrokerCreateBatchOperationRequest()
+            .setKeys(processInstanceKeys);
 
     return sendBrokerRequest(brokerRequest);
   }
@@ -186,19 +191,27 @@ public final class ProcessInstanceServices
       Long requestTimeout,
       Long operationReference,
       List<ProcessInstanceCreationStartInstruction> startInstructions,
-      List<String> fetchVariables) {}
+      List<String> fetchVariables) {
 
-  public record ProcessInstanceCancelRequest(Long processInstanceKey, Long operationReference) {}
+  }
+
+  public record ProcessInstanceCancelRequest(Long processInstanceKey, Long operationReference) {
+
+  }
 
   public record ProcessInstanceMigrateRequest(
       Long processInstanceKey,
       Long targetProcessDefinitionKey,
       List<ProcessInstanceMigrationMappingInstruction> mappingInstructions,
-      Long operationReference) {}
+      Long operationReference) {
+
+  }
 
   public record ProcessInstanceModifyRequest(
       Long processInstanceKey,
       List<ProcessInstanceModificationActivateInstruction> activateInstructions,
       List<ProcessInstanceModificationTerminateInstruction> terminateInstructions,
-      Long operationReference) {}
+      Long operationReference) {
+
+  }
 }
