@@ -1465,7 +1465,7 @@ public class TaskListenerTest {
             tuple(UserTaskIntent.COMPLETING, ""),
             tuple(UserTaskIntent.DENY_TASK_LISTENER, "Reason to deny lifecycle transition"),
             tuple(UserTaskIntent.COMPLETION_DENIED, "Reason to deny lifecycle transition"),
-            tuple(UserTaskIntent.COMPLETING, "Reason to deny lifecycle transition"),
+            tuple(UserTaskIntent.COMPLETING, ""),
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, ""),
             tuple(UserTaskIntent.COMPLETED, ""));
   }
@@ -1506,7 +1506,7 @@ public class TaskListenerTest {
             tuple(UserTaskIntent.ASSIGNING, ""),
             tuple(UserTaskIntent.DENY_TASK_LISTENER, "Reason to deny lifecycle transition"),
             tuple(UserTaskIntent.ASSIGNMENT_DENIED, "Reason to deny lifecycle transition"),
-            tuple(UserTaskIntent.ASSIGNING, "Reason to deny lifecycle transition"),
+            tuple(UserTaskIntent.ASSIGNING, ""),
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, ""),
             tuple(UserTaskIntent.ASSIGNED, ""));
   }
@@ -1554,7 +1554,7 @@ public class TaskListenerTest {
             tuple(UserTaskIntent.UPDATING, ""),
             tuple(UserTaskIntent.DENY_TASK_LISTENER, "Reason to deny lifecycle transition"),
             tuple(UserTaskIntent.UPDATE_DENIED, "Reason to deny lifecycle transition"),
-            tuple(UserTaskIntent.UPDATING, "Reason to deny lifecycle transition"),
+            tuple(UserTaskIntent.UPDATING, ""),
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, ""),
             tuple(UserTaskIntent.UPDATED, ""));
   }
