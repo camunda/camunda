@@ -162,13 +162,8 @@ public class CamundaMultiDBExtension
   }
 
   public CamundaMultiDBExtension(final TestStandaloneApplication testApplication) {
-    this(testApplication, true);
-  }
-
-  public CamundaMultiDBExtension(
-      final TestStandaloneApplication testApplication, final boolean useNativeEsOsExporter) {
     this.testApplication = testApplication;
-    multiDbConfigurator = new MultiDbConfigurator(testApplication, useNativeEsOsExporter);
+    multiDbConfigurator = new MultiDbConfigurator(testApplication);
     // resolve active database and exporter type
     final String property = System.getProperty(PROP_CAMUNDA_IT_DATABASE_TYPE);
     databaseType =

@@ -46,8 +46,7 @@ public class ClusterPurgeMultiDbIT {
       new TestStandaloneBroker().withUnauthenticatedAccess();
 
   @RegisterExtension
-  public static final CamundaMultiDBExtension EXTENSION =
-      new CamundaMultiDBExtension(APPLICATION, true);
+  public static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(APPLICATION);
 
   private static final int TIMEOUT = 40;
 
