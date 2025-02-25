@@ -35,7 +35,7 @@ jobs:
         shell: bash
         id: build-dist
         run: |
-          ./mvnw -B -T1C -DskipTests -DskipChecks -Dflatten.skip=true package
+          ./mvnw -B -T1C -DskipTests -DskipChecks -Dflatten.skip=true -Dskip.fe.build=false package
           export ARTIFACT=$(./mvnw -pl dist/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
           echo "distball=dist/target/${ARTIFACT}.tar.gz" >> $GITHUB_OUTPUT
 
