@@ -2,7 +2,7 @@ import {test} from '@fixtures/8.7';
 import {authAPI, assertResponseStatus} from 'utils/apiHelpers';
 import {createInstances, deploy} from 'utils/zeebeClient';
 
-const baseURL = process.env.CORE_COMPONENT_TASKLIST_URL;
+const baseURL = process.env.CORE_APPLICATION_TASKLIST_URL;
 
 test.beforeAll(async () => {
   await Promise.all([

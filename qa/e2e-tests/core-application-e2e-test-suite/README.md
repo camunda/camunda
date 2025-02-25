@@ -1,4 +1,4 @@
-# Camunda Core Component Test Suite
+# Camunda Core Application E2e Test Suite
 
 This repository contains the end-to-end test suite for Camunda's core components. Follow the steps below to get started and run the tests locally.
 
@@ -16,7 +16,7 @@ git clone https://github.com/camunda/camunda.git
 
 ### 2. Install Dependencies
 
-Navigate to the `core-component-test-suite` directory and install the required dependencies:
+Navigate to the `core-application-e2e-test-suite` directory and install the required dependencies:
 
 ```bash
 npm install
@@ -25,13 +25,13 @@ npx playwright install
 
 ### 3. Configure Environmental Variables
 
-Create a `.env` file inside `core-component-test-suite`. Your `.env` file should look similar to this:
+Create a `.env` file inside `core-application-e2e-test-suite`. Your `.env` file should look similar to this:
 
 ```bash
 LOCAL_TEST=true
 MINOR_VERSION=8.7
-CORE_COMPONENT_TASKLIST_URL=http://localhost:8080
-CORE_COMPONENT_OPERATE_URL=http://localhost:8081
+CORE_APPLICATION_TASKLIST_URL=http://localhost:8080
+CORE_APPLICATION_OPERATE_URL=http://localhost:8081
 ```
 
 ---

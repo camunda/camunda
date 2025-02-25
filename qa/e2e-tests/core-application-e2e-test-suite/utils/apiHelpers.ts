@@ -13,9 +13,9 @@ export async function authAPI(
   let baseURL: string;
 
   if (application === 'tasklist') {
-    baseURL = process.env.CORE_COMPONENT_TASKLIST_URL as string;
+    baseURL = process.env.CORE_APPLICATION_TASKLIST_URL as string;
   } else if (application === 'operate') {
-    baseURL = process.env.CORE_COMPONENT_OPERATE_URL as string;
+    baseURL = process.env.CORE_APPLICATION_OPERATE_URL as string;
   } else {
     throw new Error(`Unsupported application: ${application}`);
   }
