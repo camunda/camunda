@@ -27,6 +27,7 @@ import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFutureListener;
@@ -78,6 +79,8 @@ public class NettyUnicastService implements ManagedUnicastService {
       Maps.newConcurrentMap();
   private final AtomicBoolean started = new AtomicBoolean();
   private final Address bindAddress;
+
+  private final MeterRegistry registry;
 
   private EventLoopGroup group;
   private DatagramChannel channel;

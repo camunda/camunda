@@ -22,6 +22,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -111,7 +112,7 @@ final class ClusterConfigurationGossiperTest {
   }
 
   private AtomixCluster createClusterNode(final Node localNode, final Collection<Node> nodes) {
-    return AtomixCluster.builder()
+    return AtomixCluster.builder(meterRegistry)
         .withAddress(localNode.address())
         .withMemberId(localNode.id().id())
         .withMembershipProvider(new BootstrapDiscoveryProvider(nodes))

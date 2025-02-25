@@ -64,7 +64,7 @@ class UnavailableBrokersTest {
     final GatewayCfg config = new GatewayCfg().setNetwork(networkCfg);
     config.init(InetAddress.getLocalHost().getHostName());
 
-    cluster = AtomixCluster.builder().build();
+    cluster = AtomixCluster.builder(REGISTRY).build();
     cluster.start();
 
     actorScheduler = ActorScheduler.newActorScheduler().build();
@@ -99,7 +99,7 @@ class UnavailableBrokersTest {
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer(),
-            new SimpleMeterRegistry());
+            REGISTRY);
     gateway.start().join();
 
     final String gatewayAddress = NetUtil.toSocketAddressString(networkCfg.toSocketAddress());

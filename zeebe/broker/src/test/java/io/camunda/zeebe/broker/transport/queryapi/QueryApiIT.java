@@ -61,7 +61,8 @@ public final class QueryApiIT {
         new NettyMessagingService(
             broker.getBrokerCfg().getCluster().getClusterName(),
             Address.from(SocketUtil.getNextAddress().getPort()),
-            new MessagingConfig());
+            new MessagingConfig(),
+            broker.getMeterRegistry());
 
     clientTransport = new AtomixClientTransportAdapter(messagingService);
     actor.submitActor((AtomixClientTransportAdapter) clientTransport).join();
