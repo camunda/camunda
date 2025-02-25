@@ -25,6 +25,6 @@ public final class DefaultZeebeDbFactory {
         new RocksDbConfiguration(),
         consistencyChecks,
         new AccessMetricsConfiguration(Kind.NONE, 1),
-        new SimpleMeterRegistry());
+        SimpleMeterRegistry::new);
   }
 }

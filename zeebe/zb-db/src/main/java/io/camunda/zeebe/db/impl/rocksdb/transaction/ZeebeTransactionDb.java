@@ -98,7 +98,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
           final RocksDbConfiguration rocksDbConfiguration,
           final ConsistencyChecksSettings consistencyChecksSettings,
           final AccessMetricsConfiguration metrics,
-          final Supplier<MeterRegistry> registrySupplier)
+          final Supplier<MeterRegistry> meterRegistryFactory)
           throws RocksDBException {
     final var cfDescriptors =
         Arrays.asList( // todo: could consider using List.of
@@ -117,7 +117,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
     final ColumnFamilyHandle defaultColumnFamilyHandle = cfHandles.getFirst();
     closables.add(defaultColumnFamilyHandle);
 
-    final var meterRegistry = registrySupplier.get();
+    final var meterRegistry = meterRegistryFactory.get();
     closables.add(() -> MicrometerUtil.close(meterRegistry));
 
     return new ZeebeTransactionDb<>(
