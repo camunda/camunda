@@ -19,7 +19,7 @@ package io.camunda.operate.opensearch.client;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import io.camunda.operate.util.OpensearchOperateAbstractIT;
+import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.TestUtil;
 import java.util.function.Function;
 import org.junit.After;
