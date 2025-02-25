@@ -203,6 +203,7 @@ func getBaseCommandSettings(baseCommand string) (C8RunSettings, error) {
 
 func createStartFlagSet(settings *C8RunSettings) *flag.FlagSet {
 	startFlagSet := flag.NewFlagSet("start", flag.ExitOnError)
+	startFlagSet.StringVar(&settings.config, "config", "", "Applies the specified configuration file.")
 	startFlagSet.BoolVar(&settings.detached, "detached", false, "Starts Camunda Run as a detached process")
 	return startFlagSet
 }
@@ -235,6 +236,8 @@ func main() {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+
+	settings, err := getBaseCommandSettings(baseCommand)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
@@ -367,11 +370,36 @@ func main() {
 			fmt.Print("Failed to open file: " + connectorsPidPath)
 			os.Exit(1)
 		}
+
 		_, err = connectorsPidFile.Write([]byte(strconv.Itoa(connectorsCmd.Process.Pid)))
 		if err != nil {
 			fmt.Print("Failed to write to file: " + connectorsPidPath + " continuing...")
 		}
-		camundaCmd := c8.CamundaCmd(camundaVersion, parentDir, "")
+
+		var extraArgs string
+
+		if settings.config != "" {
+			path := filepath.Join(parentDir, settings.config)
+			var slash string
+			if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+				slash = "/"
+			} else if runtime.GOOS == "windows" {
+				slash = "\\"
+			}
+
+			configStat, err := os.Stat(path)
+			if err != nil {
+				fmt.Printf("Failed to read config file: %s\n", path)
+				os.Exit(1)
+			}
+			if configStat.IsDir() {
+				extraArgs = "--spring.config.additional-location=file:" + settings.config + slash
+			} else {
+				extraArgs = "--spring.config.additional-location=file:" + settings.config
+			}
+		}
+
+		camundaCmd := c8.CamundaCmd(camundaVersion, parentDir, extraArgs)
 		camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
 		camundaLogFile, err := os.OpenFile(camundaLogPath, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {

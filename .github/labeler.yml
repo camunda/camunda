@@ -77,3 +77,10 @@ component/build-pipeline:
           - '.github/workflows/**'
           - '.github/actionlint*'
           - 'maven-settings.xml'
+component/c8run:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'c8run/**'
+          - '.github/workflows/c8run-build.yaml'
+          - '.github/workflows/c8run-release.yaml'
+          - '.github/actions/setup-c8run/action.yml'
