@@ -10,7 +10,6 @@ package io.camunda.zeebe.exporter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.connect.plugin.PluginRepository;
-import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -57,7 +56,6 @@ public class ElasticsearchExporter implements Exporter {
   private MeterRegistry registry;
 
   private long lastPosition = -1;
-  private boolean indexTemplatesCreated;
 
   @Override
   public void configure(final Context context) {
@@ -70,7 +68,6 @@ public class ElasticsearchExporter implements Exporter {
     pluginRepository.load(configuration.getInterceptorPlugins());
 
     context.setFilter(new ElasticsearchRecordFilter(configuration));
-    indexTemplatesCreated = false;
     registry = context.getMeterRegistry();
   }
 
@@ -118,11 +115,7 @@ public class ElasticsearchExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
-    if (!indexTemplatesCreated) {
-      createIndexTemplates();
-
-      updateRetentionPolicyForExistingIndices();
-    }
+    new SchemaManager(client, configuration).createSchema();
 
     final var recordSequence = recordCounters.getNextRecordSequence(record);
     final var isRecordIndexedToBatch = client.index(record, recordSequence);
@@ -231,164 +224,6 @@ public class ElasticsearchExporter implements Exporter {
       return exporterMetadataObjectMapper.readValue(metadata, ElasticsearchExporterMetadata.class);
     } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to deserialize exporter metadata", e);
-    }
-  }
-
-  private void createIndexTemplates() {
-    if (configuration.retention.isEnabled()) {
-      createIndexLifecycleManagementPolicy();
-    }
-
-    final IndexConfiguration index = configuration.index;
-
-    if (index.createTemplate) {
-      createComponentTemplate();
-
-      if (index.deployment) {
-        createValueIndexTemplate(ValueType.DEPLOYMENT);
-      }
-      if (index.process) {
-        createValueIndexTemplate(ValueType.PROCESS);
-      }
-      if (index.error) {
-        createValueIndexTemplate(ValueType.ERROR);
-      }
-      if (index.incident) {
-        createValueIndexTemplate(ValueType.INCIDENT);
-      }
-      if (index.job) {
-        createValueIndexTemplate(ValueType.JOB);
-      }
-      if (index.jobBatch) {
-        createValueIndexTemplate(ValueType.JOB_BATCH);
-      }
-      if (index.message) {
-        createValueIndexTemplate(ValueType.MESSAGE);
-      }
-      if (index.messageBatch) {
-        createValueIndexTemplate(ValueType.MESSAGE_BATCH);
-      }
-      if (index.messageSubscription) {
-        createValueIndexTemplate(ValueType.MESSAGE_SUBSCRIPTION);
-      }
-      if (index.variable) {
-        createValueIndexTemplate(ValueType.VARIABLE);
-      }
-      if (index.variableDocument) {
-        createValueIndexTemplate(ValueType.VARIABLE_DOCUMENT);
-      }
-      if (index.processInstance) {
-        createValueIndexTemplate(ValueType.PROCESS_INSTANCE);
-      }
-      if (index.processInstanceBatch) {
-        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_BATCH);
-      }
-      if (index.processInstanceCreation) {
-        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_CREATION);
-      }
-      if (index.processInstanceModification) {
-        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_MODIFICATION);
-      }
-      if (index.processMessageSubscription) {
-        createValueIndexTemplate(ValueType.PROCESS_MESSAGE_SUBSCRIPTION);
-      }
-      if (index.decisionRequirements) {
-        createValueIndexTemplate(ValueType.DECISION_REQUIREMENTS);
-      }
-      if (index.decision) {
-        createValueIndexTemplate(ValueType.DECISION);
-      }
-      if (index.decisionEvaluation) {
-        createValueIndexTemplate(ValueType.DECISION_EVALUATION);
-      }
-      if (index.checkpoint) {
-        createValueIndexTemplate(ValueType.CHECKPOINT);
-      }
-      if (index.timer) {
-        createValueIndexTemplate(ValueType.TIMER);
-      }
-      if (index.messageStartEventSubscription) {
-        createValueIndexTemplate(ValueType.MESSAGE_START_EVENT_SUBSCRIPTION);
-      }
-      if (index.processEvent) {
-        createValueIndexTemplate(ValueType.PROCESS_EVENT);
-      }
-      if (index.deploymentDistribution) {
-        createValueIndexTemplate(ValueType.DEPLOYMENT_DISTRIBUTION);
-      }
-      if (index.escalation) {
-        createValueIndexTemplate(ValueType.ESCALATION);
-      }
-      if (index.signal) {
-        createValueIndexTemplate(ValueType.SIGNAL);
-      }
-      if (index.signalSubscription) {
-        createValueIndexTemplate(ValueType.SIGNAL_SUBSCRIPTION);
-      }
-      if (index.resourceDeletion) {
-        createValueIndexTemplate(ValueType.RESOURCE_DELETION);
-      }
-      if (index.commandDistribution) {
-        createValueIndexTemplate(ValueType.COMMAND_DISTRIBUTION);
-      }
-      if (index.form) {
-        createValueIndexTemplate(ValueType.FORM);
-      }
-      if (index.userTask) {
-        createValueIndexTemplate(ValueType.USER_TASK);
-      }
-      if (index.processInstanceMigration) {
-        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_MIGRATION);
-      }
-      if (index.compensationSubscription) {
-        createValueIndexTemplate(ValueType.COMPENSATION_SUBSCRIPTION);
-      }
-      if (index.messageCorrelation) {
-        createValueIndexTemplate(ValueType.MESSAGE_CORRELATION);
-      }
-      if (index.user) {
-        createValueIndexTemplate(ValueType.USER);
-      }
-
-      if (index.authorization) {
-        createValueIndexTemplate(ValueType.AUTHORIZATION);
-      }
-    }
-
-    indexTemplatesCreated = true;
-  }
-
-  private void createIndexLifecycleManagementPolicy() {
-    if (!client.putIndexLifecycleManagementPolicy()) {
-      log.warn(
-          "Failed to acknowledge the creation or update of the Index Lifecycle Management Policy");
-    }
-  }
-
-  private void createComponentTemplate() {
-    if (!client.putComponentTemplate()) {
-      log.warn("Failed to acknowledge the creation or update of the component template");
-    }
-  }
-
-  private void createValueIndexTemplate(final ValueType valueType) {
-    if (!client.putIndexTemplate(valueType)) {
-      log.warn(
-          "Failed to acknowledge the creation or update of the index template for value type {}",
-          valueType);
-    }
-  }
-
-  private void updateRetentionPolicyForExistingIndices() {
-    final boolean acknowledged;
-    if (configuration.retention.isEnabled()) {
-      acknowledged = client.bulkPutIndexLifecycleSettings(configuration.retention.getPolicyName());
-    } else {
-      acknowledged = client.bulkPutIndexLifecycleSettings(null);
-    }
-
-    if (!acknowledged) {
-      log.warn("Failed to acknowledge the the update of retention policy for existing indices");
     }
   }
 

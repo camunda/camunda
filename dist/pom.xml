@@ -177,6 +177,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>operate-schema</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>operate-importer</artifactId>
     </dependency>
 
@@ -198,6 +203,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>tasklist-importer</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>tasklist-els-schema</artifactId>
     </dependency>
 
     <dependency>
@@ -574,6 +584,10 @@
             <program>
               <id>migrate</id>
               <mainClass>io.camunda.operate.schema.migration.SchemaMigration</mainClass>
+            </program>
+            <program>
+              <id>schemaManager</id>
+              <mainClass>io.camunda.application.StandaloneSchemaManager</mainClass>
             </program>
             <program>
               <id>tasklist</id>
