@@ -7,10 +7,8 @@
  */
 package io.camunda.operate.elasticsearch;
 
-import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy;
 import com.github.tomakehurst.wiremock.client.WireMock;
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestPlugin;
@@ -23,53 +21,27 @@ import java.nio.file.Path;
 import net.bytebuddy.ByteBuddy;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
-@Testcontainers
 @SpringBootTest(
     classes = {ElasticsearchConnector.class, OperateProperties.class},
     properties = OperateProperties.PREFIX + ".database=elasticsearch")
 @EnableConfigurationProperties(OperateProperties.class)
-public class ElasticsearchConnectorIT {
+public class ElasticsearchConnectorIT extends AbstractElasticsearchConnectorProxyIT {
 
-  @Container
-  static ElasticsearchContainer elasticsearch =
-      new ElasticsearchContainer(
-              DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
-                  .withTag(RestClient.class.getPackage().getImplementationVersion()))
-          .withEnv("xpack.security.enabled", "false")
-          .withEnv("xpack.security.http.ssl.enabled", "false");
-
-  // We can't use field injections from the WireMock or TempDir extensions, as those would run after
-  // the DynamicPropertySource method used by SpringBootTest; so we need to manually manage their
-  // lifecycle here instead
-  private static final WireMockServer WIRE_MOCK_SERVER =
-      new WireMockServer(WireMockConfiguration.options().dynamicPort());
   private static final Path TEMP_DIR = createTempDir();
 
   @Autowired private ElasticsearchConnector connector;
 
-  @BeforeAll
-  static void beforeAll() {
-    WIRE_MOCK_SERVER.start();
-  }
-
   @AfterAll
-  static void afterAll() throws IOException {
+  public static void deleteTempDirectory() throws IOException {
     FileUtil.deleteFolderIfExists(TEMP_DIR);
-    WIRE_MOCK_SERVER.stop();
   }
 
   @Test
@@ -129,17 +101,8 @@ public class ElasticsearchConnectorIT {
             .toPath();
     final var plugin = new PluginConfiguration("test", "com.acme.Foo", jar);
 
-    // need to start server here since this is called before any other extensions
-    WIRE_MOCK_SERVER.start();
-    WIRE_MOCK_SERVER.stubFor(
-        WireMock.any(WireMock.anyUrl())
-            .willReturn(
-                WireMock.aResponse().proxiedFrom("http://" + elasticsearch.getHttpHostAddress())));
-
     setPluginConfig(registry, OperateProperties.PREFIX + ".elasticsearch", plugin);
     setPluginConfig(registry, OperateProperties.PREFIX + ".zeebeElasticsearch", plugin);
-    registry.add(OperateProperties.PREFIX + ".elasticsearch.url", WIRE_MOCK_SERVER::baseUrl);
-    registry.add(OperateProperties.PREFIX + ".zeebeElasticsearch.url", WIRE_MOCK_SERVER::baseUrl);
   }
 
   private static void setPluginConfig(

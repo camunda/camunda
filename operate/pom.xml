@@ -175,7 +175,7 @@
     <profile>
       <id>operateItOpensearch</id>
       <properties>
-        <includeITNames>**/api/v1/**/*IT.java</includeITNames>
+        <includeITNames>**/api/v1/**/*IT.java,io/camunda/operate/opensearch/Opensearch*IT.java</includeITNames>
         <excludeITNames>none</excludeITNames>
         <skipSurefire>true</skipSurefire>
       </properties>

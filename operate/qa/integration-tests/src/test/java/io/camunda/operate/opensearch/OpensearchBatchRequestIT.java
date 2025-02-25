@@ -19,7 +19,7 @@ import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import io.camunda.operate.util.OpensearchOperateAbstractIT;
+import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.TestUtil;
 import java.util.List;
 import java.util.Map;
@@ -29,8 +29,10 @@ import org.junit.Test;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 
-public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
+@TestPropertySource(properties = OperateProperties.PREFIX + ".database=opensearch")
+public class OpensearchBatchRequestIT extends OperateAbstractIT {
 
   @Autowired RichOpenSearchClient richOpenSearchClient;
 
