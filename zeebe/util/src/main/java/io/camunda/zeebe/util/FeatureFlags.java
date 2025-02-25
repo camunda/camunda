@@ -10,15 +10,7 @@ package io.camunda.zeebe.util;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-public record FeatureFlags(
-    boolean yieldingDueDateChecker,
-    boolean enableActorMetrics,
-    boolean enableMessageTTLCheckerAsync,
-    boolean enableTimerDueDateCheckerAsync,
-    boolean enableStraightThroughProcessingLoopDetector,
-    boolean enablePartitionScaling,
-    boolean enableIdentitySetup
-    /*, boolean foo*/ ) {
+public final class FeatureFlags {
 
   /* To add a new feature toggle, please follow these steps:
    *
@@ -56,6 +48,32 @@ public record FeatureFlags(
   private static final boolean ENABLE_PARTITION_SCALING = false;
   private static final boolean ENABLE_IDENTITY_SETUP = true;
 
+  private boolean yieldingDueDateChecker;
+  private boolean enableActorMetrics;
+  private boolean enableMessageTTLCheckerAsync;
+  private boolean enableTimerDueDateCheckerAsync;
+  private boolean enableStraightThroughProcessingLoopDetector;
+  private boolean enablePartitionScaling;
+  private boolean enableIdentitySetup;
+
+  public FeatureFlags(
+      final boolean yieldingDueDateChecker,
+      final boolean enableActorMetrics,
+      final boolean enableMessageTTLCheckerAsync,
+      final boolean enableTimerDueDateCheckerAsync,
+      final boolean enableStraightThroughProcessingLoopDetector,
+      final boolean enablePartitionScaling,
+      final boolean enableIdentitySetup
+      /*, boolean foo*/ ) {
+    this.yieldingDueDateChecker = yieldingDueDateChecker;
+    this.enableActorMetrics = enableActorMetrics;
+    this.enableMessageTTLCheckerAsync = enableMessageTTLCheckerAsync;
+    this.enableTimerDueDateCheckerAsync = enableTimerDueDateCheckerAsync;
+    this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
+    this.enablePartitionScaling = enablePartitionScaling;
+    this.enableIdentitySetup = enableIdentitySetup;
+  }
+
   public static FeatureFlags createDefault() {
     return new FeatureFlags(
         YIELDING_DUE_DATE_CHECKER,
@@ -83,6 +101,63 @@ public record FeatureFlags(
         true, /* ENABLE_PARTITION_SCALING */
         false /* ENABLE_IDENTITY_SETUP */
         /*, FOO_DEFAULT*/ );
+  }
+
+  public boolean yieldingDueDateChecker() {
+    return yieldingDueDateChecker;
+  }
+
+  public boolean enableActorMetrics() {
+    return enableActorMetrics;
+  }
+
+  public boolean enableMessageTTLCheckerAsync() {
+    return enableMessageTTLCheckerAsync;
+  }
+
+  public boolean enableTimerDueDateCheckerAsync() {
+    return enableTimerDueDateCheckerAsync;
+  }
+
+  public boolean enableStraightThroughProcessingLoopDetector() {
+    return enableStraightThroughProcessingLoopDetector;
+  }
+
+  public boolean enablePartitionScaling() {
+    return enablePartitionScaling;
+  }
+
+  public boolean enableIdentitySetup() {
+    return enableIdentitySetup;
+  }
+
+  public void setYieldingDueDateChecker(final boolean yieldingDueDateChecker) {
+    this.yieldingDueDateChecker = yieldingDueDateChecker;
+  }
+
+  public void setEnableActorMetrics(final boolean enableActorMetrics) {
+    this.enableActorMetrics = enableActorMetrics;
+  }
+
+  public void setEnableMessageTTLCheckerAsync(final boolean enableMessageTTLCheckerAsync) {
+    this.enableMessageTTLCheckerAsync = enableMessageTTLCheckerAsync;
+  }
+
+  public void setEnableTimerDueDateCheckerAsync(final boolean enableTimerDueDateCheckerAsync) {
+    this.enableTimerDueDateCheckerAsync = enableTimerDueDateCheckerAsync;
+  }
+
+  public void setEnableStraightThroughProcessingLoopDetector(
+      final boolean enableStraightThroughProcessingLoopDetector) {
+    this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
+  }
+
+  public void setEnablePartitionScaling(final boolean enablePartitionScaling) {
+    this.enablePartitionScaling = enablePartitionScaling;
+  }
+
+  public void setEnableIdentitySetup(final boolean enableIdentitySetup) {
+    this.enableIdentitySetup = enableIdentitySetup;
   }
 
   @Override

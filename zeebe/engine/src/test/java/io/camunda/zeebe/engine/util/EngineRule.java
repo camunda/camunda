@@ -104,7 +104,7 @@ public final class EngineRule extends ExternalResource {
   private long lastProcessedPosition = -1L;
   private JobStreamer jobStreamer = JobStreamer.noop();
 
-  private FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
+  private final FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
   private ArrayList<TestInterPartitionCommandSender> interPartitionCommandSenders;
   private Consumer<SecurityConfiguration> securityConfigModifier = cfg -> {};
 
@@ -168,8 +168,8 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
-  public EngineRule withFeatureFlags(final FeatureFlags featureFlags) {
-    this.featureFlags = featureFlags;
+  public EngineRule withFeatureFlags(final Consumer<FeatureFlags> modifier) {
+    modifier.accept(featureFlags);
     return this;
   }
 
