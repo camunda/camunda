@@ -86,7 +86,7 @@ final class TestState {
         new RocksDbConfiguration(),
         new ConsistencyChecksSettings(false, false),
         new AccessMetricsConfiguration(Kind.NONE, 1),
-        new SimpleMeterRegistry());
+        SimpleMeterRegistry::new);
   }
 
   private void insertData(final List<ColumnFamily<DbString, DbString>> columns) {
