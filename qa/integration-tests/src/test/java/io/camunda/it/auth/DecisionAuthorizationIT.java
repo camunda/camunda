@@ -20,7 +20,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.it.utils.BrokerITInvocationProvider;
-import io.camunda.it.utils.CamundaClientTestFactory.Authenticated;
+import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
 import java.time.Duration;

@@ -10,14 +10,12 @@ package io.camunda.it.utils;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.client.protocol.rest.OwnerTypeEnum;
+import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.Permissions;
+import io.camunda.qa.util.auth.User;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -144,19 +142,5 @@ public final class CamundaClientTestFactory implements AutoCloseable {
   @Override
   public void close() {
     cachedClients.values().forEach(CamundaClient::close);
-  }
-
-  /**
-   * Annotation to be passed along with {@link BrokerITInvocationProvider}'s {@link
-   * org.junit.jupiter.api.TestTemplate}. When applied, this indicates that the {@link
-   * CamundaClient} should be created with the provided user's credentials.
-   */
-  @Target(ElementType.PARAMETER)
-  @Retention(RetentionPolicy.RUNTIME)
-  @Documented
-  public @interface Authenticated {
-
-    /** The username of the user to be used for authentication. */
-    String value() default InitializationConfiguration.DEFAULT_USER_USERNAME;
   }
 }
