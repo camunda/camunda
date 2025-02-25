@@ -14,6 +14,22 @@ on:
       - "c8run/**"
       - ".github/workflows/c8run-build.yaml"
 
+permissions:
+  actions: write
+  attestations: none
+  checks: write
+  contents: read
+  deployments: none
+  id-token: none
+  issues: none
+  discussions: none
+  packages: none
+  pages: none
+  pull-requests: none
+  repository-projects: none
+  security-events: none
+  statuses: write
+
 jobs:
   camunda-dist-build:
     name: Build camunda-dist
