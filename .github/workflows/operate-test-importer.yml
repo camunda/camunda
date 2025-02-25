@@ -1,7 +1,11 @@
 name: Operate Run Test Importer
 on:
-  schedule:
-    - cron: "0 5 * * *"
+  push:
+    branches:
+      - stable/8.7
+    paths:
+      - '.github/workflows/operate-*'
+      - 'operate/**'
   workflow_dispatch:
 jobs:
   run-importer-tests:
