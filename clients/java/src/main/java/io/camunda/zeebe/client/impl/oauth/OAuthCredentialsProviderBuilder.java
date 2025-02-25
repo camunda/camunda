@@ -47,6 +47,7 @@ public final class OAuthCredentialsProviderBuilder {
   private File credentialsCache;
   private Duration connectTimeout;
   private Duration readTimeout;
+  private boolean applyEnvironmentOverrides = true;
 
   /** Client id to be used when requesting access token from OAuth authorization server. */
   public OAuthCredentialsProviderBuilder clientId(final String clientId) {
@@ -166,7 +167,9 @@ public final class OAuthCredentialsProviderBuilder {
    * @return a new {@link OAuthCredentialsProvider} with the provided configuration options.
    */
   public OAuthCredentialsProvider build() {
-    checkEnvironmentOverrides();
+    if (applyEnvironmentOverrides) {
+      checkEnvironmentOverrides();
+    }
     applyDefaults();
 
     validate();
@@ -266,5 +269,11 @@ public final class OAuthCredentialsProviderBuilder {
               "%s timeout is %s milliseconds, expected timeout to be a positive number of milliseconds smaller than %s.",
               timeoutName, timeout.toMillis(), Integer.MAX_VALUE));
     }
+  }
+
+  public OAuthCredentialsProviderBuilder applyEnvironmentOverrides(
+      final boolean applyEnvironmentOverrides) {
+    this.applyEnvironmentOverrides = applyEnvironmentOverrides;
+    return this;
   }
 }

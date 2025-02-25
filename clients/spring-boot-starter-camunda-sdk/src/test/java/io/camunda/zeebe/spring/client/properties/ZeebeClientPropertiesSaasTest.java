@@ -18,6 +18,7 @@ package io.camunda.zeebe.spring.client.properties;
 import static org.assertj.core.api.Assertions.*;
 
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties.ClientMode;
+import java.net.URI;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -36,20 +37,19 @@ public class ZeebeClientPropertiesSaasTest {
   @Test
   void shouldPopulateBaseUrlsForSaas() {
     assertThat(properties.getZeebe().getGrpcAddress().toString())
-        .isEqualTo("https://my-cluster-id.bru-2.zeebe.camunda.io");
+        .isEqualTo("https://my-cluster-id.bru-2.zeebe.camunda.io:443");
     assertThat(properties.getZeebe().getRestAddress().toString())
-        .isEqualTo("https://bru-2.zeebe.camunda.io/my-cluster-id");
-    assertThat(properties.getZeebe().isPreferRestOverGrpc()).isEqualTo(false);
+        .isEqualTo("https://bru-2.zeebe.camunda.io:443/my-cluster-id");
+    assertThat(properties.getZeebe().getPreferRestOverGrpc()).isEqualTo(false);
   }
 
   @Test
   void shouldLoadDefaultsSaas() {
     assertThat(properties.getMode()).isEqualTo(ClientMode.saas);
-    assertThat(properties.getAuth().getIssuer())
-        .isEqualTo("https://login.cloud.camunda.io/oauth/token");
+    assertThat(properties.getAuth().getTokenUrl())
+        .isEqualTo(URI.create("https://login.cloud.camunda.io/oauth/token"));
     assertThat(properties.getZeebe().getEnabled()).isEqualTo(true);
     assertThat(properties.getZeebe().getAudience()).isEqualTo("zeebe.camunda.io");
     assertThat(properties.getZeebe().getScope()).isEqualTo("zeebe-scope");
-    assertThat(properties.getIdentity().getEnabled()).isEqualTo(false);
   }
 }

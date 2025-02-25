@@ -1,0 +1,16 @@
+camunda:
+  client:
+    mode: saas
+    cloud:
+      base-url: zeebe.camunda.io
+      port: 443
+      region: bru-2
+    tenant-id: <default>
+    auth:
+      token-url: https://login.cloud.camunda.io/oauth/token
+    zeebe:
+      enabled: true
+      audience: zeebe.camunda.io
+      rest-address: https://${camunda.client.cloud.region}.${camunda.client.cloud.base-url}:${camunda.client.cloud.port}/${camunda.client.cloud.cluster-id}
+      grpc-address: https://${camunda.client.cloud.cluster-id}.${camunda.client.cloud.region}.${camunda.client.cloud.base-url}:${camunda.client.cloud.port}
+      prefer-rest-over-grpc: false

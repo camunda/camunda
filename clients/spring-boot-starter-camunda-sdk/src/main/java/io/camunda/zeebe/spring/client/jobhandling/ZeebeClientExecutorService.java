@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.spring.client.jobhandling;
 
+import static io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl.DEFAULT;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -45,7 +47,7 @@ public class ZeebeClientExecutorService {
   }
 
   public static ZeebeClientExecutorService createDefault() {
-    return createDefault(1);
+    return createDefault(DEFAULT.getNumJobWorkerExecutionThreads());
   }
 
   public static ZeebeClientExecutorService createDefault(final int threads) {
