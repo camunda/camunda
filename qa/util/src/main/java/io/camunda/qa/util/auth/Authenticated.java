@@ -17,8 +17,8 @@ import java.lang.annotation.Target;
 
 /**
  * Annotation to be passed along with {@link BrokerITInvocationProvider}'s {@link
- * org.junit.jupiter.api.TestTemplate}. When applied, this indicates that the {@link CamundaClient}
- * should be created with the provided user's credentials.
+ * org.junit.jupiter.api.TestTemplate} or {@link CamundaMultiDbExtension}. When applied, this
+ * indicates that the {@link CamundaClient} should be created with the provided user's credentials.
  */
 @Target(ElementType.PARAMETER)
 @Retention(RetentionPolicy.RUNTIME)

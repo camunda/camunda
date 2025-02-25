@@ -77,6 +77,56 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
  *    new CamundaMultiDBExtension(new TestStandaloneBroker());
  * }</pre>
  *
+ * This is for example necessary for authentication tests.
+ *
+ * <b>We need to make sure to tag the
+ * corresponding tests as @Tag("multi-db-test"), otherwise tests are not executed in multi db fashion.</b>
+ * This is per default done by the {@link MultiDbTest} annotation.
+ *
+ *  <pre>{@code
+ *  @Tag("multi-db-test")
+ *  final class MyAuthMultiDbTest {
+ *
+ *    static final TestStandaloneBroker BROKER =
+ *        new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
+ *
+ *    @RegisterExtension
+ *    static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
+ *
+ *    private static final String ADMIN = "admin";
+ *
+ *    @UserDefinition
+ *    private static final User ADMIN_USER =
+ *      new User(ADMIN,
+ *               "password",
+ *               List.of(new Permissions(AUTHORIZATION, PermissionTypeEnum.READ, List.of("*"))));
+ *
+ *    @Test
+ *    void shouldMakeUseOfClient(@Authenticated(ADMIN) final CamundaClient adminClient) {
+ *      // given
+ *      // ... set up
+ *
+ *      // when
+ *      topology = adminClient.newTopologyRequest().send().join();
+ *
+ *      // then
+ *      assertThat(topology.getClusterSize()).isEqualTo(1);
+ *    }
+ *  }</pre>
+ *
+ *  As we can see there are further possibilities with the extension, like defining users with
+ *  annotated {@link UserDefinition}. This allows the extension to pick up the users, and create
+ *  them on client usage. Furthermore, authenticated clients are supported with this as well.
+ *
+ * The following code will inject a client, as parameter, that is authenticated with the ADMIN
+ * user.
+ * <pre>{@code
+ * @Test
+ * void shouldMakeUseOfClient(@Authenticated(ADMIN) final CamundaClient adminClient) {
+ * </pre>
+ *
+ *
+ *
  *<p>The extension will take care of the life cycle of the {@link TestStandaloneApplication}, which
  * means configuring the detected database (this includes Operate, Tasklist, Broker properties and
  * exporter), starting the application, and tearing down at the end.
