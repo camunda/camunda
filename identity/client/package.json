@@ -16,7 +16,7 @@
     "extract-sbom": "vite build --mode sbom"
   },
   "dependencies": {
-    "@camunda/camunda-composite-components": "0.16.0",
+    "@camunda/camunda-composite-components": "0.17.0",
     "@carbon/elements": "^11.57.0",
     "@carbon/react": "1.74.0",
     "i18next": "24.2.0",
