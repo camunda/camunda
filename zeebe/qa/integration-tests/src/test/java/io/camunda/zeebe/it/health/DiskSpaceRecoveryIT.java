@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
-import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
@@ -52,7 +51,6 @@ final class DiskSpaceRecoveryIT {
   private final ZeebeContainer container =
       new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage())
           .withZeebeData(volume)
-          .withEnv(AuthenticationProperties.getAllowUnauthenticatedApiAccessEnvVar(), "true")
           .withEnv("ZEEBE_BROKER_EXPERIMENTAL_RAFT_PREFERSNAPSHOTREPLICATIONTHRESHOLD", "0")
           .withEnv("ZEEBE_BROKER_DATA_LOGSEGMENTSIZE", "1MB")
           .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "1MB")

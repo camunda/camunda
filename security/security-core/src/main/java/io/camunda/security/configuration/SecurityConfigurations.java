@@ -15,7 +15,7 @@ public class SecurityConfigurations {
     final AuthenticationConfiguration authenticationConfiguration =
         securityConfiguration.getAuthentication();
     authenticationConfiguration.setMethod(AuthenticationMethod.BASIC);
-    authenticationConfiguration.getBasic().setAllowUnauthenticatedApiAccess(true);
+    authenticationConfiguration.setUnprotectedApi(true);
     return securityConfiguration;
   }
 }

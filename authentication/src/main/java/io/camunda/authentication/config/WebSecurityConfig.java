@@ -32,7 +32,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
@@ -55,12 +54,9 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 @Profile("consolidated-auth")
 public class WebSecurityConfig {
   public static final String SESSION_COOKIE = "camunda-session";
-
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
-
   private static final String LOGIN_URL = "/login";
   private static final String LOGOUT_URL = "/logout";
-
   private static final Set<String> API_PATHS = Set.of("/v1/**", "/v2/**");
   private static final Set<String> UNAUTHENTICATED_PATHS =
       Set.of(
@@ -111,8 +107,8 @@ public class WebSecurityConfig {
   }
 
   @Bean
-  @Primary
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
+  @Order(1)
   public SecurityFilterChain oidcHttpSecurity(
       final HttpSecurity httpSecurity,
       final AuthFailureHandler authFailureHandler,
@@ -165,7 +161,7 @@ public class WebSecurityConfig {
                         // work around a limitation of Java's HTTP client, which only sends an
                         // Authorization header after the server sends a WWW-Authenticate header in
                         // a 401 response.
-                        || !securityConfiguration.isUnauthenticatedApiAccessAllowed()
+                        || securityConfiguration.isApiProtected()
                             && isApiRequest(request)
                             && !isFrontendRequest(request)),
             authFailureHandler,
@@ -175,16 +171,16 @@ public class WebSecurityConfig {
   }
 
   @Bean
-  @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
   @Order(2)
   public SecurityFilterChain unprotectedApiAccessSecurityFilterChain(
       final HttpSecurity httpSecurity,
       final AuthFailureHandler authFailureHandler,
       final SecurityConfiguration securityConfiguration)
       throws Exception {
-    if (!securityConfiguration.isUnauthenticatedApiAccessAllowed()) {
+    if (securityConfiguration.isApiProtected()) {
       return null;
     }
+
     LOG.warn(
         "The API is accessible without authentication. Please disable {} for any deployment.",
         AuthenticationProperties.API_UNPROTECTED);
