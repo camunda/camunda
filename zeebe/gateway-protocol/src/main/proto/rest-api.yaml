@@ -77,12 +77,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/JobActivationResult"
         "400":
-          description: >
-            The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "500":
           description: >
             An internal error occurred while processing the request.
@@ -114,12 +109,7 @@ paths:
         "204":
           description: The job is failed.
         "400":
-          description: >
-            The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: >
             The job with the given jobKey is not found.
@@ -166,12 +156,7 @@ paths:
         "204":
           description: An error is thrown for the job.
         "400":
-          description: >
-            The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: >
             The job with the given jobKey is not found.
@@ -218,13 +203,7 @@ paths:
         "204":
           description: The job was completed successfully.
         "400":
-          description: >
-            The job with the given key cannot be completed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The job with the given key was not found.
           content:
@@ -269,12 +248,7 @@ paths:
         "204":
           description: The job was updated successfully.
         "400":
-          description: >
-            The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The job with the jobKey is not found.
           content:
@@ -316,11 +290,7 @@ paths:
         "204":
           description: The incident is marked as resolved.
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The incident with the incidentKey is not found.
           content:
@@ -328,11 +298,437 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
+<<<<<<< HEAD
           description: An internal error occurred while processing the request.
+=======
+          $ref: "#/components/responses/InternalServerError"
+
+  /tenants:
+    post:
+      tags:
+        - Tenant
+      operationId: createTenant
+      summary: Create tenant
+      description: Creates a new tenant.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TenantCreateRequest"
+        required: true
+      responses:
+        "201":
+          description: The tenant was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantCreateResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The resource was not found.
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+<<<<<<< HEAD
+=======
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /tenants/{tenantId}:
+    get:
+      tags:
+        - Tenant
+      operationId: getTenant
+      summary: Get tenant
+      description: Retrieves a single tenant by tenant ID.
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The tenant was retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Tenant not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    patch:
+      tags:
+        - Tenant
+      operationId: updateTenant
+      summary: Update tenant
+      description: Updates an existing tenant.
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TenantUpdateRequest"
+        required: true
+      responses:
+        "200":
+          description: The tenant was updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantUpdateResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      tags:
+        - Tenant
+      operationId: deleteTenant
+      summary: Delete tenant
+      description: Deletes an existing tenant.
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: string
+      responses:
+        "204":
+          description: The tenant was deleted successfully.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /tenants/{tenantId}/users/{username}:
+    put:
+      tags:
+        - Tenant
+      operationId: assignUserToTenant
+      summary: Assign a user to a tenant
+      description: Assign a single user to a specified tenant.
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: string
+        - name: username
+          in: path
+          required: true
+          description: The username of the user to assign.
+          schema:
+            type: string
+      responses:
+        "202":
+          description: The user was successfully assigned to the tenant.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant or user was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags:
+        - Tenant
+      operationId: removeUserFromTenant
+      summary: Remove a user from a tenant
+      description: Removes a single user from a specified tenant without deleting the user.
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: string
+        - name: username
+          in: path
+          required: true
+          description: The unique identifier of the user.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The user was successfully removed from the tenant.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant or user was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /tenants/{tenantId}/users/search:
+    post:
+      tags:
+        - Tenant
+        - User
+      operationId: searchUsersForTenant
+      summary: Query users for tenant
+      description: Retrieves a filtered and sorted list of users for a specified tenant.
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserSearchQueryRequest"
+      responses:
+        "200":
+          description: The search result of users for the tenant.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSearchResult"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/UserSearchResult"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/UserSearchResult"
+
+  /tenants/{tenantKey}/mapping-rules/{mappingKey}:
+    put:
+      tags:
+        - Tenant
+      operationId: assignMappingRuleToTenant
+      summary: Assign a mapping rule to a tenant
+      description: Assign a single mapping rule to a specified tenant.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: string
+        - name: mappingKey
+          in: path
+          required: true
+          description: The unique identifier of the mapping rule.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The mapping rule was successfully assigned to the tenant.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant or mapping rule was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      tags:
+        - Tenant
+      operationId: removeMappingRuleFromTenant
+      summary: Remove a mapping rule from a tenant
+      description: Removes a single mapping rule from a specified tenant without deleting the rule.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: string
+        - name: mappingKey
+          in: path
+          required: true
+          description: The unique identifier of the mapping rule.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The mapping rule was successfully removed from the tenant.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant or mapping rule was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /tenants/{tenantKey}/groups/{groupKey}:
+    put:
+      tags:
+        - Tenant
+      operationId: assignGroupToTenant
+      summary: Assign a group to a tenant
+      description: Assign a single group to a specified tenant.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: string
+        - name: groupKey
+          in: path
+          required: true
+          description: The unique identifier of the group.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The group was successfully assigned to the tenant.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant or group was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      tags:
+        - Tenant
+      operationId: removeGroupFromTenant
+      summary: Remove a group from a tenant
+      description: Removes a single group from a specified tenant without deleting the group.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: string
+        - name: groupKey
+          in: path
+          required: true
+          description: The unique identifier of the group.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The group was successfully removed from the tenant.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant or group was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /tenants/search:
+    post:
+      tags:
+        - Tenant
+      operationId: searchTenants
+      summary: Query tenants
+      description: Retrieves a filtered and sorted list of tenants.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TenantSearchQueryRequest"
+      responses:
+        "200":
+          description: The tenants search result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantSearchQueryResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
 
   /user-tasks/{userTaskKey}/completion:
     post:
@@ -358,13 +754,7 @@ paths:
         "204":
           description: The user task was completed successfully.
         "400":
-          description: >
-            The user task with the given key cannot be completed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The user task with the given key was not found.
           content:
@@ -409,13 +799,7 @@ paths:
         "204":
           description: The user task's assignment was adjusted.
         "400":
-          description: >
-            The assignment of the user task with the given key cannot be completed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The user task with the given key was not found.
           content:
@@ -438,6 +822,46 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
   /user-tasks/{userTaskKey}:
+<<<<<<< HEAD
+=======
+    get:
+      tags:
+        - User task
+      operationId: getUserTask
+      summary: Get user task
+      description: |
+        Get the user task by the user task key.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The user task key.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: >
+            The user task is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserTaskResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The user task with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
     patch:
       tags:
         - User task
@@ -460,13 +884,7 @@ paths:
         "204":
           description: The user task was updated successfully.
         "400":
-          description: >
-            The user task with the given key cannot be updated.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The user task with the given key was not found.
           content:
@@ -483,11 +901,36 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           description: >
+<<<<<<< HEAD
             An internal error occurred while processing the request.
+=======
+            The form is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FormResult"
+        "204":
+          description: >
+            The user task was found, but no form is associated with it.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Not found"
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+<<<<<<< HEAD
+=======
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
   /user-tasks/{userTaskKey}/assignee:
     delete:
       tags:
@@ -505,13 +948,7 @@ paths:
         "204":
           description: The user task was unassigned successfully.
         "400":
-          description: >
-            The user task with the given key cannot be unassigned.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The user task with the given key was not found.
           content:
@@ -573,6 +1010,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserTaskSearchQueryResult"
         "400":
+<<<<<<< HEAD
           description: >
             The user task search query failed.
             More details are provided in the response body.
@@ -580,13 +1018,100 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+=======
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
         "500":
           description: >
+<<<<<<< HEAD
             An internal error occurred while processing the request.
+=======
+            The user task variables search response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VariableSearchQueryResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /variables/search:
+    post:
+      tags:
+        - Variable
+      operationId: findVariables
+      summary: Query variables
+      description: |
+        Search for process and local variables based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VariableSearchQuery"
+      responses:
+        "200":
+          description: >
+            The variable search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VariableSearchQueryResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /variables/{variableKey}:
+    get:
+      tags:
+        - Variable
+      operationId: getVariable
+      summary: Get variable
+      description: |
+        Get the variable by the variable key.
+      parameters:
+        - name: variableKey
+          in: path
+          required: true
+          description: The variable key.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: >
+            The variable is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VariableResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Not found"
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+<<<<<<< HEAD
+=======
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
 
   /clock:
     put:
@@ -613,11 +1138,7 @@ paths:
           description: >
             The clock was successfully pinned to the specified time in epoch milliseconds.
         "400":
-          description: The required timestamp parameter is missing or it is negative.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "500":
           description: An internal error occurred while processing the request.
           content:
@@ -641,11 +1162,175 @@ paths:
         "204":
           description: The clock was successfully reset to the system time.
         "500":
+<<<<<<< HEAD
           description: An internal error occurred while processing the request.
+=======
+          $ref: "#/components/responses/InternalServerError"
+
+  /process-definitions/search:
+    post:
+      tags:
+        - Process definition
+      operationId: findProcessDefinitions
+      summary: Query process definitions
+      description: |
+        Search for process definitions based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcessDefinitionSearchQuery"
+      responses:
+        "200":
+          description: >
+            The process definition search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessDefinitionSearchQueryResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /process-definitions/{processDefinitionKey}:
+    get:
+      tags:
+        - Process definition
+      operationId: getProcessDefinition
+      summary: Get process definition
+      description: |
+        Returns process definition as JSON.
+      parameters:
+        - name: processDefinitionKey
+          in: path
+          required: true
+          description: The assigned key of the process definition, which acts as a unique identifier for this process definition.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: >
+            The process definition is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessDefinitionResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: >
+            The process definition with the given key was not found.
+            More details are provided in the response body.
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+<<<<<<< HEAD
+=======
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /process-definitions/{processDefinitionKey}/xml:
+    get:
+      tags:
+        - Process definition
+      operationId: getProcessDefinitionXML
+      summary: Get process definition XML
+      description: |
+        Returns process definition as XML.
+      parameters:
+        - name: processDefinitionKey
+          in: path
+          required: true
+          description: The assigned key of the process definition, which acts as a unique identifier for this process.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: >
+            The XML of the process definition is successfully returned.
+          content:
+            text/xml:
+              schema:
+                type: string
+        "204":
+          description: >
+            The process definition was found but does not have XML.
+          content:
+            text/plain:
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: >
+            The decision with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /process-definitions/{processDefinitionsKey}/form:
+    get:
+      tags:
+        - Process definition
+      operationId: getStartProcessForm
+      summary: Get process start form
+      description: |
+        Get the start form of a process.
+
+        Note that this endpoint will only return linked forms. This endpoint does not support embedded forms.
+      parameters:
+        - name: processDefinitionsKey
+          in: path
+          required: true
+          description: The process key.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: >
+            The form is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FormResult"
+        "204":
+          description: >
+            The process was found, but no form is associated with it.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Not found"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
 
   /process-instances:
     post:
@@ -697,13 +1382,54 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateProcessInstanceResult"
         "400":
-          description: The provided data is not valid.
+          $ref: "#/components/responses/InvalidData"
         "500":
+<<<<<<< HEAD
           description: An internal error occurred while processing the request.
+=======
+          $ref: "#/components/responses/InternalServerError"
+
+  /process-instances/{processInstanceKey}:
+    get:
+      tags:
+        - Process instance
+      operationId: getProcessInstance
+      summary: Get process instance
+      description: |
+        Get the process instance by the process instance key.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The process instance key.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The process instance is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessInstanceResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The process instance with the given key was not found.
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+<<<<<<< HEAD
+=======
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
   /process-instances/search:
     post:
       tags:
@@ -744,6 +1470,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProcessInstanceSearchQueryResult"
         "400":
+<<<<<<< HEAD
           description: >
             The Process Instance Search Query failed.
             More details are provided in the response body.
@@ -751,6 +1478,13 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+=======
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
         "500":
           description: >
             An internal error occurred while processing the request.
@@ -781,11 +1515,7 @@ paths:
         "204":
           description: The process instance is canceled.
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The process instance is not found.
           content:
@@ -834,11 +1564,7 @@ paths:
         "204":
           description: The process instance is migrated.
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The process instance is not found.
           content:
@@ -886,11 +1612,7 @@ paths:
         "204":
           description: The process instance is modified.
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The process instance is not found.
           content:
@@ -944,8 +1666,51 @@ paths:
               schema:
                 $ref: "#/components/schemas/FlowNodeInstanceSearchQueryResult"
         "400":
+<<<<<<< HEAD
           description: >
             The Flow node instance Search Query failed.
+=======
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /flownode-instances/{flownodeInstanceKey}:
+    get:
+      tags:
+        - Flow node instance
+      operationId: getFlowNodeInstance
+      summary: Get flow node instance
+      description: |
+        Returns flow node instance as JSON.
+      parameters:
+        - name: flownodeInstanceKey
+          in: path
+          required: true
+          description: The assigned key of the flow node instance, which acts as a unique identifier for this flow node instance.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: >
+            The flow node instance is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlowNodeInstanceResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: >
+            The flow node instance with the given key was not found.
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -998,8 +1763,51 @@ paths:
               schema:
                 $ref: "#/components/schemas/DecisionDefinitionSearchQueryResult"
         "400":
+<<<<<<< HEAD
           description: >
             The Decision Definition Search Query failed.
+=======
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /decision-definitions/{decisionDefinitionKey}:
+    get:
+      tags:
+        - Decision definition
+      operationId: getDecisionDefinition
+      summary: Get decision definition
+      description: |
+        Returns a decision definition by key.
+      parameters:
+        - name: decisionDefinitionKey
+          in: path
+          required: true
+          description: The assigned key of the decision definition, which acts as a unique identifier for this decision.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: >
+            The decision definition is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecisionDefinitionResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: >
+            The decision with the given key was not found.
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -1041,6 +1849,7 @@ paths:
               schema:
                 type: string
         "400":
+<<<<<<< HEAD
           description: >
             The Decision Definition Get XML failed.
             More details are provided in the response body.
@@ -1048,6 +1857,13 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+=======
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
         "404":
           description: >
             The decision with the given key was not found.
@@ -1103,9 +1919,99 @@ paths:
               schema:
                 $ref: "#/components/schemas/DecisionRequirementsSearchQueryResult"
         "400":
+<<<<<<< HEAD
           description: >
             The decision requirements search query failed.
             More details are provided in the response body.
+=======
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /decision-requirements/{decisionRequirementsKey}:
+    get:
+      tags:
+        - Decision requirements
+      operationId: getDecisionRequirements
+      summary: Get decision requirements
+      description: |
+        Returns Decision Requirements as JSON.
+      parameters:
+        - name: decisionRequirementsKey
+          in: path
+          required: true
+          description: The assigned key of the decision requirements, which acts as a unique identifier for this decision requirements.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: >
+            The decision requirements is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecisionRequirementsResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: >
+            The decision requirements with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /decision-requirements/{decisionRequirementsKey}/xml:
+    get:
+      tags:
+        - Decision requirements
+      operationId: getDecisionRequirementsXML
+      summary: Get decision requirements XML
+      description: |
+        Returns decision requirements as XML.
+      parameters:
+        - name: decisionRequirementsKey
+          in: path
+          required: true
+          description: The assigned key of the decision requirements, which acts as a unique identifier for this decision.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: >
+            The XML of the decision requirements is successfully returned.
+          content:
+            text/xml:
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: >
+            The decision requirements with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
 
   /decision-instances/search:
     post:
@@ -1147,6 +2053,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DecisionInstanceSearchQueryResult"
         "400":
+<<<<<<< HEAD
           description: >
             The decision instance search query failed.
             More details are provided in the response body.
@@ -1154,13 +2061,43 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+=======
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
         "500":
           description: >
+<<<<<<< HEAD
             An internal error occurred while processing the request.
+=======
+            The decision instance is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecisionInstanceGetQueryResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: >
+            The decision instance with the given ID was not found.
+            More details are provided in the response body.
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+<<<<<<< HEAD
+=======
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
 
   /decision-definitions/evaluation:
     post:
@@ -1209,11 +2146,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/EvaluateDecisionResult"
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The decision is not found.
           content:
@@ -1221,12 +2154,626 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
+<<<<<<< HEAD
+=======
+          $ref: "#/components/responses/InternalServerError"
+
+  /authorizations:
+    post:
+      tags:
+        - Authorization
+      operationId: createAuthorization
+      summary: Create authorization
+      description: Create the authorization.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthorizationRequest"
+        required: true
+      responses:
+        "201":
+          description: |
+            The authorization was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthorizationCreateResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: |
+            The owner was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /authorizations/{authorizationKey}:
+    put:
+      tags:
+        - Authorization
+      operationId: updateAuthorization
+      summary: Update authorization
+      description: Update the authorization with the given key.
+      parameters:
+        - name: authorizationKey
+          in: path
+          required: true
+          description: The key of the authorization to delete.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthorizationRequest"
+        required: true
+      responses:
+        "204":
+          description: The authorization was updated successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The authorization with the authorizationKey was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags:
+        - Authorization
+      operationId: deleteAuthorization
+      summary: Delete authorization
+      description: Deletes the authorization with the given key.
+      parameters:
+        - name: authorizationKey
+          in: path
+          required: true
+          description: The key of the authorization to delete.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: The authorization was deleted successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The authorization with the authorizationKey was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /authorizations/search:
+    post:
+      tags:
+        - Authorization
+      summary: Query authorizations
+      description: |
+        Search for authorizations based on given criteria.
+      operationId: findAuthorizations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthorizationSearchQuery"
+        required: true
+      responses:
+        "200":
+          description: The authorization search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthorizationSearchResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /roles:
+    post:
+      tags:
+        - Role
+      operationId: createRole
+      summary: Create role
+      description: |
+        Create a new role.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleCreateRequest"
+      responses:
+        "201":
+          description: |
+            The role was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleCreateResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /roles/{roleKey}:
+    get:
+      tags:
+        - Role
+      operationId: getRole
+      summary: Get role
+      description: |
+        Get a role by its key.
+      parameters:
+        - name: roleKey
+          in: path
+          required: true
+          description: The role key.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The role is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The role with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    patch:
+      tags:
+        - Role
+      operationId: updateRole
+      summary: Update role
+      description: Update a role with the given key.
+      parameters:
+        - name: roleKey
+          in: path
+          required: true
+          description: The key of the role to update.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleUpdateRequest"
+      responses:
+        "204":
+          description: The role was updated successfully.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The role with the roleKey is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags:
+        - Role
+      operationId: deleteRole
+      summary: Delete role
+      description: Deletes the role with the given key.
+      parameters:
+        - name: roleKey
+          in: path
+          required: true
+          description: The key of the role to delete.
+          schema:
+            type: string
+      responses:
+        "204":
+          description: The role was deleted successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The role with the roleKey was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /roles/search:
+    post:
+      tags:
+        - Role
+      operationId: searchRoles
+      summary: Query roles
+      description: |
+        Search for roles based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleSearchQueryRequest"
+      responses:
+        "200":
+          description: The roles search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleSearchQueryResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
           description: An internal error occurred while processing the request.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
+<<<<<<< HEAD
+=======
+  /groups:
+    post:
+      tags:
+        - Group
+      operationId: createGroup
+      summary: Create group
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupCreateRequest"
+      responses:
+        "201":
+          description: The group was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupCreateResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /groups/{groupKey}:
+    get:
+      tags:
+        - Group
+      operationId: getGroup
+      summary: Get group
+      description: |
+        Get a group by its key.
+      parameters:
+        - name: groupKey
+          in: path
+          required: true
+          description: The group key.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The group is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The group with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    patch:
+      tags:
+        - Group
+      operationId: updateGroup
+      summary: Update group
+      description: Update a group with the given key.
+      parameters:
+        - name: groupKey
+          in: path
+          required: true
+          description: The key of the group to update.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupUpdateRequest"
+      responses:
+        "204":
+          description: The group was updated successfully.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The group with the groupKey is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags:
+        - Group
+      operationId: deleteGroup
+      summary: Delete group
+      description: Deletes the group with the given key.
+      parameters:
+        - name: groupKey
+          in: path
+          required: true
+          description: The key of the group to delete.
+          schema:
+            type: string
+      responses:
+        "204":
+          description: The group was deleted successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The group with the groupKey was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /groups/{groupKey}/users/{userKey}:
+    post:
+      tags:
+        - Group
+      operationId: addUserToGroup
+      summary: Assign a user to a group
+      description: |
+        Assigns a user to a group.
+      parameters:
+        - name: groupKey
+          in: path
+          required: true
+          description: The group key.
+          schema:
+            type: string
+        - name: userKey
+          in: path
+          required: true
+          description: The user key.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The user was assigned successfully to the group.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The group or user with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: The user with the given key is already assigned to the group.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags:
+        - Group
+      operationId: unassignUserFromGroup
+      summary: Unassign a user from a group
+      description: |
+        Unassigns a user from a group.
+      parameters:
+        - name: groupKey
+          in: path
+          required: true
+          description: The group key.
+          schema:
+            type: string
+        - name: userKey
+          in: path
+          required: true
+          description: The user key.
+          schema:
+            type: string
+      responses:
+        "202":
+          description: The user was unassigned successfully from the group.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The group or user with the given key was not found, or the user is not assigned to this group.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /groups/search:
+    post:
+      tags:
+        - Group
+      operationId: searchGroups
+      summary: Query groups
+      description: |
+        Search for groups based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupSearchQueryRequest"
+      responses:
+        "200":
+          description: The groups search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupSearchQueryResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
+  /mapping-rules:
+    post:
+      tags:
+        - Mapping rule
+      operationId: createMappingRule
+      summary: Create mapping rule
+      description: |
+        Create a new mapping rule
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MappingRuleCreateRequest"
+      responses:
+        "201":
+          description: The mapping rule was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MappingRuleCreateResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          description: |
+            The request to create a mapping rule was denied.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The request to create a mapping rule was denied.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /mapping-rules/{mappingKey}:
+    delete:
+      tags:
+        - Mapping rule
+      operationId: deleteMappingRule
+      summary: Delete a mapping rule
+      description: Deletes the mapping rule with the given key.
+      parameters:
+        - name: mappingKey
+          in: path
+          required: true
+          description: The key of the mapping rule to delete.
+          schema:
+            type: string
+      responses:
+        "204":
+          description: The mapping rule was deleted successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The mapping rule with the mappingKey was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /mapping-rules/search:
+    post:
+      tags:
+        - Mapping rule
+      operationId: findMappings
+      summary: Query mappings
+      description: |
+        Search for mapping rules based on given criteria.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MappingSearchQueryRequest"
+        required: true
+      responses:
+        "200":
+          description: The mapping rule search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MappingSearchQueryResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
   /messages/publication:
     post:
       tags:
@@ -1257,11 +2804,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MessagePublicationResult"
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "500":
           description: Internal server error.
           content:
@@ -1296,11 +2839,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MessageCorrelationResult"
         "400":
-          description: The provided data is not valid
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "403":
           description: Unauthorized
           content:
@@ -1370,12 +2909,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentReference"
         "400":
-          description: >
-            The document upload failed. More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
   /documents/batch:
     post:
       tags:
@@ -1443,12 +2977,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentCreationBatchResponse"
         "400":
-          description: >
-            The document upload failed. More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
   /documents/{documentId}:
     get:
       tags:
@@ -1582,13 +3111,48 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentLink"
         "400":
-          description: >
-            The document link creation failed. More details are provided in the response body.
+          $ref: "#/components/responses/InvalidData"
+
+<<<<<<< HEAD
+=======
+  /users:
+    post:
+      tags:
+        - User
+      operationId: createUser
+      summary: Create user
+      description: Create a new user.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRequest"
+        required: true
+      responses:
+        "201":
+          description: |
+            The user was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserCreateResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: |
+            A user with the given username already exists.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
   /users/search:
     post:
       tags:
@@ -1623,6 +3187,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserSearchResult"
         "400":
+<<<<<<< HEAD
           description: "Bad request"
           content:
             application/problem+json:
@@ -1630,10 +3195,72 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
           description: "Unauthorized"
+=======
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /users/{username}:
+    delete:
+      tags:
+        - User
+      operationId: deleteUser
+      summary: Delete user
+      description: |
+        Deletes a user.
+      parameters:
+        - name: username
+          in: path
+          required: true
+          description: The username of the user to delete.
+          schema:
+            type: string
+      responses:
+        "204":
+          description: The user was deleted successfully.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "404":
+          description: The user is not found.
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+<<<<<<< HEAD
+=======
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    patch:
+      tags:
+        - User
+      operationId: updateUser
+      summary: Update user
+      description: |
+        Updates a user.
+      parameters:
+        - name: username
+          in: path
+          required: true
+          description: The username of the user to update.
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdateRequest"
+        required: true
+      responses:
+        "204":
+          description: The user was updated successfully.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
         "403":
           description: "Forbidden"
           content:
@@ -1693,9 +3320,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/IncidentSearchQueryResult"
         "400":
-          description: >
-            The incident search query failed.
-            More details are provided in the response body.
+          $ref: "#/components/responses/InvalidData"
         "401":
           description: "Unauthorized"
           content:
@@ -1754,6 +3379,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/IncidentResult"
         "400":
+<<<<<<< HEAD
           description: >
             The incident Get failed.
             More details are provided in the response body.
@@ -1761,6 +3387,13 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+=======
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
         "404":
           description: >
             The incident with the given key was not found.
@@ -1771,11 +3404,27 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           description: >
+<<<<<<< HEAD
             An internal error occurred while processing the request.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+=======
+            The usage metrics search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageMetricsResponse"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
   /deployments:
     post:
       tags:
@@ -1817,12 +3466,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeploymentResult"
         "400":
-          description: >
-            The document upload failed. More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
   /resources/{resourceKey}/deletion:
     post:
       tags:
@@ -1852,11 +3496,7 @@ paths:
         "200":
           description: The resource is deleted.
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The resource is not found.
           content:
@@ -1970,11 +3610,7 @@ paths:
         "204":
           description: The variables were updated.
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "500":
           description: An internal error occurred while processing the request.
           content:
@@ -2008,11 +3644,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/SignalBroadcastResult"
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The signal is not found.
           content:
@@ -5017,6 +6649,27 @@ components:
         application/problem+json:
           schema:
             $ref: "#/components/schemas/ProblemDetail"
+<<<<<<< HEAD
+=======
+    Unauthorized:
+      description: The request lacks valid authentication credentials.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+    Forbidden:
+      description: Forbidden. The request is not allowed.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+    InvalidData:
+      description: The provided data is not valid.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+>>>>>>> 5f8d39a6 (refactor: streamline 400 response descriptions)
 
   securitySchemes:
     bearerAuth:
