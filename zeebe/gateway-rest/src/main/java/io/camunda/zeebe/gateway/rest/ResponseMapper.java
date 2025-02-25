@@ -454,6 +454,11 @@ public final class ResponseMapper {
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
+  public static ResponseEntity<Long> toCancelProcessInstanceBatchOperationWithResultResponse(
+      final ProcessInstanceResultRecord brokerResponse) {
+    return new ResponseEntity<>(brokerResponse, HttpStatus.CREATED);
+  }
+
   public static ResponseEntity<Object> toSignalBroadcastResponse(
       final BrokerResponse<SignalRecord> brokerResponse) {
     final var response =
