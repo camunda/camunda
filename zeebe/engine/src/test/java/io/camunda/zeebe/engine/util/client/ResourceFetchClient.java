@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
@@ -72,6 +73,11 @@ public class ResourceFetchClient {
             ResourceIntent.FETCH,
             resourceRecord,
             authorizedTenantIds.toArray(new String[0]));
+    return expectation.apply(position);
+  }
+
+  public Record<Resource> fetch(final AuthInfo authorizations) {
+    final long position = writer.writeCommand(ResourceIntent.FETCH, resourceRecord, authorizations);
     return expectation.apply(position);
   }
 
