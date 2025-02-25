@@ -338,12 +338,10 @@ public final class TestStreams {
     LOG.info("Paused processing for stream {}", streamName);
   }
 
-  public void banInstanceInNewTransaction(
-      final String streamName, final int partitionId, final long processInstanceKey) {
+  public void banInstanceInNewTransaction(final String streamName, final long processInstanceKey) {
     final ZeebeDb zeebeDbLocal = streamContextMap.get(streamName).zeebeDb;
     final TransactionContext context = zeebeDbLocal.createContext();
-    new DbBannedInstanceState(zeebeDbLocal, context, partitionId)
-        .banProcessInstance(processInstanceKey);
+    new DbBannedInstanceState(zeebeDbLocal, context).banProcessInstance(processInstanceKey);
   }
 
   public void resumeProcessing(final String streamName) {
