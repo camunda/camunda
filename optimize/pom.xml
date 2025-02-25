@@ -63,7 +63,7 @@
     <zeebe.version>8.6.0</zeebe.version>
     <identity.version>8.6.0</identity.version>
     <!-- We use this for the Zeebe test container version only -->
-    <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
+    <zeebe.docker.version>8.7.0-alpha4</zeebe.docker.version>
 
     <!-- maven plugins -->
     <surefire-plugin.version>3.5.2</surefire-plugin.version>
@@ -124,7 +124,7 @@
 
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
-    <spring-boot.version>3.4.1</spring-boot.version>
+    <spring-boot.version>3.4.3</spring-boot.version>
   </properties>
 
   <dependencyManagement>
@@ -476,7 +476,7 @@
         <plugin>
           <groupId>com.diffplug.spotless</groupId>
           <artifactId>spotless-maven-plugin</artifactId>
-          <version>2.44.2</version>
+          <version>2.44.3</version>
           <configuration>
             <java>
               <includes>

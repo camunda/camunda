@@ -120,11 +120,12 @@
     flushCache="true">
     INSERT INTO ${prefix}FLOW_NODE_INSTANCE (FLOW_NODE_INSTANCE_KEY, FLOW_NODE_ID, PROCESS_INSTANCE_KEY,
                                     PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY, TYPE, STATE,
-                                    START_DATE, END_DATE, TENANT_ID, TREE_PATH, INCIDENT_KEY, NUM_SUBPROCESS_INCIDENTS)
+                                             START_DATE, END_DATE, TENANT_ID, TREE_PATH,
+                                             INCIDENT_KEY, NUM_SUBPROCESS_INCIDENTS, PARTITION_ID, HISTORY_CLEANUP_DATE)
     VALUES (#{flowNodeInstanceKey}, #{flowNodeId}, #{processInstanceKey}, #{processDefinitionId},
             #{processDefinitionKey}, #{type}, #{state},
             #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId},
-            #{treePath}, #{incidentKey}, #{numSubprocessIncidents})
+            #{treePath}, #{incidentKey}, #{numSubprocessIncidents}, #{partitionId}, #{historyCleanupDate, jdbcType=TIMESTAMP})
   </insert>
 
   <update
@@ -140,7 +141,8 @@
         STATE                    = #{state},
         START_DATE               = #{startDate, jdbcType=TIMESTAMP},
         END_DATE                 = #{endDate, jdbcType=TIMESTAMP},
-        TENANT_ID                = #{tenantId}
+        TENANT_ID                = #{tenantId},
+        HISTORY_CLEANUP_DATE     = #{historyCleanupDate, jdbcType=TIMESTAMP}
     WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
   </update>
 
@@ -184,4 +186,22 @@
     SET NUM_SUBPROCESS_INCIDENTS = NUM_SUBPROCESS_INCIDENTS - 1
     WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
   </update>
+
+  <update
+    flushCache="true"
+    id="updateHistoryCleanupDate"
+    statementType="PREPARED">
+    UPDATE ${prefix}FLOW_NODE_INSTANCE SET
+      HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </update>
+
+  <delete
+    flushCache="true"
+    id="cleanupHistory"
+    statementType="PREPARED">
+    <bind name="tableName" value="'FLOW_NODE_INSTANCE'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+  </delete>
+
 </mapper>

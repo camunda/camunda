@@ -92,8 +92,21 @@ public interface ProcessInstanceRecordValue
    *
    * <p>Example:
    *
+   * <p><b>Element in main process:
+   *
    * <pre>
-   * [ PI ROOT -> Call Activity 1 -> PI SUB 1 -> Call activity 2 -> PI SUB 2]
+   * [ PI ROOT -> Element ]
+   *
+   * List:
+   *  - 0:
+   *    - PI ROOT key
+   *    - Element Instance Key
+   * </pre>
+   *
+   * <p><b>Element in sub process via two call activities:
+   *
+   * <pre>
+   * [ PI ROOT -> Call Activity 1 -> PI SUB 1 -> Call activity 2 -> PI SUB 2 -> Element instance key]
    *
    * List:
    *   - 0:
@@ -104,6 +117,32 @@ public interface ProcessInstanceRecordValue
    *     - Call activity 2 elements instance key
    *   - 2:
    *     - PI SUB 2 key
+   *     - Elements instance key
+   * </pre>
+   *
+   * <p><b>Element in embedded sub process:
+   *
+   * <pre>
+   * [ PI ROOT -> Embedded sub process 1 -> Element instance key]
+   *
+   * List:
+   *   - 0:
+   *     - PI ROOT key
+   *     - Embedded sub process 1 element instance key
+   *     - Elements instance key
+   * </pre>
+   *
+   * <p><b>Element in double embedded sub process:
+   *
+   * <pre>
+   * [ PI ROOT -> Embedded sub process 1 -> Embedded sub process 2 -> Element instance key]
+   *
+   * List:
+   *   - 0:
+   *     - PI ROOT key
+   *     - Embedded sub process 1 element instance key
+   *     - Embedded sub process 2 element instance key
+   *     - Elements instance key
    * </pre>
    *
    * @return tree path information about all element instances in the call hierarchy

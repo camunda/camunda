@@ -32,13 +32,13 @@ import io.camunda.operate.webapp.rest.dto.ProcessRequestDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentByProcessStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -98,7 +98,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
             ? ACTIVE_INCIDENT_QUERY
             : and(
                 ACTIVE_INCIDENT_QUERY,
-                createQueryForProcessesByPermission(IdentityPermission.READ));
+                createQueryForProcessesByPermission(PermissionType.READ_PROCESS_INSTANCE));
 
     final var uniqueProcessInstances =
         cardinalityAggregation(IncidentTemplate.PROCESS_INSTANCE_KEY);
@@ -240,7 +240,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
     return result;
   }
 
-  private Query createQueryForProcessesByPermission(final IdentityPermission permission) {
+  private Query createQueryForProcessesByPermission(final PermissionType permission) {
     final PermissionsService.ResourcesAllowed allowed =
         permissionsService.getProcessesWithPermission(permission);
     if (allowed == null) {

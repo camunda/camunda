@@ -20,7 +20,6 @@ import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
@@ -30,6 +29,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Set;
 
 public class UserCreateProcessor implements DistributedTypedRecordProcessor<UserRecord> {
 
@@ -55,9 +55,9 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
-    commandWriter = writers.command();
     this.distributionBehavior = distributionBehavior;
     this.authCheckBehavior = authCheckBehavior;
+    commandWriter = writers.command();
   }
 
   @Override
@@ -108,7 +108,6 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
             },
             () -> {
               stateWriter.appendFollowUpEvent(command.getKey(), UserIntent.CREATED, record);
-              addUserPermissions(record.getUserKey(), record.getUsername());
             });
 
     distributionBehavior.acknowledgeCommand(command);
@@ -117,15 +116,12 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
   private void addUserPermissions(final long key, final String username) {
     final var authorizationRecord =
         new AuthorizationRecord()
-            .setOwnerKey(key)
             .setOwnerId(username)
             .setOwnerType(AuthorizationOwnerType.USER)
             .setResourceType(AuthorizationResourceType.USER)
-            .addPermission(
-                new Permission().setPermissionType(PermissionType.READ).addResourceId(username))
-            .addPermission(
-                new Permission().setPermissionType(PermissionType.UPDATE).addResourceId(username));
+            .setResourceId(username)
+            .setPermissionTypes(Set.of(PermissionType.READ, PermissionType.UPDATE));
 
-    stateWriter.appendFollowUpEvent(key, AuthorizationIntent.CREATED, authorizationRecord);
+    commandWriter.appendFollowUpCommand(key, AuthorizationIntent.CREATE, authorizationRecord);
   }
 }

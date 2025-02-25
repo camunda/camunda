@@ -27,7 +27,6 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -349,7 +348,44 @@ public class JobControllerTest extends RestControllerTest {
         ArgumentCaptor.forClass(JobResult.class);
     Mockito.verify(jobServices)
         .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
-    Assertions.assertTrue(jobResultArgumentCaptor.getValue().isDenied());
+    assertThat(jobResultArgumentCaptor.getValue().isDenied()).isTrue();
+  }
+
+  @Test
+  void shouldCompleteJobWithResultDeniedTrueAndDeniedReason() {
+    // given
+    when(jobServices.completeJob(anyLong(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+          {
+            "result": {
+              "denied": true,
+              "deniedReason": "Reason to deny lifecycle transition",
+              "corrections": {}
+            }
+          }
+        """;
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    final ArgumentCaptor<JobResult> jobResultArgumentCaptor =
+        ArgumentCaptor.forClass(JobResult.class);
+    Mockito.verify(jobServices)
+        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
+    assertThat(jobResultArgumentCaptor.getValue().isDenied()).isTrue();
+    assertThat(jobResultArgumentCaptor.getValue().getDeniedReason())
+        .isEqualTo("Reason to deny lifecycle transition");
   }
 
   @Test
@@ -547,7 +583,8 @@ public class JobControllerTest extends RestControllerTest {
         ArgumentCaptor.forClass(JobResult.class);
     Mockito.verify(jobServices)
         .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
-    Assertions.assertFalse(jobResultArgumentCaptor.getValue().isDenied());
+    assertThat(jobResultArgumentCaptor.getValue().isDenied()).isFalse();
+    assertThat(jobResultArgumentCaptor.getValue().getDeniedReason()).isEqualTo("");
   }
 
   @Test
@@ -581,7 +618,8 @@ public class JobControllerTest extends RestControllerTest {
         ArgumentCaptor.forClass(JobResult.class);
     Mockito.verify(jobServices)
         .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
-    Assertions.assertFalse(jobResultArgumentCaptor.getValue().isDenied());
+    assertThat(jobResultArgumentCaptor.getValue().isDenied()).isFalse();
+    assertThat(jobResultArgumentCaptor.getValue().getDeniedReason()).isEqualTo("");
   }
 
   @Test

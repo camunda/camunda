@@ -8,7 +8,7 @@
 package io.camunda.tasklist.webapp.security.oauth;
 
 import io.camunda.identity.sdk.Identity;
-import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.webapp.security.tenant.TasklistTenant;
 import io.camunda.tasklist.webapp.security.tenant.TenantAwareAuthentication;
@@ -53,7 +53,7 @@ public class IdentityTenantAwareJwtAuthenticationToken extends JwtAuthentication
             .sorted(TENANT_NAMES_COMPARATOR)
             .toList();
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new InsufficientAuthenticationException(e.getMessage(), e);
     }
   }
@@ -63,6 +63,6 @@ public class IdentityTenantAwareJwtAuthenticationToken extends JwtAuthentication
   }
 
   private boolean isMultiTenancyEnabled() {
-    return SpringContextHolder.getBean(TasklistProperties.class).getMultiTenancy().isEnabled();
+    return SpringContextHolder.getBean(SecurityConfiguration.class).getMultiTenancy().isEnabled();
   }
 }

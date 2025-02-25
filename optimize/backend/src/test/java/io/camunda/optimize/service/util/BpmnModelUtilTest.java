@@ -18,12 +18,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.assertj.core.groups.Tuple;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.junit.jupiter.api.Test;
 
 public class BpmnModelUtilTest {

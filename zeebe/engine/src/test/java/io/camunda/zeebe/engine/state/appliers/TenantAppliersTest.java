@@ -47,9 +47,7 @@ public class TenantAppliersTest {
     tenantState = processingState.getTenantState();
     userState = processingState.getUserState();
     authorizationState = processingState.getAuthorizationState();
-    tenantDeletedApplier =
-        new TenantDeletedApplier(
-            processingState.getTenantState(), processingState.getAuthorizationState());
+    tenantDeletedApplier = new TenantDeletedApplier(processingState.getTenantState());
     tenantEntityAddedApplier = new TenantEntityAddedApplier(processingState);
     tenantEntityRemovedApplier = new TenantEntityRemovedApplier(processingState);
   }

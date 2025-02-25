@@ -96,51 +96,71 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
 
     if (subscription == null) {
       rejectCommand(command, RejectionType.NOT_FOUND, NO_SUBSCRIPTION_FOUND_MESSAGE);
+      return;
 
     } else if (subscription.isClosing()) {
       rejectCommand(command, RejectionType.INVALID_STATE, ALREADY_CLOSING_MESSAGE);
+      return;
 
-    } else {
-      final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
-      final var canTriggerElement =
-          eventHandle.canTriggerElement(
-              elementInstance, subscription.getRecord().getElementIdBuffer());
-
-      if (!canTriggerElement) {
-        rejectCommand(command, RejectionType.INVALID_STATE, NO_EVENT_OCCURRED_MESSAGE);
-
-      } else {
-        // avoid reusing the subscription record directly as any access to the state (e.g. as #get)
-        // will overwrite it - safer to just copy its values into an one-time-use record
-        final ProcessMessageSubscriptionRecord subscriptionRecord = subscription.getRecord();
-        record
-            .setElementId(subscriptionRecord.getElementIdBuffer())
-            .setInterrupting(subscriptionRecord.isInterrupting());
-
-        stateWriter.appendFollowUpEvent(
-            subscription.getKey(), ProcessMessageSubscriptionIntent.CORRELATED, record);
-
-        // update transient state in a side-effect to ensure that these changes only take effect
-        // after
-        // the command has been successfully processed
-        sideEffectWriter.appendSideEffect(
-            () -> {
-              transientProcessMessageSubscriptionState.remove(
-                  new PendingSubscription(elementInstanceKey, messageName, tenantId));
-              return true;
-            });
-
-        final var catchEvent =
-            getCatchEvent(elementInstance.getValue(), record.getElementIdBuffer());
-        eventHandle.activateElement(
-            catchEvent,
-            elementInstanceKey,
-            elementInstance.getValue(),
-            record.getVariablesBuffer());
-
-        sendAcknowledgeCommand(record);
-      }
+    } else if (hasAlreadyBeenCorrelated(record, subscription)) {
+      rejectionWriter.appendRejection(
+          command, RejectionType.INVALID_STATE, "Already correlated this message");
+      // while we don't accept the command on this partition, we still need to acknowledge it to
+      // attempt recovering from a previous acknowledgment that didn't make it to the other
+      // partition.
+      sendAcknowledgeCommand(record);
+      return;
     }
+
+    final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
+    final var canTriggerElement =
+        eventHandle.canTriggerElement(
+            elementInstance, subscription.getRecord().getElementIdBuffer());
+
+    if (!canTriggerElement) {
+      rejectCommand(command, RejectionType.INVALID_STATE, NO_EVENT_OCCURRED_MESSAGE);
+      return;
+    }
+
+    // avoid reusing the subscription record directly as any access to the state (e.g. as #get)
+    // will overwrite it - safer to just copy its values into an one-time-use record
+    final ProcessMessageSubscriptionRecord subscriptionRecord = subscription.getRecord();
+    record
+        .setElementId(subscriptionRecord.getElementIdBuffer())
+        .setInterrupting(subscriptionRecord.isInterrupting());
+
+    stateWriter.appendFollowUpEvent(
+        subscription.getKey(), ProcessMessageSubscriptionIntent.CORRELATED, record);
+
+    // update transient state in a side-effect to ensure that these changes only take effect
+    // after
+    // the command has been successfully processed
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          transientProcessMessageSubscriptionState.remove(
+              new PendingSubscription(elementInstanceKey, messageName, tenantId));
+          return true;
+        });
+
+    final var catchEvent = getCatchEvent(elementInstance.getValue(), record.getElementIdBuffer());
+    eventHandle.activateElement(
+        catchEvent, elementInstanceKey, elementInstance.getValue(), record.getVariablesBuffer());
+
+    sendAcknowledgeCommand(record);
+  }
+
+  private boolean hasAlreadyBeenCorrelated(
+      final ProcessMessageSubscriptionRecord record,
+      final ProcessMessageSubscription subscription) {
+    // we only want to correlate a subscription once per message (by key)
+    final var messageKey = record.getMessageKey();
+
+    // return true if it has already been correlated, otherwise false
+    final var lastCorrelatedMessageKey = subscription.getRecord().getMessageKey();
+    // as correlations are ordered per message, a message is considered to have been correlated
+    // either if it is the last correlated message (keys are equal), or if it was a message prior to
+    // the last correlated one (messageKey is less than lastCorrelatedMessageKey).
+    return messageKey <= lastCorrelatedMessageKey;
   }
 
   private ExecutableFlowElement getCatchEvent(
@@ -171,6 +191,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
 
   private void sendAcknowledgeCommand(final ProcessMessageSubscriptionRecord subscription) {
     subscriptionCommandSender.correlateMessageSubscription(
+        subscription.getMessageKey(),
         subscription.getSubscriptionPartitionId(),
         subscription.getProcessInstanceKey(),
         subscription.getElementInstanceKey(),

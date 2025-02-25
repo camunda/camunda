@@ -53,7 +53,12 @@
     WHERE 1 = 1
     <if test="filter.ownerType != null">AND OWNER_TYPE = #{filter.ownerType}</if>
     <if test="filter.resourceType != null">AND RESOURCE_TYPE = #{filter.resourceType}</if>
-    <if test="filter.permissionType != null">AND PERMISSION_TYPE = #{filter.permissionType}</if>
+    <if test="filter.permissionTypes != null and !filter.permissionTypes.isEmpty()">
+        AND PERMISSION_TYPE IN
+      <foreach collection="filter.permissionTypes" item="value" open="(" separator=", "
+        close=")">#{value}
+      </foreach>
+    </if>
     <if test="filter.ownerIds != null and !filter.ownerIds.isEmpty()">
       AND OWNER_ID IN
       <foreach collection="filter.ownerIds" item="value" open="(" separator=", "

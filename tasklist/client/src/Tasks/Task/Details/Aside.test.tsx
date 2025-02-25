@@ -50,7 +50,7 @@ describe('<Aside />', () => {
 
   beforeEach(() => {
     nodeMockServer.use(
-      http.get('/v1/internal/users/current', () => {
+      http.get('/v2/authentication/me', () => {
         return HttpResponse.json(userMocks.currentUser);
       }),
     );
@@ -117,7 +117,7 @@ describe('<Aside />', () => {
     };
 
     nodeMockServer.use(
-      http.get('/v1/internal/users/current', () => {
+      http.get('/v2/authentication/me', () => {
         return HttpResponse.json(currentUserWithSingleTenant);
       }),
     );

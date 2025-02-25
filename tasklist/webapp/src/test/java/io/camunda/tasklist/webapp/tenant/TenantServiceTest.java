@@ -9,9 +9,7 @@ package io.camunda.tasklist.webapp.tenant;
 
 import static org.mockito.Mockito.*;
 
-import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.webapp.security.tenant.TasklistTenant;
-import io.camunda.tasklist.webapp.security.tenant.TenantAwareAuthentication;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.security.tenant.TenantServiceImpl;
 import java.util.ArrayList;
@@ -22,27 +20,27 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 public class TenantServiceTest {
 
-  @Spy private TasklistProperties tasklistProperties;
+  @Spy private SecurityConfiguration securityConfiguration;
   @InjectMocks private TenantServiceImpl instance;
 
   @Test
   void getAuthenticatedTenantsWhenMultiTenancyIsOff() {
-    tasklistProperties.getMultiTenancy().setEnabled(false);
+    RequestContextHolder.setRequestAttributes(null);
     Assertions.assertThat(instance.getAuthenticatedTenants())
         .isEqualTo(TenantService.AuthenticatedTenants.allTenants());
   }
 
   @Test
   void getAuthenticatedTenantsWhenMultiTenancyIsOn() {
-    tasklistProperties.getMultiTenancy().setEnabled(true);
-    prepareMocksForSecurityContext();
+    RequestContextHolder.setRequestAttributes(mock(RequestAttributes.class));
+    securityConfiguration.getMultiTenancy().setEnabled(true);
+    prepareMocksTenants();
 
     final List<String> expectedListOfTenants = new ArrayList<String>();
     expectedListOfTenants.add("A");
@@ -56,30 +54,26 @@ public class TenantServiceTest {
 
   @Test
   void invalidTenant() {
+    RequestContextHolder.setRequestAttributes(mock(RequestAttributes.class));
     final String tenantId = "C";
-    tasklistProperties.getMultiTenancy().setEnabled(true);
-    prepareMocksForSecurityContext();
+    securityConfiguration.getMultiTenancy().setEnabled(true);
+    prepareMocksTenants();
     Assertions.assertThat(instance.isTenantValid(tenantId)).isFalse();
   }
 
   @Test
   void validTenant() {
+    RequestContextHolder.setRequestAttributes(mock(RequestAttributes.class));
     final String tenantId = "A";
-    tasklistProperties.getMultiTenancy().setEnabled(true);
-    prepareMocksForSecurityContext();
+    securityConfiguration.getMultiTenancy().setEnabled(true);
+    prepareMocksTenants();
     Assertions.assertThat(instance.isTenantValid(tenantId)).isTrue();
   }
 
-  private void prepareMocksForSecurityContext() {
-    final Authentication authentication =
-        mock(Authentication.class, withSettings().extraInterfaces(TenantAwareAuthentication.class));
-    final SecurityContext securityContext = mock(SecurityContext.class);
-    when(securityContext.getAuthentication()).thenReturn(authentication);
-    SecurityContextHolder.setContext(securityContext);
-
-    final List<TasklistTenant> listOfTenants = new ArrayList<TasklistTenant>();
-    listOfTenants.add(new TasklistTenant("A", "TenantA"));
-    listOfTenants.add(new TasklistTenant("B", "TenantB"));
-    when(((TenantAwareAuthentication) authentication).getTenants()).thenReturn(listOfTenants);
+  private void prepareMocksTenants() {
+    final List<String> listOfTenants = new ArrayList<>();
+    listOfTenants.add("A");
+    listOfTenants.add("B");
+    when(instance.tenantsIds()).thenReturn(listOfTenants);
   }
 }

@@ -117,9 +117,10 @@ public class BrokerITInvocationProvider
     return this;
   }
 
-  public BrokerITInvocationProvider withAuthenticationMethod(
-      final AuthenticationMethod authenticationMethod) {
-    return withAdditionalProperty(AuthenticationProperties.METHOD, authenticationMethod.name());
+  public BrokerITInvocationProvider withBasicAuth() {
+    withAdditionalProperty(AuthenticationProperties.METHOD, AuthenticationMethod.BASIC.name());
+    withAdditionalProfiles(Profile.CONSOLIDATED_AUTH);
+    return this;
   }
 
   public BrokerITInvocationProvider withAuthorizationsEnabled() {

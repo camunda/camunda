@@ -472,11 +472,12 @@ public class UserTaskJobBasedHandlerTest {
             ValueType.JOB,
             r ->
                 r.withIntent(JobIntent.MIGRATED)
+                    .withKey(111)
                     .withValue(jobRecordValue)
                     .withTimestamp(System.currentTimeMillis()));
 
     // when
-    final TaskEntity taskEntity = new TaskEntity().setId("id");
+    final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -496,11 +497,7 @@ public class UserTaskJobBasedHandlerTest {
     assertThat(taskEntity.getBpmnProcessId()).isEqualTo(jobRecordValue.getBpmnProcessId());
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
-            taskEntity.getId(),
-            taskEntity,
-            expectedUpdates,
-            taskEntity.getProcessInstanceId());
+            indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 
   @Test
@@ -516,10 +513,11 @@ public class UserTaskJobBasedHandlerTest {
             r ->
                 r.withIntent(JobIntent.COMPLETED)
                     .withValue(jobRecordValue)
+                    .withKey(111)
                     .withTimestamp(System.currentTimeMillis()));
 
     // when
-    final TaskEntity taskEntity = new TaskEntity().setId("id");
+    final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -532,11 +530,7 @@ public class UserTaskJobBasedHandlerTest {
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
-            taskEntity.getId(),
-            taskEntity,
-            expectedUpdates,
-            taskEntity.getProcessInstanceId());
+            indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 
   @Test
@@ -580,11 +574,12 @@ public class UserTaskJobBasedHandlerTest {
             ValueType.JOB,
             r ->
                 r.withIntent(JobIntent.FAILED)
+                    .withKey(111)
                     .withValue(jobRecordValue)
                     .withTimestamp(System.currentTimeMillis()));
 
     // when
-    final TaskEntity taskEntity = new TaskEntity().setId("id");
+    final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -596,11 +591,7 @@ public class UserTaskJobBasedHandlerTest {
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
-            taskEntity.getId(),
-            taskEntity,
-            expectedUpdates,
-            taskEntity.getProcessInstanceId());
+            indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 
   @Test
@@ -646,11 +637,12 @@ public class UserTaskJobBasedHandlerTest {
             ValueType.JOB,
             r ->
                 r.withIntent(JobIntent.FAILED)
+                    .withKey(111)
                     .withValue(jobRecordValue)
                     .withTimestamp(System.currentTimeMillis()));
 
     // when
-    final TaskEntity taskEntity = new TaskEntity().setId("id");
+    final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -662,11 +654,7 @@ public class UserTaskJobBasedHandlerTest {
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
-            taskEntity.getId(),
-            taskEntity,
-            expectedUpdates,
-            taskEntity.getProcessInstanceId());
+            indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 
   @Test
@@ -712,11 +700,12 @@ public class UserTaskJobBasedHandlerTest {
             ValueType.JOB,
             r ->
                 r.withIntent(JobIntent.FAILED)
+                    .withKey(111)
                     .withValue(jobRecordValue)
                     .withTimestamp(System.currentTimeMillis()));
 
     // when
-    final TaskEntity taskEntity = new TaskEntity().setId("id");
+    final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -728,11 +717,7 @@ public class UserTaskJobBasedHandlerTest {
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
-            taskEntity.getId(),
-            taskEntity,
-            expectedUpdates,
-            taskEntity.getProcessInstanceId());
+            indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 
   @Test
@@ -771,10 +756,11 @@ public class UserTaskJobBasedHandlerTest {
             r ->
                 r.withIntent(JobIntent.RECURRED_AFTER_BACKOFF)
                     .withValue(jobRecordValue)
+                    .withKey(111)
                     .withTimestamp(System.currentTimeMillis()));
 
     // when
-    final TaskEntity taskEntity = new TaskEntity().setId("id");
+    final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -786,10 +772,6 @@ public class UserTaskJobBasedHandlerTest {
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
-            taskEntity.getId(),
-            taskEntity,
-            expectedUpdates,
-            taskEntity.getProcessInstanceId());
+            indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 }

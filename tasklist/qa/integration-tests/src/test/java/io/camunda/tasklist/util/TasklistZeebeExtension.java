@@ -8,6 +8,7 @@
 package io.camunda.tasklist.util;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TasklistIndexPrefixHolder;
@@ -42,6 +43,7 @@ public abstract class TasklistZeebeExtension
   private static ContainerPoolManager<ZeebeContainer> zeebeContainerContainerPoolManager;
 
   @Autowired protected TasklistProperties tasklistProperties;
+  @Autowired protected SecurityConfiguration securityConfiguration;
   @Autowired protected TasklistIndexPrefixHolder indexPrefixHolder;
   protected ZeebeContainer zeebeContainer;
   protected boolean failed = false;
@@ -94,7 +96,7 @@ public abstract class TasklistZeebeExtension
                   IdentityTester.testContext.getInternalIdentityBaseUrl())
               .withEnv(
                   "ZEEBE_BROKER_GATEWAY_MULTITENANCY_ENABLED",
-                  String.valueOf(tasklistProperties.getMultiTenancy().isEnabled()));
+                  String.valueOf(securityConfiguration.getMultiTenancy().isEnabled()));
       zeebeContainer.start();
     } else {
       zeebeContainer = createZeebeContainer();
@@ -122,11 +124,17 @@ public abstract class TasklistZeebeExtension
     final String zeebeVersion =
         ContainerVersionsUtil.readProperty(
             ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME);
+    final String zeebeRepo =
+        ContainerVersionsUtil.readProperty(
+            ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_REPO_PROPERTY_NAME);
     final String indexPrefix = indexPrefixHolder.getIndexPrefix();
     LOGGER.info(
-        "************ Starting Zeebe:{}, indexPrefix={} ************", zeebeVersion, indexPrefix);
+        "************ Starting Zeebe - {}:{}, indexPrefix={} ************",
+        zeebeRepo,
+        zeebeVersion,
+        indexPrefix);
     final ZeebeContainer zContainer =
-        new ZeebeContainer(DockerImageName.parse("camunda/zeebe").withTag(zeebeVersion))
+        new ZeebeContainer(DockerImageName.parse(zeebeRepo).withTag(zeebeVersion))
             .withEnv(getDatabaseEnvironmentVariables(indexPrefix))
             .withEnv("JAVA_OPTS", "-Xss256k -XX:+TieredCompilation -XX:TieredStopAtLevel=1")
             .withEnv("ZEEBE_LOG_LEVEL", "ERROR")

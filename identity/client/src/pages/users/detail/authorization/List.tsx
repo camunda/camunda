@@ -12,9 +12,7 @@ import {
   NoDataContainer,
   NoDataHeader,
 } from "src/components/entityList";
-import PatchModal, {
-  ResourceType,
-} from "src/pages/users/detail/authorization/PatchModal";
+import PatchModal from "src/pages/users/detail/authorization/PatchModal";
 import { Edit } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import { User } from "src/utility/api/users";
@@ -44,7 +42,10 @@ import {
 } from "@carbon/react";
 
 import { useEntityModal } from "src/components/modal";
-import { Authorization } from "src/utility/api/authorizations";
+import {
+  ResourceType,
+  UserAuthorization,
+} from "src/utility/api/authorizations";
 import { DataTableRenderProps } from "@carbon/react/lib/components/DataTable/DataTable";
 import styled from "styled-components";
 import { gray30, spacing02, spacing04, spacing05 } from "@carbon/elements";
@@ -88,7 +89,7 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
 
   const headers = [{ header: t("ResourceType"), key: "resourceType" }];
 
-  const rowsWithoutId: Authorization[] =
+  const rowsWithoutId: UserAuthorization[] =
     authorizations == null ? [] : authorizations.items;
 
   const rows = rowsWithoutId.map((item, index) => ({
@@ -143,14 +144,14 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
         title="Authorizations"
         description="Authorizations's of the user"
       >
-        <DataTable<Authorization> rows={rows} headers={headers}>
+        <DataTable<UserAuthorization> rows={rows} headers={headers}>
           {({
             headers,
             rows,
             getHeaderProps,
             getRowProps,
             getTableProps,
-          }: DataTableRenderProps<Authorization, unknown[]>) => (
+          }: DataTableRenderProps<UserAuthorization, unknown[]>) => (
             <div>
               <TableToolbar>
                 <TableToolbarContent as={ToolbarContent}>

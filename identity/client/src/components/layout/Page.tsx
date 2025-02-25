@@ -9,18 +9,66 @@
 import { FC, PointerEvent, ReactNode } from "react";
 import styled from "styled-components";
 import { Breadcrumb, BreadcrumbItem, Content, Stack } from "@carbon/react";
-import { spacing06 } from "@carbon/elements";
+import {
+  spacing04,
+  spacing06,
+  spacing07,
+  styles,
+  textSecondary,
+} from "@carbon/elements";
 import { cssSize } from "src/utility/style";
 import { useNavigate } from "react-router";
+import { DocumentationLink } from "src/components/documentation";
+import useTranslate from "src/utility/localization";
 
-export const PageTitle = styled.h2`
-  margin-bottom: ${cssSize(3)};
-  margin-left: ${cssSize(2)};
+const PageTitle = styled.h2`
+  font-size: ${styles.heading04.fontSize};
+  font-weight: ${styles.heading04.fontWeight};
+`;
+
+const PageSubTitle = styled.div`
+  font-size: ${styles.bodyCompact01.fontSize};
+  font-weight: ${styles.bodyCompact01.fontWeight};
+  letter-spacing: ${styles.bodyCompact01.letterSpacing};
+  letter-height: ${styles.bodyCompact01.lineHeight};
+  color: ${textSecondary};
+`;
+
+const StackWithMargin = styled(Stack)`
+  margin-bottom: ${spacing07};
 `;
 
 const Page = styled(Content)`
   height: 100%;
 `;
+
+type PageHeaderProps = {
+  title: string;
+  linkText: string;
+  linkUrl: string;
+};
+
+export const PageHeader: FC<PageHeaderProps> = ({
+  title,
+  linkText,
+  linkUrl,
+}) => {
+  const { Translate } = useTranslate();
+
+  return (
+    <StackWithMargin gap={spacing04}>
+      <PageTitle>{title}</PageTitle>
+      <PageSubTitle>
+        <Translate i18nKey="moreInfo">
+          For more information, see documentation on{" "}
+          <DocumentationLink path={linkUrl} withIcon>
+            {linkText}
+          </DocumentationLink>
+        </Translate>
+      </PageSubTitle>
+    </StackWithMargin>
+  );
+};
 
 const StyledBreadcrumb = styled(Breadcrumb)`
   margin-left: ${cssSize(2)};

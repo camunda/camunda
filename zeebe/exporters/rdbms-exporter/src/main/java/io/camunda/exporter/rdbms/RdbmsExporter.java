@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -29,7 +30,7 @@ public class RdbmsExporter {
   private final Map<ValueType, List<RdbmsExportHandler>> registeredHandlers;
   private Controller controller;
 
-  private final long partitionId;
+  private final int partitionId;
   private final RdbmsWriter rdbmsWriter;
 
   // configuration
@@ -40,6 +41,7 @@ public class RdbmsExporter {
   private ExporterPositionModel exporterRdbmsPosition;
   private long lastPosition = -1;
   private ScheduledTask currentFlushTask = null;
+  private ScheduledTask currentCleanupTask = null;
 
   public RdbmsExporter(final RdbmsExporterConfig config) {
     rdbmsWriter = config.rdbmsWriter();
@@ -76,6 +78,11 @@ public class RdbmsExporter {
     rdbmsWriter.getExecutionQueue().registerPreFlushListener(this::updatePositionInRdbms);
     rdbmsWriter.getExecutionQueue().registerPostFlushListener(this::updatePositionInBroker);
 
+    // schedule first cleanup in 1 second. Future intervals are given by the history cleanup service
+    // itself
+    currentCleanupTask =
+        controller.scheduleCancellableTask(Duration.ofSeconds(1), this::cleanupHistory);
+
     LOG.info("[RDBMS Exporter] Exporter opened with last exported position {}", lastPosition);
   }
 
@@ -83,6 +90,9 @@ public class RdbmsExporter {
     try {
       if (currentFlushTask != null) {
         currentFlushTask.cancel();
+      }
+      if (currentCleanupTask != null) {
+        currentCleanupTask.cancel();
       }
 
       rdbmsWriter.flush();
@@ -94,7 +104,7 @@ public class RdbmsExporter {
   }
 
   public void export(final Record<?> record) {
-    LOG.debug(
+    LOG.trace(
         "[RDBMS Exporter] Process record {}-{} - {}:{}",
         record.getPartitionId(),
         record.getPosition(),
@@ -136,6 +146,9 @@ public class RdbmsExporter {
   public void purge() {
     if (currentFlushTask != null) {
       currentFlushTask.cancel();
+    }
+    if (currentCleanupTask != null) {
+      currentCleanupTask.cancel();
     }
 
     rdbmsWriter.getRdbmsPurger().purgeRdbms();
@@ -195,6 +208,12 @@ public class RdbmsExporter {
     currentFlushTask = controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
   }
 
+  private void cleanupHistory() {
+    final var newDuration =
+        rdbmsWriter.getHistoryCleanupService().cleanupHistory(partitionId, OffsetDateTime.now());
+    currentCleanupTask = controller.scheduleCancellableTask(newDuration, this::cleanupHistory);
+  }
+
   @VisibleForTesting(
       "Each exporter creates it's own executionQueue, so we need an accessible flush method for tests")
   public void flushExecutionQueue() {
@@ -202,7 +221,7 @@ public class RdbmsExporter {
       LOG.warn("Unnecessary flush called, since flush interval is zero or max queue size is zero");
       return;
     }
-    LOG.debug("[RDBMS Exporter] flushing queue");
+    LOG.trace("[RDBMS Exporter] flushing queue");
     rdbmsWriter.flush();
   }
 }

@@ -10,6 +10,7 @@ package io.camunda.service;
 import io.camunda.document.api.DocumentCreationRequest;
 import io.camunda.document.api.DocumentError;
 import io.camunda.document.api.DocumentError.StoreDoesNotExist;
+import io.camunda.document.api.DocumentError.UnknownDocumentError;
 import io.camunda.document.api.DocumentLink;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.document.api.DocumentReference;
@@ -25,8 +26,12 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DocumentServices extends ApiServices<DocumentServices> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(DocumentServices.class);
 
   private final SimpleDocumentStoreRegistry registry;
 
@@ -186,8 +191,15 @@ public class DocumentServices extends ApiServices<DocumentServices> {
             reference.metadata()));
   }
 
+  private void logIfUnknownError(final DocumentError error) {
+    if (error instanceof final UnknownDocumentError docError) {
+      LOG.error("An unexpected error occurred", docError.cause());
+    }
+  }
+
   private <T> T requireRightOrThrow(final Either<DocumentError, T> response) {
     if (response.isLeft()) {
+      logIfUnknownError(response.getLeft());
       throw new DocumentException(response.getLeft());
     } else {
       return response.get();

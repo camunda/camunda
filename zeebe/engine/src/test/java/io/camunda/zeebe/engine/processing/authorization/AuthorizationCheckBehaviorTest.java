@@ -719,7 +719,6 @@ public class AuthorizationCheckBehaviorTest {
         .authorization()
         .newAuthorization()
         .withPermissions(permissionType)
-        .withOwnerKey(groupKey)
         .withOwnerId(String.valueOf(groupKey))
         .withOwnerType(AuthorizationOwnerType.GROUP)
         .withResourceType(resourceType)
@@ -756,7 +755,6 @@ public class AuthorizationCheckBehaviorTest {
     engine
         .authorization()
         .newAuthorization()
-        .withOwnerKey(roleKey)
         .withOwnerId(String.valueOf(roleKey))
         .withOwnerType(AuthorizationOwnerType.ROLE)
         .withResourceType(resourceType)
@@ -823,7 +821,6 @@ public class AuthorizationCheckBehaviorTest {
     engine
         .authorization()
         .newAuthorization()
-        .withOwnerKey(firstMappingKey)
         .withOwnerId(String.valueOf(firstMappingKey))
         .withOwnerType(AuthorizationOwnerType.MAPPING)
         .withResourceType(resourceType)
@@ -833,7 +830,6 @@ public class AuthorizationCheckBehaviorTest {
     engine
         .authorization()
         .newAuthorization()
-        .withOwnerKey(secondMappingKey)
         .withOwnerId(String.valueOf(secondMappingKey))
         .withOwnerType(AuthorizationOwnerType.MAPPING)
         .withResourceType(resourceType)
@@ -899,7 +895,6 @@ public class AuthorizationCheckBehaviorTest {
     engine
         .authorization()
         .newAuthorization()
-        .withOwnerKey(firstMappingKey)
         .withOwnerId(String.valueOf(firstMappingKey))
         .withOwnerType(AuthorizationOwnerType.MAPPING)
         .withResourceType(resourceType)
@@ -909,7 +904,6 @@ public class AuthorizationCheckBehaviorTest {
     engine
         .authorization()
         .newAuthorization()
-        .withOwnerKey(secondMappingKey)
         .withOwnerId(String.valueOf(secondMappingKey))
         .withOwnerType(AuthorizationOwnerType.MAPPING)
         .withResourceType(resourceType)
@@ -1134,7 +1128,6 @@ public class AuthorizationCheckBehaviorTest {
           .authorization()
           .newAuthorization()
           .withPermissions(permissionType)
-          .withOwnerKey(ownerKey)
           .withOwnerId(ownerId)
           .withOwnerType(ownerType)
           .withResourceType(resourceType)

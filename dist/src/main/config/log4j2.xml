@@ -6,9 +6,9 @@
     <Property name="log.pattern">%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{actor-scheduler}] [%t] [%X{actor-name}] %-5level
       %logger{36} - %msg%n
     </Property>
-    <Property name="log.stackdriver.serviceName">${env:ZEEBE_LOG_STACKDRIVER_SERVICENAME:-${env:OPERATE_LOG_STACKDRIVER_SERVICENAME:-${env:TASKLIST_LOG_STACKDRIVER_SERVICENAME:-}}}
+    <Property name="log.stackdriver.serviceName">${env:ZEEBE_LOG_STACKDRIVER_SERVICENAME:-${env:OPERATE_LOG_STACKDRIVER_SERVICENAME:-${env:OPTIMIZE_LOG_STACKDRIVER_SERVICENAME:-${env:TASKLIST_LOG_STACKDRIVER_SERVICENAME:-}}}}
     </Property>
-    <Property name="log.stackdriver.serviceVersion">${env:ZEEBE_LOG_STACKDRIVER_SERVICEVERSION:-${env:OPERATE_LOG_STACKDRIVER_SERVICEVERSION:-${env:TASKLIST_LOG_STACKDRIVER_SERVICEVERSION:-}}}
+    <Property name="log.stackdriver.serviceVersion">${env:ZEEBE_LOG_STACKDRIVER_SERVICEVERSION:-${env:OPERATE_LOG_STACKDRIVER_SERVICEVERSION:-${env:OPTIMIZE_LOG_STACKDRIVER_SERVICEVERSION:-${env:TASKLIST_LOG_STACKDRIVER_SERVICEVERSION:-}}}}
     </Property>
   </Properties>
 
@@ -39,13 +39,15 @@
     <Logger name="io.camunda.zeebe" level="${env:ZEEBE_LOG_LEVEL:-info}"/>
     <Logger name="io.atomix" level="${env:ATOMIX_LOG_LEVEL:-info}"/>
     <Logger name="io.camunda.operate" level="info" />
+    <Logger name="io.camunda.optimize" level="${env:OPTIMIZE_LOG_LEVEL:-info}" />
     <Logger name="io.camunda.tasklist" level="info" />
+    <Logger name="org.elasticsearch" level="${env:ES_LOG_LEVEL:-warn}" />
 
     <Root level="info">
       <AppenderRef ref="RollingFile"/>
 
       <!-- remove to disable console logging -->
-      <AppenderRef ref="${env:ZEEBE_LOG_APPENDER:-${env:OPERATE_LOG_APPENDER:-${env:TASKLIST_LOG_APPENDER:-Console}}}"/>
+      <AppenderRef ref="${env:ZEEBE_LOG_APPENDER:-${env:OPERATE_LOG_APPENDER:-${env:OPTIMIZE_LOG_APPENDER:-${env:TASKLIST_LOG_APPENDER:-Console}}}}"/>
     </Root>
 
     <!-- disable noisy loggers -->

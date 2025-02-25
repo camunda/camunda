@@ -17,6 +17,7 @@ import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel.UserTaskState;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
+import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.fixtures.UserTaskFixtures;
 import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
@@ -42,7 +43,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class UserTaskIT {
 
-  public static final Long PARTITION_ID = 0L;
+  public static final int PARTITION_ID = 0;
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
   @TestTemplate
@@ -672,5 +673,49 @@ public class UserTaskIT {
     } else {
       assertThat(instance.candidateGroups()).isEmpty();
     }
+  }
+
+  @TestTemplate
+  public void shouldCleanup(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final UserTaskReader reader = rdbmsService.getUserTaskReader();
+
+    final var cleanupDate = NOW.minusDays(1);
+
+    final var definition =
+        ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriter, b -> b);
+    final var item1 =
+        createAndSaveUserTask(
+            rdbmsWriter, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+    final var item2 =
+        createAndSaveUserTask(
+            rdbmsWriter, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+    final var item3 =
+        createAndSaveUserTask(
+            rdbmsWriter, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+
+    // set cleanup dates
+    rdbmsWriter.getUserTaskWriter().scheduleForHistoryCleanup(item1.processInstanceKey(), NOW);
+    rdbmsWriter
+        .getUserTaskWriter()
+        .scheduleForHistoryCleanup(item2.processInstanceKey(), NOW.minusDays(2));
+    rdbmsWriter.flush();
+
+    // cleanup
+    rdbmsWriter.getUserTaskWriter().cleanupHistory(PARTITION_ID, cleanupDate, 10);
+
+    final var searchResult =
+        reader.search(
+            UserTaskQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(definition.processDefinitionKey()))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(20))));
+
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items().stream().map(UserTaskEntity::userTaskKey))
+        .containsExactlyInAnyOrder(item1.userTaskKey(), item3.userTaskKey());
   }
 }

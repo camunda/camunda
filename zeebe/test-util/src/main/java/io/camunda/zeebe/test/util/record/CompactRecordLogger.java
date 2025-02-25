@@ -555,6 +555,9 @@ public class CompactRecordLogger {
         .append("@[")
         .append(shortenKey(value.getElementInstanceKey()))
         .append("]")
+        .append(" msg[")
+        .append(shortenKey(value.getMessageKey()))
+        .append("]")
         .append(
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
         .append(summarizeVariables(value.getVariables()));
@@ -569,7 +572,33 @@ public class CompactRecordLogger {
         .append(formatId(value.getElementId()))
         .append(
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
+        .append(summarizeTreePath(value))
         .toString();
+  }
+
+  private String summarizeTreePath(final ProcessInstanceRecordValue value) {
+    final StringBuilder result = new StringBuilder();
+    if (!value.getElementInstancePath().isEmpty()) {
+      result
+          .append(" ElementInstancePath: ")
+          .append(
+              value.getElementInstancePath().stream()
+                  .map(p -> p.stream().map(this::shortenKey).collect(Collectors.joining(" -> ")))
+                  .toList());
+    }
+    if (!value.getProcessDefinitionPath().isEmpty()) {
+      result
+          .append(" ProcessDefinitionPath: [")
+          .append(
+              value.getProcessDefinitionPath().stream()
+                  .map(this::shortenKey)
+                  .collect(Collectors.joining(" -> ")))
+          .append("]");
+    }
+    if (!value.getCallingElementPath().isEmpty()) {
+      result.append(" CallingElementPath: ").append(value.getCallingElementPath());
+    }
+    return result.toString();
   }
 
   private String summarizeProcessInstanceCreation(final Record<?> record) {

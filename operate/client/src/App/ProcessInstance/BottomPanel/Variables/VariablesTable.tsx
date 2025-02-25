@@ -290,7 +290,6 @@ const VariablesTable: React.FC<Props> = observer(
                       if (!hasActiveOperation) {
                         return (
                           <Restricted
-                            scopes={['write']}
                             resourceBasedRestrictions={{
                               scopes: ['UPDATE_PROCESS_INSTANCE'],
                               permissions:

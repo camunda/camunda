@@ -170,7 +170,7 @@ public final class RaftRule extends ExternalResource {
     memberLog = null;
     position = 0;
     directory = null;
-    MicrometerUtil.closeRegistry(meterRegistry);
+    MicrometerUtil.close(meterRegistry);
   }
 
   /**

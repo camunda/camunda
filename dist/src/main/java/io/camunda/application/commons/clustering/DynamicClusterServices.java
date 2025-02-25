@@ -10,6 +10,7 @@ package io.camunda.application.commons.clustering;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.GatewayClusterConfigurationService;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
@@ -29,12 +31,19 @@ public class DynamicClusterServices {
   private final ActorScheduler scheduler;
   private final ClusterMembershipService clusterMembershipService;
   private final ClusterCommunicationService clusterCommunicationService;
+  private final MeterRegistry meterRegistry;
+  private final BrokerClientTopologyMetrics brokerTopologyMetrics;
 
   @Autowired
-  public DynamicClusterServices(final ActorScheduler scheduler, final AtomixCluster atomixCluster) {
+  public DynamicClusterServices(
+      final ActorScheduler scheduler,
+      final AtomixCluster atomixCluster,
+      final MeterRegistry meterRegistry) {
     this.scheduler = scheduler;
     clusterMembershipService = atomixCluster.getMembershipService();
     clusterCommunicationService = atomixCluster.getCommunicationService();
+    this.meterRegistry = meterRegistry;
+    brokerTopologyMetrics = new BrokerClientTopologyMetrics(meterRegistry);
   }
 
   @Bean
@@ -45,7 +54,8 @@ public class DynamicClusterServices {
         new GatewayClusterConfigurationService(
             clusterCommunicationService,
             clusterMembershipService,
-            gatewayCfg.getCluster().getConfigManager().gossip());
+            gatewayCfg.getCluster().getConfigManager().gossip(),
+            meterRegistry);
     scheduler.submitActor(service).join();
     service.addUpdateListener(brokerTopologyManager);
     return service;
@@ -54,7 +64,7 @@ public class DynamicClusterServices {
   @Bean
   public BrokerTopologyManager brokerTopologyManager() {
     final var brokerTopologyManager =
-        new BrokerTopologyManagerImpl(clusterMembershipService::getMembers);
+        new BrokerTopologyManagerImpl(clusterMembershipService::getMembers, brokerTopologyMetrics);
     scheduler.submitActor(brokerTopologyManager).join();
     clusterMembershipService.addListener(brokerTopologyManager);
     return brokerTopologyManager;

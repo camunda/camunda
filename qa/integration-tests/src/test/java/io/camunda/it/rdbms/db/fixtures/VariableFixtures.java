@@ -86,6 +86,14 @@ public final class VariableFixtures extends CommonFixtures {
     return models;
   }
 
+  public static VariableDbModel createAndSaveVariable(
+      final RdbmsService rdbmsService,
+      final Function<VariableDbModelBuilder, VariableDbModelBuilder> builderFunction) {
+    final var randomized = createRandomized(builderFunction);
+    createAndSaveVariables(rdbmsService, List.of(randomized));
+    return randomized;
+  }
+
   public static void createAndSaveVariable(
       final RdbmsService rdbmsService, final VariableDbModel processInstance) {
     createAndSaveVariables(rdbmsService, List.of(processInstance));

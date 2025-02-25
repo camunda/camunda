@@ -21,6 +21,7 @@
 
   <properties>
     <version.zeebe.docker.current>SNAPSHOT</version.zeebe.docker.current>
+    <version.zeebe.docker.repo>camunda/zeebe</version.zeebe.docker.repo>
     <version.identity.docker.current>SNAPSHOT</version.identity.docker.current>
   </properties>
 

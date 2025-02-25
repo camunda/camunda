@@ -9,10 +9,12 @@ package io.camunda.application.commons.broker.client;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -25,17 +27,20 @@ public final class BrokerClientConfiguration {
   private final AtomixCluster cluster;
   private final ActorScheduler scheduler;
   private final BrokerTopologyManager topologyManager;
+  private final BrokerClientRequestMetrics metrics;
 
   @Autowired
   public BrokerClientConfiguration(
       final BrokerClientTimeoutConfiguration config,
       final AtomixCluster cluster,
       final ActorScheduler scheduler,
-      final BrokerTopologyManager topologyManager) {
+      final BrokerTopologyManager topologyManager,
+      final MeterRegistry meterRegistry) {
     this.config = config;
     this.cluster = cluster;
     this.scheduler = scheduler;
     this.topologyManager = topologyManager;
+    metrics = new BrokerClientRequestMetrics(meterRegistry);
   }
 
   @Bean(destroyMethod = "close")
@@ -46,10 +51,11 @@ public final class BrokerClientConfiguration {
             cluster.getMessagingService(),
             cluster.getEventService(),
             scheduler,
-            topologyManager);
+            topologyManager,
+            metrics);
     brokerClient.start().forEach(ActorFuture::join);
     return brokerClient;
   }
 
-  public static record BrokerClientTimeoutConfiguration(Duration requestTimeout) {}
+  public record BrokerClientTimeoutConfiguration(Duration requestTimeout) {}
 }

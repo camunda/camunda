@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-public class UserTaskDbModel {
+public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
 
   private Long userTaskKey;
   private String elementId;
@@ -37,6 +37,8 @@ public class UserTaskDbModel {
   private String serializedCustomHeaders;
   private Map<String, String> customHeaders;
   private Integer priority;
+  private int partitionId;
+  private OffsetDateTime historyCleanupDate;
 
   public UserTaskDbModel(final Long userTaskKey) {
     this.userTaskKey = userTaskKey;
@@ -60,7 +62,9 @@ public class UserTaskDbModel {
       final String externalFormReference,
       final Integer processDefinitionVersion,
       final Map<String, String> customHeaders,
-      final Integer priority) {
+      final Integer priority,
+      final int partitionId,
+      final OffsetDateTime historyCleanupDate) {
     this.userTaskKey = userTaskKey;
     this.elementId = elementId;
     this.processDefinitionId = processDefinitionId;
@@ -80,6 +84,14 @@ public class UserTaskDbModel {
     this.customHeaders = customHeaders;
     serializedCustomHeaders = CustomHeaderSerializer.serialize(customHeaders);
     this.priority = priority;
+    this.partitionId = partitionId;
+    this.historyCleanupDate = historyCleanupDate;
+  }
+
+  @Override
+  public UserTaskDbModel copy(
+      final Function<ObjectBuilder<UserTaskDbModel>, ObjectBuilder<UserTaskDbModel>> copyFunction) {
+    return copyFunction.apply(toBuilder()).build();
   }
 
   // Methods without get/set prefix
@@ -253,6 +265,18 @@ public class UserTaskDbModel {
     this.priority = priority;
   }
 
+  public int partitionId() {
+    return partitionId;
+  }
+
+  public OffsetDateTime historyCleanupDate() {
+    return historyCleanupDate;
+  }
+
+  public void historyCleanupDate(final OffsetDateTime historyCleanupDate) {
+    this.historyCleanupDate = historyCleanupDate;
+  }
+
   public Builder toBuilder() {
     return new Builder()
         .userTaskKey(userTaskKey)
@@ -274,7 +298,9 @@ public class UserTaskDbModel {
         .externalFormReference(externalFormReference)
         .processDefinitionVersion(processDefinitionVersion)
         .customHeaders(customHeaders)
-        .priority(priority);
+        .priority(priority)
+        .partitionId(partitionId)
+        .historyCleanupDate(historyCleanupDate);
   }
 
   public static class Builder implements ObjectBuilder<UserTaskDbModel> {
@@ -299,6 +325,8 @@ public class UserTaskDbModel {
     private Integer processDefinitionVersion;
     private Map<String, String> customHeaders;
     private Integer priority;
+    private int partitionId;
+    private OffsetDateTime historyCleanupDate;
 
     // Public constructor to initialize the builder
     public Builder() {}
@@ -409,6 +437,16 @@ public class UserTaskDbModel {
       return this;
     }
 
+    public Builder partitionId(final int partitionId) {
+      this.partitionId = partitionId;
+      return this;
+    }
+
+    public Builder historyCleanupDate(final OffsetDateTime value) {
+      historyCleanupDate = value;
+      return this;
+    }
+
     // Build method to create the record
     @Override
     public UserTaskDbModel build() {
@@ -431,7 +469,9 @@ public class UserTaskDbModel {
               externalFormReference,
               processDefinitionVersion,
               customHeaders,
-              priority);
+              priority,
+              partitionId,
+              historyCleanupDate);
 
       model.candidateUsers(candidateUsers);
       model.candidateGroups(candidateGroups);

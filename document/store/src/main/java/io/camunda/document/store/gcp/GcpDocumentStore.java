@@ -13,6 +13,7 @@ import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageException;
 import com.google.cloud.storage.StorageOptions;
 import io.camunda.document.api.DocumentContent;
 import io.camunda.document.api.DocumentCreationRequest;
@@ -37,8 +38,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class GcpDocumentStore implements DocumentStore {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(GcpDocumentStore.class);
 
   private static final String CONTENT_HASH_METADATA_KEY = "contentHash";
   private static final String METADATA_PROCESS_DEFINITION_ID = "camunda.processDefinitionId";
@@ -111,6 +116,29 @@ public class GcpDocumentStore implements DocumentStore {
         () -> verifyContentHashInternal(documentId, contentHash), executor);
   }
 
+  @Override
+  public void validateSetup() {
+    try {
+      if (storage.get(bucketName).exists()) {
+        LOGGER.info("Successfully accessed bucket '{}'", bucketName);
+      } else {
+        LOGGER.warn("Bucket '{}' does not exist. {}", bucketName, SETUP_VALIDATION_FAILURE_MESSAGE);
+      }
+    } catch (final StorageException e) {
+      LOGGER.warn(
+          "Could not access bucket '{}' with the given credentials. {}",
+          bucketName,
+          SETUP_VALIDATION_FAILURE_MESSAGE,
+          e);
+    } catch (final Exception e) {
+      LOGGER.warn(
+          "Unexpected error while accessing bucket '{}'. {}",
+          bucketName,
+          SETUP_VALIDATION_FAILURE_MESSAGE,
+          e);
+    }
+  }
+
   private Either<DocumentError, DocumentReference> createDocumentInternal(
       final DocumentCreationRequest request) {
     final String documentId =
@@ -118,15 +146,15 @@ public class GcpDocumentStore implements DocumentStore {
     final String fullBlobName = getFullBlobName(documentId);
     final String fileName = Optional.ofNullable(request.metadata().fileName()).orElse(documentId);
 
-    Blob existingBlob = null;
     try {
-      existingBlob = storage.get(bucketName, fullBlobName);
+      final Blob existingBlob = storage.get(bucketName, fullBlobName);
+      if (existingBlob != null) {
+        return Either.left(new DocumentError.DocumentAlreadyExists(documentId));
+      }
     } catch (final Exception e) {
-      //      return Either.left(new UnknownDocumentError(e));
+      return Either.left(new UnknownDocumentError(e));
     }
-    if (existingBlob != null) {
-      return Either.left(new DocumentError.DocumentAlreadyExists(documentId));
-    }
+
     final BlobId blobId = BlobId.of(bucketName, fullBlobName);
     final var blobInfoBuilder = BlobInfo.newBuilder(blobId);
 
@@ -258,9 +286,14 @@ public class GcpDocumentStore implements DocumentStore {
     blobInfoBuilder.setContentDisposition("attachment; filename=" + fileName);
 
     final Map<String, String> blobMetadata = new HashMap<>();
-    final var valueAsString = objectMapper.writeValueAsString(metadata.customProperties());
+
     if (metadata.customProperties() != null && !metadata.customProperties().isEmpty()) {
-      metadata.customProperties().forEach((key, value) -> blobMetadata.put(key, valueAsString));
+      for (final var key : metadata.customProperties().keySet()) {
+        final var value = metadata.customProperties().get(key);
+        final var valueAsString = objectMapper.writeValueAsString(value);
+
+        blobMetadata.put(key, valueAsString);
+      }
     }
     if (metadata.processDefinitionId() != null) {
       blobMetadata.put(METADATA_PROCESS_DEFINITION_ID, metadata.processDefinitionId());

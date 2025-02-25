@@ -63,8 +63,10 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -678,11 +680,60 @@ final class CamundaExporterIT {
     }
 
     @TestTemplate
-    void shouldNotFlushIfImportersAreNotCompleted(
+    void shouldFlushIfImporterNotCompletedButNoZeebeIndices(
         final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
         throws IOException {
       // given
+      config.getIndex().setZeebeIndexPrefix(UUID.randomUUID().toString());
       createSchemas(config, clientAdapter);
+      indexImportPositionEntity("decision", false, clientAdapter);
+      clientAdapter.refresh();
+
+      // given
+      final var context = spy(getContextFromConfig(config));
+      doReturn(partitionId).when(context).getPartitionId();
+      camundaExporter.configure(context);
+      camundaExporter.open(controller);
+
+      controller.runScheduledTasks(Duration.ofMinutes(1));
+
+      // when
+      final var record =
+          factory.generateRecord(
+              ValueType.USER,
+              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
+              UserIntent.CREATED);
+
+      camundaExporter.export(record);
+
+      // then
+      assertThat(controller.getPosition()).isEqualTo(record.getPosition());
+      verify(controller, times(1))
+          .updateLastExportedRecordPosition(eq(record.getPosition()), any());
+
+      final var authHandler =
+          getHandlers(config).stream()
+              .filter(handler -> handler.getHandledValueType().equals(record.getValueType()))
+              .filter(handler -> handler.handlesRecord(record))
+              .findFirst()
+              .orElseThrow();
+      final var recordId = authHandler.generateIds(record).getFirst();
+
+      assertThat(
+              clientAdapter.get(recordId, authHandler.getIndexName(), authHandler.getEntityType()))
+          .isNotNull();
+    }
+
+    @TestTemplate
+    void shouldNotFlushIfImportersAreNotCompletedAndThereAreZeebeIndices(
+        final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+        throws IOException {
+      // given
+      final String zeebeIndexPrefix = CUSTOM_PREFIX + "-zeebe-record";
+      config.getIndex().setZeebeIndexPrefix(zeebeIndexPrefix);
+      createSchemas(config, clientAdapter);
+      clientAdapter.index("1", zeebeIndexPrefix + "-decision", Map.of("key", "12345"));
+
       // adds a not complete position index document so exporter sees importing as not yet completed
       indexImportPositionEntity("decision", false, clientAdapter);
       clientAdapter.refresh();
@@ -762,6 +813,57 @@ final class CamundaExporterIT {
     }
 
     @TestTemplate
+    void shouldRunDelayedFlushIfNotWaitingForImportersRegardlessOfImporterIndexState(
+        final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+        throws IOException {
+      // given
+      createSchemas(config, clientAdapter);
+      // an incomplete position index document so exporter sees importing as not yet completed
+      indexImportPositionEntity("decision", false, clientAdapter);
+      clientAdapter.refresh();
+
+      // increase bulk size so we flush via delayed flush, adding fewer records than bulk size
+      config.getBulk().setSize(5);
+      // ignore importer state, to export regardless of the importer state
+      config.getIndex().setShouldWaitForImporters(false);
+
+      final var context = spy(getContextFromConfig(config));
+      doReturn(partitionId).when(context).getPartitionId();
+      camundaExporter.configure(context);
+      camundaExporter.open(controller);
+
+      // when
+      final var record =
+          factory.generateRecord(
+              ValueType.USER,
+              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
+              UserIntent.CREATED);
+
+      camundaExporter.export(record);
+
+      // as the importer state is ignored, this should trigger a flush still resulting in the
+      // record being visible in ES/OS
+      controller.runScheduledTasks(Duration.ofSeconds(config.getBulk().getDelay()));
+
+      // then
+      assertThat(controller.getPosition()).isEqualTo(record.getPosition());
+      verify(controller, times(1))
+          .updateLastExportedRecordPosition(eq(record.getPosition()), any());
+
+      final var authHandler =
+          getHandlers(config).stream()
+              .filter(handler -> handler.getHandledValueType().equals(record.getValueType()))
+              .filter(handler -> handler.handlesRecord(record))
+              .findFirst()
+              .orElseThrow();
+      final var recordId = authHandler.generateIds(record).getFirst();
+
+      assertThat(
+              clientAdapter.get(recordId, authHandler.getIndexName(), authHandler.getEntityType()))
+          .isNotNull();
+    }
+
+    @TestTemplate
     @DisabledIfSystemProperty(
         named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
         matches = "^(?=\\s*\\S).*$",
@@ -771,11 +873,15 @@ final class CamundaExporterIT {
         throws IOException {
       // given
       assertThat(config.getBulk().getSize()).isEqualTo(1);
+      final String zeebeIndexPrefix = CUSTOM_PREFIX + "-zeebe-record";
+      config.getIndex().setZeebeIndexPrefix(zeebeIndexPrefix);
+
+      // Simulate existing zeebe index so it will not skip the wait for importers
+      clientAdapter.index("1", zeebeIndexPrefix + "-decision", Map.of("key", "12345"));
 
       // if schemas are never created then import position indices do not exist and all checks about
       // whether the importers are completed will return false.
       config.setCreateSchema(false);
-      config.getIndex().setPrefix(RandomStringUtils.randomAlphabetic(10));
       final var context = getContextFromConfig(config);
       camundaExporter.configure(context);
       camundaExporter.open(controller);

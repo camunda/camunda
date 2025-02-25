@@ -22,7 +22,8 @@ import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.impl.rest.exception.RestException;
 import io.camunda.identity.sdk.tenants.Tenants;
 import io.camunda.identity.sdk.tenants.dto.Tenant;
-import io.camunda.tasklist.property.MultiTenancyProperties;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
@@ -70,7 +71,7 @@ public class IdentityAuthenticationIT {
 
   @Autowired @InjectMocks private IdentityAuthentication identityAuthentication;
 
-  @SpyBean private TasklistProperties tasklistProperties;
+  @SpyBean private SecurityConfiguration securityConfiguration;
 
   @Autowired private ApplicationContext applicationContext;
 
@@ -86,8 +87,9 @@ public class IdentityAuthenticationIT {
   @Test
   public void shouldReturnTenantsWhenMultiTenancyIsEnabled() throws IOException {
     // given
-    final var multiTenancyProperties = new MultiTenancyProperties().setEnabled(true);
-    when(tasklistProperties.getMultiTenancy()).thenReturn(multiTenancyProperties);
+    final var multiTenancyConfiguration = new MultiTenancyConfiguration();
+    multiTenancyConfiguration.setEnabled(true);
+    when(securityConfiguration.getMultiTenancy()).thenReturn(multiTenancyConfiguration);
 
     final List<Tenant> tenants =
         new ObjectMapper()
@@ -110,8 +112,9 @@ public class IdentityAuthenticationIT {
   @Test
   public void shouldReturnEmptyListOfTenantsWhenMultiTenancyIsDisabled() {
     // given
-    final var multiTenancyProperties = new MultiTenancyProperties().setEnabled(false);
-    when(tasklistProperties.getMultiTenancy()).thenReturn(multiTenancyProperties);
+    final var multiTenancyConfiguration = new MultiTenancyConfiguration();
+    multiTenancyConfiguration.setEnabled(false);
+    when(securityConfiguration.getMultiTenancy()).thenReturn(multiTenancyConfiguration);
 
     // when
     final var result = identityAuthentication.getTenants();
@@ -125,8 +128,9 @@ public class IdentityAuthenticationIT {
   @Test
   public void shouldReturnEmptyListOfTenantsWhenIdentityThrowsException() {
     // given
-    final var multiTenancyProperties = new MultiTenancyProperties().setEnabled(false);
-    when(tasklistProperties.getMultiTenancy()).thenReturn(multiTenancyProperties);
+    final var multiTenancyConfiguration = new MultiTenancyConfiguration();
+    multiTenancyConfiguration.setEnabled(true);
+    when(securityConfiguration.getMultiTenancy()).thenReturn(multiTenancyConfiguration);
     when(tenants.forToken(any())).thenThrow(new RestException("smth went wrong"));
 
     // when

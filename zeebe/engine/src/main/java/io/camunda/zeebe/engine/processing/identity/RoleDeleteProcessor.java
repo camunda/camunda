@@ -15,10 +15,15 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -29,6 +34,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
   private static final String ROLE_NOT_FOUND_ERROR_MESSAGE =
       "Expected to delete role with key '%s', but a role with this key doesn't exist.";
   private final RoleState roleState;
+  private final AuthorizationState authorizationState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -37,12 +43,13 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
   private final CommandDistributionBehavior commandDistributionBehavior;
 
   public RoleDeleteProcessor(
-      final RoleState roleState,
+      final ProcessingState state,
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
-    this.roleState = roleState;
+    roleState = state.getRoleState();
+    authorizationState = state.getAuthorizationState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -75,6 +82,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
     }
     record.setName(persistedRecord.get().getName());
     removeMembers(record);
+    deleteAuthorizations(record);
     stateWriter.appendFollowUpEvent(roleKey, RoleIntent.DELETED, record);
     responseWriter.writeEventOnCommand(roleKey, RoleIntent.DELETED, record, command);
 
@@ -93,6 +101,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
         .ifPresentOrElse(
             role -> {
               removeMembers(command.getValue());
+              deleteAuthorizations(command.getValue());
               stateWriter.appendFollowUpEvent(
                   command.getKey(), RoleIntent.DELETED, command.getValue());
             },
@@ -121,5 +130,19 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
                         roleKey, RoleIntent.ENTITY_REMOVED, entityRecord);
                   });
             });
+  }
+
+  private void deleteAuthorizations(final RoleRecord record) {
+    final var roleKey = record.getRoleKey();
+    final var authorizationKeysForGroup =
+        authorizationState.getAuthorizationKeysForOwner(
+            AuthorizationOwnerType.ROLE, String.valueOf(roleKey));
+
+    authorizationKeysForGroup.forEach(
+        authorizationKey -> {
+          final var authorization = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
+          stateWriter.appendFollowUpEvent(
+              authorizationKey, AuthorizationIntent.DELETED, authorization);
+        });
   }
 }

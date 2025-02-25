@@ -139,7 +139,21 @@ public class IncidentHandlerTest {
 
     // then
     verify(mockRequest, times(1))
-        .upsert(indexName, String.valueOf(recordKey), incidentEntity, Map.of("position", 1L));
+        .upsert(
+            indexName,
+            String.valueOf(recordKey),
+            incidentEntity,
+            Map.of(
+                "position",
+                1L,
+                "flowNodeId",
+                incidentRecordValue.getElementId(),
+                "bpmnProcessId",
+                incidentRecordValue.getBpmnProcessId(),
+                "processDefinitionKey",
+                incidentRecordValue.getProcessDefinitionKey(),
+                "treePath",
+                incidentEntity.getTreePath()));
     verify(incidentNotifier).notifyAsync(List.of(incidentEntity));
   }
 

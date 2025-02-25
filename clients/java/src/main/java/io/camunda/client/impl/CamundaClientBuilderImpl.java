@@ -50,6 +50,7 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PLAINTEXT
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PREFER_REST_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.REST_ADDRESS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR;
+import static io.camunda.client.impl.util.ClientPropertiesValidationUtils.checkIfUriIsAbsolute;
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_KB;
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_MB;
 
@@ -407,36 +408,14 @@ public final class CamundaClientBuilderImpl
 
   @Override
   public CamundaClientBuilder restAddress(final URI restAddress) {
-    /*
-     * Validates that the provided rest address is an absolute URI.
-     *
-     * <p>We use {@code URI.getHost() == null} to check for absolute URIs because:
-     * <ul>
-     *   <li>For absolute URIs (with a scheme) (e.g., "https://example.com"), {@code URI.getHost()} returns the hostname (e.g., "example.com").</li>
-     *   <li>For relative URIs (without a scheme) (e.g., "example.com"), {@code URI.getHost()} returns {@code null}.</li>
-     * </ul>
-     */
-    if (restAddress != null && restAddress.getHost() == null) {
-      throw new IllegalArgumentException("The REST API address must be an absolute URI");
-    }
+    checkIfUriIsAbsolute(restAddress, "restAddress");
     this.restAddress = restAddress;
     return this;
   }
 
   @Override
   public CamundaClientBuilder grpcAddress(final URI grpcAddress) {
-    /*
-     * Validates that the provided gRPC address is an absolute URI.
-     *
-     * <p>We use {@code URI.getHost() == null} to check for absolute URIs because:
-     * <ul>
-     *   <li>For absolute URIs (with a scheme) (e.g., "https://example.com"), {@code URI.getHost()} returns the hostname (e.g., "example.com").</li>
-     *   <li>For relative URIs (without a scheme) (e.g., "example.com"), {@code URI.getHost()} returns {@code null}.</li>
-     * </ul>
-     */
-    if (grpcAddress != null && grpcAddress.getHost() == null) {
-      throw new IllegalArgumentException("The gRPC address must be an absolute URI");
-    }
+    checkIfUriIsAbsolute(grpcAddress, "grpcAddress");
     this.grpcAddress = grpcAddress;
     grpcAddressUsed = true;
     return this;

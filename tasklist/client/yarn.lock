@@ -231,28 +231,28 @@
     "@codemirror/language" "^6.10.0"
     lezer-feel "^1.2.3"
 
-"@bpmn-io/form-js-carbon-styles@1.13.2":
-  version "1.13.2"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.13.2.tgz#673b1282660ba822708864a8e8aacba4a864572c"
-  integrity sha512-chSX8GahZcafr2NlBR7TmI3xagpP5LNPnNaBTo3rtvLd7baH6Yg/JW7KKXp9Q1pcP+pYg/wz4o4YDx3mJdjVCA==
+"@bpmn-io/form-js-carbon-styles@1.14.0":
+  version "1.14.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.14.0.tgz#ec5a8a7dac808e6f6002747f1dbfdd1dd22dc1da"
+  integrity sha512-M47HJhRXLjkgAlKfVqvt+rBbPjLu3njLI1HhtNzF7HwwhxkzTQ4NqDofe9qPJP2UePQzFG2PMXSAw+6Hkr/xvg==
 
-"@bpmn-io/form-js-viewer@1.13.2":
-  version "1.13.2"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.13.2.tgz#5ce671bdc098de0a711c3e3e8488856b28c757ab"
-  integrity sha512-Hu5EU+cmQWnFTXLnxizNuQlfzb51R/WxeAKOWqIALGd3g3NJx58ZsnVh/elfOpecCyuf3T20qkkxMvOM9nD1ww==
+"@bpmn-io/form-js-viewer@1.14.0":
+  version "1.14.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.14.0.tgz#e7cf0bc6affc81ba1bdddae281c2d3615fa51b77"
+  integrity sha512-cuazq2APPk+Mj8sXwDjpjGFtnc76tou35YpIX5Gntlx+xDWZS3j2aWvielIpyajuOCufyM3ZgISYrf/04JSPTg==
   dependencies:
-    "@carbon/grid" "^11.29.0"
+    "@carbon/grid" "^11.30.0"
     big.js "^6.2.2"
     classnames "^2.5.1"
     didi "^10.2.2"
-    dompurify "^3.2.0"
+    dompurify "^3.2.3"
     feelers "^1.4.0"
-    feelin "^3.2.0"
+    feelin "^4.3.0"
     flatpickr "^4.6.13"
     ids "^1.0.5"
     lodash "^4.17.21"
     luxon "^3.5.0"
-    marked "^15.0.1"
+    marked "^15.0.6"
     min-dash "^4.2.2"
     preact "^10.5.14"
 
@@ -278,10 +278,10 @@
     "@types/tough-cookie" "^4.0.5"
     tough-cookie "^4.1.4"
 
-"@camunda/camunda-composite-components@0.16.0":
-  version "0.16.0"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.16.0.tgz#b32daa6d034445d0fe3439612aa2990ea47e9782"
-  integrity sha512-mFHa8yJcIqt8t0DNx08FYRNJiThqmbQe9nT4HEBHjS34+Y3mnjdYXJFkHQagdrEQ4AgrpTqZBntcUS86BXMmkw==
+"@camunda/camunda-composite-components@0.17.0":
+  version "0.17.0"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.17.0.tgz#1d798566b32cf1c9c9f488f1e074a8fb95e6fb39"
+  integrity sha512-0tIxZbFJjezAaB7A68D/9iEE1W7l2Uk4GrNvKUMnIqnqYK1ki/6qCgu/2+lCbgMoaY7VyIM4HoonQ2JZuunCcA==
   dependencies:
     jwt-decode "4.0.0"
     react-error-boundary "4.0.13"
@@ -294,14 +294,14 @@
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
-"@carbon/elements@11.60.0":
-  version "11.60.0"
-  resolved "https://registry.yarnpkg.com/@carbon/elements/-/elements-11.60.0.tgz#36e34eddafa312a3de1394c2b1a95dfa02f024bd"
-  integrity sha512-tCg9nX9a1LLcjEWlCtzuwDNtm9j2qCrzzkkRF+wjzC2Qka7f8O4vmFhuphwQENruc7v7ldiYQVwd5w6OMVPzUA==
+"@carbon/elements@11.61.0":
+  version "11.61.0"
+  resolved "https://registry.yarnpkg.com/@carbon/elements/-/elements-11.61.0.tgz#e421d3f33a908b0d37618a55d71c21ef49bfa7df"
+  integrity sha512-Fa+CgT+94K34OXkMNKx0ESG+DMDMNWwcX0jPiu3PK4N0LEl1bVzpaDStnmsxEloZwd4y4y2RMMoqM8KzNnyT/g==
   dependencies:
     "@carbon/colors" "^11.29.0"
     "@carbon/grid" "^11.31.0"
-    "@carbon/icons" "^11.54.0"
+    "@carbon/icons" "^11.55.0"
     "@carbon/layout" "^11.29.0"
     "@carbon/motion" "^11.24.0"
     "@carbon/themes" "^11.46.0"
@@ -315,7 +315,7 @@
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
-"@carbon/grid@^11.29.0", "@carbon/grid@^11.31.0":
+"@carbon/grid@^11.30.0", "@carbon/grid@^11.31.0":
   version "11.31.0"
   resolved "https://registry.yarnpkg.com/@carbon/grid/-/grid-11.31.0.tgz#5415d9907bf196bef4c7cfa1ea8d9359e9dcc3ea"
   integrity sha512-6Tk5b0IA21rPLgOu49XZVnVPdpvGg6cgjztG4AM2ADeAh44hsixptshJNmdpcSmZL69GC7nkTnLXhnxJicg9NQ==
@@ -339,10 +339,10 @@
     "@ibm/telemetry-js" "^1.5.0"
     prop-types "^15.7.2"
 
-"@carbon/icons@^11.54.0":
-  version "11.54.0"
-  resolved "https://registry.yarnpkg.com/@carbon/icons/-/icons-11.54.0.tgz#4e1b48824bf1105bc7f2d1e73337d768fd0ad0cf"
-  integrity sha512-bqNW8lnABpeyhr9npdrW8GFefGd36kTOk2tUfCQ7vlq5tw5pO/gzVEoXcsRW1aXs+wwxZ73Sp5dUd5EBM2vW1g==
+"@carbon/icons@^11.55.0":
+  version "11.55.0"
+  resolved "https://registry.yarnpkg.com/@carbon/icons/-/icons-11.55.0.tgz#299a5ff0c6f7efc7ae7f807a4500cac85f315af4"
+  integrity sha512-JkDnI3FwZbL1iUkflA193N8qhcTOJ+0diuBxAwxqtAFVDezGgmNbFoyvB7OGpZQbmqeZBlJEXAOnS8AOZ1sHRg==
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
@@ -1131,19 +1131,19 @@
     semver "^7.3.5"
     tar "^6.1.11"
 
-"@monaco-editor/loader@^1.4.0":
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/@monaco-editor/loader/-/loader-1.4.0.tgz#f08227057331ec890fa1e903912a5b711a2ad558"
-  integrity sha512-00ioBig0x642hytVspPl7DbQyaSWRaolYie/UFNjoTdvoKPzo6xrXLhTk9ixgIKcLH5b5vDOjVNiGyY+uDCUlg==
+"@monaco-editor/loader@^1.5.0":
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/@monaco-editor/loader/-/loader-1.5.0.tgz#dcdbc7fe7e905690fb449bed1c251769f325c55d"
+  integrity sha512-hKoGSM+7aAc7eRTRjpqAZucPmoNOC4UUbknb/VNoTkEIkCPhqV8LfbsgM1webRM7S/z21eHEx9Fkwx8Z/C/+Xw==
   dependencies:
     state-local "^1.0.6"
 
-"@monaco-editor/react@4.6.0":
-  version "4.6.0"
-  resolved "https://registry.yarnpkg.com/@monaco-editor/react/-/react-4.6.0.tgz#bcc68671e358a21c3814566b865a54b191e24119"
-  integrity sha512-RFkU9/i7cN2bsq/iTkurMWOEErmYcY6JiQI3Jn+WeR/FGISH8JbHERjpS9oRuSOPvDMJI0Z8nJeKkbOs9sBYQw==
+"@monaco-editor/react@4.7.0":
+  version "4.7.0"
+  resolved "https://registry.yarnpkg.com/@monaco-editor/react/-/react-4.7.0.tgz#35a1ec01bfe729f38bfc025df7b7bac145602a60"
+  integrity sha512-cyzXQCtO47ydzxpQtCGSQGOC8Gk3ZUeBXFAxD+CWXYFo5OqZyZUonFl0DwUlTyAfRHntBfw2p3w4s9R6oe1eCA==
   dependencies:
-    "@monaco-editor/loader" "^1.4.0"
+    "@monaco-editor/loader" "^1.5.0"
 
 "@mswjs/interceptors@^0.37.0":
   version "0.37.1"
@@ -3003,10 +3003,10 @@ domify@^2.0.0:
   resolved "https://registry.yarnpkg.com/domify/-/domify-2.0.0.tgz#951f0c36ff960b1cc527444f41819c765336dca8"
   integrity sha512-rmvrrmWQPD/X1A/nPBfIVg4r05792QdG9Z4Prk6oQG0F9zBMDkr0GKAdds1wjb2dq1rTz/ywc4ZxpZbgz0tttg==
 
-dompurify@^3.2.0:
-  version "3.2.1"
-  resolved "https://registry.yarnpkg.com/dompurify/-/dompurify-3.2.1.tgz#d480972aeb1a59eb8ac47cba95558fbd72a0127b"
-  integrity sha512-NBHEsc0/kzRYQd+AY6HR6B/IgsqzBABrqJbpCDQII/OK6h7B7LXzweZTDsqSW2LkTRpoxf18YUP+YjGySk6B3w==
+dompurify@^3.2.3:
+  version "3.2.4"
+  resolved "https://registry.yarnpkg.com/dompurify/-/dompurify-3.2.4.tgz#af5a5a11407524431456cf18836c55d13441cd8e"
+  integrity sha512-ysFSFEDVduQpyhzAob/kkuJjf5zWkZD8/A9ywSp1byueyuCfHamrCBa14/Oc2iiB0e51B+NpxSl5gmzn+Ms/mg==
   optionalDependencies:
     "@types/trusted-types" "^2.0.7"
 
@@ -3454,13 +3454,22 @@ feelers@^1.4.0:
     lezer-feel "^1.2.4"
     min-dom "^5.0.0"
 
-feelin@^3.0.1, feelin@^3.2.0:
+feelin@^3.0.1:
   version "3.2.0"
   resolved "https://registry.yarnpkg.com/feelin/-/feelin-3.2.0.tgz#2d482a135a7063b5897133d448a136783ddf1bfe"
   integrity sha512-GFDbHsTYk7YXO1tyw1dOjb7IODeAZvNIosdGZThUwPx5XcD/XhO0hnPZXsIbAzSsIdrgGlTEEdby9fZ2gixysA==
   dependencies:
     "@lezer/lr" "^1.4.2"
     lezer-feel "^1.4.0"
+    luxon "^3.5.0"
+
+feelin@^4.3.0:
+  version "4.3.0"
+  resolved "https://registry.yarnpkg.com/feelin/-/feelin-4.3.0.tgz#2979208ab34b816311c45917ef6137aaf64a443f"
+  integrity sha512-Uv3YNCrmXSXgkCJSfa2jR7SL/acjPhfEHKNsaL///fRJxD7epUvUJyF1WXbh8oh9Myv+z3WVClGb+rIuT7LDow==
+  dependencies:
+    "@lezer/lr" "^1.4.2"
+    lezer-feel "^1.6.0"
     luxon "^3.5.0"
 
 fflate@^0.4.4:
@@ -4286,10 +4295,10 @@ levn@^0.4.1:
     prelude-ls "^1.2.1"
     type-check "~0.4.0"
 
-lezer-feel@^1.2.3, lezer-feel@^1.2.4, lezer-feel@^1.4.0:
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/lezer-feel/-/lezer-feel-1.4.0.tgz#468b0514541e273b0dad5e041c86ba28172b9322"
-  integrity sha512-kNxG7O38gwpuYy+C3JCRxQNTCE2qu9uTuH5dE3EGVnRhIQMe6rPDz0S8t3urLEOsMud6HI795m6zX2ujfUaqTw==
+lezer-feel@^1.2.3, lezer-feel@^1.2.4, lezer-feel@^1.4.0, lezer-feel@^1.6.0:
+  version "1.7.0"
+  resolved "https://registry.yarnpkg.com/lezer-feel/-/lezer-feel-1.7.0.tgz#f35e4ae01150f49ce6108cebdec154aa009c52bc"
+  integrity sha512-UC8h3Nu4llRPISEUhv+Ne7bNkdxjf4+/DcU4KfO8zKxycWxev8d2BoVnGlG17zbQDtQJBD39ZQvWtjCeTFm69g==
   dependencies:
     "@lezer/highlight" "^1.2.1"
     "@lezer/lr" "^1.4.2"
@@ -4440,10 +4449,10 @@ make-dir@^4.0.0:
   dependencies:
     semver "^7.5.3"
 
-marked@^15.0.1:
-  version "15.0.2"
-  resolved "https://registry.yarnpkg.com/marked/-/marked-15.0.2.tgz#e6f8c351554e05cfbe77fee5fa2d6116d361787b"
-  integrity sha512-85RUkoYKIVB21PbMKrnD6aCl9ws+XKEyhJNMbLn206NyD3jbBo7Ec7Wi4Jrsn4dV1a2ng7K/jfkmIN0DNoS41w==
+marked@^15.0.6:
+  version "15.0.7"
+  resolved "https://registry.yarnpkg.com/marked/-/marked-15.0.7.tgz#f67d7e34d202ce087e6b879107b5efb04e743314"
+  integrity sha512-dgLIeKGLx5FwziAnsk4ONoGwHwGPJzselimvlVskE9XLN4Orv9u2VA3GWw/lYUqjfA0rUT/6fqKwfZJapP9BEg==
 
 mathml-tag-names@^2.1.3:
   version "2.1.3"

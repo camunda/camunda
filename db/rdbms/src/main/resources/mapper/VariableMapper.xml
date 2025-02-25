@@ -125,11 +125,10 @@
     parameterType="io.camunda.db.rdbms.write.domain.VariableDbModel"
     flushCache="true">
     INSERT INTO ${prefix}VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, SCOPE_KEY, TYPE, VAR_NAME, DOUBLE_VALUE,
-                          LONG_VALUE,
-                          VAR_VALUE, VAR_FULL_VALUE, TENANT_ID, IS_PREVIEW)
+                                   LONG_VALUE, VAR_VALUE, VAR_FULL_VALUE, TENANT_ID, IS_PREVIEW,
+                                   PARTITION_ID, HISTORY_CLEANUP_DATE)
     VALUES (#{variableKey}, #{processInstanceKey}, #{processDefinitionId}, #{scopeKey}, #{type}, #{name}, #{doubleValue},
-            #{longValue},
-            #{value}, #{fullValue}, #{tenantId}, #{isPreview})
+            #{longValue}, #{value}, #{fullValue}, #{tenantId}, #{isPreview}, #{partitionId}, #{historyCleanupDate, jdbcType=TIMESTAMP})
   </insert>
 
   <update
@@ -143,16 +142,34 @@
           LONG_VALUE   = #{longValue},
           VAR_VALUE  = #{value},
           VAR_FULL_VALUE = #{fullValue},
-          IS_PREVIEW     = #{isPreview}
+          IS_PREVIEW     = #{isPreview},
+          HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
       WHERE VAR_KEY = #{variableKey}
   </update>
+
+  <update
+    flushCache="true"
+    id="updateHistoryCleanupDate"
+    statementType="PREPARED">
+    UPDATE ${prefix}VARIABLE SET
+      HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </update>
+
+  <delete
+    flushCache="true"
+    id="cleanupHistory"
+    statementType="PREPARED">
+    <bind name="tableName" value="'VARIABLE'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+  </delete>
 
   <update
     id="migrateToProcess"
     statementType="PREPARED"
     parameterType="java.util.Map"
     flushCache="true">
-      UPDATE VARIABLE
+      UPDATE ${prefix}VARIABLE
       SET PROCESS_DEFINITION_ID = #{processDefinitionId}
       WHERE VAR_KEY = #{variableKey}
   </update>

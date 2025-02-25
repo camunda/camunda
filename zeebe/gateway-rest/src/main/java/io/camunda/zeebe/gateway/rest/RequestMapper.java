@@ -87,7 +87,6 @@ import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserChangeset;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
@@ -136,11 +135,8 @@ import org.springframework.web.multipart.MultipartFile;
 public class RequestMapper {
 
   public static final String VND_CAMUNDA_API_KEYS_STRING_JSON = "vnd.camunda.api.keys.string+json";
-  public static final String VND_CAMUNDA_API_KEYS_NUMBER_JSON = "vnd.camunda.api.keys.number+json";
   public static final String MEDIA_TYPE_KEYS_STRING_VALUE =
       "application/" + VND_CAMUNDA_API_KEYS_STRING_JSON;
-  public static final String MEDIA_TYPE_KEYS_NUMBER_VALUE =
-      "application/" + VND_CAMUNDA_API_KEYS_NUMBER_JSON;
 
   public static CompleteUserTaskRequest toUserTaskCompletionRequest(
       final UserTaskCompletionRequest completionRequest, final long userTaskKey) {
@@ -188,12 +184,14 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, UserDTO> toUserUpdateRequest(
       final UserUpdateRequest updateRequest, final String username) {
-    final UserChangeset changeset = updateRequest.getChangeset();
     return getResult(
         validateUserUpdateRequest(updateRequest),
         () ->
             new UserDTO(
-                username, changeset.getName(), changeset.getEmail(), changeset.getPassword()));
+                username,
+                updateRequest.getName(),
+                updateRequest.getEmail(),
+                updateRequest.getPassword()));
   }
 
   public static Either<ProblemDetail, Long> getPinnedEpoch(final ClockPinRequest pinRequest) {
@@ -435,7 +433,12 @@ public class RequestMapper {
       final MappingRuleCreateRequest request) {
     return getResult(
         validateMappingRequest(request),
-        () -> new MappingDTO(request.getClaimName(), request.getClaimValue(), request.getName()));
+        () ->
+            new MappingDTO(
+                request.getClaimName(),
+                request.getClaimValue(),
+                request.getName(),
+                request.getId()));
   }
 
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
@@ -822,6 +825,7 @@ public class RequestMapper {
 
     final JobResult jobResult = new JobResult();
     jobResult.setDenied(getBooleanOrDefault(request, r -> r.getResult().getDenied(), false));
+    jobResult.setDeniedReason(getStringOrEmpty(request, r -> r.getResult().getDeniedReason()));
 
     final var jobResultCorrections = request.getResult().getCorrections();
     if (jobResultCorrections == null) {

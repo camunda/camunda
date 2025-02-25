@@ -23,7 +23,8 @@ import org.springframework.test.context.junit4.SpringRunner;
     properties = {
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
+      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
+      "spring.profiles.active=test,consolidated-auth"
     })
 public abstract class ModuleAbstractIT {
 

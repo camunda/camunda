@@ -7,16 +7,24 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
+import io.camunda.db.rdbms.sql.HistoryCleanupMapper;
+import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import java.time.OffsetDateTime;
 
 public class DecisionInstanceWriter {
 
+  private final DecisionInstanceMapper mapper;
   private final ExecutionQueue executionQueue;
 
-  public DecisionInstanceWriter(final ExecutionQueue executionQueue) {
+  public DecisionInstanceWriter(
+      final DecisionInstanceMapper mapper, final ExecutionQueue executionQueue) {
+    this.mapper = mapper;
     this.executionQueue = executionQueue;
   }
 
@@ -24,6 +32,7 @@ public class DecisionInstanceWriter {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.DECISION_INSTANCE,
+            WriteStatementType.INSERT,
             decisionInstance.decisionInstanceKey(),
             "io.camunda.db.rdbms.sql.DecisionInstanceMapper.insert",
             decisionInstance));
@@ -32,6 +41,7 @@ public class DecisionInstanceWriter {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.DECISION_INSTANCE,
+              WriteStatementType.INSERT,
               decisionInstance.decisionInstanceKey(),
               "io.camunda.db.rdbms.sql.DecisionInstanceMapper.insertInput",
               decisionInstance));
@@ -41,9 +51,34 @@ public class DecisionInstanceWriter {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.DECISION_INSTANCE,
+              WriteStatementType.INSERT,
               decisionInstance.decisionInstanceKey(),
               "io.camunda.db.rdbms.sql.DecisionInstanceMapper.insertOutput",
               decisionInstance));
     }
+  }
+
+  public void scheduleForHistoryCleanup(
+      final Long processInstanceKey, final OffsetDateTime historyCleanupDate) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.DECISION_INSTANCE,
+            WriteStatementType.UPDATE,
+            processInstanceKey,
+            "io.camunda.db.rdbms.sql.DecisionInstanceMapper.updateHistoryCleanupDate",
+            new HistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
+                .processInstanceKey(processInstanceKey)
+                .historyCleanupDate(historyCleanupDate)
+                .build()));
+  }
+
+  public int cleanupHistory(
+      final int partitionId, final OffsetDateTime cleanupDate, final int rowsToRemove) {
+    return mapper.cleanupHistory(
+        new CleanupHistoryDto.Builder()
+            .partitionId(partitionId)
+            .cleanupDate(cleanupDate)
+            .limit(rowsToRemove)
+            .build());
   }
 }

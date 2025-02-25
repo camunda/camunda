@@ -82,7 +82,8 @@ public class CreateUserMultiPartitionTest {
         .endsWith(tuple(CommandDistributionIntent.FINISHED, RecordType.EVENT, 1));
     for (int partitionId = 2; partitionId < PARTITION_COUNT; partitionId++) {
       assertThat(
-              RecordingExporter.records()
+              RecordingExporter.userRecords()
+                  .withUsername(username)
                   .withPartitionId(partitionId)
                   .limit(record -> record.getIntent().equals(UserIntent.CREATED))
                   .collect(Collectors.toList()))

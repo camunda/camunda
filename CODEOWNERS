@@ -1,0 +1,10 @@
+# This is a comment.
+# Each line is a file pattern followed by one or more owners.
+# If you'd like to be added as an owner, don't hesitate to reach out to one of the existing ones.
+
+# C8 REST OpenAPI specification
+/zeebe/gateway-protocol/src/main/proto/rest-api.yaml @camunda/docs-api-reviewers
+
+# Testing guide
+/docs/testing.md       @npepinpe @ChrisKujawa
+/docs/assets/testing*  @npepinpe @ChrisKujawa

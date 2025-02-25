@@ -14,11 +14,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper.EndProcessInstanceDto;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,13 +30,15 @@ class ProcessInstanceWriterTest {
 
   private static final OffsetDateTime NOW = OffsetDateTime.now();
 
+  private ProcessInstanceMapper mapper;
   private ExecutionQueue executionQueue;
   private ProcessInstanceWriter writer;
 
   @BeforeEach
   void setUp() {
+    mapper = mock(ProcessInstanceMapper.class);
     executionQueue = mock(ExecutionQueue.class);
-    writer = new ProcessInstanceWriter(executionQueue);
+    writer = new ProcessInstanceWriter(mapper, executionQueue);
   }
 
   @Test
@@ -57,6 +61,7 @@ class ProcessInstanceWriterTest {
             eq(
                 new QueueItem(
                     ContextType.PROCESS_INSTANCE,
+                    WriteStatementType.UPDATE,
                     1L,
                     "io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateStateAndEndDate",
                     new EndProcessInstanceDto(1L, ProcessInstanceState.COMPLETED, NOW))));

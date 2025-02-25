@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist;
 
+import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.operate.webapp.security.UserService;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.webapp.dto.UserDTO;
@@ -87,6 +88,11 @@ public class TasklistSecurityStubsConfiguration {
   @Bean
   public TenantService stubTenantService() {
     return new TenantService() {
+      @Override
+      public List<String> tenantsIds() {
+        return TenantAttributeHolder.getTenantIds();
+      }
+
       @Override
       public AuthenticatedTenants getAuthenticatedTenants() {
         return AuthenticatedTenants.allTenants();

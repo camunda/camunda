@@ -407,11 +407,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   @Override
   protected void onActorCloseRequested() {
     isOpened.set(false);
-    if (exporterMode == ExporterMode.ACTIVE) {
-      containers.forEach(ExporterContainer::close);
-    } else {
-      exporterDistributionService.close();
-    }
+    containers.forEach(ExporterContainer::close);
+    exporterDistributionService.close();
   }
 
   @Override

@@ -35,6 +35,7 @@ import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient.RequestHandler;
 import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
@@ -97,6 +98,7 @@ public final class LongPollingActivateJobsTest {
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
             .setNoJobsReceivedExceptionProvider(Gateway.NO_JOBS_RECEIVED_EXCEPTION_PROVIDER)
             .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
+            .setMetrics(LongPollingMetrics.noop())
             .build();
     submitActorToActivateJobs(handler);
 
@@ -263,6 +265,7 @@ public final class LongPollingActivateJobsTest {
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
             .setNoJobsReceivedExceptionProvider(Gateway.NO_JOBS_RECEIVED_EXCEPTION_PROVIDER)
             .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
+            .setMetrics(LongPollingMetrics.noop())
             .build();
     submitActorToActivateJobs(handler);
 
@@ -292,6 +295,7 @@ public final class LongPollingActivateJobsTest {
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
             .setNoJobsReceivedExceptionProvider(Gateway.NO_JOBS_RECEIVED_EXCEPTION_PROVIDER)
             .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
+            .setMetrics(LongPollingMetrics.noop())
             .build();
     submitActorToActivateJobs(handler);
 

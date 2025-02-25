@@ -30,7 +30,6 @@ import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
-import io.camunda.client.CredentialsProvider.CredentialsApplier;
 import io.camunda.client.CredentialsProvider.StatusCode;
 import io.camunda.client.api.response.Topology;
 import io.camunda.client.impl.CamundaClientCredentials;
@@ -41,6 +40,8 @@ import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.protocol.rest.TopologyResponse;
 import io.camunda.client.util.RecordingGatewayService;
 import io.camunda.client.util.RestGatewayPaths;
+import io.camunda.client.util.TestCredentialsApplier;
+import io.camunda.client.util.TestCredentialsApplier.Credential;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
 import io.grpc.Server;
@@ -67,10 +68,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -173,7 +171,7 @@ public final class OAuthCredentialsProviderTest {
     provider.applyCredentials(applier);
 
     // then
-    assertThat(applier.credentials)
+    assertThat(applier.getCredentials())
         .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
   }
 
@@ -195,7 +193,7 @@ public final class OAuthCredentialsProviderTest {
     provider.applyCredentials(applier);
 
     // then
-    assertThat(applier.credentials)
+    assertThat(applier.getCredentials())
         .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
   }
 
@@ -385,7 +383,7 @@ public final class OAuthCredentialsProviderTest {
         .join();
 
     // then
-    assertThat(applier.credentials)
+    assertThat(applier.getCredentials())
         .containsOnly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN))
         .hasSize(10);
     currentWiremockRuntimeInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
@@ -445,42 +443,6 @@ public final class OAuthCredentialsProviderTest {
 
   private String tokenHttpsUrlString() {
     return currentWiremockRuntimeInfo.getHttpsBaseUrl() + "/oauth/token";
-  }
-
-  private static final class TestCredentialsApplier implements CredentialsApplier {
-    private final List<Credential> credentials = new CopyOnWriteArrayList<>();
-
-    @Override
-    public void put(final String key, final String value) {
-      credentials.add(new Credential(key, value));
-    }
-  }
-
-  private static final class Credential {
-    private final String key;
-    private final String value;
-
-    private Credential(final String key, final String value) {
-      this.key = key;
-      this.value = value;
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(key, value);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      final Credential that = (Credential) o;
-      return Objects.equals(key, that.key) && Objects.equals(value, that.value);
-    }
   }
 
   private static final class TestStatusCode implements StatusCode {
@@ -690,7 +652,7 @@ public final class OAuthCredentialsProviderTest {
       provider.applyCredentials(applier);
 
       // then
-      assertThat(applier.credentials)
+      assertThat(applier.getCredentials())
           .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
     }
 
