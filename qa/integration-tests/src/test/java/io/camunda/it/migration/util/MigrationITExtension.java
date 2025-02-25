@@ -32,6 +32,8 @@ import org.junit.jupiter.api.extension.TestTemplateInvocationContext;
 import org.junit.jupiter.api.extension.TestTemplateInvocationContextProvider;
 import org.junit.platform.commons.support.ModifierSupport;
 import org.opensearch.testcontainers.OpensearchContainer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Network;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
@@ -41,6 +43,7 @@ public class MigrationITExtension
         AfterEachCallback,
         TestTemplateInvocationContextProvider {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(MigrationITExtension.class);
   private static final String TASKLIST = "tasklist";
   private static final String OPERATE = "operate";
   private static final Map<DatabaseType, MigrationHelper> HELPERS = new HashMap<>();
@@ -135,6 +138,7 @@ public class MigrationITExtension
   public void upgrade(final DatabaseType databaseType) {
     final String indexPrefix = INDEX_PREFIXES.get(databaseType);
     if (HAS_87_DATA.get(databaseType)) {
+      final long startTime = System.nanoTime();
       Awaitility.await("Await Import Positions have been flushed")
           .timeout(Duration.of(1, ChronoUnit.MINUTES))
           .pollInterval(Duration.of(500, ChronoUnit.MILLIS))
@@ -146,18 +150,27 @@ public class MigrationITExtension
                       && DATABASE_CHECKS
                           .get(databaseType)
                           .checkImportPositionsFlushed(indexPrefix, TASKLIST));
+
+      LOGGER.info(
+          "Timed \"Await Import Positions have been flushed\" : {} ms",
+          (System.nanoTime() - startTime) / 1_000_000);
     }
 
     HELPERS.get(databaseType).update(databaseType);
 
+    long startTime = System.nanoTime();
     Awaitility.await("Await database and exporter readiness")
         .timeout(Duration.of(60, ChronoUnit.SECONDS))
         .pollInterval(Duration.of(500, ChronoUnit.MILLIS))
         .untilAsserted(() -> DATABASE_CHECKS.get(databaseType).validateSchemaCreation(indexPrefix));
+    LOGGER.info(
+        "Timed \"Await database and exporter readiness\" : {} ms",
+        (System.nanoTime() - startTime) / 1_000_000);
 
     /* Ingest an 8.8 Record in order to trigger importers empty batch counting */
     ingestRecordToTriggerImporters(databaseType);
 
+    startTime = System.nanoTime();
     Awaitility.await("Await Importers finished")
         .timeout(Duration.of(2, ChronoUnit.MINUTES))
         .pollInterval(Duration.of(500, ChronoUnit.MILLIS))
@@ -167,6 +180,8 @@ public class MigrationITExtension
                     && DATABASE_CHECKS
                         .get(databaseType)
                         .checkImportersFinished(indexPrefix, TASKLIST));
+    LOGGER.info(
+        "Timed \"Await Importers finished\" : {} ms", (System.nanoTime() - startTime) / 1_000_000);
   }
 
   private void ingestRecordToTriggerImporters(final DatabaseType databaseType) {

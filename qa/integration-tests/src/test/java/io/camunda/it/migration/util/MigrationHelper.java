@@ -144,7 +144,13 @@ public class MigrationHelper implements ApiCallable {
           databaseUrl, indexPrefix, OS_USER, OS_PASSWORD);
     }
     final Map<String, String> env = new HashMap<>();
-    env.put("camunda.migration.process.importerFinishedTimeout", "PT5S");
+    env.put("camunda.migration.process.importerFinishedTimeout", "PT2S");
+
+    /* Importer Overdrive to speed up tests*/
+    env.put("camunda.operate.importer.importPositionUpdateInterval", "200");
+    env.put("camunda.operate.importer.readerBackoff", "200");
+    env.put("camunda.tasklist.importer.importPositionUpdateInterval", "200");
+    env.put("camunda.tasklist.importer.readerBackoff", "200");
 
     env.putAll(envOverrides);
     env.forEach(broker::withProperty);
@@ -284,6 +290,11 @@ public class MigrationHelper implements ApiCallable {
         put("CAMUNDA_OPERATE_ZEEBEOPENSEARCH_PREFIX", indexPrefix);
         put("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
         put("CAMUNDA_DATABASE_URL", "http://opensearch:9200");
+        /* Importer Overdrive */
+        put("CAMUNDA_OPERATE_IMPORTER_IMPORTPOSITIONUPDATEINTERVAL", "200");
+        put("CAMUNDA_OPERATE_IMPORTER_READERBACKOFF", "200");
+        put("CAMUNDA_TASKLIST_IMPORTER_IMPORTPOSITIONUPDATEINTERVAL", "200");
+        put("CAMUNDA_TASKLIST_IMPORTER_READERBACKOFF", "200");
       }
     };
   }
