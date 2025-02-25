@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Profile("consolidated-auth")
-public class IdentityAuthorizationServiceImpl implements IdentityAuthorizationService {
+public class UserGroupServiceImpl implements UserGroupService {
   @Autowired private CamundaUserService camundaUserService;
 
   @Override

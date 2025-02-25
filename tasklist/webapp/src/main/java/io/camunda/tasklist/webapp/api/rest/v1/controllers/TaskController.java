@@ -32,7 +32,7 @@ import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.UserReader;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.tasklist.webapp.security.identity.UserGroupService;
 import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.tasklist.webapp.service.VariableService;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
@@ -81,7 +81,7 @@ public class TaskController extends ApiErrorController {
   @Autowired private VariableService variableService;
   @Autowired private TaskMapper taskMapper;
   @Autowired private UserReader userReader;
-  @Autowired private IdentityAuthorizationService identityAuthorizationService;
+  @Autowired private UserGroupService userGroupService;
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private TasklistPermissionServices permissionServices;
 
@@ -115,7 +115,7 @@ public class TaskController extends ApiErrorController {
 
     if (tasklistProperties.getIdentity() != null
         && tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()) {
-      final List<String> listOfUserGroups = identityAuthorizationService.getUserGroups();
+      final List<String> listOfUserGroups = userGroupService.getUserGroups();
       if (!listOfUserGroups.contains(IdentityProperties.FULL_GROUP_ACCESS)) {
         final String userName = userReader.getCurrentUser().getUserId();
         final TaskByCandidateUserOrGroup taskByCandidateUserOrGroup =
@@ -231,7 +231,7 @@ public class TaskController extends ApiErrorController {
 
   private boolean hasAccessToTask(final LazySupplier<TaskDTO> taskSupplier) {
     final String userName = userReader.getCurrentUserId();
-    final List<String> listOfUserGroups = identityAuthorizationService.getUserGroups();
+    final List<String> listOfUserGroups = userGroupService.getUserGroups();
     final var task = taskSupplier.get();
     final boolean allUsersTask =
         task.getCandidateUsers() == null && task.getCandidateGroups() == null;

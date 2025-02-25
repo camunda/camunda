@@ -11,8 +11,8 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.webapp.management.WebappManagementModuleConfiguration;
 import io.camunda.tasklist.webapp.security.WebappSecurityModuleConfiguration;
 import io.camunda.tasklist.webapp.security.identity.DefaultIdentityAuthorizationServiceImpl;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationServiceImpl;
+import io.camunda.tasklist.webapp.security.identity.UserGroupService;
+import io.camunda.tasklist.webapp.security.identity.UserGroupServiceImpl;
 import io.camunda.tasklist.zeebeimport.security.ImporterSecurityModuleConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.gateway.Gateway;
@@ -83,8 +83,8 @@ public class TasklistModuleConfiguration {
   @Bean
   @Primary
   @Profile("consolidated-auth")
-  public IdentityAuthorizationService consolidatedIdentityAuthorizationService() {
-    return new IdentityAuthorizationServiceImpl();
+  public UserGroupService consolidatedIdentityAuthorizationService() {
+    return new UserGroupServiceImpl();
   }
 
   /**
@@ -98,7 +98,7 @@ public class TasklistModuleConfiguration {
    * implemented
    */
   @Bean
-  public IdentityAuthorizationService defaultIdentityAuthorizationService() {
+  public UserGroupService defaultIdentityAuthorizationService() {
     return new DefaultIdentityAuthorizationServiceImpl();
   }
 
