@@ -10,11 +10,13 @@ package io.camunda.db.rdbms.write;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.ResourceSample;
 import io.micrometer.core.instrument.Timer.Sample;
 import java.time.Duration;
+import java.util.function.Supplier;
 
 public class RdbmsWriterMetrics {
 
@@ -46,6 +48,32 @@ public class RdbmsWriterMetrics {
     DistributionSummary.builder(meterName("bulk.size"))
         .description("Exporter bulk size")
         .serviceLevelObjectives(1, 2, 5, 10, 20, 50, 100, 200, 500, 1_000, 2_000, 5_000, 10_000)
+        .register(meterRegistry)
+        .record(bulkSize);
+  }
+
+  public void registerCleanupBackoffDurationGauge(
+      final Integer partitionId, final Supplier<Number> supplier) {
+    Gauge.builder(meterName("historyCleanup.backoffDuration"), supplier)
+        .description("Current backoff duration for cleanup of entity")
+        .tag("partitionId", String.valueOf(partitionId))
+        .register(meterRegistry);
+  }
+
+  public ResourceSample measureHistoryCleanupDuration() {
+    return Timer.resource(meterRegistry, meterName("historyCleanup.duration.seconds"))
+        .description("History cleanup duration of bulk exporters in seconds")
+        .publishPercentileHistogram()
+        .minimumExpectedValue(Duration.ofMillis(10));
+  }
+
+  public void recordHistoryCleanupBulkSize(final int bulkSize, final String entityName) {
+    DistributionSummary.builder(meterName("historyCleanup.bulk.size"))
+        .description("Exporter bulk size")
+        .tag("entity", entityName)
+        .serviceLevelObjectives(
+            1, 2, 5, 10, 20, 50, 100, 200, 500, 1_000, 2_000, 5_000, 10_000, 20_000, 50_000,
+            100_000)
         .register(meterRegistry)
         .record(bulkSize);
   }

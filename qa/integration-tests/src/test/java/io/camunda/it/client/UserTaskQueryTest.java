@@ -16,7 +16,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.UserTaskState;
-import io.camunda.client.protocol.rest.StringFilterProperty;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.it.utils.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -368,10 +367,12 @@ class UserTaskQueryTest {
   @Test
   public void shouldRetrieveTaskByCandidateGroupFilter() {
     // when
-    final var filter = new StringFilterProperty();
-    filter.$like("grou?");
     final var result =
-        camundaClient.newUserTaskQuery().filter(f -> f.candidateGroup("group")).send().join();
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.candidateGroup(b -> b.like("grou?")))
+            .send()
+            .join();
 
     // then
     assertThat(result.items()).hasSize(1);

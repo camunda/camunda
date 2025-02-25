@@ -6,7 +6,12 @@
  * You may not use this file except in compliance with the Camunda License 1.0.
  */
 import { FC, useState } from "react";
-import { Dropdown, CheckboxGroup, Checkbox } from "@carbon/react";
+import {
+  Dropdown,
+  CheckboxGroup,
+  Checkbox,
+  InlineNotification,
+} from "@carbon/react";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
@@ -69,7 +74,9 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
 }) => {
   const { t, Translate } = useTranslate("authorizations");
   const { enqueueNotification } = useNotifications();
-  const [apiCall, { loading }] = useApiCall(createAuthorization);
+  const [apiCall, { loading, error }] = useApiCall(createAuthorization, {
+    suppressErrorNotification: true,
+  });
   const [ownerType, setOwnerType] = useState<OwnerType>(OwnerType.USER);
   const [ownerId, setOwnerId] = useState("");
   const [resourceId, setResourceId] = useState("");
@@ -102,13 +109,10 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
     if (success) {
       enqueueNotification({
         kind: "success",
-        title: t("Authorization created"),
-        subtitle: t(
-          "You have successfully created authorization {{ resourceId }}",
-          {
-            resourceId,
-          },
-        ),
+        title: t("authorizationCreated"),
+        subtitle: t("authorizationCreatedSuccess", {
+          resourceId,
+        }),
       });
       onSuccess();
     }
@@ -116,19 +120,19 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
 
   return (
     <FormModal
-      headline={t("Create authorization")}
+      headline={t("createAuthorization")}
       open={open}
       onClose={onClose}
       loading={loading}
       submitDisabled={loading}
-      confirmLabel={t("Create authorization")}
+      confirmLabel={t("createAuthorization")}
       onSubmit={handleSubmit}
     >
       <Row>
         <Dropdown
           id="owner-type-dropdown"
-          label="Select Owner type"
-          titleText="Owner type"
+          label={t("selectOwnerType")}
+          titleText={t("ownerType")}
           items={ownerTypeItems}
           onChange={(item: { selectedItem: OwnerType }) =>
             setOwnerType(item.selectedItem)
@@ -140,8 +144,8 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
         />
         <TextFieldContainer>
           <TextField
-            label={t("Owner ID")}
-            placeholder={t("Enter ID")}
+            label={t("ownerId")}
+            placeholder={t("enterId")}
             onChange={setOwnerId}
             value={ownerId}
             autoFocus
@@ -152,8 +156,8 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
       <Row>
         <Dropdown
           id="resource-type-dropdown"
-          label="Select Resource type"
-          titleText="Resource type"
+          label={t("selectResourceType")}
+          titleText={t("resourceType")}
           items={resourceTypeItems}
           onChange={(item: { selectedItem: ResourceType }) =>
             setResourceType(item.selectedItem)
@@ -165,8 +169,8 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
         />
         <TextFieldContainer>
           <TextField
-            label={t("Resource ID")}
-            placeholder={t("Enter ID")}
+            label={t("resourceId")}
+            placeholder={t("enterId")}
             onChange={setResourceId}
             value={resourceId}
             autoFocus
@@ -177,14 +181,16 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
       <CheckboxGroup
         legendText={
           <PermissionsSectionLabel>
-            <Translate>Select at least one permission. Visit</Translate>{" "}
-            <DocumentationLink
-              path="/concepts/resource-authorizations/"
-              withIcon
-            >
-              {t("Resource permissions")}
-            </DocumentationLink>{" "}
-            <Translate>for a full overview.</Translate>
+            <Translate i18nKey="selectPermission">
+              Select at least one permission. Visit{" "}
+              <DocumentationLink
+                path="/concepts/resource-authorizations/"
+                withIcon
+              >
+                Resource permissions
+              </DocumentationLink>{" "}
+              for a full overview.
+            </Translate>
           </PermissionsSectionLabel>
         }
       >
@@ -199,6 +205,15 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
           />
         ))}
       </CheckboxGroup>
+      {error && (
+        <InlineNotification
+          kind="error"
+          role="alert"
+          lowContrast
+          title={error.title}
+          subtitle={error.detail}
+        />
+      )}
     </FormModal>
   );
 };

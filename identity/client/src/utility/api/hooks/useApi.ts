@@ -1,34 +1,42 @@
 import { useCallback, useEffect, useState } from "react";
-import { ApiDefinition, ApiPromise } from "../request";
-import useApiCall, { NamedErrors } from "./useApiCall";
+import { ApiDefinition, ApiPromise, ErrorResponse } from "../request";
+import useApiCall, { UseApiCallOptions } from "./useApiCall";
 
-export interface UseApiResult<R, P = undefined> {
+export interface UseApiResult<R> {
   data: R | null;
   loading: boolean;
-  errors: string[] | null;
-  namedErrors: NamedErrors<P>;
+  error: ErrorResponse | null;
   status: number | null;
   success: boolean;
   reload(): ApiPromise<R>;
   reset(): void;
 }
 
+type UseApiOptions = UseApiCallOptions & {
+  paramsValid?: boolean;
+};
+
 export type UseApi = {
   <R, P>(
     apiDefinition: ApiDefinition<R, P>,
     params: P,
-    paramsValid?: boolean,
-  ): UseApiResult<R, P>;
+    Options?: UseApiOptions,
+  ): UseApiResult<R>;
   <R>(apiDefinition: ApiDefinition<R>): UseApiResult<R>;
 };
 
 const useApi: UseApi = <R, P>(
   apiDefinition: ApiDefinition<R, P>,
   params?: P,
-  paramsValid = true,
+  Options: UseApiOptions = {
+    paramsValid: true,
+    suppressErrorNotification: false,
+  },
 ): UseApiResult<R> => {
-  const [call, { data, status, errors, namedErrors, loading, success }, reset] =
-    useApiCall<R, P>(apiDefinition);
+  const [call, { data, status, error, loading, success }, reset] = useApiCall<
+    R,
+    P
+  >(apiDefinition, Options);
   const [called, setCalled] = useState(false);
 
   const paramsDependency = JSON.stringify(params);
@@ -40,26 +48,25 @@ const useApi: UseApi = <R, P>(
   );
 
   useEffect(() => {
-    if (paramsValid) {
+    if (Options.paramsValid) {
       (async () => {
         await reload();
         setCalled(true);
       })();
     }
-  }, [reload, setCalled, paramsValid]);
+  }, [reload, setCalled, Options.paramsValid]);
 
   useEffect(() => {
-    if (!paramsValid) {
+    if (!Options.paramsValid) {
       reset();
     }
-  }, [reset, paramsValid]);
+  }, [reset, Options.paramsValid]);
 
   return {
     data,
     // set loading to true on initial call to prevent flickering
     loading: called ? loading : true,
-    errors,
-    namedErrors,
+    error,
     status,
     reload,
     success,

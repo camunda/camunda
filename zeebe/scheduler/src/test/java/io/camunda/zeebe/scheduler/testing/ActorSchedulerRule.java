@@ -75,7 +75,7 @@ public final class ActorSchedulerRule extends ExternalResource {
 
     actorScheduler = null;
     builder = null;
-    MicrometerUtil.closeRegistry(meterRegistry);
+    MicrometerUtil.close(meterRegistry);
   }
 
   public ActorFuture<Void> submitActor(final Actor actor) {

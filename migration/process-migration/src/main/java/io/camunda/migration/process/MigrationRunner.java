@@ -69,11 +69,14 @@ public class MigrationRunner implements Migrator {
       while (shouldContinue(items)) {
         if (!items.isEmpty()) {
           final List<ProcessEntity> finalItems = items;
-          lastMigratedProcessDefinitionKey =
+          final String currentLastMigratedProcessDefinitionKey =
               metricRegistry.measureMigrationRoundDuration(() -> migrateBatch(finalItems));
-          metricRegistry.incrementMigrationRoundCounter();
-          metricRegistry.incrementMigratedProcessCounter(
-              migratedProcessesCount(lastMigratedProcessDefinitionKey, items));
+          if (currentLastMigratedProcessDefinitionKey != null) {
+            lastMigratedProcessDefinitionKey = currentLastMigratedProcessDefinitionKey;
+            metricRegistry.incrementMigrationRoundCounter();
+            metricRegistry.incrementMigratedProcessCounter(
+                migratedProcessesCount(lastMigratedProcessDefinitionKey, items));
+          }
         }
         if (countdownTask == null && isImporterFinished()) {
           startCountdown();
@@ -115,7 +118,9 @@ public class MigrationRunner implements Migrator {
                 })
             .toList();
     final String lastMigratedProcessDefinitionKey = adapter.migrate(updatedProcesses);
-    adapter.writeLastMigratedEntity(lastMigratedProcessDefinitionKey);
+    if (lastMigratedProcessDefinitionKey != null) {
+      adapter.writeLastMigratedEntity(lastMigratedProcessDefinitionKey);
+    }
     return lastMigratedProcessDefinitionKey;
   }
 
