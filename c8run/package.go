@@ -88,7 +88,6 @@ func getFilesToArchive(osType, elasticsearchVersion, connectorsFilePath, camunda
 		filepath.Join("c8run", connectorsFilePath),
 		filepath.Join("c8run", "elasticsearch-"+elasticsearchVersion),
 		filepath.Join("c8run", "custom_connectors"),
-		filepath.Join("c8run", "configuration"),
 		filepath.Join("c8run", "endpoints.txt"),
 		filepath.Join("c8run", "log"),
 		filepath.Join("c8run", "camunda-zeebe-"+camundaVersion),

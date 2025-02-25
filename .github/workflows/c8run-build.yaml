@@ -14,7 +14,53 @@ on:
       - "c8run/**"
       - ".github/workflows/c8run-build.yaml"
 
+permissions:
+  actions: write
+  attestations: none
+  checks: write
+  contents: read
+  deployments: none
+  id-token: none
+  issues: none
+  discussions: none
+  packages: none
+  pages: none
+  pull-requests: none
+  repository-projects: none
+  security-events: none
+  statuses: write
+
 jobs:
+  camunda-dist-build:
+    name: Build camunda-dist
+    runs-on: gcp-perf-core-16-default
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Package camunda-dist
+        shell: bash
+        id: build-dist
+        run: |
+          ./mvnw -B -T1C -DskipTests -DskipChecks -Dflatten.skip=true -Dskip.fe.build=false package
+          export ARTIFACT=$(./mvnw -pl dist/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
+          echo "distball=dist/target/${ARTIFACT}.tar.gz" >> $GITHUB_OUTPUT
+
+      - name: Upload camunda-dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: camunda-platform-dist
+          path: ${{ steps.build-dist.outputs.distball }}
+
   test_c8run:
     strategy:
       matrix:
@@ -23,6 +69,7 @@ jobs:
     name: C8Run Test ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
+    needs: camunda-dist-build
     steps:
 
       - if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -47,51 +94,26 @@ jobs:
             secret/data/products/distribution/ci NEXUS_USERNAME;
             secret/data/products/distribution/ci NEXUS_PASSWORD;
 
-      - name: print architecture
-        run: arch
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '>=1.23.1'
-
-      - name: Build c8run
-        run: go build
-        working-directory: ./c8run
-
-      - name: make a package
-        run: ./c8run package
-        working-directory: ./c8run
-        env:
-          GH_TOKEN: ${{ github.token }}
-          JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
-          JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
-
-      - name: ls
-        run: ls
-        working-directory: ./c8run
-
-      - if: ${{ matrix.os == 'macos-13' }}
-        name: Set env
-        run: echo "JAVA_HOME=$(echo $JAVA_HOME_21_X64)" >> $GITHUB_ENV
-
-      - if: ${{ matrix.os == 'ubuntu-latest' }}
-        name: Linux - Run c8run
-        run: ./c8run start
-        working-directory: ./c8run
-        env:
-          JAVA_HOME: /usr/lib/jvm/temurin-21-jdk-amd64
-          JAVA_VERSION: 21.0.3
-
-      - if: ${{ startsWith(matrix.os, 'macos') }}
-        name: Mac - Run c8run
-        run: ./c8run start
-        working-directory: ./c8run
-        env:
-          JAVA_VERSION: 21.0.3
-
       - uses: actions/setup-node@v4
         with:
           node-version: 18
+
+      - name: Download Camunda Core Dist
+        uses: actions/download-artifact@v4
+        with:
+          name: camunda-platform-dist
+          path: c8run
+
+      - name: Setup C8Run
+        uses: ./.github/actions/setup-c8run
+        with:
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          os: ${{ matrix.os }}
+          github-token: ${{ github.token }}
+          local-archive-build: 'true'
+          checkout: 'false'
 
       - name: Install dependencies
         run: npm ci
@@ -102,7 +124,7 @@ jobs:
         working-directory: ./c8run/e2e_tests
 
       - name: Wait for camunda process to start
-        run: bash -c 'while ! curl -s -f "http://localhost:8080/operate/login"; do sleep 5; done'
+        run: bash -c 'while ! curl -s -f "http://localhost:9600/actuator/health"; do sleep 5; done'
 
       - name: Run Playwright tests
         run: npx playwright test
@@ -119,12 +141,6 @@ jobs:
           retention-days: 30
 
       - uses: actions/upload-artifact@v4
-        with:
-          name: camunda8-run-build-${{ matrix.os }}
-          path: ./c8run/camunda8-run*
-          retention-days: 1
-
-      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: c8run-logs-${{ matrix.os }}
@@ -134,6 +150,8 @@ jobs:
   test_c8run_windows:
     name: C8Run Test Windows
     runs-on: windows-latest
+    timeout-minutes: 15
+    needs: camunda-dist-build
     steps:
       - uses: actions/checkout@v4
 
@@ -152,6 +170,17 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '>=1.23.1'
+
+      - name: Download Camunda Core Dist
+        uses: actions/download-artifact@v4
+        with:
+          name: camunda-platform-dist
+          path: c8run
+
+      - name: Get version of camunda-dist
+        run: echo CAMUNDA_VERSION=$(ls camunda-zeebe*.tar.gz | grep -o 'camunda-zeebe-.*' | sed 's/camunda-zeebe-//' | sed 's/\.tar\.gz//') >> $GITHUB_ENV
+        shell: bash
+        working-directory: .\c8run
 
       - name: Build c8run
         run: go build
