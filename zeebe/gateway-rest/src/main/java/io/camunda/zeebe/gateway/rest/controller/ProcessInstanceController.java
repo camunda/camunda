@@ -107,7 +107,7 @@ public class ProcessInstanceController {
   public CompletableFuture<ResponseEntity<Object>> cancelProcessInstanceBatchOperation(
       @RequestBody(required = false) final ProcessInstanceSearchQuery query) {
     return SearchQueryRequestMapper.toProcessInstanceQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::batchOperationCancellation);
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationCancellation);
   }
 
   private ResponseEntity<ProcessInstanceSearchQueryResult> search(
@@ -131,7 +131,7 @@ public class ProcessInstanceController {
             processInstanceServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .cancelProcessInstanceBatchOperationWithResult(query),
-        ResponseMapper::toCancelProcessInstanceBatchOperationWithResultResponse);
+        ResponseEntity::ok); // TODO better response
   }
 
   private CompletableFuture<ResponseEntity<Object>> createProcessInstance(
