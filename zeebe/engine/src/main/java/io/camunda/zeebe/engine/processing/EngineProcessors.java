@@ -13,6 +13,7 @@ import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSetupProcessors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
@@ -306,6 +307,11 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         securityConfig,
         featureFlags);
+
+    BatchOperationSetupProcessors.addBatchOperationProcessors(
+        keyGenerator,
+        typedRecordProcessors,
+        writers);
 
     return typedRecordProcessors;
   }
