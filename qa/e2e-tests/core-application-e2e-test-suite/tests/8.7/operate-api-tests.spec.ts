@@ -3,7 +3,7 @@ import {expect} from 'playwright/test';
 import {authAPI, assertResponseStatus} from 'utils/apiHelpers';
 import {createInstances, deploy} from 'utils/zeebeClient';
 
-const baseURL = process.env.CORE_COMPONENT_OPERATE_URL;
+const baseURL = process.env.CORE_APPLICATION_OPERATE_URL;
 
 test.beforeAll(async () => {
   await Promise.all([
