@@ -142,12 +142,6 @@ jobs:
           retention-days: 30
 
       - uses: actions/upload-artifact@v4
-        with:
-          name: camunda8-run-build-${{ matrix.os }}
-          path: ./c8run/camunda8-run*
-          retention-days: 1
-
-      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: c8run-logs-${{ matrix.os }}
