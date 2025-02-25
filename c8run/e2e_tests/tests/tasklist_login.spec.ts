@@ -4,6 +4,7 @@ const playwright = require('playwright');
 test('test', async ({ page }) => {
   test.setTimeout(60000);
   await page.goto('http://localhost:8080/tasklist/login');
+  await page.screenshot({ path: 'tasklist-login.png' });
   await page.getByPlaceholder('Username').click();
   await page.getByPlaceholder('Username').fill('demo');
   await page.getByPlaceholder('Username').press('Tab');

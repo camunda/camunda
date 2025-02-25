@@ -107,6 +107,13 @@ jobs:
         run: npx playwright install --with-deps
         working-directory: ./c8run/e2e_tests
 
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-screenshots-${{ matrix.os }}
+          path: ./c8run/e2e_tests/*.png
+          retention-days: 30
+
       - name: Wait for camunda process to start
         run: bash -c 'while ! curl -s -f "http://localhost:9600/actuator/health"; do sleep 5; done; sleep 120'
 
