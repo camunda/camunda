@@ -85,7 +85,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   public void processRecord(final TypedRecord<UserTaskRecord> command) {
     final UserTaskIntent intent = (UserTaskIntent) command.getIntent();
     switch (intent) {
-      case ASSIGN, CLAIM, COMPLETE, UPDATE -> processOperationCommand(command, intent);
+      case CREATE, ASSIGN, CLAIM, COMPLETE, UPDATE -> processOperationCommand(command, intent);
       case COMPLETE_TASK_LISTENER -> processCompleteTaskListener(command);
       case DENY_TASK_LISTENER -> processDenyTaskListener(command);
       default -> throw new UnsupportedOperationException("Unexpected user task intent: " + intent);
@@ -268,6 +268,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
   private ZeebeTaskListenerEventType mapIntentToEventType(final UserTaskIntent intent) {
     return switch (intent) {
+      case CREATING -> ZeebeTaskListenerEventType.creating;
       case ASSIGN, CLAIM -> ZeebeTaskListenerEventType.assigning;
       case UPDATE -> ZeebeTaskListenerEventType.updating;
       case COMPLETE -> ZeebeTaskListenerEventType.completing;
@@ -316,11 +317,12 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
     final var userTaskIntent =
         switch (lifecycleState) {
+          case CREATING -> UserTaskIntent.CREATE;
           case ASSIGNING -> UserTaskIntent.ASSIGN;
           case CLAIMING -> UserTaskIntent.CLAIM;
           case UPDATING -> UserTaskIntent.UPDATE;
           case COMPLETING -> UserTaskIntent.COMPLETE;
-          case CREATING, CANCELING ->
+          case CANCELING ->
               throw new UnsupportedOperationException(
                   "Conversion from '%s' user task lifecycle state to a user task command is not yet supported"
                       .formatted(lifecycleState));
