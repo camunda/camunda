@@ -8,11 +8,15 @@
 package io.camunda.webapps.schema.entities.tasklist;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 
-public class TaskEntity extends TasklistEntity<TaskEntity> {
+public class TaskEntity extends AbstractExporterEntity<TaskEntity> implements TenantOwned {
+
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String flowNodeBpmnId;
@@ -325,6 +329,16 @@ public class TaskEntity extends TasklistEntity<TaskEntity> {
 
   public TaskEntity setImplementation(final TaskImplementation implementation) {
     this.implementation = implementation;
+    return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public TaskEntity setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
     return this;
   }
 

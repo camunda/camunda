@@ -8,8 +8,13 @@
 package io.camunda.webapps.schema.entities.tasklist;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 
-public class TaskVariableEntity extends TasklistEntity<TaskVariableEntity> {
+public class TaskVariableEntity extends AbstractExporterEntity<TaskVariableEntity>
+    implements TenantOwned {
+
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String name;
@@ -106,6 +111,16 @@ public class TaskVariableEntity extends TasklistEntity<TaskVariableEntity> {
 
   public TaskVariableEntity setPosition(final Long position) {
     this.position = position;
+    return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public TaskVariableEntity setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
     return this;
   }
 }

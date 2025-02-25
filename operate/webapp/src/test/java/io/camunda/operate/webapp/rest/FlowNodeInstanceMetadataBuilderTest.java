@@ -244,6 +244,7 @@ class FlowNodeInstanceMetadataBuilderTest {
 
   private void fillStandardValues(final FlowNodeInstanceEntity flowNodeInstance) {
     flowNodeInstance
+        .setKey(0L)
         .setFlowNodeId("flowNodeId")
         .setId("id")
         .setStartDate(startDate)
