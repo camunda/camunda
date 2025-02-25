@@ -1970,10 +1970,10 @@
     test-exclude "^7.0.1"
     tinyrainbow "^1.2.0"
 
-"@vitest/eslint-plugin@1.1.31":
-  version "1.1.31"
-  resolved "https://registry.yarnpkg.com/@vitest/eslint-plugin/-/eslint-plugin-1.1.31.tgz#a5336f2093d2806fb5b9f04ac8e57672691fcc1f"
-  integrity sha512-xlsLr+e+AXZ/00eVZCtNmMeCJoJaRCoLDiAgLcxgQjSS1EertieB2MUHf8xIqPKs9lECc/UpL+y1xDcpvi02hw==
+"@vitest/eslint-plugin@1.1.32":
+  version "1.1.32"
+  resolved "https://registry.yarnpkg.com/@vitest/eslint-plugin/-/eslint-plugin-1.1.32.tgz#8978c27b1f4c0779e6c4a5e7b190e76f47ba1ddb"
+  integrity sha512-peq6IcFL4RdTrDRom9lm1Y29xnQEqYj0OXZLmnOqk8j0XHSGv8/0EsFf4kq+//I//mzkDM4qTw+iShIzXUw/zw==
 
 "@vitest/expect@2.1.9":
   version "2.1.9"
