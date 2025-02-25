@@ -7,37 +7,46 @@
  */
 package io.camunda.zeebe.gateway.impl.broker.request;
 
-import io.camunda.search.filter.ProcessInstanceFilter;
-import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
-public class BrokerCancelProcessInstanceBatchOperationRequest
+public class BrokerCreateBatchOperationRequest
     extends BrokerExecuteCommand<Long> {
 
-  private ProcessInstanceFilter requestQueryDto;
+  private List<Long> keys;
+  private CommandType commandType;
 
-  public BrokerCancelProcessInstanceBatchOperationRequest() {
-    super(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CANCEL_BATCH_OPERATION);
+  public BrokerCreateBatchOperationRequest() {
+    super(ValueType.BATCH_OPERATION, BatchOperationIntent.CREATE);
   }
 
-  public BrokerCancelProcessInstanceBatchOperationRequest setQuery(final ProcessInstanceQuery query) {
-    requestQueryDto = query;
+  public BrokerCreateBatchOperationRequest setKeys(final List<Long> keys) {
+    this.keys = keys;
+    return this;
+  }
+
+  public BrokerCreateBatchOperationRequest setCommandType(final CommandType commandType) {
+    this.commandType = commandType;
     return this;
   }
 
   @Override
   public ProcessInstanceRecord getRequestWriter() {
-    return requestDto;
+    return null; // TODO
   }
 
   @Override
   protected Long toResponseDto(final DirectBuffer buffer) {
     final ProcessInstanceRecord responseDto = new ProcessInstanceRecord();
     responseDto.wrap(buffer);
-    return responseDto;
+    return -1L; // TODO
+  }
+
+  public enum CommandType {
+    CANCEL_PROCESS_INSTANCE,
   }
 }
