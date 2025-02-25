@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.Batc
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -46,7 +47,6 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     fkBatchKey = new DbForeignKey<>(batchKey, ZbColumnFamilies.BATCH_OPERATION);
     chunkKey = new DbLong();
     fkBatchKeyAndChunkKey = new DbCompositeKey<>(fkBatchKey, chunkKey);
-
     batchOperationColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.BATCH_OPERATION,
@@ -135,6 +135,28 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     LOGGER.trace("Completing batch operation with key {}", batchOperationKey);
     batchKey.wrapLong(batchOperationKey);
     batchOperationColumnFamily.deleteExisting(batchKey);
+  }
+
+  @Override
+  public void pause(final long batchKey, final BatchOperationExecutionRecord record) {
+    this.batchKey.wrapLong(record.getBatchOperationKey());
+    final var batch = batchOperationColumnFamily.get(this.batchKey);
+    batch.setStatus(BatchOperationStatus.PAUSED);
+    batchOperationColumnFamily.update(this.batchKey, batch);
+  }
+
+  @Override
+  public void resume(final long batchKey, final BatchOperationExecutionRecord record) {
+    this.batchKey.wrapLong(record.getBatchOperationKey());
+    final var batch = batchOperationColumnFamily.get(this.batchKey);
+    batch.setStatus(BatchOperationStatus.ACTIVATED);
+    batchOperationColumnFamily.update(this.batchKey, batch);
+  }
+
+  @Override
+  public void cancel(final long batchKey, final BatchOperationExecutionRecord record) {
+    this.batchKey.wrapLong(record.getBatchOperationKey());
+    batchOperationColumnFamily.deleteExisting(this.batchKey);
   }
 
   @Override

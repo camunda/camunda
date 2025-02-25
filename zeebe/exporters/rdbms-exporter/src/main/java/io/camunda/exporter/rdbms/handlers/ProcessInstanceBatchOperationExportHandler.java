@@ -12,15 +12,22 @@ import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationRe
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemStatus;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** This aggregates the batch operation status of process instance cancellations */
 public class ProcessInstanceBatchOperationExportHandler
     implements RdbmsExportHandler<ProcessInstanceRecordValue> {
+
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(ProcessInstanceBatchOperationExportHandler.class);
 
   private final BatchOperationWriter batchOperationWriter;
 

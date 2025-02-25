@@ -80,7 +80,7 @@ public class RdbmsExporterWrapper implements Exporter {
             .rdbmsWriter(rdbmsWriter);
 
     createHandlers(partitionId, rdbmsWriter, builder);
-    createBatchOperationHandlers(rdbmsWriter, builder);
+    createBatchOperationHandlers(partitionId, rdbmsWriter, builder);
 
     exporter = new RdbmsExporter(builder.build());
   }
@@ -211,6 +211,26 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.BATCH_OPERATION_CHUNK,
         new BatchOperationChunkExportHandler(rdbmsWriter.getBatchOperationWriter()));
+    builder.withHandler(
+        ValueType.BATCH_OPERATION_EXECUTION,
+        new BatchOperationExecutionExportHandler(rdbmsWriter.getBatchOperationWriter()));
+
+    // Handlers per batch operation to track status
+    builder.withHandler(
+        ValueType.PROCESS_INSTANCE,
+        new ProcessInstanceBatchOperationExportHandler(rdbmsWriter.getBatchOperationWriter()));
+  }
+
+  private static void createBatchOperationHandlers(
+      final long partitionId,
+      final RdbmsWriter rdbmsWriter,
+      final RdbmsExporterConfig.Builder builder) {
+    builder.withHandler(
+        ValueType.BATCH_OPERATION_CREATION,
+        new BatchOperationCreatedExportHandler(rdbmsWriter.getBatchOperationWriter(), partitionId));
+    builder.withHandler(
+        ValueType.BATCH_OPERATION_CHUNK,
+        new BatchOperationSubBatchExportHandler(rdbmsWriter.getBatchOperationWriter()));
     builder.withHandler(
         ValueType.BATCH_OPERATION_EXECUTION,
         new BatchOperationExecutionExportHandler(rdbmsWriter.getBatchOperationWriter()));

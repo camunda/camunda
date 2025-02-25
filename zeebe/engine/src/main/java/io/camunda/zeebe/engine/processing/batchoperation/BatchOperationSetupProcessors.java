@@ -26,6 +26,7 @@ public final class BatchOperationSetupProcessors {
   public static void addBatchOperationProcessors(
       final KeyGenerator keyGenerator,
       final TypedRecordProcessors typedRecordProcessors,
+      final ProcessingState processingState,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
@@ -45,6 +46,22 @@ public final class BatchOperationSetupProcessors {
             ValueType.BATCH_OPERATION_EXECUTION,
             BatchOperationExecutionIntent.EXECUTE,
             new BatchOperationExecuteProcessor(writers, processingState, partitionId))
+        .onCommand(
+            ValueType.BATCH_OPERATION_EXECUTION,
+            BatchOperationExecutionIntent.CANCEL,
+            new BatchOperationCancelProcessor(
+                writers, keyGenerator, commandDistributionBehavior, processingState))
+        .onCommand(
+            ValueType.BATCH_OPERATION_EXECUTION,
+            BatchOperationExecutionIntent.PAUSE,
+            new BatchOperationPauseProcessor(
+                writers, keyGenerator, commandDistributionBehavior, processingState))
+        .onCommand(
+            ValueType.BATCH_OPERATION_EXECUTION,
+            BatchOperationExecutionIntent.RESUME,
+            new BatchOperationResumeProcessor(
+                writers, keyGenerator, commandDistributionBehavior, processingState))
+
         .withListener(
             new BatchOperationExecutionScheduler(
                 scheduledTaskStateFactory, searchClientsProxy, Duration.ofMillis(1000)));

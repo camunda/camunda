@@ -34,6 +34,7 @@ public record ProcessInstanceFilter(
     List<Operation<String>> tenantIdOperations,
     List<VariableValueFilter> variableFilters,
     List<Operation<String>> errorMessageOperations,
+    List<Integer> partitionIds,
     List<Operation<String>> batchOperationIdOperations,
     Boolean hasRetriesLeft,
     List<Operation<String>> flowNodeIdOperations,
@@ -58,6 +59,7 @@ public record ProcessInstanceFilter(
         .hasIncident(hasIncident)
         .tenantIdOperations(tenantIdOperations)
         .variables(variableFilters)
+        .partitionIds(partitionIds)
         .batchOperationIdOperations(batchOperationIdOperations);
   }
 
@@ -78,6 +80,7 @@ public record ProcessInstanceFilter(
     private List<Operation<String>> tenantIdOperations;
     private List<VariableValueFilter> variableFilters;
     private List<Operation<String>> errorMessageOperations;
+    private List<Integer> partitionIds;
     private List<Operation<String>> batchOperationIdOperations;
     private Boolean hasRetriesLeft;
     private List<Operation<String>> flowNodeIdOperations;
@@ -278,6 +281,11 @@ public record ProcessInstanceFilter(
       return this;
     }
 
+    public Builder partitionIds(final List<Integer> partitionIds) {
+      this.partitionIds = addValuesToList(this.partitionIds, partitionIds);
+      return this;
+    }
+
     public Builder batchOperationIdOperations(final List<Operation<String>> operations) {
       batchOperationIdOperations = addValuesToList(batchOperationIdOperations, operations);
       return this;
@@ -377,6 +385,7 @@ public record ProcessInstanceFilter(
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(variableFilters, Collections.emptyList()),
           Objects.requireNonNullElse(errorMessageOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(partitionIds, Collections.emptyList()),
           Objects.requireNonNullElse(batchOperationIdOperations, Collections.emptyList()),
           hasRetriesLeft,
           Objects.requireNonNullElse(flowNodeIdOperations, Collections.emptyList()),

@@ -11,7 +11,10 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -46,6 +49,21 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
     setBatchOperationType(record.getBatchOperationType());
     setEntityFilter(record.getEntityFilterBuffer());
     return this;
+  }
+
+  public boolean canCancel() {
+    return getStatus() == BatchOperationStatus.CREATED
+        || getStatus() == BatchOperationStatus.ACTIVATED
+        || getStatus() == BatchOperationStatus.PAUSED;
+  }
+
+  public boolean canPause() {
+    return getStatus() == BatchOperationStatus.CREATED
+        || getStatus() == BatchOperationStatus.ACTIVATED;
+  }
+
+  public boolean canResume() {
+    return getStatus() == BatchOperationStatus.PAUSED;
   }
 
   public long getKey() {

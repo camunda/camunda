@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
@@ -127,6 +128,16 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         batchOperationKey, BatchOperationExecutionIntent.EXECUTE, command, batchOperationKey);
   }
 
+  private void appendExecution(
+      final PersistedBatchOperation batchOperation, final TaskResultBuilder taskResultBuilder) {
+    final var command = new BatchOperationExecutionRecord();
+    command.setBatchOperationKey(batchOperation.getKey());
+
+    LOG.debug("Appending batch operation execution {}", batchOperation.getKey());
+    taskResultBuilder.appendCommandRecord(
+        batchOperation.getKey(), BatchOperationExecutionIntent.EXECUTE, command, batchOperation.getKey());
+  }
+
   private Set<Long> queryAllKeys(final PersistedBatchOperation batchOperation) {
     return switch (batchOperation.getBatchOperationType()) {
       case PROCESS_CANCELLATION -> queryAllProcessInstanceKeys(batchOperation);
@@ -143,6 +154,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     final var itemKeys = new LinkedHashSet<Long>();
 
     Object[] searchValues = null;
+    final int batchSize = 400000;
     while (true) {
 
       final var page =

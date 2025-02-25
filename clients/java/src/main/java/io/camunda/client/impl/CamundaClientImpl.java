@@ -30,6 +30,7 @@ import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
 import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
+import io.camunda.client.api.command.CancelProcessInstancesBatchRequest;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ClockPinCommandStep1;
 import io.camunda.client.api.command.ClockResetCommandStep1;
@@ -74,6 +75,8 @@ import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.client.api.fetch.BatchOperationGetRequest;
+import io.camunda.client.api.fetch.BatchOperationItemsGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.DecisionInstanceGetRequest;
@@ -91,6 +94,7 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.request.AdHocSubprocessActivitySearchRequest;
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
@@ -113,6 +117,7 @@ import io.camunda.client.impl.command.AssignUserToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignUserToTenantCommandImpl;
 import io.camunda.client.impl.command.BroadcastSignalCommandImpl;
 import io.camunda.client.impl.command.CancelProcessInstanceCommandImpl;
+import io.camunda.client.impl.command.CancelProcessInstancesBatchRequestImpl;
 import io.camunda.client.impl.command.ClockPinCommandImpl;
 import io.camunda.client.impl.command.ClockResetCommandImpl;
 import io.camunda.client.impl.command.CompleteUserTaskCommandImpl;
@@ -153,6 +158,8 @@ import io.camunda.client.impl.command.UpdateAuthorizationCommandImpl;
 import io.camunda.client.impl.command.UpdateGroupCommandImpl;
 import io.camunda.client.impl.command.UpdateTenantCommandImpl;
 import io.camunda.client.impl.command.UpdateUserTaskCommandImpl;
+import io.camunda.client.impl.fetch.BatchOperationGetRequestImpl;
+import io.camunda.client.impl.fetch.BatchOperationItemsGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionDefinitionGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionDefinitionGetXmlRequestImpl;
 import io.camunda.client.impl.fetch.DecisionInstanceGetRequestImpl;
@@ -170,6 +177,7 @@ import io.camunda.client.impl.fetch.UserTaskGetRequestImpl;
 import io.camunda.client.impl.fetch.VariableGetRequestImpl;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.http.HttpClientFactory;
+import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.client.impl.search.request.AdHocSubprocessActivitySearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionInstanceSearchRequestImpl;
@@ -206,8 +214,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 public final class CamundaClientImpl implements CamundaClient {
+
   private final CamundaClientConfiguration config;
   private final JsonMapper jsonMapper;
   private final GatewayStub asyncStub;
@@ -493,6 +503,26 @@ public final class CamundaClientImpl implements CamundaClient {
         httpClient,
         config,
         jsonMapper);
+  }
+
+  @Override
+  public CancelProcessInstancesBatchRequest newCancelInstancesBatchCommand(
+      final Consumer<ProcessInstanceFilter> filterModifier) {
+    final ProcessInstanceFilter filter = new ProcessInstanceFilterImpl();
+    filterModifier.accept(filter);
+
+    return new CancelProcessInstancesBatchRequestImpl(httpClient, filter, jsonMapper);
+  }
+
+  @Override
+  public BatchOperationGetRequest newGetBatchOperationCommand(final Long batchOperationKey) {
+    return new BatchOperationGetRequestImpl(httpClient, batchOperationKey);
+  }
+
+  @Override
+  public BatchOperationItemsGetRequest newGetBatchOperationItemsCommand(
+      final Long batchOperationKey) {
+    return new BatchOperationItemsGetRequestImpl(httpClient, batchOperationKey);
   }
 
   @Override

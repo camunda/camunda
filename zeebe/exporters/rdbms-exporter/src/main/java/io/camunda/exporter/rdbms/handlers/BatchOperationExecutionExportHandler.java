@@ -16,16 +16,25 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
 import io.camunda.zeebe.util.DateUtil;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Tracks the execution of a batch operation, like completion. */
 public class BatchOperationExecutionExportHandler
     implements RdbmsExportHandler<BatchOperationExecutionRecordValue> {
 
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BatchOperationExecutionExportHandler.class);
+
   private static final Set<Intent> EXPORTABLE_INTENTS =
       Set.of(
           BatchOperationExecutionIntent.EXECUTING,
           BatchOperationExecutionIntent.EXECUTED,
-          BatchOperationExecutionIntent.COMPLETED);
+          BatchOperationExecutionIntent.COMPLETED,
+          BatchOperationIntent.CANCELED,
+          BatchOperationIntent.PAUSED,
+          BatchOperationIntent.RESUMED
+      );
 
   private final BatchOperationWriter batchOperationWriter;
 
@@ -46,6 +55,13 @@ public class BatchOperationExecutionExportHandler
     if (record.getIntent().equals(BatchOperationExecutionIntent.COMPLETED)) {
       batchOperationWriter.finish(
           batchOperationKey, DateUtil.toOffsetDateTime(record.getTimestamp()));
+    } else if (record.getIntent().equals(BatchOperationIntent.CANCELED)) {
+      batchOperationWriter.cancel(
+          batchOperationKey, DateUtil.toOffsetDateTime(record.getTimestamp()));
+    } else if (record.getIntent().equals(BatchOperationIntent.PAUSED)) {
+      batchOperationWriter.paused(batchOperationKey);
+    } else if (record.getIntent().equals(BatchOperationIntent.RESUMED)) {
+      batchOperationWriter.resumed(batchOperationKey);
     }
   }
 }

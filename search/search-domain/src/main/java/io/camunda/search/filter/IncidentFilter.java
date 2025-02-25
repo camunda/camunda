@@ -30,7 +30,8 @@ public record IncidentFilter(
     DateValueFilter creationTime,
     List<IncidentState> states,
     List<Long> jobKeys,
-    List<String> tenantIds)
+    List<String> tenantIds,
+    List<Integer> partitionIds)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<IncidentFilter> {
@@ -48,6 +49,7 @@ public record IncidentFilter(
     private List<IncidentState> states;
     private List<Long> jobKeys;
     private List<String> tenantIds;
+    private List<Integer> partitionIds;
 
     public Builder incidentKeys(final Long value, final Long... values) {
       return incidentKeys(collectValues(value, values));
@@ -162,6 +164,15 @@ public record IncidentFilter(
       return this;
     }
 
+    public Builder partitionIds(final Integer value, final Integer... values) {
+      return partitionIds(collectValues(value, values));
+    }
+
+    public Builder partitionIds(final List<Integer> values) {
+      partitionIds = addValuesToList(partitionIds, values);
+      return this;
+    }
+
     @Override
     public IncidentFilter build() {
       return new IncidentFilter(
@@ -177,7 +188,8 @@ public record IncidentFilter(
           creationTimeFilter,
           Objects.requireNonNullElse(states, Collections.emptyList()),
           Objects.requireNonNullElse(jobKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
+          Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
+          Objects.requireNonNullElse(partitionIds, Collections.emptyList()));
     }
   }
 }

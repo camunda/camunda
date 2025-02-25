@@ -24,6 +24,7 @@ import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
 import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
+import io.camunda.client.api.command.CancelProcessInstancesBatchRequest;
 import io.camunda.client.api.command.ClockPinCommandStep1;
 import io.camunda.client.api.command.ClockResetCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
@@ -63,6 +64,8 @@ import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.client.api.fetch.BatchOperationGetRequest;
+import io.camunda.client.api.fetch.BatchOperationItemsGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.DecisionInstanceGetRequest;
@@ -80,6 +83,7 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.request.AdHocSubprocessActivitySearchRequest;
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
@@ -97,6 +101,7 @@ import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.CamundaClientCloudBuilderImpl;
 import io.camunda.client.impl.CamundaClientImpl;
+import java.util.function.Consumer;
 
 /** The client to communicate with a Camunda broker/cluster. */
 public interface CamundaClient extends AutoCloseable, JobClient {
@@ -300,6 +305,49 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   CancelProcessInstanceCommandStep1 newCancelInstanceCommand(long processInstanceKey);
+
+  /**
+   * Command to cancel process instances as a batch.
+   *
+   * <pre>
+   * camundaClient
+   *  .newCancelInstancesBatchCommand(filterModifier)
+   *  .send();
+   * </pre>
+   *
+   * @param filterModifier the filter which identifies the corresponding process instances
+   * @return a builder for the command
+   */
+  CancelProcessInstancesBatchRequest newCancelInstancesBatchCommand(
+      Consumer<ProcessInstanceFilter> filterModifier);
+
+  /**
+   * Command to get a single batch operation by batch operation key.
+   *
+   * <pre>
+   * camundaClient
+   *  .newGetBatchOperationCommand(batchOperationKey)
+   *  .send();
+   * </pre>
+   *
+   * @param batchOperationKey the key which identifies the corresponding batch operation
+   * @return a builder for the command
+   */
+  BatchOperationGetRequest newGetBatchOperationCommand(Long batchOperationKey);
+
+  /**
+   * Command to get a all items for a batch operation by batch operation key.
+   *
+   * <pre>
+   * camundaClient
+   *  .newGetBatchOperationItemsCommand(batchOperationKey)
+   *  .send();
+   * </pre>
+   *
+   * @param batchOperationKey the key which identifies the corresponding batch operation
+   * @return a builder for the command
+   */
+  BatchOperationItemsGetRequest newGetBatchOperationItemsCommand(Long batchOperationKey);
 
   /**
    * Command to set and/or update the variables of a given flow element (e.g. process instance,

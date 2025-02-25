@@ -77,6 +77,11 @@ public final class BatchOperationExecuteProcessor
     switch (batchOperation.getBatchOperationType()) {
       case PROCESS_CANCELLATION ->
           entityKeys.forEach(entityKey -> cancelProcessInstance(entityKey, batchKey));
+      default ->
+          LOGGER.error(
+              "Unexpected batch operation type '{}' for batch operation with key '{}'",
+              batchOperation.getBatchOperationType(),
+              batchKey);
     }
 
     appendBatchOperationExecutionExecutedEvent(command.getValue(), Set.copyOf(entityKeys));

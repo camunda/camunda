@@ -595,6 +595,15 @@ public final class EventAppliers implements EventApplier {
         BatchOperationExecutionIntent.EXECUTING,
         new BatchOperationExecutingApplier(state.getBatchOperationState()));
     register(BatchOperationExecutionIntent.EXECUTED, NOOP_EVENT_APPLIER);
+    register(
+        BatchOperationExecutionIntent.PAUSED,
+        new BatchOperationPausedApplier(state.getBatchOperationState()));
+    register(
+        BatchOperationExecutionIntent.RESUMED,
+        new BatchOperationResumedApplier(state.getBatchOperationState()));
+    register(
+        BatchOperationExecutionIntent.CANCELED,
+        new BatchOperationCanceledApplier(state.getBatchOperationState()));
 
     register(
         BatchOperationExecutionIntent.COMPLETED,

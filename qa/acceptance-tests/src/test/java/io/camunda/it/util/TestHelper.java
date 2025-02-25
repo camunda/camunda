@@ -110,6 +110,19 @@ public final class TestHelper {
             });
   }
 
+  public static void waitForProcessInstanceToBeTerminated(
+      final CamundaClient camundaClient, final Long processInstanceKey) {
+    Awaitility.await("should wait until process is terminated")
+        .atMost(Duration.ofSeconds(60))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
+              assertThat(result.getState()).isEqualTo(ProcessInstanceState.TERMINATED);
+            });
+  }
+
   public static void waitForFlowNodeInstances(
       final CamundaClient camundaClient, final int expectedFlowNodeInstances) {
     Awaitility.await("should wait until flow node instances are available")
