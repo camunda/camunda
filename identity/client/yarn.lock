@@ -1495,12 +1495,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:22.10.0":
-  version: 22.10.0
-  resolution: "@types/node@npm:22.10.0"
+"@types/node@npm:22.13.5":
+  version: 22.13.5
+  resolution: "@types/node@npm:22.13.5"
   dependencies:
     undici-types: "npm:~6.20.0"
-  checksum: 10c0/efb3783b6fe74b4300c5bdd4f245f1025887d9b1d0950edae584af58a30d95cc058c10b4b3428f8300e4318468b605240c2ede8fcfb6ead2e0f05bca31e54c1b
+  checksum: 10c0/a2e7ed7bb0690e439004779baedeb05159c5cc41ef6d81c7a6ebea5303fde4033669e1c0e41ff7453b45fd2fea8dbd55fddfcd052950c7fcae3167c970bca725
   languageName: node
   linkType: hard
 
@@ -3113,7 +3113,7 @@ __metadata:
     "@types/carbon-components-react": "npm:^7.55.13"
     "@types/carbon__elements": "npm:^11.10.3"
     "@types/event-source-polyfill": "npm:1.0.5"
-    "@types/node": "npm:22.10.0"
+    "@types/node": "npm:22.13.5"
     "@types/react": "npm:18.3.12"
     "@types/react-dom": "npm:18.3.1"
     "@types/react-transition-group": "npm:4.4.11"
