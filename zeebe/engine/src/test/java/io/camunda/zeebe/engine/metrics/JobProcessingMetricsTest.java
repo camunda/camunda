@@ -25,9 +25,11 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -42,8 +44,11 @@ public class JobProcessingMetricsTest {
   private static final String JOB_TYPE = "job";
 
   @Parameter public JobMetricsTestScenario scenario;
-  @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
+
+  private final TestWatcher watcher = new RecordingExporterTestWatcher();
   private final EngineRule engine = EngineRule.singlePartition();
+
+  @Rule public final RuleChain ruleChain = RuleChain.outerRule(engine).around(watcher);
 
   @Parameters(name = "{index}: {0}")
   public static Collection<Object[]> parameters() {
@@ -80,11 +85,6 @@ public class JobProcessingMetricsTest {
     assertThat(findJobCounter("failed", JOB_TYPE, scenario.jobKind)).isEmpty();
     assertThat(findJobCounter("canceled", JOB_TYPE, scenario.jobKind)).isEmpty();
     assertThat(findJobCounter("error thrown", JOB_TYPE, scenario.jobKind)).isEmpty();
-  }
-
-  @Before
-  public void resetMetrics() {
-    engine.getMeterRegistry().clear();
   }
 
   @Test
