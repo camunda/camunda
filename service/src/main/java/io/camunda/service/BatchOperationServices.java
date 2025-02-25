@@ -20,7 +20,12 @@ import io.camunda.security.auth.Authorization.Builder;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelBatchOperationRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerPauseBatchOperationRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerResumeBatchOperationRequest;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +51,7 @@ public final class BatchOperationServices
         brokerClient, securityContextProvider, batchOperationSearchClient, authentication);
   }
 
+  // TODO Auth
   @Override
   public SearchQueryResult<BatchOperationEntity> search(final BatchOperationQuery query) {
     return batchOperationSearchClient
@@ -65,5 +71,31 @@ public final class BatchOperationServices
 
   public List<BatchOperationItemEntity> getItemsByKey(final Long key) {
     return batchOperationSearchClient.getBatchOperationItems(key);
+  }
+
+  public CompletableFuture<BatchOperationExecutionRecord> cancel(final long batchKey) {
+    LOGGER.debug("Cancelling batch operation with key '{}'", batchKey);
+
+    final var brokerRequest =
+        new BrokerCancelBatchOperationRequest().setBatchOperationKey(batchKey);
+
+    return sendBrokerRequest(brokerRequest);
+  }
+
+  public CompletableFuture<BatchOperationExecutionRecord> pause(final long batchKey) {
+    LOGGER.debug("Pausing batch operation with key '{}'", batchKey);
+
+    final var brokerRequest = new BrokerPauseBatchOperationRequest().setBatchOperationKey(batchKey);
+
+    return sendBrokerRequest(brokerRequest);
+  }
+
+  public CompletableFuture<BatchOperationExecutionRecord> resume(final long batchKey) {
+    LOGGER.debug("Resuming batch operation with key '{}'", batchKey);
+
+    final var brokerRequest =
+        new BrokerResumeBatchOperationRequest().setBatchOperationKey(batchKey);
+
+    return sendBrokerRequest(brokerRequest);
   }
 }

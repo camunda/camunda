@@ -11,9 +11,11 @@ import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.Duration;
@@ -24,10 +26,12 @@ public final class BatchOperationSetupProcessors {
   public static void addBatchOperationProcessors(
       final KeyGenerator keyGenerator,
       final TypedRecordProcessors typedRecordProcessors,
+      final ProcessingState processingState,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
-      final SearchClientsProxy searchClientsProxy) {
+      final SearchClientsProxy searchClientsProxy,
+      final int partitionId) {
     typedRecordProcessors
         .onCommand(
             ValueType.BATCH_OPERATION_CREATION,
@@ -37,6 +41,28 @@ public final class BatchOperationSetupProcessors {
             ValueType.BATCH_OPERATION_CHUNK,
             BatchOperationChunkIntent.CREATE,
             new BatchOperationCreateChunkProcessor(writers))
+        .onCommand(
+            ValueType.BATCH_OPERATION_EXECUTION,
+            BatchOperationExecutionIntent.CANCEL,
+            new BatchOperationCancelProcessor(
+                writers, keyGenerator, commandDistributionBehavior, processingState))
+        .onCommand(
+            ValueType.BATCH_OPERATION_EXECUTION,
+            BatchOperationExecutionIntent.PAUSE,
+            new BatchOperationPauseProcessor(
+                writers, keyGenerator, commandDistributionBehavior, processingState))
+        .onCommand(
+            ValueType.BATCH_OPERATION_EXECUTION,
+            BatchOperationExecutionIntent.RESUME,
+            new BatchOperationResumeProcessor(
+                writers, keyGenerator, commandDistributionBehavior, processingState))
+        .onCommand(
+            ValueType.BATCH_OPERATION_EXECUTION,
+            BatchOperationExecutionIntent.EXECUTE,
+            new BatchOperationExecuteProcessor(writers, processingState, partitionId))
+        // FIXME pass process instance services (or a list of query services) to the scheduler
+        // FIXME pass the polling interval from configurations to the scheduler
+
         .withListener(
             new BatchOperationExecutionScheduler(
                 scheduledTaskStateFactory,

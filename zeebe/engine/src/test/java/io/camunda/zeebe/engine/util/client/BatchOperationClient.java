@@ -7,15 +7,22 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.search.filter.FilterBase;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Random;
 import java.util.function.Function;
@@ -31,6 +38,10 @@ public final class BatchOperationClient {
 
   public BatchOperationCreationClient ofType(final BatchOperationType type) {
     return new BatchOperationCreationClient(writer, type);
+  }
+
+  public ExistingBatchOperationClient ofKey(final long batchOperationKey) {
+    return new ExistingBatchOperationClient(writer, batchOperationKey);
   }
 
   public static class BatchOperationCreationClient {
@@ -142,6 +153,81 @@ public final class BatchOperationClient {
           .getFirst()
           .getValue()
           .getBatchOperationKey();
+    }
+  }
+
+  public static class ExistingBatchOperationClient {
+
+    public static final Function<Long, Record<BatchOperationExecutionRecordValue>>
+        SUCCESS_EXPECTATION =
+            (batchOperationKey) ->
+                RecordingExporter.batchOperationExecutionRecords()
+                    .withRecordKey(batchOperationKey)
+                    .withIntent(BatchOperationExecutionIntent.COMPLETED)
+                    .withBatchOperationKey(batchOperationKey)
+                    .getFirst();
+
+    public static final Function<Long, Record<BatchOperationExecutionRecordValue>>
+        REJECTION_EXPECTATION =
+            (batchOperationKey) ->
+                RecordingExporter.batchOperationExecutionRecords()
+                    .onlyCommandRejections()
+                    .withIntent(BatchOperationExecutionIntent.CANCEL)
+                    .withRecordKey(batchOperationKey)
+                    .withBatchOperationKey(batchOperationKey)
+                    .getFirst();
+
+    public static final Function<Long, Record<ErrorRecordValue>> ERROR_EXPECTATION =
+        (processInstanceKey) ->
+            RecordingExporter.errorRecords().withIntent(ErrorIntent.CREATED).getFirst();
+
+    private static final int DEFAULT_PARTITION = -1;
+    private final CommandWriter writer;
+    private final long batchOperationKey;
+
+    private int partition = DEFAULT_PARTITION;
+    private Function<Long, Record<BatchOperationExecutionRecordValue>> expectation =
+        SUCCESS_EXPECTATION;
+
+    public ExistingBatchOperationClient(final CommandWriter writer, final long batchOperationKey) {
+      this.writer = writer;
+      this.batchOperationKey = batchOperationKey;
+    }
+
+    public ExistingBatchOperationClient onPartition(final int partition) {
+      this.partition = partition;
+      return this;
+    }
+
+    public ExistingBatchOperationClient expectRejection() {
+      expectation = REJECTION_EXPECTATION;
+      return this;
+    }
+
+    public Record<BatchOperationExecutionRecordValue> cancel() {
+      writeCancelCommand();
+      return expectation.apply(batchOperationKey);
+    }
+
+    public Record<ErrorRecordValue> cancelWithError() {
+      writeCancelCommand();
+      return ERROR_EXPECTATION.apply(batchOperationKey);
+    }
+
+    private void writeCancelCommand() {
+      if (partition == DEFAULT_PARTITION) {
+        partition =
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(batchOperationKey)
+                .getFirst()
+                .getPartitionId();
+      }
+
+      writer.writeCommandOnPartition(
+          partition,
+          batchOperationKey,
+          ProcessInstanceIntent.CANCEL,
+          new BatchOperationExecutionRecord().setBatchOperationKey(batchOperationKey));
     }
   }
 }

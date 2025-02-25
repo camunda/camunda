@@ -35,7 +35,8 @@ public final class IncidentFixtures extends CommonFixtures {
             .errorMessage("error-" + generateRandomString(20))
             .creationDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .tenantId("tenant-" + generateRandomString(20))
-            .treePath("tree-" + generateRandomString(20));
+            .treePath("tree-" + generateRandomString(20))
+            .partitionId(RANDOM.nextInt(100));
 
     return builderFunction.apply(builder).build();
   }

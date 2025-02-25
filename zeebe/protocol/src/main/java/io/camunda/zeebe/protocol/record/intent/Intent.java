@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 public interface Intent {
+
   Collection<Class<? extends Intent>> INTENT_CLASSES =
       Arrays.asList(
           DeploymentIntent.class,

@@ -43,12 +43,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ProcessInstanceServices
     extends SearchQueryService<
         ProcessInstanceServices, ProcessInstanceQuery, ProcessInstanceEntity> {
 
   public static final long NO_PARENT_EXISTS_KEY = -1L;
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProcessInstanceServices.class);
 
   private final ProcessInstanceSearchClient processInstanceSearchClient;
 

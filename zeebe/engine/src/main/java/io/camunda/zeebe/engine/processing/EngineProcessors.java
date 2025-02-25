@@ -317,10 +317,12 @@ public final class EngineProcessors {
     BatchOperationSetupProcessors.addBatchOperationProcessors(
         keyGenerator,
         typedRecordProcessors,
+        processingState,
         writers,
         commandDistributionBehavior,
         scheduledTaskStateFactory,
-        searchClientsProxy);
+        searchClientsProxy,
+        partitionId);
 
     return typedRecordProcessors;
   }
