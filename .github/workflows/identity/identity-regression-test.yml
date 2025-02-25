@@ -1,0 +1,97 @@
+name: Identity API Regression Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run tests on'
+        required: true
+        default: 'main'
+
+concurrency:
+  cancel-in-progress: true
+  group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
+
+jobs:
+  run-http-regression-tests:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [ 'local' ]
+        case: [ 'identity-regression-test.http' ]
+
+    runs-on: ubuntu-latest
+    environment: '${{ matrix.env }}-http-tests'
+    env:
+      LC_ALL: C.UTF-8
+
+    services:
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.17.2
+        env:
+          discovery.type: single-node
+          cluster.name: docker-cluster
+          bootstrap.memory_lock: true
+          xpack.security.enabled: false
+          ES_JAVA_OPTS: -Xms1024m -Xmx1024m
+        ports:
+          - 9200:9200
+          - 9300:9300
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: "21"
+
+      - name: Set up Maven
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: "21"
+
+      - name: Build Project
+        run: mvn clean install -T1C -DskipTests -DskipChecks -DskipOptimize=true
+
+      - name: Extract Distribution Tarball
+        run: |
+          cd ./dist/target
+          tar -xvzf camunda-zeebe-8.8.0-SNAPSHOT.tar.gz
+
+      - name: Start Camunda
+        run: |
+          cd ./dist/target/camunda-zeebe-8.8.0-SNAPSHOT
+          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter && \
+          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:9200  && \
+          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE=100  && \
+          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false  && \
+          export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true && \
+          export CAMUNDA_SECURITY_AUTHENTICATION_BASIC_ALLOWUNAUTHENTICATEDAPIACCESS=false && \
+          export SPRING_PROFILES_ACTIVE=identity,tasklist,operate,broker,consolidated-auth && \
+          ./bin/camunda &
+          sleep 60
+
+      - name: Install IntelliJ HTTP Client
+        shell: bash
+        run: |
+          curl -f -L -o ijhttp.zip "https://jb.gg/ijhttp/latest"
+          unzip ijhttp.zip
+          ijhttp/ijhttp http/${{ matrix.case }} --private-env-file http/http-client.private.env.json --report -t 60000
+
+      - name: Publish Test Report
+        if: success() || failure()
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: '**/reports/report.xml'
+          include_passed: true
+
+      - name: Cleanup
+        shell: bash
+        if: always()
+        run: |
+          rm http/http-client.private.env.json
