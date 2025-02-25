@@ -29,7 +29,7 @@ Create a `.env` file inside `core-application-e2e-test-suite`. Your `.env` file 
 
 ```bash
 LOCAL_TEST=true
-MINOR_VERSION=8.7
+MINOR_VERSION=version_to_test
 CORE_APPLICATION_TASKLIST_URL=http://localhost:8080
 CORE_APPLICATION_OPERATE_URL=http://localhost:8081
 ```
