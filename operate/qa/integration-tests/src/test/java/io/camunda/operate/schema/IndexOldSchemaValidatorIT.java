@@ -172,7 +172,7 @@ public class IndexOldSchemaValidatorIT {
   public void testNewerVersionsForArchivedIndices() {
     // Only older versions
     final Set<String> givenIndexNames =
-        versionsOf(processIndex, olderVersions, "2022.01.01_10", "2022_01_01_10", "2022-01-01");
+        versionsOf(processIndex, olderVersions, "2022.01.01_10", "2022_01_01-10", "2022-01-01");
     whenDatabaseClientReturnsIndexNames(givenIndexNames);
     assertThat(indexSchemaValidator.newerVersionsForIndex(processIndex)).isEmpty();
 
@@ -188,7 +188,7 @@ public class IndexOldSchemaValidatorIT {
 
     // Only newer versions
     whenDatabaseClientReturnsIndexNames(
-        versionsOf(processIndex, newerVersions, "2022.01.01_10", "2022_01_01_10", "2022-01-01"));
+        versionsOf(processIndex, newerVersions, "2022.01.01_10", "2022_01_01-10", "2022-01-01"));
     assertThat(indexSchemaValidator.newerVersionsForIndex(processIndex)).containsAll(newerVersions);
   }
 
@@ -196,7 +196,7 @@ public class IndexOldSchemaValidatorIT {
   public void testOlderVersionsForArchivedIndices() {
     // Only newer versions
     whenDatabaseClientReturnsIndexNames(
-        versionsOf(processIndex, newerVersions, "2022.01.01_10", "2022_01_01_10", "2022-01-01"));
+        versionsOf(processIndex, newerVersions, "2022.01.01_10", "2022_01_01-10", "2022-01-01"));
     assertThat(indexSchemaValidator.olderVersionsForIndex(processIndex)).isEmpty();
     // Only current version
     whenDatabaseClientReturnsIndexNames(
@@ -209,7 +209,7 @@ public class IndexOldSchemaValidatorIT {
     assertThat(indexSchemaValidator.olderVersionsForIndex(processIndex)).isEmpty();
     // Only older versions
     whenDatabaseClientReturnsIndexNames(
-        versionsOf(processIndex, olderVersions, "2022.01.01_10", "2022_01_01_10", "2022-01-01"));
+        versionsOf(processIndex, olderVersions, "2022.01.01_10", "2022_01_01-10", "2022-01-01"));
     assertThat(indexSchemaValidator.olderVersionsForIndex(processIndex)).isEqualTo(olderVersions);
   }
 
