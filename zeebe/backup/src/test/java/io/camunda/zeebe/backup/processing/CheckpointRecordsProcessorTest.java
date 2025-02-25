@@ -62,7 +62,7 @@ final class CheckpointRecordsProcessorTest {
                 new RocksDbConfiguration(),
                 new ConsistencyChecksSettings(true, true),
                 new AccessMetricsConfiguration(Kind.NONE, 1),
-                new SimpleMeterRegistry())
+                SimpleMeterRegistry::new)
             .createDb(database.toFile());
     final RecordProcessorContextImpl context = createContext(executor, zeebedb);
 

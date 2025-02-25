@@ -62,6 +62,7 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;

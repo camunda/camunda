@@ -228,7 +228,8 @@ public class JobProcessingMetricsTest {
     return processInstanceKey;
   }
 
-  private Optional<Counter> findJobCounter(final String action, final String type, final JobKind kind) {
+  private Optional<Counter> findJobCounter(
+      final String action, final String type, final JobKind kind) {
     return Optional.ofNullable(
         engine
             .getMeterRegistry()
