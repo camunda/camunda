@@ -16,6 +16,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class TaskListenerIndicesRecord extends UnpackedObject implements DbValue {
 
+  private final IntegerProperty creatingTaskListenerIndexProp =
+      new IntegerProperty("creatingTaskListenerIndex", 0);
   private final IntegerProperty assigningTaskListenerIndexProp =
       new IntegerProperty("assigningTaskListenerIndex", 0);
   private final IntegerProperty updatingTaskListenerIndexProp =
@@ -24,14 +26,16 @@ public final class TaskListenerIndicesRecord extends UnpackedObject implements D
       new IntegerProperty("completingTaskListenerIndex", 0);
 
   TaskListenerIndicesRecord() {
-    super(3);
-    declareProperty(assigningTaskListenerIndexProp)
+    super(4);
+    declareProperty(creatingTaskListenerIndexProp)
+        .declareProperty(assigningTaskListenerIndexProp)
         .declareProperty(updatingTaskListenerIndexProp)
         .declareProperty(completingTaskListenerIndexProp);
   }
 
   public Integer getTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
     return switch (eventType) {
+      case creating -> creatingTaskListenerIndexProp.getValue();
       case assigning -> assigningTaskListenerIndexProp.getValue();
       case updating -> updatingTaskListenerIndexProp.getValue();
       case completing -> completingTaskListenerIndexProp.getValue();
@@ -42,6 +46,7 @@ public final class TaskListenerIndicesRecord extends UnpackedObject implements D
 
   public void incrementTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
     switch (eventType) {
+      case creating -> creatingTaskListenerIndexProp.increment();
       case assigning -> assigningTaskListenerIndexProp.increment();
       case updating -> updatingTaskListenerIndexProp.increment();
       case completing -> completingTaskListenerIndexProp.increment();
@@ -52,6 +57,7 @@ public final class TaskListenerIndicesRecord extends UnpackedObject implements D
 
   public void resetTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
     switch (eventType) {
+      case creating -> creatingTaskListenerIndexProp.reset();
       case assigning -> assigningTaskListenerIndexProp.reset();
       case updating -> updatingTaskListenerIndexProp.reset();
       case completing -> completingTaskListenerIndexProp.reset();

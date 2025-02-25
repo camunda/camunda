@@ -376,6 +376,7 @@ public final class BpmnJobBehavior {
   private static JobListenerEventType fromTaskListenerEventType(
       final ZeebeTaskListenerEventType eventType) {
     return switch (eventType) {
+      case creating -> JobListenerEventType.CREATING;
       case assigning -> JobListenerEventType.ASSIGNING;
       case updating -> JobListenerEventType.UPDATING;
       case completing -> JobListenerEventType.COMPLETING;
