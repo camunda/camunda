@@ -1,4 +1,4 @@
-import { FC, useEffect, useState } from "react";
+import { FC, useEffect, useRef, useState } from "react";
 import { CSSTransition } from "react-transition-group";
 import styled from "styled-components";
 import { ToastNotification } from "@carbon/react";
@@ -42,6 +42,8 @@ const Notification: FC<NotificationProps> = ({
   onClose,
 }) => {
   const [show, setShow] = useState(false);
+  // https://github.com/reactjs/react-transition-group/issues/668#issuecomment-695162879
+  const nodeRef = useRef(null);
 
   useEffect(() => {
     setShow(true);
@@ -55,18 +57,21 @@ const Notification: FC<NotificationProps> = ({
       classNames="toast"
       onExited={onClose}
       unmountOnExit
+      nodeRef={nodeRef}
     >
-      <ToastNotification
-        kind={kind}
-        lowContrast
-        onClose={() => {
-          setShow(false);
-          return false;
-        }}
-        role={role || (kind === "error" ? "alert" : "status")}
-        title={title}
-        subtitle={subtitle}
-      />
+      <div ref={nodeRef}>
+        <ToastNotification
+          kind={kind}
+          lowContrast
+          onClose={() => {
+            setShow(false);
+            return false;
+          }}
+          role={role || (kind === "error" ? "alert" : "status")}
+          title={title}
+          subtitle={subtitle}
+        />
+      </div>
     </StyledCSSTransition>
   );
 };

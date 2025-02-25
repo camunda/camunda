@@ -5,16 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.security.configuration;
+package io.camunda.zeebe.gateway.rest.util;
 
-public class BasicAuthenticationConfiguration {
-  private boolean allowUnauthenticatedApiAccess = true;
+public interface CustomConverter<T> {
 
-  public boolean getAllowUnauthenticatedApiAccess() {
-    return allowUnauthenticatedApiAccess;
-  }
+  boolean canConvert(final Object value);
 
-  public void setAllowUnauthenticatedApiAccess(final boolean value) {
-    allowUnauthenticatedApiAccess = value;
-  }
+  T convertValue(final Object value);
 }
