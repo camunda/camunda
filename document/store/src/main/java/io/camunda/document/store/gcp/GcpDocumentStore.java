@@ -23,21 +23,18 @@ import io.camunda.document.api.DocumentLink;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
+import io.camunda.document.store.InputStreamHashCalculator;
 import io.camunda.zeebe.util.Either;
 import java.nio.channels.Channels;
-import java.security.DigestInputStream;
-import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
-import java.util.HexFormat;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -155,27 +152,21 @@ public class GcpDocumentStore implements DocumentStore {
       return Either.left(new UnknownDocumentError(e));
     }
 
-    final BlobId blobId = BlobId.of(bucketName, fullBlobName);
-    final var blobInfoBuilder = BlobInfo.newBuilder(blobId);
-
-    final MessageDigest md;
+    final String hash;
     try {
-      md = MessageDigest.getInstance(MessageDigestAlgorithms.SHA_256);
-    } catch (final Exception e) {
-      // should never happen
-      return Either.left(new UnknownDocumentError(e));
-    }
-    final DigestInputStream digestStream = new DigestInputStream(request.contentInputStream(), md);
-    final var contentHash = HexFormat.of().formatHex(md.digest());
+      final BlobId blobId = BlobId.of(bucketName, fullBlobName);
+      final var blobInfoBuilder = BlobInfo.newBuilder(blobId);
+      applyMetadata(blobInfoBuilder, request.metadata(), fileName, "");
+      hash =
+          InputStreamHashCalculator.streamAndCalculateHash(
+              request.contentInputStream(),
+              stream -> storage.createFrom(blobInfoBuilder.build(), stream));
 
-    try {
-      applyMetadata(blobInfoBuilder, request.metadata(), fileName, contentHash);
+      applyMetadata(blobInfoBuilder, request.metadata(), fileName, hash);
+      storage.update(blobInfoBuilder.build());
     } catch (final JsonProcessingException e) {
       return Either.left(
           new DocumentError.InvalidInput("Failed to serialize metadata: " + e.getMessage()));
-    }
-    try {
-      storage.createFrom(blobInfoBuilder.build(), digestStream);
     } catch (final Exception e) {
       return Either.left(new UnknownDocumentError(e));
     }
@@ -190,7 +181,7 @@ public class GcpDocumentStore implements DocumentStore {
             request.metadata().processInstanceKey(),
             request.metadata().customProperties());
 
-    final var documentReference = new DocumentReference(documentId, contentHash, updatedMetadata);
+    final var documentReference = new DocumentReference(documentId, hash, updatedMetadata);
     return Either.right(documentReference);
   }
 
